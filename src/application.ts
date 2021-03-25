@@ -1,5 +1,6 @@
 import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig} from '@loopback/core';
+import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
+import {CronComponent} from '@loopback/cron';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {
@@ -8,6 +9,7 @@ import {
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
+import {FetchContentJob} from './jobs/fetchcontent.job';
 import {MySequence} from './sequence';
 
 export {ApplicationConfig};
@@ -31,8 +33,8 @@ export class MyriadApiApplication extends BootMixin(
     this.component(RestExplorerComponent);
 
     // Add cron component
-    // this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentJob));
+    this.component(CronComponent);
+    this.add(createBindingFromClass(FetchContentJob));
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
