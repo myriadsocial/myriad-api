@@ -1,4 +1,4 @@
-import {Entity, model, property, hasMany} from '@loopback/repository';
+import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
 
 @model({
@@ -19,6 +19,20 @@ export class Post extends Entity {
     },
   })
   id?: string;
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: true,
+  })
+  tags: String[];
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: true,
+  })
+  platformId: String;
 
   @property({
     type: 'string',

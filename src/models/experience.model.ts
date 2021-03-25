@@ -31,6 +31,20 @@ export class Experience extends Entity {
   name: string;
 
   @property({
+    type: 'array',
+    itemType: 'string',
+    required: true,
+  })
+  tags?: String[];
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: false,
+  })
+  people?: String[];
+
+  @property({
     type: 'date',
     required: true,
   })
