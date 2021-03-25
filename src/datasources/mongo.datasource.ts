@@ -4,12 +4,16 @@ import {AnyObject, juggler} from '@loopback/repository';
 const config = {
   name: 'mongo',
   connector: 'mongodb',
-  url: 'mongodb://root:root@127.0.0.1:27017/myriad',
-  useNewUrlParser: true
+  url: '',
+  host: 'localhost',
+  port: 27017,
+  user: 'root',
+  password: 'root',
+  database: 'myriad',
 };
 
 function updateConfig(dsConfig: AnyObject) {
-  dsConfig.url = process.env.MONGO_URL;
+  // todo use env
   return dsConfig;
 }
 

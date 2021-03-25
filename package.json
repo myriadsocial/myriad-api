@@ -57,7 +57,6 @@
     "@loopback/rest-explorer": "^3.2.0",
     "@loopback/service-proxy": "^3.1.0",
     "@polkadot/api": "^4.0.3",
-    "dotenv": "^8.2.0",
     "loopback-connector-mongodb": "^5.5.0",
     "loopback-connector-rest": "^3.7.0",
     "tslib": "^2.0.0",
