@@ -63,17 +63,12 @@ export class FetchContentJob extends CronJob {
       const content = await this.postRepository.findOne({
         where: {url: contentURL.toString()}
       })
+
       if (content != null) {
         let newTags: String[] = []
         if (content.tags != null) newTags = content.tags
         newTags.indexOf(tags) === -1 && newTags.push(tags);
-        await this.postRepository.updateAll({
-          tags: newTags
-        },
-          {
-            id: content.id
-          })
-
+        await this.postRepository.updateAll({tags: newTags}, {id: content.id})
         continue
       }
 
