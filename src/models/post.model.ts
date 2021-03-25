@@ -1,15 +1,15 @@
-import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {User} from './user.model';
+import {Entity, model, property, hasMany} from '@loopback/repository';
+import {Comment} from './comment.model';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'topics',
+      collection: 'posts',
     },
   }
 })
-export class Topic extends Entity {
+export class Post extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -27,13 +27,13 @@ export class Topic extends Entity {
       unique: true
     },
   })
-  name: string;
+  url: string;
 
   @property({
     type: 'date',
-    required: false,
+    required: true,
   })
-  createdAt?: string;
+  createdAt: string;
 
   @property({
     type: 'date',
@@ -47,20 +47,16 @@ export class Topic extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User, {}, {
-    mongodb: {
-      dataType: 'ObjectId'
-    }
-  })
-  userId: string;
+  @hasMany(() => Comment)
+  comments: Comment[];
 
-  constructor(data?: Partial<Topic>) {
+  constructor(data?: Partial<Post>) {
     super(data);
   }
 }
 
-export interface TopicRelations {
+export interface PostRelations {
   // describe navigational properties here
 }
 
-export type TopicWithRelations = Topic & TopicRelations;
+export type PostWithRelations = Post & PostRelations;

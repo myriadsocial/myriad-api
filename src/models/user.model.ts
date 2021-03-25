@@ -1,11 +1,6 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
-import {Content} from './content.model';
 import {Experience} from './experience.model';
-import {Platform} from './platform.model';
-import {Topic} from './topic.model';
-import {UserCredential} from './user-credential.model';
-import {UserIdentity} from './user-identity.model';
 
 @model({
   settings: {
@@ -19,53 +14,39 @@ export class User extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: true,
-    mongodb: {
-      dataType: 'ObjectId',
-    },
-  })
-  id?: string;
-
-  @property({
-    type: 'string',
+    generated: false,
     required: true,
     index: {
       unique: true
     },
+    jsonSchema: {
+      maxLength: 48,
+      minLength: 48,
+    },
   })
-  accountAddress: string;
+  id: string;
 
   @property({
     type: 'string',
     required: true,
+    jsonSchema: {
+      maxLength: 30,
+      minLength: 3,
+    },
   })
   name: string;
 
   @property({
-    type: 'array',
-    itemType: 'string',
+    type: 'string',
     required: false,
-    mongodb: {
-      dataType: 'ObjectId',
-    },
   })
-  corpus?: String[];
-
-  @property({
-    type: 'array',
-    itemType: 'string',
-    required: false,
-    mongodb: {
-      dataType: 'ObjectId',
-    },
-  })
-  following?: String[];
+  profilePictureURL?: string;
 
   @property({
     type: 'date',
-    required: false,
+    required: true,
   })
-  createdAt?: string;
+  createdAt: string;
 
   @property({
     type: 'date',
@@ -79,26 +60,11 @@ export class User extends Entity {
   })
   deletedAt?: string;
 
-  @hasMany(() => UserCredential)
-  userCredentials: UserCredential[];
-
-  @hasMany(() => UserIdentity)
-  userIdentities: UserIdentity[];
-
-  @hasMany(() => Topic)
-  topics: Topic[];
-
-  @hasMany(() => Platform)
-  platforms: Platform[];
-
-  @hasMany(() => Content)
-  contents: Content[];
+  @hasMany(() => Experience)
+  experiences: Experience[];
 
   @hasMany(() => Comment)
   comments: Comment[];
-
-  @hasMany(() => Experience)
-  experiences: Experience[];
 
   constructor(data?: Partial<User>) {
     super(data);

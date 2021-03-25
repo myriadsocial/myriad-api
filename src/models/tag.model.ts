@@ -1,34 +1,28 @@
-import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {User} from './user.model';
+import {Entity, model, property} from '@loopback/repository';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'experiences',
+      collection: 'tags',
     },
   }
 })
-export class Experience extends Entity {
+export class Tag extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: true,
-    mongodb: {
-      dataType: 'ObjectId',
-    },
-  })
-  id?: string;
-
-  @property({
-    type: 'string',
+    generated: false,
     required: true,
+    index: {
+      unique: true
+    },
     jsonSchema: {
       maxLength: 50,
       minLength: 1,
     },
   })
-  name: string;
+  id: string;
 
   @property({
     type: 'date',
@@ -48,16 +42,13 @@ export class Experience extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User)
-  userId: string;
-
-  constructor(data?: Partial<Experience>) {
+  constructor(data?: Partial<Tag>) {
     super(data);
   }
 }
 
-export interface ExperienceRelations {
+export interface TagRelations {
   // describe navigational properties here
 }
 
-export type ExperienceWithRelations = Experience & ExperienceRelations;
+export type TagWithRelations = Tag & TagRelations;

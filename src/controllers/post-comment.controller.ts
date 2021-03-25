@@ -16,20 +16,20 @@ import {
   requestBody,
 } from '@loopback/rest';
 import {
-  Content,
+  Post,
   Comment,
 } from '../models';
-import {ContentRepository} from '../repositories';
+import {PostRepository} from '../repositories';
 
-export class ContentCommentController {
+export class PostCommentController {
   constructor(
-    @repository(ContentRepository) protected contentRepository: ContentRepository,
+    @repository(PostRepository) protected postRepository: PostRepository,
   ) { }
 
-  @get('/contents/{id}/comments', {
+  @get('/posts/{id}/comments', {
     responses: {
       '200': {
-        description: 'Array of Content has many Comment',
+        description: 'Array of Post has many Comment',
         content: {
           'application/json': {
             schema: {type: 'array', items: getModelSchemaRef(Comment)},
@@ -42,38 +42,38 @@ export class ContentCommentController {
     @param.path.string('id') id: string,
     @param.query.object('filter') filter?: Filter<Comment>,
   ): Promise<Comment[]> {
-    return this.contentRepository.comments(id).find(filter);
+    return this.postRepository.comments(id).find(filter);
   }
 
-  @post('/contents/{id}/comments', {
+  @post('/posts/{id}/comments', {
     responses: {
       '200': {
-        description: 'Content model instance',
+        description: 'Post model instance',
         content: {'application/json': {schema: getModelSchemaRef(Comment)}},
       },
     },
   })
   async create(
-    @param.path.string('id') id: typeof Content.prototype.id,
+    @param.path.string('id') id: typeof Post.prototype.id,
     @requestBody({
       content: {
         'application/json': {
           schema: getModelSchemaRef(Comment, {
-            title: 'NewCommentInContent',
+            title: 'NewCommentInPost',
             exclude: ['id'],
-            optional: ['contentId']
+            optional: ['postId']
           }),
         },
       },
     }) comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    return this.contentRepository.comments(id).create(comment);
+    return this.postRepository.comments(id).create(comment);
   }
 
-  @patch('/contents/{id}/comments', {
+  @patch('/posts/{id}/comments', {
     responses: {
       '200': {
-        description: 'Content.Comment PATCH success count',
+        description: 'Post.Comment PATCH success count',
         content: {'application/json': {schema: CountSchema}},
       },
     },
@@ -90,13 +90,13 @@ export class ContentCommentController {
     comment: Partial<Comment>,
     @param.query.object('where', getWhereSchemaFor(Comment)) where?: Where<Comment>,
   ): Promise<Count> {
-    return this.contentRepository.comments(id).patch(comment, where);
+    return this.postRepository.comments(id).patch(comment, where);
   }
 
-  @del('/contents/{id}/comments', {
+  @del('/posts/{id}/comments', {
     responses: {
       '200': {
-        description: 'Content.Comment DELETE success count',
+        description: 'Post.Comment DELETE success count',
         content: {'application/json': {schema: CountSchema}},
       },
     },
@@ -105,6 +105,6 @@ export class ContentCommentController {
     @param.path.string('id') id: string,
     @param.query.object('where', getWhereSchemaFor(Comment)) where?: Where<Comment>,
   ): Promise<Count> {
-    return this.contentRepository.comments(id).delete(where);
+    return this.postRepository.comments(id).delete(where);
   }
 }

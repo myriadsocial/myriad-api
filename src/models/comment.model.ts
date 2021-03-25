@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {Content} from './content.model';
+import {Post} from './post.model';
 import {User} from './user.model';
 
 @model({
@@ -29,9 +29,9 @@ export class Comment extends Entity {
 
   @property({
     type: 'date',
-    required: false,
+    required: true,
   })
-  createdAt?: string;
+  createdAt: string;
 
   @property({
     type: 'date',
@@ -45,18 +45,14 @@ export class Comment extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => Content, {}, {
+  @belongsTo(() => Post, {}, {
     mongodb: {
       dataType: 'ObjectId'
     }
   })
-  contentId: string;
+  postId: string;
 
-  @belongsTo(() => User, {}, {
-    mongodb: {
-      dataType: 'ObjectId'
-    }
-  })
+  @belongsTo(() => User)
   userId: string;
 
   constructor(data?: Partial<Comment>) {

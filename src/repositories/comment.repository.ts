@@ -1,8 +1,8 @@
-import {Getter, inject} from '@loopback/core';
-import {BelongsToAccessor, DefaultCrudRepository, repository} from '@loopback/repository';
+import {inject, Getter} from '@loopback/core';
+import {DefaultCrudRepository, repository, BelongsToAccessor} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Comment, CommentRelations, Content, User} from '../models';
-import {ContentRepository} from './content.repository';
+import {Comment, CommentRelations, Post, User} from '../models';
+import {PostRepository} from './post.repository';
 import {UserRepository} from './user.repository';
 
 export class CommentRepository extends DefaultCrudRepository<
@@ -11,21 +11,17 @@ export class CommentRepository extends DefaultCrudRepository<
   CommentRelations
 > {
 
+  public readonly post: BelongsToAccessor<Post, typeof Comment.prototype.id>;
+
   public readonly user: BelongsToAccessor<User, typeof Comment.prototype.id>;
 
-  public readonly content: BelongsToAccessor<Content, typeof Comment.prototype.id>;
-
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource,
-    @repository.getter('UserRepository')
-    protected userRepositoryGetter: Getter<UserRepository>,
-    @repository.getter('ContentRepository')
-    protected contentRepositoryGetter: Getter<ContentRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('PostRepository') protected postRepositoryGetter: Getter<PostRepository>, @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>,
   ) {
     super(Comment, dataSource);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter,);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
-    this.content = this.createBelongsToAccessorFor('content', contentRepositoryGetter,);
-    this.registerInclusionResolver('content', this.content.inclusionResolver);
+    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter,);
+    this.registerInclusionResolver('post', this.post.inclusionResolver);
   }
 }

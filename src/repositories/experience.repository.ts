@@ -13,9 +13,7 @@ export class ExperienceRepository extends DefaultCrudRepository<
   public readonly user: BelongsToAccessor<User, typeof Experience.prototype.id>;
 
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource,
-    @repository.getter('UserRepository')
-    protected userRepositoryGetter: Getter<UserRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>,
   ) {
     super(Experience, dataSource);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter,);

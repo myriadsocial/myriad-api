@@ -1,5 +1,4 @@
-import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {User} from './user.model';
+import {Entity, model, property} from '@loopback/repository';
 
 @model({
   settings: {
@@ -13,27 +12,23 @@ export class Platform extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: true,
-    mongodb: {
-      dataType: 'ObjectId',
-    },
-  })
-  id?: string;
-
-  @property({
-    type: 'string',
+    generated: false,
     required: true,
     index: {
       unique: true
     },
+    jsonSchema: {
+      maxLength: 50,
+      minLength: 1,
+    },
   })
-  name: string;
+  id: string;
 
   @property({
     type: 'date',
-    required: false,
+    required: true,
   })
-  createdAt?: string;
+  createdAt: string;
 
   @property({
     type: 'date',
@@ -46,13 +41,6 @@ export class Platform extends Entity {
     required: false,
   })
   deletedAt?: string;
-
-  @belongsTo(() => User, {}, {
-    mongodb: {
-      dataType: 'ObjectId'
-    }
-  })
-  userId: string;
 
   constructor(data?: Partial<Platform>) {
     super(data);

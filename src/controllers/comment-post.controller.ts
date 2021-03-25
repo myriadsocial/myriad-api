@@ -8,31 +8,31 @@ import {
 } from '@loopback/rest';
 import {
   Comment,
-  Content,
+  Post,
 } from '../models';
 import {CommentRepository} from '../repositories';
 
-export class CommentContentController {
+export class CommentPostController {
   constructor(
     @repository(CommentRepository)
     public commentRepository: CommentRepository,
   ) { }
 
-  @get('/comments/{id}/content', {
+  @get('/comments/{id}/post', {
     responses: {
       '200': {
-        description: 'Content belonging to Comment',
+        description: 'Post belonging to Comment',
         content: {
           'application/json': {
-            schema: {type: 'array', items: getModelSchemaRef(Content)},
+            schema: {type: 'array', items: getModelSchemaRef(Post)},
           },
         },
       },
     },
   })
-  async getContent(
+  async getPost(
     @param.path.string('id') id: typeof Comment.prototype.id,
-  ): Promise<Content> {
-    return this.commentRepository.content(id);
+  ): Promise<Post> {
+    return this.commentRepository.post(id);
   }
 }

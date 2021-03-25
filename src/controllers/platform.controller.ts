@@ -37,12 +37,12 @@ export class PlatformController {
         'application/json': {
           schema: getModelSchemaRef(Platform, {
             title: 'NewPlatform',
-            exclude: ['id'],
+            
           }),
         },
       },
     })
-    platform: Omit<Platform, 'id'>,
+    platform: Platform,
   ): Promise<Platform> {
     return this.platformRepository.create(platform);
   }
