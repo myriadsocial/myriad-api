@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "myriad-api",
   "keywords": [
-    "loopback-application",
+    "myriad",
     "loopback"
   ],
   "main": "dist/index.js",
@@ -38,7 +38,7 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/myriadsocial/myriad-api.git"
   },
   "author": "Myriad <1@myriad.social>",
   "license": "",
