@@ -2,7 +2,6 @@ import {Entity, model, property} from '@loopback/repository';
 
 @model({
   settings: {
-    strictObjectIDCoercion: true,
     mongodb: {
       collection: 'platforms',
     },
@@ -14,9 +13,6 @@ export class Platform extends Entity {
     id: true,
     generated: false,
     required: true,
-    index: {
-      unique: true
-    },
     jsonSchema: {
       maxLength: 50,
       minLength: 1,

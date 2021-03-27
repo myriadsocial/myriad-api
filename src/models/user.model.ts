@@ -4,7 +4,6 @@ import {Experience} from './experience.model';
 
 @model({
   settings: {
-    strictObjectIDCoercion: true,
     mongodb: {
       collection: 'users',
     },
@@ -16,9 +15,6 @@ export class User extends Entity {
     id: true,
     generated: false,
     required: true,
-    index: {
-      unique: true
-    },
     jsonSchema: {
       maxLength: 48,
       minLength: 48,
