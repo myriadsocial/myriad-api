@@ -42,9 +42,24 @@ export class ExperienceController {
         },
       },
     })
-    experience: Omit<Experience, 'id'>,
+    experience: Omit<Experience, 'id'>, 
+    @param.filter(Experience) filter?: Filter<Experience>
   ): Promise<Experience> {
-    return this.experienceRepository.create(experience);
+
+    return this.experienceRepository.find(filter)
+      .then( experiences => {
+        const find = experiences.find(e => e.userId === experience.userId)
+
+        if (!find) {
+          return this.experienceRepository.create(experience)
+        } else {
+          this.experienceRepository.updateById(find.id, experience)
+          return {
+            ...experience,
+            id: find.id
+          }
+        }
+      })
   }
 
   @get('/experiences/count')
