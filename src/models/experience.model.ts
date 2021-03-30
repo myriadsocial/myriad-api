@@ -32,10 +32,10 @@ export class Experience extends Entity {
 
   @property({
     type: 'array',
-    itemType: 'string',
+    itemType: 'object',
     required: true,
   })
-  tags?: String[];
+  tags?: Object[];
 
   @property({
     type: 'array',
