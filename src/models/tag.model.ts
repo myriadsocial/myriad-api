@@ -21,6 +21,13 @@ export class Tag extends Entity {
   id: string;
 
   @property({
+    type: 'boolean',
+    default: false
+  })
+
+  hide: boolean;
+
+  @property({
     type: 'date',
     required: true,
   })
