@@ -48,7 +48,7 @@ export class ExperienceController {
 
     return this.experienceRepository.find(filter)
       .then( experiences => {
-        const find = experiences.find(e => e.userId === experience.userId)
+        const find = experiences.find(e => e.userId === experience.userId && e.name === experience.name)
 
         if (!find) {
           return this.experienceRepository.create(experience)
