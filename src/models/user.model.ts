@@ -39,6 +39,14 @@ export class User extends Entity {
   profilePictureURL?: string;
 
   @property({
+    type: 'array',
+    itemType: "object",
+    required: true
+  })
+
+  savedExperiences?:Object[];
+
+  @property({
     type: 'date',
     required: true,
   })
