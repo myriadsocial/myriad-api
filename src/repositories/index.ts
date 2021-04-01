@@ -4,3 +4,6 @@ export * from './platform.repository';
 export * from './post.repository';
 export * from './tag.repository';
 export * from './user.repository';
+export * from './saved-experience.repository';
+export * from './user-credential.repository';
+export * from './people.repository';

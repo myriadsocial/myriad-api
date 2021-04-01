@@ -18,6 +18,7 @@ import {
   response,
 } from '@loopback/rest';
 import {Experience} from '../models';
+import {SavedExperience} from '../models'
 import {ExperienceRepository} from '../repositories';
 
 export class ExperienceController {

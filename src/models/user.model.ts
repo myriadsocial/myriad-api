@@ -1,6 +1,7 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
 import {Experience} from './experience.model';
+import {SavedExperience} from './saved-experience.model';
 
 @model({
   settings: {
@@ -39,14 +40,6 @@ export class User extends Entity {
   profilePictureURL?: string;
 
   @property({
-    type: 'array',
-    itemType: "object",
-    required: true
-  })
-
-  savedExperiences?:Object[];
-
-  @property({
     type: 'date',
     required: true,
   })
@@ -69,6 +62,9 @@ export class User extends Entity {
 
   @hasMany(() => Comment)
   comments: Comment[];
+
+  @hasMany(() => Experience, {through: {model: () => SavedExperience, keyFrom: 'user_id', keyTo: 'experience_id'}})
+  savedExperiences: Experience[];
 
   constructor(data?: Partial<User>) {
     super(data);

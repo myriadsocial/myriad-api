@@ -10,3 +10,6 @@ export * from './platform.controller';
 export * from './experience.controller';
 export * from './post.controller';
 export * from './comment.controller';
+export * from './saved-experience.controller';
+export * from './user-credential.controller';
+export * from './people.controller';

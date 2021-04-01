@@ -5,7 +5,7 @@ import {
   repository,
   Where,
 } from '@loopback/repository';
-import {
+  import {
   del,
   get,
   getModelSchemaRef,
@@ -16,8 +16,9 @@ import {
   requestBody,
 } from '@loopback/rest';
 import {
-  User,
-  Experience,
+User,
+SavedExperience,
+Experience,
 } from '../models';
 import {UserRepository} from '../repositories';
 
@@ -29,7 +30,7 @@ export class UserExperienceController {
   @get('/users/{id}/experiences', {
     responses: {
       '200': {
-        description: 'Array of User has many Experience',
+        description: 'Array of User has many Experience through SavedExperience',
         content: {
           'application/json': {
             schema: {type: 'array', items: getModelSchemaRef(Experience)},
@@ -42,13 +43,13 @@ export class UserExperienceController {
     @param.path.string('id') id: string,
     @param.query.object('filter') filter?: Filter<Experience>,
   ): Promise<Experience[]> {
-    return this.userRepository.experiences(id).find(filter);
+    return this.userRepository.savedExperiences(id).find(filter);
   }
 
   @post('/users/{id}/experiences', {
     responses: {
       '200': {
-        description: 'User model instance',
+        description: 'create a Experience model instance',
         content: {'application/json': {schema: getModelSchemaRef(Experience)}},
       },
     },
@@ -61,13 +62,12 @@ export class UserExperienceController {
           schema: getModelSchemaRef(Experience, {
             title: 'NewExperienceInUser',
             exclude: ['id'],
-            optional: ['userId']
           }),
         },
       },
     }) experience: Omit<Experience, 'id'>,
   ): Promise<Experience> {
-    return this.userRepository.experiences(id).create(experience);
+    return this.userRepository.savedExperiences(id).create(experience);
   }
 
   @patch('/users/{id}/experiences', {
@@ -90,7 +90,7 @@ export class UserExperienceController {
     experience: Partial<Experience>,
     @param.query.object('where', getWhereSchemaFor(Experience)) where?: Where<Experience>,
   ): Promise<Count> {
-    return this.userRepository.experiences(id).patch(experience, where);
+    return this.userRepository.savedExperiences(id).patch(experience, where);
   }
 
   @del('/users/{id}/experiences', {
@@ -105,6 +105,6 @@ export class UserExperienceController {
     @param.path.string('id') id: string,
     @param.query.object('where', getWhereSchemaFor(Experience)) where?: Where<Experience>,
   ): Promise<Count> {
-    return this.userRepository.experiences(id).delete(where);
+    return this.userRepository.savedExperiences(id).delete(where);
   }
 }

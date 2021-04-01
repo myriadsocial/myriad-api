@@ -1,5 +1,7 @@
-import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {belongsTo, Entity, model, property, hasMany} from '@loopback/repository';
 import {User} from './user.model';
+import {SavedExperience} from './saved-experience.model';
+import {Tag} from './tag.model';
 
 @model({
   settings: {
@@ -31,20 +33,6 @@ export class Experience extends Entity {
   name: string;
 
   @property({
-    type: 'array',
-    itemType: 'object',
-    required: true,
-  })
-  tags?: Object[];
-
-  @property({
-    type: 'array',
-    itemType: 'string',
-    required: false,
-  })
-  people?: String[];
-
-  @property({
     type: 'date',
     required: true,
   })
@@ -65,6 +53,9 @@ export class Experience extends Entity {
   @belongsTo(() => User)
   userId: string;
 
+  @hasMany(() => User, {through: {model: () => SavedExperience, keyFrom: 'experience_id', keyTo: 'user_id'}})
+  savedUsers: User[];
+  
   constructor(data?: Partial<Experience>) {
     super(data);
   }
