@@ -1,4 +1,6 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, model, property, hasMany} from '@loopback/repository';
+// import {Experience} from './experience.model';
+// import {SavedTag} from './saved-tag.model';
 
 @model({
   settings: {
@@ -44,6 +46,9 @@ export class Tag extends Entity {
     required: false,
   })
   deletedAt?: string;
+
+  // @hasMany(() => Experience, {through: {model: () => SavedTag, keyFrom: 'tag_id', keyTo: 'experience_id'}})
+  // savedExperiences: Experience[];
 
   constructor(data?: Partial<Tag>) {
     super(data);

@@ -42,7 +42,7 @@ export class PostController {
         },
       },
     })
-    post: Omit<Post, 'id'>,
+    post: Omit<Post, 'id'>
   ): Promise<Post> {
     return this.postRepository.create(post);
   }

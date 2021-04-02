@@ -19,11 +19,14 @@ import {
 } from '@loopback/rest';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
+import {ExperienceRepository} from '../repositories';
 
 export class UserController {
   constructor(
     @repository(UserRepository)
     public userRepository : UserRepository,
+    @repository(ExperienceRepository)
+    public experienceRepository: ExperienceRepository,
   ) {}
 
   @post('/users')
@@ -44,7 +47,17 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    return this.userRepository.create(user);
+    const newUser = await this.userRepository.create(user);
+
+    const newExperience = await this.userRepository.savedExperiences(newUser.id).create({
+      name: "My Experience",
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString(),
+      deletedAt: new Date().toString(),
+      userId: newUser.id
+    })
+    
+    return newUser
   }
 
   @get('/users/count')

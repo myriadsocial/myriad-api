@@ -18,6 +18,7 @@ import {
   response,
 } from '@loopback/rest';
 import {Experience} from '../models';
+import {SavedExperience} from '../models'
 import {ExperienceRepository} from '../repositories';
 
 export class ExperienceController {
@@ -42,24 +43,33 @@ export class ExperienceController {
         },
       },
     })
-    experience: Omit<Experience, 'id'>, 
-    @param.filter(Experience) filter?: Filter<Experience>
+    experience: Omit<Experience, 'id'>
+    // @param.filter(Experience) filter?: Filter<Experience>
   ): Promise<Experience> {
+    // const newExperience = this.experienceRepository.create(experience)
 
-    return this.experienceRepository.find(filter)
-      .then( experiences => {
-        const find = experiences.find(e => e.userId === experience.userId && e.name === experience.name)
+    // const tags = experience.tags
+    // console.log(experience.tags)
 
-        if (!find) {
-          return this.experienceRepository.create(experience)
-        } else {
-          this.experienceRepository.updateById(find.id, experience)
-          return {
-            ...experience,
-            id: find.id
-          }
-        }
-      })
+    // console.log(experience)
+    
+
+    // return this.experienceRepository.create(experience)
+    return this.experienceRepository.create(experience)
+    // return this.experienceRepository.find(filter)
+    //   .then( experiences => {
+    //     const find = experiences.find(e => e.userId === experience.userId && e.name === experience.name)
+
+    //     if (!find) {
+    //       return this.experienceRepository.create(experience)
+    //     } else {
+    //       this.experienceRepository.updateById(find.id, experience)
+    //       return {
+    //         ...experience,
+    //         id: find.id
+    //       }
+    //     }
+    //   })
   }
 
   @get('/experiences/count')

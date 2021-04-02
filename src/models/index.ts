@@ -4,3 +4,7 @@ export * from './platform.model';
 export * from './post.model';
 export * from './tag.model';
 export * from './user.model';
+export * from './saved-experience.model';
+export * from './people.model';
+export * from './user-credential.model';
+// export * from './saved-tag.model';
