@@ -23,16 +23,22 @@ export class Post extends Entity {
   @property({
     type: 'array',
     itemType: 'string',
-    required: true,
+    required: false,
   })
-  tags: String[];
+  tags?: string[];
 
   @property({
-    type: 'array',
-    itemType: 'string',
+    type: 'object',
     required: true,
   })
-  platformId: String;
+  people: object;
+
+  // @property({
+  //   type: 'array',
+  //   itemType: 'string',
+  //   required: true,
+  // })
+  // platformId: String;
 
   @property({
     type: 'string',
@@ -42,6 +48,14 @@ export class Post extends Entity {
     },
   })
   url: string;
+
+  @property({
+    type: 'boolean',
+    required: false,
+    default: false
+  })
+
+  hasMedia: boolean
 
   @property({
     type: 'date',

@@ -13,3 +13,7 @@ export * from './comment.controller';
 export * from './saved-experience.controller';
 export * from './user-credential.controller';
 export * from './people.controller';
+// export * from './experience-tag.controller';
+// export * from './tag-experience.controller';
+// export * from './saved-tag.controller';
+export * from './user-user-credential.controller';
