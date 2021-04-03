@@ -18,3 +18,5 @@ export * from './people.controller';
 // export * from './saved-tag.controller';
 export * from './user-user-credential.controller';
 export * from './user-credential-user.controller';
+export * from './people-user-credential.controller';
+export * from './user-credential-people.controller';

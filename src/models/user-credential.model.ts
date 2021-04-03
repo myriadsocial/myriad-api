@@ -1,5 +1,6 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {User} from './user.model';
+import {People} from './people.model';
 
 @model({
   settings: {
@@ -23,16 +24,13 @@ export class UserCredential extends Entity {
     type: 'string',
     required: true,
   })
-  token: string;
+  access_token: string;
 
-  @property({
-    type: 'string',
-    required: true,
-  })
-  people_id: string;
+  @belongsTo(() => People)
+  peopleId: string;
 
   @belongsTo(() => User)
-  userId: string;
+  userId: string
 
   constructor(data?: Partial<UserCredential>) {
     super(data);

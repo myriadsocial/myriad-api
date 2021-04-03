@@ -51,7 +51,14 @@ export class PeopleController {
     })
     people:People
   ):Promise<People>{
-    return this.peopleRepository.create(people)
+    const [findPeople] = await this.peopleRepository.find({where: {username: people.username, platform: people.platform}})
+    
+    if (!findPeople) {
+      people.platform_account_id = Math.floor((Math.random() * 10000000000000)).toString()
+      return this.peopleRepository.create(people)
+    }
+
+    return findPeople
   }
 
   @post('/people/{platform}')
@@ -82,12 +89,12 @@ export class PeopleController {
     let newPeople = null
     
     if (platform === 'twitter') {
-      // Get peopleUserId
+      // Get platform_account_id
       const { data } = await this.twitterService.getActions(`users/by/username/${people.username}`)
       // If not create new people
       newPeople = await this.peopleRepository.create({
         ...people,
-        peopleUserId: data.id
+        platform_account_id: data.id
       })
 
       await this.createPostByPeople(newPeople)
@@ -96,7 +103,7 @@ export class PeopleController {
     return newPeople
   }
   
-  @post('/people/twitter/following')
+  @post('/people/{platform}/following')
   @response(200,{
     description: 'People following SUCCESS',
     content: { 'application/json': { schema: getModelSchemaRef(People) } }
@@ -112,21 +119,25 @@ export class PeopleController {
       },
     },
   })
-  people: People):Promise<void> {
-    const { data: peopleWithId } = await this.twitterService.getActions(`users/by/username/${people.username}`)
-    const { data: following } = await this.twitterService.getActions(`users/${peopleWithId.id}/following?max_results=15`)
+  people: People,
+  @param.path.string('platform') platform: string):Promise<void> {
 
-    for (let i = 0; i < following.length; i++) {
-      const findUser = await this.peopleRepository.find({ where: { peopleUserId: following[i].id } })
+    if (platform === 'twitter') {
+      const { data: peopleWithId } = await this.twitterService.getActions(`users/by/username/${people.username}`)
+      const { data: following } = await this.twitterService.getActions(`users/${peopleWithId.id}/following?max_results=15`)
 
-      if (findUser.length === 0) {
-        const user = await this.peopleRepository.create({
-          username: following[i].username,
-          platform: 'twitter',
-          peopleUserId: following[i].id,
-        })
+      for (let i = 0; i < following.length; i++) {
+        const findUser = await this.peopleRepository.find({ where: { platform_account_id: following[i].id } })
 
-        await this.createPostByPeople(user)
+        if (findUser.length === 0) {
+          const user = await this.peopleRepository.create({
+            username: following[i].username,
+            platform: platform,
+            platform_account_id: following[i].id,
+          })
+
+          await this.createPostByPeople(user)
+        }
       }
     }
   }
@@ -233,7 +244,7 @@ export class PeopleController {
   }
 
   async createPostByPeople(user:People):Promise<void> {
-    const { data: items } = await this.twitterService.getActions(`users/${user.peopleUserId}/tweets?max_results=15&expansions=attachments.media_keys&tweet.fields=referenced_tweets`)
+    const { data: items } = await this.twitterService.getActions(`users/${user.platform_account_id}/tweets?max_results=15&expansions=attachments.media_keys&tweet.fields=referenced_tweets`)
 
     for (let i = 0; i < items.length; i++) {
       const hasMedia = Boolean(items[i].attachments)
@@ -263,7 +274,7 @@ export class PeopleController {
           platform: 'twitter',
           people: {
             username: user.username,
-            peopleUserId: user.peopleUserId,
+            platform_account_id: user.platform_account_id,
           },
           hasMedia: false,
           link: `https://twitter.com/${user.username}/status/${items[i].id}`
