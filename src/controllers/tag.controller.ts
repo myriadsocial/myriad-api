@@ -18,12 +18,19 @@ import {
   response,
 } from '@loopback/rest';
 import {Tag} from '../models';
-import {TagRepository} from '../repositories';
+import {PeopleRepository, PostRepository, TagRepository} from '../repositories';
+import {inject} from '@loopback/core'
+import {Twitter} from '../services'
 
 export class TagController {
   constructor(
     @repository(TagRepository)
     public tagRepository : TagRepository,
+    @repository(PeopleRepository)
+    public peopleRepository:PeopleRepository,
+    @repository(PostRepository)
+    public postRepository:PostRepository,
+    @inject('services.Twitter') protected    twitterService:Twitter,
   ) {}
 
   @post('/tags')
@@ -45,6 +52,29 @@ export class TagController {
     tag: Tag,
   ): Promise<Tag> {
     return this.tagRepository.create(tag);
+  }
+
+  @post('/tags/{platform}')
+  @response(200, {
+    description: 'Tag By Platform model instance',
+    content: { 'application/json': { schema: getModelSchemaRef(Tag) } },
+  })
+  async createTagByPlatform(
+    @param.query.string('keyword') keyword:string,
+    @param.path.string('platform') platform:string,
+    ):Promise<any> {
+
+    if (platform === 'twitter') {
+      return await this.searchByKeyword(keyword)
+    }
+
+    if (platform === 'facebook') {
+      
+    }
+
+    if (platform === 'twitter') {
+      
+    }
   }
 
   @get('/tags/count')
@@ -147,4 +177,81 @@ export class TagController {
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.tagRepository.deleteById(id);
   }
+
+  async searchByKeyword (keyword:string):Promise<any>{
+    const { data: posts } = await this.twitterService.getActions(`tweets/search/recent?max_results=50&tweet.fields=referenced_tweets&expansions=attachments.media_keys,author_id&user.fields=description&query=${keyword}`)
+
+    if (!posts || posts.errors) return null
+
+    const newTag = await this.tagRepository.create({
+      id: keyword,
+      createdAt: new Date().toString()
+    })
+
+    for (let i = 0; i < posts.length; i++) {
+      const post = posts[i]
+      const hasMedia = Boolean(post.attachments)
+      const tags = post.text.split(' ')
+        .filter(function (word: string) {
+          return word.startsWith('#')
+        })
+        .map(function (word: string) {
+          return word.substr(1).trim()
+        })
+
+      if (!post.referenced_tweets) {
+        interface Post {
+          text: string,
+          textId: string,
+          createdAt: string,
+          people?: object,
+          platform: string,
+          hasMedia: boolean,
+          tags?: string[],
+          link: string
+        }
+
+        const { data: user } = await this.twitterService.getActions(`users/${post.author_id}`)
+
+        const newPost: Post = {
+          text: post.text,
+          textId: post.id,
+          createdAt: new Date().toString(),
+          platform: 'twitter',
+          hasMedia: false,
+          link: `https://twitter.com/${user.username}/status/${post.id}`,
+          tags: []
+        }
+
+        if (hasMedia) newPost.hasMedia = true
+
+        if (tags.length > 0) {
+          newPost.tags = tags
+
+          for (let i = 0; i < tags.length; i++) {
+            const findTag = await this.tagRepository.find({
+              where: { id: tags[i].toLowerCase() }
+            })
+
+            if (findTag.length === 0) {
+              await this.tagRepository.create({
+                id: tags[i],
+                createdAt: new Date().toString()
+              })
+            }
+          }
+        }
+
+        const findDuplicateKeyWord = newPost.tags?.find(tag => tag.toLowerCase() === keyword.toLowerCase())
+
+        if (!findDuplicateKeyWord) {
+          newPost.tags?.push(keyword)
+        }
+
+        this.postRepository.create(newPost)
+      }
+    }
+
+    return newTag
+  } 
 }

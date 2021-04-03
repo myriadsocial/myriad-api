@@ -10,6 +10,7 @@ import {
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
 // import {FetchContentJob} from './jobs/fetchcontent.job';
+import {FetchContentTwitterJob} from './jobs/fetchContentTwitter.job'
 import {MySequence} from './sequence';
 
 export {ApplicationConfig};
@@ -34,6 +35,7 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
+    this.add(createBindingFromClass(FetchContentTwitterJob))
     // this.add(createBindingFromClass(FetchContentJob));
 
     this.projectRoot = __dirname;

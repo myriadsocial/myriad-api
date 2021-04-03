@@ -66,6 +66,19 @@ export class Experience extends Entity {
     required: false,
   })
   deletedAt?: string;
+  
+  @property({
+    type: 'boolean',
+    default: false
+  })
+  default?: boolean
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  description: string
+
 
   @belongsTo(() => User)
   userId: string;
