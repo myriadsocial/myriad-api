@@ -1,5 +1,7 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
+import dotenv from 'dotenv'
+dotenv.config()
 
 const config = {
   name: 'twitter',
@@ -8,7 +10,7 @@ const config = {
   crud: false,
   options: {
     headers: {
-      Authorization: 'Bearer AAAAAAAAAAAAAAAAAAAAAFDdOAEAAAAA7NWJGsd4XSINjo3etc1c13M9WX8%3D6FkeDeBcLVKKzAkw5zqoxWazvMtNcb9R5BaqUlDDunrhKbrhRm'
+      Authorization: `Bearer ${process.env.BEARER_TOKEN}`
     }
   },
   operations: [

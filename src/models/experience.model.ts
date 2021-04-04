@@ -50,6 +50,13 @@ export class Experience extends Entity {
   people: object[]
 
   @property({
+    type: 'string',
+    required: false,
+    default: ''
+  })
+  layout:string
+
+  @property({
     type: 'date',
     required: true,
   })
@@ -78,7 +85,6 @@ export class Experience extends Entity {
     required: false,
   })
   description: string
-
 
   @belongsTo(() => User)
   userId: string;

@@ -21,6 +21,10 @@ import {People} from '../models';
 import {PeopleRepository, PostRepository, TagRepository} from '../repositories';
 import {inject} from '@loopback/core';
 import {Twitter} from '../services';
+import TwitterLib from 'twitter';
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 export class PeopleController {
   constructor(
@@ -61,7 +65,7 @@ export class PeopleController {
     return findPeople
   }
 
-  @post('/people/{platform}')
+  @post('/people/{platform}/posts')
   @response(200, {
     description: 'People model instance from twitter platform',
     content: {'application/json': {schema: getModelSchemaRef(People)}},
@@ -80,21 +84,19 @@ export class PeopleController {
     people: People,
     @param.path.string('platform') platform:string
   ): Promise<any> {
-    // Find people in database
-    const findPeople = await this.peopleRepository.find({where: {username: people.username, platform: people.platform}})
-
-    // Find if people already in database
-    if (findPeople.length > 0) return findPeople[0]
-    
     let newPeople = null
     
     if (platform === 'twitter') {
       // Get platform_account_id
-      const { data } = await this.twitterService.getActions(`users/by/username/${people.username}`)
+      const { data:user } = await this.twitterService.getActions(`users/by/username/${people.username}`)
+      const [findPeople] = await this.peopleRepository.find({where: {platform_account_id: user.id, platform}})
+
+      if (findPeople) return findPeople
       // If not create new people
       newPeople = await this.peopleRepository.create({
         ...people,
-        platform_account_id: data.id
+        platform,
+        platform_account_id: user.id
       })
 
       await this.createPostByPeople(newPeople)
@@ -123,22 +125,58 @@ export class PeopleController {
   @param.path.string('platform') platform: string):Promise<void> {
 
     if (platform === 'twitter') {
-      const { data: peopleWithId } = await this.twitterService.getActions(`users/by/username/${people.username}`)
-      const { data: following } = await this.twitterService.getActions(`users/${peopleWithId.id}/following?max_results=15`)
+      const client = new TwitterLib({
+        consumer_key: 'EP3yMA4CwxhgnF57GRgaBP89u',
+        consumer_secret: 'R2dxXblRWnrF7rBEcKY1mZI3sHYv01sI9zZYz9sNUdIVznHgRA',
+        access_token_key: '2246250000-JsoqCHp9UYWE3c0CLaxI1rEUCl22FLmC5tPVpwF',
+        access_token_secret: 'nue3TlbcIuVZMkPX0nNsxeNlzC0ORLanTkoXq9uRZmdtb'
+      })
 
-      for (let i = 0; i < following.length; i++) {
-        const findUser = await this.peopleRepository.find({ where: { platform_account_id: following[i].id } })
-
-        if (findUser.length === 0) {
-          const user = await this.peopleRepository.create({
-            username: following[i].username,
-            platform: platform,
-            platform_account_id: following[i].id,
-          })
-
-          await this.createPostByPeople(user)
+      const params = {screen_name: people.username}
+      client.get('statuses/user_timeline', params, (err, tweets, res) => {
+        if (!err) {
+          console.log(tweets)
+          // const posts = []
+          // tweets.forEach(tweet => {
+          //   if (!tweet.retweeted_status) {
+          //     posts.push({
+          //       tags: tweet.entities.hashtags.map(hashtag => {
+          //         return {
+          //           id: hashtag.text,
+          //           hide: false
+          //         }
+          //       }),
+          //       people: {
+          //         username: tweet.user.screen_name,
+          //         platform_account_id: tweet.user.id_str,
+          //       },
+          //       platform: 'twitter',
+          //       hasMedia: Boolean(tweet.entities.media),
+          //       platform_post_id: tweet.id_str,
+          //       url: `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`
+          //     })
+          //   }
+          // })
+          // fs.writeFileSync('example.json', JSON.stringify(posts, null, 4))
         }
-      }
+      })
+
+      // const { data: peopleWithId } = await this.twitterService.getActions(`users/by/username/${people.username}`)
+      // const { data: following } = await this.twitterService.getActions(`users/${peopleWithId.id}/following?max_results=15`)
+
+      // for (let i = 0; i < following.length; i++) {
+      //   const findUser = await this.peopleRepository.find({ where: { platform_account_id: following[i].id, platform } })
+
+      //   if (findUser.length === 0) {
+      //     const user = await this.peopleRepository.create({
+      //       username: following[i].username,
+      //       platform: platform,
+      //       platform_account_id: following[i].id,
+      //     })
+
+      //     await this.createPostByPeople(user)
+      //   }
+      // }
     }
   }
 
@@ -244,63 +282,44 @@ export class PeopleController {
   }
 
   async createPostByPeople(user:People):Promise<void> {
-    const { data: items } = await this.twitterService.getActions(`users/${user.platform_account_id}/tweets?max_results=15&expansions=attachments.media_keys&tweet.fields=referenced_tweets`)
+    const { data: items } = await this.twitterService.getActions(`users/${user.platform_account_id}/tweets?max_results=15&tweet.fields=attachments,entities,referenced_tweets`)
+    const filterPost = items.filter((post:any) => !post.referenced_tweets)
 
-    for (let i = 0; i < items.length; i++) {
-      const hasMedia = Boolean(items[i].attachments)
-      const tags = items[i].text.split(' ')
-        .filter(function (word: string) {
-          return word.startsWith('#')
-        })
-        .map(function (word: string) {
-          return word.substr(1).trim()
-        })
+    for (let i = 0; i < filterPost.length; i++) {
+      const post = filterPost[i]
 
-      if (!items[i].referenced_tweets) {
-        interface Post {
-          text: string,
-          textId: string,
-          createdAt: string,
-          people?: object,
-          platform: string,
-          hasMedia: boolean,
-          tags?: string[],
-          link: string
-        }
-        const post:Post = {
-          text: items[i].text,
-          textId: items[i].id,
-          createdAt: new Date().toString(),
-          platform: 'twitter',
-          people: {
-            username: user.username,
-            platform_account_id: user.platform_account_id,
-          },
-          hasMedia: false,
-          link: `https://twitter.com/${user.username}/status/${items[i].id}`
-        }
+      const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map(function (hashtag: any) {
+        return hashtag.tag
+      }) : [] : []
 
-        if (hasMedia) post.hasMedia = true
-
-        if (tags.length > 0) {
-          post.tags = tags
-
-          for (let i = 0; i < tags.length; i++) {
-            const findTag = await this.tagRepository.find({
-              where: { id: tags[i].toLowerCase() } 
-            })
-
-            if (findTag.length === 0) {
-              await this.tagRepository.create({
-                id: tags[i],
-                createdAt: new Date().toString()
-              })
-            }
-          }
-        }
-
-        this.postRepository.create(post)
+      const people = {
+        username: user.username,
+        platform_account_id: user.platform_account_id
       }
+
+      const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
+      const platform = user.platform
+      const text = post.text
+      const textId = post.id
+      const link = `https://twitter.com/${people.username}/status/${textId}`
+
+      for (let i = 0; i < tags.length; i++) {
+        const tag = tags[i]
+        const [findTag] = await this.tagRepository.find({where: {id: tag.toLowerCase()}})
+        
+        if (!findTag) {
+          await this.tagRepository.create({
+            id: tag.toLowerCase(),
+            createdAt: new Date().toString()
+          })
+        }
+      }
+
+      const [findPost] = await this.postRepository.find({where: {textId: post.id, platform}})
+
+      if (!findPost) await this.postRepository.create({
+        textId, text, tags, people, hasMedia, platform, link, createdAt: new Date().toString()
+      })
     }
   }
 }
