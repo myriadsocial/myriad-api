@@ -1,5 +1,7 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {AnyObject, juggler} from '@loopback/repository';
+import dotenv from 'dotenv';
+dotenv.config()
 
 const config = {
   name: 'mongo',
@@ -13,7 +15,19 @@ const config = {
 };
 
 function updateConfig(dsConfig: AnyObject) {
-  // todo use env
+  if (process.env.MONGO_HOST) {
+    dsConfig.host = process.env.MONGO_HOST
+  }
+  const envPort = parseInt(process.env.MONGO_PORT || '')
+  if (Number.isInteger(envPort)) {
+    dsConfig.port = envPort
+  }
+  if (process.env.MONGO_USER) {
+    dsConfig.user = process.env.MONGO_USER
+  }
+  if (process.env.MONGO_PASSWORD) {
+    dsConfig.password = process.env.MONGO_PASSWORD
+  }
   return dsConfig;
 }
 
