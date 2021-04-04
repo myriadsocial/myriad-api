@@ -28,7 +28,7 @@ export class People extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
   platform: string;
 

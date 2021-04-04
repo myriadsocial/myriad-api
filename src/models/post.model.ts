@@ -60,6 +60,13 @@ export class Post extends Entity {
 
   hasMedia: boolean
 
+
+  @property({
+    type: 'string',
+    required: false
+  })
+  link?: string
+  
   @property({
     type: 'date',
     required: true,
@@ -77,12 +84,6 @@ export class Post extends Entity {
     required: false,
   })
   deletedAt?: string;
-  
-  @property({
-    type: 'string',
-    required: false
-  })
-  link?: string
 
   @hasMany(() => Comment)
   comments: Comment[];
