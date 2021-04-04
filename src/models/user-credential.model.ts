@@ -26,6 +26,12 @@ export class UserCredential extends Entity {
   })
   access_token: string;
 
+  @property({
+    type: 'string',
+    required: false,
+  })
+  refresh_token: string
+
   @belongsTo(() => People)
   peopleId: string;
 
