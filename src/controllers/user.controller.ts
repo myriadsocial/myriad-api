@@ -19,7 +19,7 @@ import {
 } from '@loopback/rest';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
-import {ExperienceRepository} from '../repositories';
+import {ExperienceRepository, TagRepository, PeopleRepository} from '../repositories';
 
 export class UserController {
   constructor(
@@ -27,6 +27,10 @@ export class UserController {
     public userRepository : UserRepository,
     @repository(ExperienceRepository)
     public experienceRepository: ExperienceRepository,
+    @repository(TagRepository)
+    public tagRepository:TagRepository,
+    @repository(PeopleRepository)
+    public peopleRepository:PeopleRepository
   ) {}
 
   @post('/users')
@@ -48,13 +52,26 @@ export class UserController {
     user: User,
   ): Promise<User> {
     const newUser = await this.userRepository.create(user);
+    const findTag = await this.tagRepository.find({where: {id: 'myriad'}})
 
-    const newExperience = await this.userRepository.savedExperiences(newUser.id).create({
+    if (!findTag.length) {
+      await this.tagRepository.create({
+        id: 'myriad',
+        hide: false,
+        createdAt: new Date().toString()
+      })
+    }
+
+    await this.userRepository.savedExperiences(newUser.id).create({
       name: "My Experience",
       createdAt: new Date().toString(),
-      updatedAt: new Date().toString(),
-      deletedAt: new Date().toString(),
-      userId: newUser.id
+      userId: newUser.id,
+      tags: [{
+        id: 'myriad',
+        hide: false
+      }],
+      people: [],
+      description: 'Welcome to myriad!'
     })
     
     return newUser
@@ -78,7 +95,7 @@ export class UserController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(User, {includeRelations: true}),
+          items: getModelSchemaRef(User, { includeRelations: true }),
         },
       },
     },

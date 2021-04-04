@@ -8,7 +8,7 @@ const config = {
   crud: false,
   options: {
     headers: {
-      Authorization: 'Bearer AAAAAAAAAAAAAAAAAAAAAFDdOAEAAAAAA%2FRgFL1%2BSNvSfw%2BQ0Hbwj1WPPfc%3Dv4LNy81kPxoRqJGsyZyFfR3LdSmBo2naKZErw3Z6sRq5T6Hme3'
+      Authorization: 'Bearer AAAAAAAAAAAAAAAAAAAAAFDdOAEAAAAA7NWJGsd4XSINjo3etc1c13M9WX8%3D6FkeDeBcLVKKzAkw5zqoxWazvMtNcb9R5BaqUlDDunrhKbrhRm'
     }
   },
   operations: [

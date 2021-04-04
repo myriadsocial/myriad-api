@@ -1,4 +1,5 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, model, property, hasOne} from '@loopback/repository';
+import {UserCredential} from './user-credential.model';
 
 @model({
   settings: {
@@ -35,7 +36,7 @@ export class People extends Entity {
     type: 'string',
     required: false,
   })
-  peopleUserId?: string;
+  platform_account_id?: string;
 
   @property({
     type: 'boolean',
@@ -43,6 +44,10 @@ export class People extends Entity {
   })
 
   hide?: boolean
+
+  @hasOne(() => UserCredential)
+  userCredential: UserCredential;
+
   constructor(data?: Partial<People>) {
     super(data);
   }

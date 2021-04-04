@@ -29,25 +29,28 @@ export class Post extends Entity {
 
   @property({
     type: 'object',
-    required: true,
+    required: false,
   })
-  people: object;
-
-  // @property({
-  //   type: 'array',
-  //   itemType: 'string',
-  //   required: true,
-  // })
-  // platformId: String;
+  people?: object;
 
   @property({
     type: 'string',
-    required: true,
-    index: {
-      unique: true
-    },
+    required: true
   })
-  url: string;
+
+  platform: string
+
+  @property({
+    type: 'string',
+    required: true
+  })
+  text: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  textId: string;
 
   @property({
     type: 'boolean',
@@ -74,6 +77,12 @@ export class Post extends Entity {
     required: false,
   })
   deletedAt?: string;
+  
+  @property({
+    type: 'string',
+    required: false
+  })
+  link?: string
 
   @hasMany(() => Comment)
   comments: Comment[];
