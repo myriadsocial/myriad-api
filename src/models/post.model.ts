@@ -31,7 +31,7 @@ export class Post extends Entity {
     type: 'object',
     required: false,
   })
-  people?: object;
+  people?: any;
 
   @property({
     type: 'string',

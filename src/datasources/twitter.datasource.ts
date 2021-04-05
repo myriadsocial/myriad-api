@@ -1,7 +1,7 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
-import dotenv from 'dotenv'
-dotenv.config()
+import { config as dotenvConfig} from 'dotenv'
+dotenvConfig()
 
 const config = {
   name: 'twitter',
