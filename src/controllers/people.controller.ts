@@ -23,6 +23,7 @@ import {inject} from '@loopback/core';
 import {Twitter} from '../services';
 import TwitterLib from 'twitter';
 import dotenv from 'dotenv'
+import fs from 'fs'
 
 dotenv.config()
 
@@ -125,41 +126,64 @@ export class PeopleController {
   @param.path.string('platform') platform: string):Promise<void> {
 
     if (platform === 'twitter') {
-      const client = new TwitterLib({
-        consumer_key: 'EP3yMA4CwxhgnF57GRgaBP89u',
-        consumer_secret: 'R2dxXblRWnrF7rBEcKY1mZI3sHYv01sI9zZYz9sNUdIVznHgRA',
-        access_token_key: '2246250000-JsoqCHp9UYWE3c0CLaxI1rEUCl22FLmC5tPVpwF',
-        access_token_secret: 'nue3TlbcIuVZMkPX0nNsxeNlzC0ORLanTkoXq9uRZmdtb'
-      })
+      // const client = new TwitterLib({
+      //   consumer_key: 'EP3yMA4CwxhgnF57GRgaBP89u',
+      //   consumer_secret: 'R2dxXblRWnrF7rBEcKY1mZI3sHYv01sI9zZYz9sNUdIVznHgRA',
+      //   access_token_key: '2246250000-JsoqCHp9UYWE3c0CLaxI1rEUCl22FLmC5tPVpwF',
+      //   access_token_secret: 'nue3TlbcIuVZMkPX0nNsxeNlzC0ORLanTkoXq9uRZmdtb'
+      // })
 
-      const params = {screen_name: people.username}
-      client.get('statuses/user_timeline', params, (err, tweets, res) => {
-        if (!err) {
-          console.log(tweets)
-          // const posts = []
-          // tweets.forEach(tweet => {
-          //   if (!tweet.retweeted_status) {
-          //     posts.push({
-          //       tags: tweet.entities.hashtags.map(hashtag => {
-          //         return {
-          //           id: hashtag.text,
-          //           hide: false
-          //         }
-          //       }),
-          //       people: {
-          //         username: tweet.user.screen_name,
-          //         platform_account_id: tweet.user.id_str,
-          //       },
-          //       platform: 'twitter',
-          //       hasMedia: Boolean(tweet.entities.media),
-          //       platform_post_id: tweet.id_str,
-          //       url: `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`
-          //     })
-          //   }
-          // })
-          // fs.writeFileSync('example.json', JSON.stringify(posts, null, 4))
-        }
-      })
+      // client.get('account/verify_credentials', (err, user, res) => {
+      //   if (err) throw 'error'
+
+      //   client.get('statuses/user_timeline', user.screen_name, (err, tweets, res) => {
+      //     const tweetsData:object[] = []
+
+      //     for (let i = 0; i < tweets.length; i++) {
+      //       if (!tweets[i].text.includes('13N2NpDg6kU1vAGuPv9MkTj4YsaDmf7BKyr3TTxhV5sFmuhd') && !tweets[i].retweeted_status ) {
+      //         tweetsData.push(tweets[i])
+      //       }
+      //     }
+      //     fs.writeFileSync('../tweets.json', JSON.stringify(tweetsData, null, 4))
+      //   })
+      // })
+
+      // console.log(user)
+      // const params = { q: 'nasa'}
+      // client.get('account/verify_credentials', (err, user, res) => {
+      //   if (!err) {
+      //     const userData = {
+      //       id: user.id_str,
+      //       username: user.screen_name
+      //     }
+      //     console.log(userData)
+      //     fs.writeFileSync('../tweets.json', JSON.stringify(user, null, 4))
+
+      //     // console.log(tweets)
+      //     // const posts = []
+      //     // tweets.forEach(tweet => {
+      //     //   if (!tweet.retweeted_status) {
+      //     //     posts.push({
+      //     //       tags: tweet.entities.hashtags.map(hashtag => {
+      //     //         return {
+      //     //           id: hashtag.text,
+      //     //           hide: false
+      //     //         }
+      //     //       }),
+      //     //       people: {
+      //     //         username: tweet.user.screen_name,
+      //     //         platform_account_id: tweet.user.id_str,
+      //     //       },
+      //     //       platform: 'twitter',
+      //     //       hasMedia: Boolean(tweet.entities.media),
+      //     //       platform_post_id: tweet.id_str,
+      //     //       url: `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`
+      //     //     })
+      //     //   }
+      //     // })
+      //     // fs.writeFileSync('example.json', JSON.stringify(posts, null, 4))
+      //   }
+      // })
 
       // const { data: peopleWithId } = await this.twitterService.getActions(`users/by/username/${people.username}`)
       // const { data: following } = await this.twitterService.getActions(`users/${peopleWithId.id}/following?max_results=15`)
@@ -285,41 +309,43 @@ export class PeopleController {
     const { data: items } = await this.twitterService.getActions(`users/${user.platform_account_id}/tweets?max_results=15&tweet.fields=attachments,entities,referenced_tweets`)
     const filterPost = items.filter((post:any) => !post.referenced_tweets)
 
-    for (let i = 0; i < filterPost.length; i++) {
-      const post = filterPost[i]
+    if (filterPost.length > 0) {
+      for (let i = 0; i < filterPost.length; i++) {
+        const post = filterPost[i]
 
-      const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map(function (hashtag: any) {
-        return hashtag.tag
-      }) : [] : []
+        const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map(function (hashtag: any) {
+          return hashtag.tag
+        }) : [] : []
 
-      const people = {
-        username: user.username,
-        platform_account_id: user.platform_account_id
-      }
-
-      const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
-      const platform = user.platform
-      const text = post.text
-      const textId = post.id
-      const link = `https://twitter.com/${people.username}/status/${textId}`
-
-      for (let i = 0; i < tags.length; i++) {
-        const tag = tags[i]
-        const [findTag] = await this.tagRepository.find({where: {id: tag.toLowerCase()}})
-        
-        if (!findTag) {
-          await this.tagRepository.create({
-            id: tag.toLowerCase(),
-            createdAt: new Date().toString()
-          })
+        const people = {
+          username: user.username,
+          platform_account_id: user.platform_account_id
         }
+
+        const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
+        const platform = user.platform
+        const text = post.text
+        const textId = post.id
+        const link = `https://twitter.com/${people.username}/status/${textId}`
+
+        for (let i = 0; i < tags.length; i++) {
+          const tag = tags[i]
+          const [findTag] = await this.tagRepository.find({ where: { id: tag.toLowerCase() } })
+
+          if (!findTag) {
+            await this.tagRepository.create({
+              id: tag.toLowerCase(),
+              createdAt: new Date().toString()
+            })
+          }
+        }
+
+        const [findPost] = await this.postRepository.find({ where: { textId: post.id, platform } })
+
+        if (!findPost) await this.postRepository.create({
+          textId, text, tags, people, hasMedia, platform, link, createdAt: new Date().toString()
+        })
       }
-
-      const [findPost] = await this.postRepository.find({where: {textId: post.id, platform}})
-
-      if (!findPost) await this.postRepository.create({
-        textId, text, tags, people, hasMedia, platform, link, createdAt: new Date().toString()
-      })
     }
   }
 }

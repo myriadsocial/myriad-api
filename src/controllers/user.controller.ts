@@ -51,6 +51,9 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
+    const foundUser = await this.userRepository.findOne({ where: { name: user.name } })
+    if (foundUser) return foundUser
+
     const newUser = await this.userRepository.create(user);
     const findTag = await this.tagRepository.find({where: {id: 'myriad'}})
 
