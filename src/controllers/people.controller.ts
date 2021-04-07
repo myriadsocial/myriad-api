@@ -20,11 +20,9 @@ import {
 import {People} from '../models';
 import {PeopleRepository, PostRepository, TagRepository} from '../repositories';
 import {inject} from '@loopback/core';
-import {Twitter} from '../services';
-import TwitterLib from 'twitter';
+import {Twitter, Reddit} from '../services';
 import dotenv from 'dotenv'
 import fs from 'fs'
-
 dotenv.config()
 
 export class PeopleController {
@@ -35,7 +33,8 @@ export class PeopleController {
     public postRepository : PostRepository,
     @repository(TagRepository)
     public tagRepository: TagRepository,
-    @inject('services.Twitter') protected twitterService:Twitter
+    @inject('services.Twitter') protected twitterService:Twitter,
+    @inject('services.Reddit') protected redditService:Reddit
   ) {}
 
   @post('/people')
@@ -88,19 +87,61 @@ export class PeopleController {
     let newPeople = null
     
     if (platform === 'twitter') {
-      // Get platform_account_id
-      const { data:user } = await this.twitterService.getActions(`users/by/username/${people.username}`)
-      const [findPeople] = await this.peopleRepository.find({where: {platform_account_id: user.id, platform}})
+      try { 
+        const { data: user } = await this.twitterService.getActions(`users/by/username/${people.username}`)
+        const [findPeople] = await this.peopleRepository.find({ where: { platform_account_id: user.id, platform } })
 
-      if (findPeople) return findPeople
-      // If not create new people
-      newPeople = await this.peopleRepository.create({
-        ...people,
-        platform,
-        platform_account_id: user.id
-      })
+        if (findPeople) return findPeople
+        // If not create new people
+        newPeople = await this.peopleRepository.create({
+          ...people,
+          platform,
+          platform_account_id: user.id
+        })
 
-      await this.createPostByPeople(newPeople)
+        await this.createPostByPeople(newPeople)
+      } catch (err) {
+        return null
+      }
+
+    } 
+    
+    if (platform === 'reddit') {
+      try {
+        const { data: user } = await this.redditService.getActions(`u/${people.username}.json`)
+        const findPeople = await this.peopleRepository.findOne({where: {username: `u/${people.username}`}})
+
+        if (findPeople) return findPeople
+
+        newPeople = await this.peopleRepository.create({
+          username: "u/" + people.username,
+          platform: 'reddit'
+        })
+        const posts = user.children.filter((post:any) => {
+          return post.kind === 't3'
+        }).map((post:any) => {
+          const e = post.data
+          return {
+            people: {
+              username: `u/${people.username}`,
+            },
+            tags: [],
+            platform: 'reddit',
+            title: e.title,
+            text: e.selftext,
+            textId: e.id,
+            hasMedia: false,
+            link: `https://reddit.com${e.permalink}`,
+            createdAt: new Date().toString()
+          }
+        })
+
+        await this.postRepository.createAll(posts)
+
+        fs.writeFileSync('../reddit.json', JSON.stringify(posts, null, 4))
+      } catch (err) {
+        return null
+      }
     }
 
     return newPeople

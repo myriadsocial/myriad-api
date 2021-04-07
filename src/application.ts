@@ -11,6 +11,7 @@ import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
 // import {FetchContentJob} from './jobs/fetchcontent.job';
 import {FetchContentTwitterJob} from './jobs/fetchContentTwitter.job'
+import {FetchContentRedditJob} from './jobs/fetchcontentReddit.job'
 import { CommentRepository, ExperienceRepository, PeopleRepository, PostRepository, SavedExperienceRepository, TagRepository, UserRepository } from './repositories';
 import {MySequence} from './sequence';
 import users from './seed-data/users.json'
@@ -43,6 +44,7 @@ export class MyriadApiApplication extends BootMixin(
     // Add cron component
     this.component(CronComponent);
     this.add(createBindingFromClass(FetchContentTwitterJob))
+    this.add(createBindingFromClass(FetchContentRedditJob))
     // this.add(createBindingFromClass(FetchContentJob));
 
     this.projectRoot = __dirname;

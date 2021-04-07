@@ -20,7 +20,8 @@ import {
 import {Tag} from '../models';
 import {PeopleRepository, PostRepository, TagRepository} from '../repositories';
 import {inject} from '@loopback/core'
-import {Twitter} from '../services'
+import {Twitter, Reddit} from '../services'
+import fs from 'fs'
 
 export class TagController {
   constructor(
@@ -30,7 +31,8 @@ export class TagController {
     public peopleRepository:PeopleRepository,
     @repository(PostRepository)
     public postRepository:PostRepository,
-    @inject('services.Twitter') protected    twitterService:Twitter,
+    @inject('services.Twitter') protected twitterService:Twitter,
+    @inject('services.Reddit') protected redditService:Reddit
   ) {}
 
   @post('/tags')
@@ -39,23 +41,29 @@ export class TagController {
     content: { 'application/json': { schema: getModelSchemaRef(Tag) } },
   })
   async createTagByPlatform(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Tag, {
-            title: 'NewTag',
+    // @requestBody({
+    //   content: {
+    //     'application/json': {
+    //       schema: getModelSchemaRef(Tag, {
+    //         title: 'NewTag',
 
-          }),
-        },
-      },
-    })
-    tag: Tag
+    //       }),
+    //     },
+    //   },
+    // })
+    // tag: Tag,
+    @param.query.string('keyword') keyword: string
     ):Promise<any> {
-    const searchTwitter = await this.searchTweetsByKeyword(tag.id, 'twitter')
-    const searchFacebook = await this.searchFbPostsByKeyword(tag.id, 'facebook')
-    const searchReddit = await this.searchRedditPostByKeyword(tag.id, 'reddit')
+    const searchTwitter = null
+    // const searchTwitter = await this.searchTweetsByKeyword(keyword, 'twitter')
+    const searchFacebook = await this.searchFbPostsByKeyword(keyword, 'facebook')
+    const searchReddit = await this.searchRedditPostByKeyword(keyword, 'reddit')
 
-    if (searchTwitter || searchFacebook || searchReddit) return searchTwitter
+    if (searchTwitter || searchFacebook || searchReddit) return {
+      id: keyword,
+      hide: false,
+      createdAt: new Date().toString()
+    }
     
     return null
   }
@@ -192,7 +200,10 @@ export class TagController {
           const platform = 'twitter'
           const text = post.text
           const textId = post.id
-          const people = {}
+          const people = {
+            username: newPeople.username,
+            platform_account_id: newPeople.id
+          }
           const link = `https://twitter.com/${newPeople.username}/status/${textId}`
 
           this.postRepository.create({
@@ -204,7 +215,8 @@ export class TagController {
 
     return {
       id: word,
-      hide: false
+      hide: false,
+      createdAt: new Date().toString()
     }
   }
 
@@ -213,6 +225,47 @@ export class TagController {
   }
 
   async searchRedditPostByKeyword (keyword: string, platform: string): Promise<any> {
-    return null
+    const word = keyword.replace(/ /g, '')
+    const foundTag = await this.tagRepository.findOne({ where: {id: word} })
+
+    const {data} = await this.redditService.getActions(`search.json?q=${word}&sort=new&limit=5`)
+
+    if (data.children.length === 0) return null
+
+    if (foundTag) { return foundTag }
+
+    await this.tagRepository.create({
+      id: word,
+      createdAt: new Date().toString()
+    })
+    const posts = data.children.filter((post:any) => {
+      return post.kind === 't3'
+    }).map((post:any) => {
+      const e = post.data
+
+      return {
+        people: {
+          username: `u/${e.author}`
+        },
+        tags: [word],
+        platform,
+        title: e.title,
+        text: e.selftext,
+        textId: e.id,
+        hasMedia: false,
+        link: `https://www.reddit.com${e.permalink}`,
+        createdAt: new Date().toString()
+      }
+    })
+
+    await this.postRepository.createAll(posts)
+    
+    fs.writeFileSync('../tagReddit.json', JSON.stringify(posts, null, 4))
+
+    return {
+      id: word,
+      createdAt: new Date().toString,
+      hide: false
+    }
   }
 }

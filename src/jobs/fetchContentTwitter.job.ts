@@ -29,23 +29,23 @@ export class FetchContentTwitterJob extends CronJob {
   }
 
   async searchPostByPeople ():Promise<void> {
-    const people = await this.peopleRepository.find()
-    const posts = await this.postRepository.find()
+    const people = await this.peopleRepository.find({where: {platform: 'twitter'}})
+    const posts = await this.postRepository.find({where: {platform: 'twitter'}})
 
     for (let i = 0; i < people.length; i++) {
       const person = people[i]
       const personPosts = posts.filter(post => {
-        if (post.people) {
+        if (post.people.platform_account_id) {
           return post.people.platform_account_id === person.platform_account_id
         }
-
+ 
         return false
       })
 
       let maxId = ''
       for (let j = 0; j < personPosts.length; j++) {
         const id = personPosts[j].textId
-
+        // console.log(id)
         if (id > maxId) {
           maxId = id
         }
@@ -88,7 +88,7 @@ export class FetchContentTwitterJob extends CronJob {
 
   async searchPostByTag ():Promise<void> {
     const tagsRepo = await this.tagRepository.find()
-    const posts = await this.postRepository.find()
+    const posts = await this.postRepository.find({where: {platform: 'twitter'}})
 
     for (let i = 0; i < tagsRepo.length; i++) {
       const tag = tagsRepo[i]
@@ -105,12 +105,12 @@ export class FetchContentTwitterJob extends CronJob {
       let maxId = ''
       for (let i = 0; i < tagPosts.length; i++) {
         const id = tagPosts[i].textId
-
+        
         if (id > maxId) {
           maxId = id
         }
       }
-
+      
       if (!maxId) continue
       
       const {data:newPosts} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&since_id=${maxId}&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&query=%23${tag.id}`)
@@ -126,7 +126,10 @@ export class FetchContentTwitterJob extends CronJob {
           if (!foundPost) {
             const { data: person } = await this.twitterService.getActions(`users/${post.author_id}`)
             const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : [] : []
-            const people = {}
+            const people = {
+              username: person.username,
+              platform_account_id: person.id
+            }
             const hasMedia = post.attachments ? Boolean(post.attachments.mediaKeys) : false
             const platform = 'twitter'
             const text = post.text
