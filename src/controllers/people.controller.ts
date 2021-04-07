@@ -21,6 +21,7 @@ import {People} from '../models';
 import {PeopleRepository, PostRepository, TagRepository} from '../repositories';
 import {inject} from '@loopback/core';
 import {Twitter, Reddit} from '../services';
+import snoowrap from 'snoowrap'
 import dotenv from 'dotenv'
 import fs from 'fs'
 dotenv.config()
@@ -184,6 +185,57 @@ export class PeopleController {
           await this.createPostByPeople(user)
         }
       }
+    }
+
+    if (platform === 'reddit') {
+      const r = new snoowrap({
+        userAgent: 'Myriad-Network',
+        clientId: 'iYqX8KAOHu_v1A',
+        clientSecret: 'DHmK0U2vpSLRBzOVkBAJ7YtCLw7j_g',
+        refreshToken: '886673820564-J6KE0yxylfBYrhxC7nZ6T8u0juH6EA'
+      })
+
+      const data = await r.getSubscriptions()
+      const following = data.map( e => {
+        return e.display_name_prefixed
+      })
+
+      for (let i = 0; i < following.length; i++) {
+        const user = following[i]
+        const foundUser = await this.peopleRepository.findOne({where: {username: user}})
+
+        if (!foundUser && user.startsWith('u/')) {
+          await this.peopleRepository.create({
+            username: user,
+            platform: 'reddit',
+          })
+        }
+
+        const { data } = await this.redditService.getActions(user + '.json?limit=5&sort=new')
+        const posts = await data.children.filter((post:any) => {
+          return post.kind === 't3'
+        }).map((post:any) => {
+          const e = post.data;
+          return {
+            people: {
+              username: `u/${e.author}`
+            },
+            tags: [],
+            platform: 'reddit',
+            title: e.title,
+            text: e.selftext,
+            textId: e.id,
+            hasMedia: false,
+            link: `https://reddit.com${e.permalink}`,
+            createdAt: new Date().toString()
+          }
+        })
+
+        await this.postRepository.createAll(posts)
+
+      }
+
+      fs.writeFileSync('../reddit.json', JSON.stringify(following, null, 4))
     }
   }
 

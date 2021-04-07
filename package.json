@@ -61,6 +61,7 @@
     "dotenv": "^8.2.0",
     "loopback-connector-mongodb": "^5.5.0",
     "loopback-connector-rest": "^3.7.0",
+    "snoowrap": "^1.22.0",
     "tslib": "^2.0.0",
     "unique-names-generator": "^4.4.0",
     "xml-js": "^1.6.11"
