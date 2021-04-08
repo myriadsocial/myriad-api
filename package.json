@@ -62,7 +62,6 @@
     "loopback-connector-mongodb": "^5.5.0",
     "loopback-connector-rest": "^3.7.0",
     "tslib": "^2.0.0",
-    "twitter": "^1.7.1",
     "unique-names-generator": "^4.4.0",
     "xml-js": "^1.6.11"
   },

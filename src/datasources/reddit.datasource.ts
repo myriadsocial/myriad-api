@@ -4,23 +4,23 @@ import {config as dotenvConfig} from 'dotenv'
 dotenvConfig()
 
 const config = {
-  name: 'twitter',
+  name: 'reddit',
   connector: 'rest',
-  baseURL: 'https://api.twitter.com/2/',
+  baseURL: 'https://reddit.com',
   crud: false,
   options: {
     headers: {
-      Authorization: `Bearer ${process.env.BEARER_TOKEN}`
+
     }
   },
   operations: [
     {
       template: {
         method: 'GET',
-        url: 'https://api.twitter.com/2/{action}'
+        url: 'https://reddit.com/{actions}'
       },
       functions: {
-        getActions: ['action']
+        getActions: ['actions']
       }
     }
   ]
@@ -31,13 +31,13 @@ const config = {
 // gracefully. The `stop()` method is inherited from `juggler.DataSource`.
 // Learn more at https://loopback.io/doc/en/lb4/Life-cycle.html
 @lifeCycleObserver('datasource')
-export class TwitterDataSource extends juggler.DataSource
+export class RedditDataSource extends juggler.DataSource
   implements LifeCycleObserver {
-  static dataSourceName = 'twitter';
+  static dataSourceName = 'reddit';
   static readonly defaultConfig = config;
 
   constructor(
-    @inject('datasources.config.twitter', {optional: true})
+    @inject('datasources.config.reddit', {optional: true})
     dsConfig: object = config,
   ) {
     super(dsConfig);

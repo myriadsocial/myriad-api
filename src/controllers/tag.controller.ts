@@ -20,7 +20,8 @@ import {
 import {Tag} from '../models';
 import {PeopleRepository, PostRepository, TagRepository} from '../repositories';
 import {inject} from '@loopback/core'
-import {Twitter} from '../services'
+import {Twitter, Reddit} from '../services'
+import fs from 'fs'
 
 export class TagController {
   constructor(
@@ -30,51 +31,41 @@ export class TagController {
     public peopleRepository:PeopleRepository,
     @repository(PostRepository)
     public postRepository:PostRepository,
-    @inject('services.Twitter') protected    twitterService:Twitter,
+    @inject('services.Twitter') protected twitterService:Twitter,
+    @inject('services.Reddit') protected redditService:Reddit
   ) {}
 
   @post('/tags')
-  @response(200, {
-    description: 'Tag model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Tag)}},
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Tag, {
-            title: 'NewTag',
-            
-          }),
-        },
-      },
-    })
-    tag: Tag,
-  ): Promise<Tag> {
-    return this.tagRepository.create(tag);
-  }
-
-  @post('/tags/{platform}')
   @response(200, {
     description: 'Tag By Platform model instance',
     content: { 'application/json': { schema: getModelSchemaRef(Tag) } },
   })
   async createTagByPlatform(
-    @param.query.string('keyword') keyword:string,
-    @param.path.string('platform') platform:string,
+    // @requestBody({
+    //   content: {
+    //     'application/json': {
+    //       schema: getModelSchemaRef(Tag, {
+    //         title: 'NewTag',
+
+    //       }),
+    //     },
+    //   },
+    // })
+    // tag: Tag,
+    @param.query.string('keyword') keyword: string
     ):Promise<any> {
+    const searchTwitter = null
+    // const searchTwitter = await this.searchTweetsByKeyword(keyword, 'twitter')
+    const searchFacebook = await this.searchFbPostsByKeyword(keyword, 'facebook')
+    const searchReddit = await this.searchRedditPostByKeyword(keyword, 'reddit')
 
-    if (platform === 'twitter') {
-      return await this.searchByKeyword(keyword)
+    if (searchTwitter || searchFacebook || searchReddit) return {
+      id: keyword,
+      hide: false,
+      createdAt: new Date().toString()
     }
-
-    if (platform === 'facebook') {
-      
-    }
-
-    if (platform === 'twitter') {
-      
-    }
+    
+    return null
   }
 
   @get('/tags/count')
@@ -178,80 +169,103 @@ export class TagController {
     await this.tagRepository.deleteById(id);
   }
 
-  async searchByKeyword (keyword:string):Promise<any>{
-    const { data: posts } = await this.twitterService.getActions(`tweets/search/recent?max_results=50&tweet.fields=referenced_tweets&expansions=attachments.media_keys,author_id&user.fields=description&query=${keyword}`)
+  async searchTweetsByKeyword (keyword:string, platform:string): Promise<any> {
+    const word = keyword.replace(/ /g,'')
+    const foundTag = await this.tagRepository.findOne({ where: { id: word.toLowerCase() } })
+
+    if (foundTag) return foundTag
+
+    const { data: posts } = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&query=%23${word}`)
 
     if (!posts || posts.errors) return null
 
-    const newTag = await this.tagRepository.create({
-      id: keyword,
+    await this.tagRepository.create({
+      id: word,
       createdAt: new Date().toString()
     })
 
-    for (let i = 0; i < posts.length; i++) {
-      const post = posts[i]
-      const hasMedia = Boolean(post.attachments)
-      const tags = post.text.split(' ')
-        .filter(function (word: string) {
-          return word.startsWith('#')
-        })
-        .map(function (word: string) {
-          return word.substr(1).trim()
-        })
+    const filterPost = posts.filter((post:any) => !post.referenced_tweets)
 
-      if (!post.referenced_tweets) {
-        interface Post {
-          text: string,
-          textId: string,
-          createdAt: string,
-          people?: object,
-          platform: string,
-          hasMedia: boolean,
-          tags?: string[],
-          link: string
-        }
+    if (filterPost.length > 0) {
+      for (let i = 0; i < filterPost.length; i++) {
+        const post = filterPost[i]
+        const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform }})
 
-        const { data: user } = await this.twitterService.getActions(`users/${post.author_id}`)
+        if (!foundPost) {
+          const {data: newPeople} = await this.twitterService.getActions(`users/${post.author_id}`)
 
-        const newPost: Post = {
-          text: post.text,
-          textId: post.id,
-          createdAt: new Date().toString(),
-          platform: 'twitter',
-          hasMedia: false,
-          link: `https://twitter.com/${user.username}/status/${post.id}`,
-          tags: []
-        }
+          const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag:any) => hashtag.tag.toLowerCase()) : [] : []
 
-        if (hasMedia) newPost.hasMedia = true
-
-        if (tags.length > 0) {
-          newPost.tags = tags
-
-          for (let i = 0; i < tags.length; i++) {
-            const findTag = await this.tagRepository.find({
-              where: { id: tags[i].toLowerCase() }
-            })
-
-            if (findTag.length === 0) {
-              await this.tagRepository.create({
-                id: tags[i],
-                createdAt: new Date().toString()
-              })
-            }
+          const hasMedia = post.attachments ? Boolean(post.attachments.mediaKeys) : false
+          const platform = 'twitter'
+          const text = post.text
+          const textId = post.id
+          const people = {
+            username: newPeople.username,
+            platform_account_id: newPeople.id
           }
+          const link = `https://twitter.com/${newPeople.username}/status/${textId}`
+
+          this.postRepository.create({
+            textId, text, tags, people, hasMedia, platform, link, createdAt: new Date().toString()
+          })
         }
-
-        const findDuplicateKeyWord = newPost.tags?.find(tag => tag.toLowerCase() === keyword.toLowerCase())
-
-        if (!findDuplicateKeyWord) {
-          newPost.tags?.push(keyword)
-        }
-
-        this.postRepository.create(newPost)
       }
     }
 
-    return newTag
-  } 
+    return {
+      id: word,
+      hide: false,
+      createdAt: new Date().toString()
+    }
+  }
+
+  async searchFbPostsByKeyword (keyword: string, platform: string): Promise<any> {
+    return null
+  }
+
+  async searchRedditPostByKeyword (keyword: string, platform: string): Promise<any> {
+    const word = keyword.replace(/ /g, '')
+    const foundTag = await this.tagRepository.findOne({ where: {id: word} })
+
+    const {data} = await this.redditService.getActions(`search.json?q=${word}&sort=new&limit=5`)
+
+    if (data.children.length === 0) return null
+
+    if (foundTag) { return foundTag }
+
+    await this.tagRepository.create({
+      id: word,
+      createdAt: new Date().toString()
+    })
+    const posts = data.children.filter((post:any) => {
+      return post.kind === 't3'
+    }).map((post:any) => {
+      const e = post.data
+
+      return {
+        people: {
+          username: `u/${e.author}`
+        },
+        tags: [word],
+        platform,
+        title: e.title,
+        text: e.selftext,
+        textId: e.id,
+        hasMedia: false,
+        link: `https://www.reddit.com${e.permalink}`,
+        createdAt: new Date().toString()
+      }
+    })
+
+    await this.postRepository.createAll(posts)
+    
+    fs.writeFileSync('../tagReddit.json', JSON.stringify(posts, null, 4))
+
+    return {
+      id: word,
+      createdAt: new Date().toString,
+      hide: false
+    }
+  }
 }

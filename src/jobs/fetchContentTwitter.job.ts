@@ -24,62 +24,122 @@ export class FetchContentTwitterJob extends CronJob {
   }
 
   async performJob () {
-    const people = await this.peopleRepository.find()
-    const posts = await this.postRepository.find()
+    await this.searchPostByPeople()
+    await this.searchPostByTag()
+  }
+
+  async searchPostByPeople ():Promise<void> {
+    const people = await this.peopleRepository.find({where: {platform: 'twitter'}})
+    const posts = await this.postRepository.find({where: {platform: 'twitter'}})
 
     for (let i = 0; i < people.length; i++) {
       const person = people[i]
       const personPosts = posts.filter(post => {
-        if (post.people) {
+        if (post.people.platform_account_id) {
           return post.people.platform_account_id === person.platform_account_id
         }
-
+ 
         return false
       })
 
       let maxId = ''
       for (let j = 0; j < personPosts.length; j++) {
         const id = personPosts[j].textId
-
+        // console.log(id)
         if (id > maxId) {
           maxId = id
         }
       }
 
-      const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?max_results=15&since_id=${maxId}&tweet.fields=attachments,entities,referenced_tweets`)
+      if (!maxId) continue
+
+      const { data: newPosts } = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${maxId}&tweet.fields=attachments,entities,referenced_tweets`)
+
+      if (!newPosts) continue
       const filterNewPost = newPosts.filter((post: any) => !post.referenced_tweets)
 
       if (filterNewPost.length > 0) {
         for (let k = 0; k < filterNewPost.length; k++) {
           const post = filterNewPost[k]
-          const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag) : [] : []
+          const [foundPost] = await this.postRepository.find({ where: { textId: post.id, platform: post.platform } })
 
-          const people = {
-            username: person.username,
-            platform_account_id: person.platform_account_id
-          }
+          if (!foundPost) {
+            const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : [] : []
 
-          const hasMedia = post.attachments ? Boolean(post.attachments.mediaKeys) : false
-          const platform = 'twitter'
-          const text = post.text
-          const textId = post.id
-          const link = `https://twitter.com/${person.username}/status/${textId}`
-
-          for (let l = 0; l < tags.length; l++) {
-            const tag = tags[i]
-            const [findTag] = await this.tagRepository.find({ where: { id: tag.toLowerCase() } })
-
-            if (!findTag) {
-              await this.tagRepository.create({
-                id: tag.toLowerCase(),
-                createdAt: new Date().toString()
-              })
+            const people = {
+              username: person.username,
+              platform_account_id: person.platform_account_id
             }
-          }
 
-          await this.postRepository.create({
-            textId, text, tags, people, hasMedia, platform, link, createdAt: new Date().toString()
-          })
+            const hasMedia = post.attachments ? Boolean(post.attachments.mediaKeys) : false
+            const platform = 'twitter'
+            const text = post.text
+            const textId = post.id
+            const link = `https://twitter.com/${person.username}/status/${textId}`
+
+            await this.postRepository.create({
+              textId, text, tags, people, hasMedia, platform, link, createdAt: new Date().toString()
+            })
+          }
+        }
+      }
+    }
+  }
+
+  async searchPostByTag ():Promise<void> {
+    const tagsRepo = await this.tagRepository.find()
+    const posts = await this.postRepository.find({where: {platform: 'twitter'}})
+
+    for (let i = 0; i < tagsRepo.length; i++) {
+      const tag = tagsRepo[i]
+      const tagPosts = posts.filter(post => {
+        if (post.tags) {
+          const foundPost = post.tags.find(e => e === tag.id)
+
+          if (foundPost) return true
+        } 
+
+        else false
+      })
+
+      let maxId = ''
+      for (let i = 0; i < tagPosts.length; i++) {
+        const id = tagPosts[i].textId
+        
+        if (id > maxId) {
+          maxId = id
+        }
+      }
+      
+      if (!maxId) continue
+      
+      const {data:newPosts} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&since_id=${maxId}&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&query=%23${tag.id}`)
+
+      if (!newPosts) continue
+      const filterNewPost = newPosts.filter((post:any) => !post.referenced_tweets)
+
+      if (filterNewPost.length > 0) {
+        for (let k = 0; k < filterNewPost.length; k++) {
+          const post = filterNewPost[k]
+          const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: post.platform}})
+
+          if (!foundPost) {
+            const { data: person } = await this.twitterService.getActions(`users/${post.author_id}`)
+            const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : [] : []
+            const people = {
+              username: person.username,
+              platform_account_id: person.id
+            }
+            const hasMedia = post.attachments ? Boolean(post.attachments.mediaKeys) : false
+            const platform = 'twitter'
+            const text = post.text
+            const textId = post.id
+            const link = `https://twitter.com/${person.username}/status/${textId}`
+
+            await this.postRepository.create({
+              textId, text, tags, people, hasMedia, platform, link, createdAt: new Date().toString()
+            })
+          }
         }
       }
     }

@@ -24,12 +24,14 @@ export class Post extends Entity {
     type: 'array',
     itemType: 'string',
     required: false,
+    default: []
   })
   tags?: string[];
 
   @property({
     type: 'object',
     required: false,
+    default: {}
   })
   people?: any;
 
@@ -42,9 +44,15 @@ export class Post extends Entity {
 
   @property({
     type: 'string',
-    required: true
+    required: false
   })
-  text: string;
+  title?: string
+
+  @property({
+    type: 'string',
+    required: false
+  })
+  text?: string;
 
   @property({
     type: 'string',
@@ -59,7 +67,6 @@ export class Post extends Entity {
   })
 
   hasMedia: boolean
-
 
   @property({
     type: 'string',
