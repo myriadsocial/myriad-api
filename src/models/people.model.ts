@@ -1,5 +1,6 @@
-import {Entity, model, property, hasOne} from '@loopback/repository';
+import {Entity, model, property, hasOne, hasMany} from '@loopback/repository';
 import {UserCredential} from './user-credential.model';
+import {Post} from './post.model';
 
 @model({
   settings: {
@@ -47,6 +48,9 @@ export class People extends Entity {
 
   @hasOne(() => UserCredential)
   userCredential: UserCredential;
+
+  @hasMany(() => Post)
+  posts: Post[];
 
   constructor(data?: Partial<People>) {
     super(data);

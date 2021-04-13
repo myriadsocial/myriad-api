@@ -20,3 +20,5 @@ export * from './user-user-credential.controller';
 export * from './user-credential-user.controller';
 export * from './people-user-credential.controller';
 export * from './user-credential-people.controller';
+export * from './people-post.controller';
+export * from './post-people.controller';

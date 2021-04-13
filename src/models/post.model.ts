@@ -1,5 +1,6 @@
-import {Entity, hasMany, model, property} from '@loopback/repository';
+import {Entity, hasMany, model, property, belongsTo} from '@loopback/repository';
 import {Comment} from './comment.model';
+import {People} from './people.model';
 
 @model({
   settings: {
@@ -33,7 +34,7 @@ export class Post extends Entity {
     required: false,
     default: {}
   })
-  people?: any;
+  platformUser?: any;
 
   @property({
     type: 'string',
@@ -73,7 +74,7 @@ export class Post extends Entity {
     required: false
   })
   link?: string
-  
+
   @property({
     type: 'date',
     required: true,
@@ -94,6 +95,9 @@ export class Post extends Entity {
 
   @hasMany(() => Comment)
   comments: Comment[];
+
+  @belongsTo(() => People)
+  peopleId: string;
 
   constructor(data?: Partial<Post>) {
     super(data);

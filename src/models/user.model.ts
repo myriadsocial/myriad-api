@@ -41,6 +41,13 @@ export class User extends Entity {
   profilePictureURL?: string;
 
   @property({
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  anonymous?: boolean;
+
+  @property({
     type: 'date',
     required: true,
   })

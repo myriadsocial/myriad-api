@@ -27,77 +27,104 @@ export class FetchContentRedditJob extends CronJob {
   }
 
   async performJob() {
-    await this.searchPostByTag()
+    await this.searchPostByTag()  
     await this.searchPostByPeople()
   }
   async searchPostByPeople() {
-    const people = await this.peopleRepository.find()
-    const filterPeople = people.filter((person:any) => {
-      return person.username.startsWith('u/')
-    })
-
-    for (let i = 0; i < filterPeople.length; i++) {
-      const person = filterPeople[i]
-      const {data: user} = await this.redditService.getActions(person.username)
-
-      const posts = user.children.filter((post:any) => {
-        return post.kind === 't3'
+    try {
+      const people = await this.peopleRepository.find()
+      const filterPeople = people.filter((person:any) => {
+        return person.username.startsWith('u/')
       })
-
-      for (let j = 0; j < posts.length; j++) {
-        const post = posts[j].data
-
-        const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
-
-        if (foundPost) continue
-
-        await this.postRepository.create({
-          people: {
-            username: `u/${post.author}`
-          },
-          tags: [],
-          platform: 'reddit',
-          title: post.title,
-          text: post.selftext,
-          hasMedia: false,
-          link: `https://wwww.reddit.com${post.permalink}`,
-          createdAt: new Date().toString()
+  
+      for (let i = 0; i < filterPeople.length; i++) {
+        const person = filterPeople[i]
+        const {data: user} = await this.redditService.getActions(person.username)
+  
+        const posts = user.children.filter((post:any) => {
+          return post.kind === 't3'
         })
+  
+        for (let j = 0; j < posts.length; j++) {
+          const post = posts[j].data
+  
+          const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
+  
+          if (foundPost) continue
+  
+          await this.postRepository.create({
+            platformUser: {
+              username: `u/${post.author}`
+            },
+            tags: [],
+            platform: 'reddit',
+            peopleId: person.id,
+            title: post.title,
+            text: post.selftext,
+            textId: post.id,
+            hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
+            link: `https://wwww.reddit.com${post.permalink}`,
+            createdAt: new Date().toString()
+          })
+        }
       }
-    }
+    } catch (err) {}
   }
   async searchPostByTag() {
-    const tags = await this.tagRepository.find()
+    try {
+      const tags = await this.tagRepository.find()
 
-    for (let i = 0; i < tags.length; i++) {
-      const tag = tags[i]
-      const { data } = await this.redditService.getActions(`search.json?q=${tag.id}&sort=new&limit=20`)
+      for (let i = 0; i < tags.length; i++) {
+  
+          const tag = tags[i]
+          const { data } = await this.redditService.getActions(`search.json?q=${tag.id}&sort=new&limit=20`)
 
-      if (data.children.length === 0) continue
-
-      const posts = data.children.filter((post:any) => {
-        return post.kind === 't3'
-      })
-
-      for (let j = 0; j < posts.length; j++) {
-        const post = posts[j].data
-        const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
-
-        if (foundPost) continue
-
-        await this.postRepository.create({
-          people: {
-            username: `u/${post.author}`
-          },
-          tags: [tag.id],
-          platform: 'reddit',
-          title: post.title,
-          text: post.selftext,
-          hasMedia: false,
-          link: `https://wwww.reddit.com${post.permalink}`,
-          createdAt: new Date().toString()
+        if (data.children.length === 0) continue
+  
+        const posts = data.children.filter((post:any) => {
+          return post.kind === 't3'
         })
+  
+        for (let j = 0; j < posts.length; j++) {
+          const post = posts[j].data
+          const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
+  
+          if (foundPost) continue
+  
+          const foundPerson = await this.peopleRepository.findOne({where: {username: `u/${post.author}`}})
+
+          if (foundPerson) {
+            await this.postRepository.create({
+              platformUser: {
+                username: `u/${post.author}`
+              },
+              tags: [tag.id],
+              platform: 'reddit',
+              peopleId: foundPerson.id,
+              title: post.title,
+              text: post.selftext,
+              textId: post.id,
+              hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
+              link: `https://wwww.reddit.com${post.permalink}`,
+              createdAt: new Date().toString()
+            })
+          } else {
+            await this.postRepository.create({
+              platformUser: {
+                username: `u/${post.author}`
+              },
+              tags: [tag.id],
+              platform: 'reddit',
+              title: post.title,
+              text: post.selftext,
+              textId: post.id,
+              hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
+              link: `https://wwww.reddit.com${post.permalink}`,
+              createdAt: new Date().toString()
+            })
+          }
+        }
       }
-    }
+    } catch (err) {}
   }
-}
+} 
