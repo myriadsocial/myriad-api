@@ -50,7 +50,9 @@
     "!*/__tests__"
   ],
   "dependencies": {
+    "-": "^0.0.1",
     "@loopback/boot": "^3.3.0",
+    "@loopback/cli": "^2.20.2",
     "@loopback/core": "^2.15.0",
     "@loopback/cron": "^0.4.0",
     "@loopback/repository": "^3.5.0",
@@ -59,8 +61,10 @@
     "@loopback/service-proxy": "^3.1.0",
     "@polkadot/api": "^4.0.3",
     "dotenv": "^8.2.0",
+    "g": "^2.0.1",
     "loopback-connector-mongodb": "^5.5.0",
     "loopback-connector-rest": "^3.7.0",
+    "snoowrap": "^1.22.0",
     "tslib": "^2.0.0",
     "unique-names-generator": "^4.4.0",
     "xml-js": "^1.6.11"

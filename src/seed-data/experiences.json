@@ -12,13 +12,21 @@
       }
     ],
     "people": [
-
+      {
+        "username": "jokowi",
+        "platform_account_id": "366987179",
+        "hide": false
+      },
+      {
+        "username": "prabowo",
+        "platform_account_id": "40580714",
+        "hide": false
+      }
     ],
     "layout": "",
     "createdAt": "2021-04-04T09:25:55.048Z",
     "description": "Welcome to myriad!",
     "default": false
-
   },
   {
     "name": "world",

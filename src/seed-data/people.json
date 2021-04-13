@@ -22,5 +22,30 @@
     "platform": "twitter",
     "platform_account_id": "1061147681832132609",
     "hide": false
+  },
+  {
+    "username": "u/feross",
+    "platform": "reddit",
+    "hide": false
+  },
+  {
+    "username": "u/polkadotweekly",
+    "platform": "reddit",
+    "hide": false
+  },
+  {
+    "username": "u/FrancisStokes",
+    "platform": "reddit",
+    "hide": false
+  },
+  {
+    "username": "Jokowi",
+    "platform": "facebook",
+    "hide": false
+  },
+  {
+    "username": "PrabowoSubianto",
+    "platform": "facebook",
+    "hide": false
   }
 ]

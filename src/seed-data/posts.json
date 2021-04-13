@@ -1,7 +1,10 @@
 [
   {
     "tags": ["blockchain","technology"],
-    "people": {},
+    "platformUser": {
+      "username": "blockchain",
+      "platform_account_id": "125304737"
+    },
     "platform": "twitter",
     "text": "Who else thinks #bitcoin looks good on the streets of #nyc?",
     "textId": "1378083565695463425",
@@ -11,7 +14,7 @@
   },
   {
     "tags": [],
-    "people": {
+    "platformUser": {
       "username": "jokowi",
       "platform_account_id": "366987179"
     },
@@ -24,7 +27,7 @@
   },
   {
     "tags": ["technology","comedy"],
-    "people": {
+    "platformUser": {
       "username": "prabowo",
       "platform_account_id": "40580714"
     },
@@ -40,7 +43,7 @@
       "myriad",
       "comedy"
     ],
-    "people": {
+    "platformUser": {
       "username": "sandiuno",
       "platform_account_id": "132041617"
     },
@@ -53,14 +56,80 @@
   },
   {
     "tags": [],
-    "people": {
+    "platformUser": {
       "username": "Kiyai_MarufAmin",
       "platform_account_id": "1061147681832132609"
     },
     "platform": "twitter",
     "text": "Pemerintah berharap, Mathla’ul Anwar tetap konsisten membangun peradaban bangsa melalui layanan pendidikan, dakwah dan sosial dengan mengajarkan agama yang rahmatan lil ‘alamin, ramah dan toleran.",
     "textId": "1378294413433053190",
+    "hasMedia": false,
     "link": "https://twitter.com/Kiyai_MarufAmin/status/1378294413433053190",
     "createdAt": "2021-04-04T09:25:55.048Z"
+  },
+  {
+    "platformUser": {
+        "username": "u/feross"
+    },
+    "tags": [],
+    "platform": "reddit",
+    "title": "The Most Annoying Website - JSConf US 2018 [VIDEO]",
+    "text": "",
+    "textId": "9yd2mo",
+    "hasMedia": false,
+    "link": "https://reddit.com/r/programming/comments/9yd2mo/the_most_annoying_website_jsconf_us_2018_video/",
+    "createdAt": "Tue Apr 13 2021 21:34:34 GMT+0700 (Western Indonesia Time)"
+  },
+  {
+    "platformUser": {
+        "username": "u/FrancisStokes"
+    },
+    "tags": [],
+    "platform": "reddit",
+    "title": "Replacing a byte pattern in a pre-built binary before flashing",
+    "text": "I'm trying to replace a known series of bytes (a serial number) in a binary I've built (in this case using the arduino framework).\n\nIf I take the binaries and flash them without `esptool`without modification, everything works as expected. If however, I find and replace the serial number bytes (the number of bytes doesn't change), then flashing works, but the program seems corrupted while running.\n\nMy guess is there is some kind of CRC or similar integrity check on the binary at build time, which my byte swapping is messing up.\n\nSo I'm wondering: What is the correct way to go about this? Is there a way I can recalculate the CRC and patch that on the fly too, or there a better way using the existing tools which I'm missing here?",
+    "textId": "mliw6e",
+    "hasMedia": false,
+    "link": "https://reddit.com/r/esp32/comments/mliw6e/replacing_a_byte_pattern_in_a_prebuilt_binary/",
+    "createdAt": "Tue Apr 13 2021 21:33:41 GMT+0700 (Western Indonesia Time)"
+  },
+  {
+    "platformUser": {
+        "username": "u/polkadotweekly"
+    },
+    "tags": [],
+    "platform": "reddit",
+    "title": "Polkadot Weekly – All of the Polkadot news for the week of April 12, 2021! Tether to Launch on Kusama and Polkadot, Web3 Wave 9 Grants, and a whole lot more!",
+    "text": "",
+    "textId": "mpkrfi",
+    "hasMedia": false,
+    "link": "https://reddit.com/r/polkadot_market/comments/mpkrfi/polkadot_weekly_all_of_the_polkadot_news_for_the/",
+    "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
+  },
+  {
+    "platformUser": {
+      "username": "Jokowi"
+    },
+    "tags": [],
+    "platform": "facebook",
+    "title": "",
+    "text": "",
+    "textId": "",
+    "hasMedia": false,
+    "link": "https://www.facebook.com/Jokowi/posts/1783048761883965",
+    "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
+  },
+  {
+    "platformUser": {
+      "username": "PrabowoSubianto"
+    },
+    "tags": [],
+    "platform": "facebook",
+    "title": "",
+    "text": "",
+    "textId": "",
+    "hasMedia": false,
+    "link": "https://www.facebook.com/PrabowoSubianto/posts/10157926732381179",
+    "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
   }
 ]

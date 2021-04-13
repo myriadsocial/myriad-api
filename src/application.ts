@@ -9,17 +9,17 @@ import {
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
+import {FetchContentRedditJob} from './jobs/fetchContentReddit.job';
 // import {FetchContentJob} from './jobs/fetchcontent.job';
-import {FetchContentTwitterJob} from './jobs/fetchContentTwitter.job'
-import {FetchContentRedditJob} from './jobs/fetchcontentReddit.job'
-import { CommentRepository, ExperienceRepository, PeopleRepository, PostRepository, SavedExperienceRepository, TagRepository, UserRepository } from './repositories';
+import {FetchContentTwitterJob} from './jobs/fetchContentTwitter.job';
+import {CommentRepository, ExperienceRepository, PeopleRepository, PostRepository, SavedExperienceRepository, TagRepository, UserRepository} from './repositories';
+import comments from './seed-data/comments.json';
+import experiences from './seed-data/experiences.json';
+import people from './seed-data/people.json';
+import posts from './seed-data/posts.json';
+import tags from './seed-data/tags.json';
+import users from './seed-data/users.json';
 import {MySequence} from './sequence';
-import users from './seed-data/users.json'
-import tags from './seed-data/tags.json'
-import experiences from './seed-data/experiences.json'
-import posts from './seed-data/posts.json'
-import people from './seed-data/people.json'
-import comments from './seed-data/comments.json'
 
 export {ApplicationConfig};
 
@@ -80,8 +80,59 @@ export class MyriadApiApplication extends BootMixin(
 
     const newTags = await tagRepo.createAll(tags)
     const newUsers = await userRepo.createAll(users)
-    const newPosts = await postsRepo.createAll(posts)
     const newPeople = await peopleRepo.createAll(people)
+    const redditPosts = posts.filter(post => post.platformUser.username.startsWith('u/'))
+    const twitterPosts = posts.filter(post => !post.platformUser.username.startsWith('u/'))
+
+    // console.log(redditPosts)
+
+    interface PlatformUser {
+      username: string,
+      platform_account_id?: string
+    }
+
+    interface Post {
+      tags?: string[],
+      platformUser: PlatformUser,
+      platform?: string,
+      text?: string,
+      textId?: string,
+      hasMedia?: boolean,
+      link?: string,
+      createdAt?: string,
+      peopleId?: string
+    }
+
+    for (let i = 0; i < newPeople.length; i++) {
+      const person = newPeople[i]
+      const personAccountId = person.platform_account_id
+      const personUsername = person.username
+      const personPlatform = person.platform
+
+      for (let j = 0; j < posts.length; j++) {
+        const post:Post = posts[j]
+        const postAccountId = post.platformUser.platform_account_id
+        const postAccountUsername = post.platformUser.username
+
+        if (personPlatform === 'twitter') {
+          if (personAccountId === postAccountId) {
+            post.peopleId = person.id
+          }
+        }
+
+        if (personPlatform === 'reddit') {
+          if (personUsername === postAccountUsername) {
+            post.peopleId = person.id
+          }
+        }
+
+        if (personPlatform === 'facebook') {
+          if (personUsername === postAccountUsername) {
+            post.peopleId = person.id
+          }
+        }
+      }
+    }
 
     const experience1 = await userRepo.savedExperiences(newUsers[0].id).create({
       ...experiences[0],
@@ -97,7 +148,8 @@ export class MyriadApiApplication extends BootMixin(
       experience_id: experience2.id
     })
 
-    await commentsRepo.createAll(comments.map(function(comment, index){
+    const newPosts = await postsRepo.createAll(posts)
+    await commentsRepo.createAll(comments.map(function (comment, index) {
       if (index % 2 === 0) {
         return {
           ...comment,
