@@ -1,3 +1,4 @@
+import {inject} from '@loopback/core'
 import {
   Count,
   CountSchema,
@@ -18,12 +19,25 @@ import {
   response,
 } from '@loopback/rest';
 import {UserCredential} from '../models';
-import {UserCredentialRepository} from '../repositories';
+import {UserCredentialRepository, PeopleRepository, PostRepository} from '../repositories';
+import {Reddit, Twitter, Rsshub} from '../services'
+
+interface VerifyUser {
+  userId: string,
+  peopleId: string
+}
 
 export class UserCredentialController {
   constructor(
     @repository(UserCredentialRepository)
     public userCredentialRepository : UserCredentialRepository,
+    @repository(PeopleRepository)
+    public peopleRepository: PeopleRepository,
+    @repository(PostRepository)
+    public postRepository: PostRepository,
+    @inject('services.Twitter') protected twitterService: Twitter,
+    @inject('services.Reddit') protected redditService: Reddit,
+    @inject('services.Rsshub') protected rsshubService:Rsshub
   ) {}
 
   @post('/user-credentials')
@@ -43,8 +57,62 @@ export class UserCredentialController {
       },
     })
     userCredential: UserCredential,
-  ): Promise<UserCredential> {
-    return this.userCredentialRepository.create(userCredential);
+  ): Promise<any> {
+    let newUserCredential = null
+    
+    const foundUserCredential = await this.userCredentialRepository.findOne({where: {userId: userCredential.userId, peopleId: userCredential.peopleId}})
+
+    if (foundUserCredential) {
+      newUserCredential = await this.userCredentialRepository.updateById(foundUserCredential.id, foundUserCredential)
+    }
+    
+    newUserCredential = await this.userCredentialRepository.create(userCredential)
+
+    return newUserCredential
+  }
+
+  @post('/verify')
+  @response(200, {
+    desciption: `Verify User`
+  })
+  async verify(
+    @requestBody() verifyUser: VerifyUser
+  ):Promise<any> {
+    const { userId, peopleId } = verifyUser
+
+    try {
+      const foundPeople = await this.peopleRepository.findOne({where: {id: peopleId}})
+
+      if (!foundPeople) throw new Error('People not found')
+
+      const {username, platform_account_id, id, platform} = foundPeople
+
+      switch(platform) {
+        case "twitter":
+          const {data:tweets} = await this.twitterService.getActions(`users/${platform_account_id}}/tweets?max_results=5`)
+          const twitterPublicKey = tweets[0].text.replace(/\n/g, ' ').split(' ')[7]
+          const foundUserCredentialTwitter = await this.userCredentialRepository.findOne({where: {userId: twitterPublicKey, peopleId: id}})
+
+          if (foundUserCredentialTwitter && userId === twitterPublicKey) {
+            return this.userCredentialRepository.updateById(foundUserCredentialTwitter.id, {verify: true})
+          }
+        break
+
+        case "reddit":
+          const {data: redditPosts} = await this.redditService.getActions(`u/${username}.json?limit=1`)
+          const redditPublicKey = redditPosts.children[0].data.title.replace(/n/g,' ').split(' ')[7]
+          const foundUserCredentialReddit = await this.userCredentialRepository.findOne({where: {userId: redditPublicKey, peopleId: id}})
+        
+          if (foundUserCredentialReddit && userId === redditPublicKey) {
+            return this.userCredentialRepository.updateById(foundUserCredentialReddit.id, {verify: true})
+          }
+        break
+      }
+    } catch (err) {
+      return null
+    }
+
+    return null
   }
 
   @get('/user-credentials/count')

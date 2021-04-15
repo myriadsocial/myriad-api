@@ -18,10 +18,9 @@ import {
   response,
 } from '@loopback/rest';
 import {Tag} from '../models';
-import {PeopleRepository, PostRepository, TagRepository} from '../repositories';
+import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
 import {inject} from '@loopback/core'
 import {Twitter, Reddit} from '../services'
-import fs from 'fs'
 
 export class TagController {
   constructor(
@@ -31,6 +30,8 @@ export class TagController {
     public peopleRepository:PeopleRepository,
     @repository(PostRepository)
     public postRepository:PostRepository,
+    @repository(UserCredentialRepository)
+    public userCredentialRepository:UserCredentialRepository,
     @inject('services.Twitter') protected twitterService:Twitter,
     @inject('services.Reddit') protected redditService:Reddit
   ) {}
@@ -169,16 +170,17 @@ export class TagController {
 
   async searchTweetsByKeyword (keyword:string): Promise<any> {
     try {
-      const word = keyword.replace(/ /g,'')
+      const word = keyword.replace(/ /g,'').trim()
       const foundTag = await this.tagRepository.findOne({ where: { id: word.toLowerCase() } })
   
       if (foundTag) return foundTag
   
-      const { data: posts, includes } = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=%23${word}`)
-      const {users} = includes
+      const {data: posts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=%23${word}`)
+      
+      if (!posts) return null
 
-      if (!posts || posts.errors) return null
-  
+      const {users} = includes
+      
       await this.tagRepository.create({
         id: word,
         createdAt: new Date().toString()
@@ -186,39 +188,44 @@ export class TagController {
   
       const filterPost = posts.filter((post:any) => !post.referenced_tweets)
   
-      if (filterPost.length > 0) {
-        for (let i = 0; i < filterPost.length; i++) {
-          const post = filterPost[i]
-          const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: 'twitter' }})
-          const username = users.find((user:any) => user.id === post.author_id).username
-  
-          if (!foundPost) {
-            const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag:any) => hashtag.tag.toLowerCase()) : [] : []
-            const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
-            const platform = 'twitter'
-            const text = post.text
-            const textId = post.id
-            const link = `https://twitter.com/${username}/status/${textId}`
-            const platformUser = {
-              username,
-              platform_account_id: post.author_id
-            }
+      for (let i = 0; i < filterPost.length; i++) {
+        const post = filterPost[i]
+        const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: 'twitter' }})
+        const username = users.find((user:any) => user.id === post.author_id).username
 
-            const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: platformUser.platform_account_id}})
+        if (foundPost) continue
 
-            if (foundPeople) {
-              const peopleId = foundPeople.id
-              await this.postRepository.create({
-                textId, text, tags, platformUser, hasMedia, platform, link, peopleId, createdAt: new Date().toString()
-              })
-            } else {
-              await this.postRepository.create({
-                textId, text, tags, platformUser, hasMedia, platform, link, createdAt: new Date().toString()
-              })
-            }
-
-          }
+        const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag:any) => hashtag.tag.toLowerCase()) : [] : []
+        const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
+        const platform = 'twitter'
+        const text = post.text
+        const textId = post.id
+        const link = `https://twitter.com/${username}/status/${textId}`
+        const platformUser = {
+          username,
+          platform_account_id: post.author_id
         }
+
+        const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: post.author_id}})
+
+        if (foundPeople) {
+          const peopleId = foundPeople.id
+          const userCredential = await this.userCredentialRepository.findOne({where: {peopleId}})
+
+          if (userCredential) {
+            await this.postRepository.create({
+              textId, text, tags, platformUser, hasMedia, platform, wallet_address: userCredential.id, link, peopleId, createdAt: new Date().toString()
+            })
+          }
+          
+          await this.postRepository.create({
+            textId, text, tags, platformUser, hasMedia, platform, link, peopleId, createdAt: new Date().toString()
+          })
+        }
+
+        await this.postRepository.create({
+          textId, text, tags, platformUser, hasMedia, platform, link, createdAt: new Date().toString()
+        })        
       }
   
       return {
@@ -226,9 +233,9 @@ export class TagController {
         hide: false,
         createdAt: new Date().toString()
       }
-    } catch (err) {
-      return null
-    }
+    } catch (err) {}
+
+    return null
   }
 
   async searchFbPostsByKeyword (keyword: string): Promise<any> {
