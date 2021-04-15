@@ -21,6 +21,7 @@ import {
 import dotenv from 'dotenv';
 import {xml2json} from 'xml-js'
 import {People} from '../models';
+import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository, UserRepository} from '../repositories';
 import {Reddit, Twitter, Rsshub} from '../services';
 dotenv.config()
@@ -64,7 +65,11 @@ export class PeopleController {
 
     if (!findPeople) {
       const newPeople = await this.peopleRepository.create(people)
+      const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+      const api = await ApiPromise.create({provider: wsProvider})
 
+      await api.isReady
+      
       switch (newPeople.platform) {
         case "twitter": 
           await this.createTwitterPostByPeople(newPeople)
@@ -190,6 +195,7 @@ export class PeopleController {
     try {
       const {data: tweets} = await this.twitterService.getActions(`users/${people.platform_account_id}/tweets?max_results=5&tweet.fields=attachments,entities,referenced_tweets`)
       const filterTweets = tweets.filter((post: any) => !post.referenced_tweets)
+      const keyring = new Keyring({type: 'sr25519'})
 
       for (let i = 0; i < filterTweets.length; i++) {
         const tweet = filterTweets[i]
@@ -218,22 +224,29 @@ export class PeopleController {
         if (userCredentials) {
           await this.postRepository.create({
             ...newPost,
-            wallet_address: userCredentials.userId
+            walletAddress: userCredentials.userId
           })
         }
 
-        await this.postRepository.create(newPost)
+        const result = await this.postRepository.create(newPost)
+        const newKey = keyring.addFromUri('//' + result.id)
+        await this.postRepository.updateById(result.id, {
+          ...result,
+          walletAddress: newKey.address
+        })
       }
     } catch (err) {}
   }
 
   async createRedditPostByPeople(people: People):Promise<void> {
     try {
+      const keyring = new Keyring({type: 'sr25519'})
       const {data: user} = await this.redditService.getActions(`u/${people.username}.json?limit=5`)
       const redditPost = await this.postRepository.find({where: {platform: 'reddit'}})
-      const posts = user.children.filter((post:any) => {
+      
+      user.children.filter((post:any) => {
         return !redditPost.find(e => post.data.id === e.textId) && post.kind === 't3'
-      }).map(async (post: any) => {
+      }).forEach(async (post: any) => {
         const e = post.data
         const newPost = {
           platformUser: {
@@ -254,26 +267,34 @@ export class PeopleController {
         const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
 
         if (userCredential) {
-          return {
+          await this.postRepository.create({
             ...newPost,
-            wallet_address: userCredential.userId
-          }
+            walletAddress: userCredential.userId
+          })
         }
+
+        const result = await this.postRepository.create(newPost)
+        const newKey = keyring.addFromUri('//' + result.id)
+
+        await this.postRepository.updateById(result.id, {
+          ...newPost,
+          walletAddress: newKey.address
+        })
 
         return post
       })
-  
-      await this.postRepository.createAll(posts)
     } catch (err) {}
   }
 
   async createFBPostByPeople(people:People):Promise<void> {
     try {
+      const keyring = new Keyring({type: 'sr25519'})
       const {data:user} = await this.rsshubService.getContents(people.platform, people.username)
       const resultJSON = await xml2json(user, {compact: true, trim: true})
       const response = JSON.parse(resultJSON)
-      const posts = response.rss.channel.items.maps((post:any) => {
-        return {
+      
+      response.rss.channel.items.forEach(async (post:any) => {
+        const newPost = await this.postRepository.create({
           platformUser: {
             username: people.username,
           },
@@ -286,10 +307,13 @@ export class PeopleController {
           hasMedia: false,
           link: post.link._text,
           createdAt: new Date().toString()
-        }
+        })
+        const newKey = keyring.addFromUri('//' + newPost.id)
+        await this.postRepository.updateById(newPost.id, {
+          ...newPost,
+          walletAddress: newKey.address
+        })
       })
-
-      await this.postRepository.createAll(posts)
     } catch (err) {}
   }
 }

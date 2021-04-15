@@ -21,6 +21,7 @@ import {Tag} from '../models';
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
 import {inject} from '@loopback/core'
 import {Twitter, Reddit} from '../services'
+import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 
 export class TagController {
   constructor(
@@ -56,6 +57,11 @@ export class TagController {
     ):Promise<any> {
     const keyword = tag.id.replace(/ /g,'').trim().toLowerCase();
     const foundTag = await this.tagRepository.findOne({where: {id: keyword}})
+    
+    const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+    const api = await ApiPromise.create({provider: wsProvider})
+
+    await api.isReady
 
     if (foundTag) return false
 
@@ -177,7 +183,8 @@ export class TagController {
   async searchTweetsByKeyword (keyword:string): Promise<Boolean> {
     try {  
       const {data: posts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=%23${keyword}`)
-      
+      const keyring = new Keyring({type: 'sr25519'})
+
       if (!posts) return false
 
       const {users} = includes
@@ -215,18 +222,24 @@ export class TagController {
           if (userCredential) {
             await this.postRepository.create({
               ...newPost, 
-              wallet_address: userCredential.id, 
+              walletAddress: userCredential.id, 
               peopleId: foundPeople.id
             })
           }
           
-          await this.postRepository.create({
+          const result = await this.postRepository.create({
             ...newPost,
               peopleId: foundPeople.id
           })
+          const newKey = keyring.addFromUri('//' + result.id)
+
+          await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
         }
 
-        await this.postRepository.create(newPost)        
+        const result = await this.postRepository.create(newPost)
+        const newKey = keyring.addFromUri('//' + result.id)
+
+        await this.postRepository.updateById(result.id, {walletAddress: newKey.address})        
       }
   
       return true
@@ -242,12 +255,13 @@ export class TagController {
   async searchRedditPostByKeyword (keyword: string): Promise<boolean> {
     try {
       const {data} = await this.redditService.getActions(`search.json?q=${keyword}&sort=new&limit=5`)
+      const keyring = new Keyring({type: 'sr25519'})
 
       if (data.children.length === 0) return false
 
-      const posts = data.children.filter((post:any) => {
+      data.children.filter((post:any) => {
         return post.kind === 't3'
-      }).map(async (post:any) => {
+      }).forEach(async (post:any) => {
         const e = post.data
         const foundPerson = await this.peopleRepository.findOne({where: {username: e.author}})
         const newPost = {
@@ -269,23 +283,27 @@ export class TagController {
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPerson.id}})
 
           if (userCredential) {
-            return {
+            await this.postRepository.create({
               ...newPost,
               peopleId: foundPerson.id,
-              wallet_address: userCredential.userId
-            }
+              walletAddress: userCredential.userId
+            })
           }
 
-          return {
+          const result = await this.postRepository.create({
             ...newPost,
             peopleId: foundPerson.id
-          }
+          })
+          const newKey = keyring.addFromUri('//' + result.id)
+          
+          await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
         }
 
-        return newPost
-      })
+        const result = await this.postRepository.create(newPost)
+        const newKey = keyring.addFromUri('//' + result.id)
 
-      await this.postRepository.createAll(posts)
+        await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+      })
 
       return true
     } catch (e) {}

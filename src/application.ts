@@ -22,8 +22,9 @@ import {
   UserRepository,
   UserCredentialRepository
 } from './repositories';
+import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+import {mnemonicGenerate} from '@polkadot/util-crypto'
 import comments from './seed-data/comments.json';
-import experiences from './seed-data/experiences.json';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
 import tags from './seed-data/tags.json';
@@ -106,33 +107,41 @@ export class MyriadApiApplication extends BootMixin(
     await commentsRepo.deleteAll()
     await userCredRepo.deleteAll()
 
+    const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+    const api = await ApiPromise.create({provider: wsProvider})
+
+    await api.isReady
+
+    const keyring = new Keyring({ type: 'sr25519', ss58Format: 42 });
+    const keyring2 = new Keyring({ type: 'sr25519'})
     const newTags = await tagRepo.createAll(tags)
-    const newUsers = await userRepo.createAll(users)
     const newPeople = await peopleRepo.createAll(people)
-    const findUser = await userRepo.findOne({where: {id: "5DWtyG57bZGSo77wrfMakq44AkY7HSufqdfuk8kRPKZP4Suu"}})
-    const findPeople = await peopleRepo.findOne({where: {platform_account_id: "1382543232882462720"}})
     
-    if (findUser && findPeople) {
-      await userCredRepo.create({
-        access_token: "1382543232882462720-e63OlOqtvQ12sCXs35KHLSmoi3fLf6",
-        refresh_token: "swDabGqtyVKfybBUStJu3aKrgA3cSlUZ3SO3rrtaFVeee",
-        userId: findUser.id,
-        peopleId: findPeople.id
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i]
+      const seed = mnemonicGenerate()
+      const newKey = keyring.createFromUri(seed + "//hard" + user.name)
+      const newUser = await userRepo.create({
+        ...user,
+        id: newKey.address
       })
 
-      const experience3 = await userRepo.savedExperiences(findUser.id).create({
-        name: "My Experience",
+      await userRepo.savedExperiences(newUser.id).create({
+        name: newUser.name + " Experience",
         createdAt: new Date().toString(),
-        userId: findUser.id,
+        userId: newUser.id,
         tags: [{
           id: 'myriad',
           hide: false
         }],
-        people: [],
-        description: 'Welcome to myriad!'
+        people: [{
+          username: "NetworkMyriad",
+          platform_account_id: "1382543232882462720",
+          hide: false
+        }],
+        description: `Hello, ${newUser.name}! Welcome to myriad!`
       })
     }
-
 
     for (let i = 0; i < newPeople.length; i++) {
       const person = newPeople[i]
@@ -165,21 +174,16 @@ export class MyriadApiApplication extends BootMixin(
       }
     }
 
-    const experience1 = await userRepo.savedExperiences(newUsers[0].id).create({
-      ...experiences[0],
-      userId: newUsers[0].id
-    })
-    const experience2 = await userRepo.savedExperiences(newUsers[1].id).create({
-      ...experiences[1],
-      userId: newUsers[1].id
-    })
+    for (let i = 0; i < posts.length; i++) {
+      const post = await postsRepo.create(posts[i])
+      const newKey = keyring2.addFromUri('//' + post.id)
 
-    await savedExperiencesRepo.create({
-      user_id: newUsers[1].id,
-      experience_id: experience2.id
-    })
+      await postsRepo.updateById(post.id, {walletAddress: newKey.address})
+    }
 
-    const newPosts = await postsRepo.createAll(posts)
+    const newPosts = await postsRepo.find()
+    const newUsers = await userRepo.find()
+
     await commentsRepo.createAll(comments.map(function (comment, index) {
       if (index % 2 === 0) {
         return {

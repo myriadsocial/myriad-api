@@ -60,6 +60,7 @@
     "@loopback/rest-explorer": "^3.2.0",
     "@loopback/service-proxy": "^3.1.0",
     "@polkadot/api": "^4.5.1",
+    "@polkadot/util-crypto": "^6.1.1",
     "dotenv": "^8.2.0",
     "g": "^2.0.1",
     "loopback-connector-mongodb": "^5.5.0",

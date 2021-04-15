@@ -3,6 +3,7 @@ import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories'
 import {Twitter} from '../services'
+import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 
 @cronJob()
 export class FetchContentTwitterJob extends CronJob {
@@ -24,6 +25,11 @@ export class FetchContentTwitterJob extends CronJob {
   }
 
   async performJob() {
+    const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+    const api = await ApiPromise.create({provider: wsProvider})
+
+    await api.isReady
+
     await this.searchPostByPeople()
     await this.searchPostByTag()
   }
@@ -32,6 +38,8 @@ export class FetchContentTwitterJob extends CronJob {
     try {
       const people = await this.peopleRepository.find({where: {platform: 'twitter'}})
       const posts = await this.postRepository.find({where: {platform: 'twitter'}})
+
+      const keyring = new Keyring({type: 'sr25519'})
 
       for (let i = 0; i < people.length; i++) {
         const person = people[i]
@@ -86,11 +94,14 @@ export class FetchContentTwitterJob extends CronJob {
           if (userCredential) {
             await this.postRepository.create({
               ...newPost,
-              wallet_address: userCredential.userId
+              walletAddress: userCredential.userId
             })
           }
 
-          await this.postRepository.create(newPost)
+          const result = await this.postRepository.create(newPost)
+          const newKey = keyring.addFromUri('//' + result.id)
+
+          await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
         }
       }
     } catch (err) { }
@@ -98,6 +109,7 @@ export class FetchContentTwitterJob extends CronJob {
 
   async searchPostByTag(): Promise<void> {
     try {
+      const keyring = new Keyring({type: 'sr25519'})
       const tagsRepo = await this.tagRepository.find()
 
       for (let i = 0; i < tagsRepo.length; i++) {
@@ -142,17 +154,23 @@ export class FetchContentTwitterJob extends CronJob {
               await this.postRepository.create({
                 ...newPost,
                 peopleId: foundPeople.id, 
-                wallet_address: userCredential.userId
+                walletAddress: userCredential.userId
               })
             }
 
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
               peopleId: foundPeople.id
             })
+            const newKey = keyring.addFromUri('//' + result.id)
+
+            await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
           }
           
-          await this.postRepository.create(newPost)
+          const result = await this.postRepository.create(newPost)
+          const newKey = keyring.addFromUri('//' + result.id)
+
+          await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
         }
       }
     } catch (e) { }

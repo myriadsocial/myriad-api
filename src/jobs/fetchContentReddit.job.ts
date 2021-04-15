@@ -2,6 +2,7 @@ import {inject} from '@loopback/core'
 import {cronJob, CronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
 import {PostRepository, PeopleRepository, TagRepository, UserCredentialRepository} from '../repositories'
+import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 import {Reddit} from '../services'
 
 @cronJob()
@@ -31,6 +32,12 @@ export class FetchContentRedditJob extends CronJob {
   async searchPostByPeople() {
     try {
       const people = await this.peopleRepository.find({where: {platform: "reddit"}})
+      const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+      const api = await ApiPromise.create({provider: wsProvider})
+
+      await api.isReady
+
+      const keyring = new Keyring({type: 'sr25519'})
 
       for (let i = 0; i < people.length; i++) {
         const person = people[i]
@@ -60,7 +67,7 @@ export class FetchContentRedditJob extends CronJob {
             textId: post.id,
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
             link: `https://wwww.reddit.com/${post.id}`,
-            createdAt: new Date().toString()
+            createdAt: new Date().toString(),
           }
 
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
@@ -68,11 +75,14 @@ export class FetchContentRedditJob extends CronJob {
           if (userCredential) {
             await this.postRepository.create({
               ...newPost,
-              wallet_address: userCredential.userId,
+              walletAddress: userCredential.userId,
             })
           }
   
-          await this.postRepository.create(newPost)
+          const result = await this.postRepository.create(newPost)
+          const newKey = keyring.addFromUri('//' + result.id)
+
+          await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
         }
       }
     } catch (err) { }
@@ -81,6 +91,12 @@ export class FetchContentRedditJob extends CronJob {
   async searchPostByTag() {
     try {
       const tags = await this.tagRepository.find()
+      const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+      const api = await ApiPromise.create({provider: wsProvider})
+
+      await api.isReady
+
+      const keyring = new Keyring({type: 'sr25519'})
 
       for (let i = 0; i < tags.length; i++) {
         const tag = tags[i]
@@ -121,16 +137,22 @@ export class FetchContentRedditJob extends CronJob {
               await this.postRepository.create({
                 ...newPost,
                 peopleId: foundPerson.id,
-                wallet_address: userCredential.userId
+                walletAddress: userCredential.userId
               })
             }
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
-              peopleId: foundPerson.id,
+              peopleId: foundPerson.id
             })
+            const newKey = keyring.addFromUri('//' + result.id)
+
+            await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
           } 
             
-          await this.postRepository.create(newPost)
+          const result = await this.postRepository.create(newPost)
+          const newKey = keyring.addFromUri('//' + result.id)
+
+          await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
         }
       }
     } catch (err) { }

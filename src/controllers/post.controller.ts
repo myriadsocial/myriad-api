@@ -8,16 +8,11 @@ import {
 } from '@loopback/repository';
 import {
   del, get,
-  getModelSchemaRef, param,
-
-
-  patch, post,
-
-
-
-
+  getModelSchemaRef, 
+  param,
+  patch,
+  post,
   put,
-
   requestBody,
   response
 } from '@loopback/rest';
@@ -53,8 +48,7 @@ export class PostController {
     post: Omit<Post, 'id'>
   ): Promise<Post> {
     return this.postRepository.create(post);
-
-
+    
     // const result = await this.postRepository.create(post)
     // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
     // const api = await ApiPromise.create({provider: wsProvider})

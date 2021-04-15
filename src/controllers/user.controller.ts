@@ -9,15 +9,8 @@ import {
 import {
   del, get,
   getModelSchemaRef, param,
-
-
   patch, post,
-
-
-
-
   put,
-
   requestBody,
   response
 } from '@loopback/rest';
@@ -55,8 +48,6 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    const foundUser = await this.userRepository.findOne({where: {name: user.name}})
-    if (foundUser) return foundUser
     const newUser = await this.userRepository.create(user);
     const findTag = await this.tagRepository.findOne({where: {id: 'myriad'}})
 
@@ -81,58 +72,22 @@ export class UserController {
     }
 
     await this.userRepository.savedExperiences(newUser.id).create({
-      name: "My Experience",
+      name: newUser.name + " Experience",
       createdAt: new Date().toString(),
       userId: newUser.id,
       tags: [{
         id: 'myriad',
         hide: false
       }],
-      people: [],
-      description: 'Welcome to myriad!'
+      people: [{
+        username: "NetworkMyriad",
+        platform_account_id: "1382543232882462720",
+        hide: false
+      }],
+      description: `Hello, ${newUser.name}! Welcome to myriad!`
     })
 
     return newUser
-
-    // const foundUser = await this.userRepository.findOne({where: {name: user.name}})
-    // if (foundUser) return foundUser
-
-    // const newUser = await this.userRepository.create(user);
-    // const findTag = await this.tagRepository.find({where: {id: 'myriad'}})
-
-    // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-    // const api = await ApiPromise.create({provider: wsProvider})
-    // await api.isReady
-
-    // const keyring = new Keyring({type: 'sr25519'});
-    // const from = keyring.addFromUri('//Charlie');
-    // const to = newUser.id;
-    // const value = 1000000000000;
-
-    // const transfer = api.tx.balances.transfer(to, value);
-    // await transfer.signAndSend(from);
-
-    // if (!findTag.length) {
-    //   await this.tagRepository.create({
-    //     id: 'myriad',
-    //     hide: false,
-    //     createdAt: new Date().toString()
-    //   })
-    // }
-
-    // await this.userRepository.savedExperiences(newUser.id).create({
-    //   name: "My Experience",
-    //   createdAt: new Date().toString(),
-    //   userId: newUser.id,
-    //   tags: [{
-    //     id: 'myriad',
-    //     hide: false
-    //   }],
-    //   people: [],
-    //   description: 'Welcome to myriad!'
-    // })
-
-    // return newUser
   }
 
   // @get('/users/count')
