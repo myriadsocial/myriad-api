@@ -19,3 +19,5 @@ export * from './people-user-credential.controller';
 export * from './user-credential-people.controller';
 export * from './people-post.controller';
 export * from './post-people.controller';
+export * from './transaction-user.controller';
+export * from './transaction.controller';
