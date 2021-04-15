@@ -1,29 +1,30 @@
 import {inject} from '@loopback/core';
 import {
-  Count,
-  CountSchema,
   Filter,
   FilterExcludingWhere,
-  repository,
-  Where,
+  repository
 } from '@loopback/repository';
 import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
+  del, get,
+  getModelSchemaRef, param,
+
+
+  patch, post,
+
+
+
+
   put,
-  del,
+
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
-import dotenv from 'dotenv';
-import {xml2json} from 'xml-js'
-import {People} from '../models';
 import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+import dotenv from 'dotenv';
+import {xml2json} from 'xml-js';
+import {People} from '../models';
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository, UserRepository} from '../repositories';
-import {Reddit, Twitter, Rsshub} from '../services';
+import {Reddit, Rsshub, Twitter} from '../services';
 dotenv.config()
 
 export class PeopleController {
@@ -40,7 +41,7 @@ export class PeopleController {
     public userRepository: UserRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
-    @inject('services.Rsshub') protected rsshubService:Rsshub
+    @inject('services.Rsshub') protected rsshubService: Rsshub
   ) { }
 
   @post('/people')
@@ -69,21 +70,21 @@ export class PeopleController {
       const api = await ApiPromise.create({provider: wsProvider})
 
       await api.isReady
-      
-      switch (newPeople.platform) {
-        case "twitter": 
-          await this.createTwitterPostByPeople(newPeople)
-        break
 
-        case "reddit": 
+      switch (newPeople.platform) {
+        case "twitter":
+          await this.createTwitterPostByPeople(newPeople)
+          break
+
+        case "reddit":
           await this.createRedditPostByPeople(newPeople)
-        break
+          break
 
         case "facebook":
           await this.createFBPostByPeople(newPeople)
-        break
+          break
       }
-      
+
       return newPeople
     }
 
@@ -195,7 +196,7 @@ export class PeopleController {
     try {
       const {data: tweets} = await this.twitterService.getActions(`users/${people.platform_account_id}/tweets?max_results=5&tweet.fields=attachments,entities,referenced_tweets`)
       const filterTweets = tweets.filter((post: any) => !post.referenced_tweets)
-      const keyring = new Keyring({type: 'sr25519'})
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
 
       for (let i = 0; i < filterTweets.length; i++) {
         const tweet = filterTweets[i]
@@ -204,7 +205,7 @@ export class PeopleController {
         if (foundTweet) continue
 
         const userCredentials = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
-        const tags = tweet.entities ? tweet.entities.hashtags ? tweet.entities.hashtags.map( (hashtag: any) => hashtag.tag) : [] : []
+        const tags = tweet.entities ? tweet.entities.hashtags ? tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : [] : []
         const hasMedia = tweet.attachments ? Boolean(tweet.attachments.media_keys) : false
         const newPost = {
           tags,
@@ -235,16 +236,16 @@ export class PeopleController {
           walletAddress: newKey.address
         })
       }
-    } catch (err) {}
+    } catch (err) { }
   }
 
-  async createRedditPostByPeople(people: People):Promise<void> {
+  async createRedditPostByPeople(people: People): Promise<void> {
     try {
-      const keyring = new Keyring({type: 'sr25519'})
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
       const {data: user} = await this.redditService.getActions(`u/${people.username}.json?limit=5`)
       const redditPost = await this.postRepository.find({where: {platform: 'reddit'}})
-      
-      user.children.filter((post:any) => {
+
+      user.children.filter((post: any) => {
         return !redditPost.find(e => post.data.id === e.textId) && post.kind === 't3'
       }).forEach(async (post: any) => {
         const e = post.data
@@ -283,17 +284,17 @@ export class PeopleController {
 
         return post
       })
-    } catch (err) {}
+    } catch (err) { }
   }
 
-  async createFBPostByPeople(people:People):Promise<void> {
+  async createFBPostByPeople(people: People): Promise<void> {
     try {
-      const keyring = new Keyring({type: 'sr25519'})
-      const {data:user} = await this.rsshubService.getContents(people.platform, people.username)
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const {data: user} = await this.rsshubService.getContents(people.platform, people.username)
       const resultJSON = await xml2json(user, {compact: true, trim: true})
       const response = JSON.parse(resultJSON)
-      
-      response.rss.channel.items.forEach(async (post:any) => {
+
+      response.rss.channel.items.forEach(async (post: any) => {
         const newPost = await this.postRepository.create({
           platformUser: {
             username: people.username,
@@ -314,6 +315,6 @@ export class PeopleController {
           walletAddress: newKey.address
         })
       })
-    } catch (err) {}
+    } catch (err) { }
   }
 }

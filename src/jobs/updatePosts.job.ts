@@ -1,25 +1,24 @@
-import {CronJob, cronJob} from '@loopback/cron'
-import {repository} from '@loopback/repository'
-import {PostRepository, PeopleRepository, TagRepository, UserCredentialRepository} from '../repositories'
+import {CronJob, cronJob} from '@loopback/cron';
+import {repository} from '@loopback/repository';
 import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
-import {Post} from '../models'
+import {Post} from '../models';
+import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
 
 @cronJob()
-
 export class UpdatePostsJob extends CronJob {
-    constructor (
-        @repository(PostRepository) public postRepository:PostRepository,
-        @repository(PeopleRepository) public peopleRepository:PeopleRepository,
-        @repository(TagRepository) public tagRepository:TagRepository,
-        @repository(UserCredentialRepository) public userCredentialRepository:UserCredentialRepository,
+    constructor(
+        @repository(PostRepository) public postRepository: PostRepository,
+        @repository(PeopleRepository) public peopleRepository: PeopleRepository,
+        @repository(TagRepository) public tagRepository: TagRepository,
+        @repository(UserCredentialRepository) public userCredentialRepository: UserCredentialRepository,
     ) {
         super({
             name: 'update-wallet-address-job',
             onTick: async () => {
-              await this.performJob();
+                await this.performJob();
             },
             cronTime: '*/1800 * * * * *',
-            start: true 
+            start: true
         })
     }
 
@@ -28,26 +27,26 @@ export class UpdatePostsJob extends CronJob {
         await this.updatePeoplePost()
     }
 
-    async updateUserCredentialPosts () {
+    async updateUserCredentialPosts() {
         try {
             const userCredentials = await this.userCredentialRepository.find()
             const wsProvider = new WsProvider('wss://rpc.myriad.systems')
             const api = await ApiPromise.create({provider: wsProvider})
 
             await api.isReady
-            
-            const keyring = new Keyring({type: 'sr25519'})
+
+            const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
 
             userCredentials.forEach(async userCredential => {
                 const peopleId = userCredential.peopleId
-                const posts:Post[] = await this.postRepository.find({where: {peopleId}})
-                
-                posts.forEach(async (post:Post) => {
+                const posts: Post[] = await this.postRepository.find({where: {peopleId}})
+
+                posts.forEach(async (post: Post) => {
                     if (post.walletAddress !== userCredential.userId) {
                         const from = keyring.addFromUri('//' + post.id)
                         const to = userCredential.userId
-                        const value = 1000000000000
-                        const transfer = api.tx.balances.transfer(to, value)
+                        const {data: balance} = await api.query.system.account(from.address);
+                        const transfer = api.tx.balances.transfer(to, balance.free)
 
                         await transfer.signAndSend(from)
 
@@ -58,10 +57,10 @@ export class UpdatePostsJob extends CronJob {
                     }
                 })
             })
-        } catch (err) {}
+        } catch (err) { }
     }
 
-    async updatePeoplePost () {
+    async updatePeoplePost() {
         try {
             const posts = await this.postRepository.find()
             const people = await this.peopleRepository.find()
@@ -80,12 +79,12 @@ export class UpdatePostsJob extends CronJob {
                             peopleId: foundPeople.id
                         })
                     }
-                    
+
                     await this.postRepository.updateById(post.id, {
                         peopleId: foundPeople.id
                     })
                 }
             })
-        } catch (err) {}
+        } catch (err) { }
     }
 }

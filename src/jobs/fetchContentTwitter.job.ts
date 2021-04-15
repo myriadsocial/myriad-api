@@ -1,9 +1,9 @@
 import {inject} from '@loopback/core'
 import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
+import {ApiPromise, Keyring, WsProvider} from '@polkadot/api'
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories'
 import {Twitter} from '../services'
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 
 @cronJob()
 export class FetchContentTwitterJob extends CronJob {
@@ -39,7 +39,7 @@ export class FetchContentTwitterJob extends CronJob {
       const people = await this.peopleRepository.find({where: {platform: 'twitter'}})
       const posts = await this.postRepository.find({where: {platform: 'twitter'}})
 
-      const keyring = new Keyring({type: 'sr25519'})
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
 
       for (let i = 0; i < people.length; i++) {
         const person = people[i]
@@ -81,7 +81,7 @@ export class FetchContentTwitterJob extends CronJob {
             hasMedia,
             platform: "twitter",
             text: post.text,
-            textId: post.id, 
+            textId: post.id,
             link: `https://twitter.com/${person.username}/status/${post.id}`,
             peopleId: person.id,
             platformUser: {
@@ -109,7 +109,7 @@ export class FetchContentTwitterJob extends CronJob {
 
   async searchPostByTag(): Promise<void> {
     try {
-      const keyring = new Keyring({type: 'sr25519'})
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
       const tagsRepo = await this.tagRepository.find()
 
       for (let i = 0; i < tagsRepo.length; i++) {
@@ -128,7 +128,7 @@ export class FetchContentTwitterJob extends CronJob {
 
           if (foundPost) continue
 
-          const username = users.find((user:any) => user.id === post.author_id).username
+          const username = users.find((user: any) => user.id === post.author_id).username
           const tags = post.entities ? (post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : []) : []
           const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
           const newPost = {
@@ -139,7 +139,7 @@ export class FetchContentTwitterJob extends CronJob {
             textId: post.id,
             link: `https://twitter.com/${username}/status/${post.id}`,
             platformUser: {
-              username, 
+              username,
               platform_account_id: post.author_id
             },
             createdAt: new Date().toString()
@@ -153,7 +153,7 @@ export class FetchContentTwitterJob extends CronJob {
             if (userCredential) {
               await this.postRepository.create({
                 ...newPost,
-                peopleId: foundPeople.id, 
+                peopleId: foundPeople.id,
                 walletAddress: userCredential.userId
               })
             }
@@ -166,7 +166,7 @@ export class FetchContentTwitterJob extends CronJob {
 
             await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
           }
-          
+
           const result = await this.postRepository.create(newPost)
           const newKey = keyring.addFromUri('//' + result.id)
 
