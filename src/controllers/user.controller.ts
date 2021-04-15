@@ -4,34 +4,38 @@ import {
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
+  del, get,
+  getModelSchemaRef, param,
+
+
+  patch, post,
+
+
+
+
   put,
-  del,
+
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
+import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 import {User} from '../models';
-import {UserRepository} from '../repositories';
-import {ExperienceRepository, TagRepository, PeopleRepository} from '../repositories';
+import {ExperienceRepository, PeopleRepository, TagRepository, UserRepository} from '../repositories';
 
 export class UserController {
   constructor(
     @repository(UserRepository)
-    public userRepository : UserRepository,
+    public userRepository: UserRepository,
     @repository(ExperienceRepository)
     public experienceRepository: ExperienceRepository,
     @repository(TagRepository)
-    public tagRepository:TagRepository,
+    public tagRepository: TagRepository,
     @repository(PeopleRepository)
-    public peopleRepository:PeopleRepository
-  ) {}
+    public peopleRepository: PeopleRepository
+  ) { }
 
   @post('/users')
   @response(200, {
@@ -44,18 +48,30 @@ export class UserController {
         'application/json': {
           schema: getModelSchemaRef(User, {
             title: 'NewUser',
-            
+
           }),
         },
       },
     })
     user: User,
   ): Promise<User> {
-    const foundUser = await this.userRepository.findOne({ where: { name: user.name } })
+    const foundUser = await this.userRepository.findOne({where: {name: user.name}})
     if (foundUser) return foundUser
 
     const newUser = await this.userRepository.create(user);
     const findTag = await this.tagRepository.find({where: {id: 'myriad'}})
+
+    const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+    const api = await ApiPromise.create({provider: wsProvider})
+    await api.isReady
+
+    const keyring = new Keyring({type: 'sr25519'});
+    const from = keyring.addFromUri('//Charlie');
+    const to = newUser.id;
+    const value = 1000000000000;
+
+    const transfer = api.tx.balances.transfer(to, value);
+    await transfer.signAndSend(from);
 
     if (!findTag.length) {
       await this.tagRepository.create({
@@ -76,7 +92,7 @@ export class UserController {
       people: [],
       description: 'Welcome to myriad!'
     })
-    
+
     return newUser
   }
 
@@ -98,7 +114,7 @@ export class UserController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(User, { includeRelations: true }),
+          items: getModelSchemaRef(User, {includeRelations: true}),
         },
       },
     },

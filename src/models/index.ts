@@ -9,3 +9,4 @@ export * from './people.model';
 export * from './user-credential.model';
 // export * from './saved-tag.model';
 export * from './transaction.model';
+export * from './wallet.model';

@@ -1,4 +1,4 @@
-import {Entity, hasMany, model, property, belongsTo} from '@loopback/repository';
+import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
 import {People} from './people.model';
 
@@ -8,6 +8,7 @@ import {People} from './people.model';
     mongodb: {
       collection: 'posts',
     },
+    hiddenProperties: ['wallet_address']
   }
 })
 export class Post extends Entity {
@@ -79,7 +80,7 @@ export class Post extends Entity {
     type: 'string',
     required: false,
   })
-  wallet_address?: string
+  walletAddress?: string
 
   @property({
     type: 'date',
