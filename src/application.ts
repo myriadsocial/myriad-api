@@ -43,8 +43,8 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    this.add(createBindingFromClass(FetchContentTwitterJob))
-    this.add(createBindingFromClass(FetchContentRedditJob))
+    // this.add(createBindingFromClass(FetchContentTwitterJob))
+    // this.add(createBindingFromClass(FetchContentRedditJob))
     // this.add(createBindingFromClass(FetchContentJob));
 
     this.projectRoot = __dirname;
@@ -121,7 +121,7 @@ export class MyriadApiApplication extends BootMixin(
         }
 
         if (personPlatform === 'reddit') {
-          if (personUsername === postAccountUsername) {
+          if (personAccountId === postAccountId) {
             post.peopleId = person.id
           }
         }

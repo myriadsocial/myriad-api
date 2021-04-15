@@ -1,7 +1,7 @@
 import {inject} from '@loopback/core'
 import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
-import {PostRepository, PeopleRepository, TagRepository} from '../repositories'
+import {PostRepository, PeopleRepository, TagRepository, UserCredentialRepository} from '../repositories'
 import {Twitter} from '../services'
 
 @cronJob()
@@ -12,6 +12,7 @@ export class FetchContentTwitterJob extends CronJob {
     @repository(PostRepository) public postRepository:PostRepository,
     @repository(PeopleRepository) public peopleRepository:PeopleRepository,
     @repository(TagRepository) public tagRepository:TagRepository,
+    @repository(UserCredentialRepository) public userCredentialRepository:UserCredentialRepository, //
   ) {
     super({
       name: 'fetch-content-twitter-job',
@@ -26,7 +27,6 @@ export class FetchContentTwitterJob extends CronJob {
   async performJob () {
     await this.searchPostByPeople()
     await this.searchPostByTag()
-    // await this.updatePostPeople()
   }
 
   async searchPostByPeople ():Promise<void> {
@@ -45,12 +45,12 @@ export class FetchContentTwitterJob extends CronJob {
         })
   
         let maxId = ''
-        for (let j = 0; j < personPosts.length; j++) {
-          const id = personPosts[j].textId
-          if (id > maxId) {
-            maxId = id
-          }
-        }
+
+        personPosts.forEach(post => {
+          const id = post.textId
+
+          if (id > maxId) maxId = id
+        })
   
         if (!maxId) continue
   
@@ -59,37 +59,38 @@ export class FetchContentTwitterJob extends CronJob {
         if (!newPosts) continue
 
         const filterNewPost = newPosts.filter((post: any) => !post.referenced_tweets)
-
-        if (filterNewPost.length === 0) continue
   
-        for (let k = 0; k < filterNewPost.length; k++) {
-          const post = filterNewPost[k]
+        for (let j = 0; j < filterNewPost.length; j++) {
+          const post = filterNewPost[j]
           const foundPost = await this.postRepository.findOne({ where: { textId: post.id, platform: 'twitter' } })
 
           if (foundPost) continue
 
+          const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
           const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : [] : []
-
-          const platformUser = {
-            username: person.username,
-            platform_account_id: person.platform_account_id
-          }
-
           const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
           const platform = 'twitter'
           const text = post.text
           const textId = post.id
           const link = `https://twitter.com/${person.username}/status/${textId}`
           const peopleId = person.id
+          const platformUser = {
+            username: person.username,
+            platform_account_id: person.platform_account_id
+          }
+
+          if (userCredential) {
+            await this.postRepository.create({
+              textId, text, tags, platformUser, hasMedia, wallet_address: userCredential.userId, platform, link, peopleId, createdAt: new Date().toString()
+            })
+          }
 
           await this.postRepository.create({
             textId, text, tags, platformUser, hasMedia, platform, link, peopleId, createdAt: new Date().toString()
           })
         }
       }
-    } catch (err) {
-      // console.log(err)
-    }
+    } catch (err) {}
   }
 
   async searchPostByTag ():Promise<void> {
@@ -106,74 +107,41 @@ export class FetchContentTwitterJob extends CronJob {
   
         const filterNewPost = newPosts.filter((post:any) => !post.referenced_tweets)
   
-        if (filterNewPost.length === 0) continue
-  
-        for (let k = 0; k < filterNewPost.length; k++) {
-          const post = filterNewPost[k]
+        for (let j = 0; j < filterNewPost.length; j++) {
+          const post = filterNewPost[j]
           const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: 'twitter'}})
           const username = users.find((user:any) => user.id === post.author_id).username
-  
-          if (!foundPost) {
-            const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : [] : []
-            const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
-            const platform = 'twitter'
-            const text = post.text 
-            const textId = post.id
-            const link = `https://twitter.com/${username}/status/${textId}`
-            const platformUser = {
-              username, 
-              platform_account_id: post.author_id
-            }
-  
-            const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: platformUser.platform_account_id}})
-  
-            if (foundPeople) { 
-              const peopleId = foundPeople.id
+          
+          if (foundPost) continue
+
+          const tags = post.entities ? (post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : []) : []
+          const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
+          const platform = 'twitter'
+          const text = post.text 
+          const textId = post.id
+          const link = `https://twitter.com/${username}/status/${textId}`
+          const platformUser = {
+            username, 
+            platform_account_id: post.author_id
+          }
+
+          const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: post.author_id}})
+
+          if (foundPeople) { 
+            const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPeople.id}})
+
+            if (userCredential) {
               await this.postRepository.create({
-                textId, text, tags, platformUser, hasMedia, platform, link, peopleId, createdAt: new Date().toString()
-              })
-            } else {
-              await this.postRepository.create({
-                textId, text, tags, platformUser, hasMedia, platform, link, createdAt: new Date().toString()
+                textId, text, tags, platformUser, hasMedia, platform, link, peopleId: foundPeople.id, wallet_address: userCredential.userId, createdAt: new Date().toString()
               })
             }
           }
+          
+          await this.postRepository.create({
+            textId, text, tags, platformUser, hasMedia, platform, link, createdAt: new Date().toString()
+          })
         }
       }  
     } catch (e) {}
-  }
-
-  async updatePostPeople ():Promise<void> {
-    try {
-      const posts = await this.postRepository.find()
-      const filterPost = posts.filter(post => !post.platformUser)
-      const postTextIds = filterPost.map(post => post.textId).slice(0,10).join(',')
-      const {data: tweets, includes} = await this.twitterService.getActions(`tweets?ids=${postTextIds}&expansions=author_id&user.fields=id,username`)
-      const {users} = includes
-  
-      for (let i = 0; i < users.length; i++) {
-        const foundPerson = await this.peopleRepository.findOne({where: {platform_account_id: users[i].id}})
-        
-        if (foundPerson) {
-          const platformUser = {
-            username: foundPerson.username,
-            platform_account_id: foundPerson.platform_account_id
-          }
-  
-          const filterTweets = tweets.filter((tweet:any) => tweet.author_id === users[i].id )
-  
-          for (let i = 0; i < filterTweets.length; i++) {
-            const foundPost = await this.postRepository.findOne({where: {textId: filterTweets[i].id}})
-  
-            if (foundPost) { 
-              await this.postRepository.updateById(foundPost.id, {platformUser})
-            }
-            
-          }
-        }
-      }
-    } catch(e) {
-      // console.log('Error')
-    }
   }
 }

@@ -10,9 +10,7 @@ export class FetchContentRedditJob extends CronJob {
   constructor(
     @inject('services.Reddit') protected redditService:Reddit,
     @repository(PostRepository) public postRepository:PostRepository,
-
     @repository(PeopleRepository) public peopleRepository:PeopleRepository,
-
     @repository(TagRepository) public tagRepository:TagRepository
 
   ) {
@@ -30,16 +28,14 @@ export class FetchContentRedditJob extends CronJob {
     await this.searchPostByTag()  
     await this.searchPostByPeople()
   }
+
   async searchPostByPeople() {
     try {
-      const people = await this.peopleRepository.find()
-      const filterPeople = people.filter((person:any) => {
-        return person.username.startsWith('u/')
-      })
+      const people = await this.peopleRepository.find({where: {platform: "reddit"}})
   
-      for (let i = 0; i < filterPeople.length; i++) {
-        const person = filterPeople[i]
-        const {data: user} = await this.redditService.getActions(person.username)
+      for (let i = 0; i < people.length; i++) {
+        const person = people[i]
+        const {data: user} = await this.redditService.getActions(`u/${person.username}.json`)
   
         const posts = user.children.filter((post:any) => {
           return post.kind === 't3'
@@ -54,7 +50,8 @@ export class FetchContentRedditJob extends CronJob {
   
           await this.postRepository.create({
             platformUser: {
-              username: `u/${post.author}`
+              username: post.author,
+              platform_account_id: post.author_fullname
             },
             tags: [],
             platform: 'reddit',
@@ -63,13 +60,14 @@ export class FetchContentRedditJob extends CronJob {
             text: post.selftext,
             textId: post.id,
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
-            link: `https://wwww.reddit.com${post.permalink}`,
+            link: `https://wwww.reddit.com${post.id}`,
             createdAt: new Date().toString()
           })
         }
       }
     } catch (err) {}
   }
+
   async searchPostByTag() {
     try {
       const tags = await this.tagRepository.find()

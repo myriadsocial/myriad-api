@@ -76,6 +76,12 @@ export class Post extends Entity {
   link?: string
 
   @property({
+    type: 'string',
+    required: false,
+  })
+  wallet_address?: string
+
+  @property({
     type: 'date',
     required: true,
   })

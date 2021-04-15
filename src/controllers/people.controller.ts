@@ -19,11 +19,12 @@ import {
   response,
 } from '@loopback/rest';
 import dotenv from 'dotenv';
+import {xml2json} from 'xml-js'
 import fs from 'fs';
 import snoowrap from 'snoowrap';
 import {People} from '../models';
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository, UserRepository} from '../repositories';
-import {Reddit, Twitter} from '../services';
+import {Reddit, Twitter, Rsshub} from '../services';
 dotenv.config()
 
 export class PeopleController {
@@ -39,7 +40,8 @@ export class PeopleController {
     @repository(UserRepository)
     public userRepository: UserRepository,//
     @inject('services.Twitter') protected twitterService: Twitter,
-    @inject('services.Reddit') protected redditService: Reddit
+    @inject('services.Reddit') protected redditService: Reddit,
+    @inject('services.Rsshub') protected rsshubService:Rsshub
   ) { }
 
   @post('/people')
@@ -80,7 +82,6 @@ export class PeopleController {
         'application/json': {
           schema: getModelSchemaRef(People, {
             title: 'NewPeople',
-
           }),
         },
       },
@@ -96,7 +97,7 @@ export class PeopleController {
           const findPeople = await this.peopleRepository.findOne({where: {platform_account_id: user.id, platform: people.platform}})
   
           if (findPeople) return findPeople
-          // If not create new people
+          
           newPeople = await this.peopleRepository.create({
             ...people,
             platform: 'twitter',
@@ -122,10 +123,12 @@ export class PeopleController {
             platform: 'reddit'
           })
 
-          const posts = user.children.filter((post: any) => {
-            return post.kind === 't3'
+          const redditPost = await this.postRepository.find({where: {platform: 'reddit'}})
+          const posts = user.children.filter((post:any) => {
+            return !redditPost.find(e => post.data.id === e.textId) && post.kind === 't3'
           }).map((post: any) => {
             const e = post.data
+
             return {
               platformUser: {
                 username: `u/${people.username}`,
@@ -144,6 +147,46 @@ export class PeopleController {
   
           await this.postRepository.createAll(posts)
         } catch (err) {
+          return null
+        }
+      break
+
+      case 'facebook':
+        try {
+          const foundPeople = await this.peopleRepository.findOne({where: {username: people.username}})
+
+          if (foundPeople) return foundPeople
+
+          const {data:user} = await this.rsshubService.getContents(people.platform, people.username)
+          // console.log(user)
+          newPeople = await this.peopleRepository.create({
+            username: people.username,
+            platform: 'facebook',
+          })
+
+          const resultJSON = await xml2json(user, {compact: true, trim: true})
+          const response = JSON.parse(resultJSON)
+          
+          const posts = response.rss.channel.items.maps((post:any) => {
+            return {
+              platformUser: {
+                username: people.username,
+              },
+              tags: [],
+              platform: 'facebook',
+              title: "",
+              text: "",
+              textId: "",
+              peopleId: newPeople.id,
+              hasMedia: false,
+              link: post.link._text,
+              createdAt: new Date().toString()
+            }
+          })
+          // fs.writeFileSync('posts.json', JSON.stringify(posts, null, 4))
+          await this.postRepository.createAll(posts)
+        } catch (err) {
+          console.error(err)
           return null
         }
       break
@@ -245,7 +288,7 @@ export class PeopleController {
           }
   
           const {data} = await this.redditService.getActions(user + '.json?limit=5&sort=new')
-          const posts = await data.children.filter((post: any) => {
+          const posts =  data.children.filter((post: any) => {
             return post.kind === 't3'
           }).map((post: any) => {
             const e = post.data;
@@ -265,7 +308,6 @@ export class PeopleController {
           })
   
           await this.postRepository.createAll(posts)
-  
         }
       break
     }
@@ -372,37 +414,44 @@ export class PeopleController {
     await this.peopleRepository.deleteById(id);
   }
 
-  async createTwitterPostByPeople(user: People): Promise<void> {
-    const {data: items} = await this.twitterService.getActions(`users/${user.platform_account_id}/tweets?max_results=5&tweet.fields=attachments,entities,referenced_tweets`)
-    const filterPost = items.filter((post: any) => !post.referenced_tweets)
+  async createTwitterPostByPeople(people: People): Promise<void> {
+    try {
+      const {data: tweets} = await this.twitterService.getActions(`users/${people.platform_account_id}/tweets?max_results=5&tweet.fields=attachments,entities,referenced_tweets`)
+      const filterTweets = tweets.filter((post: any) => !post.referenced_tweets)
 
-    if (filterPost.length > 0) {
-      for (let i = 0; i < filterPost.length; i++) {
-        const post = filterPost[i]
-        const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: post.platform}})
+      for (let i = 0; i < filterTweets.length; i++) {
+        const tweet = filterTweets[i]
+        const foundTweet = await this.postRepository.findOne({where: {textId: tweet.id, platform: "twitter"}})
 
-        if (!foundPost) {
-          const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map(function (hashtag: any) {
-            return hashtag.tag
-          }) : [] : []
+        if (foundTweet) {continue}
 
-          const platformUser = {
-            username: user.username,
-            platform_account_id: user.platform_account_id
-          }
+        const userCredentials = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
+        const tags = tweet.entities ? tweet.entities.hashtags ? tweet.entities.hashtags.map(function (hashtag: any) {
+          return hashtag.tag
+        }) : [] : []
 
-          const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
-          const platform = user.platform
-          const text = post.text
-          const textId = post.id
-          const link = `https://twitter.com/${platformUser.username}/status/${textId}`
-          const peopleId = user.id
+        const platformUser = {
+          username: people.username,
+          platform_account_id: people.platform_account_id
+        }
 
+        const hasMedia = tweet.attachments ? Boolean(tweet.attachments.media_keys) : false
+        const platform = people.platform
+        const text = tweet.text
+        const textId = tweet.id
+        const link = `https://twitter.com/${platformUser.username}/status/${textId}`
+        const peopleId = people.id
+
+        if (userCredentials) {
           await this.postRepository.create({
-            textId, text, tags, platformUser, hasMedia, platform, link, peopleId, createdAt: new Date().toString()
+            textId, text, tags, platformUser, hasMedia, platform, link, peopleId, wallet_address: userCredentials.userId, createdAt: new Date().toString()
           })
         }
+
+        await this.postRepository.create({
+          textId, text, tags, platformUser, hasMedia, platform, link, peopleId, createdAt: new Date().toString()
+        })
       }
-    }
+    } catch (err) {}
   }
 }

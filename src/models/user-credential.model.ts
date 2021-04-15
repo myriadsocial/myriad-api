@@ -32,6 +32,13 @@ export class UserCredential extends Entity {
   })
   refresh_token: string
 
+  @property({
+    type: 'boolean',
+    required: false,
+    default: false
+  })
+  verify?: boolean
+
   @belongsTo(() => People)
   peopleId: string;
 

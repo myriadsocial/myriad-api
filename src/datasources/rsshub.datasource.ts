@@ -15,10 +15,10 @@ const config = {
     {
       template: {
         method: 'GET',
-        url: 'https://rsshub.app/{platform}/keyword/{topic}'
+        url: 'https://rsshub.app/{platform}/page/{username}'
       },
       functions: {
-        getContents: ['platform', 'topic']
+        getContents: ['platform', 'username']
       }
     }
   ]
