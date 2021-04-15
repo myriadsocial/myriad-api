@@ -10,9 +10,18 @@ import {
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
 import {FetchContentRedditJob} from './jobs/fetchContentReddit.job';
-// import {FetchContentJob} from './jobs/fetchcontent.job';
 import {FetchContentTwitterJob} from './jobs/fetchContentTwitter.job';
-import {CommentRepository, ExperienceRepository, PeopleRepository, PostRepository, SavedExperienceRepository, TagRepository, UserRepository} from './repositories';
+import {UpdatePostsJob} from './jobs/updatePosts.job';
+import {
+  CommentRepository, 
+  ExperienceRepository, 
+  PeopleRepository, 
+  PostRepository, 
+  SavedExperienceRepository, 
+  TagRepository, 
+  UserRepository,
+  UserCredentialRepository
+} from './repositories';
 import comments from './seed-data/comments.json';
 import experiences from './seed-data/experiences.json';
 import people from './seed-data/people.json';
@@ -20,6 +29,23 @@ import posts from './seed-data/posts.json';
 import tags from './seed-data/tags.json';
 import users from './seed-data/users.json';
 import {MySequence} from './sequence';
+
+interface PlatformUser {
+  username: string,
+  platform_account_id?: string
+}
+
+interface Post {
+  tags?: string[],
+  platformUser: PlatformUser,
+  platform?: string,
+  text?: string,
+  textId?: string,
+  hasMedia?: boolean,
+  link?: string,
+  createdAt?: string,
+  peopleId?: string
+}
 
 export {ApplicationConfig};
 
@@ -43,9 +69,9 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentTwitterJob))
-    // this.add(createBindingFromClass(FetchContentRedditJob))
-    // this.add(createBindingFromClass(FetchContentJob));
+    this.add(createBindingFromClass(FetchContentTwitterJob))
+    this.add(createBindingFromClass(FetchContentRedditJob))
+    this.add(createBindingFromClass(UpdatePostsJob))
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -69,6 +95,7 @@ export class MyriadApiApplication extends BootMixin(
     const postsRepo = await this.getRepository(PostRepository)
     const peopleRepo = await this.getRepository(PeopleRepository)
     const commentsRepo = await this.getRepository(CommentRepository)
+    const userCredRepo = await this.getRepository(UserCredentialRepository)
 
     await userRepo.deleteAll()
     await tagRepo.deleteAll()
@@ -77,31 +104,35 @@ export class MyriadApiApplication extends BootMixin(
     await postsRepo.deleteAll()
     await peopleRepo.deleteAll()
     await commentsRepo.deleteAll()
+    await userCredRepo.deleteAll()
 
     const newTags = await tagRepo.createAll(tags)
     const newUsers = await userRepo.createAll(users)
     const newPeople = await peopleRepo.createAll(people)
-    const redditPosts = posts.filter(post => post.platformUser.username.startsWith('u/'))
-    const twitterPosts = posts.filter(post => !post.platformUser.username.startsWith('u/'))
+    const findUser = await userRepo.findOne({where: {id: "5DWtyG57bZGSo77wrfMakq44AkY7HSufqdfuk8kRPKZP4Suu"}})
+    const findPeople = await peopleRepo.findOne({where: {platform_account_id: "1382543232882462720"}})
+    
+    if (findUser && findPeople) {
+      await userCredRepo.create({
+        access_token: "1382543232882462720-e63OlOqtvQ12sCXs35KHLSmoi3fLf6",
+        refresh_token: "swDabGqtyVKfybBUStJu3aKrgA3cSlUZ3SO3rrtaFVeee",
+        userId: findUser.id,
+        peopleId: findPeople.id
+      })
 
-    // console.log(redditPosts)
-
-    interface PlatformUser {
-      username: string,
-      platform_account_id?: string
+      const experience3 = await userRepo.savedExperiences(findUser.id).create({
+        name: "My Experience",
+        createdAt: new Date().toString(),
+        userId: findUser.id,
+        tags: [{
+          id: 'myriad',
+          hide: false
+        }],
+        people: [],
+        description: 'Welcome to myriad!'
+      })
     }
 
-    interface Post {
-      tags?: string[],
-      platformUser: PlatformUser,
-      platform?: string,
-      text?: string,
-      textId?: string,
-      hasMedia?: boolean,
-      link?: string,
-      createdAt?: string,
-      peopleId?: string
-    }
 
     for (let i = 0; i < newPeople.length; i++) {
       const person = newPeople[i]

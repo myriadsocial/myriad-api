@@ -69,25 +69,29 @@ export class FetchContentTwitterJob extends CronJob {
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
           const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : [] : []
           const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
-          const platform = 'twitter'
-          const text = post.text
-          const textId = post.id
-          const link = `https://twitter.com/${person.username}/status/${textId}`
-          const peopleId = person.id
-          const platformUser = {
-            username: person.username,
-            platform_account_id: person.platform_account_id
+          const newPost = {
+            tags,
+            hasMedia,
+            platform: "twitter",
+            text: post.text,
+            textId: post.id, 
+            link: `https://twitter.com/${person.username}/status/${post.id}`,
+            peopleId: person.id,
+            platformUser: {
+              username: person.username,
+              platform_account_id: person.platform_account_id
+            },
+            createdAt: new Date().toString()
           }
 
           if (userCredential) {
             await this.postRepository.create({
-              textId, text, tags, platformUser, hasMedia, wallet_address: userCredential.userId, platform, link, peopleId, createdAt: new Date().toString()
+              ...newPost,
+              wallet_address: userCredential.userId
             })
           }
 
-          await this.postRepository.create({
-            textId, text, tags, platformUser, hasMedia, platform, link, peopleId, createdAt: new Date().toString()
-          })
+          await this.postRepository.create(newPost)
         }
       }
     } catch (err) {}
@@ -110,19 +114,24 @@ export class FetchContentTwitterJob extends CronJob {
         for (let j = 0; j < filterNewPost.length; j++) {
           const post = filterNewPost[j]
           const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: 'twitter'}})
-          const username = users.find((user:any) => user.id === post.author_id).username
           
           if (foundPost) continue
 
+          const username = users.find((user:any) => user.id === post.author_id).username
           const tags = post.entities ? (post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : []) : []
           const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
-          const platform = 'twitter'
-          const text = post.text 
-          const textId = post.id
-          const link = `https://twitter.com/${username}/status/${textId}`
-          const platformUser = {
-            username, 
-            platform_account_id: post.author_id
+          const newPost = {
+            tags,
+            hasMedia,
+            platform: 'twitter',
+            text: post.text,
+            textId: post.id,
+            link: `https://twitter.com/${username}/status/${post.id}`,
+            platformUser: {
+              username, 
+              platform_account_id: post.author_id
+            },
+            createdAt: new Date().toString()
           }
 
           const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: post.author_id}})
@@ -132,14 +141,19 @@ export class FetchContentTwitterJob extends CronJob {
 
             if (userCredential) {
               await this.postRepository.create({
-                textId, text, tags, platformUser, hasMedia, platform, link, peopleId: foundPeople.id, wallet_address: userCredential.userId, createdAt: new Date().toString()
+                ...newPost,
+                peopleId: foundPeople.id, 
+                wallet_address: userCredential.userId
               })
             }
+
+            await this.postRepository.create({
+              ...newPost,
+              peopleId: foundPeople.id
+            })
           }
           
-          await this.postRepository.create({
-            textId, text, tags, platformUser, hasMedia, platform, link, createdAt: new Date().toString()
-          })
+          await this.postRepository.create(newPost)
         }
       }  
     } catch (e) {}

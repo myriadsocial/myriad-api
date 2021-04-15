@@ -47,16 +47,16 @@ export class CommentController {
     return this.commentRepository.create(comment);
   }
 
-  @get('/comments/count')
-  @response(200, {
-    description: 'Comment model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(Comment) where?: Where<Comment>,
-  ): Promise<Count> {
-    return this.commentRepository.count(where);
-  }
+  // @get('/comments/count')
+  // @response(200, {
+  //   description: 'Comment model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(Comment) where?: Where<Comment>,
+  // ): Promise<Count> {
+  //   return this.commentRepository.count(where);
+  // }
 
   @get('/comments')
   @response(200, {
@@ -76,24 +76,24 @@ export class CommentController {
     return this.commentRepository.find(filter);
   }
 
-  @patch('/comments')
-  @response(200, {
-    description: 'Comment PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Comment, {partial: true}),
-        },
-      },
-    })
-    comment: Comment,
-    @param.where(Comment) where?: Where<Comment>,
-  ): Promise<Count> {
-    return this.commentRepository.updateAll(comment, where);
-  }
+  // @patch('/comments')
+  // @response(200, {
+  //   description: 'Comment PATCH success count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async updateAll(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(Comment, {partial: true}),
+  //       },
+  //     },
+  //   })
+  //   comment: Comment,
+  //   @param.where(Comment) where?: Where<Comment>,
+  // ): Promise<Count> {
+  //   return this.commentRepository.updateAll(comment, where);
+  // }
 
   @get('/comments/{id}')
   @response(200, {
@@ -129,16 +129,16 @@ export class CommentController {
     await this.commentRepository.updateById(id, comment);
   }
 
-  @put('/comments/{id}')
-  @response(204, {
-    description: 'Comment PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() comment: Comment,
-  ): Promise<void> {
-    await this.commentRepository.replaceById(id, comment);
-  }
+  // @put('/comments/{id}')
+  // @response(204, {
+  //   description: 'Comment PUT success',
+  // })
+  // async replaceById(
+  //   @param.path.string('id') id: string,
+  //   @requestBody() comment: Comment,
+  // ): Promise<void> {
+  //   await this.commentRepository.replaceById(id, comment);
+  // }
 
   @del('/comments/{id}')
   @response(204, {

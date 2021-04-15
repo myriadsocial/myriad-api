@@ -51,13 +51,10 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    const foundUser = await this.userRepository.findOne({ where: { name: user.name } })
-    if (foundUser) return foundUser
-
     const newUser = await this.userRepository.create(user);
-    const findTag = await this.tagRepository.find({where: {id: 'myriad'}})
+    const findTag = await this.tagRepository.findOne({where: {id: 'myriad'}})
 
-    if (!findTag.length) {
+    if (!findTag) {
       await this.tagRepository.create({
         id: 'myriad',
         hide: false,
@@ -78,18 +75,58 @@ export class UserController {
     })
     
     return newUser
+
+    // const foundUser = await this.userRepository.findOne({where: {name: user.name}})
+    // if (foundUser) return foundUser
+
+    // const newUser = await this.userRepository.create(user);
+    // const findTag = await this.tagRepository.find({where: {id: 'myriad'}})
+
+    // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+    // const api = await ApiPromise.create({provider: wsProvider})
+    // await api.isReady
+
+    // const keyring = new Keyring({type: 'sr25519'});
+    // const from = keyring.addFromUri('//Charlie');
+    // const to = newUser.id;
+    // const value = 1000000000000;
+
+    // const transfer = api.tx.balances.transfer(to, value);
+    // await transfer.signAndSend(from);
+
+    // if (!findTag.length) {
+    //   await this.tagRepository.create({
+    //     id: 'myriad',
+    //     hide: false,
+    //     createdAt: new Date().toString()
+    //   })
+    // }
+
+    // await this.userRepository.savedExperiences(newUser.id).create({
+    //   name: "My Experience",
+    //   createdAt: new Date().toString(),
+    //   userId: newUser.id,
+    //   tags: [{
+    //     id: 'myriad',
+    //     hide: false
+    //   }],
+    //   people: [],
+    //   description: 'Welcome to myriad!'
+    // })
+
+    // return newUser
   }
 
-  @get('/users/count')
-  @response(200, {
-    description: 'User model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(User) where?: Where<User>,
-  ): Promise<Count> {
-    return this.userRepository.count(where);
-  }
+  // @get('/users/count')
+  // @response(200, {
+  //   description: 'User model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(User) where?: Where<User>,
+  // ): Promise<Count> {
+  //   return this.userRepository.count(where);
+  // }
 
   @get('/users')
   @response(200, {
@@ -109,24 +146,24 @@ export class UserController {
     return this.userRepository.find(filter);
   }
 
-  @patch('/users')
-  @response(200, {
-    description: 'User PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(User, {partial: true}),
-        },
-      },
-    })
-    user: User,
-    @param.where(User) where?: Where<User>,
-  ): Promise<Count> {
-    return this.userRepository.updateAll(user, where);
-  }
+  // @patch('/users')
+  // @response(200, {
+  //   description: 'User PATCH success count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async updateAll(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(User, {partial: true}),
+  //       },
+  //     },
+  //   })
+  //   user: User,
+  //   @param.where(User) where?: Where<User>,
+  // ): Promise<Count> {
+  //   return this.userRepository.updateAll(user, where);
+  // }
 
   @get('/users/{id}')
   @response(200, {
@@ -162,16 +199,16 @@ export class UserController {
     await this.userRepository.updateById(id, user);
   }
 
-  @put('/users/{id}')
-  @response(204, {
-    description: 'User PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() user: User,
-  ): Promise<void> {
-    await this.userRepository.replaceById(id, user);
-  }
+  // @put('/users/{id}')
+  // @response(204, {
+  //   description: 'User PUT success',
+  // })
+  // async replaceById(
+  //   @param.path.string('id') id: string,
+  //   @requestBody() user: User,
+  // ): Promise<void> {
+  //   await this.userRepository.replaceById(id, user);
+  // }
 
   @del('/users/{id}')
   @response(204, {

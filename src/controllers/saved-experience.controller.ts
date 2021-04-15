@@ -47,16 +47,16 @@ export class SavedExperienceController {
     return this.savedExperienceRepository.create(savedExperience);
   }
 
-  @get('/saved-experiences/count')
-  @response(200, {
-    description: 'SavedExperience model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(SavedExperience) where?: Where<SavedExperience>,
-  ): Promise<Count> {
-    return this.savedExperienceRepository.count(where);
-  }
+  // @get('/saved-experiences/count')
+  // @response(200, {
+  //   description: 'SavedExperience model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(SavedExperience) where?: Where<SavedExperience>,
+  // ): Promise<Count> {
+  //   return this.savedExperienceRepository.count(where);
+  // }
 
   @get('/saved-experiences')
   @response(200, {
@@ -76,24 +76,24 @@ export class SavedExperienceController {
     return this.savedExperienceRepository.find(filter);
   }
 
-  @patch('/saved-experiences')
-  @response(200, {
-    description: 'SavedExperience PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(SavedExperience, {partial: true}),
-        },
-      },
-    })
-    savedExperience: SavedExperience,
-    @param.where(SavedExperience) where?: Where<SavedExperience>,
-  ): Promise<Count> {
-    return this.savedExperienceRepository.updateAll(savedExperience, where);
-  }
+  // @patch('/saved-experiences')
+  // @response(200, {
+  //   description: 'SavedExperience PATCH success count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async updateAll(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(SavedExperience, {partial: true}),
+  //       },
+  //     },
+  //   })
+  //   savedExperience: SavedExperience,
+  //   @param.where(SavedExperience) where?: Where<SavedExperience>,
+  // ): Promise<Count> {
+  //   return this.savedExperienceRepository.updateAll(savedExperience, where);
+  // }
 
   @get('/saved-experiences/{id}')
   @response(200, {
@@ -129,16 +129,16 @@ export class SavedExperienceController {
     await this.savedExperienceRepository.updateById(id, savedExperience);
   }
 
-  @put('/saved-experiences/{id}')
-  @response(204, {
-    description: 'SavedExperience PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() savedExperience: SavedExperience,
-  ): Promise<void> {
-    await this.savedExperienceRepository.replaceById(id, savedExperience);
-  }
+  // @put('/saved-experiences/{id}')
+  // @response(204, {
+  //   description: 'SavedExperience PUT success',
+  // })
+  // async replaceById(
+  //   @param.path.string('id') id: string,
+  //   @requestBody() savedExperience: SavedExperience,
+  // ): Promise<void> {
+  //   await this.savedExperienceRepository.replaceById(id, savedExperience);
+  // }
 
   @del('/saved-experiences/{id}')
   @response(204, {

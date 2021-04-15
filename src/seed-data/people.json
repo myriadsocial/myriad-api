@@ -50,5 +50,11 @@
     "username": "PrabowoSubianto",
     "platform": "facebook",
     "hide": false
+  },
+  {
+    "username": "NetworkMyriad",
+    "platform": "twitter",
+    "platform_account_id": "1382543232882462720",
+    "hide": false
   }
 ]

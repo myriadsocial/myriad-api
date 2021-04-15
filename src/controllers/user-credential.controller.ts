@@ -18,14 +18,9 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {UserCredential} from '../models';
+import {UserCredential, VerifyUser} from '../models';
 import {UserCredentialRepository, PeopleRepository, PostRepository} from '../repositories';
 import {Reddit, Twitter, Rsshub} from '../services'
-
-interface VerifyUser {
-  userId: string,
-  peopleId: string
-}
 
 export class UserCredentialController {
   constructor(
@@ -71,13 +66,23 @@ export class UserCredentialController {
     return newUserCredential
   }
 
-  @post('/verify')
+  @post('/user-credentials/verify')
   @response(200, {
-    desciption: `Verify User`
+    desciption: `Verify User`,
+    content: {'application/json': {schema: getModelSchemaRef(VerifyUser)}},
   })
   async verify(
-    @requestBody() verifyUser: VerifyUser
-  ):Promise<any> {
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(VerifyUser, {
+            title: 'NewVerifyUser',
+            
+          }),
+        },
+      },
+    }) verifyUser: VerifyUser
+  ):Promise<Boolean> {
     const { userId, peopleId } = verifyUser
 
     try {
@@ -91,10 +96,14 @@ export class UserCredentialController {
         case "twitter":
           const {data:tweets} = await this.twitterService.getActions(`users/${platform_account_id}}/tweets?max_results=5`)
           const twitterPublicKey = tweets[0].text.replace(/\n/g, ' ').split(' ')[7]
-          const foundUserCredentialTwitter = await this.userCredentialRepository.findOne({where: {userId: twitterPublicKey, peopleId: id}})
+          const foundUserCredentialTwitter = await this.userCredentialRepository.findOne({where: {userId, peopleId: id}})
 
-          if (foundUserCredentialTwitter && userId === twitterPublicKey) {
-            return this.userCredentialRepository.updateById(foundUserCredentialTwitter.id, {verify: true})
+          if (foundUserCredentialTwitter) {
+            if (userId === twitterPublicKey) return true
+            else {
+              await this.userCredentialRepository.deleteById(foundUserCredentialTwitter.id)
+              await this.peopleRepository.deleteById(id)
+            }
           }
         break
 
@@ -104,27 +113,38 @@ export class UserCredentialController {
           const foundUserCredentialReddit = await this.userCredentialRepository.findOne({where: {userId: redditPublicKey, peopleId: id}})
         
           if (foundUserCredentialReddit && userId === redditPublicKey) {
-            return this.userCredentialRepository.updateById(foundUserCredentialReddit.id, {verify: true})
+            if (userId === redditPublicKey) return true
+            else {
+              await this.userCredentialRepository.deleteById(foundUserCredentialReddit.id)
+              await this.peopleRepository.deleteById(id)
+            }
           }
         break
+
+        case "facebook":
+
+        break
+
+        default:
+          return false
       }
     } catch (err) {
-      return null
+      return false
     }
 
-    return null
+    return false
   }
 
-  @get('/user-credentials/count')
-  @response(200, {
-    description: 'UserCredential model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(UserCredential) where?: Where<UserCredential>,
-  ): Promise<Count> {
-    return this.userCredentialRepository.count(where);
-  }
+  // @get('/user-credentials/count')
+  // @response(200, {
+  //   description: 'UserCredential model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(UserCredential) where?: Where<UserCredential>,
+  // ): Promise<Count> {
+  //   return this.userCredentialRepository.count(where);
+  // }
 
   @get('/user-credentials')
   @response(200, {
@@ -144,24 +164,24 @@ export class UserCredentialController {
     return this.userCredentialRepository.find(filter);
   }
 
-  @patch('/user-credentials')
-  @response(200, {
-    description: 'UserCredential PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(UserCredential, {partial: true}),
-        },
-      },
-    })
-    userCredential: UserCredential,
-    @param.where(UserCredential) where?: Where<UserCredential>,
-  ): Promise<Count> {
-    return this.userCredentialRepository.updateAll(userCredential, where);
-  }
+  // @patch('/user-credentials')
+  // @response(200, {
+  //   description: 'UserCredential PATCH success count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async updateAll(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(UserCredential, {partial: true}),
+  //       },
+  //     },
+  //   })
+  //   userCredential: UserCredential,
+  //   @param.where(UserCredential) where?: Where<UserCredential>,
+  // ): Promise<Count> {
+  //   return this.userCredentialRepository.updateAll(userCredential, where);
+  // }
 
   @get('/user-credentials/{id}')
   @response(200, {
@@ -197,16 +217,16 @@ export class UserCredentialController {
     await this.userCredentialRepository.updateById(id, userCredential);
   }
 
-  @put('/user-credentials/{id}')
-  @response(204, {
-    description: 'UserCredential PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() userCredential: UserCredential,
-  ): Promise<void> {
-    await this.userCredentialRepository.replaceById(id, userCredential);
-  }
+  // @put('/user-credentials/{id}')
+  // @response(204, {
+  //   description: 'UserCredential PUT success',
+  // })
+  // async replaceById(
+  //   @param.path.string('id') id: string,
+  //   @requestBody() userCredential: UserCredential,
+  // ): Promise<void> {
+  //   await this.userCredentialRepository.replaceById(id, userCredential);
+  // }
 
   @del('/user-credentials/{id}')
   @response(204, {
