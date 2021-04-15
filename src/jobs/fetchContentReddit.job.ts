@@ -1,17 +1,17 @@
 import {inject} from '@loopback/core'
 import {cronJob, CronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
-import {PeopleRepository, PostRepository, TagRepository} from '../repositories'
+import {PostRepository, PeopleRepository, TagRepository, UserCredentialRepository} from '../repositories'
 import {Reddit} from '../services'
 
 @cronJob()
 export class FetchContentRedditJob extends CronJob {
   constructor(
-    @inject('services.Reddit') protected redditService: Reddit,
-    @repository(PostRepository) public postRepository: PostRepository,
-    @repository(PeopleRepository) public peopleRepository: PeopleRepository,
-    @repository(TagRepository) public tagRepository: TagRepository
-
+    @inject('services.Reddit') protected redditService:Reddit,
+    @repository(PostRepository) public postRepository:PostRepository,
+    @repository(PeopleRepository) public peopleRepository:PeopleRepository,
+    @repository(TagRepository) public tagRepository:TagRepository,
+    @repository(UserCredentialRepository) public userCredentialRepository:UserCredentialRepository
   ) {
     super({
       name: 'fetch-content-reddit-job',
@@ -47,7 +47,7 @@ export class FetchContentRedditJob extends CronJob {
 
           if (foundPost) continue
 
-          await this.postRepository.create({
+          const newPost = {
             platformUser: {
               username: post.author,
               platform_account_id: post.author_fullname
@@ -59,9 +59,20 @@ export class FetchContentRedditJob extends CronJob {
             text: post.selftext,
             textId: post.id,
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
-            link: `https://wwww.reddit.com${post.id}`,
+            link: `https://wwww.reddit.com/${post.id}`,
             createdAt: new Date().toString()
-          })
+          }
+
+          const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
+
+          if (userCredential) {
+            await this.postRepository.create({
+              ...newPost,
+              wallet_address: userCredential.userId,
+            })
+          }
+  
+          await this.postRepository.create(newPost)
         }
       }
     } catch (err) { }
@@ -72,7 +83,6 @@ export class FetchContentRedditJob extends CronJob {
       const tags = await this.tagRepository.find()
 
       for (let i = 0; i < tags.length; i++) {
-
         const tag = tags[i]
         const {data} = await this.redditService.getActions(`search.json?q=${tag.id}&sort=new&limit=20`)
 
@@ -87,39 +97,40 @@ export class FetchContentRedditJob extends CronJob {
           const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
 
           if (foundPost) continue
-
-          const foundPerson = await this.peopleRepository.findOne({where: {username: `u/${post.author}`}})
+          
+          const foundPerson = await this.peopleRepository.findOne({where: {username: post.author}})
+          const newPost = {
+            platformUser: {
+              username: post.author,
+              platform_account_id: post.author_fullname
+            },
+            tags: [tag.id],
+            platform: 'reddit',
+            title: post.title,
+            text: post.selftext,
+            textId: post.id,
+            hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
+            link: `https://wwww.reddit.com/${post.id}`,
+            createdAt: new Date().toString()
+          }
 
           if (foundPerson) {
+            const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPerson.id}})
+
+            if (userCredential) {
+              await this.postRepository.create({
+                ...newPost,
+                peopleId: foundPerson.id,
+                wallet_address: userCredential.userId
+              })
+            }
             await this.postRepository.create({
-              platformUser: {
-                username: `u/${post.author}`
-              },
-              tags: [tag.id],
-              platform: 'reddit',
+              ...newPost,
               peopleId: foundPerson.id,
-              title: post.title,
-              text: post.selftext,
-              textId: post.id,
-              hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
-              link: `https://wwww.reddit.com${post.permalink}`,
-              createdAt: new Date().toString()
             })
-          } else {
-            await this.postRepository.create({
-              platformUser: {
-                username: `u/${post.author}`
-              },
-              tags: [tag.id],
-              platform: 'reddit',
-              title: post.title,
-              text: post.selftext,
-              textId: post.id,
-              hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
-              link: `https://wwww.reddit.com${post.permalink}`,
-              createdAt: new Date().toString()
-            })
-          }
+          } 
+            
+          await this.postRepository.create(newPost)
         }
       }
     } catch (err) { }

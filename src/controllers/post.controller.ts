@@ -52,29 +52,32 @@ export class PostController {
     })
     post: Omit<Post, 'id'>
   ): Promise<Post> {
-    const result = await this.postRepository.create(post)
-    const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-    const api = await ApiPromise.create({provider: wsProvider})
-    await api.isReady
+    return this.postRepository.create(post);
 
-    const keyring = new Keyring({type: 'sr25519'});
 
-    const newKey = keyring.addFromUri('//' + result.id)
+    // const result = await this.postRepository.create(post)
+    // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+    // const api = await ApiPromise.create({provider: wsProvider})
+    // await api.isReady
 
-    post.walletAddress = newKey.address
-    return result
+    // const keyring = new Keyring({type: 'sr25519'});
+
+    // const newKey = keyring.addFromUri('//' + result.id)
+
+    // post.walletAddress = newKey.address
+    // return result
   }
 
-  @get('/posts/count')
-  @response(200, {
-    description: 'Post model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(Post) where?: Where<Post>,
-  ): Promise<Count> {
-    return this.postRepository.count(where);
-  }
+  // @get('/posts/count')
+  // @response(200, {
+  //   description: 'Post model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(Post) where?: Where<Post>,
+  // ): Promise<Count> {
+  //   return this.postRepository.count(where);
+  // }
 
   @get('/posts')
   @response(200, {
@@ -94,24 +97,24 @@ export class PostController {
     return this.postRepository.find(filter);
   }
 
-  @patch('/posts')
-  @response(200, {
-    description: 'Post PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Post, {partial: true}),
-        },
-      },
-    })
-    post: Post,
-    @param.where(Post) where?: Where<Post>,
-  ): Promise<Count> {
-    return this.postRepository.updateAll(post, where);
-  }
+  // @patch('/posts')
+  // @response(200, {
+  //   description: 'Post PATCH success count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async updateAll(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(Post, {partial: true}),
+  //       },
+  //     },
+  //   })
+  //   post: Post,
+  //   @param.where(Post) where?: Where<Post>,
+  // ): Promise<Count> {
+  //   return this.postRepository.updateAll(post, where);
+  // }
 
   @get('/posts/{id}')
   @response(200, {
@@ -182,16 +185,16 @@ export class PostController {
     await this.postRepository.updateById(id, post);
   }
 
-  @put('/posts/{id}')
-  @response(204, {
-    description: 'Post PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() post: Post,
-  ): Promise<void> {
-    await this.postRepository.replaceById(id, post);
-  }
+  // @put('/posts/{id}')
+  // @response(204, {
+  //   description: 'Post PUT success',
+  // })
+  // async replaceById(
+  //   @param.path.string('id') id: string,
+  //   @requestBody() post: Post,
+  // ): Promise<void> {
+  //   await this.postRepository.replaceById(id, post);
+  // }
 
   @del('/posts/{id}')
   @response(204, {

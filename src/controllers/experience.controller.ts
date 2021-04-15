@@ -44,44 +44,20 @@ export class ExperienceController {
       },
     })
     experience: Omit<Experience, 'id'>
-    // @param.filter(Experience) filter?: Filter<Experience>
   ): Promise<Experience> {
-    // const newExperience = this.experienceRepository.create(experience)
-
-    // const tags = experience.tags
-    // console.log(experience.tags)
-
-    // console.log(experience)
-    
-
-    // return this.experienceRepository.create(experience)
     return this.experienceRepository.create(experience)
-    // return this.experienceRepository.find(filter)
-    //   .then( experiences => {
-    //     const find = experiences.find(e => e.userId === experience.userId && e.name === experience.name)
-
-    //     if (!find) {
-    //       return this.experienceRepository.create(experience)
-    //     } else {
-    //       this.experienceRepository.updateById(find.id, experience)
-    //       return {
-    //         ...experience,
-    //         id: find.id
-    //       }
-    //     }
-    //   })
   }
 
-  @get('/experiences/count')
-  @response(200, {
-    description: 'Experience model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(Experience) where?: Where<Experience>,
-  ): Promise<Count> {
-    return this.experienceRepository.count(where);
-  }
+  // @get('/experiences/count')
+  // @response(200, {
+  //   description: 'Experience model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(Experience) where?: Where<Experience>,
+  // ): Promise<Count> {
+  //   return this.experienceRepository.count(where);
+  // }
 
   @get('/experiences')
   @response(200, {
@@ -101,24 +77,24 @@ export class ExperienceController {
     return this.experienceRepository.find(filter);
   }
 
-  @patch('/experiences')
-  @response(200, {
-    description: 'Experience PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Experience, {partial: true}),
-        },
-      },
-    })
-    experience: Experience,
-    @param.where(Experience) where?: Where<Experience>,
-  ): Promise<Count> {
-    return this.experienceRepository.updateAll(experience, where);
-  }
+  // @patch('/experiences')
+  // @response(200, {
+  //   description: 'Experience PATCH success count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async updateAll(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(Experience, {partial: true}),
+  //       },
+  //     },
+  //   })
+  //   experience: Experience,
+  //   @param.where(Experience) where?: Where<Experience>,
+  // ): Promise<Count> {
+  //   return this.experienceRepository.updateAll(experience, where);
+  // }
 
   @get('/experiences/{id}')
   @response(200, {
@@ -154,16 +130,16 @@ export class ExperienceController {
     await this.experienceRepository.updateById(id, experience);
   }
 
-  @put('/experiences/{id}')
-  @response(204, {
-    description: 'Experience PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() experience: Experience,
-  ): Promise<void> {
-    await this.experienceRepository.replaceById(id, experience);
-  }
+  // @put('/experiences/{id}')
+  // @response(204, {
+  //   description: 'Experience PUT success',
+  // })
+  // async replaceById(
+  //   @param.path.string('id') id: string,
+  //   @requestBody() experience: Experience,
+  // ): Promise<void> {
+  //   await this.experienceRepository.replaceById(id, experience);
+  // }
 
   @del('/experiences/{id}')
   @response(204, {
