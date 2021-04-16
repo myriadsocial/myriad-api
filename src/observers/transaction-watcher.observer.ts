@@ -56,11 +56,12 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
             from: from,
             to: to,
             value: parseInt(value),
+            state: 'success',
             createdAt: new Date().toString()
           })
         }
-      });
-    });
+      })
+    })
   }
 
   /**
