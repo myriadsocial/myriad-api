@@ -136,18 +136,22 @@ export class PostController {
   ): Promise<Wallet> {
     const resultPost: Post = await this.postRepository.findById(id)
 
-    const wallet = new Wallet();
-    wallet.walletAddress = resultPost.walletAddress != null
-      ? resultPost.walletAddress : ''
+    const wallet = new Wallet()
+    if (resultPost != null) {
+      wallet.walletAddress = resultPost.walletAddress != null
+        ? resultPost.walletAddress : ''
 
-    const resultUser = await this.userCredentialRepository.findOne({
-      where: {
-        peopleId: resultPost.peopleId
+      const resultUser = await this.userCredentialRepository.findOne({
+        where: {
+          peopleId: resultPost.peopleId
+        }
+      })
+
+      if (resultUser != null) {
+        wallet.walletAddress = resultUser.userId != null
+          ? resultUser.userId : ''
       }
-    })
-
-    wallet.walletAddress = resultUser != null && resultUser.userId != null
-      ? resultUser.userId : ''
+    }
 
     return wallet;
   }
