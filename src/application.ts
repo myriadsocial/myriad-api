@@ -8,7 +8,7 @@ import {
   RestExplorerComponent
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+import {Keyring} from '@polkadot/api';
 import {mnemonicGenerate} from '@polkadot/util-crypto';
 import path from 'path';
 import {FetchContentRedditJob} from './jobs/fetchContentReddit.job';
@@ -70,9 +70,9 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    this.add(createBindingFromClass(FetchContentTwitterJob))
-    this.add(createBindingFromClass(FetchContentRedditJob))
-    this.add(createBindingFromClass(UpdatePostsJob))
+    // this.add(createBindingFromClass(FetchContentTwitterJob))
+    // this.add(createBindingFromClass(FetchContentRedditJob))
+    // this.add(createBindingFromClass(UpdatePostsJob))
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -106,11 +106,6 @@ export class MyriadApiApplication extends BootMixin(
     await peopleRepo.deleteAll()
     await commentsRepo.deleteAll()
     await userCredRepo.deleteAll()
-
-    const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-    const api = await ApiPromise.create({provider: wsProvider})
-
-    await api.isReady
 
     const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
     const newTags = await tagRepo.createAll(tags)

@@ -3,8 +3,9 @@ import {
   LifeCycleObserver
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {ApiPromise, WsProvider} from '@polkadot/api';
 import {TransactionRepository} from '../repositories';
+import {polkadotApi} from '../helpers/polkadotApi'
+import {decodeAddress, encodeAddress} from '@polkadot/util-crypto'
 
 /**
  * This class will be bound to the application as a `LifeCycleObserver` during
@@ -33,8 +34,7 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
   async start(): Promise<void> {
     // Add your logic for start
     try {
-      const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-      const api = await ApiPromise.create({provider: wsProvider})
+      const api = await polkadotApi()
       await api.isReady
       console.log('RPC isReady for TransactionWatcher');
 
@@ -54,11 +54,14 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
 
             this.transactionRepository.create({
               trxHash: hash,
-              from: from,
-              to: to,
+              from: encodeAddress(from, 42),
+              to: encodeAddress(to, 42),
               value: parseInt(value),
               state: 'success',
               createdAt: new Date().toString()
+            })
+            console.log({
+              hash,from: encodeAddress(from, 42),to,value
             })
           }
         })
