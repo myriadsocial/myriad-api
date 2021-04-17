@@ -65,10 +65,10 @@ export class PeopleController {
 
     if (!findPeople) {
       const newPeople = await this.peopleRepository.create(people)
-      const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-      const api = await ApiPromise.create({provider: wsProvider})
+      // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+      // const api = await ApiPromise.create({provider: wsProvider})
 
-      await api.isReady
+      // await api.isReady
       
       switch (newPeople.platform) {
         case "twitter": 
@@ -230,10 +230,7 @@ export class PeopleController {
 
         const result = await this.postRepository.create(newPost)
         const newKey = keyring.addFromUri('//' + result.id)
-        await this.postRepository.updateById(result.id, {
-          ...result,
-          walletAddress: newKey.address
-        })
+        await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
       }
     } catch (err) {}
   }
@@ -276,12 +273,7 @@ export class PeopleController {
         const result = await this.postRepository.create(newPost)
         const newKey = keyring.addFromUri('//' + result.id)
 
-        await this.postRepository.updateById(result.id, {
-          ...newPost,
-          walletAddress: newKey.address
-        })
-
-        return post
+        await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
       })
     } catch (err) {}
   }
@@ -309,10 +301,7 @@ export class PeopleController {
           createdAt: new Date().toString()
         })
         const newKey = keyring.addFromUri('//' + newPost.id)
-        await this.postRepository.updateById(newPost.id, {
-          ...newPost,
-          walletAddress: newKey.address
-        })
+        await this.postRepository.updateById(newPost.id, {walletAddress: newKey.address})
       })
     } catch (err) {}
   }

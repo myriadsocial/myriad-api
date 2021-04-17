@@ -19,23 +19,27 @@ export class FetchContentRedditJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '*/1800 * * * * *',
+      cronTime: '*/10 * * * * *',
       start: true
     })
   }
 
   async performJob() {
-    await this.searchPostByTag()
-    await this.searchPostByPeople()
+    try {
+      await this.searchPostByTag()
+      await this.searchPostByPeople()
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   async searchPostByPeople() {
     try {
       const people = await this.peopleRepository.find({where: {platform: "reddit"}})
-      const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-      const api = await ApiPromise.create({provider: wsProvider})
+      // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+      // const api = await ApiPromise.create({provider: wsProvider})
 
-      await api.isReady
+      // await api.isReady
 
       const keyring = new Keyring({type: 'sr25519'})
 
@@ -91,10 +95,10 @@ export class FetchContentRedditJob extends CronJob {
   async searchPostByTag() {
     try {
       const tags = await this.tagRepository.find()
-      const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-      const api = await ApiPromise.create({provider: wsProvider})
+      // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+      // const api = await ApiPromise.create({provider: wsProvider})
 
-      await api.isReady
+      // await api.isReady
 
       const keyring = new Keyring({type: 'sr25519'})
 

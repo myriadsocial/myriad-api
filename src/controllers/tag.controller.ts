@@ -58,10 +58,10 @@ export class TagController {
     const keyword = tag.id.replace(/ /g,'').trim().toLowerCase();
     const foundTag = await this.tagRepository.findOne({where: {id: keyword}})
     
-    const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-    const api = await ApiPromise.create({provider: wsProvider})
+    // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+    // const api = await ApiPromise.create({provider: wsProvider})
 
-    await api.isReady
+    // await api.isReady
 
     if (foundTag) return false
 
