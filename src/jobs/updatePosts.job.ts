@@ -36,7 +36,7 @@ export class UpdatePostsJob extends CronJob {
         try {
             const userCredentials = await this.userCredentialRepository.find()
             const api = await polkadotApi()
-            const keyring = new Keyring({type: 'sr25519'})
+            const keyring = new Keyring({type: 'sr25519', ss58Format: 214})
 
             userCredentials.forEach(async userCredential => {
                 const peopleId = userCredential.peopleId

@@ -104,7 +104,7 @@ export class MyriadApiApplication extends BootMixin(
     await commentsRepo.deleteAll()
     await userCredRepo.deleteAll()
 
-    const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+    const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
     const newTags = await tagRepo.createAll(tags)
     const newPeople = await peopleRepo.createAll(people)
 

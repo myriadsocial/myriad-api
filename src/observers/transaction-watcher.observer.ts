@@ -48,14 +48,14 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
 
             this.transactionRepository.create({
               trxHash: hash,
-              from: encodeAddress(from, 42),
-              to: encodeAddress(to, 42),
+              from: encodeAddress(from, 214),
+              to: encodeAddress(to, 214),
               value: parseInt(value),
               state: 'success',
               createdAt: new Date().toString()
             })
             console.log({
-              hash, from: encodeAddress(from, 42), to, value
+              hash, from: encodeAddress(from, 214), to, value
             })
           }
         })
