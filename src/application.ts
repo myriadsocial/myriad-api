@@ -8,22 +8,22 @@ import {
   RestExplorerComponent
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
+import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+import {mnemonicGenerate} from '@polkadot/util-crypto';
 import path from 'path';
 import {FetchContentRedditJob} from './jobs/fetchContentReddit.job';
 import {FetchContentTwitterJob} from './jobs/fetchContentTwitter.job';
 import {UpdatePostsJob} from './jobs/updatePosts.job';
 import {
-  CommentRepository, 
-  ExperienceRepository, 
-  PeopleRepository, 
-  PostRepository, 
-  SavedExperienceRepository, 
-  TagRepository, 
-  UserRepository,
-  UserCredentialRepository
+  CommentRepository,
+  ExperienceRepository,
+  PeopleRepository,
+  PostRepository,
+  SavedExperienceRepository,
+  TagRepository,
+
+  UserCredentialRepository, UserRepository
 } from './repositories';
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
-import {mnemonicGenerate} from '@polkadot/util-crypto'
 import comments from './seed-data/comments.json';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
@@ -112,11 +112,10 @@ export class MyriadApiApplication extends BootMixin(
 
     await api.isReady
 
-    const keyring = new Keyring({ type: 'sr25519', ss58Format: 42 });
-    const keyring2 = new Keyring({ type: 'sr25519'})
+    const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
     const newTags = await tagRepo.createAll(tags)
     const newPeople = await peopleRepo.createAll(people)
-    
+
     for (let i = 0; i < users.length; i++) {
       const user = users[i]
       const seed = mnemonicGenerate()
@@ -150,7 +149,7 @@ export class MyriadApiApplication extends BootMixin(
       const personPlatform = person.platform
 
       for (let j = 0; j < posts.length; j++) {
-        const post:Post = posts[j]
+        const post: Post = posts[j]
         const postAccountId = post.platformUser.platform_account_id
         const postAccountUsername = post.platformUser.username
 
@@ -176,7 +175,7 @@ export class MyriadApiApplication extends BootMixin(
 
     for (let i = 0; i < posts.length; i++) {
       const post = await postsRepo.create(posts[i])
-      const newKey = keyring2.addFromUri('//' + post.id)
+      const newKey = keyring.addFromUri('//' + post.id)
 
       await postsRepo.updateById(post.id, {walletAddress: newKey.address})
     }

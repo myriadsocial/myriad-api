@@ -1,18 +1,18 @@
-import {inject} from '@loopback/core'
-import {cronJob, CronJob} from '@loopback/cron'
-import {repository} from '@loopback/repository'
-import {PostRepository, PeopleRepository, TagRepository, UserCredentialRepository} from '../repositories'
+import {inject} from '@loopback/core';
+import {cronJob, CronJob} from '@loopback/cron';
+import {repository} from '@loopback/repository';
 import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
-import {Reddit} from '../services'
+import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
+import {Reddit} from '../services';
 
 @cronJob()
 export class FetchContentRedditJob extends CronJob {
   constructor(
-    @inject('services.Reddit') protected redditService:Reddit,
-    @repository(PostRepository) public postRepository:PostRepository,
-    @repository(PeopleRepository) public peopleRepository:PeopleRepository,
-    @repository(TagRepository) public tagRepository:TagRepository,
-    @repository(UserCredentialRepository) public userCredentialRepository:UserCredentialRepository
+    @inject('services.Reddit') protected redditService: Reddit,
+    @repository(PostRepository) public postRepository: PostRepository,
+    @repository(PeopleRepository) public peopleRepository: PeopleRepository,
+    @repository(TagRepository) public tagRepository: TagRepository,
+    @repository(UserCredentialRepository) public userCredentialRepository: UserCredentialRepository
   ) {
     super({
       name: 'fetch-content-reddit-job',
@@ -41,7 +41,7 @@ export class FetchContentRedditJob extends CronJob {
 
       // await api.isReady
 
-      const keyring = new Keyring({type: 'sr25519'})
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
 
       for (let i = 0; i < people.length; i++) {
         const person = people[i]
@@ -82,7 +82,7 @@ export class FetchContentRedditJob extends CronJob {
               walletAddress: userCredential.userId,
             })
           }
-  
+
           const result = await this.postRepository.create(newPost)
           const newKey = keyring.addFromUri('//' + result.id)
 
@@ -100,7 +100,7 @@ export class FetchContentRedditJob extends CronJob {
 
       // await api.isReady
 
-      const keyring = new Keyring({type: 'sr25519'})
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
 
       for (let i = 0; i < tags.length; i++) {
         const tag = tags[i]
@@ -117,7 +117,7 @@ export class FetchContentRedditJob extends CronJob {
           const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
 
           if (foundPost) continue
-          
+
           const foundPerson = await this.peopleRepository.findOne({where: {username: post.author}})
           const newPost = {
             platformUser: {
@@ -151,8 +151,8 @@ export class FetchContentRedditJob extends CronJob {
             const newKey = keyring.addFromUri('//' + result.id)
 
             await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
-          } 
-            
+          }
+
           const result = await this.postRepository.create(newPost)
           const newKey = keyring.addFromUri('//' + result.id)
 

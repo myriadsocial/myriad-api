@@ -1,22 +1,18 @@
 import {
-  Count,
-  CountSchema,
   Filter,
   FilterExcludingWhere,
-  repository,
-  Where
+  repository
 } from '@loopback/repository';
 import {
   del, get,
-  getModelSchemaRef, 
+  getModelSchemaRef,
   param,
   patch,
   post,
-  put,
+
   requestBody,
   response
 } from '@loopback/rest';
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 import {Post} from '../models';
 import {Wallet} from '../models/wallet.model';
 import {PostRepository, UserCredentialRepository} from '../repositories';
@@ -48,13 +44,13 @@ export class PostController {
     post: Omit<Post, 'id'>
   ): Promise<Post> {
     return this.postRepository.create(post);
-    
+
     // const result = await this.postRepository.create(post)
     // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
     // const api = await ApiPromise.create({provider: wsProvider})
     // await api.isReady
 
-    // const keyring = new Keyring({type: 'sr25519'});
+    // const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
 
     // const newKey = keyring.addFromUri('//' + result.id)
 
@@ -138,26 +134,25 @@ export class PostController {
   async findByIdGetWalletAddress(
     @param.path.string('id') id: string
   ): Promise<Wallet> {
-    const resultPost: Post = await this.postRepository.findById(id);
+    const resultPost: Post = await this.postRepository.findById(id)
 
-    console.log(resultPost)
+    const wallet = new Wallet()
+    if (resultPost != null) {
+      wallet.walletAddress = resultPost.walletAddress != null
+        ? resultPost.walletAddress : ''
 
-    const wallet = new Wallet();
-    wallet.walletAddress = resultPost.walletAddress != null
-      ? resultPost.walletAddress : ''
+      const resultUser = await this.userCredentialRepository.findOne({
+        where: {
+          peopleId: resultPost.peopleId
+        }
+      })
 
-    const resultUser = await this.userCredentialRepository.findOne({
-      where: {
-        peopleId: resultPost.peopleId
+      if (resultUser != null) {
+        wallet.walletAddress = resultUser.userId != null
+          ? resultUser.userId : ''
       }
-    })
+    }
 
-    console.log(resultUser)
-
-    wallet.walletAddress = resultUser != null && resultUser.userId != null
-      ? resultUser.userId : ''
-
-    console.log(wallet)
     return wallet;
   }
 

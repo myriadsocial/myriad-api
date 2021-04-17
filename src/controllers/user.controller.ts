@@ -1,16 +1,13 @@
 import {
-  Count,
-  CountSchema,
   Filter,
   FilterExcludingWhere,
-  repository,
-  Where
+  repository
 } from '@loopback/repository';
 import {
   del, get,
   getModelSchemaRef, param,
   patch, post,
-  put,
+
   requestBody,
   response
 } from '@loopback/rest';
@@ -57,7 +54,7 @@ export class UserController {
     // await api.isReady
     const api = await polkadotApi()
 
-    const keyring = new Keyring({type: 'sr25519'});
+    const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
     const from = keyring.addFromUri('//Charlie');
     const to = newUser.id;
     const value = 1000000000000;
