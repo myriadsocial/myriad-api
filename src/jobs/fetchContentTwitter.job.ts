@@ -39,7 +39,7 @@ export class FetchContentTwitterJob extends CronJob {
       const people = await this.peopleRepository.find({where: {platform: 'twitter'}})
       const posts = await this.postRepository.find({where: {platform: 'twitter'}})
 
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       for (let i = 0; i < people.length; i++) {
         const person = people[i]
@@ -109,7 +109,7 @@ export class FetchContentTwitterJob extends CronJob {
 
   async searchPostByTag(): Promise<void> {
     try {
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
       const tagsRepo = await this.tagRepository.find()
 
       for (let i = 0; i < tagsRepo.length; i++) {

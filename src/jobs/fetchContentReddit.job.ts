@@ -37,7 +37,7 @@ export class FetchContentRedditJob extends CronJob {
 
       await api.isReady
 
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       for (let i = 0; i < people.length; i++) {
         const person = people[i]
@@ -96,7 +96,7 @@ export class FetchContentRedditJob extends CronJob {
 
       await api.isReady
 
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       for (let i = 0; i < tags.length; i++) {
         const tag = tags[i]

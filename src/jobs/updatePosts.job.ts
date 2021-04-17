@@ -35,7 +35,7 @@ export class UpdatePostsJob extends CronJob {
 
             await api.isReady
 
-            const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+            const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
             userCredentials.forEach(async userCredential => {
                 const peopleId = userCredential.peopleId

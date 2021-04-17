@@ -196,7 +196,7 @@ export class PeopleController {
     try {
       const {data: tweets} = await this.twitterService.getActions(`users/${people.platform_account_id}/tweets?max_results=5&tweet.fields=attachments,entities,referenced_tweets`)
       const filterTweets = tweets.filter((post: any) => !post.referenced_tweets)
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       for (let i = 0; i < filterTweets.length; i++) {
         const tweet = filterTweets[i]
@@ -241,7 +241,7 @@ export class PeopleController {
 
   async createRedditPostByPeople(people: People): Promise<void> {
     try {
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
       const {data: user} = await this.redditService.getActions(`u/${people.username}.json?limit=5`)
       const redditPost = await this.postRepository.find({where: {platform: 'reddit'}})
 
@@ -289,7 +289,7 @@ export class PeopleController {
 
   async createFBPostByPeople(people: People): Promise<void> {
     try {
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
       const {data: user} = await this.rsshubService.getContents(people.platform, people.username)
       const resultJSON = await xml2json(user, {compact: true, trim: true})
       const response = JSON.parse(resultJSON)

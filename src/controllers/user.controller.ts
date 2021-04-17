@@ -52,13 +52,14 @@ export class UserController {
     const api = await ApiPromise.create({provider: wsProvider})
     await api.isReady
 
-    const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+    const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
     const from = keyring.addFromUri('//Charlie');
     const to = newUser.id;
     const value = 1000000000000;
 
     const transfer = api.tx.balances.transfer(to, value);
     await transfer.signAndSend(from);
+    await api.disconnect()
 
     if (!findTag) {
       await this.tagRepository.create({

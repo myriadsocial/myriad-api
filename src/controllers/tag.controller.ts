@@ -181,7 +181,7 @@ export class TagController {
   async searchTweetsByKeyword(keyword: string): Promise<Boolean> {
     try {
       const {data: posts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=%23${keyword}`)
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       if (!posts) return false
 
@@ -253,7 +253,7 @@ export class TagController {
   async searchRedditPostByKeyword(keyword: string): Promise<boolean> {
     try {
       const {data} = await this.redditService.getActions(`search.json?q=${keyword}&sort=new&limit=5`)
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       if (data.children.length === 0) return false
 

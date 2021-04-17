@@ -50,7 +50,7 @@ export class PostController {
     // const api = await ApiPromise.create({provider: wsProvider})
     // await api.isReady
 
-    // const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
+    // const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
     // const newKey = keyring.addFromUri('//' + result.id)
 

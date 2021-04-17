@@ -3,7 +3,6 @@ import {
   LifeCycleObserver
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {ApiPromise, WsProvider} from '@polkadot/api';
 import {TransactionRepository} from '../repositories';
 
 /**
@@ -25,6 +24,41 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
    */
   async init(): Promise<void> {
     // Add your logic for init
+
+    // try {
+    //   const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+    //   const api = await ApiPromise.create({provider: wsProvider})
+    //   await api.isReady
+    //   console.log('RPC isReady for TransactionWatcher');
+
+    //   // Subscribe to system events via storage
+    //   api.query.system.events((events) => {
+    //     // Loop through the Vec<EventRecord>
+    //     events.forEach((record) => {
+    //       // Extract the phase, event and the event types
+    //       const {event} = record;
+
+    //       // Show what we are busy with
+    //       if (event.section == 'balances' && event.method == 'Transfer') {
+    //         const hash = event.hash.toString()
+    //         const from = event.data[0].toString();
+    //         const to = event.data[1].toString();
+    //         const value = event.data[2].toString();
+
+    //         this.transactionRepository.create({
+    //           trxHash: hash,
+    //           from: from,
+    //           to: to,
+    //           value: parseInt(value),
+    //           state: 'success',
+    //           createdAt: new Date().toString()
+    //         })
+    //       }
+    //     })
+    //   })
+    // } catch (error) {
+    //   console.error(error)
+    // }
   }
 
   /**
@@ -32,40 +66,6 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
    */
   async start(): Promise<void> {
     // Add your logic for start
-    try {
-      const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-      const api = await ApiPromise.create({provider: wsProvider})
-      await api.isReady
-      console.log('RPC isReady for TransactionWatcher');
-
-      // Subscribe to system events via storage
-      api.query.system.events((events) => {
-        // Loop through the Vec<EventRecord>
-        events.forEach((record) => {
-          // Extract the phase, event and the event types
-          const {event} = record;
-
-          // Show what we are busy with
-          if (event.section == 'balances' && event.method == 'Transfer') {
-            const hash = event.hash.toString()
-            const from = event.data[0].toString();
-            const to = event.data[1].toString();
-            const value = event.data[2].toString();
-
-            this.transactionRepository.create({
-              trxHash: hash,
-              from: from,
-              to: to,
-              value: parseInt(value),
-              state: 'success',
-              createdAt: new Date().toString()
-            })
-          }
-        })
-      })
-    } catch (error) {
-      console.error(error)
-    }
   }
 
   /**
