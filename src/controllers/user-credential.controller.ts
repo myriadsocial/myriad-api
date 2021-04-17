@@ -52,18 +52,16 @@ export class UserCredentialController {
       },
     })
     userCredential: UserCredential,
-  ): Promise<any> {
-    let newUserCredential = null
-    
+  ): Promise<UserCredential> {    
     const foundUserCredential = await this.userCredentialRepository.findOne({where: {userId: userCredential.userId, peopleId: userCredential.peopleId}})
 
     if (foundUserCredential) {
-      newUserCredential = await this.userCredentialRepository.updateById(foundUserCredential.id, foundUserCredential)
+      await this.userCredentialRepository.updateById(foundUserCredential.id, userCredential)
+
+      return userCredential
     }
     
-    newUserCredential = await this.userCredentialRepository.create(userCredential)
-
-    return newUserCredential
+    return this.userCredentialRepository.create(userCredential)
   }
 
   @post('/user-credentials/verify')
@@ -96,7 +94,7 @@ export class UserCredentialController {
         case "twitter":
           const {data:tweets} = await this.twitterService.getActions(`users/${platform_account_id}}/tweets?max_results=5`)
           const twitterPublicKey = tweets[0].text.replace(/\n/g, ' ').split(' ')[7]
-          const foundUserCredentialTwitter = await this.userCredentialRepository.findOne({where: {userId, peopleId: id}})
+          const foundUserCredentialTwitter = await this.userCredentialRepository.findOne({where: {userId: twitterPublicKey, peopleId: id}})
 
           if (foundUserCredentialTwitter) {
             if (userId === twitterPublicKey) return true

@@ -25,13 +25,17 @@ export class FetchContentTwitterJob extends CronJob {
   }
 
   async performJob() {
-    const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-    const api = await ApiPromise.create({provider: wsProvider})
-
-    await api.isReady
-
-    await this.searchPostByPeople()
-    await this.searchPostByTag()
+    try {
+      // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+      // const api = await ApiPromise.create({provider: wsProvider})
+  
+      // await api.isReady
+  
+      await this.searchPostByPeople()
+      await this.searchPostByTag()
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   async searchPostByPeople(): Promise<void> {

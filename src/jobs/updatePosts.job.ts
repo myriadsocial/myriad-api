@@ -1,6 +1,7 @@
 import {CronJob, cronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+import {Keyring} from '@polkadot/api';
+import {polkadotApi} from '../helpers/polkadotApi';
 import {Post} from '../models';
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
 
@@ -23,19 +24,19 @@ export class UpdatePostsJob extends CronJob {
     }
 
     async performJob() {
-        await this.updateUserCredentialPosts()
-        await this.updatePeoplePost()
+        try {
+            await this.updateUserCredentialPosts()
+            await this.updatePeoplePost()
+        } catch (e) {
+            console.log(e)
+        }
     }
 
     async updateUserCredentialPosts() {
         try {
             const userCredentials = await this.userCredentialRepository.find()
-            const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-            const api = await ApiPromise.create({provider: wsProvider})
-
-            await api.isReady
-
-            const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+            const api = await polkadotApi()
+            const keyring = new Keyring({type: 'sr25519'})
 
             userCredentials.forEach(async userCredential => {
                 const peopleId = userCredential.peopleId
