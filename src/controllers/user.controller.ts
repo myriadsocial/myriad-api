@@ -14,6 +14,7 @@ import {
 import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 import {User} from '../models';
 import {ExperienceRepository, PeopleRepository, TagRepository, UserRepository} from '../repositories';
+import {polkadotApi} from '../helpers/polkadotApi'
 
 export class UserController {
   constructor(
@@ -48,9 +49,10 @@ export class UserController {
     const newUser = await this.userRepository.create(user);
     const findTag = await this.tagRepository.findOne({where: {id: 'myriad'}})
 
-    const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-    const api = await ApiPromise.create({provider: wsProvider})
-    await api.isReady
+    // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
+    // const api = await ApiPromise.create({provider: wsProvider})
+    // await api.isReady
+    const api = await polkadotApi()
 
     const keyring = new Keyring({type: 'sr25519', ss58Format: 42});
     const from = keyring.addFromUri('//Charlie');
