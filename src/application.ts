@@ -18,7 +18,6 @@ import {
   PostRepository,
   SavedExperienceRepository,
   TagRepository,
-
   UserCredentialRepository, UserRepository
 } from './repositories';
 import comments from './seed-data/comments.json';

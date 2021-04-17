@@ -11,10 +11,10 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+import {Keyring} from '@polkadot/api';
+import {polkadotApi} from '../helpers/polkadotApi';
 import {User} from '../models';
 import {ExperienceRepository, PeopleRepository, TagRepository, UserRepository} from '../repositories';
-import {polkadotApi} from '../helpers/polkadotApi'
 
 export class UserController {
   constructor(
@@ -55,9 +55,10 @@ export class UserController {
     const api = await polkadotApi()
 
     const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
-    const from = keyring.addFromUri('//Charlie');
+    const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
+    const from = keyring.addFromMnemonic(mnemonic);
     const to = newUser.id;
-    const value = 1000000000000;
+    const value = 100000000000000;
 
     const transfer = api.tx.balances.transfer(to, value);
     await transfer.signAndSend(from);

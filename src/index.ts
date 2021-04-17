@@ -1,5 +1,4 @@
 import {ApplicationConfig, MyriadApiApplication} from './application';
-import {polkadotApi} from './helpers/polkadotApi'
 
 export * from './application';
 
