@@ -30,7 +30,6 @@ export class SavedExperience extends Entity {
   })
   experience_id: string;
 
-
   constructor(data?: Partial<SavedExperience>) {
     super(data);
   }

@@ -1,39 +1,35 @@
-import {inject} from '@loopback/core'
+import {inject} from '@loopback/core';
 import {
-  Count,
-  CountSchema,
   Filter,
   FilterExcludingWhere,
-  repository,
-  Where,
+  repository
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
+  param,
   patch,
-  put,
-  del,
+  post,
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
 import {UserCredential, VerifyUser} from '../models';
-import {UserCredentialRepository, PeopleRepository, PostRepository} from '../repositories';
-import {Reddit, Twitter, Rsshub} from '../services'
+import {PeopleRepository, PostRepository, UserCredentialRepository} from '../repositories';
+import {Reddit, Rsshub, Twitter} from '../services';
 
 export class UserCredentialController {
   constructor(
     @repository(UserCredentialRepository)
-    public userCredentialRepository : UserCredentialRepository,
+    public userCredentialRepository: UserCredentialRepository,
     @repository(PeopleRepository)
     public peopleRepository: PeopleRepository,
     @repository(PostRepository)
     public postRepository: PostRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
-    @inject('services.Rsshub') protected rsshubService:Rsshub
-  ) {}
+    @inject('services.Rsshub') protected rsshubService: Rsshub
+  ) { }
 
   @post('/user-credentials')
   @response(200, {
@@ -46,13 +42,13 @@ export class UserCredentialController {
         'application/json': {
           schema: getModelSchemaRef(UserCredential, {
             title: 'NewUserCredential',
-            
+
           }),
         },
       },
     })
     userCredential: UserCredential,
-  ): Promise<UserCredential> {    
+  ): Promise<UserCredential> {
     const foundUserCredential = await this.userCredentialRepository.findOne({where: {userId: userCredential.userId, peopleId: userCredential.peopleId}})
 
     if (foundUserCredential) {
@@ -60,7 +56,7 @@ export class UserCredentialController {
 
       return userCredential
     }
-    
+
     return this.userCredentialRepository.create(userCredential)
   }
 
@@ -75,13 +71,13 @@ export class UserCredentialController {
         'application/json': {
           schema: getModelSchemaRef(VerifyUser, {
             title: 'NewVerifyUser',
-            
+
           }),
         },
       },
     }) verifyUser: VerifyUser
-  ):Promise<Boolean> {
-    const { userId, peopleId } = verifyUser
+  ): Promise<Boolean> {
+    const {userId, peopleId} = verifyUser
 
     try {
       const foundPeople = await this.peopleRepository.findOne({where: {id: peopleId}})
@@ -90,9 +86,9 @@ export class UserCredentialController {
 
       const {username, platform_account_id, id, platform} = foundPeople
 
-      switch(platform) {
+      switch (platform) {
         case "twitter":
-          const {data:tweets} = await this.twitterService.getActions(`users/${platform_account_id}}/tweets?max_results=5`)
+          const {data: tweets} = await this.twitterService.getActions(`users/${platform_account_id}}/tweets?max_results=5`)
           const twitterPublicKey = tweets[0].text.replace(/\n/g, ' ').split(' ')[7]
           const foundUserCredentialTwitter = await this.userCredentialRepository.findOne({where: {userId: twitterPublicKey, peopleId: id}})
 
@@ -103,13 +99,13 @@ export class UserCredentialController {
               await this.peopleRepository.deleteById(id)
             }
           }
-        break
+          break
 
         case "reddit":
           const {data: redditPosts} = await this.redditService.getActions(`u/${username}.json?limit=1`)
-          const redditPublicKey = redditPosts.children[0].data.title.replace(/n/g,' ').split(' ')[7]
+          const redditPublicKey = redditPosts.children[0].data.title.replace(/n/g, ' ').split(' ')[7]
           const foundUserCredentialReddit = await this.userCredentialRepository.findOne({where: {userId: redditPublicKey, peopleId: id}})
-        
+
           if (foundUserCredentialReddit && userId === redditPublicKey) {
             if (userId === redditPublicKey) return true
             else {
@@ -117,11 +113,11 @@ export class UserCredentialController {
               await this.peopleRepository.deleteById(id)
             }
           }
-        break
+          break
 
         case "facebook":
 
-        break
+          break
 
         default:
           return false

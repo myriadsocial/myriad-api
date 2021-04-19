@@ -18,8 +18,8 @@ export class User extends Entity {
     generated: false,
     required: true,
     jsonSchema: {
-      maxLength: 48,
-      minLength: 48,
+      maxLength: 49,
+      minLength: 49,
     },
   })
   id: string;
@@ -73,7 +73,7 @@ export class User extends Entity {
 
   @hasMany(() => Experience, {through: {model: () => SavedExperience, keyFrom: 'user_id', keyTo: 'experience_id'}})
   savedExperiences: Experience[];
-  
+
   @hasMany(() => UserCredential)
   userCredentials: UserCredential[];
 

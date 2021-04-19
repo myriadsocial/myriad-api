@@ -1,6 +1,6 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
-import {config as dotenvConfig} from 'dotenv'
+import {config as dotenvConfig} from 'dotenv';
 dotenvConfig()
 
 const config = {

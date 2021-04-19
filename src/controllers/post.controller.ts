@@ -9,7 +9,6 @@ import {
   param,
   patch,
   post,
-
   requestBody,
   response
 } from '@loopback/rest';

@@ -1,24 +1,3 @@
-import {
-  Count,
-  CountSchema,
-  Filter,
-  FilterExcludingWhere,
-  repository,
-  Where,
-} from '@loopback/repository';
-import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
-  put,
-  del,
-  requestBody,
-  response,
-} from '@loopback/rest';
-import {Platform} from '../models';
-import {PlatformRepository} from '../repositories';
 
 export class PlatformController {
   // constructor(
@@ -37,7 +16,7 @@ export class PlatformController {
   //       'application/json': {
   //         schema: getModelSchemaRef(Platform, {
   //           title: 'NewPlatform',
-            
+
   //         }),
   //       },
   //     },

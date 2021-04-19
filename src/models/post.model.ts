@@ -41,7 +41,6 @@ export class Post extends Entity {
     type: 'string',
     required: true
   })
-
   platform: string
 
   @property({
@@ -67,7 +66,6 @@ export class Post extends Entity {
     required: false,
     default: false
   })
-
   hasMedia: boolean
 
   @property({

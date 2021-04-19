@@ -6,17 +6,13 @@ import {
 } from '@loopback/repository';
 import {
   get,
-  getModelSchemaRef, param, post,
-
-
-
-
-
-
+  getModelSchemaRef,
+  param,
+  post,
   requestBody,
   response
 } from '@loopback/rest';
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+import {Keyring} from '@polkadot/api';
 import {Tag} from '../models';
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
 import {Reddit, Twitter} from '../services';
@@ -55,7 +51,7 @@ export class TagController {
   ): Promise<any> {
     const keyword = tag.id.replace(/ /g, '').trim().toLowerCase();
     const foundTag = await this.tagRepository.findOne({where: {id: keyword}})
-    
+
     // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
     // const api = await ApiPromise.create({provider: wsProvider})
 

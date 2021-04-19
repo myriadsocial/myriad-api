@@ -1,7 +1,6 @@
 import {inject} from '@loopback/core';
 import {CronJob, cronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
-import {xml2json} from 'xml-js';
 import {PostRepository} from '../repositories';
 import {Rsshub} from '../services';
 

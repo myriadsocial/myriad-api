@@ -1,7 +1,7 @@
 import {inject} from '@loopback/core'
 import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api'
+import {Keyring} from '@polkadot/api'
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories'
 import {Twitter} from '../services'
 
@@ -28,9 +28,9 @@ export class FetchContentTwitterJob extends CronJob {
     try {
       // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
       // const api = await ApiPromise.create({provider: wsProvider})
-  
+
       // await api.isReady
-  
+
       await this.searchPostByPeople()
       await this.searchPostByTag()
     } catch (e) {

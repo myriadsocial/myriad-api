@@ -1,7 +1,7 @@
 import {inject} from '@loopback/core';
 import {cronJob, CronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+import {Keyring} from '@polkadot/api';
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
 import {Reddit} from '../services';
 

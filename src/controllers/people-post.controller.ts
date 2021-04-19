@@ -1,23 +1,14 @@
 import {
-  Count,
-  CountSchema,
   Filter,
-  repository,
-  Where,
+  repository
 } from '@loopback/repository';
 import {
-  del,
   get,
   getModelSchemaRef,
-  getWhereSchemaFor,
-  param,
-  patch,
-  post,
-  requestBody,
+  param
 } from '@loopback/rest';
 import {
-  People,
-  Post,
+  Post
 } from '../models';
 import {PeopleRepository} from '../repositories';
 

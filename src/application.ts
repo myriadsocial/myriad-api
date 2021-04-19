@@ -189,6 +189,5 @@ export class MyriadApiApplication extends BootMixin(
         }
       }
     }))
-
   }
 }

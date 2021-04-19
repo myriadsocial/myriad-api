@@ -5,21 +5,17 @@ import {
   repository
 } from '@loopback/repository';
 import {
-  del, get,
-  getModelSchemaRef, param,
-
-
-  patch, post,
-
-
-
-
+  del,
+  get,
+  getModelSchemaRef,
+  param,
+  patch,
+  post,
   put,
-
   requestBody,
   response
 } from '@loopback/rest';
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+import {Keyring} from '@polkadot/api';
 import dotenv from 'dotenv';
 import {xml2json} from 'xml-js';
 import {People} from '../models';
@@ -68,9 +64,9 @@ export class PeopleController {
       const newPeople = await this.peopleRepository.create(people)
       // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
       // const api = await ApiPromise.create({provider: wsProvider})
-      
+
       // await api.isReady
-     
+
       switch (newPeople.platform) {
         case "twitter":
           await this.createTwitterPostByPeople(newPeople)

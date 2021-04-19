@@ -1,6 +1,6 @@
-import {Entity, model, property, hasOne, hasMany} from '@loopback/repository';
-import {UserCredential} from './user-credential.model';
+import {Entity, hasMany, hasOne, model, property} from '@loopback/repository';
 import {Post} from './post.model';
+import {UserCredential} from './user-credential.model';
 
 @model({
   settings: {
@@ -43,7 +43,6 @@ export class People extends Entity {
     type: 'boolean',
     default: false
   })
-
   hide?: boolean
 
   @hasOne(() => UserCredential)
