@@ -2,23 +2,18 @@ import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
 
 const config = {
-  name: 'rsshub',
+  name: 'facebook',
   connector: 'rest',
-  baseURL: 'https://rsshub.app/',
+  baseURL: 'https://facebook.com',
   crud: false,
-  options: {
-    headers: {
-      accept: 'application/xml'
-    }
-  },
   operations: [
     {
       template: {
         method: 'GET',
-        url: 'https://rsshub.app/facebook/page/{username}'
+        url: 'https://facebook.com/{pageId}/posts/{postId}'
       },
       functions: {
-        getContents: ['username']
+        getActions: ['pageId','postId']
       }
     }
   ]
@@ -29,13 +24,13 @@ const config = {
 // gracefully. The `stop()` method is inherited from `juggler.DataSource`.
 // Learn more at https://loopback.io/doc/en/lb4/Life-cycle.html
 @lifeCycleObserver('datasource')
-export class RsshubDataSource extends juggler.DataSource
+export class FacebookDataSource extends juggler.DataSource
   implements LifeCycleObserver {
-  static readonly dataSourceName = config.name;
+  static dataSourceName = 'facebook';
   static readonly defaultConfig = config;
 
   constructor(
-    @inject('datasources.config.rsshub', {optional: true})
+    @inject('datasources.config.facebook', {optional: true})
     dsConfig: object = config,
   ) {
     super(dsConfig);

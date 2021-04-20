@@ -55,7 +55,7 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
               createdAt: new Date().toString()
             })
             console.log({
-              hash, from: encodeAddress(from, 214), to, value
+              hash, from: encodeAddress(from, 214), to: encodeAddress(to, 214), value
             })
           }
         })

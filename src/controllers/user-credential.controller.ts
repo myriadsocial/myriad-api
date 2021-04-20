@@ -14,9 +14,10 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
+import { xml2json } from 'xml-js';
 import {UserCredential, VerifyUser} from '../models';
 import {PeopleRepository, PostRepository, UserCredentialRepository} from '../repositories';
-import {Reddit, Rsshub, Twitter} from '../services';
+import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 
 export class UserCredentialController {
   constructor(
@@ -28,7 +29,8 @@ export class UserCredentialController {
     public postRepository: PostRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
-    @inject('services.Rsshub') protected rsshubService: Rsshub
+    @inject('services.Rsshub') protected rsshubService: Rsshub,
+    @inject('services.Facebook') protected facebookService: Facebook
   ) { }
 
   @post('/user-credentials')
@@ -81,43 +83,51 @@ export class UserCredentialController {
 
     try {
       const foundPeople = await this.peopleRepository.findOne({where: {id: peopleId}})
+      const foundCredential = await this.userCredentialRepository.findOne({where: {userId, peopleId}})
 
-      if (!foundPeople) throw new Error('People not found')
+      if (!foundPeople) return false
+      if (!foundCredential) return false
 
-      const {username, platform_account_id, id, platform} = foundPeople
+      const {username, platform_account_id, platform} = foundPeople
 
       switch (platform) {
         case "twitter":
           const {data: tweets} = await this.twitterService.getActions(`users/${platform_account_id}}/tweets?max_results=5`)
           const twitterPublicKey = tweets[0].text.replace(/\n/g, ' ').split(' ')[7]
-          const foundUserCredentialTwitter = await this.userCredentialRepository.findOne({where: {userId: twitterPublicKey, peopleId: id}})
 
-          if (foundUserCredentialTwitter) {
-            if (userId === twitterPublicKey) return true
-            else {
-              await this.userCredentialRepository.deleteById(foundUserCredentialTwitter.id)
-              await this.peopleRepository.deleteById(id)
-            }
-          }
-          break
+          if (userId === twitterPublicKey) return true
+          
+          await this.userCredentialRepository.deleteById(foundCredential.id)
+          
+          return false
 
         case "reddit":
           const {data: redditPosts} = await this.redditService.getActions(`u/${username}.json?limit=1`)
           const redditPublicKey = redditPosts.children[0].data.title.replace(/n/g, ' ').split(' ')[7]
-          const foundUserCredentialReddit = await this.userCredentialRepository.findOne({where: {userId: redditPublicKey, peopleId: id}})
-
-          if (foundUserCredentialReddit && userId === redditPublicKey) {
-            if (userId === redditPublicKey) return true
-            else {
-              await this.userCredentialRepository.deleteById(foundUserCredentialReddit.id)
-              await this.peopleRepository.deleteById(id)
-            }
-          }
-          break
+          
+          if (userId === redditPublicKey) return true
+          
+          await this.userCredentialRepository.deleteById(foundCredential.id)
+          
+          return false
 
         case "facebook":
+          let facebookPublicKey = null
 
-          break
+          const {data: facebookPosts} = await this.facebookService.getActions(platform_account_id, '')
+          const publicKey = "Saying hi to #MyriadNetwork Public Key: "
+          const indexFBPublicKey = facebookPosts.search(publicKey)
+
+          if (indexFBPublicKey >= 0) {
+            const index = indexFBPublicKey + publicKey.length
+            facebookPublicKey = facebookPosts.substring(index, index + 49)
+          }
+
+          if (userId === facebookPublicKey) return true
+          
+          await this.userCredentialRepository.deleteById(foundCredential.id)
+          
+          return false
 
         default:
           return false
@@ -125,8 +135,6 @@ export class UserCredentialController {
     } catch (err) {
       return false
     }
-
-    return false
   }
 
   // @get('/user-credentials/count')

@@ -51,9 +51,6 @@ export class UserController {
     const newUser = await this.userRepository.create(user);
     const findTag = await this.tagRepository.findOne({where: {id: 'myriad'}})
 
-    // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-    // const api = await ApiPromise.create({provider: wsProvider})
-    // await api.isReady
     const api = await polkadotApi()
 
     const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
@@ -75,7 +72,7 @@ export class UserController {
     }
 
     await this.userRepository.savedExperiences(newUser.id).create({
-      name: newUser.name + " Experience",
+      name: newUser.name[0].toUpperCase() + newUser.name.substr(1) + " Experience",
       createdAt: new Date().toString(),
       userId: newUser.id,
       tags: [{
@@ -87,7 +84,7 @@ export class UserController {
         platform_account_id: "1382543232882462720",
         hide: false
       }],
-      description: `Hello, ${newUser.name}! Welcome to myriad!`
+      description: `Hello, ${newUser.name[0].toUpperCase() + newUser.name.substr(1)}! Welcome to myriad!`
     })
 
     return newUser

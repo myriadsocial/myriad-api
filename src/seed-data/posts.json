@@ -116,28 +116,30 @@
   },
   {
     "platformUser": {
-      "username": "Jokowi"
+      "username": "Jokowi",
+      "platform_account_id": "390581294464059"
     },
     "tags": [],
     "platform": "facebook",
     "title": "",
     "text": "",
-    "textId": "",
+    "textId": "1783048761883965",
     "hasMedia": false,
-    "link": "https://www.facebook.com/Jokowi/posts/1783048761883965",
+    "link": "https://www.facebook.com/390581294464059/posts/1783048761883965",
     "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
-      "username": "PrabowoSubianto"
+      "username": "PrabowoSubianto",
+      "platform_account_id": "23383061178"
     },
     "tags": [],
     "platform": "facebook",
     "title": "",
     "text": "",
-    "textId": "",
+    "textId": "10157926732381179",
     "hasMedia": false,
-    "link": "https://www.facebook.com/PrabowoSubianto/posts/10157926732381179",
+    "link": "https://www.facebook.com/23383061178/posts/10157940768461179",
     "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
   }
 ]

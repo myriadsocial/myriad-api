@@ -37,7 +37,7 @@ export class People extends Entity {
     type: 'string',
     required: false,
   })
-  platform_account_id?: string;
+  platform_account_id: string;
 
   @property({
     type: 'boolean',

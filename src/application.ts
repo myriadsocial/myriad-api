@@ -1,5 +1,5 @@
 import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig} from '@loopback/core';
+import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
 import {CronComponent} from '@loopback/cron';
 import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
@@ -18,14 +18,22 @@ import {
   PostRepository,
   SavedExperienceRepository,
   TagRepository,
-  UserCredentialRepository, UserRepository
+  UserCredentialRepository, UserRepository,
+  TransactionRepository
 } from './repositories';
 import comments from './seed-data/comments.json';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
 import tags from './seed-data/tags.json';
 import users from './seed-data/users.json';
+import {polkadotApi} from './helpers/polkadotApi'
 import {MySequence} from './sequence';
+import {
+  FetchContentFacebookJob,
+  FetchContentRedditJob, 
+  FetchContentTwitterJob,
+  UpdatePostsJob
+} from './jobs'
 
 interface PlatformUser {
   username: string,
@@ -66,8 +74,9 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentTwitterJob))
-    // this.add(createBindingFromClass(FetchContentRedditJob))
+    this.add(createBindingFromClass(FetchContentFacebookJob))
+    this.add(createBindingFromClass(FetchContentTwitterJob))
+    this.add(createBindingFromClass(FetchContentRedditJob))
     // this.add(createBindingFromClass(UpdatePostsJob))
 
     this.projectRoot = __dirname;
@@ -93,6 +102,7 @@ export class MyriadApiApplication extends BootMixin(
     const peopleRepo = await this.getRepository(PeopleRepository)
     const commentsRepo = await this.getRepository(CommentRepository)
     const userCredRepo = await this.getRepository(UserCredentialRepository)
+    const transactionRepo = await this.getRepository(TransactionRepository)
 
     await userRepo.deleteAll()
     await tagRepo.deleteAll()
@@ -102,22 +112,36 @@ export class MyriadApiApplication extends BootMixin(
     await peopleRepo.deleteAll()
     await commentsRepo.deleteAll()
     await userCredRepo.deleteAll()
-
+    await transactionRepo.deleteAll()
+    
+    // const api = await polkadotApi()
     const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+    // const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
+    // const from = keyring.addFromMnemonic(mnemonic);
+    // const value = 100000000000000;
+
     const newTags = await tagRepo.createAll(tags)
     const newPeople = await peopleRepo.createAll(people)
 
     for (let i = 0; i < users.length; i++) {
       const user = users[i]
       const seed = mnemonicGenerate()
-      const newKey = keyring.createFromUri(seed + "//hard" + user.name)
+      const newKey = keyring.createFromUri(seed + "", {name: user.name})
       const newUser = await userRepo.create({
         ...user,
         id: newKey.address
       })
 
+      // const {nonce} = await api.query.system.account(newUser.id)
+      // console.log(nonce)
+      // const nonce = await api.rpc.system.accountNextIndex(from);
+      // const to = newUser.id;
+      // const transfer = api.tx.balances.transfer(to, value);
+      
+      // await transfer.signAndSend(from, {nonce: -1});
+
       await userRepo.savedExperiences(newUser.id).create({
-        name: newUser.name + " Experience",
+        name: newUser.name[0].toUpperCase() + newUser.name.substr(1) + " Experience",
         createdAt: new Date().toString(),
         userId: newUser.id,
         tags: [{
@@ -129,7 +153,7 @@ export class MyriadApiApplication extends BootMixin(
           platform_account_id: "1382543232882462720",
           hide: false
         }],
-        description: `Hello, ${newUser.name}! Welcome to myriad!`
+        description: `Hello, ${newUser.name[0].toUpperCase() + newUser.name.substr(1)}! Welcome to myriad!`
       })
     }
 

@@ -6,7 +6,7 @@ export interface Rsshub {
   // this is where you define the Node.js methods that will be
   // mapped to REST/SOAP/gRPC operations as stated in the datasource
   // json file.
-  getContents(platform: String, topic: String): Promise<any>;
+  getContents(username: String): Promise<any>;
 }
 
 export class RsshubProvider implements Provider<Rsshub> {
