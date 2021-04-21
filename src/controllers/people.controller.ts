@@ -210,7 +210,7 @@ export class PeopleController {
           platform: 'twitter',
           text: tweet.text,
           textId: tweet.id,
-          link: `https://twitter.com/${people.username}/status/${tweet.id}`,
+          link: `https://twitter.com/${people.platform_account_id}/status/${tweet.id}`,
           peopleId: people.id,
           platformUser: {
             username: people.username,
