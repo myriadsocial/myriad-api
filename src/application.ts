@@ -9,24 +9,16 @@ import {
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import {Keyring} from '@polkadot/api';
-import {mnemonicGenerate} from '@polkadot/util-crypto';
 import path from 'path';
 import {
-  CommentRepository,
-  ExperienceRepository,
   PeopleRepository,
   PostRepository,
-  SavedExperienceRepository,
   TagRepository,
-  UserCredentialRepository, UserRepository,
   TransactionRepository
 } from './repositories';
-import comments from './seed-data/comments.json';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
 import tags from './seed-data/tags.json';
-import users from './seed-data/users.json';
-import {polkadotApi} from './helpers/polkadotApi'
 import {MySequence} from './sequence';
 import {
   FetchContentFacebookJob,
@@ -94,68 +86,20 @@ export class MyriadApiApplication extends BootMixin(
   async migrateSchema(options?: SchemaMigrationOptions) {
     await super.migrateSchema(options)
 
-    const userRepo = await this.getRepository(UserRepository)
     const tagRepo = await this.getRepository(TagRepository)
-    const experienceRepo = await this.getRepository(ExperienceRepository)
-    const savedExperiencesRepo = await this.getRepository(SavedExperienceRepository)
     const postsRepo = await this.getRepository(PostRepository)
     const peopleRepo = await this.getRepository(PeopleRepository)
-    const commentsRepo = await this.getRepository(CommentRepository)
-    const userCredRepo = await this.getRepository(UserCredentialRepository)
     const transactionRepo = await this.getRepository(TransactionRepository)
 
-    await userRepo.deleteAll()
     await tagRepo.deleteAll()
-    await experienceRepo.deleteAll()
-    await savedExperiencesRepo.deleteAll()
     await postsRepo.deleteAll()
     await peopleRepo.deleteAll()
-    await commentsRepo.deleteAll()
-    await userCredRepo.deleteAll()
     await transactionRepo.deleteAll()
     
-    // const api = await polkadotApi()
     const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
-    // const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
-    // const from = keyring.addFromMnemonic(mnemonic);
-    // const value = 100000000000000;
 
     const newTags = await tagRepo.createAll(tags)
     const newPeople = await peopleRepo.createAll(people)
-
-    for (let i = 0; i < users.length; i++) {
-      const user = users[i]
-      const seed = mnemonicGenerate()
-      const newKey = keyring.createFromUri(seed + "", {name: user.name})
-      const newUser = await userRepo.create({
-        ...user,
-        id: newKey.address
-      })
-
-      // const {nonce} = await api.query.system.account(newUser.id)
-      // console.log(nonce)
-      // const nonce = await api.rpc.system.accountNextIndex(from);
-      // const to = newUser.id;
-      // const transfer = api.tx.balances.transfer(to, value);
-      
-      // await transfer.signAndSend(from, {nonce: -1});
-
-      await userRepo.savedExperiences(newUser.id).create({
-        name: newUser.name[0].toUpperCase() + newUser.name.substr(1) + " Experience",
-        createdAt: new Date().toString(),
-        userId: newUser.id,
-        tags: [{
-          id: 'myriad',
-          hide: false
-        }],
-        people: [{
-          username: "NetworkMyriad",
-          platform_account_id: "1382543232882462720",
-          hide: false
-        }],
-        description: `Hello, ${newUser.name[0].toUpperCase() + newUser.name.substr(1)}! Welcome to myriad!`
-      })
-    }
 
     for (let i = 0; i < newPeople.length; i++) {
       const person = newPeople[i]
@@ -194,24 +138,5 @@ export class MyriadApiApplication extends BootMixin(
 
       await postsRepo.updateById(post.id, {walletAddress: newKey.address})
     }
-
-    const newPosts = await postsRepo.find()
-    const newUsers = await userRepo.find()
-
-    await commentsRepo.createAll(comments.map(function (comment, index) {
-      if (index % 2 === 0) {
-        return {
-          ...comment,
-          userId: newUsers[0].id,
-          postId: newPosts[1].id
-        }
-      } else {
-        return {
-          ...comment,
-          userId: newUsers[1].id,
-          postId: newPosts[1].id
-        }
-      }
-    }))
   }
 }
