@@ -20,7 +20,7 @@ import dotenv from 'dotenv';
 import {xml2json} from 'xml-js';
 import {People} from '../models';
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository, UserRepository} from '../repositories';
-import {Reddit, Rsshub, Twitter} from '../services';
+import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 dotenv.config()
 
 export class PeopleController {
@@ -37,7 +37,8 @@ export class PeopleController {
     public userRepository: UserRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
-    @inject('services.Rsshub') protected rsshubService: Rsshub
+    @inject('services.Rsshub') protected rsshubService: Rsshub,
+    @inject('services.Facebook') protected facebookService: Facebook
   ) { }
 
   @post('/people')
@@ -278,27 +279,47 @@ export class PeopleController {
   async createFBPostByPeople(people: People): Promise<void> {
     try {
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
-      const {data: user} = await this.rsshubService.getContents(people.platform, people.username)
-      const resultJSON = await xml2json(user, {compact: true, trim: true})
+      const xml = await this.rsshubService.getContents(people.platform_account_id)
+      const resultJSON = await xml2json(xml, {compact: true, trim: true})
       const response = JSON.parse(resultJSON)
 
       response.rss.channel.items.forEach(async (post: any) => {
-        const newPost = await this.postRepository.create({
-          platformUser: {
-            username: people.username,
-          },
-          tags: [],
-          platform: 'facebook',
-          title: "",
-          text: "",
-          textId: "",
-          peopleId: people.id,
-          hasMedia: false,
-          link: post.link._text,
-          createdAt: new Date().toString()
-        })
-        const newKey = keyring.addFromUri('//' + newPost.id)
-        await this.postRepository.updateById(newPost.id, {walletAddress: newKey.address})
+        const link = post.link._text.split("=")
+        const platform_account_id = link[2]
+        const textId = link[1].substr(0, link[1].length - 3)
+
+        const foundPost = await this.postRepository.findOne({where: {textId, platform: 'facebook'}})
+
+        if (!foundPost) {
+          const newPost = {
+            platformUser: {
+              username: people.username,
+              platform_account_id,
+            },
+            tags: [],
+            platform: 'facebook',
+            title: "",
+            text: "",
+            textId,
+            peopleId: people.id,
+            hasMedia: false,
+            link: `https://facebook.com/${platform_account_id}/posts/${textId}`,
+            createdAt: new Date().toString()
+          }
+
+          const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
+
+          if (userCredential) {
+            await this.postRepository.create({
+              ...newPost,
+              walletAddress: userCredential.userId
+            })
+          }
+
+          const result = await this.postRepository.create(newPost)
+          const newKey = keyring.addFromUri('//' + result.id)
+          await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+        }
       })
     } catch (err) { }
   }

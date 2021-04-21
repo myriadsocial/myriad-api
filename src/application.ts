@@ -1,5 +1,5 @@
 import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig} from '@loopback/core';
+import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
 import {CronComponent} from '@loopback/cron';
 import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
@@ -9,23 +9,23 @@ import {
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import {Keyring} from '@polkadot/api';
-import {mnemonicGenerate} from '@polkadot/util-crypto';
 import path from 'path';
 import {
-  CommentRepository,
-  ExperienceRepository,
   PeopleRepository,
   PostRepository,
-  SavedExperienceRepository,
   TagRepository,
-  UserCredentialRepository, UserRepository
+  TransactionRepository
 } from './repositories';
-import comments from './seed-data/comments.json';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
 import tags from './seed-data/tags.json';
-import users from './seed-data/users.json';
 import {MySequence} from './sequence';
+import {
+  FetchContentFacebookJob,
+  FetchContentRedditJob, 
+  FetchContentTwitterJob,
+  UpdatePostsJob
+} from './jobs'
 
 interface PlatformUser {
   username: string,
@@ -66,8 +66,9 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentTwitterJob))
-    // this.add(createBindingFromClass(FetchContentRedditJob))
+    this.add(createBindingFromClass(FetchContentFacebookJob))
+    this.add(createBindingFromClass(FetchContentTwitterJob))
+    this.add(createBindingFromClass(FetchContentRedditJob))
     // this.add(createBindingFromClass(UpdatePostsJob))
 
     this.projectRoot = __dirname;
@@ -85,53 +86,20 @@ export class MyriadApiApplication extends BootMixin(
   async migrateSchema(options?: SchemaMigrationOptions) {
     await super.migrateSchema(options)
 
-    const userRepo = await this.getRepository(UserRepository)
     const tagRepo = await this.getRepository(TagRepository)
-    const experienceRepo = await this.getRepository(ExperienceRepository)
-    const savedExperiencesRepo = await this.getRepository(SavedExperienceRepository)
     const postsRepo = await this.getRepository(PostRepository)
     const peopleRepo = await this.getRepository(PeopleRepository)
-    const commentsRepo = await this.getRepository(CommentRepository)
-    const userCredRepo = await this.getRepository(UserCredentialRepository)
+    const transactionRepo = await this.getRepository(TransactionRepository)
 
-    await userRepo.deleteAll()
     await tagRepo.deleteAll()
-    await experienceRepo.deleteAll()
-    await savedExperiencesRepo.deleteAll()
     await postsRepo.deleteAll()
     await peopleRepo.deleteAll()
-    await commentsRepo.deleteAll()
-    await userCredRepo.deleteAll()
-
+    await transactionRepo.deleteAll()
+    
     const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+
     const newTags = await tagRepo.createAll(tags)
     const newPeople = await peopleRepo.createAll(people)
-
-    for (let i = 0; i < users.length; i++) {
-      const user = users[i]
-      const seed = mnemonicGenerate()
-      const newKey = keyring.createFromUri(seed + "//hard" + user.name)
-      const newUser = await userRepo.create({
-        ...user,
-        id: newKey.address
-      })
-
-      await userRepo.savedExperiences(newUser.id).create({
-        name: newUser.name + " Experience",
-        createdAt: new Date().toString(),
-        userId: newUser.id,
-        tags: [{
-          id: 'myriad',
-          hide: false
-        }],
-        people: [{
-          username: "NetworkMyriad",
-          platform_account_id: "1382543232882462720",
-          hide: false
-        }],
-        description: `Hello, ${newUser.name}! Welcome to myriad!`
-      })
-    }
 
     for (let i = 0; i < newPeople.length; i++) {
       const person = newPeople[i]
@@ -170,24 +138,5 @@ export class MyriadApiApplication extends BootMixin(
 
       await postsRepo.updateById(post.id, {walletAddress: newKey.address})
     }
-
-    const newPosts = await postsRepo.find()
-    const newUsers = await userRepo.find()
-
-    await commentsRepo.createAll(comments.map(function (comment, index) {
-      if (index % 2 === 0) {
-        return {
-          ...comment,
-          userId: newUsers[0].id,
-          postId: newPosts[1].id
-        }
-      } else {
-        return {
-          ...comment,
-          userId: newUsers[1].id,
-          postId: newPosts[1].id
-        }
-      }
-    }))
   }
 }
