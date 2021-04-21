@@ -2,6 +2,6 @@ version: '3'
 
 services:
   api:
-    image: blocksphereid/myriad-api
+    image: myriadsocial/myriad-api
     ports:
       - 3000:3000
