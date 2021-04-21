@@ -200,7 +200,7 @@ export class TagController {
           platform: "twitter",
           text: post.text,
           textId: post.id,
-          link: `https://twitter.com/${username}/status/${post.id}`,
+          link: `https://twitter.com/${post.author_id}/status/${post.id}`,
           platformUser: {
             username,
             platform_account_id: post.author_id
