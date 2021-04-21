@@ -48,7 +48,10 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    const newUser = await this.userRepository.create(user);
+    const newUser = await this.userRepository.create({
+      ...user,
+      bio: user.bio ? user.bio : `Hello, my name is ${user.name}`
+    });
     const findTag = await this.tagRepository.findOne({where: {id: 'myriad'}})
 
     const api = await polkadotApi()
