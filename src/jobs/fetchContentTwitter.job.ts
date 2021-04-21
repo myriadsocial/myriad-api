@@ -86,7 +86,7 @@ export class FetchContentTwitterJob extends CronJob {
             platform: "twitter",
             text: post.text,
             textId: post.id,
-            link: `https://twitter.com/${person.username}/status/${post.id}`,
+            link: `https://twitter.com/${person.platform_account_id}/status/${post.id}`,
             peopleId: person.id,
             platformUser: {
               username: person.username,
@@ -141,7 +141,7 @@ export class FetchContentTwitterJob extends CronJob {
             platform: 'twitter',
             text: post.text,
             textId: post.id,
-            link: `https://twitter.com/${username}/status/${post.id}`,
+            link: `https://twitter.com/${post.author_id}/status/${post.id}`,
             platformUser: {
               username,
               platform_account_id: post.author_id
