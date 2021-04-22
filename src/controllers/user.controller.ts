@@ -48,17 +48,14 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    const updateUserName = user.name.replace(/\s\s+/g, ' ')
-      .trim().split(' ')
-
-    const newName =  updateUserName.map(word => {
+    user.name = user.name.replace(/\s\s+/g, ' ')
+      .trim().split(' ').map(word => {
       return word[0].toUpperCase() + word.substr(1).toLowerCase()
     }).join(' ')
 
     const newUser = await this.userRepository.create({
       ...user,
-      name: newName,
-      bio: user.bio ? user.bio : `Hello, my name is ${newName}`
+      bio: user.bio ? user.bio : `Hello, my name is ${user.name}!`
     });
 
     const findTag = await this.tagRepository.findOne({where: {id: 'myriad'}})
@@ -84,7 +81,7 @@ export class UserController {
     }
 
     await this.userRepository.savedExperiences(newUser.id).create({
-      name: newName + " Experience",
+      name: user.name + " Experience",
       createdAt: new Date().toString(),
       userId: newUser.id,
       tags: [{
@@ -96,7 +93,7 @@ export class UserController {
         platform_account_id: "1382543232882462720",
         hide: false
       }],
-      description: `Hello, ${newName}! Welcome to myriad!`
+      description: `Hello, ${user.name}! Welcome to myriad!`
     })
 
     return newUser
