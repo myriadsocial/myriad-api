@@ -48,6 +48,12 @@ export class User extends Entity {
   anonymous?: boolean;
 
   @property({
+    type: 'string',
+    required: false
+  })
+  bio?: string; 
+
+  @property({
     type: 'date',
     required: true,
   })
