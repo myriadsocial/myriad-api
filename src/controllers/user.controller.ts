@@ -48,10 +48,19 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
+    const updateUserName = user.name.replace(/\s\s+/g, ' ')
+      .trim().split(' ')
+
+    const newName =  updateUserName.map(word => {
+      return word[0].toUpperCase() + word.substr(1).toLowerCase()
+    }).join(' ')
+
     const newUser = await this.userRepository.create({
       ...user,
-      bio: user.bio ? user.bio : `Hello, my name is ${user.name}`
+      name: newName,
+      bio: user.bio ? user.bio : `Hello, my name is ${newName}`
     });
+
     const findTag = await this.tagRepository.findOne({where: {id: 'myriad'}})
 
     const api = await polkadotApi()
@@ -75,7 +84,7 @@ export class UserController {
     }
 
     await this.userRepository.savedExperiences(newUser.id).create({
-      name: newUser.name[0].toUpperCase() + newUser.name.substr(1) + " Experience",
+      name: newName + " Experience",
       createdAt: new Date().toString(),
       userId: newUser.id,
       tags: [{
@@ -87,7 +96,7 @@ export class UserController {
         platform_account_id: "1382543232882462720",
         hide: false
       }],
-      description: `Hello, ${newUser.name[0].toUpperCase() + newUser.name.substr(1)}! Welcome to myriad!`
+      description: `Hello, ${newName}! Welcome to myriad!`
     })
 
     return newUser
