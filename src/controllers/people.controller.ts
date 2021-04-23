@@ -13,13 +13,20 @@ import {
   post,
   put,
   requestBody,
-  response
+  response,
+  HttpErrors
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
 import dotenv from 'dotenv';
 import {xml2json} from 'xml-js';
 import {People} from '../models';
-import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository, UserRepository} from '../repositories';
+import {
+  PeopleRepository, 
+  PostRepository, 
+  TagRepository, 
+  UserCredentialRepository, 
+  UserRepository
+} from '../repositories';
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 dotenv.config()
 
@@ -59,33 +66,38 @@ export class PeopleController {
     })
     people: People
   ): Promise<People> {
-    const findPeople = await this.peopleRepository.findOne({where: {platform_account_id: people.platform_account_id}})
+    const findPeople = await this.peopleRepository.findOne({where: {platform_account_id: people.platform_account_id, platform: people.platform}})
 
     if (!findPeople) {
+      let isFound = false
+
       const newPeople = await this.peopleRepository.create(people)
-      // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-      // const api = await ApiPromise.create({provider: wsProvider})
-
-      // await api.isReady
-
+      
       switch (newPeople.platform) {
         case "twitter":
-          await this.createTwitterPostByPeople(newPeople)
+          isFound = await this.createTwitterPostByPeople(newPeople)
           break
 
         case "reddit":
-          await this.createRedditPostByPeople(newPeople)
+          isFound = await this.createRedditPostByPeople(newPeople)
           break
 
         case "facebook":
-          await this.createFBPostByPeople(newPeople)
+          isFound = await this.createFBPostByPeople(newPeople)
           break
       }
 
-      return newPeople
-    }
+      if (!isFound) {
+        await this.peopleRepository.deleteById(newPeople.id)
 
-    return findPeople
+        throw new HttpErrors.NotFound(`People not found in ${people.platform}`)
+      }
+
+      return newPeople
+
+    } else {
+      throw new HttpErrors.UnprocessableEntity('People already exists')
+    }
   }
 
   @get('/people')
@@ -189,7 +201,7 @@ export class PeopleController {
     await this.peopleRepository.deleteById(id);
   }
 
-  async createTwitterPostByPeople(people: People): Promise<void> {
+  async createTwitterPostByPeople(people: People): Promise<boolean> {
     try {
       const {data: tweets} = await this.twitterService.getActions(`users/${people.platform_account_id}/tweets?max_results=5&tweet.fields=attachments,entities,referenced_tweets`)
       const filterTweets = tweets.filter((post: any) => !post.referenced_tweets)
@@ -230,19 +242,26 @@ export class PeopleController {
         const newKey = keyring.addFromUri('//' + result.id)
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
       }
-    } catch (err) { }
+
+      return true
+    } catch (err) { return false }
   }
 
-  async createRedditPostByPeople(people: People): Promise<void> {
+  async createRedditPostByPeople(people: People): Promise<boolean> {
     try {
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
       const {data: user} = await this.redditService.getActions(`u/${people.username}.json?limit=5`)
       const redditPost = await this.postRepository.find({where: {platform: 'reddit'}})
-
-      user.children.filter((post: any) => {
+      const filterPost = user.children.filter((post: any) => {
         return !redditPost.find(e => post.data.id === e.textId) && post.kind === 't3'
-      }).forEach(async (post: any) => {
-        const e = post.data
+      })
+
+      for (let i = 0; i < filterPost.length; i++) {
+        const post = filterPost[i].data
+        const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
+
+        if (foundPost) continue
+
         const newPost = {
           platformUser: {
             username: people.username,
@@ -250,12 +269,12 @@ export class PeopleController {
           },
           tags: [],
           platform: 'reddit',
-          title: e.title,
-          text: e.selftext,
-          textId: e.id,
+          title: post.title,
+          text: post.selftext,
+          textId: post.id,
           peopleId: people.id,
-          hasMedia: e.media_metadata || e.is_reddit_media_domain ? true : false,
-          link: `https://reddit.com/${e.id}`,
+          hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
+          link: `https://reddit.com/${post.id}`,
           createdAt: new Date().toString()
         }
 
@@ -272,11 +291,15 @@ export class PeopleController {
         const newKey = keyring.addFromUri('//' + result.id)
 
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
-      })
-    } catch (err) { }
+
+
+      }
+      return true
+    } catch (err) { return false }
   }
 
-  async createFBPostByPeople(people: People): Promise<void> {
+  // Retrieve facebook post page from RSS hub often error
+  async createFBPostByPeople(people: People): Promise<boolean> {
     try {
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
       const xml = await this.rsshubService.getContents(people.platform_account_id)
@@ -321,6 +344,7 @@ export class PeopleController {
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
         }
       })
-    } catch (err) { }
+      return true
+    } catch (err) { return false }
   }
 }

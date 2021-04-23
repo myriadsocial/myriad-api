@@ -27,6 +27,9 @@ export class User extends Entity {
   @property({
     type: 'string',
     required: true,
+    index: {
+      unique: true,
+    },
     jsonSchema: {
       maxLength: 30,
       minLength: 3,

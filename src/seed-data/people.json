@@ -1,62 +1,38 @@
 [
   {
-    "username": "jokowi",
+    "username": "elonmusk",
     "platform": "twitter",
-    "platform_account_id": "366987179",
+    "platform_account_id": "44196397",
     "hide": false
   },
   {
-    "username": "prabowo",
+    "username": "gavofyork",
     "platform": "twitter",
-    "platform_account_id": "40580714",
+    "platform_account_id": "33962758",
     "hide": false
   },
   {
-    "username": "sandiuno",
-    "platform": "twitter",
-    "platform_account_id": "132041617",
-    "hide": false
-  },
-  {
-    "username": "Kiyai_MarufAmin",
-    "platform": "twitter",
-    "platform_account_id": "1061147681832132609",
-    "hide": false
-  },
-  {
-    "username": "feross",
+    "username": "W3F_Bill",
     "platform": "reddit",
-    "platform_account_id": "t2_3m103",
+    "platform_account_id": "t2_5turjfiq",
     "hide": false
   },
   {
-    "username": "polkadotweekly",
+    "username": "CryptoChief",
     "platform": "reddit",
-    "platform_account_id": "t2_81uafzos",
+    "platform_account_id": "t2_e0t5q",
     "hide": false
   },
   {
-    "username": "FrancisStokes",
-    "platform": "reddit",
-    "platform_account_id": "t2_16cgbu",
-    "hide": false
-  },
-  {
-    "username": "Jokowi",
+    "username": "BillGates",
     "platform": "facebook",
-    "platform_account_id": "390581294464059",
+    "platform_account_id": "216311481960",
     "hide": false
   },
   {
-    "username": "PrabowoSubianto",
+    "username": "vitalikbuterineth",
     "platform": "facebook",
-    "platform_account_id": "23383061178",
-    "hide": false
-  },
-  {
-    "username": "NetworkMyriad",
-    "platform": "twitter",
-    "platform_account_id": "1382543232882462720",
+    "platform_account_id": "112773940147738",
     "hide": false
   }
 ]

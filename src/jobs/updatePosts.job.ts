@@ -18,7 +18,7 @@ export class UpdatePostsJob extends CronJob {
             onTick: async () => {
                 await this.performJob();
             },
-            cronTime: '*/1 * * * * *',
+            cronTime: '*/1800 * * * * *',
             start: true
         })
     }
@@ -49,7 +49,7 @@ export class UpdatePostsJob extends CronJob {
                         const {data: balance} = await api.query.system.account(from.address);
                         const transfer = api.tx.balances.transfer(to, balance.free)
 
-                        await transfer.signAndSend(from, {nonce: -1})
+                        await transfer.signAndSend(from)
 
                         await this.postRepository.updateById(post.id, {
                             ...post,
@@ -58,8 +58,6 @@ export class UpdatePostsJob extends CronJob {
                     }
                 })
             })
-
-            // await api.disconnect()
         } catch (err) { }
     }
 

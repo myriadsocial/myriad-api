@@ -19,7 +19,7 @@ export class FetchContentRedditJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '*/10 * * * * *',
+      cronTime: '*/1800 * * * * *',
       start: true
     })
   }
@@ -36,11 +36,6 @@ export class FetchContentRedditJob extends CronJob {
   async searchPostByPeople() {
     try {
       const people = await this.peopleRepository.find({where: {platform: "reddit"}})
-      // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-      // const api = await ApiPromise.create({provider: wsProvider})
-
-      // await api.isReady
-
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       for (let i = 0; i < people.length; i++) {
@@ -53,8 +48,7 @@ export class FetchContentRedditJob extends CronJob {
 
         for (let j = 0; j < posts.length; j++) {
           const post = posts[j].data
-
-          const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
+          const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: 'reddit'}})
 
           if (foundPost) continue
 
@@ -95,16 +89,11 @@ export class FetchContentRedditJob extends CronJob {
   async searchPostByTag() {
     try {
       const tags = await this.tagRepository.find()
-      // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-      // const api = await ApiPromise.create({provider: wsProvider})
-
-      // await api.isReady
-
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       for (let i = 0; i < tags.length; i++) {
         const tag = tags[i]
-        const {data} = await this.redditService.getActions(`search.json?q=${tag.id}&sort=new&limit=20`)
+        const {data} = await this.redditService.getActions(`search.json?q=${tag.id}&sort=new&limit=10`)
 
         if (data.children.length === 0) continue
 
@@ -116,7 +105,18 @@ export class FetchContentRedditJob extends CronJob {
           const post = posts[j].data
           const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
 
-          if (foundPost) continue
+          if (foundPost) {
+            const foundTag = foundPost.tags.find(postTag => postTag.toLowerCase() === tag.id.toLowerCase())
+            
+            if (!foundTag) {
+              const tags = foundPost.tags
+              tags.push(tag.id)
+
+              await this.postRepository.updateById(foundPost.id, {tags})
+            }
+            
+            continue
+          }
 
           const foundPerson = await this.peopleRepository.findOne({where: {username: post.author}})
           const newPost = {

@@ -1,6 +1,6 @@
 [
   {
-    "id": "myriad",
+    "id": "cryptocurrency",
     "createdAt": "2021-04-04T09:25:55.048Z"
   },
   {
@@ -9,10 +9,6 @@
   },
   {
     "id": "technology",
-    "createdAt": "2021-04-04T09:25:55.048Z"
-  },
-  {
-    "id": "comedy",
     "createdAt": "2021-04-04T09:25:55.048Z"
   }
 ]

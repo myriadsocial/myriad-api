@@ -2,6 +2,11 @@ import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository'
 import {Comment} from './comment.model';
 import {People} from './people.model';
 
+interface PlatformUser {
+  username: string;
+  platform_account_id: string;
+}
+
 @model({
   settings: {
     strictObjectIDCoercion: true,
@@ -28,14 +33,13 @@ export class Post extends Entity {
     required: false,
     default: []
   })
-  tags?: string[];
+  tags: string[];
 
   @property({
     type: 'object',
     required: false,
-    default: {}
   })
-  platformUser?: any;
+  platformUser: PlatformUser;
 
   @property({
     type: 'string',
