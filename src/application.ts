@@ -14,7 +14,12 @@ import {
   PeopleRepository,
   PostRepository,
   TagRepository,
-  TransactionRepository
+  TransactionRepository,
+  UserRepository,
+  SavedExperienceRepository,
+  ExperienceRepository,
+  UserCredentialRepository,
+  CommentRepository
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
@@ -69,7 +74,7 @@ export class MyriadApiApplication extends BootMixin(
     this.add(createBindingFromClass(FetchContentFacebookJob))
     this.add(createBindingFromClass(FetchContentTwitterJob))
     this.add(createBindingFromClass(FetchContentRedditJob))
-    // this.add(createBindingFromClass(UpdatePostsJob))
+    this.add(createBindingFromClass(UpdatePostsJob))
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -90,11 +95,21 @@ export class MyriadApiApplication extends BootMixin(
     const postsRepo = await this.getRepository(PostRepository)
     const peopleRepo = await this.getRepository(PeopleRepository)
     const transactionRepo = await this.getRepository(TransactionRepository)
+    const userRepo = await this.getRepository(UserRepository)
+    const savedExperienceRepo = await this.getRepository(SavedExperienceRepository)
+    const experienceRepo = await this.getRepository(ExperienceRepository)
+    const userCredRepo = await this.getRepository(UserCredentialRepository)
+    const commentRepo = await this.getRepository(CommentRepository)
 
     await tagRepo.deleteAll()
     await postsRepo.deleteAll()
     await peopleRepo.deleteAll()
     await transactionRepo.deleteAll()
+    await userRepo.deleteAll()
+    await savedExperienceRepo.deleteAll()
+    await experienceRepo.deleteAll()
+    await userCredRepo.deleteAll()
+    await commentRepo.deleteAll()
     
     const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 

@@ -26,23 +26,15 @@ export class FetchContentTwitterJob extends CronJob {
 
   async performJob() {
     try {
-      // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-      // const api = await ApiPromise.create({provider: wsProvider})
-
-      // await api.isReady
-
       await this.searchPostByPeople()
       await this.searchPostByTag()
-    } catch (e) {
-      console.log(e)
-    }
+    } catch (e) {}
   }
 
   async searchPostByPeople(): Promise<void> {
     try {
       const people = await this.peopleRepository.find({where: {platform: 'twitter'}})
       const posts = await this.postRepository.find({where: {platform: 'twitter'}})
-
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       for (let i = 0; i < people.length; i++) {
@@ -60,7 +52,7 @@ export class FetchContentTwitterJob extends CronJob {
         personPosts.forEach(post => {
           const id = post.textId
 
-          if (id > maxId) maxId = id
+          if (id > maxId) maxId = `${id}`
         })
 
         if (!maxId) continue
@@ -118,25 +110,35 @@ export class FetchContentTwitterJob extends CronJob {
 
       for (let i = 0; i < tagsRepo.length; i++) {
         const tag = tagsRepo[i]
-
-        const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=%23${tag.id}`)
-        const {users} = includes
+        const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=${tag.id}`)
 
         if (!newPosts) continue
 
+        const {users} = includes
         const filterNewPost = newPosts.filter((post: any) => !post.referenced_tweets)
 
         for (let j = 0; j < filterNewPost.length; j++) {
           const post = filterNewPost[j]
           const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: 'twitter'}})
 
-          if (foundPost) continue
+          if (foundPost) {
+            const foundTag = foundPost.tags.find(postTag => postTag.toLowerCase() === tag.id.toLowerCase())
+
+            if (!foundTag) {
+              const tags = [...foundPost.tags, tag.id]
+
+              await this.postRepository.updateById(foundPost.id, {tags})
+            }
+
+            continue
+          }
 
           const username = users.find((user: any) => user.id === post.author_id).username
           const tags = post.entities ? (post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : []) : []
           const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
+          const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: post.author_id}})
           const newPost = {
-            tags,
+            tags: tags.find((tagPost:string) => tagPost.toLowerCase() === tag.id.toLowerCase()) ? tags : [...tags, tag.id],
             hasMedia,
             platform: 'twitter',
             text: post.text,
@@ -148,8 +150,6 @@ export class FetchContentTwitterJob extends CronJob {
             },
             createdAt: new Date().toString()
           }
-
-          const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: post.author_id}})
 
           if (foundPeople) {
             const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPeople.id}})

@@ -1,145 +1,100 @@
 [
   {
-    "tags": ["blockchain","technology"],
     "platformUser": {
-      "username": "blockchain",
-      "platform_account_id": "125304737"
-    },
-    "platform": "twitter",
-    "title": "",
-    "text": "Who else thinks #bitcoin looks good on the streets of #nyc?",
-    "textId": "1378083565695463425",
-    "hasMedia": true,
-    "link": "https://twitter.com/blockchain/status/1378083565695463425",
-    "createdAt": "2021-04-04T09:25:55.048Z"
-  },
-  {
-    "tags": [],
-    "platformUser": {
-      "username": "jokowi",
-      "platform_account_id": "366987179"
-    },
-    "platform": "twitter",
-    "title": "",
-    "text": "Salah satu usulan pradesain bangunan ikonik di ibu kota negara yang baru adalah Istana Negara karya Nyoman Nuarta. Saya mengharapkan masukan dari Anda semua tentang pradesain. Saya mengharapkan Istana Negara ini jadi kebanggaan bangsa, sekaligus mencerminkan kemajuan bangsa.",
-    "textId": "1377945545029820420",
-    "hasMedia": true,
-    "link": "https://twitter.com/jokowi/status/1377945545029820420",
-    "createdAt": "2021-04-04T09:25:55.048Z"
-  },
-  {
-    "tags": ["technology","comedy"],
-    "platformUser": {
-      "username": "prabowo",
-      "platform_account_id": "40580714"
-    },
-    "platform": "twitter",
-    "title": "",
-    "text": "Kemerdekaan kita diraih dengan pengorbanan besar oleh para pendahulu kita. Perayaan kemerdekaan harus menjadi pengingat bahwa banyak pihak yang tidak ingin kita merdeka.",
-    "textId": "1295252993068027906",
-    "hasMedia": false,
-    "link": "https://twitter.com/prabowo/status/1295252993068027906",
-    "createdAt": "2021-04-04T09:25:55.048Z"
-  },
-  {
-    "tags": [
-      "myriad",
-      "comedy"
-    ],
-    "platformUser": {
-      "username": "sandiuno",
-      "platform_account_id": "132041617"
-    },
-    "platform": "twitter",
-    "title": "",
-    "text": "Bersama Bupati Kulonprogo, H. Sutedjo, melakukan pertemuan dengan pelaku pariwisata dan ekonomi kreatif di Desa Tileng, Kecamatan Girimulyo, Kabupaten Kulonprogo. Sambil menikmati keindahan alam dan minuman-minuman khas daerah sini, kami berdiskusi dan saling bertukar pikiran",
-    "textId": "1378311294353203205",
-    "hasMedia": true,
-    "link": "https://twitter.com/sandiuno/status/1378311294353203205",
-    "createdAt": "2021-04-04T09:25:55.048Z"
-  },
-  {
-    "tags": [],
-    "platformUser": {
-      "username": "Kiyai_MarufAmin",
-      "platform_account_id": "1061147681832132609"
-    },
-    "platform": "twitter",
-    "title": "",
-    "text": "Pemerintah berharap, Mathla’ul Anwar tetap konsisten membangun peradaban bangsa melalui layanan pendidikan, dakwah dan sosial dengan mengajarkan agama yang rahmatan lil ‘alamin, ramah dan toleran.",
-    "textId": "1378294413433053190",
-    "hasMedia": false,
-    "link": "https://twitter.com/Kiyai_MarufAmin/status/1378294413433053190",
-    "createdAt": "2021-04-04T09:25:55.048Z"
-  },
-  {
-    "platformUser": {
-        "username": "feross",
-        "platform_account_id": "t2_3m103"
+      "username": "elonmusk",
+      "platform_account_id": "44196397"
     },
     "tags": [],
-    "platform": "reddit",
-    "title": "The Most Annoying Website - JSConf US 2018 [VIDEO]",
-    "text": "",
-    "textId": "9yd2mo",
-    "hasMedia": false,
-    "link": "https://reddit.com/r/programming/comments/9yd2mo/the_most_annoying_website_jsconf_us_2018_video/",
+    "platform": "twitter",
+    "title": "",
+    "text": "Tesla Solar + Powerwall battery enables consumers to be their own utility",
+    "textId": "1385108424761872387",
+    "hasMedia": true,
+    "link": "https://twitter.com/44196397/status/1385108424761872387",
     "createdAt": "Tue Apr 13 2021 21:34:34 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
-        "username": "FrancisStokes",
-        "platform_account_id": "t2_16cgbu"
+      "username": "Kur3Qr3",
+      "platform_account_id": "966725945901101056"
     },
-    "tags": [],
-    "platform": "reddit",
-    "title": "Replacing a byte pattern in a pre-built binary before flashing",
-    "text": "I'm trying to replace a known series of bytes (a serial number) in a binary I've built (in this case using the arduino framework).\n\nIf I take the binaries and flash them without `esptool`without modification, everything works as expected. If however, I find and replace the serial number bytes (the number of bytes doesn't change), then flashing works, but the program seems corrupted while running.\n\nMy guess is there is some kind of CRC or similar integrity check on the binary at build time, which my byte swapping is messing up.\n\nSo I'm wondering: What is the correct way to go about this? Is there a way I can recalculate the CRC and patch that on the fly too, or there a better way using the existing tools which I'm missing here?",
-    "textId": "mliw6e",
-    "hasMedia": false,
-    "link": "https://reddit.com/r/esp32/comments/mliw6e/replacing_a_byte_pattern_in_a_prebuilt_binary/",
-    "createdAt": "Tue Apr 13 2021 21:33:41 GMT+0700 (Western Indonesia Time)"
+    "tags": ["technology", "blockchain", "bitcoin", "computing", "ibm", "strorage", "artificialintelligence"],
+    "platform": "twitter",
+    "title": "",
+    "text": "This is a 5MB storage space, believe it or not.\n\n#technology #Bitcoin #Computing #IBM #storage #blockchain #ArtificialIntelligence https://t.co/bjaUW9dra2",
+    "textId": "1385164896896225282",
+    "hasMedia": true,
+    "link": "https://twitter.com/966725945901101056/status/1385164896896225282",
+    "createdAt": "Tue Apr 13 2021 21:34:34 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
-        "username": "polkadotweekly",
-        "platform_account_id": "t2_81uafzos"
+      "username": "gavofyork",
+      "platform_account_id": "33962758"
     },
-    "tags": [],
+    "tags": ["blockchain"],
+    "platform": "twitter",
+    "title": "",
+    "text": "1,000,000 blocks, two blockchain protocols, numerous validators and 51 peers - all on @polkadotnetwork 's Krumme Lancke test net https://t.co/KhA5KrrmEb",
+    "textId": "1027306774356025345",
+    "hasMedia": true,
+    "link": "https://twitter.com/33962758/status/1027306774356025345",
+    "createdAt": "Tue Apr 13 2021 21:34:34 GMT+0700 (Western Indonesia Time)"
+  },
+  {
+    "platformUser": {
+        "username": "reverse_my_repo",
+        "platform_account_id": "t2_6wmczacm"
+    },
+    "tags": ["cryptocurrency"],
     "platform": "reddit",
-    "title": "Polkadot Weekly – All of the Polkadot news for the week of April 12, 2021! Tether to Launch on Kusama and Polkadot, Web3 Wave 9 Grants, and a whole lot more!",
+    "title": "Boomer stock streamer denounces cryptocurrency and wishes failure among investors",
     "text": "",
-    "textId": "mpkrfi",
+    "textId": "ms508t",
+    "hasMedia": true,
+    "link": "https://reddit.com/ms508t",
+    "createdAt": "Tue Apr 13 2021 21:34:34 GMT+0700 (Western Indonesia Time)"
+  },
+  {
+    "platformUser": {
+        "username": "CryptoChief",
+        "platform_account_id": "t2_e0t5q"
+    },
+    "tags": ["blockchain"],
+    "platform": "reddit",
+    "title": "Cloudflare dumps Google's reCAPTCHA, moves to hCaptcha as free ride ends (and something about privacy) - hCaptcha works with a bidding system that uses the Ethereum blockchain for payments",
+    "text": "",
+    "textId": "fy9zev",
     "hasMedia": false,
-    "link": "https://reddit.com/r/polkadot_market/comments/mpkrfi/polkadot_weekly_all_of_the_polkadot_news_for_the/",
+    "link": "https://reddit.com/fy9zev",
     "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
-      "username": "Jokowi",
-      "platform_account_id": "390581294464059"
+      "username": "vitalikbuterineth",
+      "platform_account_id": "112773940147738"
     },
     "tags": [],
     "platform": "facebook",
     "title": "",
     "text": "",
-    "textId": "1783048761883965",
+    "textId": "463517661740029",
     "hasMedia": false,
-    "link": "https://www.facebook.com/390581294464059/posts/1783048761883965",
+    "link": "https://www.facebook.com/112773940147738/posts/463517661740029",
     "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
-      "username": "PrabowoSubianto",
-      "platform_account_id": "23383061178"
+      "username": "BillGates",
+      "platform_account_id": "216311481960"
     },
     "tags": [],
     "platform": "facebook",
     "title": "",
     "text": "",
-    "textId": "10157926732381179",
+    "textId": "10157789183586961",
     "hasMedia": false,
-    "link": "https://www.facebook.com/23383061178/posts/10157940768461179",
+    "link": "https://www.facebook.com/216311481960/posts/10157789183586961",
     "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
   }
 ]

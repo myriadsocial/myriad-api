@@ -11,7 +11,8 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
+  HttpErrors
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
 import {polkadotApi} from '../helpers/polkadotApi';
@@ -48,58 +49,75 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    const updateUserName = user.name.replace(/\s\s+/g, ' ')
-      .trim().split(' ')
+    const foundUser = await this.userRepository.findOne({where: {or: [{id: user.id}, {name: user.name}]}})
 
-    const newName =  updateUserName.map(word => {
-      return word[0].toUpperCase() + word.substr(1).toLowerCase()
-    }).join(' ')
+    try {
+      const api = await polkadotApi()
 
-    const newUser = await this.userRepository.create({
-      ...user,
-      name: newName,
-      bio: user.bio ? user.bio : `Hello, my name is ${newName}`
-    });
+      if (!foundUser) {
+        const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+        const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
+        const from = keyring.addFromMnemonic(mnemonic);
+        const to = user.id;
+        const value = 100000000000000;
 
-    const findTag = await this.tagRepository.findOne({where: {id: 'myriad'}})
+        const transfer = api.tx.balances.transfer(to, value);
+        await transfer.signAndSend(from);
+      }
 
-    const api = await polkadotApi()
+      await api.disconnect()
 
-    const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
-    const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
-    const from = keyring.addFromMnemonic(mnemonic);
-    const to = newUser.id;
-    const value = 100000000000000;
+      user.name = user.name.replace(/\s\s+/g, ' ')
+      .trim().split(' ').map(word => {
+        return word[0].toUpperCase() + word.substr(1).toLowerCase()
+      }).join(' ')
 
-    const transfer = api.tx.balances.transfer(to, value);
-    await transfer.signAndSend(from);
-    await api.disconnect()
+      const newUser = await this.userRepository.create({
+        ...user,
+        bio: user.bio ? user.bio : `Hello, my name is ${user.name}!`
+      });
 
-    if (!findTag) {
-      await this.tagRepository.create({
-        id: 'myriad',
-        hide: false,
-        createdAt: new Date().toString()
+      await this.userRepository.savedExperiences(newUser.id).create({
+        name: user.name + " Experience",
+        createdAt: new Date().toString(),
+        userId: newUser.id,
+        tags: [
+          {
+            id: 'cryptocurrency',
+            hide: false
+          },
+          {
+            id: 'blockchain',
+            hide: false
+          },
+          {
+            id: 'technology',
+            hide: false
+          }
+        ],
+        people: [
+          {
+            username: "gavofyork",
+            platform_account_id: "33962758",
+            hide: false
+          },
+          {
+            username: "CryptoChief",
+            platform_account_id: "t2_e0t5q",
+            hide: false
+          }
+        ],
+        description: `Hello, ${user.name}! Welcome to myriad!`
       })
+
+      return newUser
+    } catch (err) {
+      if (err.message === 'LostConnection') {
+        throw new HttpErrors.UnprocessableEntity('Myriad RPC Lost Connection')
+      }
+
+      throw new HttpErrors.UnprocessableEntity('User already exists');
     }
-
-    await this.userRepository.savedExperiences(newUser.id).create({
-      name: newName + " Experience",
-      createdAt: new Date().toString(),
-      userId: newUser.id,
-      tags: [{
-        id: 'myriad',
-        hide: false
-      }],
-      people: [{
-        username: "NetworkMyriad",
-        platform_account_id: "1382543232882462720",
-        hide: false
-      }],
-      description: `Hello, ${newName}! Welcome to myriad!`
-    })
-
-    return newUser
   }
 
   // @get('/users/count')
