@@ -30,7 +30,7 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
     try {
       const api = await polkadotApi()
       await api.isReady
-      console.log('RPC isReady for TransactionWatcher');
+      // console.log('RPC isReady for TransactionWatcher');
 
       // Subscribe to system events via storage
       api.query.system.events((events) => {
@@ -54,14 +54,14 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
               state: 'success',
               createdAt: new Date().toString()
             })
-            console.log({
-              hash, from: encodeAddress(from, 214), to: encodeAddress(to, 214), value
-            })
+            // console.log({
+            //   hash, from: encodeAddress(from, 214), to: encodeAddress(to, 214), value
+            // })
           }
         })
       })
     } catch (error) {
-      console.error(error)
+      // console.error(error)
     }
   }
 
