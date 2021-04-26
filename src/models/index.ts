@@ -10,3 +10,4 @@ export * from './user-credential.model';
 export * from './user.model';
 export * from './verify-user.model';
 export * from './wallet.model';
+export * from './queue.model';

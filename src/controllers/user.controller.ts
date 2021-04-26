@@ -17,7 +17,8 @@ import {
 import {Keyring} from '@polkadot/api';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {User} from '../models';
-import {ExperienceRepository, PeopleRepository, TagRepository, UserRepository} from '../repositories';
+import {ExperienceRepository, PeopleRepository, TagRepository, UserRepository, QueueRepository} from '../repositories';
+import {Index} from '@polkadot/types/interfaces/runtime';
 
 export class UserController {
   constructor(
@@ -28,7 +29,9 @@ export class UserController {
     @repository(TagRepository)
     public tagRepository: TagRepository,
     @repository(PeopleRepository)
-    public peopleRepository: PeopleRepository
+    public peopleRepository: PeopleRepository,
+    @repository(QueueRepository)
+    public queueRepository: QueueRepository
   ) { }
 
   @post('/users')
@@ -49,28 +52,44 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
+    user.name = user.name.replace(/\s\s+/g, ' ')
+    .trim().split(' ').map(word => {
+      return word[0].toUpperCase() + word.substr(1).toLowerCase()
+    }).join(' ')
+
     const foundUser = await this.userRepository.findOne({where: {or: [{id: user.id}, {name: user.name}]}})
 
     try {
       const api = await polkadotApi()
 
       if (!foundUser) {
+        let count:number = 0
+
+        const foundQueue = await this.queueRepository.findOne({where: {id: 'userqueue'}})
         const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
         const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
         const from = keyring.addFromMnemonic(mnemonic);
         const to = user.id;
         const value = 100000000000000;
+        const {nonce} = await api.query.system.account(from.address)
+
+        if (!foundQueue) {
+          count = nonce.toJSON()
+
+          await this.queueRepository.create({
+            id: 'userqueue',
+            count
+          })
+        } else {
+          count = foundQueue.count
+          console.log(count)
+          await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
+        }
 
         const transfer = api.tx.balances.transfer(to, value);
-        await transfer.signAndSend(from);
+        await transfer.signAndSend(from, {nonce: count});
+        await api.disconnect()
       }
-
-      await api.disconnect()
-
-      user.name = user.name.replace(/\s\s+/g, ' ')
-      .trim().split(' ').map(word => {
-        return word[0].toUpperCase() + word.substr(1).toLowerCase()
-      }).join(' ')
 
       const newUser = await this.userRepository.create({
         ...user,

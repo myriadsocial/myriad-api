@@ -21,3 +21,4 @@ export * from './people-post.controller';
 export * from './post-people.controller';
 export * from './transaction-user.controller';
 export * from './transaction.controller';
+export * from './queue.controller';

@@ -8,7 +8,6 @@ export async function polkadotApi(): Promise<ApiPromise> {
 
     return api
   } catch (e) {
-    wsProvider.disconnect()
     throw new Error('LostConnection')
   }
 }
