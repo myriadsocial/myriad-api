@@ -15,7 +15,13 @@ import {
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
 import {Tag} from '../models';
-import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  TagRepository, 
+  UserCredentialRepository,
+  PublicMetricRepository
+} from '../repositories';
 import {Reddit, Twitter} from '../services';
 
 export class TagController {
@@ -28,6 +34,8 @@ export class TagController {
     public postRepository: PostRepository,
     @repository(UserCredentialRepository)
     public userCredentialRepository: UserCredentialRepository,
+    @repository(PublicMetricRepository)
+    public publicMetricRepository: PublicMetricRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit
   ) { }
@@ -218,10 +226,15 @@ export class TagController {
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPeople.id}})
 
           if (userCredential) {
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
               walletAddress: userCredential.id,
               peopleId: foundPeople.id
+            })
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
             })
           }
 
@@ -232,12 +245,22 @@ export class TagController {
           const newKey = keyring.addFromUri('//' + result.id)
 
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
 
         const result = await this.postRepository.create(newPost)
         const newKey = keyring.addFromUri('//' + result.id)
 
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+        await this.publicMetricRepository.create({
+          liked: 0,
+          comment: 0,
+          postId: result.id
+        })
       }
 
       return true

@@ -3,7 +3,13 @@ import {CronJob, cronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
 import {Keyring} from '@polkadot/api';
 import { xml2json } from 'xml-js';
-import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
+import {
+  PeopleRepository, 
+  PostRepository, 
+  TagRepository, 
+  UserCredentialRepository,
+  PublicMetricRepository
+} from '../repositories';
 import {Rsshub} from '../services';
 
 @cronJob()
@@ -13,7 +19,8 @@ export class FetchContentFacebookJob extends CronJob {
     @repository(PostRepository) public postRepository: PostRepository,
     @repository(PeopleRepository) public peopleRepository: PeopleRepository,
     @repository(TagRepository) public tagRepository: TagRepository,
-    @repository(UserCredentialRepository) public userCredentialRepository: UserCredentialRepository
+    @repository(UserCredentialRepository) public userCredentialRepository: UserCredentialRepository,
+    @repository(PublicMetricRepository) public publicMetricRepository: PublicMetricRepository,
   ) {
     super({
       name: 'fetch-content-job',
@@ -72,15 +79,25 @@ export class FetchContentFacebookJob extends CronJob {
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
 
           if (userCredential) {
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
               walletAddress: userCredential.userId
+            })
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
             })
           }
 
           const result = await this.postRepository.create(newPost)
           const newKey = keyring.addFromUri('//' + result.id)
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
       }
     } catch (e) {console.log('error')}

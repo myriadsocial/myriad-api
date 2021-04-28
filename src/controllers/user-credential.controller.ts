@@ -50,14 +50,6 @@ export class UserCredentialController {
     })
     userCredential: UserCredential,
   ): Promise<UserCredential> {
-    const foundUserCredential = await this.userCredentialRepository.findOne({where: {userId: userCredential.userId, peopleId: userCredential.peopleId}})
-
-    if (foundUserCredential) {
-      await this.userCredentialRepository.updateById(foundUserCredential.id, userCredential)
-
-      return userCredential
-    }
-
     return this.userCredentialRepository.create(userCredential)
   }
 

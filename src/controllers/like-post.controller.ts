@@ -1,27 +1,27 @@
 import {
-  repository
+  repository,
 } from '@loopback/repository';
 import {
+  param,
   get,
   getModelSchemaRef,
-  param
 } from '@loopback/rest';
 import {
-  Comment,
-  Post
+  Like,
+  Post,
 } from '../models';
-import {CommentRepository} from '../repositories';
+import {LikeRepository} from '../repositories';
 
-export class CommentPostController {
+export class LikePostController {
   // constructor(
-  //   @repository(CommentRepository)
-  //   public commentRepository: CommentRepository,
+  //   @repository(LikeRepository)
+  //   public likeRepository: LikeRepository,
   // ) { }
 
-  // @get('/comments/{id}/post', {
+  // @get('/likes/{id}/post', {
   //   responses: {
   //     '200': {
-  //       description: 'Post belonging to Comment',
+  //       description: 'Post belonging to Like',
   //       content: {
   //         'application/json': {
   //           schema: {type: 'array', items: getModelSchemaRef(Post)},
@@ -31,8 +31,8 @@ export class CommentPostController {
   //   },
   // })
   // async getPost(
-  //   @param.path.string('id') id: typeof Comment.prototype.id,
+  //   @param.path.string('id') id: typeof Like.prototype.id,
   // ): Promise<Post> {
-  //   return this.commentRepository.post(id);
+  //   return this.likeRepository.post(id);
   // }
 }

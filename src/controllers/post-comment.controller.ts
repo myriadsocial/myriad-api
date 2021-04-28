@@ -18,11 +18,12 @@ import {
 import {
   Comment, Post
 } from '../models';
-import {PostRepository} from '../repositories';
+import {PostRepository, CommentRepository} from '../repositories';
 
 export class PostCommentController {
   constructor(
     @repository(PostRepository) protected postRepository: PostRepository,
+    @repository(CommentRepository) protected commentRepository: CommentRepository
   ) { }
 
   @get('/posts/{id}/comments', {
@@ -66,7 +67,12 @@ export class PostCommentController {
       },
     }) comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    return this.postRepository.comments(id).create(comment);
+    const newComment = await this.postRepository.comments(id).create(comment);
+    const comments = await this.commentRepository.find({where: {postId: id}})
+    
+    await this.postRepository.publicMetric(id).patch({comment: comments.length})
+
+    return newComment
   }
 
   @patch('/posts/{id}/comments', {

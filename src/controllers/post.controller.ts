@@ -89,11 +89,11 @@ export class PostController {
   async findMostLiked(
     @param.query.string("sort") sort: string
   ): Promise<Post[]> {
-    const posts = await this.postRepository.find();
+    const posts = await this.postRepository.find({include: ["publicMetric"]});
 
     posts.sort((a, b) => {
-      const likeA = a.public_metrics.liked
-      const likeB = b.public_metrics.liked
+      const likeA = a.publicMetric.liked
+      const likeB = b.publicMetric.liked
 
       if (likeA < likeB) {
         return 1
@@ -109,8 +109,8 @@ export class PostController {
     switch(sort) {
       case 'asc':
         posts.sort((a, b) => {
-          const likeA = a.public_metrics.liked
-          const likeB = b.public_metrics.liked
+          const likeA = a.publicMetric.liked
+          const likeB = b.publicMetric.liked
 
           if (likeA < likeB) {
             return -1
@@ -148,11 +148,11 @@ export class PostController {
   async findMostComments(
     @param.query.string("sort") sort: string
   ): Promise<Post[]> {
-    const posts = await this.postRepository.find();
+    const posts = await this.postRepository.find({include: ["publicMetric"]});
 
     posts.sort((a, b) => {
-      const commentA = a.public_metrics.comment
-      const commentB = b.public_metrics.comment
+      const commentA = a.publicMetric.comment
+      const commentB = b.publicMetric.comment
 
       if (commentA < commentB) {
         return 1
@@ -168,8 +168,8 @@ export class PostController {
     switch(sort) {
       case 'asc':
         posts.sort((a, b) => {
-          const commentA = a.public_metrics.comment
-          const commentB = b.public_metrics.comment
+          const commentA = a.publicMetric.comment
+          const commentB = b.publicMetric.comment
 
           if (commentA < commentB) {
             return -1
@@ -277,26 +277,6 @@ export class PostController {
     post: Post,
   ): Promise<void> {
     await this.postRepository.updateById(id, post);
-  }
-
-  @patch('/posts/{id}/liked')
-  @response(204, {
-    description: 'Post PATCH success',
-  })
-  async updateLikeById(
-    @param.path.string('id') id: string,
-    @param.query.string('action') action: string
-  ): Promise<void> {
-    const foundPost = await this.postRepository.findOne({where: {id}})
-
-    if (foundPost) {
-      await this.postRepository.updateById(id, {
-        public_metrics: {
-          ...post,
-          liked: foundPost.public_metrics.liked++
-        }
-      });
-    }
   }
 
   // @put('/posts/{id}')

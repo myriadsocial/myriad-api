@@ -123,7 +123,8 @@ export class UserController {
             hide: false
           }
         ],
-        description: `Hello, ${user.name}! Welcome to myriad!`
+        description: `Hello, ${user.name}! Welcome to myriad!`,
+        userId: newUser.id
       })
 
       return newUser
@@ -135,17 +136,6 @@ export class UserController {
       throw new HttpErrors.UnprocessableEntity('User already exists');
     }
   }
-
-  // @get('/users/count')
-  // @response(200, {
-  //   description: 'User model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(User) where?: Where<User>,
-  // ): Promise<Count> {
-  //   return this.userRepository.count(where);
-  // }
 
   @get('/users')
   @response(200, {
@@ -164,6 +154,62 @@ export class UserController {
   ): Promise<User[]> {
     return this.userRepository.find(filter);
   }
+
+  @patch('/users/{id}')
+  @response(204, {
+    description: 'User PATCH success',
+  })
+  async updateById(
+    @param.path.string('id') id: string,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(User, {partial: true}),
+        },
+      },
+    })
+    user: User,
+  ): Promise<void> {
+    await this.userRepository.updateById(id, {
+      ...user,
+      updatedAt: new Date().toString(),
+    });
+  }
+  
+  @del('/users/{id}')
+  @response(204, {
+    description: 'User DELETE success',
+  })
+  async deleteById(@param.path.string('id') id: string): Promise<void> {
+    await this.userRepository.deleteById(id);
+  }
+
+  @get('/users/{id}')
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: true}),
+      },
+    },
+  })
+  async findById(
+    @param.path.string('id') id: string,
+    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>
+  ): Promise<User> {
+    return this.userRepository.findById(id, filter);
+  }
+
+  // @get('/users/count')
+  // @response(200, {
+  //   description: 'User model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(User) where?: Where<User>,
+  // ): Promise<Count> {
+  //   return this.userRepository.count(where);
+  // }
 
   // @patch('/users')
   // @response(200, {
@@ -184,40 +230,6 @@ export class UserController {
   //   return this.userRepository.updateAll(user, where);
   // }
 
-  @get('/users/{id}')
-  @response(200, {
-    description: 'User model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(User, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>
-  ): Promise<User> {
-    return this.userRepository.findById(id, filter);
-  }
-
-  @patch('/users/{id}')
-  @response(204, {
-    description: 'User PATCH success',
-  })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(User, {partial: true}),
-        },
-      },
-    })
-    user: User,
-  ): Promise<void> {
-    await this.userRepository.updateById(id, user);
-  }
-
   // @put('/users/{id}')
   // @response(204, {
   //   description: 'User PUT success',
@@ -229,11 +241,4 @@ export class UserController {
   //   await this.userRepository.replaceById(id, user);
   // }
 
-  @del('/users/{id}')
-  @response(204, {
-    description: 'User DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.userRepository.deleteById(id);
-  }
 }

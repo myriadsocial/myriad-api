@@ -19,13 +19,14 @@ import {
   User,
   Post,
 } from '../models';
-import {UserRepository, AssetRepository, PostRepository} from '../repositories';
+import {UserRepository, AssetRepository, PostRepository, PublicMetricRepository} from '../repositories';
 
 export class UserPostController {
   constructor(
     @repository(UserRepository) protected userRepository: UserRepository,
     @repository(AssetRepository) protected assetRepository: AssetRepository,
-    @repository(PostRepository) protected postRepository: PostRepository
+    @repository(PostRepository) protected postRepository: PostRepository,
+    @repository(PublicMetricRepository) protected publicMetricRepository: PublicMetricRepository
   ) { }
 
   @get('/users/{id}/posts', {
@@ -83,8 +84,15 @@ export class UserPostController {
 
     const newPost = await this.userRepository.posts(id).create({
       ...post,
+      platformCreatedAt: new Date().toString(),
       tags
     });
+    
+    await this.publicMetricRepository.create({
+      liked: 0,
+      comment: 0,
+      postId: newPost.id
+    })
 
     if (assets.length > 0) {
       await this.postRepository.asset(newPost.id).create({

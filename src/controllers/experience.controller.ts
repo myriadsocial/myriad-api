@@ -10,7 +10,8 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
+  HttpErrors
 } from '@loopback/rest';
 import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
@@ -42,17 +43,6 @@ export class ExperienceController {
     return this.experienceRepository.create(experience)
   }
 
-  // @get('/experiences/count')
-  // @response(200, {
-  //   description: 'Experience model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Experience) where?: Where<Experience>,
-  // ): Promise<Count> {
-  //   return this.experienceRepository.count(where);
-  // }
-
   @get('/experiences')
   @response(200, {
     description: 'Array of Experience model instances',
@@ -70,25 +60,6 @@ export class ExperienceController {
   ): Promise<Experience[]> {
     return this.experienceRepository.find(filter);
   }
-
-  // @patch('/experiences')
-  // @response(200, {
-  //   description: 'Experience PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(Experience, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   experience: Experience,
-  //   @param.where(Experience) where?: Where<Experience>,
-  // ): Promise<Count> {
-  //   return this.experienceRepository.updateAll(experience, where);
-  // }
 
   @get('/experiences/{id}')
   @response(200, {
@@ -121,8 +92,54 @@ export class ExperienceController {
     })
     experience: Experience,
   ): Promise<void> {
-    await this.experienceRepository.updateById(id, experience);
+    const foundExperience = await this.experienceRepository.findOne({where: {id}})
+
+    if (!foundExperience) throw new HttpErrors.NotFound("Experience does not exists")
+
+    if (foundExperience.userId !== experience.userId) throw new HttpErrors.UnprocessableEntity("This experience does not belong to you")
+    
+    await this.experienceRepository.updateById(id, {
+      ...experience,
+      updatedAt: new Date().toString()
+    });
   }
+
+  @del('/experiences/{id}')
+  @response(204, {
+    description: 'Experience DELETE success',
+  })
+  async deleteById(@param.path.string('id') id: string): Promise<void> {
+    await this.experienceRepository.deleteById(id);
+  }
+  // @get('/experiences/count')
+  // @response(200, {
+  //   description: 'Experience model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(Experience) where?: Where<Experience>,
+  // ): Promise<Count> {
+  //   return this.experienceRepository.count(where);
+  // }
+
+  // @patch('/experiences')
+  // @response(200, {
+  //   description: 'Experience PATCH success count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async updateAll(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(Experience, {partial: true}),
+  //       },
+  //     },
+  //   })
+  //   experience: Experience,
+  //   @param.where(Experience) where?: Where<Experience>,
+  // ): Promise<Count> {
+  //   return this.experienceRepository.updateAll(experience, where);
+  // }
 
   // @put('/experiences/{id}')
   // @response(204, {
@@ -135,11 +152,4 @@ export class ExperienceController {
   //   await this.experienceRepository.replaceById(id, experience);
   // }
 
-  @del('/experiences/{id}')
-  @response(204, {
-    description: 'Experience DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.experienceRepository.deleteById(id);
-  }
 }

@@ -4,6 +4,7 @@ import {Experience} from './experience.model';
 import {SavedExperience} from './saved-experience.model';
 import {UserCredential} from './user-credential.model';
 import {Post} from './post.model';
+import {Like} from './like.model';
 
 @model({
   settings: {
@@ -91,6 +92,9 @@ export class User extends Entity {
 
   @hasMany(() => Post, {keyTo: 'walletAddress'})
   posts: Post[];
+
+  @hasMany(() => Like)
+  likes: Like[];
 
   constructor(data?: Partial<User>) {
     super(data);

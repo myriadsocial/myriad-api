@@ -1,27 +1,27 @@
 import {
-  repository
+  repository,
 } from '@loopback/repository';
 import {
+  param,
   get,
   getModelSchemaRef,
-  param
 } from '@loopback/rest';
 import {
-  Comment,
-  User
+  Like,
+  User,
 } from '../models';
-import {CommentRepository} from '../repositories';
+import {LikeRepository} from '../repositories';
 
-export class CommentUserController {
+export class LikeUserController {
   // constructor(
-  //   @repository(CommentRepository)
-  //   public commentRepository: CommentRepository,
+  //   @repository(LikeRepository)
+  //   public likeRepository: LikeRepository,
   // ) { }
 
-  // @get('/comments/{id}/user', {
+  // @get('/likes/{id}/user', {
   //   responses: {
   //     '200': {
-  //       description: 'User belonging to Comment',
+  //       description: 'User belonging to Like',
   //       content: {
   //         'application/json': {
   //           schema: {type: 'array', items: getModelSchemaRef(User)},
@@ -31,8 +31,8 @@ export class CommentUserController {
   //   },
   // })
   // async getUser(
-  //   @param.path.string('id') id: typeof Comment.prototype.id,
+  //   @param.path.string('id') id: typeof Like.prototype.id,
   // ): Promise<User> {
-  //   return this.commentRepository.user(id);
+  //   return this.likeRepository.user(id);
   // }
 }

@@ -25,7 +25,8 @@ import {
   PostRepository, 
   TagRepository, 
   UserCredentialRepository, 
-  UserRepository
+  UserRepository,
+  PublicMetricRepository
 } from '../repositories';
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 dotenv.config()
@@ -42,6 +43,8 @@ export class PeopleController {
     public userCredentialRepository: UserCredentialRepository,
     @repository(UserRepository)
     public userRepository: UserRepository,
+    @repository(PublicMetricRepository)
+    public publicMetricRepository: PublicMetricRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
     @inject('services.Rsshub') protected rsshubService: Rsshub,
@@ -236,15 +239,26 @@ export class PeopleController {
         }
 
         if (userCredentials) {
-          await this.postRepository.create({
+          const result = await this.postRepository.create({
             ...newPost,
             walletAddress: userCredentials.userId
+          })
+
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
           })
         }
 
         const result = await this.postRepository.create(newPost)
         const newKey = keyring.addFromUri('//' + result.id)
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+        await this.publicMetricRepository.create({
+          liked: 0,
+          comment: 0,
+          postId: result.id
+        })
       }
 
       return true
@@ -287,9 +301,14 @@ export class PeopleController {
         const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
 
         if (userCredential) {
-          await this.postRepository.create({
+          const result  = await this.postRepository.create({
             ...newPost,
             walletAddress: userCredential.userId
+          })
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
           })
         }
 
@@ -297,8 +316,11 @@ export class PeopleController {
         const newKey = keyring.addFromUri('//' + result.id)
 
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
-
-
+        await this.publicMetricRepository.create({
+          liked: 0,
+          comment: 0,
+          postId: result.id
+        })
       }
       return true
     } catch (err) { }
@@ -339,15 +361,25 @@ export class PeopleController {
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
 
           if (userCredential) {
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
               walletAddress: userCredential.userId
+            })
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
             })
           }
 
           const result = await this.postRepository.create(newPost)
           const newKey = keyring.addFromUri('//' + result.id)
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
       })
       return true

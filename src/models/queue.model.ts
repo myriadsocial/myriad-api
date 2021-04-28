@@ -1,6 +1,13 @@
 import {Entity, model, property} from '@loopback/repository';
 
-@model()
+@model({
+  settings: {
+    mongodb: {
+      collections: 'queues'
+    }
+
+  }
+})
 export class Queue extends Entity {
   @property({
     type: 'string',

@@ -3,15 +3,12 @@ import {Comment} from './comment.model';
 import {People} from './people.model';
 import {Asset} from './asset.model';
 import {User} from './user.model';
+import {Like} from './like.model';
+import {PublicMetric} from './public-metric.model';
 
 interface PlatformUser {
   username: string;
   platform_account_id: string;
-}
-
-interface PublicMetric {
-  liked: number;
-  comment: number;
 }
 
 @model({
@@ -87,16 +84,6 @@ export class Post extends Entity {
   link?: string
 
   @property({
-    type: 'object',
-    required: false,
-    default: {
-      liked: 0,
-      comment: 0
-    }
-  })
-  public_metrics: PublicMetric
-
-  @property({
     type: 'array',
     itemType: 'string',
     required: false
@@ -139,6 +126,12 @@ export class Post extends Entity {
 
   @hasOne(() => Asset)
   asset: Asset;
+
+  @hasMany(() => Like)
+  likes: Like[];
+
+  @hasOne(() => PublicMetric)
+  publicMetric: PublicMetric;
 
   constructor(data?: Partial<Post>) {
     super(data);

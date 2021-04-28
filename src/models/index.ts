@@ -11,3 +11,5 @@ export * from './verify-user.model';
 export * from './wallet.model';
 export * from './queue.model';
 export * from './asset.model';
+export * from './like.model';
+export * from './public-metric.model';

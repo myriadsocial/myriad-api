@@ -9,6 +9,7 @@ import {
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import {Keyring} from '@polkadot/api';
+import {mnemonicGenerate} from '@polkadot/util-crypto'
 import path from 'path';
 import {
   PeopleRepository,
@@ -19,7 +20,8 @@ import {
   SavedExperienceRepository,
   ExperienceRepository,
   UserCredentialRepository,
-  CommentRepository
+  CommentRepository,
+  PublicMetricRepository
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
@@ -100,6 +102,7 @@ export class MyriadApiApplication extends BootMixin(
     const experienceRepo = await this.getRepository(ExperienceRepository)
     const userCredRepo = await this.getRepository(UserCredentialRepository)
     const commentRepo = await this.getRepository(CommentRepository)
+    const publicMetricRepo = await this.getRepository(PublicMetricRepository)
 
     await tagRepo.deleteAll()
     await postsRepo.deleteAll()
@@ -110,11 +113,51 @@ export class MyriadApiApplication extends BootMixin(
     await experienceRepo.deleteAll()
     await userCredRepo.deleteAll()
     await commentRepo.deleteAll()
+    await publicMetricRepo.deleteAll()
     
     const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+    const seed = mnemonicGenerate()
+    const pair = keyring.createFromUri(seed + '', {name: 'Myria'})
 
     const newTags = await tagRepo.createAll(tags)
     const newPeople = await peopleRepo.createAll(people)
+
+    const newUser = await userRepo.create({
+      id: pair.address,
+      name: "Myria",
+    })
+    
+    await userRepo.savedExperiences(newUser.id).create({
+      name: newUser.name + " Experience",
+      tags: [
+        {
+          id: 'cryptocurrency',
+          hide: false
+        },
+        {
+          id: 'blockchain',
+          hide: false
+        },
+        {
+          id: 'technology',
+          hide: false
+        }
+      ],
+      people: [
+        {
+          username: "gavofyork",
+          platform_account_id: "33962758",
+          hide: false
+        },
+        {
+          username: "CryptoChief",
+          platform_account_id: "t2_e0t5q",
+          hide: false
+        }
+      ],
+      description: `Hello, ${newUser.name}! Welcome to myriad!`,
+      userId: newUser.id
+    })
 
     for (let i = 0; i < newPeople.length; i++) {
       const person = newPeople[i]
@@ -152,6 +195,11 @@ export class MyriadApiApplication extends BootMixin(
       const newKey = keyring.addFromUri('//' + post.id)
 
       await postsRepo.updateById(post.id, {walletAddress: newKey.address})
+      await publicMetricRepo.create({
+        liked: 0,
+        comment: 0,
+        postId: post.id
+      })
     }
   }
 }
