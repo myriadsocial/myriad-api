@@ -68,8 +68,12 @@ export class UpdatePostsJob extends CronJob {
             const filterPosts = posts.filter(post => !post.peopleId)
 
             filterPosts.forEach(async post => {
-                const platform_account_id = post.platformUser.platform_account_id
-                const foundPeople = people.find(person => person.platform_account_id === platform_account_id)
+                let foundPeople = null;
+
+                if (post.platformUser) {
+                    const platform_account_id = post.platformUser.platform_account_id;
+                    foundPeople = people.find(person => person.platform_account_id === platform_account_id)
+                }
 
                 if (foundPeople) {
                     const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPeople.id}})

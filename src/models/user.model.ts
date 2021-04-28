@@ -3,6 +3,7 @@ import {Comment} from './comment.model';
 import {Experience} from './experience.model';
 import {SavedExperience} from './saved-experience.model';
 import {UserCredential} from './user-credential.model';
+import {Post} from './post.model';
 
 @model({
   settings: {
@@ -40,6 +41,7 @@ export class User extends Entity {
   @property({
     type: 'string',
     required: false,
+    default: ''
   })
   profilePictureURL?: string;
 
@@ -58,9 +60,10 @@ export class User extends Entity {
 
   @property({
     type: 'date',
-    required: true,
+    required: false,
+    default: new Date()
   })
-  createdAt: string;
+  createdAt?: string;
 
   @property({
     type: 'date',
@@ -85,6 +88,9 @@ export class User extends Entity {
 
   @hasMany(() => UserCredential)
   userCredentials: UserCredential[];
+
+  @hasMany(() => Post, {keyTo: 'walletAddress'})
+  posts: Post[];
 
   constructor(data?: Partial<User>) {
     super(data);

@@ -18,23 +18,6 @@ import {Tag} from '../models';
 import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
 import {Reddit, Twitter} from '../services';
 
-// interface PlatformUser {
-//   username: string,
-//   platform_account_id: string
-// }
-
-// interface Post {
-//   platformUser: PlatformUser,
-//   platform: string,
-//   title: string,
-//   text: string,
-//   tags: string[],
-//   textId: string,
-//   hasMedia: boolean,
-//   link: string,
-//   createdAt: string
-// }
-
 export class TagController {
   constructor(
     @repository(TagRepository)
@@ -85,18 +68,7 @@ export class TagController {
       throw new HttpErrors.NotFound('Tag not found in any social media')
     }
   }
-
-  // @get('/tags/count')
-  // @response(200, {
-  //   description: 'Tag model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Tag) where?: Where<Tag>,
-  // ): Promise<Count> {
-  //   return this.tagRepository.count(where);
-  // }
-
+  
   @get('/tags')
   @response(200, {
     description: 'Array of Tag model instances',
@@ -114,6 +86,33 @@ export class TagController {
   ): Promise<Tag[]> {
     return this.tagRepository.find(filter);
   }
+
+  @get('/tags/{id}')
+  @response(200, {
+    description: 'Tag model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(Tag, {includeRelations: true}),
+      },
+    },
+  })
+  async findById(
+    @param.path.string('id') id: string,
+    @param.filter(Tag, {exclude: 'where'}) filter?: FilterExcludingWhere<Tag>
+  ): Promise<Tag> {
+    return this.tagRepository.findById(id, filter);
+  }
+
+  // @get('/tags/count')
+  // @response(200, {
+  //   description: 'Tag model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(Tag) where?: Where<Tag>,
+  // ): Promise<Count> {
+  //   return this.tagRepository.count(where);
+  // }
 
   // @patch('/tags')
   // @response(200, {
@@ -133,22 +132,6 @@ export class TagController {
   // ): Promise<Count> {
   //   return this.tagRepository.updateAll(tag, where);
   // }
-
-  @get('/tags/{id}')
-  @response(200, {
-    description: 'Tag model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Tag, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(Tag, {exclude: 'where'}) filter?: FilterExcludingWhere<Tag>
-  ): Promise<Tag> {
-    return this.tagRepository.findById(id, filter);
-  }
 
   // @patch('/tags/{id}')
   // @response(204, {
@@ -228,7 +211,7 @@ export class TagController {
             username,
             platform_account_id: post.author_id
           },
-          createdAt: new Date().toString()
+          platformCreatedAt: post.created_at,
         }
 
         if (foundPeople) {
@@ -286,8 +269,7 @@ export class TagController {
           const foundTag = foundPost.tags.find(tag => tag.toLowerCase() === keyword.toLowerCase())
           
           if (!foundTag) {
-            const tags = foundPost.tags
-            tags.push(keyword)
+            const tags = [...foundPost.tags, keyword]
 
             await this.postRepository.updateById(foundPost.id, {tags})
           }
@@ -308,7 +290,7 @@ export class TagController {
           textId: post.id,
           hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
           link: `https://www.reddit.com/${post.id}`,
-          createdAt: new Date().toString()
+          platformCreatedAt: new Date(post.created_utc * 1000).toString()
         }
         
         if (foundPerson) {

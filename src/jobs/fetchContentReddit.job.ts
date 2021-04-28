@@ -19,7 +19,7 @@ export class FetchContentRedditJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '*/1800 * * * * *',
+      cronTime: '*/3600 * * * * *',
       start: true
     })
   }
@@ -65,7 +65,7 @@ export class FetchContentRedditJob extends CronJob {
             textId: post.id,
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
             link: `https://wwww.reddit.com/${post.id}`,
-            createdAt: new Date().toString(),
+            platformCreatedAt: new Date(post.created_utc * 1000).toString()
           }
 
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
@@ -130,8 +130,7 @@ export class FetchContentRedditJob extends CronJob {
             text: post.selftext,
             textId: post.id,
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
-            link: `https://wwww.reddit.com/${post.id}`,
-            createdAt: new Date().toString()
+            link: `https://wwww.reddit.com/${post.id}`
           }
 
           if (foundPerson) {

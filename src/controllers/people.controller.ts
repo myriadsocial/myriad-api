@@ -66,38 +66,39 @@ export class PeopleController {
     })
     people: People
   ): Promise<People> {
-    const findPeople = await this.peopleRepository.findOne({where: {platform_account_id: people.platform_account_id, platform: people.platform}})
-
-    if (!findPeople) {
-      let isFound = false
-
-      const newPeople = await this.peopleRepository.create(people)
-      
-      switch (newPeople.platform) {
-        case "twitter":
-          isFound = await this.createTwitterPostByPeople(newPeople)
-          break
-
-        case "reddit":
-          isFound = await this.createRedditPostByPeople(newPeople)
-          break
-
-        case "facebook":
-          isFound = await this.createFBPostByPeople(newPeople)
-          break
+    let isFound = false
+    let foundPeople = await this.peopleRepository.findOne({
+      where: {
+        or: [
+          {platform_account_id: people.platform_account_id, platform: people.platform},
+          {username: people.username, platform: people.platform}
+        ]
       }
+    })
 
-      if (!isFound) {
-        await this.peopleRepository.deleteById(newPeople.id)
+    if (!foundPeople) foundPeople = await this.peopleRepository.create(people)
 
-        throw new HttpErrors.NotFound(`People not found in ${people.platform}`)
-      }
+    switch (foundPeople.platform) {
+      case "twitter":
+        isFound = await this.createTwitterPostByPeople(foundPeople)
+        break
 
-      return newPeople
+      case "reddit":
+        isFound = await this.createRedditPostByPeople(foundPeople)
+        break
 
-    } else {
-      throw new HttpErrors.UnprocessableEntity('People already exists')
+      case "facebook":
+        isFound = await this.createFBPostByPeople(foundPeople)
+        break
     }
+
+    if (!isFound) {
+      await this.peopleRepository.deleteById(foundPeople.id)
+
+      throw new HttpErrors.NotFound(`People not found in ${people.platform}`)
+    }
+
+    return foundPeople
   }
 
   @get('/people')
@@ -203,7 +204,10 @@ export class PeopleController {
 
   async createTwitterPostByPeople(people: People): Promise<boolean> {
     try {
-      const {data: tweets} = await this.twitterService.getActions(`users/${people.platform_account_id}/tweets?max_results=5&tweet.fields=attachments,entities,referenced_tweets`)
+      const {data: tweets} = await this.twitterService.getActions(`users/${people.platform_account_id}/tweets?max_results=5&tweet.fields=attachments,entities,referenced_tweets,created_at`)
+      
+      if (!tweets) return false 
+
       const filterTweets = tweets.filter((post: any) => !post.referenced_tweets)
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
@@ -228,7 +232,7 @@ export class PeopleController {
             username: people.username,
             platform_account_id: people.platform_account_id
           },
-          createdAt: new Date().toString()
+          platformCreatedAt: tweet.created_at
         }
 
         if (userCredentials) {
@@ -244,7 +248,9 @@ export class PeopleController {
       }
 
       return true
-    } catch (err) { return false }
+    } catch (err) { }
+
+    return false
   }
 
   async createRedditPostByPeople(people: People): Promise<boolean> {
@@ -275,7 +281,7 @@ export class PeopleController {
           peopleId: people.id,
           hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
           link: `https://reddit.com/${post.id}`,
-          createdAt: new Date().toString()
+          platformCreatedAt: new Date(post.created_utc * 1000).toString()
         }
 
         const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
@@ -295,7 +301,8 @@ export class PeopleController {
 
       }
       return true
-    } catch (err) { return false }
+    } catch (err) { }
+    return false 
   }
 
   // Retrieve facebook post page from RSS hub often error
@@ -327,7 +334,6 @@ export class PeopleController {
             peopleId: people.id,
             hasMedia: false,
             link: `https://facebook.com/${platform_account_id}/posts/${textId}`,
-            createdAt: new Date().toString()
           }
 
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
@@ -345,6 +351,7 @@ export class PeopleController {
         }
       })
       return true
-    } catch (err) { return false }
+    } catch (err) { }
+    return false 
   }
 }

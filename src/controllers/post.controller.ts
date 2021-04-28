@@ -40,21 +40,9 @@ export class PostController {
         },
       },
     })
-    post: Omit<Post, 'id'>
+    post: Omit<Post, 'id'>,
   ): Promise<Post> {
     return this.postRepository.create(post);
-
-    // const result = await this.postRepository.create(post)
-    // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-    // const api = await ApiPromise.create({provider: wsProvider})
-    // await api.isReady
-
-    // const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
-
-    // const newKey = keyring.addFromUri('//' + result.id)
-
-    // post.walletAddress = newKey.address
-    // return result
   }
 
   // @get('/posts/count')
@@ -84,6 +72,124 @@ export class PostController {
     @param.filter(Post) filter?: Filter<Post>,
   ): Promise<Post[]> {
     return this.postRepository.find(filter);
+  }
+
+  @get('/posts/liked')
+  @response(200, {
+    description: 'Array of Post model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Post, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findMostLiked(
+    @param.query.string("sort") sort: string
+  ): Promise<Post[]> {
+    const posts = await this.postRepository.find();
+
+    posts.sort((a, b) => {
+      const likeA = a.public_metrics.liked
+      const likeB = b.public_metrics.liked
+
+      if (likeA < likeB) {
+        return 1
+      }
+
+      if (likeA > likeB) {
+        return -1
+      }
+
+      return 0
+    })
+
+    switch(sort) {
+      case 'asc':
+        posts.sort((a, b) => {
+          const likeA = a.public_metrics.liked
+          const likeB = b.public_metrics.liked
+
+          if (likeA < likeB) {
+            return -1
+          }
+
+          if (likeA > likeB) {
+            return 1
+          }
+
+          return 0
+        })
+
+        return posts
+
+      case 'desc':
+        return posts
+
+      default:
+        return posts
+    }
+  }
+
+  @get('/posts/comments')
+  @response(200, {
+    description: 'Array of Post model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Post, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findMostComments(
+    @param.query.string("sort") sort: string
+  ): Promise<Post[]> {
+    const posts = await this.postRepository.find();
+
+    posts.sort((a, b) => {
+      const commentA = a.public_metrics.comment
+      const commentB = b.public_metrics.comment
+
+      if (commentA < commentB) {
+        return 1
+      }
+
+      if (commentA > commentB) {
+        return -1
+      }
+
+      return 0
+    })
+
+    switch(sort) {
+      case 'asc':
+        posts.sort((a, b) => {
+          const commentA = a.public_metrics.comment
+          const commentB = b.public_metrics.comment
+
+          if (commentA < commentB) {
+            return -1
+          }
+
+          if (commentA > commentB) {
+            return 1
+          }
+
+          return 0
+        })
+
+        return posts
+
+      case 'desc':
+        return posts
+
+      default:
+        return posts
+    }
   }
 
   // @patch('/posts')
@@ -171,6 +277,26 @@ export class PostController {
     post: Post,
   ): Promise<void> {
     await this.postRepository.updateById(id, post);
+  }
+
+  @patch('/posts/{id}/liked')
+  @response(204, {
+    description: 'Post PATCH success',
+  })
+  async updateLikeById(
+    @param.path.string('id') id: string,
+    @param.query.string('action') action: string
+  ): Promise<void> {
+    const foundPost = await this.postRepository.findOne({where: {id}})
+
+    if (foundPost) {
+      await this.postRepository.updateById(id, {
+        public_metrics: {
+          ...post,
+          liked: foundPost.public_metrics.liked++
+        }
+      });
+    }
   }
 
   // @put('/posts/{id}')

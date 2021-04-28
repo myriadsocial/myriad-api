@@ -21,7 +21,7 @@ export class FetchContentFacebookJob extends CronJob {
         // do the work
         await this.performJob();
       },
-      cronTime: '*/1800 * * * * *', // Every ten second
+      cronTime: '*/3600 * * * * *', // Every ten second
       start: true,
     });
   }
@@ -67,7 +67,6 @@ export class FetchContentFacebookJob extends CronJob {
             peopleId: person.id,
             hasMedia: false,
             link: `https://facebook.com/${platform_account_id}/posts/${textId}`,
-            createdAt: new Date().toString()
           }
 
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})

@@ -11,7 +11,7 @@
     "textId": "1385108424761872387",
     "hasMedia": true,
     "link": "https://twitter.com/44196397/status/1385108424761872387",
-    "createdAt": "Tue Apr 13 2021 21:34:34 GMT+0700 (Western Indonesia Time)"
+    "platformCreatedAt": "Thu Apr 22 2021 12:49:17 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
@@ -25,7 +25,7 @@
     "textId": "1385164896896225282",
     "hasMedia": true,
     "link": "https://twitter.com/966725945901101056/status/1385164896896225282",
-    "createdAt": "Tue Apr 13 2021 21:34:34 GMT+0700 (Western Indonesia Time)"
+    "platformCreatedAt": "Thu Apr 22 2021 16:33:41 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
@@ -39,7 +39,7 @@
     "textId": "1027306774356025345",
     "hasMedia": true,
     "link": "https://twitter.com/33962758/status/1027306774356025345",
-    "createdAt": "Tue Apr 13 2021 21:34:34 GMT+0700 (Western Indonesia Time)"
+    "platformCreatedAt": "Thu Aug 09 2018 04:33:16 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
@@ -53,7 +53,7 @@
     "textId": "ms508t",
     "hasMedia": true,
     "link": "https://reddit.com/ms508t",
-    "createdAt": "Tue Apr 13 2021 21:34:34 GMT+0700 (Western Indonesia Time)"
+    "platformCreatedAt": "Fri Apr 16 2021 22:01:59 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
@@ -67,7 +67,7 @@
     "textId": "fy9zev",
     "hasMedia": false,
     "link": "https://reddit.com/fy9zev",
-    "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
+    "platformCreatedAt": "Wed Apr 28 2021 09:17:56 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
@@ -80,8 +80,7 @@
     "text": "",
     "textId": "463517661740029",
     "hasMedia": false,
-    "link": "https://www.facebook.com/112773940147738/posts/463517661740029",
-    "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
+    "link": "https://www.facebook.com/112773940147738/posts/463517661740029"
   },
   {
     "platformUser": {
@@ -94,7 +93,6 @@
     "text": "",
     "textId": "10157789183586961",
     "hasMedia": false,
-    "link": "https://www.facebook.com/216311481960/posts/10157789183586961",
-    "createdAt": "Tue Apr 13 2021 21:35:28 GMT+0700 (Western Indonesia Time)"
+    "link": "https://www.facebook.com/216311481960/posts/10157789183586961"
   }
 ]

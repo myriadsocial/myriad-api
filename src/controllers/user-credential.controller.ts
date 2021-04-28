@@ -14,7 +14,6 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import { xml2json } from 'xml-js';
 import {UserCredential, VerifyUser} from '../models';
 import {PeopleRepository, PostRepository, UserCredentialRepository} from '../repositories';
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';

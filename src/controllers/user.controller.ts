@@ -18,7 +18,6 @@ import {Keyring} from '@polkadot/api';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {User} from '../models';
 import {ExperienceRepository, PeopleRepository, TagRepository, UserRepository, QueueRepository} from '../repositories';
-import {Index} from '@polkadot/types/interfaces/runtime';
 
 export class UserController {
   constructor(
@@ -98,8 +97,6 @@ export class UserController {
 
       await this.userRepository.savedExperiences(newUser.id).create({
         name: user.name + " Experience",
-        createdAt: new Date().toString(),
-        userId: newUser.id,
         tags: [
           {
             id: 'cryptocurrency',

@@ -19,7 +19,7 @@ export class FetchContentTwitterJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '*/1800 * * * * *',
+      cronTime: '*/3600 * * * * *',
       start: true
     })
   }
@@ -52,7 +52,7 @@ export class FetchContentTwitterJob extends CronJob {
         personPosts.forEach(post => {
           const id = post.textId
 
-          if (id > maxId) maxId = `${id}`
+          if (id && id > maxId) maxId = id.toString()
         })
 
         if (!maxId) continue
@@ -84,7 +84,7 @@ export class FetchContentTwitterJob extends CronJob {
               username: person.username,
               platform_account_id: person.platform_account_id
             },
-            createdAt: new Date().toString()
+            platformCreatedAt: post.created_at,
           }
 
           if (userCredential) {
@@ -148,7 +148,7 @@ export class FetchContentTwitterJob extends CronJob {
               username,
               platform_account_id: post.author_id
             },
-            createdAt: new Date().toString()
+            platformCreatedAt: post.created_at
           }
 
           if (foundPeople) {
