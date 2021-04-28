@@ -64,7 +64,7 @@ export class FetchContentTwitterJob extends CronJob {
 
         if (!maxId) continue
 
-        const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${maxId}&tweet.fields=attachments,entities,referenced_tweets`)
+        const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${maxId}&tweet.fields=attachments,entities,referenced_tweets,created_at`)
 
         if (!newPosts) continue
 
@@ -127,7 +127,8 @@ export class FetchContentTwitterJob extends CronJob {
 
       for (let i = 0; i < tagsRepo.length; i++) {
         const tag = tagsRepo[i]
-        const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=${tag.id}`)
+        const tweetField = 'referenced_tweets,attachments,entities,created_at'
+        const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=${tweetField}&expansions=author_id&user.fields=id,username&query=${tag.id}`)
 
         if (!newPosts) continue
 

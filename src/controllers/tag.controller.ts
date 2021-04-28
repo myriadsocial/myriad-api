@@ -180,7 +180,7 @@ export class TagController {
 
   async searchTweetsByKeyword(keyword: string): Promise<Boolean> {
     try {
-      const {data: posts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=${keyword}`)
+      const {data: posts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities,created_at&expansions=author_id&user.fields=id,username&query=${keyword}`)
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       if (!posts) return false

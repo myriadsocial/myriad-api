@@ -64,7 +64,7 @@ export class UserController {
       if (!foundUser) {
         let count:number = 0
 
-        const foundQueue = await this.queueRepository.findOne({where: {id: 'userqueue'}})
+        const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
         const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
         const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
         const from = keyring.addFromMnemonic(mnemonic);
@@ -75,13 +75,15 @@ export class UserController {
         if (!foundQueue) {
           count = nonce.toJSON()
 
-          await this.queueRepository.create({
-            id: 'userqueue',
+          const queue = await this.queueRepository.create({
+            id: 'admin',
             count
           })
+
+          await this.queueRepository.updateById(queue.id, {count: count + 1})
         } else {
           count = foundQueue.count
-          console.log(count)
+          
           await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
         }
 

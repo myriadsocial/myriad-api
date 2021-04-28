@@ -3,7 +3,13 @@ import {repository} from '@loopback/repository';
 import {Keyring} from '@polkadot/api';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {Post} from '../models';
-import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
+import {
+    PeopleRepository, 
+    PostRepository, 
+    TagRepository, 
+    UserCredentialRepository,
+    QueueRepository
+} from '../repositories';
 
 @cronJob()
 export class UpdatePostsJob extends CronJob {
@@ -12,6 +18,7 @@ export class UpdatePostsJob extends CronJob {
         @repository(PeopleRepository) public peopleRepository: PeopleRepository,
         @repository(TagRepository) public tagRepository: TagRepository,
         @repository(UserCredentialRepository) public userCredentialRepository: UserCredentialRepository,
+        @repository(QueueRepository) public queueRepository: QueueRepository
     ) {
         super({
             name: 'update-wallet-address-job',
@@ -44,20 +51,44 @@ export class UpdatePostsJob extends CronJob {
 
                 posts.forEach(async (post: Post) => {
                     if (post.walletAddress !== userCredential.userId) {
-                        const from = keyring.addFromUri('//' + post.id)
-                        const to = userCredential.userId
-                        const {data: balance} = await api.query.system.account(from.address);
-                        const transfer = api.tx.balances.transfer(to, balance.free)
+                        try {
+                            let count: number = 0
 
-                        await transfer.signAndSend(from)
+                            const foundQueue = await this.queueRepository.findOne({where: {id: post.walletAddress}})
+                            const from = keyring.addFromUri('//' + post.id)
+                            const to = userCredential.userId
+                            const {data: balance} = await api.query.system.account(from.address);
+                            const {nonce} = await api.query.system.account(to)
 
-                        await this.postRepository.updateById(post.id, {
-                            ...post,
-                            walletAddress: userCredential.userId
-                        })
+                            if (!foundQueue) {
+                                count = nonce.toJSON()
+
+                                const queue = await this.queueRepository.create({
+                                    id: post.walletAddress,
+                                    count
+                                })
+
+                                await this.queueRepository.updateById(queue.id, {count: count + 1})
+                            } else {
+                                count = foundQueue.count
+
+                                await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
+                            }
+
+                            const transfer = api.tx.balances.transfer(to, balance.free)
+    
+                            await transfer.signAndSend(from, {nonce: count})
+    
+                            await this.postRepository.updateById(post.id, {
+                                ...post,
+                                walletAddress: userCredential.userId
+                            })
+                        } catch (err) {}
                     }
                 })
             })
+
+            // await api.disconnect()
         } catch (err) { }
     }
 

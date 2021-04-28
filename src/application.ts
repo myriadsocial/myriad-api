@@ -73,10 +73,10 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentFacebookJob))
-    // this.add(createBindingFromClass(FetchContentTwitterJob))
-    // this.add(createBindingFromClass(FetchContentRedditJob))
-    // this.add(createBindingFromClass(UpdatePostsJob))
+    this.add(createBindingFromClass(FetchContentFacebookJob))
+    this.add(createBindingFromClass(FetchContentTwitterJob))
+    this.add(createBindingFromClass(FetchContentRedditJob))
+    this.add(createBindingFromClass(UpdatePostsJob))
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here

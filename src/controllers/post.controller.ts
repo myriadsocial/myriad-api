@@ -192,6 +192,65 @@ export class PostController {
     }
   }
 
+  @get('/posts/dates')
+  @response(200, {
+    description: 'Array of Post model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Post, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findNewestDate(
+    @param.query.string("sort") sort: string
+  ): Promise<Post[]> {
+    const posts = await this.postRepository.find();
+
+    posts.sort((a,b) => {
+      const dateA = a.platformCreatedAt
+      const dateB = b.platformCreatedAt
+
+      if (dateA < dateB) {
+        return 1
+      }
+
+      if (dateA > dateB) {
+        return -1
+      }
+
+      return 0
+    })
+
+    switch(sort) {
+      case "asc":
+        posts.sort((a, b) => {
+          const dateA = a.platformCreatedAt
+          const dateB = b.platformCreatedAt
+
+          if (dateA < dateB) {
+            return -1
+          }
+
+          if (dateA > dateB) {
+            return 1
+          }
+
+          return 0
+        })
+
+        return posts
+
+      case "desc":
+        return posts
+
+      default:
+        return posts
+    }
+  }
+
   // @patch('/posts')
   // @response(200, {
   //   description: 'Post PATCH success count',

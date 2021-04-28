@@ -93,8 +93,9 @@ export class Post extends Entity {
   @property({
     type: 'date',
     required: false,
+    default: new Date().toString()
   })
-  platformCreatedAt?: string
+  platformCreatedAt: string
 
   @property({
     type: 'date',

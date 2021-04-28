@@ -47,7 +47,7 @@ export class FetchContentRedditJob extends CronJob {
 
       for (let i = 0; i < people.length; i++) {
         const person = people[i]
-        const {data: user} = await this.redditService.getActions(`u/${person.username}.json`)
+        const {data: user} = await this.redditService.getActions(`u/${person.username}.json?limit=10`)
 
         const posts = user.children.filter((post: any) => {
           return post.kind === 't3'
@@ -147,7 +147,8 @@ export class FetchContentRedditJob extends CronJob {
             text: post.selftext,
             textId: post.id,
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
-            link: `https://wwww.reddit.com/${post.id}`
+            link: `https://wwww.reddit.com/${post.id}`,
+            platformCreatedAt: new Date(post.created_utc * 1000).toString()
           }
 
           if (foundPerson) {
