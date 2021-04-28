@@ -65,7 +65,10 @@ export class UserExperienceController {
       },
     }) experience: Omit<Experience, 'id'>,
   ): Promise<Experience> {
-    return this.userRepository.savedExperiences(id).create(experience);
+    return this.userRepository.savedExperiences(id).create({
+      ...experience,
+      userId: id
+    });
   }
 
   @patch('/users/{id}/experiences', {
