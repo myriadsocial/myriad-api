@@ -3,7 +3,7 @@ import {
   CountSchema,
   Filter,
   repository,
-  Where
+  Where,
 } from '@loopback/repository';
 import {
   del,
@@ -13,25 +13,26 @@ import {
   param,
   patch,
   post,
-  requestBody
+  requestBody,
 } from '@loopback/rest';
 import {
-  Comment, User
+  User,
+  Like,
 } from '../models';
 import {UserRepository} from '../repositories';
 
-export class UserCommentController {
+export class UserLikeController {
   // constructor(
   //   @repository(UserRepository) protected userRepository: UserRepository,
   // ) { }
 
-  // @get('/users/{id}/comments', {
+  // @get('/users/{id}/likes', {
   //   responses: {
   //     '200': {
-  //       description: 'Array of User has many Comment',
+  //       description: 'Array of User has many Like',
   //       content: {
   //         'application/json': {
-  //           schema: {type: 'array', items: getModelSchemaRef(Comment)},
+  //           schema: {type: 'array', items: getModelSchemaRef(Like)},
   //         },
   //       },
   //     },
@@ -39,16 +40,16 @@ export class UserCommentController {
   // })
   // async find(
   //   @param.path.string('id') id: string,
-  //   @param.query.object('filter') filter?: Filter<Comment>,
-  // ): Promise<Comment[]> {
-  //   return this.userRepository.comments(id).find(filter);
+  //   @param.query.object('filter') filter?: Filter<Like>,
+  // ): Promise<Like[]> {
+  //   return this.userRepository.likes(id).find(filter);
   // }
 
-  // @post('/users/{id}/comments', {
+  // @post('/users/{id}/likes', {
   //   responses: {
   //     '200': {
   //       description: 'User model instance',
-  //       content: {'application/json': {schema: getModelSchemaRef(Comment)}},
+  //       content: {'application/json': {schema: getModelSchemaRef(Like)}},
   //     },
   //   },
   // })
@@ -57,22 +58,22 @@ export class UserCommentController {
   //   @requestBody({
   //     content: {
   //       'application/json': {
-  //         schema: getModelSchemaRef(Comment, {
-  //           title: 'NewCommentInUser',
+  //         schema: getModelSchemaRef(Like, {
+  //           title: 'NewLikeInUser',
   //           exclude: ['id'],
   //           optional: ['userId']
   //         }),
   //       },
   //     },
-  //   }) comment: Omit<Comment, 'id'>,
-  // ): Promise<Comment> {
-  //   return this.userRepository.comments(id).create(comment);
+  //   }) like: Omit<Like, 'id'>,
+  // ): Promise<Like> {
+  //   return this.userRepository.likes(id).create(like);
   // }
 
-  // @patch('/users/{id}/comments', {
+  // @patch('/users/{id}/likes', {
   //   responses: {
   //     '200': {
-  //       description: 'User.Comment PATCH success count',
+  //       description: 'User.Like PATCH success count',
   //       content: {'application/json': {schema: CountSchema}},
   //     },
   //   },
@@ -82,28 +83,28 @@ export class UserCommentController {
   //   @requestBody({
   //     content: {
   //       'application/json': {
-  //         schema: getModelSchemaRef(Comment, {partial: true}),
+  //         schema: getModelSchemaRef(Like, {partial: true}),
   //       },
   //     },
   //   })
-  //   comment: Partial<Comment>,
-  //   @param.query.object('where', getWhereSchemaFor(Comment)) where?: Where<Comment>,
+  //   like: Partial<Like>,
+  //   @param.query.object('where', getWhereSchemaFor(Like)) where?: Where<Like>,
   // ): Promise<Count> {
-  //   return this.userRepository.comments(id).patch(comment, where);
+  //   return this.userRepository.likes(id).patch(like, where);
   // }
 
-  // @del('/users/{id}/comments', {
+  // @del('/users/{id}/likes', {
   //   responses: {
   //     '200': {
-  //       description: 'User.Comment DELETE success count',
+  //       description: 'User.Like DELETE success count',
   //       content: {'application/json': {schema: CountSchema}},
   //     },
   //   },
   // })
   // async delete(
   //   @param.path.string('id') id: string,
-  //   @param.query.object('where', getWhereSchemaFor(Comment)) where?: Where<Comment>,
+  //   @param.query.object('where', getWhereSchemaFor(Like)) where?: Where<Like>,
   // ): Promise<Count> {
-  //   return this.userRepository.comments(id).delete(where);
+  //   return this.userRepository.likes(id).delete(where);
   // }
 }

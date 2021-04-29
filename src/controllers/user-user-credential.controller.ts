@@ -19,11 +19,12 @@ import {
   User,
   UserCredential
 } from '../models';
-import {UserRepository} from '../repositories';
+import {UserRepository, UserCredentialRepository} from '../repositories';
 
 export class UserUserCredentialController {
   constructor(
     @repository(UserRepository) protected userRepository: UserRepository,
+    @repository(UserCredentialRepository) protected userCredentialRepository: UserCredentialRepository
   ) { }
 
   @get('/users/{id}/user-credentials', {
@@ -67,6 +68,12 @@ export class UserUserCredentialController {
       },
     }) userCredential: Omit<UserCredential, 'id'>,
   ): Promise<UserCredential> {
+    const foundUserCredential = await this.userCredentialRepository.findOne({where: {userId: id, peopleId: userCredential.peopleId}})
+
+    if (foundUserCredential) {
+      await this.userCredentialRepository.updateById(foundUserCredential.id, userCredential)
+      return userCredential
+    }
     return this.userRepository.userCredentials(id).create(userCredential);
   }
 

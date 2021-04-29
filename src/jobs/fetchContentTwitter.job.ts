@@ -2,7 +2,13 @@ import {inject} from '@loopback/core'
 import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
 import {Keyring} from '@polkadot/api'
-import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories'
+import {
+  PeopleRepository, 
+  PostRepository, 
+  TagRepository,
+  UserCredentialRepository,
+  PublicMetricRepository
+} from '../repositories'
 import {Twitter} from '../services'
 
 @cronJob()
@@ -13,13 +19,14 @@ export class FetchContentTwitterJob extends CronJob {
     @repository(PeopleRepository) public peopleRepository: PeopleRepository,
     @repository(TagRepository) public tagRepository: TagRepository,
     @repository(UserCredentialRepository) public userCredentialRepository: UserCredentialRepository,
+    @repository(PublicMetricRepository) public publicMetricRepository: PublicMetricRepository
   ) {
     super({
       name: 'fetch-content-twitter-job',
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '*/1800 * * * * *',
+      cronTime: '*/3600 * * * * *',
       start: true
     })
   }
@@ -52,12 +59,12 @@ export class FetchContentTwitterJob extends CronJob {
         personPosts.forEach(post => {
           const id = post.textId
 
-          if (id > maxId) maxId = `${id}`
+          if (id && id > maxId) maxId = id.toString()
         })
 
         if (!maxId) continue
 
-        const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${maxId}&tweet.fields=attachments,entities,referenced_tweets`)
+        const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${maxId}&tweet.fields=attachments,entities,referenced_tweets,created_at`)
 
         if (!newPosts) continue
 
@@ -84,13 +91,18 @@ export class FetchContentTwitterJob extends CronJob {
               username: person.username,
               platform_account_id: person.platform_account_id
             },
-            createdAt: new Date().toString()
+            platformCreatedAt: post.created_at,
           }
 
           if (userCredential) {
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
               walletAddress: userCredential.userId
+            })
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
             })
           }
 
@@ -98,6 +110,11 @@ export class FetchContentTwitterJob extends CronJob {
           const newKey = keyring.addFromUri('//' + result.id)
 
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
       }
     } catch (err) { }
@@ -110,7 +127,8 @@ export class FetchContentTwitterJob extends CronJob {
 
       for (let i = 0; i < tagsRepo.length; i++) {
         const tag = tagsRepo[i]
-        const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=${tag.id}`)
+        const tweetField = 'referenced_tweets,attachments,entities,created_at'
+        const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=${tweetField}&expansions=author_id&user.fields=id,username&query=${tag.id}`)
 
         if (!newPosts) continue
 
@@ -148,17 +166,22 @@ export class FetchContentTwitterJob extends CronJob {
               username,
               platform_account_id: post.author_id
             },
-            createdAt: new Date().toString()
+            platformCreatedAt: post.created_at
           }
 
           if (foundPeople) {
             const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPeople.id}})
 
             if (userCredential) {
-              await this.postRepository.create({
+              const result = await this.postRepository.create({
                 ...newPost,
                 peopleId: foundPeople.id,
                 walletAddress: userCredential.userId
+              })
+              await this.publicMetricRepository.create({
+                liked: 0,
+                comment: 0,
+                postId: result.id
               })
             }
 
@@ -169,12 +192,22 @@ export class FetchContentTwitterJob extends CronJob {
             const newKey = keyring.addFromUri('//' + result.id)
 
             await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
+            })
           }
 
           const result = await this.postRepository.create(newPost)
           const newKey = keyring.addFromUri('//' + result.id)
 
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
       }
     } catch (e) { }

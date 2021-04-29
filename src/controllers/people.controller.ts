@@ -25,7 +25,8 @@ import {
   PostRepository, 
   TagRepository, 
   UserCredentialRepository, 
-  UserRepository
+  UserRepository,
+  PublicMetricRepository
 } from '../repositories';
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 dotenv.config()
@@ -42,6 +43,8 @@ export class PeopleController {
     public userCredentialRepository: UserCredentialRepository,
     @repository(UserRepository)
     public userRepository: UserRepository,
+    @repository(PublicMetricRepository)
+    public publicMetricRepository: PublicMetricRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
     @inject('services.Rsshub') protected rsshubService: Rsshub,
@@ -66,38 +69,39 @@ export class PeopleController {
     })
     people: People
   ): Promise<People> {
-    const findPeople = await this.peopleRepository.findOne({where: {platform_account_id: people.platform_account_id, platform: people.platform}})
-
-    if (!findPeople) {
-      let isFound = false
-
-      const newPeople = await this.peopleRepository.create(people)
-      
-      switch (newPeople.platform) {
-        case "twitter":
-          isFound = await this.createTwitterPostByPeople(newPeople)
-          break
-
-        case "reddit":
-          isFound = await this.createRedditPostByPeople(newPeople)
-          break
-
-        case "facebook":
-          isFound = await this.createFBPostByPeople(newPeople)
-          break
+    let isFound = false
+    let foundPeople = await this.peopleRepository.findOne({
+      where: {
+        or: [
+          {platform_account_id: people.platform_account_id, platform: people.platform},
+          {username: people.username, platform: people.platform}
+        ]
       }
+    })
 
-      if (!isFound) {
-        await this.peopleRepository.deleteById(newPeople.id)
+    if (!foundPeople) foundPeople = await this.peopleRepository.create(people)
 
-        throw new HttpErrors.NotFound(`People not found in ${people.platform}`)
-      }
+    switch (foundPeople.platform) {
+      case "twitter":
+        isFound = await this.createTwitterPostByPeople(foundPeople)
+        break
 
-      return newPeople
+      case "reddit":
+        isFound = await this.createRedditPostByPeople(foundPeople)
+        break
 
-    } else {
-      throw new HttpErrors.UnprocessableEntity('People already exists')
+      case "facebook":
+        isFound = await this.createFBPostByPeople(foundPeople)
+        break
     }
+
+    if (!isFound) {
+      await this.peopleRepository.deleteById(foundPeople.id)
+
+      throw new HttpErrors.NotFound(`${people.username} is not found in ${people.platform} social media`)
+    }
+
+    return foundPeople
   }
 
   @get('/people')
@@ -203,18 +207,37 @@ export class PeopleController {
 
   async createTwitterPostByPeople(people: People): Promise<boolean> {
     try {
-      const {data: tweets} = await this.twitterService.getActions(`users/${people.platform_account_id}/tweets?max_results=5&tweet.fields=attachments,entities,referenced_tweets`)
+      const platform_account_id = people.platform_account_id
+      const maxResults = 5
+      const tweetField = "attachments,entities,referenced_tweets,created_at"
+
+      const {data: tweets} = await this.twitterService.getActions(`users/${platform_account_id}/tweets?max_results=${maxResults}&tweet.fields=${tweetField}`)
+      
+      if (!tweets) return false 
+
       const filterTweets = tweets.filter((post: any) => !post.referenced_tweets)
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
       for (let i = 0; i < filterTweets.length; i++) {
         const tweet = filterTweets[i]
-        const foundTweet = await this.postRepository.findOne({where: {textId: tweet.id, platform: "twitter"}})
+        const foundTweet = await this.postRepository.findOne({
+          where: {
+            textId: tweet.id, platform: "twitter"
+          }
+        })
 
         if (foundTweet) continue
 
-        const userCredentials = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
-        const tags = tweet.entities ? tweet.entities.hashtags ? tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : [] : []
+        const userCredentials = await this.userCredentialRepository.findOne({
+          where: {
+            peopleId: people.id
+          }
+        })
+
+        const tags = tweet.entities ? (tweet.entities.hashtags ? 
+          tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
+        ) : []
+
         const hasMedia = tweet.attachments ? Boolean(tweet.attachments.media_keys) : false
         const newPost = {
           tags,
@@ -222,35 +245,49 @@ export class PeopleController {
           platform: 'twitter',
           text: tweet.text,
           textId: tweet.id,
-          link: `https://twitter.com/${people.platform_account_id}/status/${tweet.id}`,
+          link: `https://twitter.com/${platform_account_id}/status/${tweet.id}`,
           peopleId: people.id,
           platformUser: {
             username: people.username,
-            platform_account_id: people.platform_account_id
+            platform_account_id: platform_account_id
           },
-          createdAt: new Date().toString()
+          platformCreatedAt: tweet.created_at
         }
 
         if (userCredentials) {
-          await this.postRepository.create({
+          const result = await this.postRepository.create({
             ...newPost,
             walletAddress: userCredentials.userId
+          })
+
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
           })
         }
 
         const result = await this.postRepository.create(newPost)
         const newKey = keyring.addFromUri('//' + result.id)
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+        await this.publicMetricRepository.create({
+          liked: 0,
+          comment: 0,
+          postId: result.id
+        })
       }
 
       return true
-    } catch (err) { return false }
+    } catch (err) { }
+
+    return false
   }
 
   async createRedditPostByPeople(people: People): Promise<boolean> {
     try {
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
       const {data: user} = await this.redditService.getActions(`u/${people.username}.json?limit=5`)
+
+      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
       const redditPost = await this.postRepository.find({where: {platform: 'reddit'}})
       const filterPost = user.children.filter((post: any) => {
         return !redditPost.find(e => post.data.id === e.textId) && post.kind === 't3'
@@ -258,7 +295,11 @@ export class PeopleController {
 
       for (let i = 0; i < filterPost.length; i++) {
         const post = filterPost[i].data
-        const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
+        const foundPost = await this.postRepository.findOne({
+          where: {
+            textId: post.id
+          }
+        })
 
         if (foundPost) continue
 
@@ -275,15 +316,25 @@ export class PeopleController {
           peopleId: people.id,
           hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
           link: `https://reddit.com/${post.id}`,
-          createdAt: new Date().toString()
+          platformCreatedAt: new Date(post.created_utc * 1000).toString()
         }
 
-        const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
+        const userCredential = await this.userCredentialRepository.findOne({
+          where: {
+            peopleId: people.id
+          }
+        })
 
         if (userCredential) {
-          await this.postRepository.create({
+          const result  = await this.postRepository.create({
             ...newPost,
             walletAddress: userCredential.userId
+          })
+
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
           })
         }
 
@@ -291,11 +342,15 @@ export class PeopleController {
         const newKey = keyring.addFromUri('//' + result.id)
 
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
-
-
+        await this.publicMetricRepository.create({
+          liked: 0,
+          comment: 0,
+          postId: result.id
+        })
       }
       return true
-    } catch (err) { return false }
+    } catch (err) { }
+    return false 
   }
 
   // Retrieve facebook post page from RSS hub often error
@@ -311,7 +366,11 @@ export class PeopleController {
         const platform_account_id = link[2]
         const textId = link[1].substr(0, link[1].length - 3)
 
-        const foundPost = await this.postRepository.findOne({where: {textId, platform: 'facebook'}})
+        const foundPost = await this.postRepository.findOne({
+          where: {
+            textId, platform: 'facebook'
+          }
+        })
 
         if (!foundPost) {
           const newPost = {
@@ -327,24 +386,34 @@ export class PeopleController {
             peopleId: people.id,
             hasMedia: false,
             link: `https://facebook.com/${platform_account_id}/posts/${textId}`,
-            createdAt: new Date().toString()
           }
 
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})
 
           if (userCredential) {
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
               walletAddress: userCredential.userId
+            })
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
             })
           }
 
           const result = await this.postRepository.create(newPost)
           const newKey = keyring.addFromUri('//' + result.id)
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
       })
       return true
-    } catch (err) { return false }
+    } catch (err) { }
+    return false 
   }
 }

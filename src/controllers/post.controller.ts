@@ -40,21 +40,9 @@ export class PostController {
         },
       },
     })
-    post: Omit<Post, 'id'>
+    post: Omit<Post, 'id'>,
   ): Promise<Post> {
     return this.postRepository.create(post);
-
-    // const result = await this.postRepository.create(post)
-    // const wsProvider = new WsProvider('wss://rpc.myriad.systems')
-    // const api = await ApiPromise.create({provider: wsProvider})
-    // await api.isReady
-
-    // const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
-
-    // const newKey = keyring.addFromUri('//' + result.id)
-
-    // post.walletAddress = newKey.address
-    // return result
   }
 
   // @get('/posts/count')
@@ -84,6 +72,183 @@ export class PostController {
     @param.filter(Post) filter?: Filter<Post>,
   ): Promise<Post[]> {
     return this.postRepository.find(filter);
+  }
+
+  @get('/posts/liked')
+  @response(200, {
+    description: 'Array of Post model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Post, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findMostLiked(
+    @param.query.string("sort") sort: string
+  ): Promise<Post[]> {
+    const posts = await this.postRepository.find({include: ["publicMetric"]});
+
+    posts.sort((a, b) => {
+      const likeA = a.publicMetric.liked
+      const likeB = b.publicMetric.liked
+
+      if (likeA < likeB) {
+        return 1
+      }
+
+      if (likeA > likeB) {
+        return -1
+      }
+
+      return 0
+    })
+
+    switch(sort) {
+      case 'asc':
+        posts.sort((a, b) => {
+          const likeA = a.publicMetric.liked
+          const likeB = b.publicMetric.liked
+
+          if (likeA < likeB) {
+            return -1
+          }
+
+          if (likeA > likeB) {
+            return 1
+          }
+
+          return 0
+        })
+
+        return posts
+
+      case 'desc':
+        return posts
+
+      default:
+        return posts
+    }
+  }
+
+  @get('/posts/comments')
+  @response(200, {
+    description: 'Array of Post model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Post, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findMostComments(
+    @param.query.string("sort") sort: string
+  ): Promise<Post[]> {
+    const posts = await this.postRepository.find({include: ["publicMetric"]});
+
+    posts.sort((a, b) => {
+      const commentA = a.publicMetric.comment
+      const commentB = b.publicMetric.comment
+
+      if (commentA < commentB) {
+        return 1
+      }
+
+      if (commentA > commentB) {
+        return -1
+      }
+
+      return 0
+    })
+
+    switch(sort) {
+      case 'asc':
+        posts.sort((a, b) => {
+          const commentA = a.publicMetric.comment
+          const commentB = b.publicMetric.comment
+
+          if (commentA < commentB) {
+            return -1
+          }
+
+          if (commentA > commentB) {
+            return 1
+          }
+
+          return 0
+        })
+
+        return posts
+
+      case 'desc':
+        return posts
+
+      default:
+        return posts
+    }
+  }
+
+  @get('/posts/dates')
+  @response(200, {
+    description: 'Array of Post model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Post, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findNewestDate(
+    @param.query.string("sort") sort: string
+  ): Promise<Post[]> {
+    const posts = await this.postRepository.find();
+
+    posts.sort((a,b) => {
+      const dateA = a.platformCreatedAt
+      const dateB = b.platformCreatedAt
+
+      if (dateA < dateB) {
+        return 1
+      }
+
+      if (dateA > dateB) {
+        return -1
+      }
+
+      return 0
+    })
+
+    switch(sort) {
+      case "asc":
+        posts.sort((a, b) => {
+          const dateA = a.platformCreatedAt
+          const dateB = b.platformCreatedAt
+
+          if (dateA < dateB) {
+            return -1
+          }
+
+          if (dateA > dateB) {
+            return 1
+          }
+
+          return 0
+        })
+
+        return posts
+
+      case "desc":
+        return posts
+
+      default:
+        return posts
+    }
   }
 
   // @patch('/posts')

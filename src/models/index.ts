@@ -1,7 +1,6 @@
 export * from './comment.model';
 export * from './experience.model';
 export * from './people.model';
-export * from './platform.model';
 export * from './post.model';
 export * from './saved-experience.model';
 export * from './tag.model';
@@ -11,3 +10,6 @@ export * from './user.model';
 export * from './verify-user.model';
 export * from './wallet.model';
 export * from './queue.model';
+export * from './asset.model';
+export * from './like.model';
+export * from './public-metric.model';

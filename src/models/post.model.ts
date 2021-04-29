@@ -1,6 +1,10 @@
-import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
+import {belongsTo, Entity, hasMany, model, property, hasOne} from '@loopback/repository';
 import {Comment} from './comment.model';
 import {People} from './people.model';
+import {Asset} from './asset.model';
+import {User} from './user.model';
+import {Like} from './like.model';
+import {PublicMetric} from './public-metric.model';
 
 interface PlatformUser {
   username: string;
@@ -39,13 +43,14 @@ export class Post extends Entity {
     type: 'object',
     required: false,
   })
-  platformUser: PlatformUser;
+  platformUser?: PlatformUser;
 
   @property({
     type: 'string',
-    required: true
+    required: false,
+    default: 'myriad'
   })
-  platform: string
+  platform?: string
 
   @property({
     type: 'string',
@@ -63,7 +68,7 @@ export class Post extends Entity {
     type: 'string',
     required: false,
   })
-  textId: string;
+  textId?: string;
 
   @property({
     type: 'boolean',
@@ -79,16 +84,28 @@ export class Post extends Entity {
   link?: string
 
   @property({
-    type: 'string',
-    required: false,
+    type: 'array',
+    itemType: 'string',
+    required: false
   })
-  walletAddress?: string
+  assets?: string[]
 
   @property({
     type: 'date',
-    required: true,
+    required: false,
+    default: new Date().toString()
   })
-  createdAt: string;
+  platformCreatedAt: string
+
+  @property({
+    type: 'date',
+    required: false,
+    default: new Date()
+  })
+  createdAt?: string;
+
+  @belongsTo(() => User, {name: 'user'})
+  walletAddress: string;
 
   @property({
     type: 'date',
@@ -107,6 +124,15 @@ export class Post extends Entity {
 
   @belongsTo(() => People)
   peopleId: string;
+
+  @hasOne(() => Asset)
+  asset: Asset;
+
+  @hasMany(() => Like)
+  likes: Like[];
+
+  @hasOne(() => PublicMetric)
+  publicMetric: PublicMetric;
 
   constructor(data?: Partial<Post>) {
     super(data);

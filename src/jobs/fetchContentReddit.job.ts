@@ -2,7 +2,13 @@ import {inject} from '@loopback/core';
 import {cronJob, CronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
 import {Keyring} from '@polkadot/api';
-import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
+import {
+  PeopleRepository, 
+  PostRepository, 
+  TagRepository, 
+  UserCredentialRepository,
+  PublicMetricRepository
+} from '../repositories';
 import {Reddit} from '../services';
 
 @cronJob()
@@ -12,14 +18,15 @@ export class FetchContentRedditJob extends CronJob {
     @repository(PostRepository) public postRepository: PostRepository,
     @repository(PeopleRepository) public peopleRepository: PeopleRepository,
     @repository(TagRepository) public tagRepository: TagRepository,
-    @repository(UserCredentialRepository) public userCredentialRepository: UserCredentialRepository
+    @repository(UserCredentialRepository) public userCredentialRepository: UserCredentialRepository,
+    @repository(PublicMetricRepository) public publicMetricRepository: PublicMetricRepository
   ) {
     super({
       name: 'fetch-content-reddit-job',
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '*/1800 * * * * *',
+      cronTime: '*/3600 * * * * *',
       start: true
     })
   }
@@ -40,7 +47,7 @@ export class FetchContentRedditJob extends CronJob {
 
       for (let i = 0; i < people.length; i++) {
         const person = people[i]
-        const {data: user} = await this.redditService.getActions(`u/${person.username}.json`)
+        const {data: user} = await this.redditService.getActions(`u/${person.username}.json?limit=10`)
 
         const posts = user.children.filter((post: any) => {
           return post.kind === 't3'
@@ -65,15 +72,20 @@ export class FetchContentRedditJob extends CronJob {
             textId: post.id,
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
             link: `https://wwww.reddit.com/${post.id}`,
-            createdAt: new Date().toString(),
+            platformCreatedAt: new Date(post.created_utc * 1000).toString()
           }
 
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
 
           if (userCredential) {
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
               walletAddress: userCredential.userId,
+            })
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
             })
           }
 
@@ -81,6 +93,11 @@ export class FetchContentRedditJob extends CronJob {
           const newKey = keyring.addFromUri('//' + result.id)
 
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
       }
     } catch (err) { }
@@ -131,17 +148,22 @@ export class FetchContentRedditJob extends CronJob {
             textId: post.id,
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
             link: `https://wwww.reddit.com/${post.id}`,
-            createdAt: new Date().toString()
+            platformCreatedAt: new Date(post.created_utc * 1000).toString()
           }
 
           if (foundPerson) {
             const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPerson.id}})
 
             if (userCredential) {
-              await this.postRepository.create({
+              const result = await this.postRepository.create({
                 ...newPost,
                 peopleId: foundPerson.id,
                 walletAddress: userCredential.userId
+              })
+              await this.publicMetricRepository.create({
+                liked: 0,
+                comment: 0,
+                postId: result.id
               })
             }
             const result = await this.postRepository.create({
@@ -151,12 +173,22 @@ export class FetchContentRedditJob extends CronJob {
             const newKey = keyring.addFromUri('//' + result.id)
 
             await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
+            })
           }
 
           const result = await this.postRepository.create(newPost)
           const newKey = keyring.addFromUri('//' + result.id)
 
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
       }
     } catch (err) { }

@@ -15,25 +15,14 @@ import {
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
 import {Tag} from '../models';
-import {PeopleRepository, PostRepository, TagRepository, UserCredentialRepository} from '../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  TagRepository, 
+  UserCredentialRepository,
+  PublicMetricRepository
+} from '../repositories';
 import {Reddit, Twitter} from '../services';
-
-// interface PlatformUser {
-//   username: string,
-//   platform_account_id: string
-// }
-
-// interface Post {
-//   platformUser: PlatformUser,
-//   platform: string,
-//   title: string,
-//   text: string,
-//   tags: string[],
-//   textId: string,
-//   hasMedia: boolean,
-//   link: string,
-//   createdAt: string
-// }
 
 export class TagController {
   constructor(
@@ -45,6 +34,8 @@ export class TagController {
     public postRepository: PostRepository,
     @repository(UserCredentialRepository)
     public userCredentialRepository: UserCredentialRepository,
+    @repository(PublicMetricRepository)
+    public publicMetricRepository: PublicMetricRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit
   ) { }
@@ -68,7 +59,15 @@ export class TagController {
     tag: Tag,
   ): Promise<Tag> {
     const keyword = tag.id.replace(/ /g, '').trim();
-    const foundTag = await this.tagRepository.findOne({where: {or: [{id: keyword},{id: keyword.toLowerCase()},{id: keyword.toUpperCase()}]}})
+    const foundTag = await this.tagRepository.findOne({
+      where: {
+        or: [
+          {id: keyword},
+          {id: keyword.toLowerCase()},
+          {id: keyword.toUpperCase()}
+        ]
+      }
+    })
 
     if (foundTag) throw new HttpErrors.UnprocessableEntity('Tag already exists')
 
@@ -82,21 +81,10 @@ export class TagController {
         id: keyword
       })
     } else {
-      throw new HttpErrors.NotFound('Tag not found in any social media')
+      throw new HttpErrors.NotFound(`Keyword ${tag.id} is not found in any social media`)
     }
   }
-
-  // @get('/tags/count')
-  // @response(200, {
-  //   description: 'Tag model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Tag) where?: Where<Tag>,
-  // ): Promise<Count> {
-  //   return this.tagRepository.count(where);
-  // }
-
+  
   @get('/tags')
   @response(200, {
     description: 'Array of Tag model instances',
@@ -114,6 +102,33 @@ export class TagController {
   ): Promise<Tag[]> {
     return this.tagRepository.find(filter);
   }
+
+  @get('/tags/{id}')
+  @response(200, {
+    description: 'Tag model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(Tag, {includeRelations: true}),
+      },
+    },
+  })
+  async findById(
+    @param.path.string('id') id: string,
+    @param.filter(Tag, {exclude: 'where'}) filter?: FilterExcludingWhere<Tag>
+  ): Promise<Tag> {
+    return this.tagRepository.findById(id, filter);
+  }
+
+  // @get('/tags/count')
+  // @response(200, {
+  //   description: 'Tag model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(Tag) where?: Where<Tag>,
+  // ): Promise<Count> {
+  //   return this.tagRepository.count(where);
+  // }
 
   // @patch('/tags')
   // @response(200, {
@@ -133,22 +148,6 @@ export class TagController {
   // ): Promise<Count> {
   //   return this.tagRepository.updateAll(tag, where);
   // }
-
-  @get('/tags/{id}')
-  @response(200, {
-    description: 'Tag model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Tag, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(Tag, {exclude: 'where'}) filter?: FilterExcludingWhere<Tag>
-  ): Promise<Tag> {
-    return this.tagRepository.findById(id, filter);
-  }
 
   // @patch('/tags/{id}')
   // @response(204, {
@@ -189,8 +188,12 @@ export class TagController {
 
   async searchTweetsByKeyword(keyword: string): Promise<Boolean> {
     try {
-      const {data: posts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=referenced_tweets,attachments,entities&expansions=author_id&user.fields=id,username&query=${keyword}`)
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+      const maxResult = 10
+      const tweetField = "referenced_tweets,attachments,entities,created_at"
+      const expansionsField = "author_id"
+      const userField = "id,username"
+      const {data: posts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=${maxResult}&tweet.fields=${tweetField}&expansions=${expansionsField}&user.fields=${userField}&query=${keyword}`)
 
       if (!posts) return false
 
@@ -199,7 +202,12 @@ export class TagController {
 
       for (let i = 0; i < filterPost.length; i++) {
         const post = filterPost[i]
-        const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: 'twitter'}})
+        const foundPost = await this.postRepository.findOne({
+          where: {
+            textId: post.id, 
+            platform: 'twitter'
+          }
+        })
 
         if (foundPost) {
           const foundTag = foundPost.tags.find(tag => tag.toLowerCase() === keyword.toLowerCase())
@@ -214,9 +222,17 @@ export class TagController {
         }
 
         const username = users.find((user: any) => user.id === post.author_id).username
-        const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : [] : []
         const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
-        const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: post.author_id}})
+        const tags = post.entities ? (post.entities.hashtags ? 
+          post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : []
+        ) : []
+
+        const foundPeople = await this.peopleRepository.findOne({
+          where: {
+            platform_account_id: post.author_id
+          }
+        })
+
         const newPost = {
           tags: tags.find((tag:string) => tag.toLowerCase() === keyword.toLowerCase()) ? tags : [...tags, keyword],
           hasMedia,
@@ -228,17 +244,27 @@ export class TagController {
             username,
             platform_account_id: post.author_id
           },
-          createdAt: new Date().toString()
+          platformCreatedAt: post.created_at,
         }
 
         if (foundPeople) {
-          const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPeople.id}})
+          const userCredential = await this.userCredentialRepository.findOne({
+            where: {
+              peopleId: foundPeople.id
+            }
+          })
 
           if (userCredential) {
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
               walletAddress: userCredential.id,
               peopleId: foundPeople.id
+            })
+
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
             })
           }
 
@@ -246,15 +272,26 @@ export class TagController {
             ...newPost,
             peopleId: foundPeople.id
           })
+
           const newKey = keyring.addFromUri('//' + result.id)
 
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
 
         const result = await this.postRepository.create(newPost)
         const newKey = keyring.addFromUri('//' + result.id)
 
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+        await this.publicMetricRepository.create({
+          liked: 0,
+          comment: 0,
+          postId: result.id
+        })
       }
 
       return true
@@ -280,14 +317,17 @@ export class TagController {
 
       for (let i = 0; i < filterPost.length; i++) {
         const post = filterPost[i].data
-        const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
+        const foundPost = await this.postRepository.findOne({
+          where: {
+            textId: post.id
+          }
+        })
 
         if (foundPost) {
           const foundTag = foundPost.tags.find(tag => tag.toLowerCase() === keyword.toLowerCase())
           
           if (!foundTag) {
-            const tags = foundPost.tags
-            tags.push(keyword)
+            const tags = [...foundPost.tags, keyword]
 
             await this.postRepository.updateById(foundPost.id, {tags})
           }
@@ -295,7 +335,12 @@ export class TagController {
           continue
         }
 
-        const foundPerson = await this.peopleRepository.findOne({where: {username: post.author}})
+        const foundPerson = await this.peopleRepository.findOne({
+          where: {
+            username: post.author
+          }
+        })
+
         const newPost = {
           platformUser: {
             username: post.author,
@@ -308,17 +353,27 @@ export class TagController {
           textId: post.id,
           hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
           link: `https://www.reddit.com/${post.id}`,
-          createdAt: new Date().toString()
+          platformCreatedAt: new Date(post.created_utc * 1000).toString()
         }
         
         if (foundPerson) {
-          const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPerson.id}})
+          const userCredential = await this.userCredentialRepository.findOne({
+            where: {
+              peopleId: foundPerson.id
+            }
+          })
 
           if (userCredential) {
-            await this.postRepository.create({
+            const result = await this.postRepository.create({
               ...newPost,
               peopleId: foundPerson.id,
               walletAddress: userCredential.userId
+            })
+
+            await this.publicMetricRepository.create({
+              liked: 0,
+              comment: 0,
+              postId: result.id
             })
           }
 
@@ -329,12 +384,22 @@ export class TagController {
           const newKey = keyring.addFromUri('//' + result.id)
 
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.publicMetricRepository.create({
+            liked: 0,
+            comment: 0,
+            postId: result.id
+          })
         }
 
         const result = await this.postRepository.create(newPost)
         const newKey = keyring.addFromUri('//' + result.id)
 
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+        await this.publicMetricRepository.create({
+          liked: 0,
+          comment: 0,
+          postId: result.id
+        })
       }
 
       return true

@@ -1,7 +1,6 @@
 export * from './comment.repository';
 export * from './experience.repository';
 export * from './people.repository';
-export * from './platform.repository';
 export * from './post.repository';
 export * from './saved-experience.repository';
 export * from './tag.repository';
@@ -9,3 +8,6 @@ export * from './transaction.repository';
 export * from './user-credential.repository';
 export * from './user.repository';
 export * from './queue.repository';
+export * from './asset.repository';
+export * from './like.repository';
+export * from './public-metric.repository';

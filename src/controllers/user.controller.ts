@@ -18,7 +18,6 @@ import {Keyring} from '@polkadot/api';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {User} from '../models';
 import {ExperienceRepository, PeopleRepository, TagRepository, UserRepository, QueueRepository} from '../repositories';
-import {Index} from '@polkadot/types/interfaces/runtime';
 
 export class UserController {
   constructor(
@@ -57,7 +56,14 @@ export class UserController {
       return word[0].toUpperCase() + word.substr(1).toLowerCase()
     }).join(' ')
 
-    const foundUser = await this.userRepository.findOne({where: {or: [{id: user.id}, {name: user.name}]}})
+    const foundUser = await this.userRepository.findOne({
+      where: {
+        or: [
+          {id: user.id}, 
+          {name: user.name}
+        ]
+      }
+    })
 
     try {
       const api = await polkadotApi()
@@ -65,31 +71,33 @@ export class UserController {
       if (!foundUser) {
         let count:number = 0
 
-        const foundQueue = await this.queueRepository.findOne({where: {id: 'userqueue'}})
+        const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
         const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
         const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
         const from = keyring.addFromMnemonic(mnemonic);
         const to = user.id;
-        const value = 100000000000000;
+        const value = 100000000000000; // send 100 myria
         const {nonce} = await api.query.system.account(from.address)
 
         if (!foundQueue) {
           count = nonce.toJSON()
 
-          await this.queueRepository.create({
-            id: 'userqueue',
+          const queue = await this.queueRepository.create({
+            id: 'admin',
             count
           })
+
+          await this.queueRepository.updateById(queue.id, {count: count + 1})
         } else {
           count = foundQueue.count
-          console.log(count)
+          
           await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
         }
 
         const transfer = api.tx.balances.transfer(to, value);
         await transfer.signAndSend(from, {nonce: count});
         await api.disconnect()
-      }
+      } else throw new Error('UserExists')
 
       const newUser = await this.userRepository.create({
         ...user,
@@ -98,8 +106,6 @@ export class UserController {
 
       await this.userRepository.savedExperiences(newUser.id).create({
         name: user.name + " Experience",
-        createdAt: new Date().toString(),
-        userId: newUser.id,
         tags: [
           {
             id: 'cryptocurrency',
@@ -126,7 +132,8 @@ export class UserController {
             hide: false
           }
         ],
-        description: `Hello, ${user.name}! Welcome to myriad!`
+        description: `Hello, ${user.name}! Welcome to myriad!`,
+        userId: newUser.id
       })
 
       return newUser
@@ -138,17 +145,6 @@ export class UserController {
       throw new HttpErrors.UnprocessableEntity('User already exists');
     }
   }
-
-  // @get('/users/count')
-  // @response(200, {
-  //   description: 'User model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(User) where?: Where<User>,
-  // ): Promise<Count> {
-  //   return this.userRepository.count(where);
-  // }
 
   @get('/users')
   @response(200, {
@@ -167,6 +163,62 @@ export class UserController {
   ): Promise<User[]> {
     return this.userRepository.find(filter);
   }
+
+  @patch('/users/{id}')
+  @response(204, {
+    description: 'User PATCH success',
+  })
+  async updateById(
+    @param.path.string('id') id: string,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(User, {partial: true}),
+        },
+      },
+    })
+    user: User,
+  ): Promise<void> {
+    await this.userRepository.updateById(id, {
+      ...user,
+      updatedAt: new Date().toString(),
+    });
+  }
+  
+  @del('/users/{id}')
+  @response(204, {
+    description: 'User DELETE success',
+  })
+  async deleteById(@param.path.string('id') id: string): Promise<void> {
+    await this.userRepository.deleteById(id);
+  }
+
+  @get('/users/{id}')
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: true}),
+      },
+    },
+  })
+  async findById(
+    @param.path.string('id') id: string,
+    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>
+  ): Promise<User> {
+    return this.userRepository.findById(id, filter);
+  }
+
+  // @get('/users/count')
+  // @response(200, {
+  //   description: 'User model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(User) where?: Where<User>,
+  // ): Promise<Count> {
+  //   return this.userRepository.count(where);
+  // }
 
   // @patch('/users')
   // @response(200, {
@@ -187,40 +239,6 @@ export class UserController {
   //   return this.userRepository.updateAll(user, where);
   // }
 
-  @get('/users/{id}')
-  @response(200, {
-    description: 'User model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(User, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>
-  ): Promise<User> {
-    return this.userRepository.findById(id, filter);
-  }
-
-  @patch('/users/{id}')
-  @response(204, {
-    description: 'User PATCH success',
-  })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(User, {partial: true}),
-        },
-      },
-    })
-    user: User,
-  ): Promise<void> {
-    await this.userRepository.updateById(id, user);
-  }
-
   // @put('/users/{id}')
   // @response(204, {
   //   description: 'User PUT success',
@@ -232,11 +250,4 @@ export class UserController {
   //   await this.userRepository.replaceById(id, user);
   // }
 
-  @del('/users/{id}')
-  @response(204, {
-    description: 'User DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.userRepository.deleteById(id);
-  }
 }
