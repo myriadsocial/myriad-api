@@ -56,7 +56,14 @@ export class UserController {
       return word[0].toUpperCase() + word.substr(1).toLowerCase()
     }).join(' ')
 
-    const foundUser = await this.userRepository.findOne({where: {or: [{id: user.id}, {name: user.name}]}})
+    const foundUser = await this.userRepository.findOne({
+      where: {
+        or: [
+          {id: user.id}, 
+          {name: user.name}
+        ]
+      }
+    })
 
     try {
       const api = await polkadotApi()
@@ -69,7 +76,7 @@ export class UserController {
         const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
         const from = keyring.addFromMnemonic(mnemonic);
         const to = user.id;
-        const value = 100000000000000;
+        const value = 100000000000000; // send 100 myria
         const {nonce} = await api.query.system.account(from.address)
 
         if (!foundQueue) {
@@ -90,7 +97,7 @@ export class UserController {
         const transfer = api.tx.balances.transfer(to, value);
         await transfer.signAndSend(from, {nonce: count});
         await api.disconnect()
-      }
+      } else throw new Error('UserExists')
 
       const newUser = await this.userRepository.create({
         ...user,
