@@ -67,7 +67,9 @@ export class UserExperienceController {
   ): Promise<Experience> {
     return this.userRepository.savedExperiences(id).create({
       ...experience,
-      userId: id
+      userId: id,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
     });
   }
 
@@ -91,7 +93,10 @@ export class UserExperienceController {
     experience: Partial<Experience>,
     @param.query.object('where', getWhereSchemaFor(Experience)) where?: Where<Experience>,
   ): Promise<Count> {
-    return this.userRepository.savedExperiences(id).patch(experience, where);
+    return this.userRepository.savedExperiences(id).patch({
+      ...experience,
+      updatedAt: new Date().toString()
+    }, where);
   }
 
   @del('/users/{id}/experiences', {

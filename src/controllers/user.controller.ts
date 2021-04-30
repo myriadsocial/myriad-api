@@ -101,7 +101,9 @@ export class UserController {
 
       const newUser = await this.userRepository.create({
         ...user,
-        bio: user.bio ? user.bio : `Hello, my name is ${user.name}!`
+        bio: user.bio ? user.bio : `Hello, my name is ${user.name}!`,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString()
       });
 
       await this.userRepository.savedExperiences(newUser.id).create({
@@ -124,16 +126,20 @@ export class UserController {
           {
             username: "gavofyork",
             platform_account_id: "33962758",
+            platform: "twitter",
             hide: false
           },
           {
             username: "CryptoChief",
             platform_account_id: "t2_e0t5q",
+            platform: "reddit",
             hide: false
           }
         ],
         description: `Hello, ${user.name}! Welcome to myriad!`,
-        userId: newUser.id
+        userId: newUser.id,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString()
       })
 
       return newUser

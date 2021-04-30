@@ -42,7 +42,11 @@ export class PostController {
     })
     post: Omit<Post, 'id'>,
   ): Promise<Post> {
-    return this.postRepository.create(post);
+    return this.postRepository.create({
+      ...post,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
+    });
   }
 
   // @get('/posts/count')
@@ -335,7 +339,10 @@ export class PostController {
     })
     post: Post,
   ): Promise<void> {
-    await this.postRepository.updateById(id, post);
+    await this.postRepository.updateById(id, {
+      ...post,
+      updatedAt: new Date().toString()
+    });
   }
 
   // @put('/posts/{id}')

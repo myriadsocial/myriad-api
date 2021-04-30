@@ -32,3 +32,7 @@ export * from './user-like.controller';
 export * from './like-user.controller';
 export * from './post-public-metric.controller';
 export * from './public-metric-post.controller';
+export * from './user-conversation.controller';
+export * from './conversation-user.controller';
+export * from './conversation-post.controller';
+export * from './conversation.controller';

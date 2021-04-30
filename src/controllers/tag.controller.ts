@@ -78,7 +78,9 @@ export class TagController {
     if (searchTwitter || searchFacebook || searchReddit) {
       return this.tagRepository.create({
         ...tag,
-        id: keyword
+        id: keyword,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString()
       })
     } else {
       throw new HttpErrors.NotFound(`Keyword ${tag.id} is not found in any social media`)

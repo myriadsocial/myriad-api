@@ -13,3 +13,4 @@ export * from './queue.model';
 export * from './asset.model';
 export * from './like.model';
 export * from './public-metric.model';
+export * from './conversation.model';

@@ -71,7 +71,8 @@ export class UserPostController {
     }) post: Omit<Post, 'id'>,
   ): Promise<Post> {
     const tags = post.text?.replace(/\s\s+/g, ' ')
-    .trim().split(' ').filter(tag => tag.startsWith('#'))
+      .trim().split(' ').filter(tag => tag.startsWith('#'))
+      .map(tag => tag.substr(1))
   
     let assets:string[] = []
 
@@ -84,8 +85,10 @@ export class UserPostController {
 
     const newPost = await this.userRepository.posts(id).create({
       ...post,
+      tags,
       platformCreatedAt: new Date().toString(),
-      tags
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
     });
     
     await this.publicMetricRepository.create({

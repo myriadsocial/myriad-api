@@ -251,7 +251,8 @@ export class PeopleController {
             username: people.username,
             platform_account_id: platform_account_id
           },
-          platformCreatedAt: tweet.created_at
+          platformCreatedAt: tweet.created_at,
+          createdAt: new Date().toString()
         }
 
         if (userCredentials) {
@@ -316,7 +317,8 @@ export class PeopleController {
           peopleId: people.id,
           hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
           link: `https://reddit.com/${post.id}`,
-          platformCreatedAt: new Date(post.created_utc * 1000).toString()
+          platformCreatedAt: new Date(post.created_utc * 1000).toString(),
+          createdAt: new Date().toString()
         }
 
         const userCredential = await this.userCredentialRepository.findOne({
@@ -386,6 +388,7 @@ export class PeopleController {
             peopleId: people.id,
             hasMedia: false,
             link: `https://facebook.com/${platform_account_id}/posts/${textId}`,
+            createdAt: new Date().toString()
           }
 
           const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: people.id}})

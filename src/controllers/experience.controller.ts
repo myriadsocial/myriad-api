@@ -40,7 +40,11 @@ export class ExperienceController {
     })
     experience: Omit<Experience, 'id'>
   ): Promise<Experience> {
-    return this.experienceRepository.create(experience)
+    return this.experienceRepository.create({
+      ...experience,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
+    })
   }
 
   @get('/experiences')

@@ -30,7 +30,6 @@ export class Comment extends Entity {
   @property({
     type: 'date',
     required: false,
-    default: new Date()
   })
   createdAt?: string;
 

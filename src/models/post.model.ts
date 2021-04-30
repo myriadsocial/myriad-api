@@ -93,19 +93,14 @@ export class Post extends Entity {
   @property({
     type: 'date',
     required: false,
-    default: new Date().toString()
   })
   platformCreatedAt: string
 
   @property({
     type: 'date',
     required: false,
-    default: new Date()
   })
   createdAt?: string;
-
-  @belongsTo(() => User, {name: 'user'})
-  walletAddress: string;
 
   @property({
     type: 'date',
@@ -118,6 +113,9 @@ export class Post extends Entity {
     required: false,
   })
   deletedAt?: string;
+
+  @belongsTo(() => User, {name: 'user'})
+  walletAddress: string;
 
   @hasMany(() => Comment)
   comments: Comment[];

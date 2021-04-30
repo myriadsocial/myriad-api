@@ -12,16 +12,20 @@ import {Keyring} from '@polkadot/api';
 import {mnemonicGenerate} from '@polkadot/util-crypto'
 import path from 'path';
 import {
+  AssetRepository,
+  CommentRepository,
+  ConversationRepository,
+  ExperienceRepository,
+  LikeRepository,
   PeopleRepository,
   PostRepository,
+  PublicMetricRepository,
+  QueueRepository,
+  SavedExperienceRepository,
   TagRepository,
   TransactionRepository,
-  UserRepository,
-  SavedExperienceRepository,
-  ExperienceRepository,
   UserCredentialRepository,
-  CommentRepository,
-  PublicMetricRepository
+  UserRepository,
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
@@ -73,10 +77,10 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    this.add(createBindingFromClass(FetchContentFacebookJob))
-    this.add(createBindingFromClass(FetchContentTwitterJob))
-    this.add(createBindingFromClass(FetchContentRedditJob))
-    this.add(createBindingFromClass(UpdatePostsJob))
+    // this.add(createBindingFromClass(FetchContentFacebookJob))
+    // this.add(createBindingFromClass(FetchContentTwitterJob))
+    // this.add(createBindingFromClass(FetchContentRedditJob))
+    // this.add(createBindingFromClass(UpdatePostsJob))
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -103,7 +107,15 @@ export class MyriadApiApplication extends BootMixin(
     const userCredRepo = await this.getRepository(UserCredentialRepository)
     const commentRepo = await this.getRepository(CommentRepository)
     const publicMetricRepo = await this.getRepository(PublicMetricRepository)
+    const assetRepository = await this.getRepository(AssetRepository)
+    const likeRepository = await this.getRepository(LikeRepository)
+    const conversationRepository = await this.getRepository(ConversationRepository)
+    const queueRepository = await this.getRepository(QueueRepository)
 
+    await likeRepository.deleteAll()
+    await conversationRepository.deleteAll()
+    await queueRepository.deleteAll()
+    await assetRepository.deleteAll()
     await tagRepo.deleteAll()
     await postsRepo.deleteAll()
     await peopleRepo.deleteAll()
@@ -125,6 +137,8 @@ export class MyriadApiApplication extends BootMixin(
     const newUser = await userRepo.create({
       id: pair.address,
       name: "Myria",
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
     })
     
     await userRepo.savedExperiences(newUser.id).create({
@@ -147,16 +161,20 @@ export class MyriadApiApplication extends BootMixin(
         {
           username: "gavofyork",
           platform_account_id: "33962758",
+          platform: "twitter",
           hide: false
         },
         {
           username: "CryptoChief",
           platform_account_id: "t2_e0t5q",
+          platform: "reddit",
           hide: false
         }
       ],
       description: `Hello, ${newUser.name}! Welcome to myriad!`,
-      userId: newUser.id
+      userId: newUser.id,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
     })
 
     for (let i = 0; i < newPeople.length; i++) {
@@ -169,6 +187,8 @@ export class MyriadApiApplication extends BootMixin(
         const post: Post = posts[j]
         const postAccountId = post.platformUser.platform_account_id
         const postAccountUsername = post.platformUser.username
+
+        post.createdAt = new Date().toString()
 
         if (personPlatform === 'twitter') {
           if (personAccountId === postAccountId) {

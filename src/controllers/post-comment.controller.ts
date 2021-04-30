@@ -18,12 +18,17 @@ import {
 import {
   Comment, Post
 } from '../models';
-import {PostRepository, CommentRepository} from '../repositories';
+import {
+  PostRepository, 
+  CommentRepository,
+  ConversationRepository
+} from '../repositories';
 
 export class PostCommentController {
   constructor(
     @repository(PostRepository) protected postRepository: PostRepository,
-    @repository(CommentRepository) protected commentRepository: CommentRepository
+    @repository(CommentRepository) protected commentRepository: CommentRepository,
+    @repository(ConversationRepository) protected conversationRepository: ConversationRepository
   ) { }
 
   @get('/posts/{id}/comments', {
@@ -67,10 +72,69 @@ export class PostCommentController {
       },
     }) comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    const newComment = await this.postRepository.comments(id).create(comment);
-    const comments = await this.commentRepository.find({where: {postId: id}})
-    
+    const foundConversation = await this.conversationRepository.findOne({
+      where: {
+        userId: comment.userId,
+        postId: id
+      }
+    })
+
+    if (!foundConversation) {
+      await this.conversationRepository.create({
+        userId: comment.userId,
+        postId: id,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString()
+      })
+    } 
+
+    await this.conversationRepository.updateAll({
+      read: false,
+      updatedAt: new Date().toString()
+    }, {
+      postId: id,
+      read: true
+    })
+
+    const newComment = await this.postRepository.comments(id).create({
+      ...comment,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
+    });
+
+    const comments = await this.commentRepository.find({
+      where: {
+        postId: id
+      }
+    })
+
     await this.postRepository.publicMetric(id).patch({comment: comments.length})
+
+    const foundAllConversation = await this.conversationRepository.find({
+      where: {
+        postId: id,
+        read: false
+      }
+    })
+
+    for (let i = 0; i < foundAllConversation.length; i++) {
+      const id = foundAllConversation[i].id
+      const date = foundAllConversation[i].updatedAt
+      const postId = foundAllConversation[i].postId
+
+      const allComment = await this.commentRepository.find({
+        where: {
+          postId,
+          updatedAt: {
+            gte: date
+          }
+        }
+      })
+
+      await this.conversationRepository.updateById(id, {
+        unreadMessage: allComment.length
+      })
+    }
 
     return newComment
   }
@@ -95,7 +159,10 @@ export class PostCommentController {
     comment: Partial<Comment>,
     @param.query.object('where', getWhereSchemaFor(Comment)) where?: Where<Comment>,
   ): Promise<Count> {
-    return this.postRepository.comments(id).patch(comment, where);
+    return this.postRepository.comments(id).patch({
+      ...comment,
+      updatedAt: new Date().toString()
+    }, where);
   }
 
   @del('/posts/{id}/comments', {
