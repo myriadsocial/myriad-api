@@ -5,10 +5,12 @@ import {Asset} from './asset.model';
 import {User} from './user.model';
 import {Like} from './like.model';
 import {PublicMetric} from './public-metric.model';
+import {Dislike} from './dislike.model';
 
 interface PlatformUser {
   username: string;
   platform_account_id: string;
+  profile_image_url?: string;
 }
 
 @model({
@@ -131,6 +133,9 @@ export class Post extends Entity {
 
   @hasOne(() => PublicMetric)
   publicMetric: PublicMetric;
+
+  @hasMany(() => Dislike)
+  dislikes: Dislike[];
 
   constructor(data?: Partial<Post>) {
     super(data);

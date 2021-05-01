@@ -89,7 +89,8 @@ export class FetchContentTwitterJob extends CronJob {
             peopleId: person.id,
             platformUser: {
               username: person.username,
-              platform_account_id: person.platform_account_id
+              platform_account_id: person.platform_account_id,
+              profile_image_url: person.profile_image_url
             },
             platformCreatedAt: post.created_at,
           }

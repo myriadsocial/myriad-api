@@ -12,3 +12,4 @@ export * from './asset.repository';
 export * from './like.repository';
 export * from './public-metric.repository';
 export * from './conversation.repository';
+export * from './dislike.repository';

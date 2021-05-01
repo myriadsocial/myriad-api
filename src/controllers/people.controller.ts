@@ -249,7 +249,8 @@ export class PeopleController {
           peopleId: people.id,
           platformUser: {
             username: people.username,
-            platform_account_id: platform_account_id
+            platform_account_id: platform_account_id,
+            profile_image_url: people.profile_image_url
           },
           platformCreatedAt: tweet.created_at,
           createdAt: new Date().toString()
@@ -264,6 +265,7 @@ export class PeopleController {
           await this.publicMetricRepository.create({
             liked: 0,
             comment: 0,
+            disliked: 0,
             postId: result.id
           })
         }
@@ -274,6 +276,7 @@ export class PeopleController {
         await this.publicMetricRepository.create({
           liked: 0,
           comment: 0,
+          disliked: 0,
           postId: result.id
         })
       }
@@ -308,6 +311,7 @@ export class PeopleController {
           platformUser: {
             username: people.username,
             platform_account_id: people.platform_account_id,
+            profile_image_url: people.profile_image_url
           },
           tags: [],
           platform: 'reddit',
@@ -336,6 +340,7 @@ export class PeopleController {
           await this.publicMetricRepository.create({
             liked: 0,
             comment: 0,
+            disliked: 0,
             postId: result.id
           })
         }
@@ -347,6 +352,7 @@ export class PeopleController {
         await this.publicMetricRepository.create({
           liked: 0,
           comment: 0,
+          disliked: 0,
           postId: result.id
         })
       }
@@ -400,6 +406,7 @@ export class PeopleController {
             })
             await this.publicMetricRepository.create({
               liked: 0,
+              disliked: 0,
               comment: 0,
               postId: result.id
             })
@@ -410,6 +417,7 @@ export class PeopleController {
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
           await this.publicMetricRepository.create({
             liked: 0,
+            disliked: 0,
             comment: 0,
             postId: result.id
           })

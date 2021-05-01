@@ -40,6 +40,12 @@ export class People extends Entity {
   platform_account_id: string;
 
   @property({
+    type: 'string',
+    required: false
+  })
+  profile_image_url: string;
+
+  @property({
     type: 'boolean',
     default: false
   })

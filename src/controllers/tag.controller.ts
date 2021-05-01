@@ -71,11 +71,11 @@ export class TagController {
 
     if (foundTag) throw new HttpErrors.UnprocessableEntity('Tag already exists')
 
-    const searchTwitter = await this.searchTweetsByKeyword(keyword)
+    // const searchTwitter = await this.searchTweetsByKeyword(keyword)
     const searchFacebook = await this.searchFbPostsByKeyword(keyword)
     const searchReddit = await this.searchRedditPostByKeyword(keyword)
 
-    if (searchTwitter || searchFacebook || searchReddit) {
+    if (searchFacebook || searchReddit) {
       return this.tagRepository.create({
         ...tag,
         id: keyword,
@@ -265,6 +265,7 @@ export class TagController {
 
             await this.publicMetricRepository.create({
               liked: 0,
+              disliked: 0,
               comment: 0,
               postId: result.id
             })
@@ -280,6 +281,7 @@ export class TagController {
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
           await this.publicMetricRepository.create({
             liked: 0,
+            disliked: 0,
             comment: 0,
             postId: result.id
           })
@@ -291,6 +293,7 @@ export class TagController {
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
         await this.publicMetricRepository.create({
           liked: 0,
+          disliked: 0,
           comment: 0,
           postId: result.id
         })
@@ -319,6 +322,9 @@ export class TagController {
 
       for (let i = 0; i < filterPost.length; i++) {
         const post = filterPost[i].data
+          const {data: userAbout} = await this.redditService.getActions(`user/${post.author}/about.json`)
+          console.log(userAbout.icon_img)
+          const profile_image_url = userAbout.icon_img.split('?')[0]
         const foundPost = await this.postRepository.findOne({
           where: {
             textId: post.id
@@ -346,7 +352,8 @@ export class TagController {
         const newPost = {
           platformUser: {
             username: post.author,
-            platform_account_id: post.author_fullname
+            platform_account_id: post.author_fullname,
+            profile_image_url
           },
           tags: [keyword],
           platform: 'reddit',
@@ -374,6 +381,7 @@ export class TagController {
 
             await this.publicMetricRepository.create({
               liked: 0,
+              disliked: 0,
               comment: 0,
               postId: result.id
             })
@@ -388,6 +396,7 @@ export class TagController {
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
           await this.publicMetricRepository.create({
             liked: 0,
+            disliked: 0,
             comment: 0,
             postId: result.id
           })
@@ -399,6 +408,7 @@ export class TagController {
         await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
         await this.publicMetricRepository.create({
           liked: 0,
+          disliked: 0,
           comment: 0,
           postId: result.id
         })

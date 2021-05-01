@@ -2,8 +2,11 @@ import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {Post} from './post.model';
 
 @model({
-  mongodb: {
-    collection: "public_metrics"
+  settings: {
+    strictObjectIDCoercion: true,
+    mongodb: {
+      collection: "publicMetrics"
+    }
   }
 })
 export class PublicMetric extends Entity {
@@ -22,6 +25,12 @@ export class PublicMetric extends Entity {
     required: true,
   })
   liked: number;
+
+  @property({
+    type: 'number',
+    required: true,
+  })
+  disliked: number;
 
   @property({
     type: 'number',

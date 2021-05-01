@@ -4,6 +4,7 @@ import {Post} from './post.model';
 
 @model({
   settings: {
+    strictObjectIDCoercion: true,
     mongodb: {
       collection: 'conversations'
     }
@@ -23,14 +24,14 @@ export class Conversation extends Entity {
   @property({
     type: 'boolean',
     required: false,
-    default: false
+    default: true
   })
   read: boolean;
 
   @property({
     type: 'number',
     required: false,
-    default: 1
+    default: 0
   })
   unreadMessage: number
 
