@@ -2,18 +2,18 @@ import {inject} from '@loopback/core'
 import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
 import {Keyring} from '@polkadot/api'
-import {
-  PeopleRepository, 
-  PostRepository, 
-  TagRepository,
-  UserCredentialRepository,
-  PublicMetricRepository
-} from '../repositories'
 import {xml2json} from 'xml-js'
 import {
-  Twitter,
+  PeopleRepository,
+  PostRepository,
+
+
+  PublicMetricRepository, TagRepository,
+  UserCredentialRepository
+} from '../repositories'
+import {
   Reddit,
-  Rsshub
+  Rsshub, Twitter
 } from '../services'
 
 @cronJob()
@@ -33,7 +33,7 @@ export class FetchContentSocialMediaJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '*/3600 * * * * *',
+      cronTime: '0 0 */1 * * *', // Every hour
       start: true
     })
   }
@@ -55,53 +55,53 @@ export class FetchContentSocialMediaJob extends CronJob {
                 platform: person.platform
               }
             })
-      
-            const {data:newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at`)
-      
+
+            const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at`)
+
             if (!newPosts) break
-            
+
             const twitterPosts = newPosts.filter((post: any) => !post.referenced_tweets)
-            
+
             await this.socialMediaPosts(person, twitterPosts)
 
             break
-          
+
           case "reddit":
             const {data: user} = await this.redditService.getActions(`u/${person.username}.json?limit=10`)
             const redditPosts = user.children.filter((post: any) => {
               return post.kind === 't3'
-            }).map((post:any) => post.data)
+            }).map((post: any) => post.data)
 
             await this.socialMediaPosts(person, redditPosts)
             break
-    
+
           case "facebook":
             const xml = await this.rsshubService.getContents(person.platform_account_id)
             const resultJSON = await xml2json(xml, {compact: true, trim: true})
             const responseFB = JSON.parse(resultJSON)
 
-            const facebookPost =  responseFB.rss.channel.item
+            const facebookPost = responseFB.rss.channel.item
             await this.socialMediaPosts(person, facebookPost)
             break
-    
-          default: 
+
+          default:
             throw new Error("Platform does not exist")
         }
       } catch (err) {console.log(err)}
     }
   }
 
-  async socialMediaPosts (person:any, posts:any) {
+  async socialMediaPosts(person: any, posts: any) {
     try {
       for (let i = 0; i < posts.length; i++) {
         const post = posts[i]
         const foundPost = await this.postRepository.findOne({
           where: {
-            textId: person.platform === "facebook"? this.getFBTextId(post) : post.id, 
+            textId: person.platform === "facebook" ? this.getFBTextId(post) : post.id,
             platform: person.platform
           }
         })
-  
+
         if (foundPost) continue
 
         const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
@@ -167,8 +167,8 @@ export class FetchContentSocialMediaJob extends CronJob {
             walletAddress: userCredential.userId
           }, true)
         }
-  
-        await this.createPostPublicMetric(newPost, false)        
+
+        await this.createPostPublicMetric(newPost, false)
       }
     } catch (e) {console.log(e)}
   }
@@ -184,25 +184,25 @@ export class FetchContentSocialMediaJob extends CronJob {
 
     if (!credential) {
       const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
-      const newKey = keyring.addFromUri('//' +  newPost.id)
-  
+      const newKey = keyring.addFromUri('//' + newPost.id)
+
       await this.postRepository.updateById(newPost.id, {walletAddress: newKey.address})
     }
   }
 
-  getFBTextId(post:any) {
+  getFBTextId(post: any) {
     const link = post.link._text.split('=')
     return link[1].substring(0, link[1].length - 3)
   }
 
-  async twitterPost(person:any, posts:any):Promise<void> {
-    try {  
+  async twitterPost(person: any, posts: any): Promise<void> {
+    try {
       for (let j = 0; j < posts.length; j++) {
         const post = posts[j]
         const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: 'twitter'}})
-  
+
         if (foundPost) continue
-  
+
         const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
         const tags = post.entities ? post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : [] : []
         const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
@@ -221,25 +221,25 @@ export class FetchContentSocialMediaJob extends CronJob {
           },
           platformCreatedAt: post.created_at,
         }
-  
+
         if (userCredential) {
           await this.createPostPublicMetric({
             ...newPost,
             walletAddress: userCredential.userId
           }, true)
         }
-  
+
         await this.createPostPublicMetric(newPost, false)
       }
-    } catch (err) {}
+    } catch (err) { }
   }
 
-  async redditPost(person:any, posts:any):Promise<void> {
+  async redditPost(person: any, posts: any): Promise<void> {
     try {
       for (let j = 0; j < posts.length; j++) {
         const post = posts[j].data
         const foundPost = await this.postRepository.findOne({where: {textId: post.id, platform: 'reddit'}})
-  
+
         if (foundPost) continue
 
         const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
@@ -259,32 +259,32 @@ export class FetchContentSocialMediaJob extends CronJob {
           link: `https://wwww.reddit.com/${post.id}`,
           platformCreatedAt: new Date(post.created_utc * 1000).toString()
         }
-  
+
         if (userCredential) {
           await this.createPostPublicMetric({
             ...newPost,
             walletAddress: userCredential.userId,
           }, true)
         }
-  
+
         await this.createPostPublicMetric(newPost, false)
       }
-    } catch (err) {}
+    } catch (err) { }
   }
 
-  async facebookPost(person:any, posts:any):Promise<void> {
+  async facebookPost(person: any, posts: any): Promise<void> {
     try {
       for (let j = 0; j < posts.length; j++) {
         const post = posts[j]
         const link = post.link._text.split('=')
         const platform_account_id = link[2]
         const textId = link[1].substring(0, link[1].length - 3)
-  
+
         const foundPost = await this.postRepository.findOne({where: {textId}})
-  
+
         if (foundPost) continue
-  
-        const newPost = { 
+
+        const newPost = {
           platformUser: {
             username: person.username,
             platform_account_id,
@@ -298,18 +298,18 @@ export class FetchContentSocialMediaJob extends CronJob {
           hasMedia: false,
           link: `https://facebook.com/${platform_account_id}/posts/${textId}`,
         }
-  
+
         const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: person.id}})
-  
+
         if (userCredential) {
           await this.createPostPublicMetric({
             ...newPost,
             walletAddress: userCredential.userId
           }, true)
         }
-  
+
         await this.createPostPublicMetric(newPost, false)
       }
-    } catch (err) {}
-  }  
+    } catch (err) { }
+  }
 }

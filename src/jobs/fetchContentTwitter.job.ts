@@ -3,11 +3,12 @@ import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
 import {Keyring} from '@polkadot/api'
 import {
-  PeopleRepository, 
-  PostRepository, 
-  TagRepository,
-  UserCredentialRepository,
-  PublicMetricRepository
+  PeopleRepository,
+  PostRepository,
+
+
+  PublicMetricRepository, TagRepository,
+  UserCredentialRepository
 } from '../repositories'
 import {Twitter} from '../services'
 
@@ -26,7 +27,7 @@ export class FetchContentTwitterJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '*/3600 * * * * *',
+      cronTime: '0 0 */1 * * *', // Every hour
       start: true
     })
   }
@@ -35,7 +36,7 @@ export class FetchContentTwitterJob extends CronJob {
     try {
       await this.searchPostByPeople()
       await this.searchPostByTag()
-    } catch (e) {}
+    } catch (e) { }
   }
 
   async searchPostByPeople(): Promise<void> {
@@ -159,7 +160,7 @@ export class FetchContentTwitterJob extends CronJob {
           const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
           const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: post.author_id}})
           const newPost = {
-            tags: tags.find((tagPost:string) => tagPost.toLowerCase() === tag.id.toLowerCase()) ? tags : [...tags, tag.id],
+            tags: tags.find((tagPost: string) => tagPost.toLowerCase() === tag.id.toLowerCase()) ? tags : [...tags, tag.id],
             hasMedia,
             platform: 'twitter',
             text: post.text,

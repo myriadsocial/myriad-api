@@ -4,11 +4,12 @@ import {Keyring} from '@polkadot/api';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {Post} from '../models';
 import {
-    PeopleRepository, 
-    PostRepository, 
-    TagRepository, 
-    UserCredentialRepository,
-    QueueRepository
+    PeopleRepository,
+    PostRepository,
+
+
+    QueueRepository, TagRepository,
+    UserCredentialRepository
 } from '../repositories';
 
 @cronJob()
@@ -25,7 +26,7 @@ export class UpdatePostsJob extends CronJob {
             onTick: async () => {
                 await this.performJob();
             },
-            cronTime: '*/3600 * * * * *',
+            cronTime: '0 0 */1 * * *', // Every hour
             start: true
         })
     }
@@ -42,8 +43,6 @@ export class UpdatePostsJob extends CronJob {
     async updateUserCredentialPosts() {
         try {
             const userCredentials = await this.userCredentialRepository.find()
-            const api = await polkadotApi()
-            const keyring = new Keyring({type: 'sr25519', ss58Format: 214})
 
             for (let i = 0; i < userCredentials.length; i++) {
                 const userCredential = userCredentials[i]
@@ -52,27 +51,29 @@ export class UpdatePostsJob extends CronJob {
 
                 for (let j = 0; j < posts.length; j++) {
                     const post = posts[j]
-                    
+
                     if (post.walletAddress !== userCredential.userId) {
                         try {
+                            const api = await polkadotApi()
+                            const keyring = new Keyring({type: 'sr25519', ss58Format: 214})
                             const from = keyring.addFromUri('//' + post.id)
                             const to = userCredential.userId
                             const {data: balance} = await api.query.system.account(from.address);
 
                             const transfer = api.tx.balances.transfer(to, balance.free)
-    
+
                             await transfer.signAndSend(from)
-    
+
                             await this.postRepository.updateById(post.id, {
                                 ...post,
                                 walletAddress: userCredential.userId
                             })
-                        } catch (err) {}
+                            await api.disconnect()
+                        } catch (err) { }
                     }
                 }
             }
-            
-            await api.disconnect()
+
         } catch (err) { }
     }
 

@@ -9,8 +9,14 @@ import {
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import {Keyring} from '@polkadot/api';
-import {mnemonicGenerate} from '@polkadot/util-crypto'
+import {mnemonicGenerate} from '@polkadot/util-crypto';
 import path from 'path';
+import {
+  FetchContentFacebookJob,
+  FetchContentRedditJob,
+  FetchContentTwitterJob,
+  UpdatePostsJob
+} from './jobs';
 import {
   AssetRepository,
   CommentRepository,
@@ -25,20 +31,13 @@ import {
   TagRepository,
   TransactionRepository,
   UserCredentialRepository,
-  UserRepository,
+  UserRepository
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
 import tags from './seed-data/tags.json';
-import users from './seed-data/users.json'
+import users from './seed-data/users.json';
 import {MySequence} from './sequence';
-import {
-  FetchContentFacebookJob,
-  FetchContentRedditJob, 
-  FetchContentTwitterJob,
-  FetchContentSocialMediaJob, 
-  UpdatePostsJob
-} from './jobs'
 
 interface PlatformUser {
   username: string,
@@ -129,7 +128,7 @@ export class MyriadApiApplication extends BootMixin(
     await userCredRepo.deleteAll()
     await commentRepo.deleteAll()
     await publicMetricRepo.deleteAll()
-    
+
     const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
 
     const newTags = await tagRepo.createAll(tags)

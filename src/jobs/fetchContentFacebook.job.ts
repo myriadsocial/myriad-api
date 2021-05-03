@@ -2,13 +2,14 @@ import {inject} from '@loopback/core';
 import {CronJob, cronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
 import {Keyring} from '@polkadot/api';
-import { xml2json } from 'xml-js';
+import {xml2json} from 'xml-js';
 import {
-  PeopleRepository, 
-  PostRepository, 
-  TagRepository, 
-  UserCredentialRepository,
-  PublicMetricRepository
+  PeopleRepository,
+  PostRepository,
+
+
+  PublicMetricRepository, TagRepository,
+  UserCredentialRepository
 } from '../repositories';
 import {Rsshub} from '../services';
 
@@ -28,7 +29,7 @@ export class FetchContentFacebookJob extends CronJob {
         // do the work
         await this.performJob();
       },
-      cronTime: '*/3600 * * * * *', // Every ten second
+      cronTime: '0 0 */1 * * *', // Every hour
       start: true,
     });
   }
@@ -36,7 +37,7 @@ export class FetchContentFacebookJob extends CronJob {
   async performJob() {
     try {
       await this.searchPostByPeople()
-    } catch (e) {}
+    } catch (e) { }
   }
 
   async searchPostByPeople() {
@@ -61,7 +62,7 @@ export class FetchContentFacebookJob extends CronJob {
 
           if (foundPost) continue
 
-          const newPost = { 
+          const newPost = {
             platformUser: {
               username: person.username,
               platform_account_id,

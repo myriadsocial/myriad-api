@@ -16,8 +16,7 @@ import {
 } from '@loopback/rest';
 import {UserCredential, VerifyUser} from '../models';
 import {PeopleRepository, PostRepository, UserCredentialRepository} from '../repositories';
-import {Reddit, Rsshub, Twitter, Facebook} from '../services';
-import {polkadotApi} from '../helpers/polkadotApi'
+import {Facebook, Reddit, Rsshub, Twitter} from '../services';
 
 export class UserCredentialController {
   constructor(
@@ -81,7 +80,6 @@ export class UserCredentialController {
       if (!foundCredential) return false
 
       const {username, platform_account_id, platform} = foundPeople
-      const api = await polkadotApi()
 
       switch (platform) {
         case "twitter":
@@ -91,19 +89,19 @@ export class UserCredentialController {
           if (userId === twitterPublicKey) {
             return true
           }
-          
+
           await this.userCredentialRepository.deleteById(foundCredential.id)
-          
+
           return false
 
         case "reddit":
           const {data: redditPosts} = await this.redditService.getActions(`u/${username}.json?limit=1`)
           const redditPublicKey = redditPosts.children[0].data.title.replace(/n/g, ' ').split(' ')[7]
-          
+
           if (userId === redditPublicKey) return true
-          
+
           await this.userCredentialRepository.deleteById(foundCredential.id)
-          
+
           return false
 
         case "facebook":
@@ -119,9 +117,9 @@ export class UserCredentialController {
           }
 
           if (userId === facebookPublicKey) return true
-          
+
           await this.userCredentialRepository.deleteById(foundCredential.id)
-          
+
           return false
 
         default:
