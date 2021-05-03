@@ -16,7 +16,9 @@ import {
 } from '@loopback/rest';
 import {UserCredential, VerifyUser} from '../models';
 import {PeopleRepository, PostRepository, UserCredentialRepository} from '../repositories';
-import {Facebook, Reddit, Rsshub, Twitter} from '../services';
+import {Reddit, Rsshub, Twitter, Facebook} from '../services';
+import {polkadotApi} from '../helpers/polkadotApi'
+import {Keyring} from '@polkadot/api'
 
 export class UserCredentialController {
   constructor(
@@ -87,6 +89,8 @@ export class UserCredentialController {
           const twitterPublicKey = tweets[0].text.replace(/\n/g, ' ').split(' ')[7]
 
           if (userId === twitterPublicKey) {
+            await this.transferEscorwToUser(peopleId, userId)
+
             return true
           }
 
@@ -97,9 +101,12 @@ export class UserCredentialController {
         case "reddit":
           const {data: redditPosts} = await this.redditService.getActions(`u/${username}.json?limit=1`)
           const redditPublicKey = redditPosts.children[0].data.title.replace(/n/g, ' ').split(' ')[7]
-
-          if (userId === redditPublicKey) return true
-
+          
+          if (userId === redditPublicKey) {
+            await this.transferEscorwToUser(peopleId, userId)
+            return true
+          }
+          
           await this.userCredentialRepository.deleteById(foundCredential.id)
 
           return false
@@ -116,8 +123,11 @@ export class UserCredentialController {
             facebookPublicKey = facebookPosts.substring(index, index + 49)
           }
 
-          if (userId === facebookPublicKey) return true
-
+          if (userId === facebookPublicKey) {
+            await this.transferEscorwToUser(peopleId, userId)
+            return true
+          }
+          
           await this.userCredentialRepository.deleteById(foundCredential.id)
 
           return false
@@ -229,5 +239,34 @@ export class UserCredentialController {
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.userCredentialRepository.deleteById(id);
+  }
+
+  async transferEscorwToUser(peopleId:string, userId:string): Promise<void> {
+    const posts = await this.postRepository.find({
+      where: {
+        peopleId,
+        walletAddress: {
+          neq: userId
+        }
+      }
+    })
+
+    const api = await polkadotApi()
+    const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+
+    for (let i = 0; i < posts.length; i++) {
+      const post = posts[i]
+      const from = keyring.addFromUri('//' + post.id)
+      const to = userId
+      const {data:balance} = await api.query.system.account(from.address)
+
+      if (balance.free.toNumber()) {
+        const transfer = api.tx.balances.transfer(to, balance.free)
+
+        await transfer.signAndSend(from)
+      }
+    }
+
+    await api.disconnect()
   }
 }

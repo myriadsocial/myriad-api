@@ -12,12 +12,6 @@ import {Keyring} from '@polkadot/api';
 import {mnemonicGenerate} from '@polkadot/util-crypto';
 import path from 'path';
 import {
-  FetchContentFacebookJob,
-  FetchContentRedditJob,
-  FetchContentTwitterJob,
-  UpdatePostsJob
-} from './jobs';
-import {
   AssetRepository,
   CommentRepository,
   ConversationRepository,
@@ -38,7 +32,12 @@ import posts from './seed-data/posts.json';
 import tags from './seed-data/tags.json';
 import users from './seed-data/users.json';
 import {MySequence} from './sequence';
-
+import {
+  FetchContentRedditJob, 
+  FetchContentTwitterJob,
+  FetchContentSocialMediaJob, 
+  UpdatePostsJob
+} from './jobs'
 interface PlatformUser {
   username: string,
   platform_account_id?: string
@@ -78,8 +77,7 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentSocialMediaJob))
-    this.add(createBindingFromClass(FetchContentFacebookJob))
+    this.add(createBindingFromClass(FetchContentSocialMediaJob))
     this.add(createBindingFromClass(FetchContentTwitterJob))
     this.add(createBindingFromClass(FetchContentRedditJob))
     this.add(createBindingFromClass(UpdatePostsJob))

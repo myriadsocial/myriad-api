@@ -87,7 +87,7 @@ export class FetchContentSocialMediaJob extends CronJob {
           default:
             throw new Error("Platform does not exist")
         }
-      } catch (err) {console.log(err)}
+      } catch (err) {}
     }
   }
 
@@ -170,7 +170,7 @@ export class FetchContentSocialMediaJob extends CronJob {
 
         await this.createPostPublicMetric(newPost, false)
       }
-    } catch (e) {console.log(e)}
+    } catch (e) {}
   }
 
   async createPostPublicMetric(post: object, credential: boolean): Promise<void> {
