@@ -1,11 +1,12 @@
 import {CronJob, cronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
 import {
-    PeopleRepository, 
-    PostRepository, 
-    TagRepository, 
-    UserCredentialRepository,
-    QueueRepository
+    PeopleRepository,
+    PostRepository,
+
+
+    QueueRepository, TagRepository,
+    UserCredentialRepository
 } from '../repositories';
 
 @cronJob()
@@ -22,7 +23,7 @@ export class UpdatePostsJob extends CronJob {
             onTick: async () => {
                 await this.performJob();
             },
-            cronTime: '0 * */1 * * *',
+            cronTime: '0 0 */1 * * *', // Every hour
             start: true
         })
     }

@@ -7,17 +7,21 @@ import {
   del,
   get,
   getModelSchemaRef,
-  param,
+
+
+
+
+
+  HttpErrors, param,
   patch,
   post,
   requestBody,
-  response,
-  HttpErrors
+  response
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {User} from '../models';
-import {ExperienceRepository, PeopleRepository, TagRepository, UserRepository, QueueRepository} from '../repositories';
+import {ExperienceRepository, PeopleRepository, QueueRepository, TagRepository, UserRepository} from '../repositories';
 
 export class UserController {
   constructor(
@@ -52,14 +56,14 @@ export class UserController {
     user: User,
   ): Promise<User> {
     user.name = user.name.replace(/\s\s+/g, ' ')
-    .trim().split(' ').map(word => {
-      return word[0].toUpperCase() + word.substr(1).toLowerCase()
-    }).join(' ')
+      .trim().split(' ').map(word => {
+        return word[0].toUpperCase() + word.substr(1).toLowerCase()
+      }).join(' ')
 
     const foundUser = await this.userRepository.findOne({
       where: {
         or: [
-          {id: user.id}, 
+          {id: user.id},
           {name: user.name}
         ]
       }
@@ -69,7 +73,7 @@ export class UserController {
       const api = await polkadotApi()
 
       if (!foundUser) {
-        let count:number = 0
+        let count: number = 0
 
         const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
         const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
@@ -90,7 +94,7 @@ export class UserController {
           await this.queueRepository.updateById(queue.id, {count: count + 1})
         } else {
           count = foundQueue.count
-          
+
           await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
         }
 
@@ -190,7 +194,7 @@ export class UserController {
       updatedAt: new Date().toString(),
     });
   }
-  
+
   @del('/users/{id}')
   @response(204, {
     description: 'User DELETE success',

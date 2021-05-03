@@ -3,11 +3,12 @@ import {cronJob, CronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
 import {Keyring} from '@polkadot/api';
 import {
-  PeopleRepository, 
-  PostRepository, 
-  TagRepository, 
-  UserCredentialRepository,
-  PublicMetricRepository
+  PeopleRepository,
+  PostRepository,
+
+
+  PublicMetricRepository, TagRepository,
+  UserCredentialRepository
 } from '../repositories';
 import {Reddit} from '../services';
 
@@ -26,7 +27,7 @@ export class FetchContentRedditJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '0 * */1 * * *',
+      cronTime: '0 0 */1 * * *', // Every hour
       start: true
     })
   }
@@ -62,14 +63,14 @@ export class FetchContentRedditJob extends CronJob {
 
           if (foundPost) {
             const foundTag = foundPost.tags.find(postTag => postTag.toLowerCase() === tag.id.toLowerCase())
-            
+
             if (!foundTag) {
               const tags = foundPost.tags
               tags.push(tag.id)
 
               await this.postRepository.updateById(foundPost.id, {tags})
             }
-            
+
             continue
           }
 

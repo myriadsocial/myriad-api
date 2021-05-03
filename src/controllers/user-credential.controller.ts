@@ -93,9 +93,9 @@ export class UserCredentialController {
 
             return true
           }
-          
+
           await this.userCredentialRepository.deleteById(foundCredential.id)
-          
+
           return false
 
         case "reddit":
@@ -108,7 +108,7 @@ export class UserCredentialController {
           }
           
           await this.userCredentialRepository.deleteById(foundCredential.id)
-          
+
           return false
 
         case "facebook":
@@ -129,7 +129,7 @@ export class UserCredentialController {
           }
           
           await this.userCredentialRepository.deleteById(foundCredential.id)
-          
+
           return false
 
         default:
