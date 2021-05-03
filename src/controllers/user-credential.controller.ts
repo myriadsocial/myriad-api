@@ -17,6 +17,7 @@ import {
 import {UserCredential, VerifyUser} from '../models';
 import {PeopleRepository, PostRepository, UserCredentialRepository} from '../repositories';
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';
+import {polkadotApi} from '../helpers/polkadotApi'
 
 export class UserCredentialController {
   constructor(
@@ -80,13 +81,16 @@ export class UserCredentialController {
       if (!foundCredential) return false
 
       const {username, platform_account_id, platform} = foundPeople
+      const api = await polkadotApi()
 
       switch (platform) {
         case "twitter":
           const {data: tweets} = await this.twitterService.getActions(`users/${platform_account_id}}/tweets?max_results=5`)
           const twitterPublicKey = tweets[0].text.replace(/\n/g, ' ').split(' ')[7]
 
-          if (userId === twitterPublicKey) return true
+          if (userId === twitterPublicKey) {
+            return true
+          }
           
           await this.userCredentialRepository.deleteById(foundCredential.id)
           
