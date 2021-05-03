@@ -55,7 +55,6 @@ export class Experience extends Entity {
   @property({
     type: 'date',
     required: false,
-    default: new Date()
   })
   createdAt?: string;
 

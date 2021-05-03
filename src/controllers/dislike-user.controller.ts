@@ -7,21 +7,21 @@ import {
   getModelSchemaRef,
 } from '@loopback/rest';
 import {
-  Post,
+  Dislike,
   User,
 } from '../models';
-import {PostRepository} from '../repositories';
+import {DislikeRepository} from '../repositories';
 
-export class PostUserController {
+export class DislikeUserController {
   // constructor(
-  //   @repository(PostRepository)
-  //   public postRepository: PostRepository,
+  //   @repository(DislikeRepository)
+  //   public dislikeRepository: DislikeRepository,
   // ) { }
 
-  // @get('/posts/{id}/user', {
+  // @get('/dislikes/{id}/user', {
   //   responses: {
   //     '200': {
-  //       description: 'User belonging to Post',
+  //       description: 'User belonging to Dislike',
   //       content: {
   //         'application/json': {
   //           schema: {type: 'array', items: getModelSchemaRef(User)},
@@ -31,8 +31,8 @@ export class PostUserController {
   //   },
   // })
   // async getUser(
-  //   @param.path.string('id') id: typeof Post.prototype.id,
+  //   @param.path.string('id') id: typeof Dislike.prototype.id,
   // ): Promise<User> {
-  //   return this.postRepository.user(id);
+  //   return this.dislikeRepository.user(id);
   // }
 }

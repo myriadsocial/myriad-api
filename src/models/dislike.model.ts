@@ -1,16 +1,16 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
-import {Post} from './post.model';
 import {User} from './user.model';
+import {Post} from './post.model';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: "likes"
+      collection: 'dislikes'
     }
   }
 })
-export class Like extends Entity {
+export class Dislike extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -24,23 +24,23 @@ export class Like extends Entity {
   @property({
     type: 'boolean',
     required: false,
-    default: false
+    default: false,
   })
-  status: boolean;
-
-  @belongsTo(() => Post)
-  postId: string;
+  status?: boolean;
 
   @belongsTo(() => User)
   userId: string;
 
-  constructor(data?: Partial<Like>) {
+  @belongsTo(() => Post)
+  postId: string;
+
+  constructor(data?: Partial<Dislike>) {
     super(data);
   }
 }
 
-export interface LikeRelations {
+export interface DislikeRelations {
   // describe navigational properties here
 }
 
-export type LikeWithRelations = Like & LikeRelations;
+export type DislikeWithRelations = Dislike & DislikeRelations;

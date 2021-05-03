@@ -40,7 +40,11 @@ export class CommentController {
     })
     comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    return this.commentRepository.create(comment);
+    return this.commentRepository.create({
+      ...comment,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
+    });
   }
 
   // @get('/comments/count')

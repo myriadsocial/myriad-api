@@ -3,12 +3,13 @@ import {Post} from './post.model';
 
 @model({
   settings: {
+    strictObjectIDCoercion: true,
     mongodb: {
       collections: 'assets'
     }
-
   }
 })
+
 export class Asset extends Entity {
   @property({
     type: 'string',

@@ -89,7 +89,8 @@ export class FetchContentTwitterJob extends CronJob {
             peopleId: person.id,
             platformUser: {
               username: person.username,
-              platform_account_id: person.platform_account_id
+              platform_account_id: person.platform_account_id,
+              profile_image_url: person.profile_image_url
             },
             platformCreatedAt: post.created_at,
           }
@@ -101,6 +102,7 @@ export class FetchContentTwitterJob extends CronJob {
             })
             await this.publicMetricRepository.create({
               liked: 0,
+              disliked: 0,
               comment: 0,
               postId: result.id
             })
@@ -112,6 +114,7 @@ export class FetchContentTwitterJob extends CronJob {
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
           await this.publicMetricRepository.create({
             liked: 0,
+            disliked: 0,
             comment: 0,
             postId: result.id
           })
@@ -181,6 +184,7 @@ export class FetchContentTwitterJob extends CronJob {
               await this.publicMetricRepository.create({
                 liked: 0,
                 comment: 0,
+                disliked: 0,
                 postId: result.id
               })
             }
@@ -195,6 +199,7 @@ export class FetchContentTwitterJob extends CronJob {
             await this.publicMetricRepository.create({
               liked: 0,
               comment: 0,
+              disliked: 0,
               postId: result.id
             })
           }
@@ -206,6 +211,7 @@ export class FetchContentTwitterJob extends CronJob {
           await this.publicMetricRepository.create({
             liked: 0,
             comment: 0,
+            disliked: 0,
             postId: result.id
           })
         }

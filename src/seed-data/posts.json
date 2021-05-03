@@ -2,7 +2,8 @@
   {
     "platformUser": {
       "username": "elonmusk",
-      "platform_account_id": "44196397"
+      "platform_account_id": "44196397",
+      "profile_image_url": "https://pbs.twimg.com/profile_images/1383184766959120385/MM9DHPWC_400x400.jpg"
     },
     "tags": [],
     "platform": "twitter",
@@ -16,7 +17,8 @@
   {
     "platformUser": {
       "username": "Kur3Qr3",
-      "platform_account_id": "966725945901101056"
+      "platform_account_id": "966725945901101056",
+      "platform_image_url": "https://pbs.twimg.com/profile_images/968098454236000257/wPHTajY2_400x400.jpg"
     },
     "tags": ["technology", "blockchain", "bitcoin", "computing", "ibm", "strorage", "artificialintelligence"],
     "platform": "twitter",
@@ -30,7 +32,8 @@
   {
     "platformUser": {
       "username": "gavofyork",
-      "platform_account_id": "33962758"
+      "platform_account_id": "33962758",
+      "platform_image_url": "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg"
     },
     "tags": ["blockchain"],
     "platform": "twitter",
@@ -44,7 +47,8 @@
   {
     "platformUser": {
         "username": "reverse_my_repo",
-        "platform_account_id": "t2_6wmczacm"
+        "platform_account_id": "t2_6wmczacm",
+        "platform_image_url": "https://www.redditstatic.com/avatars/avatar_default_07_A5A4A4.png"
     },
     "tags": ["cryptocurrency"],
     "platform": "reddit",
@@ -58,7 +62,8 @@
   {
     "platformUser": {
         "username": "CryptoChief",
-        "platform_account_id": "t2_e0t5q"
+        "platform_account_id": "t2_e0t5q",
+        "platform_image_url": "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png"
     },
     "tags": ["blockchain"],
     "platform": "reddit",

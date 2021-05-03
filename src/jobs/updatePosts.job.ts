@@ -25,7 +25,7 @@ export class UpdatePostsJob extends CronJob {
             onTick: async () => {
                 await this.performJob();
             },
-            cronTime: '*/1800 * * * * *',
+            cronTime: '*/3600 * * * * *',
             start: true
         })
     }
@@ -45,39 +45,23 @@ export class UpdatePostsJob extends CronJob {
             const api = await polkadotApi()
             const keyring = new Keyring({type: 'sr25519', ss58Format: 214})
 
-            userCredentials.forEach(async userCredential => {
+            for (let i = 0; i < userCredentials.length; i++) {
+                const userCredential = userCredentials[i]
                 const peopleId = userCredential.peopleId
                 const posts: Post[] = await this.postRepository.find({where: {peopleId}})
 
-                posts.forEach(async (post: Post) => {
+                for (let j = 0; j < posts.length; j++) {
+                    const post = posts[j]
+                    
                     if (post.walletAddress !== userCredential.userId) {
                         try {
-                            let count: number = 0
-
-                            const foundQueue = await this.queueRepository.findOne({where: {id: post.walletAddress}})
                             const from = keyring.addFromUri('//' + post.id)
                             const to = userCredential.userId
                             const {data: balance} = await api.query.system.account(from.address);
-                            const {nonce} = await api.query.system.account(to)
-
-                            if (!foundQueue) {
-                                count = nonce.toJSON()
-
-                                const queue = await this.queueRepository.create({
-                                    id: post.walletAddress,
-                                    count
-                                })
-
-                                await this.queueRepository.updateById(queue.id, {count: count + 1})
-                            } else {
-                                count = foundQueue.count
-
-                                await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
-                            }
 
                             const transfer = api.tx.balances.transfer(to, balance.free)
     
-                            await transfer.signAndSend(from, {nonce: count})
+                            await transfer.signAndSend(from)
     
                             await this.postRepository.updateById(post.id, {
                                 ...post,
@@ -85,10 +69,10 @@ export class UpdatePostsJob extends CronJob {
                             })
                         } catch (err) {}
                     }
-                })
-            })
-
-            // await api.disconnect()
+                }
+            }
+            
+            await api.disconnect()
         } catch (err) { }
     }
 

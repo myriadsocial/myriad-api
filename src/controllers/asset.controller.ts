@@ -47,16 +47,16 @@ export class AssetController {
     return this.assetRepository.create(asset);
   }
 
-  @get('/assets/count')
-  @response(200, {
-    description: 'Asset model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(Asset) where?: Where<Asset>,
-  ): Promise<Count> {
-    return this.assetRepository.count(where);
-  }
+  // @get('/assets/count')
+  // @response(200, {
+  //   description: 'Asset model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(Asset) where?: Where<Asset>,
+  // ): Promise<Count> {
+  //   return this.assetRepository.count(where);
+  // }
 
   @get('/assets')
   @response(200, {
@@ -76,24 +76,24 @@ export class AssetController {
     return this.assetRepository.find(filter);
   }
 
-  @patch('/assets')
-  @response(200, {
-    description: 'Asset PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Asset, {partial: true}),
-        },
-      },
-    })
-    asset: Asset,
-    @param.where(Asset) where?: Where<Asset>,
-  ): Promise<Count> {
-    return this.assetRepository.updateAll(asset, where);
-  }
+  // @patch('/assets')
+  // @response(200, {
+  //   description: 'Asset PATCH success count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async updateAll(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(Asset, {partial: true}),
+  //       },
+  //     },
+  //   })
+  //   asset: Asset,
+  //   @param.where(Asset) where?: Where<Asset>,
+  // ): Promise<Count> {
+  //   return this.assetRepository.updateAll(asset, where);
+  // }
 
   @get('/assets/{id}')
   @response(200, {
@@ -129,16 +129,16 @@ export class AssetController {
     await this.assetRepository.updateById(id, asset);
   }
 
-  @put('/assets/{id}')
-  @response(204, {
-    description: 'Asset PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() asset: Asset,
-  ): Promise<void> {
-    await this.assetRepository.replaceById(id, asset);
-  }
+  // @put('/assets/{id}')
+  // @response(204, {
+  //   description: 'Asset PUT success',
+  // })
+  // async replaceById(
+  //   @param.path.string('id') id: string,
+  //   @requestBody() asset: Asset,
+  // ): Promise<void> {
+  //   await this.assetRepository.replaceById(id, asset);
+  // }
 
   @del('/assets/{id}')
   @response(204, {

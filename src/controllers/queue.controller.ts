@@ -26,26 +26,26 @@ export class QueueController {
     public queueRepository : QueueRepository,
   ) {}
 
-  @post('/queues')
-  @response(200, {
-    description: 'Queue model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Queue)}},
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Queue, {
-            title: 'NewQueue',
-            exclude: ['id'],
-          }),
-        },
-      },
-    })
-    queue: Omit<Queue, 'id'>,
-  ): Promise<Queue> {
-    return this.queueRepository.create(queue);
-  }
+  // @post('/queues')
+  // @response(200, {
+  //   description: 'Queue model instance',
+  //   content: {'application/json': {schema: getModelSchemaRef(Queue)}},
+  // })
+  // async create(
+  //   @requestBody({
+  //     content: {
+  //       'application/json': {
+  //         schema: getModelSchemaRef(Queue, {
+  //           title: 'NewQueue',
+  //           exclude: ['id'],
+  //         }),
+  //       },
+  //     },
+  //   })
+  //   queue: Omit<Queue, 'id'>,
+  // ): Promise<Queue> {
+  //   return this.queueRepository.create(queue);
+  // }
 
   // @get('/queues/count')
   // @response(200, {

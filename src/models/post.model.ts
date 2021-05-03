@@ -5,10 +5,12 @@ import {Asset} from './asset.model';
 import {User} from './user.model';
 import {Like} from './like.model';
 import {PublicMetric} from './public-metric.model';
+import {Dislike} from './dislike.model';
 
 interface PlatformUser {
   username: string;
   platform_account_id: string;
+  profile_image_url?: string;
 }
 
 @model({
@@ -93,19 +95,14 @@ export class Post extends Entity {
   @property({
     type: 'date',
     required: false,
-    default: new Date().toString()
   })
   platformCreatedAt: string
 
   @property({
     type: 'date',
     required: false,
-    default: new Date()
   })
   createdAt?: string;
-
-  @belongsTo(() => User, {name: 'user'})
-  walletAddress: string;
 
   @property({
     type: 'date',
@@ -118,6 +115,9 @@ export class Post extends Entity {
     required: false,
   })
   deletedAt?: string;
+
+  @belongsTo(() => User, {name: 'user'})
+  walletAddress: string;
 
   @hasMany(() => Comment)
   comments: Comment[];
@@ -133,6 +133,9 @@ export class Post extends Entity {
 
   @hasOne(() => PublicMetric)
   publicMetric: PublicMetric;
+
+  @hasMany(() => Dislike)
+  dislikes: Dislike[];
 
   constructor(data?: Partial<Post>) {
     super(data);

@@ -7,21 +7,21 @@ import {
   getModelSchemaRef,
 } from '@loopback/rest';
 import {
-  Asset,
+  Dislike,
   Post,
 } from '../models';
-import {AssetRepository} from '../repositories';
+import {DislikeRepository} from '../repositories';
 
-export class AssetPostController {
+export class DislikePostController {
   // constructor(
-  //   @repository(AssetRepository)
-  //   public assetRepository: AssetRepository,
+  //   @repository(DislikeRepository)
+  //   public dislikeRepository: DislikeRepository,
   // ) { }
 
-  // @get('/assets/{id}/post', {
+  // @get('/dislikes/{id}/post', {
   //   responses: {
   //     '200': {
-  //       description: 'Post belonging to Asset',
+  //       description: 'Post belonging to Dislike',
   //       content: {
   //         'application/json': {
   //           schema: {type: 'array', items: getModelSchemaRef(Post)},
@@ -31,8 +31,8 @@ export class AssetPostController {
   //   },
   // })
   // async getPost(
-  //   @param.path.string('id') id: typeof Asset.prototype.id,
+  //   @param.path.string('id') id: typeof Dislike.prototype.id,
   // ): Promise<Post> {
-  //   return this.assetRepository.post(id);
+  //   return this.dislikeRepository.post(id);
   // }
 }

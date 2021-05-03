@@ -1,13 +1,14 @@
 import {inject, Getter} from '@loopback/core';
 import {DefaultCrudRepository, repository, HasManyRepositoryFactory, HasManyThroughRepositoryFactory} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {User, UserRelations, Experience, Comment, SavedExperience, UserCredential, Post, Like} from '../models';
+import {User, UserRelations, Experience, Comment, SavedExperience, UserCredential, Post, Like, Conversation} from '../models';
 import {ExperienceRepository} from './experience.repository';
 import {CommentRepository} from './comment.repository';
 import {SavedExperienceRepository} from './saved-experience.repository';
 import {UserCredentialRepository} from './user-credential.repository';
 import {PostRepository} from './post.repository';
 import {LikeRepository} from './like.repository';
+import {ConversationRepository} from './conversation.repository';
 
 export class UserRepository extends DefaultCrudRepository<
   User,
@@ -30,10 +31,14 @@ export class UserRepository extends DefaultCrudRepository<
 
   public readonly likes: HasManyRepositoryFactory<Like, typeof User.prototype.id>;
 
+  public readonly conversations: HasManyRepositoryFactory<Conversation, typeof User.prototype.id>;
+
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('ExperienceRepository') protected experienceRepositoryGetter: Getter<ExperienceRepository>, @repository.getter('CommentRepository') protected commentRepositoryGetter: Getter<CommentRepository>, @repository.getter('SavedExperienceRepository') protected savedExperienceRepositoryGetter: Getter<SavedExperienceRepository>, @repository.getter('UserCredentialRepository') protected userCredentialRepositoryGetter: Getter<UserCredentialRepository>, @repository.getter('PostRepository') protected postRepositoryGetter: Getter<PostRepository>, @repository.getter('LikeRepository') protected likeRepositoryGetter: Getter<LikeRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('ExperienceRepository') protected experienceRepositoryGetter: Getter<ExperienceRepository>, @repository.getter('CommentRepository') protected commentRepositoryGetter: Getter<CommentRepository>, @repository.getter('SavedExperienceRepository') protected savedExperienceRepositoryGetter: Getter<SavedExperienceRepository>, @repository.getter('UserCredentialRepository') protected userCredentialRepositoryGetter: Getter<UserCredentialRepository>, @repository.getter('PostRepository') protected postRepositoryGetter: Getter<PostRepository>, @repository.getter('LikeRepository') protected likeRepositoryGetter: Getter<LikeRepository>, @repository.getter('ConversationRepository') protected conversationRepositoryGetter: Getter<ConversationRepository>,
   ) {
     super(User, dataSource);
+    this.conversations = this.createHasManyRepositoryFactoryFor('conversations', conversationRepositoryGetter,);
+    this.registerInclusionResolver('conversations', this.conversations.inclusionResolver);
     this.likes = this.createHasManyRepositoryFactoryFor('likes', likeRepositoryGetter,);
     this.registerInclusionResolver('likes', this.likes.inclusionResolver);
     this.posts = this.createHasManyRepositoryFactoryFor('posts', postRepositoryGetter,);

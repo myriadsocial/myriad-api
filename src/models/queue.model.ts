@@ -2,10 +2,10 @@ import {Entity, model, property} from '@loopback/repository';
 
 @model({
   settings: {
+    strictObjectIDCoercion: true,
     mongodb: {
       collections: 'queues'
     }
-
   }
 })
 export class Queue extends Entity {

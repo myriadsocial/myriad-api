@@ -4,6 +4,7 @@ import {People} from './people.model';
 
 @model({
   settings: {
+    strictObjectIDCoercion: true,
     mongodb: {
       collection: 'userCredentials'
     }

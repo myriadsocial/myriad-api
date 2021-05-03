@@ -7,21 +7,21 @@ import {
   getModelSchemaRef,
 } from '@loopback/rest';
 import {
-  Asset,
+  Conversation,
   Post,
 } from '../models';
-import {AssetRepository} from '../repositories';
+import {ConversationRepository} from '../repositories';
 
-export class AssetPostController {
+export class ConversationPostController {
   // constructor(
-  //   @repository(AssetRepository)
-  //   public assetRepository: AssetRepository,
+  //   @repository(ConversationRepository)
+  //   public conversationRepository: ConversationRepository,
   // ) { }
 
-  // @get('/assets/{id}/post', {
+  // @get('/conversations/{id}/post', {
   //   responses: {
   //     '200': {
-  //       description: 'Post belonging to Asset',
+  //       description: 'Post belonging to Conversation',
   //       content: {
   //         'application/json': {
   //           schema: {type: 'array', items: getModelSchemaRef(Post)},
@@ -31,8 +31,8 @@ export class AssetPostController {
   //   },
   // })
   // async getPost(
-  //   @param.path.string('id') id: typeof Asset.prototype.id,
+  //   @param.path.string('id') id: typeof Conversation.prototype.id,
   // ): Promise<Post> {
-  //   return this.assetRepository.post(id);
+  //   return this.conversationRepository.post(id);
   // }
 }

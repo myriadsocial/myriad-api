@@ -62,7 +62,8 @@ export class FetchContentRedditJob extends CronJob {
           const newPost = {
             platformUser: {
               username: post.author,
-              platform_account_id: post.author_fullname
+              platform_account_id: post.author_fullname,
+              profile_image_url: person.profile_image_url
             },
             tags: [],
             platform: 'reddit',
@@ -84,6 +85,7 @@ export class FetchContentRedditJob extends CronJob {
             })
             await this.publicMetricRepository.create({
               liked: 0,
+              disliked: 0,
               comment: 0,
               postId: result.id
             })
@@ -95,6 +97,7 @@ export class FetchContentRedditJob extends CronJob {
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
           await this.publicMetricRepository.create({
             liked: 0,
+            disliked: 0,
             comment: 0,
             postId: result.id
           })
@@ -120,6 +123,8 @@ export class FetchContentRedditJob extends CronJob {
 
         for (let j = 0; j < posts.length; j++) {
           const post = posts[j].data
+          const {data: userAbout} = await this.redditService.getActions(`u/${post.author}/about.json`)
+          const profile_image_url = userAbout.icon_img.split('?')[0]
           const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
 
           if (foundPost) {
@@ -139,7 +144,8 @@ export class FetchContentRedditJob extends CronJob {
           const newPost = {
             platformUser: {
               username: post.author,
-              platform_account_id: post.author_fullname
+              platform_account_id: post.author_fullname,
+              profile_image_url
             },
             tags: [tag.id],
             platform: 'reddit',
@@ -162,6 +168,7 @@ export class FetchContentRedditJob extends CronJob {
               })
               await this.publicMetricRepository.create({
                 liked: 0,
+                disliked: 0,
                 comment: 0,
                 postId: result.id
               })
@@ -175,6 +182,7 @@ export class FetchContentRedditJob extends CronJob {
             await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
             await this.publicMetricRepository.create({
               liked: 0,
+              disliked: 0,
               comment: 0,
               postId: result.id
             })
@@ -186,6 +194,7 @@ export class FetchContentRedditJob extends CronJob {
           await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
           await this.publicMetricRepository.create({
             liked: 0,
+            disliked: 0,
             comment: 0,
             postId: result.id
           })

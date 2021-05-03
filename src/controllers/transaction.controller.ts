@@ -44,19 +44,23 @@ export class TransactionController {
     })
     transaction: Omit<Transaction, 'id'>,
   ): Promise<Transaction> {
-    return this.transactionRepository.create(transaction);
+    return this.transactionRepository.create({
+      ...transaction,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
+    });
   }
 
-  @get('/transactions/count')
-  @response(200, {
-    description: 'Transaction model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(Transaction) where?: Where<Transaction>,
-  ): Promise<Count> {
-    return this.transactionRepository.count(where);
-  }
+  // @get('/transactions/count')
+  // @response(200, {
+  //   description: 'Transaction model count',
+  //   content: {'application/json': {schema: CountSchema}},
+  // })
+  // async count(
+  //   @param.where(Transaction) where?: Where<Transaction>,
+  // ): Promise<Count> {
+  //   return this.transactionRepository.count(where);
+  // }
 
   @get('/transactions')
   @response(200, {
@@ -92,7 +96,10 @@ export class TransactionController {
     transaction: Transaction,
     @param.where(Transaction) where?: Where<Transaction>,
   ): Promise<Count> {
-    return this.transactionRepository.updateAll(transaction, where);
+    return this.transactionRepository.updateAll({
+      ...transaction,
+      updatedAt: new Date().toString()
+    }, where);
   }
 
   @get('/transactions/{id}')
@@ -126,19 +133,22 @@ export class TransactionController {
     })
     transaction: Transaction,
   ): Promise<void> {
-    await this.transactionRepository.updateById(id, transaction);
+    await this.transactionRepository.updateById(id, {
+      ...transaction,
+      updatedAt: new Date().toString()
+    });
   }
 
-  @put('/transactions/{id}')
-  @response(204, {
-    description: 'Transaction PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() transaction: Transaction,
-  ): Promise<void> {
-    await this.transactionRepository.replaceById(id, transaction);
-  }
+  // @put('/transactions/{id}')
+  // @response(204, {
+  //   description: 'Transaction PUT success',
+  // })
+  // async replaceById(
+  //   @param.path.string('id') id: string,
+  //   @requestBody() transaction: Transaction,
+  // ): Promise<void> {
+  //   await this.transactionRepository.replaceById(id, transaction);
+  // }
 
   @del('/transactions/{id}')
   @response(204, {

@@ -7,21 +7,21 @@ import {
   getModelSchemaRef,
 } from '@loopback/rest';
 import {
-  Post,
+  Conversation,
   User,
 } from '../models';
-import {PostRepository} from '../repositories';
+import {ConversationRepository} from '../repositories';
 
-export class PostUserController {
+export class ConversationUserController {
   // constructor(
-  //   @repository(PostRepository)
-  //   public postRepository: PostRepository,
+  //   @repository(ConversationRepository)
+  //   public conversationRepository: ConversationRepository,
   // ) { }
 
-  // @get('/posts/{id}/user', {
+  // @get('/conversations/{id}/user', {
   //   responses: {
   //     '200': {
-  //       description: 'User belonging to Post',
+  //       description: 'User belonging to Conversation',
   //       content: {
   //         'application/json': {
   //           schema: {type: 'array', items: getModelSchemaRef(User)},
@@ -31,8 +31,8 @@ export class PostUserController {
   //   },
   // })
   // async getUser(
-  //   @param.path.string('id') id: typeof Post.prototype.id,
+  //   @param.path.string('id') id: typeof Conversation.prototype.id,
   // ): Promise<User> {
-  //   return this.postRepository.user(id);
+  //   return this.conversationRepository.user(id);
   // }
 }

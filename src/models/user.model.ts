@@ -5,6 +5,7 @@ import {SavedExperience} from './saved-experience.model';
 import {UserCredential} from './user-credential.model';
 import {Post} from './post.model';
 import {Like} from './like.model';
+import {Conversation} from './conversation.model';
 
 @model({
   settings: {
@@ -62,7 +63,6 @@ export class User extends Entity {
   @property({
     type: 'date',
     required: false,
-    default: new Date()
   })
   createdAt?: string;
 
@@ -95,6 +95,9 @@ export class User extends Entity {
 
   @hasMany(() => Like)
   likes: Like[];
+
+  @hasMany(() => Conversation)
+  conversations: Conversation[];
 
   constructor(data?: Partial<User>) {
     super(data);
