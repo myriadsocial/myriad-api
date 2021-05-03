@@ -33,7 +33,6 @@ import tags from './seed-data/tags.json';
 import users from './seed-data/users.json'
 import {MySequence} from './sequence';
 import {
-  FetchContentFacebookJob,
   FetchContentRedditJob, 
   FetchContentTwitterJob,
   FetchContentSocialMediaJob, 
@@ -79,8 +78,7 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentSocialMediaJob))
-    this.add(createBindingFromClass(FetchContentFacebookJob))
+    this.add(createBindingFromClass(FetchContentSocialMediaJob))
     this.add(createBindingFromClass(FetchContentTwitterJob))
     this.add(createBindingFromClass(FetchContentRedditJob))
     this.add(createBindingFromClass(UpdatePostsJob))
