@@ -29,6 +29,7 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
 
     try {
       const api = await polkadotApi()
+      await api.isReady
       console.log('RPC isReady for TransactionWatcher');
 
       // Subscribe to system events via storage
