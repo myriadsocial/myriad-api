@@ -90,13 +90,8 @@ export class UserPostController {
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
     });
-    
-    await this.publicMetricRepository.create({
-      liked: 0,
-      disliked: 0,
-      comment: 0,
-      postId: newPost.id
-    })
+
+    await this.postRepository.publicMetric(newPost.id).create({})
 
     if (assets.length > 0) {
       await this.postRepository.asset(newPost.id).create({

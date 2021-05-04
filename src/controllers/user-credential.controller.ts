@@ -19,6 +19,7 @@ import {PeopleRepository, PostRepository, UserCredentialRepository} from '../rep
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 import {polkadotApi} from '../helpers/polkadotApi'
 import {Keyring} from '@polkadot/api'
+import { KeypairType } from '@polkadot/util-crypto/types';
 
 export class UserCredentialController {
   constructor(
@@ -252,7 +253,10 @@ export class UserCredentialController {
     })
 
     const api = await polkadotApi()
-    const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+    const keyring = new Keyring({
+      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+    });
 
     for (let i = 0; i < posts.length; i++) {
       const post = posts[i]
