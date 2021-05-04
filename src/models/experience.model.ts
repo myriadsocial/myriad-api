@@ -24,6 +24,9 @@ export class Experience extends Entity {
   @property({
     type: 'string',
     required: true,
+    index: {
+      unique: true,
+    },
     jsonSchema: {
       maxLength: 50,
       minLength: 1,

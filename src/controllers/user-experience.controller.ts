@@ -10,6 +10,7 @@ import {
   get,
   getModelSchemaRef,
   getWhereSchemaFor,
+  HttpErrors,
   param,
   patch,
   post,
@@ -65,12 +66,19 @@ export class UserExperienceController {
       },
     }) experience: Omit<Experience, 'id'>,
   ): Promise<Experience> {
-    return this.userRepository.savedExperiences(id).create({
-      ...experience,
-      userId: id,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
-    });
+    try {
+      const newExperience = await this.userRepository.savedExperiences(id).create({
+        ...experience,
+        userId: id,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString()
+      });
+
+      return newExperience
+
+    } catch (err) {
+      throw new HttpErrors.UnprocessableEntity("Experience already exists")
+    }
   }
 
   @patch('/users/{id}/experiences', {

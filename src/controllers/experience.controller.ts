@@ -40,11 +40,17 @@ export class ExperienceController {
     })
     experience: Omit<Experience, 'id'>
   ): Promise<Experience> {
-    return this.experienceRepository.create({
-      ...experience,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
-    })
+    try {
+      const newExperience = await this.experienceRepository.create({
+        ...experience,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString()
+      })
+
+      return newExperience
+    } catch (err) {
+      throw new HttpErrors.UnprocessableEntity("Experience already exists")
+    }
   }
 
   @get('/experiences')
