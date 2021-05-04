@@ -93,6 +93,7 @@ export class UserPostController {
     
     await this.publicMetricRepository.create({
       liked: 0,
+      disliked: 0,
       comment: 0,
       postId: newPost.id
     })
