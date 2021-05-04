@@ -38,6 +38,8 @@ import {
   FetchContentSocialMediaJob, 
   UpdatePostsJob
 } from './jobs'
+import { KeypairType } from '@polkadot/util-crypto/types';
+
 interface PlatformUser {
   username: string,
   platform_account_id?: string
@@ -128,7 +130,10 @@ export class MyriadApiApplication extends BootMixin(
     await commentRepo.deleteAll()
     await publicMetricRepo.deleteAll()
 
-    const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+    const keyring = new Keyring({
+      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+    });
 
     const newTags = await tagRepo.createAll(tags)
     const newPeople = await peopleRepo.createAll(people)

@@ -22,19 +22,22 @@ export class PublicMetric extends Entity {
 
   @property({
     type: 'number',
-    required: true,
+    required: false,
+    default: 0
   })
   liked: number;
 
   @property({
     type: 'number',
-    required: true,
+    required: false,
+    default: 0
   })
   disliked: number;
 
   @property({
     type: 'number',
-    required: true,
+    required: false,
+    default: 0
   })
   comment: number;
 

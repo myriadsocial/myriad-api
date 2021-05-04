@@ -2,6 +2,7 @@ import {inject} from '@loopback/core'
 import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
 import {Keyring} from '@polkadot/api'
+import { KeypairType } from '@polkadot/util-crypto/types'
 import {
   PeopleRepository,
   PostRepository,
@@ -40,7 +41,10 @@ export class FetchContentTwitterJob extends CronJob {
 
   async searchPostByTag(): Promise<void> {
     try {
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+      const keyring = new Keyring({
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+      });
       const tagsRepo = await this.tagRepository.find()
 
       for (let i = 0; i < tagsRepo.length; i++) {
