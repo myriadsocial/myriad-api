@@ -44,6 +44,7 @@ export class PostController {
   ): Promise<Post> {
     return this.postRepository.create({
       ...post,
+      platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
     });

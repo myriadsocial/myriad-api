@@ -383,6 +383,7 @@ export class TagController {
           text: "",
           hasMedia,
           tags,
+          platformCreatedAt: new Date().toString()
         }
 
       default:
