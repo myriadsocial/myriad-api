@@ -52,7 +52,8 @@ interface Post {
   hasMedia?: boolean,
   link?: string,
   createdAt?: string,
-  peopleId?: string
+  peopleId?: string,
+  platformCreatedAt?: string
 }
 
 export {ApplicationConfig};
@@ -208,6 +209,7 @@ export class MyriadApiApplication extends BootMixin(
         if (personPlatform === 'facebook') {
           if (personUsername === postAccountUsername) {
             post.peopleId = person.id
+            post.platformCreatedAt = new Date().toString() 
           }
         }
       }
