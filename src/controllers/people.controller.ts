@@ -351,12 +351,9 @@ export class PeopleController {
       case "facebook":
         return {
           ...newPost,
-          platformUser: {
-            username: people.username,
-            platform_account_id: people.platform_account_id
-          },
           hasMedia,
           tags,
+          platformCreatedAt: new Date().toString()
         }
 
       default:
