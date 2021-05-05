@@ -15,11 +15,18 @@ import {
   response
 } from '@loopback/rest';
 import {UserCredential, VerifyUser} from '../models';
-import {PeopleRepository, PostRepository, UserCredentialRepository} from '../repositories';
+import {PeopleRepository, PostRepository, UserCredentialRepository, UserRepository} from '../repositories';
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 import {polkadotApi} from '../helpers/polkadotApi'
 import {Keyring} from '@polkadot/api'
 import { KeypairType } from '@polkadot/util-crypto/types';
+
+interface User {
+  id: string,
+  username: string,
+  platform: string,
+  profile_image_url?: string
+}
 
 export class UserCredentialController {
   constructor(
@@ -29,6 +36,7 @@ export class UserCredentialController {
     public peopleRepository: PeopleRepository,
     @repository(PostRepository)
     public postRepository: PostRepository,
+    @repository(UserRepository) public userRepository: UserRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
     @inject('services.Rsshub') protected rsshubService: Rsshub,
@@ -67,15 +75,39 @@ export class UserCredentialController {
     
     switch(platform) {
       case 'twitter':
-        const {data: foundTweet} = await this.twitterService.getActions(`tweets/search/recent?query=${publicKey}`)
+        const {data: foundTweet, includes} = await this.twitterService.getActions(`tweets/search/recent?expansions=author_id&user.fields=id,name,username,profile_image_url&query=${publicKey}`)
 
         if (!foundTweet) return false
+
+        const user = includes.users[0]
+
+        await this.createCredential({
+          id: user.id,
+          platform: 'twitter',
+          username: user.username,
+          profile_image_url: user.profile_image_url
+        }, publicKey)
+        
+        await this.transferTipsToUser(publicKey, user.id)
+        
         return true
 
       case 'reddit':
         const {data: foundRedditPost} = await this.redditService.getActions(`search.json?q=${publicKey}&sort=new`)
 
         if (foundRedditPost.children.length === 0) return false
+
+        const {data:redditUser} = await this.redditService.getActions(`user/${foundRedditPost.children[0].author}/about.json`)
+
+        await this.createCredential({
+          id: 't2_' + redditUser.id,
+          platform: 'reddit',
+          username: redditUser.name,
+          profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : ''
+        }, publicKey)
+
+        await this.transferTipsToUser(publicKey, 't2_' + redditUser.id)
+
         return true
 
       default:
@@ -284,6 +316,7 @@ export class UserCredentialController {
       type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
       ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
     });
+    const gasFee = 125000147
 
     for (let i = 0; i < posts.length; i++) {
       const post = posts[i]
@@ -292,12 +325,87 @@ export class UserCredentialController {
       const {data:balance} = await api.query.system.account(from.address)
 
       if (balance.free.toNumber()) {
-        const transfer = api.tx.balances.transfer(to, balance.free)
+        const transfer = api.tx.balances.transfer(to, balance.free.toNumber() - gasFee)
+
+        await transfer.signAndSend(from)
+      }
+
+      console.log(i)
+    }
+
+    await api.disconnect()
+  }
+
+  async transferTipsToUser(publicKey: string, platformAccountId:string):Promise<void> {
+    const posts = await this.postRepository.find({
+      where: {
+        walletAddress: {
+          neq: publicKey
+        }
+      }
+    })
+
+    const userPost = posts.filter(post => {
+      if (post.platformUser) {
+        return platformAccountId === post.platformUser.platform_account_id
+      }
+
+      return false
+    })
+
+    const api = await polkadotApi()
+    const keyring = new Keyring({
+      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+    });
+    const gasFee = 125000147
+    const to = publicKey
+
+    for (let i = 0; i < userPost.length; i++) {
+      const post = userPost[i]
+      const from = keyring.addFromUri('//' + post.id)
+      const {data:balance} = await api.query.system.account(from.address)
+
+      if (balance.free.toNumber()) {
+        const transfer = api.tx.balances.transfer(to, balance.free.toNumber() - gasFee)
 
         await transfer.signAndSend(from)
       }
     }
 
     await api.disconnect()
+  }
+
+  async createCredential(user: User, publicKey:string):Promise<void> {
+    const foundPeople = await this.peopleRepository.findOne({
+      where: {
+        platform_account_id: user.id
+      }
+    })
+
+    if (foundPeople) {
+      const foundCredential = await this.userCredentialRepository.findOne({
+        where: {
+          userId: publicKey,
+          peopleId: foundPeople.id
+        }
+      })
+
+      if (!foundCredential) {
+        await this.peopleRepository.userCredential(foundPeople.id).create({
+          userId: publicKey
+        })
+      }
+    } else {
+      const newPeople = await this.peopleRepository.create({
+        username: user.username,
+        platform_account_id: user.id,
+        platform: user.platform,
+        profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
+      })
+      await this.peopleRepository.userCredential(newPeople.id).create({
+        userId: publicKey
+      })
+    }
   }
 }
