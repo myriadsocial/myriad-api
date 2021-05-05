@@ -23,7 +23,7 @@ export class UserCredential extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
   access_token: string;
 
