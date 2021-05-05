@@ -19,6 +19,7 @@ import {
   response
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
+import { KeypairType } from '@polkadot/util-crypto/types';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {User} from '../models';
 import {ExperienceRepository, PeopleRepository, QueueRepository, TagRepository, UserRepository} from '../repositories';
@@ -76,7 +77,10 @@ export class UserController {
         let count: number = 0
 
         const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
-        const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+        const keyring = new Keyring({
+          type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+          ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+        });
         const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
         const from = keyring.addFromMnemonic(mnemonic);
         const to = user.id;

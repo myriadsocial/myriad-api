@@ -17,6 +17,7 @@ import {
   HttpErrors
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
+import { KeypairType } from '@polkadot/util-crypto/types';
 import dotenv from 'dotenv';
 import {xml2json} from 'xml-js';
 import {People, Post} from '../models';
@@ -293,7 +294,10 @@ export class PeopleController {
     })
 
     if (!credential) {
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+      const keyring = new Keyring({
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+      });
       const newKey = keyring.addFromUri('//' + newPost.id)
       
       await this.postRepository.updateById(newPost.id, {walletAddress: newKey.address});

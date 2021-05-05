@@ -2,6 +2,7 @@ import {inject} from '@loopback/core';
 import {cronJob, CronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
 import {Keyring} from '@polkadot/api';
+import { KeypairType } from '@polkadot/util-crypto/types';
 import {
   PeopleRepository,
   PostRepository,
@@ -43,7 +44,10 @@ export class FetchContentRedditJob extends CronJob {
   async searchPostByTag() {
     try {
       const tags = await this.tagRepository.find()
-      const keyring = new Keyring({type: 'sr25519', ss58Format: 214});
+      const keyring = new Keyring({
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+      });
 
       for (let i = 0; i < tags.length; i++) {
         const tag = tags[i]
