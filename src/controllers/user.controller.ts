@@ -7,12 +7,8 @@ import {
   del,
   get,
   getModelSchemaRef,
-
-
-
-
-
-  HttpErrors, param,
+  HttpErrors, 
+  param,
   patch,
   post,
   requestBody,
@@ -22,7 +18,13 @@ import {Keyring} from '@polkadot/api';
 import { KeypairType } from '@polkadot/util-crypto/types';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {User} from '../models';
-import {ExperienceRepository, PeopleRepository, QueueRepository, TagRepository, UserRepository} from '../repositories';
+import {
+  ExperienceRepository, 
+  PeopleRepository, 
+  QueueRepository, 
+  TagRepository, 
+  UserRepository
+} from '../repositories';
 
 export class UserController {
   constructor(
@@ -61,17 +63,17 @@ export class UserController {
         return word[0].toUpperCase() + word.substr(1).toLowerCase()
       }).join(' ')
 
-    const foundUser = await this.userRepository.findOne({
-      where: {
-        or: [
-          {id: user.id},
-          {name: user.name}
-        ]
-      }
-    })
-
     try {
       const api = await polkadotApi()
+
+      const foundUser = await this.userRepository.findOne({
+        where: {
+          or: [
+            {id: user.id},
+            {name: user.name}
+          ]
+        }
+      })
 
       if (!foundUser) {
         let count: number = 0
@@ -222,46 +224,4 @@ export class UserController {
   ): Promise<User> {
     return this.userRepository.findById(id, filter);
   }
-
-  // @get('/users/count')
-  // @response(200, {
-  //   description: 'User model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(User) where?: Where<User>,
-  // ): Promise<Count> {
-  //   return this.userRepository.count(where);
-  // }
-
-  // @patch('/users')
-  // @response(200, {
-  //   description: 'User PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(User, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   user: User,
-  //   @param.where(User) where?: Where<User>,
-  // ): Promise<Count> {
-  //   return this.userRepository.updateAll(user, where);
-  // }
-
-  // @put('/users/{id}')
-  // @response(204, {
-  //   description: 'User PUT success',
-  // })
-  // async replaceById(
-  //   @param.path.string('id') id: string,
-  //   @requestBody() user: User,
-  // ): Promise<void> {
-  //   await this.userRepository.replaceById(id, user);
-  // }
-
 }

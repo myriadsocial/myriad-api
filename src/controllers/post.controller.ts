@@ -73,243 +73,17 @@ export class PostController {
     const splitURL = post.url.split('/')
     const platform = splitURL[2].toLowerCase()
 
-    const keyring = new Keyring({
-      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
-    });
-
     switch (platform) {
       case 'twitter.com':
-        const twitterTextId = splitURL[5]
-        const foundPost = await this.postRepository.findOne({
-          where: {
-            textId: twitterTextId,
-            platform: 'twitter'
-          }
-        })
-
-        if (foundPost) throw new HttpErrors.UnprocessableEntity('Post already exists')
-
-        const {data: tweet, includes} = await this.twitterService.getActions(`tweets/${twitterTextId}?tweet.fields=referenced_tweets,attachments,entities,created_at&expansions=attachments.media_keys,author_id&user.fields=id,username,profile_image_url`)
-
-        if (!tweet) throw new HttpErrors.NotFound('Cannot found the specified url!')
-
-        const {users} = includes
-
-        const twitterUser = users[0]
-
-        const tags = tweet.entities ? (tweet.entities.hashtags ?
-          tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
-        ) : []
-
-        const hasMedia = tweet.attachments ? Boolean(tweet.attachments.media_keys) : false
-
-        const foundPeople = await this.peopleRepository.findOne({
-          where: {
-            platform_account_id: twitterUser.id,
-            platform
-          }
-        })
-
-        const newTweet = {
-          platformUser: {
-            username: twitterUser.username,
-            platform_account_id: twitterUser.id,
-            profile_image_url: twitterUser.profile_image_url.replace('normal','400x400')
-          }, 
-          platform: 'twitter',
-          textId: twitterTextId, 
-          createdAt: new Date().toString(),
-          tags, hasMedia, 
-          link: `https://twitter.com/${twitterUser.id}/status/${twitterTextId}`, 
-          platformCreatedAt: tweet.created_at
-        }
-
-        if (!foundPeople) {
-          const createdTweet = await this.postRepository.create(newTweet)
-          const newKey = keyring.addFromUri('//' + createdTweet.id)
-
-          await this.postRepository.updateById(createdTweet.id, {walletAddress: newKey.address})
-          await this.publicMetricRepository.create({
-            postId: createdTweet.id
-          })
-
-          const updatedTweet = await this.postRepository.findOne({
-            where: {
-              id: createdTweet.id
-            }
-          })
-
-          if (updatedTweet) return updatedTweet
-          throw new Error('Error')
-        } 
-
-        const foundCredential = await this.userCredentialRepository.findOne({
-          where: {
-            peopleId: foundPeople.id
-          }
-        })
-
-        if (!foundCredential) {
-          const createdTweet = await this.postRepository.create({
-            ...newTweet,
-            peopleId: foundPeople.id
-          })
-          const newKey = keyring.addFromUri('//' + createdTweet.id)
-
-          await this.postRepository.updateById(createdTweet.id, {walletAddress: newKey.address})
-          await this.publicMetricRepository.create({
-            postId: createdTweet.id
-          })
-
-          const updatedTweet = await this.postRepository.findOne({
-            where: {
-              id: createdTweet.id
-            }
-          })
-
-          if (updatedTweet) return updatedTweet
-          throw new Error('Error')
-        }
-
-        const createdTweet = await this.postRepository.create({
-          ...newTweet,
-          peopleId: foundPeople.id,
-          walletAddress: foundCredential.userId
-        })
-
-        await this.publicMetricRepository.create({
-          postId: createdTweet.id
-        })
-
-        const updatedTweet = await this.postRepository.findOne({
-          where: {
-            id: createdTweet.id
-          }
-        })
-
-        if (updatedTweet) return updatedTweet
-        throw new Error('Error')
+        return this.twitterPost(splitURL[5])
         
       case 'www.reddit.com':
-        const redditTextId = splitURL[6]
-        const foundRedditPost = await this.postRepository.findOne({
-          where: {
-            textId: redditTextId,
-            platform: 'reddit'
-          }
-        })
-
-        if (foundRedditPost) throw new HttpErrors.UnprocessableEntity("Post already exists")
-
-        const redditUser = splitURL[4]
-        const [data] = await this.redditService.getActions(redditTextId + '.json')
-        const {data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json') 
-        const redditPost = data.data.children[0].data
-
-        const newRedditPost = {
-          createdAt: new Date().toString(),
-          platform: 'reddit',
-          textId: redditTextId,
-          tags: [],
-          hasMedia: redditPost.media_metadata || redditPost.is_reddit_media_domain ? true : false,
-          platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
-          link: `https://reddit.com/${redditTextId}`,
-          title: redditPost.title,
-          text: redditPost.selftext,
-          platformUser: {
-            username: user.name,
-            platform_account_id: 't2_' + user.id,
-            profile_image_url: user.icon_img.split('?')[0]
-          }
-        }
-
-        const foundRedditAccount = await this.peopleRepository.findOne({
-          where: {
-            platform_account_id: 't2_' + user.id,
-            platform: 'reddit'
-          }
-        })
-
-        if (!foundRedditAccount) {
-          const createdPost = await this.postRepository.create(newRedditPost)
-          const newKey = keyring.addFromUri('//' + createdPost.id)
-
-          await this.postRepository.updateById(createdPost.id, {walletAddress: newKey.address})
-          await this.publicMetricRepository.create({
-            postId: createdPost.id
-          })
-          const updatedPost = await this.postRepository.findOne({
-            where: {
-              id: createdPost.id
-            }
-          })
-
-          if (updatedPost) return updatedPost
-          throw new Error('Error')
-        }
-
-        const foundRedditCredential = await this.userCredentialRepository.findOne({
-          where: {
-            peopleId: foundRedditAccount.id
-          }
-        })
-
-        if (!foundRedditCredential) {
-          const createdPost = await this.postRepository.create({
-            ...newRedditPost,
-            peopleId: foundRedditAccount.id
-          })
-
-          const newKey = keyring.addFromUri('//' + createdPost.id)
-
-          await this.postRepository.updateById(createdPost.id, {walletAddress: newKey.address})
-          await this.publicMetricRepository.create({
-            postId: createdPost.id
-          })
-          const updatedPost = await this.postRepository.findOne({
-            where: {
-              id: createdPost.id
-            }
-          })
-
-          if (updatedPost) return updatedPost
-          throw new Error('Error')
-        }
-
-        const createdPost = await this.postRepository.create({
-          ...newRedditPost,
-          peopleId: foundRedditAccount.id,
-          walletAddress: foundRedditCredential.userId
-        })
-        await this.publicMetricRepository.create({
-          postId: createdPost.id
-        })
-
-        const updatedPost = await this.postRepository.findOne({
-          where: {
-            id: createdPost.id
-          }
-        })
-
-        if (updatedPost) return updatedPost
-        throw new Error('Error')
+        return this.redditPost(splitURL[6])
 
       default:
         throw new HttpErrors.NotFound("Cannot found the specified url!")
     }  
   }
-
-  // @get('/posts/count')
-  // @response(200, {
-  //   description: 'Post model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Post) where?: Where<Post>,
-  // ): Promise<Count> {
-  //   return this.postRepository.count(where);
-  // }
 
   @get('/posts')
   @response(200, {
@@ -350,14 +124,8 @@ export class PostController {
       const likeA = a.publicMetric.liked
       const likeB = b.publicMetric.liked
 
-      if (likeA < likeB) {
-        return 1
-      }
-
-      if (likeA > likeB) {
-        return -1
-      }
-
+      if (likeA < likeB) return 1
+      if (likeA > likeB) return -1
       return 0
     })
 
@@ -367,14 +135,8 @@ export class PostController {
           const likeA = a.publicMetric.liked
           const likeB = b.publicMetric.liked
 
-          if (likeA < likeB) {
-            return -1
-          }
-
-          if (likeA > likeB) {
-            return 1
-          }
-
+          if (likeA < likeB) return -1
+          if (likeA > likeB) return 1
           return 0
         })
 
@@ -409,14 +171,8 @@ export class PostController {
       const commentA = a.publicMetric.comment
       const commentB = b.publicMetric.comment
 
-      if (commentA < commentB) {
-        return 1
-      }
-
-      if (commentA > commentB) {
-        return -1
-      }
-
+      if (commentA < commentB) return 1
+      if (commentA > commentB) return -1
       return 0
     })
 
@@ -426,14 +182,8 @@ export class PostController {
           const commentA = a.publicMetric.comment
           const commentB = b.publicMetric.comment
 
-          if (commentA < commentB) {
-            return -1
-          }
-
-          if (commentA > commentB) {
-            return 1
-          }
-
+          if (commentA < commentB) return -1
+          if (commentA > commentB) return 1
           return 0
         })
 
@@ -468,14 +218,8 @@ export class PostController {
       const dateA = a.platformCreatedAt
       const dateB = b.platformCreatedAt
 
-      if (dateA < dateB) {
-        return 1
-      }
-
-      if (dateA > dateB) {
-        return -1
-      }
-
+      if (dateA < dateB) return 1
+      if (dateA > dateB) return -1
       return 0
     })
 
@@ -485,14 +229,8 @@ export class PostController {
           const dateA = a.platformCreatedAt
           const dateB = b.platformCreatedAt
 
-          if (dateA < dateB) {
-            return -1
-          }
-
-          if (dateA > dateB) {
-            return 1
-          }
-
+          if (dateA < dateB) return -1
+          if (dateA > dateB) return 1
           return 0
         })
 
@@ -505,25 +243,6 @@ export class PostController {
         return posts
     }
   }
-
-  // @patch('/posts')
-  // @response(200, {
-  //   description: 'Post PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(Post, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   post: Post,
-  //   @param.where(Post) where?: Where<Post>,
-  // ): Promise<Count> {
-  //   return this.postRepository.updateAll(post, where);
-  // }
 
   @get('/posts/{id}')
   @response(200, {
@@ -596,22 +315,140 @@ export class PostController {
     });
   }
 
-  // @put('/posts/{id}')
-  // @response(204, {
-  //   description: 'Post PUT success',
-  // })
-  // async replaceById(
-  //   @param.path.string('id') id: string,
-  //   @requestBody() post: Post,
-  // ): Promise<void> {
-  //   await this.postRepository.replaceById(id, post);
-  // }
-
   @del('/posts/{id}')
   @response(204, {
     description: 'Post DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.postRepository.deleteById(id);
+  }
+
+  async redditPost (textId:string):Promise<Post> {
+    const {post: redditPost, user: redditUser} = await this.reddit(textId); 
+
+    const newRedditPost = {
+      createdAt: new Date().toString(),
+      platform: 'reddit',
+      textId: textId,
+      tags: [],
+      hasMedia: redditPost.media_metadata || redditPost.is_reddit_media_domain ? true : false,
+      platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
+      link: `https://reddit.com/${textId}`,
+      title: redditPost.title,
+      text: redditPost.selftext,
+      platformUser: {
+        username: redditUser.name,
+        platform_account_id: 't2_' + redditUser.id,
+        profile_image_url: redditUser.icon_img.split('?')[0]
+      }
+    }
+
+    return this.createPost('t2_' + redditUser.id, 'reddit', newRedditPost)
+  }
+
+  async twitterPost (textId: string) {
+    const {post: tweet, user: twitterUser} = await this.twitter(textId)
+
+    const tags = tweet.entities ? (tweet.entities.hashtags ?
+      tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
+    ) : []
+
+    const newTweet = {
+      platformUser: {
+        username: twitterUser.username,
+        platform_account_id: twitterUser.id,
+        profile_image_url: twitterUser.profile_image_url.replace('normal','400x400')
+      }, 
+      platform: 'twitter',
+      textId: textId, 
+      createdAt: new Date().toString(),
+      tags, 
+      hasMedia: tweet.attachments ? Boolean(tweet.attachments.media_keys) : false, 
+      link: `https://twitter.com/${twitterUser.id}/status/${textId}`, 
+      platformCreatedAt: tweet.created_at
+    }
+
+    return this.createPost(twitterUser.id, 'twitter', newTweet)
+  }
+
+  async twitter (textId: string) {
+    const {data: post, includes} = await this.twitterService.getActions(`tweets/${textId}?tweet.fields=referenced_tweets,attachments,entities,created_at&expansions=attachments.media_keys,author_id&user.fields=id,username,profile_image_url`)
+
+    if (!post) throw new HttpErrors.NotFound('Cannot found the specified url!')
+
+    return {
+      post,
+      user: includes.users[0]
+    }
+  }
+
+  async reddit (textId: string) {
+    const [data] = await this.redditService.getActions(textId + '.json')
+    const redditPost = data.data.children[0].data
+
+    const redditUser = redditPost.author
+    const {data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json')
+    
+    return {
+      post: redditPost,
+      user
+    }
+  }
+
+  async createPost(platformAccountId: string, platform: string, post: object):Promise<Post> {
+    const foundPeople = await this.peopleRepository.findOne({
+      where: {
+        platform_account_id: platformAccountId,
+        platform: platform
+      }
+    })
+
+    if (!foundPeople) {
+      return this.createPostWithPublicMetric(post, false)
+    } 
+
+    const foundCredential = await this.userCredentialRepository.findOne({
+      where: {
+        peopleId: foundPeople.id
+      }
+    })
+
+    if (!foundCredential) {
+      return this.createPostWithPublicMetric({
+        ...post,
+        peopleId: foundPeople.id
+      }, false)
+    }
+
+    return this.createPostWithPublicMetric({
+      ...post,
+      peopleId: foundPeople.id,
+      walletAddress: foundCredential.userId
+    }, true)
+  }
+
+  async createPostWithPublicMetric (post:object, credential: boolean):Promise<Post> {
+    const createdTweet = await this.postRepository.create(post)
+    const publicMetric = await this.postRepository.publicMetric(createdTweet.id).create({})
+
+    if (!credential) {
+      const newKey = this.keyring().addFromUri('//' + createdTweet.id)
+
+      await this.postRepository.updateById(createdTweet.id, {walletAddress: newKey.address})
+
+      createdTweet.walletAddress = newKey.address
+      createdTweet.publicMetric = publicMetric
+    } else {
+      createdTweet.publicMetric = publicMetric
+    }
+
+    return createdTweet
+  }
+
+  keyring() {
+    return new Keyring({
+      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+    });
   }
 }

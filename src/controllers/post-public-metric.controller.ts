@@ -22,28 +22,28 @@ import {
 import {PostRepository} from '../repositories';
 
 export class PostPublicMetricController {
-  // constructor(
-  //   @repository(PostRepository) protected postRepository: PostRepository,
-  // ) { }
+  constructor(
+    @repository(PostRepository) protected postRepository: PostRepository,
+  ) { }
 
-  // @get('/posts/{id}/public-metric', {
-  //   responses: {
-  //     '200': {
-  //       description: 'Post has one PublicMetric',
-  //       content: {
-  //         'application/json': {
-  //           schema: getModelSchemaRef(PublicMetric),
-  //         },
-  //       },
-  //     },
-  //   },
-  // })
-  // async get(
-  //   @param.path.string('id') id: string,
-  //   @param.query.object('filter') filter?: Filter<PublicMetric>,
-  // ): Promise<PublicMetric> {
-  //   return this.postRepository.publicMetric(id).get(filter);
-  // }
+  @get('/posts/{id}/public-metric', {
+    responses: {
+      '200': {
+        description: 'Post has one PublicMetric',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(PublicMetric),
+          },
+        },
+      },
+    },
+  })
+  async get(
+    @param.path.string('id') id: string,
+    @param.query.object('filter') filter?: Filter<PublicMetric>,
+  ): Promise<PublicMetric> {
+    return this.postRepository.publicMetric(id).get(filter);
+  }
 
   // @post('/posts/{id}/public-metric', {
   //   responses: {

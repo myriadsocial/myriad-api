@@ -304,12 +304,7 @@ export class PeopleController {
     }
   }
 
-  async newPost(post:any, people:any) {
-    let hasMedia:boolean = false
-    let link:string
-    let platformCreatedAt:string
-    let tags: string[] = []
-    
+  async newPost(post:any, people:any) {    
     const newPost = {
       platformUser: {
         username: people.username,
@@ -324,30 +319,26 @@ export class PeopleController {
 
     switch (people.platform) {
       case "twitter":
-        tags = post.entities ? (post.entities.hashtags ? 
+        const tags = post.entities ? (post.entities.hashtags ? 
           post.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
         ) : []
-
-        hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
-
-        link = `https://twitter.com/${people.platform_account_id}/status/${post.id}`
-
-        platformCreatedAt = post.created_at
 
         return {
           ...newPost,
           text: post.text,
-          tags, hasMedia, link, platformCreatedAt
+          tags: tags, 
+          hasMedia: post.attachments ? Boolean(post.attachments.media_keys) : false, 
+          link: `https://twitter.com/${people.platform_account_id}/status/${post.id}`, 
+          platformCreatedAt: post.created_at
         }
 
       case "reddit":
-        hasMedia = post.media_metadata || post.is_reddit_media_domain ? true : false
-        platformCreatedAt = new Date(post.created_utc * 1000).toString()
-        link = `https://reddit.com/${post.id}`
-
         return {
           ...newPost,
-          tags, hasMedia, link, platformCreatedAt,
+          tags: [], 
+          hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false, 
+          link: `https://reddit.com/${post.id}`, 
+          platformCreatedAt: new Date(post.created_utc * 1000).toString(),
           title: post.title,
           text: post.selftext
         }
@@ -355,8 +346,8 @@ export class PeopleController {
       case "facebook":
         return {
           ...newPost,
-          hasMedia,
-          tags,
+          hasMedia: false,
+          tags: [],
           platformCreatedAt: new Date().toString()
         }
 
