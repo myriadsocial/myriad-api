@@ -56,6 +56,33 @@ export class UserCredentialController {
     return this.userCredentialRepository.create(userCredential)
   }
 
+  @post('/verify')
+  @response(200, {
+    description: 'Verify User'
+  })
+  async verifyUser(
+    @requestBody() verifyUser: {publicKey:string, platform:string}
+  ):Promise<Boolean> {
+    const {publicKey, platform} = verifyUser
+    
+    switch(platform) {
+      case 'twitter':
+        const {data: foundTweet} = await this.twitterService.getActions(`tweets/search/recent?query=${publicKey}`)
+
+        if (!foundTweet) return false
+        return true
+
+      case 'reddit':
+        const {data: foundRedditPost} = await this.redditService.getActions(`search.json?q=${publicKey}&sort=new`)
+
+        if (foundRedditPost.children.length === 0) return false
+        return true
+
+      default:
+        return false
+    }
+  }
+
   @post('/user-credentials/verify')
   @response(200, {
     desciption: `Verify User`,
