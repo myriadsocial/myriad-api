@@ -70,25 +70,27 @@ export class UserCredentialController {
     description: 'Verify User'
   })
   async verifyUser(
-    @requestBody() verifyUser: {publicKey:string, platform:string}
+    @requestBody() verifyUser: {publicKey:string, username: string, platform:string}
   ):Promise<Boolean> {
-    const {publicKey, platform} = verifyUser
+    const {publicKey, platform, username} = verifyUser
 
-    this.wait(15000)
-    
     switch(platform) {
       case 'twitter':
-        const {data: foundTweet, includes} = await this.twitterService.getActions(`tweets/search/recent?expansions=author_id&user.fields=id,name,username,profile_image_url&query=${publicKey}`)
+        const {data: user} = await this.twitterService.getActions(`users/by/username/${username}?user.fields=profile_image_url`)
 
-        if (!foundTweet) return false
+        if (!user) throw new HttpErrors.NotFound('Invalid username')
 
-        const user = includes.users[0]
+        const {data: tweets} = await this.twitterService.getActions(`users/${user.id}/tweets?max_results=5`)
+
+        const foundTwitterPublicKey = tweets[0].text.search(publicKey)
+
+        if (foundTwitterPublicKey === -1) throw new HttpErrors.NotFound('Cannot find specified post')
 
         await this.createCredential({
           id: user.id,
-          platform: 'twitter',
+          platform: platform,
           username: user.username,
-          profile_image_url: user.profile_image_url
+          profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
         }, publicKey)
         
         await this.transferTipsToUser(publicKey, user.id)
@@ -96,11 +98,15 @@ export class UserCredentialController {
         return true
 
       case 'reddit':
-        const {data: foundRedditPost} = await this.redditService.getActions(`search.json?q=${publicKey}&sort=new`)
+        const {data: redditUser} = await this.redditService.getActions(`user/${username}/about.json`)
+        
+        const {data: foundRedditPost} = await this.redditService.getActions(`user/${username}/.json?limit=1`)
 
-        if (foundRedditPost.children.length === 0) return false
+        if (foundRedditPost.children.length === 0) throw new HttpErrors.NotFound('Cannot find the spesified post')
 
-        const {data:redditUser} = await this.redditService.getActions(`user/${foundRedditPost.children[0].author}/about.json`)
+        const foundRedditPublicKey = foundRedditPost.children[0].data.title.search(publicKey)
+
+        if (foundRedditPublicKey === -1) throw new HttpErrors.NotFound('Cannot find specified post')
 
         await this.createCredential({
           id: 't2_' + redditUser.id,
@@ -114,7 +120,7 @@ export class UserCredentialController {
         return true
 
       default:
-        return false
+        throw new HttpErrors.NotFound('Platform does not exist')
     }
   }
 
@@ -425,22 +431,12 @@ export class UserCredentialController {
         username: user.username,
         platform_account_id: user.id,
         platform: user.platform,
-        profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
+        profile_image_url: user.profile_image_url
       })
       await this.peopleRepository.userCredential(newPeople.id).create({
         userId: publicKey,
         isLogin: true
       })
-    }
-  }
-
-  wait (milliseconds:number) {
-    const start = new Date().getTime();
-
-    for (let i = 0; i < 1e7; i++) {
-      if ((new Date().getTime() - start) > milliseconds) {
-        break;
-      }
     }
   }
 }
