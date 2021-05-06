@@ -366,6 +366,8 @@ export class UserCredentialController {
 
       return false
     })
+
+    if (userPost.length === 0) return true
  
     try {
       const api = await polkadotApi()
@@ -428,7 +430,11 @@ export class UserCredentialController {
     })
 
     if (foundPeople) {
-      const foundCredential = credentials.find(credential => credential.peopleId === foundPeople.id)
+      const foundCredential = await this.userCredentialRepository.findOne({
+        where: {
+          peopleId: foundPeople.id
+        }
+      })
 
       if (!foundCredential) {
         return this.peopleRepository.userCredential(foundPeople.id).create({
@@ -437,11 +443,15 @@ export class UserCredentialController {
         })
       } 
 
-      await this.userCredentialRepository.updateById(foundCredential.id, {
-        isLogin: true
-      })
-
-      return foundCredential
+      if (foundCredential.userId === publicKey) {
+        await this.userCredentialRepository.updateById(foundCredential.id, {
+          isLogin: true
+        })
+        
+        return foundCredential
+      } 
+        
+      throw new HttpErrors.UnprocessableEntity('Credential not valid')
     } 
 
     const newPeople = await this.peopleRepository.create({
