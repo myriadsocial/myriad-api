@@ -21,9 +21,10 @@ import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 import {polkadotApi} from '../helpers/polkadotApi'
 import {Keyring} from '@polkadot/api'
 import { KeypairType } from '@polkadot/util-crypto/types';
+import fs from 'fs'
 
 interface User {
-  id: string,
+  platform_account_id: string,
   username: string,
   platform: string,
   profile_image_url?: string
@@ -41,7 +42,7 @@ export class UserCredentialController {
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
     @inject('services.Rsshub') protected rsshubService: Rsshub,
-    @inject('services.Facebook') protected facebookService: Facebook
+    @inject('services.Facebook') protected facebookService: Facebook,
   ) { }
 
   @post('/user-credentials')
@@ -86,20 +87,22 @@ export class UserCredentialController {
 
         if (foundTwitterPublicKey === -1) throw new HttpErrors.NotFound('Cannot find specified post')
 
-        await this.createCredential({
-          id: user.id,
+        const twitterCredential = await this.createCredential({
+          platform_account_id: user.id,
           platform: platform,
           username: user.username,
           profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
         }, publicKey)
         
-        await this.transferTipsToUser(publicKey, user.id)
+        const statusTransfer = await this.transferTipsToUser(twitterCredential, user.id)
         
+        if(!statusTransfer) throw new HttpErrors.UnprocessableEntity('RPC Lost Connection')
+
         return true
 
       case 'reddit':
         const {data: redditUser} = await this.redditService.getActions(`user/${username}/about.json`)
-        
+
         const {data: foundRedditPost} = await this.redditService.getActions(`user/${username}/.json?limit=1`)
 
         if (foundRedditPost.children.length === 0) throw new HttpErrors.NotFound('Cannot find the spesified post')
@@ -108,14 +111,16 @@ export class UserCredentialController {
 
         if (foundRedditPublicKey === -1) throw new HttpErrors.NotFound('Cannot find specified post')
 
-        await this.createCredential({
-          id: 't2_' + redditUser.id,
+        const redditCredential = await this.createCredential({
+          platform_account_id: 't2_' + redditUser.id,
           platform: 'reddit',
           username: redditUser.name,
           profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : ''
         }, publicKey)
 
-        await this.transferTipsToUser(publicKey, 't2_' + redditUser.id)
+        const statusTransferReddit = await this.transferTipsToUser(redditCredential, 't2_' + redditUser.id)
+
+        if (!statusTransferReddit) throw new HttpErrors.UnprocessableEntity('RPC Lost Connection')
 
         return true
 
@@ -345,47 +350,54 @@ export class UserCredentialController {
     await api.disconnect()
   }
 
-  async transferTipsToUser(publicKey: string, platformAccountId:string):Promise<void> {
+  async transferTipsToUser(credential:UserCredential, platform_account_id:string):Promise<boolean> {
     const posts = await this.postRepository.find({
       where: {
         walletAddress: {
-          neq: publicKey
+          neq: credential.userId
         }
       }
     })
 
     const userPost = posts.filter(post => {
       if (post.platformUser) {
-        return platformAccountId === post.platformUser.platform_account_id
+        return platform_account_id === post.platformUser.platform_account_id
       }
 
       return false
     })
-
-    const api = await polkadotApi()
-    const keyring = new Keyring({
-      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
-    });
-    const gasFee = 125000147
-    const to = publicKey
-
-    for (let i = 0; i < userPost.length; i++) {
-      const post = userPost[i]
-      const from = keyring.addFromUri('//' + post.id)
-      const {data:balance} = await api.query.system.account(from.address)
-
-      if (balance.free.toNumber()) {
-        const transfer = api.tx.balances.transfer(to, balance.free.toNumber() - gasFee)
-
-        await transfer.signAndSend(from)
+ 
+    try {
+      const api = await polkadotApi()
+      const keyring = new Keyring({
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+      });
+      const gasFee = 125000147
+      const to = credential.userId
+  
+      for (let i = 0; i < userPost.length; i++) {
+        const post = userPost[i]
+        const from = keyring.addFromUri('//' + post.id)
+        const {data:balance} = await api.query.system.account(from.address)
+  
+        if (balance.free.toNumber()) {
+          const transfer = api.tx.balances.transfer(to, balance.free.toNumber() - gasFee)
+  
+          await transfer.signAndSend(from)
+          await this.postRepository.updateById(post.id, {peopleId: credential.peopleId})
+        }
       }
+  
+      await api.disconnect()
+      return true
+    } catch (err) {
+      await this.userCredentialRepository.deleteById(credential.id)
+      return false
     }
-
-    await api.disconnect()
   }
 
-  async createCredential(user: User, publicKey:string):Promise<void> {
+  async createCredential(user: User, publicKey:string):Promise<UserCredential> {
     // Verify credential
     const credentials = await this.userCredentialRepository.find({
       where: {
@@ -402,13 +414,15 @@ export class UserCredentialController {
 
       
       if (person && person.platform === user.platform) {
-        throw new HttpErrors.UnprocessableEntity(`This ${person.platform} does not belong to you!`)
+        if (person.platform_account_id !== user.platform_account_id) {
+          throw new HttpErrors.UnprocessableEntity(`This ${person.platform} does not belong to you!`)
+        }
       }
     }
 
     const foundPeople = await this.peopleRepository.findOne({
       where: {
-        platform_account_id: user.id,
+        platform_account_id: user.platform_account_id,
         platform: user.platform
       }
     })
@@ -417,26 +431,30 @@ export class UserCredentialController {
       const foundCredential = credentials.find(credential => credential.peopleId === foundPeople.id)
 
       if (!foundCredential) {
-        await this.peopleRepository.userCredential(foundPeople.id).create({
+        return this.peopleRepository.userCredential(foundPeople.id).create({
           userId: publicKey,
           isLogin: true
         })
-      } else {
-        await this.userCredentialRepository.updateById(foundCredential.id, {
-          isLogin: true
-        })
-      }
-    } else {
-      const newPeople = await this.peopleRepository.create({
-        username: user.username,
-        platform_account_id: user.id,
-        platform: user.platform,
-        profile_image_url: user.profile_image_url
-      })
-      await this.peopleRepository.userCredential(newPeople.id).create({
-        userId: publicKey,
+      } 
+
+      await this.userCredentialRepository.updateById(foundCredential.id, {
         isLogin: true
       })
-    }
+
+      return foundCredential
+    } 
+
+    const newPeople = await this.peopleRepository.create({
+      username: user.username,
+      platform_account_id: user.platform_account_id,
+      platform: user.platform,
+      profile_image_url: user.profile_image_url
+    })
+
+    return this.peopleRepository.userCredential(newPeople.id).create({
+      userId: publicKey,
+      isLogin: true
+    })
+    
   }
 }

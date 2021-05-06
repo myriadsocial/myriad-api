@@ -372,6 +372,14 @@ export class PostController {
   }
 
   async twitter (textId: string) {
+    const foundPost = await this.postRepository.findOne({
+      where: {
+        textId
+      }
+    })
+
+    if (foundPost) throw new HttpErrors.UnprocessableEntity("Post already been imported")
+
     const {data: post, includes} = await this.twitterService.getActions(`tweets/${textId}?tweet.fields=referenced_tweets,attachments,entities,created_at&expansions=attachments.media_keys,author_id&user.fields=id,username,profile_image_url`)
 
     if (!post) throw new HttpErrors.NotFound('Cannot found the specified url!')
@@ -383,6 +391,14 @@ export class PostController {
   }
 
   async reddit (textId: string) {
+    const foundPost = await this.postRepository.findOne({
+      where: {
+        textId
+      }
+    })
+
+    if (foundPost) throw new HttpErrors.UnprocessableEntity("Post already been imported")
+    
     const [data] = await this.redditService.getActions(textId + '.json')
     const redditPost = data.data.children[0].data
 
