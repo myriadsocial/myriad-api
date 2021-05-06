@@ -1,5 +1,5 @@
 # Check out https://hub.docker.com/_/node to select a new base image
-FROM node:15.14.0-buster-slim
+FROM node:14-buster-slim
 
 LABEL social.myriad.api.image.authors="1@myriad.social" \
   social.myriad.api.image.vendor="Myriadsocial" \
