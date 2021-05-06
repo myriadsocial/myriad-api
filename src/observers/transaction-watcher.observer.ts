@@ -3,6 +3,7 @@ import {
   LifeCycleObserver
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
+import {ApiPromise} from '@polkadot/api';
 import {encodeAddress} from '@polkadot/util-crypto';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {TransactionRepository} from '../repositories';
@@ -13,6 +14,8 @@ import {TransactionRepository} from '../repositories';
  */
 @lifeCycleObserver('')
 export class TransactionWatcherObserver implements LifeCycleObserver {
+
+  private polkadotAPI: ApiPromise;
 
   constructor(
     @repository(TransactionRepository)
@@ -26,13 +29,22 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
    */
   async init(): Promise<void> {
     // Add your logic for init
-
     try {
-      const api = await polkadotApi()
-      // console.log('RPC isReady for TransactionWatcher');
+      this.polkadotAPI = await polkadotApi()
+      console.log('RPC isReady for TransactionWatcher');
+    } catch (error) {
+      // console.error(error)
+    }
+  }
 
+  /**
+   * This method will be invoked when the application starts.
+   */
+  async start(): Promise<void> {
+    // Add your logic for start
+    try {
       // Subscribe to system events via storage
-      api.query.system.events((events) => {
+      this.polkadotAPI.query.system.events((events) => {
         // Loop through the Vec<EventRecord>
         events.forEach((record) => {
           // Extract the phase, event and the event types
@@ -65,16 +77,14 @@ export class TransactionWatcherObserver implements LifeCycleObserver {
   }
 
   /**
-   * This method will be invoked when the application starts.
-   */
-  async start(): Promise<void> {
-    // Add your logic for start
-  }
-
-  /**
    * This method will be invoked when the application stops.
    */
   async stop(): Promise<void> {
     // Add your logic for stop
+    try {
+      this.polkadotAPI.disconnect()
+    } catch (error) {
+      // console.error(error)
+    }
   }
 }
