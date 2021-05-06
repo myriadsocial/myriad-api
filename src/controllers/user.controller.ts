@@ -7,7 +7,7 @@ import {
   del,
   get,
   getModelSchemaRef,
-  HttpErrors, 
+  HttpErrors,
   param,
   patch,
   post,
@@ -15,14 +15,14 @@ import {
   response
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
-import { KeypairType } from '@polkadot/util-crypto/types';
+import {KeypairType} from '@polkadot/util-crypto/types';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {User} from '../models';
 import {
-  ExperienceRepository, 
-  PeopleRepository, 
-  QueueRepository, 
-  TagRepository, 
+  ExperienceRepository,
+  PeopleRepository,
+  QueueRepository,
+  TagRepository,
   UserRepository
 } from '../repositories';
 
@@ -64,8 +64,6 @@ export class UserController {
       }).join(' ')
 
     try {
-      const api = await polkadotApi()
-
       const foundUser = await this.userRepository.findOne({
         where: {
           or: [
@@ -76,11 +74,9 @@ export class UserController {
       })
 
       if (!foundUser) {
-        let count: number = 0
-
-        const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
+        const api = await polkadotApi()
         const keyring = new Keyring({
-          type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+          type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
           ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
         });
         const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
@@ -89,6 +85,9 @@ export class UserController {
         const value = 100000000000000; // send 100 myria
         const {nonce} = await api.query.system.account(from.address)
 
+        let count: number = 0
+
+        const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
         if (!foundQueue) {
           count = nonce.toJSON()
 
