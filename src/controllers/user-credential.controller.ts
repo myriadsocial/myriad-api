@@ -8,6 +8,7 @@ import {
   del,
   get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
@@ -72,6 +73,8 @@ export class UserCredentialController {
     @requestBody() verifyUser: {publicKey:string, platform:string}
   ):Promise<Boolean> {
     const {publicKey, platform} = verifyUser
+
+    this.wait(15000)
     
     switch(platform) {
       case 'twitter':
@@ -377,23 +380,44 @@ export class UserCredentialController {
   }
 
   async createCredential(user: User, publicKey:string):Promise<void> {
+    // Verify credential
+    const credentials = await this.userCredentialRepository.find({
+      where: {
+        userId: publicKey
+      }
+    })
+
+    for (let i = 0; i < credentials.length; i++) {
+      const person = await this.peopleRepository.findOne({
+        where: {
+          id: credentials[i].peopleId
+        }
+      })
+
+      
+      if (person && person.platform === user.platform) {
+        throw new HttpErrors.UnprocessableEntity(`This ${person.platform} does not belong to you!`)
+      }
+    }
+
     const foundPeople = await this.peopleRepository.findOne({
       where: {
-        platform_account_id: user.id
+        platform_account_id: user.id,
+        platform: user.platform
       }
     })
 
     if (foundPeople) {
-      const foundCredential = await this.userCredentialRepository.findOne({
-        where: {
-          userId: publicKey,
-          peopleId: foundPeople.id
-        }
-      })
+      const foundCredential = credentials.find(credential => credential.peopleId === foundPeople.id)
 
       if (!foundCredential) {
         await this.peopleRepository.userCredential(foundPeople.id).create({
-          userId: publicKey
+          userId: publicKey,
+          isLogin: true
+        })
+      } else {
+        await this.userCredentialRepository.updateById(foundCredential.id, {
+          isLogin: true
         })
       }
     } else {
@@ -404,8 +428,19 @@ export class UserCredentialController {
         profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
       })
       await this.peopleRepository.userCredential(newPeople.id).create({
-        userId: publicKey
+        userId: publicKey,
+        isLogin: true
       })
+    }
+  }
+
+  wait (milliseconds:number) {
+    const start = new Date().getTime();
+
+    for (let i = 0; i < 1e7; i++) {
+      if ((new Date().getTime() - start) > milliseconds) {
+        break;
+      }
     }
   }
 }
