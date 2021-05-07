@@ -96,7 +96,7 @@ export class UserCredentialController {
         
         const statusTransfer = await this.transferTipsToUser(twitterCredential, user.id)
         
-        if(!statusTransfer) throw new HttpErrors.UnprocessableEntity('RPC Lost Connection')
+        if(!statusTransfer) throw new HttpErrors.NotFound('RPC Lost Connection')
 
         return true
 
@@ -120,7 +120,7 @@ export class UserCredentialController {
 
         const statusTransferReddit = await this.transferTipsToUser(redditCredential, 't2_' + redditUser.id)
 
-        if (!statusTransferReddit) throw new HttpErrors.UnprocessableEntity('RPC Lost Connection')
+        if (!statusTransferReddit) throw new HttpErrors.NotFound('RPC Lost Connection')
 
         return true
 
@@ -233,7 +233,7 @@ export class UserCredentialController {
       await api.disconnect()
       return true
     } catch (err) {
-      await this.userCredentialRepository.deleteById(credential.id)
+      await this.userCredentialRepository.updateById(credential.id, {isLogin: false})
       return false
     }
   }
@@ -256,7 +256,7 @@ export class UserCredentialController {
       
       if (person && person.platform === user.platform) {
         if (person.platform_account_id !== user.platform_account_id) {
-          throw new HttpErrors.UnprocessableEntity(`This ${person.platform} does not belong to you!`)
+          throw new HttpErrors.NotFound(`This ${person.platform} does not belong to you!`)
         }
       }
     }
@@ -290,7 +290,7 @@ export class UserCredentialController {
         return foundCredential
       } 
         
-      throw new HttpErrors.UnprocessableEntity('Credential not valid')
+      throw new HttpErrors.NotFound('Credential not valid')
     } 
 
     const newPeople = await this.peopleRepository.create({
