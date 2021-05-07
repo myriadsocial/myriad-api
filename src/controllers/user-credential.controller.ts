@@ -83,7 +83,7 @@ export class UserCredentialController {
 
         const {data: tweets} = await this.twitterService.getActions(`users/${user.id}/tweets?max_results=5`)
 
-        const foundTwitterPublicKey = tweets[0].text.split(' ').find((tweet:any) => tweet === publicKey)
+        const foundTwitterPublicKey = tweets[0].text.split(' ').find((tweet:string) => tweet === publicKey)
 
         if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
@@ -107,7 +107,7 @@ export class UserCredentialController {
 
         if (foundRedditPost.children.length === 0) throw new HttpErrors.NotFound('Cannot find the spesified post')
 
-        const foundRedditPublicKey = foundRedditPost.children[0].data.title.split(' ').find((tweet:any) => tweet === publicKey)
+        const foundRedditPublicKey = foundRedditPost.children[0].data.title.split(' ').find((post:string) => post === publicKey)
 
         if (!foundRedditPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
