@@ -107,7 +107,7 @@ export class UserCredentialController {
 
         if (foundRedditPost.children.length === 0) throw new HttpErrors.NotFound('Cannot find the spesified post')
 
-        const foundRedditPublicKey = foundRedditPost.children[0].data.title.find((tweet:any) => tweet === publicKey)
+        const foundRedditPublicKey = foundRedditPost.children[0].data.title.split(' ').find((tweet:any) => tweet === publicKey)
 
         if (!foundRedditPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
