@@ -194,7 +194,7 @@ export class UserCredentialController {
       where: {
         walletAddress: {
           neq: credential.userId
-        }
+        } 
       }
     })
 
