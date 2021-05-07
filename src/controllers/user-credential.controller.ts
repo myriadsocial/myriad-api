@@ -15,12 +15,12 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {UserCredential, VerifyUser} from '../models';
+import {UserCredential} from '../models';
 import {PeopleRepository, PostRepository, UserCredentialRepository, UserRepository} from '../repositories';
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 import {polkadotApi} from '../helpers/polkadotApi'
 import {Keyring} from '@polkadot/api'
-import { KeypairType } from '@polkadot/util-crypto/types';
+import {KeypairType} from '@polkadot/util-crypto/types';
 import fs from 'fs'
 
 interface User {
@@ -83,9 +83,9 @@ export class UserCredentialController {
 
         const {data: tweets} = await this.twitterService.getActions(`users/${user.id}/tweets?max_results=5`)
 
-        const foundTwitterPublicKey = tweets[0].text.search(publicKey)
+        const foundTwitterPublicKey = tweets[0].text.includes(publicKey)
 
-        if (foundTwitterPublicKey === -1) throw new HttpErrors.NotFound('Cannot find specified post')
+        if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
         const twitterCredential = await this.createCredential({
           platform_account_id: user.id,
@@ -107,9 +107,9 @@ export class UserCredentialController {
 
         if (foundRedditPost.children.length === 0) throw new HttpErrors.NotFound('Cannot find the spesified post')
 
-        const foundRedditPublicKey = foundRedditPost.children[0].data.title.search(publicKey)
+        const foundRedditPublicKey = foundRedditPost.children[0].data.title.includes(publicKey)
 
-        if (foundRedditPublicKey === -1) throw new HttpErrors.NotFound('Cannot find specified post')
+        if (!foundRedditPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
         const redditCredential = await this.createCredential({
           platform_account_id: 't2_' + redditUser.id,
@@ -129,102 +129,6 @@ export class UserCredentialController {
     }
   }
 
-  @post('/user-credentials/verify')
-  @response(200, {
-    desciption: `Verify User`,
-    content: {'application/json': {schema: getModelSchemaRef(VerifyUser)}},
-  })
-  async verify(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(VerifyUser, {
-            title: 'NewVerifyUser',
-
-          }),
-        },
-      },
-    }) verifyUser: VerifyUser
-  ): Promise<Boolean> {
-    const {userId, peopleId} = verifyUser
-
-    try {
-      const foundPeople = await this.peopleRepository.findOne({where: {id: peopleId}})
-      const foundCredential = await this.userCredentialRepository.findOne({where: {userId, peopleId}})
-
-      if (!foundPeople) return false
-      if (!foundCredential) return false
-
-      const {username, platform_account_id, platform} = foundPeople
-
-      switch (platform) {
-        case "twitter":
-          const {data: tweets} = await this.twitterService.getActions(`users/${platform_account_id}}/tweets?max_results=5`)
-          const twitterPublicKey = tweets[0].text.replace(/\n/g, ' ').split(' ')[7]
-
-          if (userId === twitterPublicKey) {
-            await this.transferEscorwToUser(peopleId, userId)
-
-            return true
-          }
-
-          await this.userCredentialRepository.deleteById(foundCredential.id)
-
-          return false
-
-        case "reddit":
-          const {data: redditPosts} = await this.redditService.getActions(`u/${username}.json?limit=1`)
-          const redditPublicKey = redditPosts.children[0].data.title.replace(/n/g, ' ').split(' ')[7]
-          
-          if (userId === redditPublicKey) {
-            await this.transferEscorwToUser(peopleId, userId)
-            return true
-          }
-          
-          await this.userCredentialRepository.deleteById(foundCredential.id)
-
-          return false
-
-        case "facebook":
-          let facebookPublicKey = null
-
-          const {data: facebookPosts} = await this.facebookService.getActions(platform_account_id, '')
-          const publicKey = "Saying hi to #MyriadNetwork Public Key: "
-          const indexFBPublicKey = facebookPosts.search(publicKey)
-
-          if (indexFBPublicKey >= 0) {
-            const index = indexFBPublicKey + publicKey.length
-            facebookPublicKey = facebookPosts.substring(index, index + 49)
-          }
-
-          if (userId === facebookPublicKey) {
-            await this.transferEscorwToUser(peopleId, userId)
-            return true
-          }
-          
-          await this.userCredentialRepository.deleteById(foundCredential.id)
-
-          return false
-
-        default:
-          return false
-      }
-    } catch (err) {
-      return false
-    }
-  }
-
-  // @get('/user-credentials/count')
-  // @response(200, {
-  //   description: 'UserCredential model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(UserCredential) where?: Where<UserCredential>,
-  // ): Promise<Count> {
-  //   return this.userCredentialRepository.count(where);
-  // }
-
   @get('/user-credentials')
   @response(200, {
     description: 'Array of UserCredential model instances',
@@ -242,25 +146,6 @@ export class UserCredentialController {
   ): Promise<UserCredential[]> {
     return this.userCredentialRepository.find(filter);
   }
-
-  // @patch('/user-credentials')
-  // @response(200, {
-  //   description: 'UserCredential PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(UserCredential, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   userCredential: UserCredential,
-  //   @param.where(UserCredential) where?: Where<UserCredential>,
-  // ): Promise<Count> {
-  //   return this.userCredentialRepository.updateAll(userCredential, where);
-  // }
 
   @get('/user-credentials/{id}')
   @response(200, {
@@ -296,58 +181,12 @@ export class UserCredentialController {
     await this.userCredentialRepository.updateById(id, userCredential);
   }
 
-  // @put('/user-credentials/{id}')
-  // @response(204, {
-  //   description: 'UserCredential PUT success',
-  // })
-  // async replaceById(
-  //   @param.path.string('id') id: string,
-  //   @requestBody() userCredential: UserCredential,
-  // ): Promise<void> {
-  //   await this.userCredentialRepository.replaceById(id, userCredential);
-  // }
-
   @del('/user-credentials/{id}')
   @response(204, {
     description: 'UserCredential DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.userCredentialRepository.deleteById(id);
-  }
-
-  async transferEscorwToUser(peopleId:string, userId:string): Promise<void> {
-    const posts = await this.postRepository.find({
-      where: {
-        peopleId,
-        walletAddress: {
-          neq: userId
-        }
-      }
-    })
-
-    const api = await polkadotApi()
-    const keyring = new Keyring({
-      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
-    });
-    const gasFee = 125000147
-
-    for (let i = 0; i < posts.length; i++) {
-      const post = posts[i]
-      const from = keyring.addFromUri('//' + post.id)
-      const to = userId
-      const {data:balance} = await api.query.system.account(from.address)
-
-      if (balance.free.toNumber()) {
-        const transfer = api.tx.balances.transfer(to, balance.free.toNumber() - gasFee)
-
-        await transfer.signAndSend(from)
-      }
-
-      console.log(i)
-    }
-
-    await api.disconnect()
   }
 
   async transferTipsToUser(credential:UserCredential, platform_account_id:string):Promise<boolean> {

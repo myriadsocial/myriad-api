@@ -365,7 +365,8 @@ export class PostController {
       tags, 
       hasMedia: tweet.attachments ? Boolean(tweet.attachments.media_keys) : false, 
       link: `https://twitter.com/${twitterUser.id}/status/${textId}`, 
-      platformCreatedAt: tweet.created_at
+      platformCreatedAt: tweet.created_at,
+      text: tweet.text
     }
 
     return this.createPost(twitterUser.id, 'twitter', newTweet)
