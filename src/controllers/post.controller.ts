@@ -89,6 +89,9 @@ export class PostController {
       case 'www.reddit.com':
         return this.redditPost(splitURL[6], experienceId)
 
+      case 'www.facebook.com':
+        return this.facebookPost(post)
+
       default:
         throw new HttpErrors.NotFound("Cannot found the specified url!")
     }  
@@ -332,6 +335,72 @@ export class PostController {
     await this.postRepository.deleteById(id);
   }
 
+  async facebookPost (post:URL):Promise<Post> {
+    const {url, experienceId} = post
+    const username = url.split('/')[3]
+
+    const foundPost = await this.postRepository.findOne({
+      where: {
+        textId: url.split('/')[5],
+        platform: 'facebook',
+      }
+    })
+
+    if (foundPost) {throw new HttpErrors.UnprocessableEntity('Post Post already been imported')}
+
+    let foundPeople = await this.peopleRepository.findOne({
+      where: {
+        username: username,
+        platform: 'facebook'
+      }
+    })
+    
+    if (!foundPeople) {
+      foundPeople = await this.peopleRepository.create({
+        username: username,
+        platform: 'facebook'
+      })
+    }
+
+    const getExperience = await this.experienceRepository.findOne({
+      where: {
+        id: experienceId
+      }
+    })
+
+    if (getExperience) {
+      const people = getExperience.people
+      const username = foundPeople.username
+
+      const found = people.find((person:any) => person.username === username)
+
+      if (!found) {
+        await this.experienceRepository.updateById(experienceId, {
+          people: [...getExperience.people, {
+            username: foundPeople.username,
+            platform: foundPeople.platform,
+            hide: foundPeople.hide
+          }]
+        })
+      }
+    } else {
+      throw new HttpErrors.NotFound('Experience Not Found')
+    }
+
+    const newFacebookPost = {
+      createdAt: new Date().toString(),
+      platform: 'facebook',
+      textId: url.split('/')[5],
+      platformCreatedAt: new Date().toString(),
+      link: url,
+      platformUser: {
+        username: username,
+      }
+    }
+
+    return this.createPost(username, 'facebook', newFacebookPost)
+  }
+
   async redditPost (textId:string, experienceId:string):Promise<Post> {
     const {post: redditPost, user: redditUser} = await this.reddit(textId); 
 
@@ -508,6 +577,38 @@ export class PostController {
   }
 
   async createPost(platformAccountId: string, platform: string, post: object):Promise<Post> {
+    if (platform === 'facebook') {
+      const foundPeople = await this.peopleRepository.findOne({
+        where: {
+          username: platformAccountId,
+          platform: platform
+        }
+      })
+
+      if (!foundPeople) {
+        return this.createPostWithPublicMetric(post, false)
+      } 
+  
+      const foundCredential = await this.userCredentialRepository.findOne({
+        where: {
+          peopleId: foundPeople.id
+        }
+      })
+  
+      if (!foundCredential) {
+        return this.createPostWithPublicMetric({
+          ...post,
+          peopleId: foundPeople.id
+        }, false)
+      }
+  
+      return this.createPostWithPublicMetric({
+        ...post,
+        peopleId: foundPeople.id,
+        walletAddress: foundCredential.userId
+      }, true)
+    }
+
     const foundPeople = await this.peopleRepository.findOne({
       where: {
         platform_account_id: platformAccountId,
