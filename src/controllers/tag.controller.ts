@@ -82,7 +82,7 @@ export class TagController {
         })
       } else return foundTag
     } else {
-      throw new HttpErrors.NotFound(`Topic ${tag.id} is not found in any social media`)
+      throw new HttpErrors.NotFound(`Topic ${tag.id} is not found in ${platform}`)
     }
   }
   
