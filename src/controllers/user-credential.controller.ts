@@ -124,6 +124,15 @@ export class UserCredentialController {
 
         return true
 
+      case 'facebook':
+        const split = username.split('/')
+        const fbUsername = split[3]
+        const postId = split[5]
+        
+        const data = await this.facebookService.getActions(fbUsername, postId)
+        fs.writeFileSync('facebook.txt', data)
+        console.log(data.match(/safasfasfafwqfwewevwwev/))
+
       default:
         throw new HttpErrors.NotFound('Platform does not exist')
     }

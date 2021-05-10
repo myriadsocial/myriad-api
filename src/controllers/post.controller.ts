@@ -16,13 +16,20 @@ import {
 import {inject} from '@loopback/core';
 import {Post} from '../models';
 import {Wallet} from '../models/wallet.model';
-import {PostRepository, UserCredentialRepository, PeopleRepository, PublicMetricRepository} from '../repositories';
+import {
+  PostRepository, 
+  UserCredentialRepository, 
+  PeopleRepository, 
+  PublicMetricRepository,
+  ExperienceRepository
+} from '../repositories';
 import {Reddit, Twitter} from '../services';
 import {Keyring} from '@polkadot/api'
 import { KeypairType } from '@polkadot/util-crypto/types';
 
 interface URL {
   url: string;
+  experienceId: string;
 }
 
 export class PostController {
@@ -33,6 +40,7 @@ export class PostController {
     public userCredentialRepository: UserCredentialRepository,
     @repository(PeopleRepository) public peopleRepository: PeopleRepository,
     @repository(PublicMetricRepository) public publicMetricRepository: PublicMetricRepository,
+    @repository(ExperienceRepository) public experienceRepository: ExperienceRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit
   ) { }
@@ -72,13 +80,14 @@ export class PostController {
   ): Promise<Post> {
     const splitURL = post.url.split('/')
     const platform = splitURL[2].toLowerCase()
+    const experienceId = post.experienceId
 
     switch (platform) {
       case 'twitter.com':
-        return this.twitterPost(splitURL[5])
+        return this.twitterPost(splitURL[5], experienceId)
         
       case 'www.reddit.com':
-        return this.redditPost(splitURL[6])
+        return this.redditPost(splitURL[6], experienceId)
 
       default:
         throw new HttpErrors.NotFound("Cannot found the specified url!")
@@ -323,8 +332,51 @@ export class PostController {
     await this.postRepository.deleteById(id);
   }
 
-  async redditPost (textId:string):Promise<Post> {
+  async redditPost (textId:string, experienceId:string):Promise<Post> {
     const {post: redditPost, user: redditUser} = await this.reddit(textId); 
+
+    let foundPeople = await this.peopleRepository.findOne({
+      where: {
+        platform_account_id: 't2_' + redditUser.id,
+        platform: 'reddit'
+      }
+    })  
+
+    if (!foundPeople) {
+      foundPeople = await this.peopleRepository.create({
+        username: redditUser.name,
+        platform_account_id: 't2_' + redditUser.id,
+        platform: 'reddit',
+        profile_image_url: redditUser.icon_img.split('?')[0]
+      })
+    }
+
+    const getExperience = await this.experienceRepository.findOne({
+      where: {
+        id: experienceId
+      }
+    })
+
+    if (getExperience) {
+      const people = getExperience.people
+      const platform_account_id = foundPeople.platform_account_id
+
+      const found = people.find((person:any) => person.platform_account_id === platform_account_id)
+
+      if (!found) {
+        await this.experienceRepository.updateById(experienceId, {
+          people: [...getExperience.people, {
+            username: foundPeople.username,
+            platform: foundPeople.platform,
+            platform_account_id: foundPeople.platform_account_id,
+            profile_image_url: foundPeople.profile_image_url,
+            hide: foundPeople.hide
+          }]
+        })
+      }
+    } else {
+      throw new HttpErrors.NotFound('Experience Not Found')
+    }
 
     const newRedditPost = {
       createdAt: new Date().toString(),
@@ -346,8 +398,51 @@ export class PostController {
     return this.createPost('t2_' + redditUser.id, 'reddit', newRedditPost)
   }
 
-  async twitterPost (textId: string) {
+  async twitterPost (textId: string, experienceId: string) {
     const {post: tweet, user: twitterUser} = await this.twitter(textId)
+
+    let foundPeople = await this.peopleRepository.findOne({
+      where: {
+        platform_account_id: twitterUser.id,
+        platform: 'twitter'
+      }
+    })
+
+    if (!foundPeople) {
+      foundPeople = await this.peopleRepository.create({
+        username: twitterUser.username,
+        platform: 'twitter',
+        platform_account_id: twitterUser.id,
+        profile_image_url: twitterUser.profile_image_url,
+      })
+    }
+
+    const getExperience = await this.experienceRepository.findOne({
+      where: {
+        id: experienceId
+      }
+    })
+
+    if (getExperience) {
+      const people = getExperience.people
+      const platform_account_id = foundPeople.platform_account_id
+
+      const found = people.find((person:any) => person.platform_account_id === platform_account_id)
+
+      if (!found) {
+        await this.experienceRepository.updateById(experienceId, {
+          people: [...getExperience.people, {
+            username: foundPeople.username,
+            platform: foundPeople.platform,
+            platform_account_id: foundPeople.platform_account_id,
+            profile_image_url: foundPeople.profile_image_url.replace('normal', '400x400'),
+            hide: foundPeople.hide
+          }]
+        })
+      }
+    } else {
+      throw new HttpErrors.NotFound('Experience Not Found')
+    }
 
     const tags = tweet.entities ? (tweet.entities.hashtags ?
       tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : []

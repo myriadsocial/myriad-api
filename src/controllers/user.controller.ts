@@ -135,12 +135,14 @@ export class UserController {
           {
             username: "gavofyork",
             platform_account_id: "33962758",
+            profile_image_url: "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg",
             platform: "twitter",
             hide: false
           },
           {
             username: "CryptoChief",
             platform_account_id: "t2_e0t5q",
+            profile_image_url: "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png",
             platform: "reddit",
             hide: false
           }
