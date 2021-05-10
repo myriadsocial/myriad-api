@@ -222,7 +222,7 @@ export class UserCredentialController {
         const from = keyring.addFromUri('//' + post.id)
         const {data:balance} = await api.query.system.account(from.address)
   
-        if (balance.free.toNumber()) {
+        if (balance.free.toNumber() > 0) {
           const transfer = api.tx.balances.transfer(to, balance.free.toNumber() - gasFee)
   
           await transfer.signAndSend(from)
