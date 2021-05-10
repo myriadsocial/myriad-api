@@ -24,7 +24,7 @@ import {KeypairType} from '@polkadot/util-crypto/types';
 import fs from 'fs'
 
 interface User {
-  platform_account_id: string,
+  platform_account_id?: string,
   username: string,
   platform: string,
   profile_image_url?: string
@@ -130,8 +130,20 @@ export class UserCredentialController {
         const postId = split[5]
         
         const data = await this.facebookService.getActions(fbUsername, postId)
-        fs.writeFileSync('facebook.txt', data)
-        console.log(data.match(/safasfasfafwqfwewevwwev/))
+        const foundIndex = data.search(publicKey)
+
+        if (foundIndex === -1) throw new HttpErrors.NotFound('Cannot find specified post')
+
+        const facebookCredential = await this.createCredentialFB({
+          platform: 'facebook',
+          username: fbUsername,
+        }, publicKey)
+
+        const statusTransferFacebook = await this.transferTipsToUser(facebookCredential, fbUsername)
+
+        if (!statusTransferFacebook) throw new HttpErrors.NotFound('RPC Lost Connection')
+
+        return true
 
       default:
         throw new HttpErrors.NotFound('Platform does not exist')
@@ -209,7 +221,11 @@ export class UserCredentialController {
 
     const userPost = posts.filter(post => {
       if (post.platformUser) {
-        return platform_account_id === post.platformUser.platform_account_id
+        if (post.platform === 'facebook') { 
+          return platform_account_id === post.platformUser.username
+        } else {
+          return platform_account_id === post.platformUser.platform_account_id
+        }
       }
 
       return false
@@ -247,6 +263,70 @@ export class UserCredentialController {
     }
   }
 
+  async createCredentialFB(user: User, publicKey:string):Promise<UserCredential> {
+    const credentials = await this.userCredentialRepository.find({
+      where: {
+        userId: publicKey
+      }
+    })
+
+    for (let i = 0; i < credentials.length; i++) {
+      const person = await this.peopleRepository.findOne({
+        where: {
+          id: credentials[i].peopleId
+        }
+      })
+      
+      if (person && person.platform === user.platform) {
+        if (person.username !== user.username) {
+          throw new HttpErrors.NotFound(`This ${person.platform} does not belong to you!`)
+        }
+      }
+    }
+
+    const foundPeople = await this.peopleRepository.findOne({
+      where: {
+        username: user.username,
+        platform: user.platform
+      }
+    })
+
+    if (foundPeople) {
+      const foundCredential = await this.userCredentialRepository.findOne({
+        where: {
+          peopleId: foundPeople.id
+        }
+      })
+
+      if (!foundCredential) {
+        return this.peopleRepository.userCredential(foundPeople.id).create({
+          userId: publicKey,
+          isLogin: true
+        })
+      } 
+
+      if (foundCredential.userId === publicKey) {
+        await this.userCredentialRepository.updateById(foundCredential.id, {
+          isLogin: true
+        })
+        
+        return foundCredential
+      } 
+        
+      throw new HttpErrors.NotFound('Credential not valid')
+    } 
+
+    const newPeople = await this.peopleRepository.create({
+      username: user.username,
+      platform: user.platform,
+    })
+
+    return this.peopleRepository.userCredential(newPeople.id).create({
+      userId: publicKey,
+      isLogin: true
+    })
+  }
+
   async createCredential(user: User, publicKey:string):Promise<UserCredential> {
     // Verify credential
     const credentials = await this.userCredentialRepository.find({
@@ -261,7 +341,6 @@ export class UserCredentialController {
           id: credentials[i].peopleId
         }
       })
-
       
       if (person && person.platform === user.platform) {
         if (person.platform_account_id !== user.platform_account_id) {

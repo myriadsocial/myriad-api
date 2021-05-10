@@ -6,6 +6,11 @@ const config = {
   connector: 'rest',
   baseURL: 'https://facebook.com',
   crud: false,
+  options: {
+    headers: {
+      "user-agent": "Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion"
+    }
+  },
   operations: [
     {
       template: {
