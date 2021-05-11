@@ -5,7 +5,7 @@ import {Post} from './post.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collections: 'assets'
+      collection: 'assets'
     }
   }
 })
