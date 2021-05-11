@@ -346,7 +346,7 @@ export class PostController {
       }
     })
 
-    if (foundPost) {throw new HttpErrors.UnprocessableEntity('Post Post already been imported')}
+    if (foundPost) {throw new HttpErrors.UnprocessableEntity('Post already been imported')}
 
     let foundPeople = await this.peopleRepository.findOne({
       where: {
@@ -577,44 +577,23 @@ export class PostController {
   }
 
   async createPost(platformAccountId: string, platform: string, post: object):Promise<Post> {
+    let foundPeople = null;
+
     if (platform === 'facebook') {
-      const foundPeople = await this.peopleRepository.findOne({
+      foundPeople = await this.peopleRepository.findOne({
         where: {
           username: platformAccountId,
           platform: platform
         }
       })
-
-      if (!foundPeople) {
-        return this.createPostWithPublicMetric(post, false)
-      } 
-  
-      const foundCredential = await this.userCredentialRepository.findOne({
+    } else {
+      foundPeople = await this.peopleRepository.findOne({
         where: {
-          peopleId: foundPeople.id
+          platform_account_id: platformAccountId,
+          platform: platform
         }
       })
-  
-      if (!foundCredential) {
-        return this.createPostWithPublicMetric({
-          ...post,
-          peopleId: foundPeople.id
-        }, false)
-      }
-  
-      return this.createPostWithPublicMetric({
-        ...post,
-        peopleId: foundPeople.id,
-        walletAddress: foundCredential.userId
-      }, true)
     }
-
-    const foundPeople = await this.peopleRepository.findOne({
-      where: {
-        platform_account_id: platformAccountId,
-        platform: platform
-      }
-    })
 
     if (!foundPeople) {
       return this.createPostWithPublicMetric(post, false)
