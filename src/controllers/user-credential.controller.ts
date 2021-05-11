@@ -131,8 +131,10 @@ export class UserCredentialController {
         
         const data = await this.facebookService.getActions(fbUsername, postId)
         const foundIndex = data.search(publicKey)
+        const foundPublicKey = data.substring(foundIndex, foundIndex + 50)
 
-        if (foundIndex === -1) throw new HttpErrors.NotFound('Cannot find specified post')
+        if (foundIndex === -1) throw new HttpErrors.NotFound('Cannot find specified post - found index')
+        if (foundPublicKey.replace('"','').trim() !== publicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
         const facebookCredential = await this.createCredentialFB({
           platform: 'facebook',
