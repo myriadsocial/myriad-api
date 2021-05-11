@@ -147,7 +147,7 @@ export class FetchContentSocialMediaJob extends CronJob {
               ...newPost,
               title: post.title,
               text: post.selftext,
-              link: `https://wwww.reddit.com/${post.id}`,
+              link: `https://www.reddit.com/${post.id}`,
               platformCreatedAt: new Date(post.created_utc * 1000).toString()
             }
 

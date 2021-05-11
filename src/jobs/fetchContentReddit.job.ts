@@ -91,7 +91,7 @@ export class FetchContentRedditJob extends CronJob {
             text: post.selftext,
             textId: post.id,
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
-            link: `https://wwww.reddit.com/${post.id}`,
+            link: `https://www.reddit.com/${post.id}`,
             platformCreatedAt: new Date(post.created_utc * 1000).toString()
           }
 
