@@ -57,7 +57,7 @@ export class FetchContentSocialMediaJob extends CronJob {
               }
             })
 
-            const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at`)
+            const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at,public_metrics`)
 
             if (!newPosts) break
 
@@ -135,10 +135,16 @@ export class FetchContentSocialMediaJob extends CronJob {
           case "twitter":
             newPost = {
               ...newPost,
+              platformPublicMetric: {
+                retweet_count: post.public_metrics.retweet_count,
+                like_count: post.public_metrics.like_count
+              },
               text: post.text,
               link: `https://twitter.com/${person.platform_account_id}/status/${post.id}`,
               platformCreatedAt: post.created_at,
             }
+
+            await this.createTags(newPost.tags)
 
             break
 
@@ -199,4 +205,23 @@ export class FetchContentSocialMediaJob extends CronJob {
     const link = post.link._text.split('=')
     return link[1].substring(0, link[1].length - 3)
   }
+
+  async createTags(tags:string[]):Promise<void> {
+    const fetchTags = await this.tagRepository.find()
+    const filterTags = tags.filter((tag:string) => {
+      const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+
+      if (foundTag) return false
+      return true
+    })
+
+    if (filterTags.length === 0) return
+
+    await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
+      return {
+        id: filterTag,
+        hide: false
+      }
+    }))
+ }
 }

@@ -46,8 +46,13 @@ export class UpdatePostsJob extends CronJob {
                 let foundPeople = null;
 
                 if (post.platformUser) {
-                    const platform_account_id = post.platformUser.platform_account_id;
-                    foundPeople = people.find(person => person.platform_account_id === platform_account_id)
+                    const {username, platform_account_id} = post.platformUser;
+
+                    if (post.platform === 'facebook') {     
+                        foundPeople = people.find(person => person.username === username)
+                    } else {
+                        foundPeople = people.find(person => person.platform_account_id === platform_account_id)
+                    }
                 }
 
                 if (foundPeople) {

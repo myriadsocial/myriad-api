@@ -49,7 +49,7 @@ export class FetchContentTwitterJob extends CronJob {
 
       for (let i = 0; i < tagsRepo.length; i++) {
         const tag = tagsRepo[i]
-        const tweetField = 'referenced_tweets,attachments,entities,created_at'
+        const tweetField = 'referenced_tweets,attachments,entities,created_at,public_metrics'
         const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=${tweetField}&expansions=author_id&user.fields=id,username&query=${tag.id}`)
 
         if (!newPosts) continue
@@ -77,6 +77,11 @@ export class FetchContentTwitterJob extends CronJob {
           const tags = post.entities ? (post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : []) : []
           const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
           const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: post.author_id}})
+          const platformPublicMetric = {
+            retweet_count: post.public_metrics.retweet_count,
+            like_count: post.public_metrics.like_count
+          }
+          
           const newPost = {
             tags: tags.find((tagPost: string) => tagPost.toLowerCase() === tag.id.toLowerCase()) ? tags : [...tags, tag.id],
             hasMedia,
@@ -88,8 +93,11 @@ export class FetchContentTwitterJob extends CronJob {
               username,
               platform_account_id: post.author_id
             },
-            platformCreatedAt: post.created_at
+            platformCreatedAt: post.created_at,
+            platformPublicMetric: platformPublicMetric
           }
+
+          await this.createTags(newPost.tags)
 
           if (foundPeople) {
             const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPeople.id}})
@@ -136,5 +144,24 @@ export class FetchContentTwitterJob extends CronJob {
         }
       }
     } catch (e) { }
+  }
+
+  async createTags(tags:string[]):Promise<void> {
+     const fetchTags = await this.tagRepository.find()
+     const filterTags = tags.filter((tag:string) => {
+       const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+
+       if (foundTag) return false
+       return true
+     })
+
+     if (filterTags.length === 0) return
+
+     await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
+       return {
+         id: filterTag,
+         hide: false
+       }
+     }))
   }
 }
