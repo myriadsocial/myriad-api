@@ -92,7 +92,7 @@ export class PostController {
         return this.redditPost(splitURL[6], experienceId)
 
       case 'www.facebook.com':
-        return this.facebookPost(post)
+        return this.facebookPost(post.url, experienceId)
 
       default:
         throw new HttpErrors.NotFound("Cannot found the specified url!")
@@ -337,62 +337,35 @@ export class PostController {
     await this.postRepository.deleteById(id);
   }
 
-  async facebookPost (post:URL):Promise<Post> {
-    const {url, experienceId} = post
+  async facebookPost (url: string, experienceId:string):Promise<Post> {
     const username = url.split('/')[3]
+    const textId = url.split('/')[5]
 
     const foundPost = await this.postRepository.findOne({
       where: {
-        textId: url.split('/')[5],
+        textId: textId,
         platform: 'facebook',
       }
     })
 
-    if (foundPost) {throw new HttpErrors.UnprocessableEntity('Post already been imported')}
-
-    let foundPeople = await this.peopleRepository.findOne({
-      where: {
-        username: username,
-        platform: 'facebook'
-      }
-    })
-    
-    if (!foundPeople) {
-      foundPeople = await this.peopleRepository.create({
-        username: username,
-        platform: 'facebook'
+    if (foundPost) {
+      await this.updateExperience(experienceId, {
+        username: foundPost.platformUser?.username,
+        platform: foundPost.platform
       })
+
+      return foundPost
     }
 
-    const getExperience = await this.experienceRepository.findOne({
-      where: {
-        id: experienceId
-      }
+    await this.updateExperience(experienceId, {
+      username: username,
+      platform: 'facebook'
     })
-
-    if (getExperience) {
-      const people = getExperience.people
-      const username = foundPeople.username
-
-      const found = people.find((person:any) => person.username === username)
-
-      if (!found) {
-        await this.experienceRepository.updateById(experienceId, {
-          people: [...getExperience.people, {
-            username: foundPeople.username,
-            platform: foundPeople.platform,
-            hide: foundPeople.hide
-          }]
-        })
-      }
-    } else {
-      throw new HttpErrors.NotFound('Experience Not Found')
-    }
 
     const newFacebookPost = {
       createdAt: new Date().toString(),
       platform: 'facebook',
-      textId: url.split('/')[5],
+      textId: textId,
       platformCreatedAt: new Date().toString(),
       link: url,
       platformUser: {
@@ -404,58 +377,32 @@ export class PostController {
   }
 
   async redditPost (textId:string, experienceId:string):Promise<Post> {
-    const {post: redditPost, user: redditUser} = await this.reddit(textId); 
-
-    let foundPeople = await this.peopleRepository.findOne({
-      where: {
-        platform_account_id: 't2_' + redditUser.id,
-        platform: 'reddit'
-      }
-    })  
-
-    if (!foundPeople) {
-      foundPeople = await this.peopleRepository.create({
-        username: redditUser.name,
-        platform_account_id: 't2_' + redditUser.id,
-        platform: 'reddit',
-        profile_image_url: redditUser.icon_img.split('?')[0]
-      })
-    }
-
-    const getExperience = await this.experienceRepository.findOne({
-      where: {
-        id: experienceId
-      }
-    })
-
-    if (getExperience) {
-      const people = getExperience.people
-      const platform_account_id = foundPeople.platform_account_id
-
-      const found = people.find((person:any) => person.platform_account_id === platform_account_id)
-
-      if (!found) {
-        await this.experienceRepository.updateById(experienceId, {
-          people: [...getExperience.people, {
-            username: foundPeople.username,
-            platform: foundPeople.platform,
-            platform_account_id: foundPeople.platform_account_id,
-            profile_image_url: foundPeople.profile_image_url,
-            hide: foundPeople.hide
-          }]
-        })
-      }
-    } else {
-      throw new HttpErrors.NotFound('Experience Not Found')
-    }
-
     const foundPost = await this.postRepository.findOne({
       where: {
-        textId
+        textId: textId,
+        platform: 'reddit'
       }
     })
 
-    if (foundPost) return foundPost
+    if (foundPost) {
+      await this.updateExperience(experienceId, {
+        id: foundPost.platformUser?.platform_account_id,
+        username: foundPost.platformUser?.username,
+        platform: foundPost.platform,
+        profile_image_url: foundPost.platformUser?.profile_image_url
+      })
+
+      return foundPost
+    }
+
+    const {post: redditPost, user: redditUser} = await this.reddit(textId); 
+
+    await this.updateExperience(experienceId, {
+      username: redditUser.name,
+      id: 't2_' + redditUser.id,
+      platform: 'reddit',
+      profile_image_url: redditUser.icon_img.split('?')[0]
+    })
 
     const newRedditPost = {
       createdAt: new Date().toString(),
@@ -479,50 +426,30 @@ export class PostController {
   }
 
   async twitterPost (textId: string, experienceId: string) {
-    const {post: tweet, user: twitterUser} = await this.twitter(textId)
-
-    let foundPeople = await this.peopleRepository.findOne({
+    const foundPost = await this.postRepository.findOne({
       where: {
-        platform_account_id: twitterUser.id,
+        textId: textId,
         platform: 'twitter'
       }
     })
 
-    if (!foundPeople) {
-      foundPeople = await this.peopleRepository.create({
-        username: twitterUser.username,
-        platform: 'twitter',
-        platform_account_id: twitterUser.id,
-        profile_image_url: twitterUser.profile_image_url,
+    if (foundPost) {
+      await this.updateExperience(experienceId, {
+        id: foundPost.platformUser?.platform_account_id,
+        username: foundPost.platformUser?.username,
+        platform: foundPost.platform,
+        profile_image_url: foundPost.platformUser?.profile_image_url
       })
+
+      return foundPost
     }
 
-    const getExperience = await this.experienceRepository.findOne({
-      where: {
-        id: experienceId
-      }
+    const {post: tweet, user: twitterUser} = await this.twitter(textId)
+
+    await this.updateExperience(experienceId, {
+      ...twitterUser,
+      platform: 'twitter'
     })
-
-    if (getExperience) {
-      const people = getExperience.people
-      const platform_account_id = foundPeople.platform_account_id
-
-      const found = people.find((person:any) => person.platform_account_id === platform_account_id)
-
-      if (!found) {
-        await this.experienceRepository.updateById(experienceId, {
-          people: [...getExperience.people, {
-            username: foundPeople.username,
-            platform: foundPeople.platform,
-            platform_account_id: foundPeople.platform_account_id,
-            profile_image_url: foundPeople.profile_image_url.replace('normal', '400x400'),
-            hide: foundPeople.hide
-          }]
-        })
-      }
-    } else {
-      throw new HttpErrors.NotFound('Experience Not Found')
-    }
 
     const platformPublicMetric = {
       retweet_count: tweet.public_metrics.retweet_count,
@@ -556,14 +483,6 @@ export class PostController {
   }
 
   async twitter (textId: string) {
-    const foundPost = await this.postRepository.findOne({
-      where: {
-        textId
-      }
-    })
-
-    if (foundPost) throw new HttpErrors.UnprocessableEntity("Post already been imported")
-
     const {data: post, includes} = await this.twitterService.getActions(`tweets/${textId}?tweet.fields=referenced_tweets,attachments,entities,created_at,public_metrics&expansions=attachments.media_keys,author_id&user.fields=id,username,profile_image_url`)
 
     if (!post) throw new HttpErrors.NotFound('Cannot found the specified url!')
@@ -574,15 +493,7 @@ export class PostController {
     }
   }
 
-  async reddit (textId: string) {
-    const foundPost = await this.postRepository.findOne({
-      where: {
-        textId
-      }
-    })
-
-    if (foundPost) throw new HttpErrors.UnprocessableEntity("Post already been imported")
-    
+  async reddit (textId: string) {    
     const [data] = await this.redditService.getActions(textId + '.json')
     const redditPost = data.data.children[0].data
 
@@ -652,35 +563,6 @@ export class PostController {
     return createdTweet
   }
 
-  async createExperience (experienceId:string, foundPeople:any) {
-    const getExperience = await this.experienceRepository.findOne({
-      where: {
-        id: experienceId
-      }
-    })
-
-    if (getExperience) {
-      const people = getExperience.people
-      const platform_account_id = foundPeople.platform_account_id
-
-      const found = people.find((person:any) => person.platform_account_id === platform_account_id)
-
-      if (!found) {
-        await this.experienceRepository.updateById(experienceId, {
-          people: [...getExperience.people, {
-            username: foundPeople.username,
-            platform: foundPeople.platform,
-            platform_account_id: foundPeople.platform_account_id,
-            profile_image_url: foundPeople.profile_image_url.replace('normal', '400x400'),
-            hide: foundPeople.hide
-          }]
-        })
-      }
-    } else {
-      throw new HttpErrors.NotFound('Experience Not Found')
-    }
-  }
-
   async createTags(tags: string[]) :Promise<void> {
     const fetchTags = await this.tagRepository.find()
     const filterTags = tags.filter((tag:string) => {
@@ -698,6 +580,60 @@ export class PostController {
         hide: false
       }
     }))
+  }
+
+  async updateExperience(id: string, platformUser:any): Promise<void> {
+    let foundPeople = null
+    
+    if (platformUser.platform === 'facebook') {
+      foundPeople = await this.peopleRepository.findOne({
+        where: {
+          username: platformUser.username,
+          platform: platformUser.platform
+        }
+      })
+    } else {
+      foundPeople = await this.peopleRepository.findOne({
+        where: {
+          platform_account_id: platformUser.id,
+          platform: platformUser.platform
+        }
+      })
+    }
+
+    if (!foundPeople) {
+      foundPeople = await this.peopleRepository.create({
+        username: platformUser.username,
+        platform: platformUser.platform,
+        platform_account_id: platformUser.id,
+        profile_image_url: platformUser.profile_image_url,
+      })
+    }
+
+    const getExperience = await this.experienceRepository.findOne({
+      where: { id }
+    })
+
+    if (getExperience) {
+      const people = getExperience.people
+      const platform_account_id = foundPeople.platform_account_id
+
+      const found = people.find((person:any) => person.platform_account_id === platform_account_id)
+
+      if (!found) {
+        await this.experienceRepository.updateById(id, {
+          people: [...getExperience.people, {
+            username: foundPeople.username,
+            platform: foundPeople.platform,
+            platform_account_id: foundPeople.platform_account_id,
+            profile_image_url: foundPeople.profile_image_url.replace('normal', '400x400'),
+            hide: foundPeople.hide
+          }]
+        })
+      }
+    } else {
+      throw new HttpErrors.NotFound('Experience Not Found')
+    }
   }
 
   calculateRedditVote(upvote_ratio:number, score:number) {

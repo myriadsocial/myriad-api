@@ -51,14 +51,14 @@
   ],
   "dependencies": {
     "-": "^0.0.1",
-    "@loopback/boot": "^3.3.0",
-    "@loopback/cli": "^2.20.2",
-    "@loopback/core": "^2.15.0",
-    "@loopback/cron": "^0.4.0",
-    "@loopback/repository": "^3.5.0",
-    "@loopback/rest": "^9.2.0",
-    "@loopback/rest-explorer": "^3.2.0",
-    "@loopback/service-proxy": "^3.1.0",
+    "@loopback/boot": "^3.4.0",
+    "@loopback/cli": "^2.21.0",
+    "@loopback/core": "^2.16.0",
+    "@loopback/cron": "^0.5.0",
+    "@loopback/repository": "^3.6.0",
+    "@loopback/rest": "^9.3.0",
+    "@loopback/rest-explorer": "^3.3.0",
+    "@loopback/service-proxy": "^3.2.0",
     "@polkadot/api": "^4.5.1",
     "@polkadot/util-crypto": "^6.1.1",
     "dotenv": "^8.2.0",
@@ -71,14 +71,14 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
-    "@loopback/build": "^6.3.0",
-    "@loopback/eslint-config": "^10.1.0",
-    "@loopback/testlab": "^3.3.0",
-    "@types/node": "^10.17.55",
+    "@loopback/build": "^6.4.0",
+    "@loopback/eslint-config": "^10.2.0",
+    "@loopback/testlab": "^3.4.0",
+    "@types/node": "^10.17.59",
     "@types/twitter": "^1.7.0",
-    "eslint": "^7.22.0",
+    "eslint": "^7.25.0",
     "source-map-support": "^0.5.19",
     "tsc-watch": "^4.2.9",
-    "typescript": "~4.2.3"
+    "typescript": "~4.2.4"
   }
 }
