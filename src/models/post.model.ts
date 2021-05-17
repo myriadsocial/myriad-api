@@ -13,6 +13,13 @@ interface PlatformUser {
   profile_image_url?: string;
 }
 
+interface PlatformPublicMetric {
+  retweet_count?: number,
+  like_count?: number,
+  upvote_count?: number,
+  downvote_count?: number
+}
+
 @model({
   settings: {
     strictObjectIDCoercion: true,
@@ -53,6 +60,12 @@ export class Post extends Entity {
     default: 'myriad'
   })
   platform?: string
+
+  @property({
+    type: 'object',
+    required: false
+  })
+  platformPublicMetric?: PlatformPublicMetric 
 
   @property({
     type: 'string',
