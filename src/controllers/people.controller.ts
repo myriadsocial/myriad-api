@@ -323,6 +323,8 @@ export class PeopleController {
           post.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
         ) : []
 
+        await this.createTags(tags)
+
         return {
           ...newPost,
           text: post.text,
@@ -360,4 +362,23 @@ export class PeopleController {
     const link = post.link._text.split("=")
     return link[1].substr(0, link[1].length - 3)
   }
+
+  async createTags(tags:string[]):Promise<void> {
+    const fetchTags = await this.tagRepository.find()
+    const filterTags = tags.filter((tag:string) => {
+      const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+
+      if (foundTag) return false
+      return true
+    })
+
+    if (filterTags.length === 0) return
+
+    await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
+      return {
+        id: filterTag,
+        hide: false
+      }
+    }))
+ }
 }
