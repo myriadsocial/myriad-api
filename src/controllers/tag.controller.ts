@@ -77,8 +77,6 @@ export class TagController {
       if (!foundTag) {
         return this.tagRepository.create({
           id: keyword,
-          createdAt: new Date().toString(),
-          updatedAt: new Date().toString()
         })
       } else return foundTag
     } else {
@@ -357,6 +355,8 @@ export class TagController {
         link = `https://twitter.com/${people.platform_account_id}/status/${post.id}`
         platformCreatedAt = post.created_at
 
+        await this.createTags([...tags, keyword])
+
         return {
           ...newPost,
           tags: tags.find((tag:string) => tag.toLowerCase() === keyword.toLowerCase()) ? tags : [...tags, keyword],
@@ -394,4 +394,23 @@ export class TagController {
         throw new Error("Platform doesn't exists")
     }
   }
+
+  async createTags(tags:string[]):Promise<void> {
+    const fetchTags = await this.tagRepository.find()
+    const filterTags = tags.filter((tag:string) => {
+      const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+
+      if (foundTag) return false
+      return true
+    })
+
+    if (filterTags.length === 0) return
+
+    await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
+      return {
+        id: filterTag,
+        hide: false
+      }
+    }))
+ }
 }

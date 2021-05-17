@@ -21,7 +21,8 @@ import {
   UserCredentialRepository, 
   PeopleRepository, 
   PublicMetricRepository,
-  ExperienceRepository
+  ExperienceRepository,
+  TagRepository
 } from '../repositories';
 import {Reddit, Twitter} from '../services';
 import {Keyring} from '@polkadot/api'
@@ -41,6 +42,7 @@ export class PostController {
     @repository(PeopleRepository) public peopleRepository: PeopleRepository,
     @repository(PublicMetricRepository) public publicMetricRepository: PublicMetricRepository,
     @repository(ExperienceRepository) public experienceRepository: ExperienceRepository,
+    @repository(TagRepository) public tagRepository: TagRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit
   ) { }
@@ -447,6 +449,14 @@ export class PostController {
       throw new HttpErrors.NotFound('Experience Not Found')
     }
 
+    const foundPost = await this.postRepository.findOne({
+      where: {
+        textId
+      }
+    })
+
+    if (foundPost) return foundPost
+
     const newRedditPost = {
       createdAt: new Date().toString(),
       platform: 'reddit',
@@ -461,7 +471,8 @@ export class PostController {
         username: redditUser.name,
         platform_account_id: 't2_' + redditUser.id,
         profile_image_url: redditUser.icon_img.split('?')[0]
-      }
+      },
+      platformPublicMetric: this.calculateRedditVote(redditPost.upvote_ratio, redditPost.score)
     }
 
     return this.createPost('t2_' + redditUser.id, 'reddit', newRedditPost)
@@ -513,6 +524,11 @@ export class PostController {
       throw new HttpErrors.NotFound('Experience Not Found')
     }
 
+    const platformPublicMetric = {
+      retweet_count: tweet.public_metrics.retweet_count,
+      like_count: tweet.public_metrics.like_count,
+    }
+
     const tags = tweet.entities ? (tweet.entities.hashtags ?
       tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
     ) : []
@@ -523,6 +539,7 @@ export class PostController {
         platform_account_id: twitterUser.id,
         profile_image_url: twitterUser.profile_image_url.replace('normal','400x400')
       }, 
+      platformPublicMetric: platformPublicMetric,
       platform: 'twitter',
       textId: textId, 
       createdAt: new Date().toString(),
@@ -532,6 +549,8 @@ export class PostController {
       platformCreatedAt: tweet.created_at,
       text: tweet.text
     }
+
+    await this.createTags(newTweet.tags)
 
     return this.createPost(twitterUser.id, 'twitter', newTweet)
   }
@@ -545,7 +564,7 @@ export class PostController {
 
     if (foundPost) throw new HttpErrors.UnprocessableEntity("Post already been imported")
 
-    const {data: post, includes} = await this.twitterService.getActions(`tweets/${textId}?tweet.fields=referenced_tweets,attachments,entities,created_at&expansions=attachments.media_keys,author_id&user.fields=id,username,profile_image_url`)
+    const {data: post, includes} = await this.twitterService.getActions(`tweets/${textId}?tweet.fields=referenced_tweets,attachments,entities,created_at,public_metrics&expansions=attachments.media_keys,author_id&user.fields=id,username,profile_image_url`)
 
     if (!post) throw new HttpErrors.NotFound('Cannot found the specified url!')
 
@@ -621,20 +640,74 @@ export class PostController {
 
   async createPostWithPublicMetric (post:object, credential: boolean):Promise<Post> {
     const createdTweet = await this.postRepository.create(post)
-    const publicMetric = await this.postRepository.publicMetric(createdTweet.id).create({})
+    
+    await this.postRepository.publicMetric(createdTweet.id).create({})
 
     if (!credential) {
       const newKey = this.keyring().addFromUri('//' + createdTweet.id)
 
       await this.postRepository.updateById(createdTweet.id, {walletAddress: newKey.address})
-
-      createdTweet.walletAddress = newKey.address
-      createdTweet.publicMetric = publicMetric
-    } else {
-      createdTweet.publicMetric = publicMetric
     }
 
     return createdTweet
+  }
+
+  async createExperience (experienceId:string, foundPeople:any) {
+    const getExperience = await this.experienceRepository.findOne({
+      where: {
+        id: experienceId
+      }
+    })
+
+    if (getExperience) {
+      const people = getExperience.people
+      const platform_account_id = foundPeople.platform_account_id
+
+      const found = people.find((person:any) => person.platform_account_id === platform_account_id)
+
+      if (!found) {
+        await this.experienceRepository.updateById(experienceId, {
+          people: [...getExperience.people, {
+            username: foundPeople.username,
+            platform: foundPeople.platform,
+            platform_account_id: foundPeople.platform_account_id,
+            profile_image_url: foundPeople.profile_image_url.replace('normal', '400x400'),
+            hide: foundPeople.hide
+          }]
+        })
+      }
+    } else {
+      throw new HttpErrors.NotFound('Experience Not Found')
+    }
+  }
+
+  async createTags(tags: string[]) :Promise<void> {
+    const fetchTags = await this.tagRepository.find()
+    const filterTags = tags.filter((tag:string) => {
+      const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+
+      if (foundTag) return false
+      return true
+    })
+
+    if (filterTags.length === 0) return
+
+    await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
+      return {
+        id: filterTag,
+        hide: false
+      }
+    }))
+  }
+
+  calculateRedditVote(upvote_ratio:number, score:number) {
+    const upvote = Math.floor((score * upvote_ratio) / (2 * upvote_ratio - 1))
+    const downvote = upvote - score
+
+    return {
+      upvote_count: upvote,
+      downvote_count: downvote
+    }
   }
 
   keyring() {
