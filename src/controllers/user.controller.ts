@@ -77,43 +77,8 @@ export class UserController {
         }
       })
 
-      if (!foundUser) {
-        const api = await polkadotApi()
-        const keyring = new Keyring({
-          type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
-          ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
-        });
-        const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
-        const from = keyring.addFromMnemonic(mnemonic);
-        const to = user.id;
-        const value = 100000000000000; // send 100 myria
-        const {nonce} = await api.query.system.account(from.address)
-
-        let count: number = nonce.toJSON()
-
-        const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
-
-        if (!foundQueue) {
-          const queue = await this.queueRepository.create({
-            id: 'admin',
-            count
-          })
-
-          await this.queueRepository.updateById(queue.id, {count: count + 1})
-        } else {
-          if (foundQueue.count >= nonce.toJSON()) {
-            count = foundQueue.count
-          } else {
-            count = nonce.toJSON()
-          }
-
-          await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
-        }
-
-        const transfer = api.tx.balances.transfer(to, value);
-        await transfer.signAndSend(from, {nonce: count});
-        await api.disconnect()
-      } else throw new Error('UserExist')
+      if (!foundUser) await this.defaultTips(user.id)
+      else throw new Error('UserExist')
 
       const newUser = await this.userRepository.create({
         ...user,
@@ -131,7 +96,11 @@ export class UserController {
         throw new HttpErrors.UnprocessableEntity('Myriad RPC Lost Connection')
       }
 
-      throw new HttpErrors.UnprocessableEntity('User already exists');
+      if (err.message === 'UserExist') {
+        throw new HttpErrors.UnprocessableEntity('User already Exists')
+      }
+
+      throw new HttpErrors.UnprocessableEntity('Error RPC');
     }
   }
 
@@ -157,10 +126,12 @@ export class UserController {
 
     if (foundFriend) {
       this.friendRepository.updateById(foundFriend.id, {
-        status: "pending"
+        status: "pending",
+        updatedAt: new Date().toString()
       })
 
       foundFriend.status = 'pending'
+      foundFriend.updatedAt = new Date().toString()
 
       return foundFriend
     }
@@ -174,24 +145,34 @@ export class UserController {
 
   @get('users/{id}/friends')
   @response(200, {
-    description: 'Array of pending friend request'
+    description: 'Array of friend request'
   })
   async requestList(
     @param.path.string('id') id: string,
     @param.query.string('status') status: string
   ):Promise<Friend[]> {
-    console.log(typeof status)
-    console.log(status, 'status')
-    console.log(status.length)
     const requestStatus = [
       "pending",
       "rejected",
-      "accepted"
+      "accepted",
+      "all"
     ]
 
     const found = requestStatus.find(req => req === status)
 
-    if (!found) throw new HttpErrors.UnprocessableEntity("Available status: pending, accepted, rejected")
+    if (!found && status) throw new HttpErrors.UnprocessableEntity("Available status: pending, accepted, rejected")
+    if ((typeof status === 'string' && !status) || status === 'all' ) {
+      return this.friendRepository.find({
+        where: {
+          requestorId: id
+        },
+        include: [
+          {
+            relation: 'friend'
+          }
+        ]
+      })
+    }
 
     return this.friendRepository.find({
       where: {
@@ -289,7 +270,7 @@ export class UserController {
     })
 
     for (let i = 0; i < posts.length; i++) {
-      await this.postRepository.updateById(posts[i].id, {
+      this.postRepository.updateById(posts[i].id, {
         importBy: [
           ...posts[i].importBy,
           userId
@@ -299,7 +280,7 @@ export class UserController {
   }
 
   async defaultExperience(user: User):Promise<void> {
-    await this.userRepository.savedExperiences(user.id).create({
+    this.userRepository.savedExperiences(user.id).create({
         name: user.name + " Experience",
         tags: [
           {
@@ -336,5 +317,44 @@ export class UserController {
         createdAt: new Date().toString(),
         updatedAt: new Date().toString()
       })
+  }
+
+  async defaultTips (userId: string):Promise<void> {
+    const api = await polkadotApi()
+    const keyring = new Keyring({
+      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
+      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+    });
+
+    const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
+    const from = keyring.addFromMnemonic(mnemonic);
+    const to = userId;
+    const value = 100000000000000; // send 100 myria
+    const {nonce} = await api.query.system.account(from.address)
+
+    const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
+
+    let count: number = nonce.toJSON()
+
+    if (!foundQueue) {
+      const queue = await this.queueRepository.create({
+        id: 'admin',
+        count
+      })
+
+      await this.queueRepository.updateById(queue.id, {count: count + 1})
+    } else {
+      if (foundQueue.count >= nonce.toJSON()) {
+        count = foundQueue.count
+      } else {
+        count = nonce.toJSON()
+      }
+
+      await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
+    }
+
+    const transfer = api.tx.balances.transfer(to, value);
+    await transfer.signAndSend(from, {nonce: count});
+    await api.disconnect()
   }
 }

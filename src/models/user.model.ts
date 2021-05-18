@@ -62,6 +62,13 @@ export class User extends Entity {
   bio?: string; 
 
   @property({
+    type: 'string',
+    required: false,
+  })
+
+  example?: string
+
+  @property({
     type: 'date',
     required: false,
   })
