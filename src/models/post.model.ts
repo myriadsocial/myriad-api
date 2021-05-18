@@ -129,6 +129,21 @@ export class Post extends Entity {
   })
   deletedAt?: string;
 
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: false,
+    default: []
+  })
+  importBy: string[]
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 0
+  })
+  tipsReceived: number
+
   @belongsTo(() => User, {name: 'user'})
   walletAddress: string;
 

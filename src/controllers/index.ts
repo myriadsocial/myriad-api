@@ -36,3 +36,5 @@ export * from './conversation.controller';
 export * from './dislike-user.controller';
 export * from './dislike-post.controller';
 export * from './post-dislike.controller';
+export * from './friend.controller';
+export * from './user-user.controller';

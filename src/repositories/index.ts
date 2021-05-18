@@ -13,3 +13,4 @@ export * from './like.repository';
 export * from './public-metric.repository';
 export * from './conversation.repository';
 export * from './dislike.repository';
+export * from './friend.repository';

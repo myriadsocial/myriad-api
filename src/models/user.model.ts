@@ -6,6 +6,7 @@ import {UserCredential} from './user-credential.model';
 import {Post} from './post.model';
 import {Like} from './like.model';
 import {Conversation} from './conversation.model';
+import {Friend} from './friend.model';
 
 @model({
   settings: {
@@ -98,6 +99,15 @@ export class User extends Entity {
 
   @hasMany(() => Conversation)
   conversations: Conversation[];
+
+  @hasMany(() => User, {
+    through: {
+      model: () => Friend, 
+      keyFrom: 'requestorId',
+      keyTo: 'friendId'
+    }
+  })
+  friends: User[];
 
   constructor(data?: Partial<User>) {
     super(data);
