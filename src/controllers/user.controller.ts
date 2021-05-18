@@ -89,13 +89,11 @@ export class UserController {
         const value = 100000000000000; // send 100 myria
         const {nonce} = await api.query.system.account(from.address)
 
-        let count: number = 0
+        let count: number = nonce.toJSON()
 
         const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
 
         if (!foundQueue) {
-          count = nonce.toJSON()
-
           const queue = await this.queueRepository.create({
             id: 'admin',
             count
@@ -103,7 +101,11 @@ export class UserController {
 
           await this.queueRepository.updateById(queue.id, {count: count + 1})
         } else {
-          count = foundQueue.count
+          if (foundQueue.count >= nonce.toJSON()) {
+            count = foundQueue.count
+          } else {
+            count = nonce.toJSON()
+          }
 
           await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
         }
