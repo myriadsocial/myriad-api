@@ -81,7 +81,7 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentSocialMediaJob))
+    this.add(createBindingFromClass(FetchContentSocialMediaJob))
     // this.add(createBindingFromClass(FetchContentTwitterJob))
     // this.add(createBindingFromClass(FetchContentRedditJob))
     // this.add(createBindingFromClass(UpdatePostsJob))
