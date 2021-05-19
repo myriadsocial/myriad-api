@@ -82,9 +82,9 @@ export class MyriadApiApplication extends BootMixin(
     // Add cron component
     this.component(CronComponent);
     this.add(createBindingFromClass(FetchContentSocialMediaJob))
-    // this.add(createBindingFromClass(FetchContentTwitterJob))
-    // this.add(createBindingFromClass(FetchContentRedditJob))
-    // this.add(createBindingFromClass(UpdatePostsJob))
+    this.add(createBindingFromClass(FetchContentTwitterJob))
+    this.add(createBindingFromClass(FetchContentRedditJob))
+    this.add(createBindingFromClass(UpdatePostsJob))
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -195,10 +195,10 @@ export class MyriadApiApplication extends BootMixin(
       
       await postsRepo.updateById(post.id, {
         walletAddress: newKey.address,
-        importBy: [
-          ...post.importBy,
-          ...newUser.map(user => user.id)
-        ]
+        // importBy: [
+        //   ...post.importBy,
+        //   ...newUser.map(user => user.id)
+        // ]
       })
       
       await publicMetricRepo.create({

@@ -87,8 +87,8 @@ export class UserController {
         updatedAt: new Date().toString()
       });
 
-      await this.defaultPost(newUser.id)
-      // await this.defaultExperience(newUser)
+      // await this.defaultPost(newUser.id)
+      await this.defaultExperience(newUser)
 
       return newUser
     } catch (err) {

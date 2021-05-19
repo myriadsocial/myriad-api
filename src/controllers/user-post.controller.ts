@@ -2,6 +2,7 @@ import {
   Count,
   CountSchema,
   Filter,
+  PredicateComparison,
   repository,
   Where,
 } from '@loopback/repository';
@@ -10,6 +11,7 @@ import {
   get,
   getModelSchemaRef,
   getWhereSchemaFor,
+  HttpErrors,
   param,
   patch,
   post,
@@ -19,15 +21,164 @@ import {
   User,
   Post,
 } from '../models';
-import {UserRepository, AssetRepository, PostRepository, PublicMetricRepository} from '../repositories';
+import {
+  UserRepository, 
+  AssetRepository, 
+  PostRepository, 
+  PublicMetricRepository,
+  FriendRepository
+} from '../repositories';
 
 export class UserPostController {
   constructor(
     @repository(UserRepository) protected userRepository: UserRepository,
     @repository(AssetRepository) protected assetRepository: AssetRepository,
     @repository(PostRepository) protected postRepository: PostRepository,
-    @repository(PublicMetricRepository) protected publicMetricRepository: PublicMetricRepository
+    @repository(PublicMetricRepository) protected publicMetricRepository: PublicMetricRepository,
+    @repository(FriendRepository) protected friendRepository: FriendRepository
   ) { }
+  
+  @get('/users/{id}/timeline', {
+    responses: {
+      '200': {
+        description: 'User timeline'
+      }
+    }
+  })
+  async findTimeline(
+    @param.path.string('id') id: string,
+    @param.query.string('orderField') orderField: string,
+    @param.query.string('order') order:string,
+    @param.query.string('limit') limit:number,
+    @param.query.string('offset') offset:number
+  ): Promise<Post[]> {
+    if (!orderField) orderField = 'platformCreatedAt'
+    if (!order) order = 'DESC'
+    if (!limit) limit = 10
+    if (!offset) offset = 0
+
+    const acceptedFriends = await this.friendRepository.find({
+      where: {
+        status: 'accepted',
+        requestorId: id
+      }
+    })
+
+    const friendIds = [
+      ...acceptedFriends.map(friend => friend.friendId),
+      id
+    ]
+
+    const foundPost = await this.postRepository.find({
+      where: {
+        importBy: {
+          inq: [friendIds]
+        }
+      },
+      order: [`${orderField} ${order.toUpperCase()}`],
+      limit: limit,
+      offset: offset
+    })
+
+    if (foundPost.length === 0) {
+      return this.postRepository.find({
+        order: [`${orderField} ${order.toUpperCase()}`],
+        limit: limit,
+        offset: offset,
+        where: {
+          or: [
+            {
+              tags: {
+                inq: ["cryptocurrency", "blockchain", "technology"]
+              }
+            },
+            {
+              'platformUser.username': [
+                "elonmusk", 
+                "gavofyork", 
+                "W3F_Bill", 
+                "CryptoChief", 
+                "BillGates", 
+                "vitalikbuterineth"
+              ]
+            },
+            {
+              platform: {
+                inq: ["twitter","facebook", "reddit"]
+              }
+            }
+          ]
+        }
+      } as Filter<Post>)
+    }
+    
+    return foundPost
+  }
+
+  @get('/users/{id}/other-timeline', {
+    responses: {
+      '200': {
+        description: 'Timeline other user'
+      }
+    }
+  })
+  async otherTimeline (
+    @param.path.string('id') id:string,
+    @param.query.string('orderField') orderField: string,
+    @param.query.string('order') order:string,
+    @param.query.string('limit') limit:number,
+    @param.query.string('offset') offset:number
+  ):Promise<Post[]> {
+    if (!orderField) orderField = 'platformCreatedAt'
+    if (!order) order = 'DESC'
+    if (!limit) limit = 10
+    if (!offset) offset = 0
+
+    const foundPost = await this.postRepository.find({
+      where: {
+        importBy: {
+          inq: [[id]]
+        }
+      },
+      order: [`${orderField} ${order.toUpperCase()}`],
+      limit: limit,
+      offset: offset
+    })
+
+    if (foundPost.length === 0) {
+      return this.postRepository.find({
+        order: [`${orderField} ${order.toUpperCase()}`],
+        limit: limit,
+        offset: offset,
+        where: {
+          or: [
+            {
+              tags: {
+                inq: ["cryptocurrency", "blockchain", "technology"]
+              }
+            },
+            {
+              'platformUser.username': [
+                "elonmusk", 
+                "gavofyork", 
+                "W3F_Bill", 
+                "CryptoChief", 
+                "BillGates", 
+                "vitalikbuterineth"
+              ]
+            },
+            {
+              platform: {
+                inq: ["twitter","facebook", "reddit"]
+              }
+            }
+          ]
+        }
+      } as Filter<Post>)
+    }
+
+    return foundPost
+  }
 
   @get('/users/{id}/posts', {
     responses: {
@@ -86,6 +237,7 @@ export class UserPostController {
     const newPost = await this.userRepository.posts(id).create({
       ...post,
       tags,
+      importBy: [id],
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()

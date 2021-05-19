@@ -7,6 +7,8 @@ import {
   get,
   getModelSchemaRef,
   response,
+  patch,
+  requestBody,
 } from '@loopback/rest';
 import {Queue} from '../models';
 import {QueueRepository} from '../repositories';
@@ -33,5 +35,22 @@ export class QueueController {
     @param.filter(Queue) filter?: Filter<Queue>,
   ): Promise<Queue[]> {
     return this.queueRepository.find(filter);
+  }
+
+  @patch('/queues/{id}')
+  @response(200, {
+    description: 'Update'
+  })
+  async update(
+    @param.path.string('id') id: string,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Queue, {partial: true}),
+        },
+      },
+    }) queue: Queue
+  ):Promise<void> {
+    this.queueRepository.updateById(id, queue)
   }
 }

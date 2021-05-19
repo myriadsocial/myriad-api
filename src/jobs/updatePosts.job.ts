@@ -24,6 +24,7 @@ export class UpdatePostsJob extends CronJob {
                 await this.performJob();
             },
             cronTime: '0 0 */1 * * *', // Every hour
+            // cronTime: '*/10 * * * * *',
             start: true
         })
     }
@@ -31,6 +32,7 @@ export class UpdatePostsJob extends CronJob {
     async performJob() {
         try {
             await this.updatePeoplePost()
+            await this.updatePeopleCredentialPost()
         } catch (e) {
             console.log(e)
         }
@@ -56,11 +58,45 @@ export class UpdatePostsJob extends CronJob {
                 }
 
                 if (foundPeople) {
-                    await this.postRepository.updateById(post.id, {
+                    this.postRepository.updateById(post.id, {
                         peopleId: foundPeople.id
                     })
                 }
             })
         } catch (err) { }
+    }
+
+    async updatePeopleCredentialPost () {
+        try {
+            const credential = await this.userCredentialRepository.find()
+
+            for (let i = 0; i < credential.length; i++) {
+                const foundPost = await this.postRepository.find({
+                    where: {
+                        peopleId: credential[i].peopleId,
+                        importBy: {
+                            nin: [[credential[i].userId]]
+                        }
+                    }
+                })
+
+                const updatedPost = foundPost.map(post => {
+                    post.importBy = [
+                        ...post.importBy,
+                        credential[i].userId
+                    ]
+
+                    return post
+                })
+
+                for (let j = 0; j < updatedPost.length; j++) {
+                    this.postRepository.updateById(updatedPost[j].id, {
+                        importBy: updatedPost[j].importBy
+                    })
+                }
+            }
+        } catch (err) {
+
+        }
     }
 }

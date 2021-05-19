@@ -7,9 +7,8 @@ import {xml2json} from 'xml-js'
 import {
   PeopleRepository,
   PostRepository,
-
-
-  PublicMetricRepository, TagRepository,
+  PublicMetricRepository, 
+  TagRepository,
   UserCredentialRepository
 } from '../repositories'
 import {
@@ -35,6 +34,7 @@ export class FetchContentSocialMediaJob extends CronJob {
         await this.performJob();
       },
       cronTime: '0 0 */1 * * *', // Every hour
+      // cronTime: '*/10 * * * * *',
       start: true
     })
   }
@@ -45,6 +45,8 @@ export class FetchContentSocialMediaJob extends CronJob {
     for (let i = 0; i < people.length; i++) {
       const person = people[i]
 
+      if (!person) continue
+    
       try {
         switch (person.platform) {
           case "twitter":
@@ -63,7 +65,7 @@ export class FetchContentSocialMediaJob extends CronJob {
 
             const twitterPosts = newPosts.filter((post: any) => !post.referenced_tweets)
 
-            await this.socialMediaPosts(person, twitterPosts)
+            this.socialMediaPosts(person, twitterPosts)
 
             break
 
@@ -73,7 +75,7 @@ export class FetchContentSocialMediaJob extends CronJob {
               return post.kind === 't3'
             }).map((post: any) => post.data)
 
-            await this.socialMediaPosts(person, redditPosts)
+            this.socialMediaPosts(person, redditPosts)
             break
 
           case "facebook":
@@ -82,7 +84,7 @@ export class FetchContentSocialMediaJob extends CronJob {
             const responseFB = JSON.parse(resultJSON)
 
             const facebookPost = responseFB.rss.channel.item
-            await this.socialMediaPosts(person, facebookPost)
+            this.socialMediaPosts(person, facebookPost)
             break
 
           default:
@@ -144,7 +146,7 @@ export class FetchContentSocialMediaJob extends CronJob {
               platformCreatedAt: post.created_at,
             }
 
-            await this.createTags(newPost.tags)
+            this.createTags(newPost.tags)
 
             break
 
@@ -153,7 +155,7 @@ export class FetchContentSocialMediaJob extends CronJob {
               ...newPost,
               title: post.title,
               text: post.selftext,
-              link: `https://www.reddit.com/${post.id}`,
+              link: `https://reddit.com/${post.id}`,
               platformCreatedAt: new Date(post.created_utc * 1000).toString()
             }
 
@@ -164,26 +166,27 @@ export class FetchContentSocialMediaJob extends CronJob {
 
             newPost = {
               ...newPost,
-              link: `https://facebook.com/${person.platform_account_id}/posts/${textId}`,
+              link: `https://facebook.com/${person.username}/posts/${textId}`,
             }
             break
         }
 
         if (userCredential) {
-          await this.createPostPublicMetric({
+          this.createPostPublicMetric({
             ...newPost,
-            walletAddress: userCredential.userId
+            walletAddress: userCredential.userId,
+            importBy: [userCredential.userId]
           }, true)
         }
 
-        await this.createPostPublicMetric(newPost, false)
+        this.createPostPublicMetric(newPost, false)
       }
     } catch (e) {}
   }
 
   async createPostPublicMetric(post: object, credential: boolean): Promise<void> {
     const newPost = await this.postRepository.create(post)
-    await this.publicMetricRepository.create({
+    this.publicMetricRepository.create({
       liked: 0,
       comment: 0,
       disliked: 0,
@@ -197,7 +200,7 @@ export class FetchContentSocialMediaJob extends CronJob {
       });
       const newKey = keyring.addFromUri('//' + newPost.id)
 
-      await this.postRepository.updateById(newPost.id, {walletAddress: newKey.address})
+      this.postRepository.updateById(newPost.id, {walletAddress: newKey.address})
     }
   }
 

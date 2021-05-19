@@ -29,6 +29,7 @@ export class FetchContentTwitterJob extends CronJob {
         await this.performJob();
       },
       cronTime: '0 0 */1 * * *', // Every hour
+      // cronTime: '*/10 * * * * *',
       start: true
     })
   }
@@ -50,7 +51,7 @@ export class FetchContentTwitterJob extends CronJob {
       for (let i = 0; i < tagsRepo.length; i++) {
         const tag = tagsRepo[i]
         const tweetField = 'referenced_tweets,attachments,entities,created_at,public_metrics'
-        const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=${tweetField}&expansions=author_id&user.fields=id,username&query=${tag.id}`)
+        const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=${tweetField}&expansions=author_id&user.fields=id,username,profile_image_url&query=${tag.id}`)
 
         if (!newPosts) continue
 
@@ -63,17 +64,16 @@ export class FetchContentTwitterJob extends CronJob {
 
           if (foundPost) {
             const foundTag = foundPost.tags.find(postTag => postTag.toLowerCase() === tag.id.toLowerCase())
-
             if (!foundTag) {
               const tags = [...foundPost.tags, tag.id]
 
-              await this.postRepository.updateById(foundPost.id, {tags})
+              this.postRepository.updateById(foundPost.id, {tags})
             }
 
             continue
           }
 
-          const username = users.find((user: any) => user.id === post.author_id).username
+          const {username, profile_image_url} = users.find((user: any) => user.id === post.author_id)
           const tags = post.entities ? (post.entities.hashtags ? post.entities.hashtags.map((hashtag: any) => hashtag.tag.toLowerCase()) : []) : []
           const hasMedia = post.attachments ? Boolean(post.attachments.media_keys) : false
           const foundPeople = await this.peopleRepository.findOne({where: {platform_account_id: post.author_id}})
@@ -91,13 +91,15 @@ export class FetchContentTwitterJob extends CronJob {
             link: `https://twitter.com/${post.author_id}/status/${post.id}`,
             platformUser: {
               username,
-              platform_account_id: post.author_id
+              platform_account_id: post.author_id,
+              profile_image_url: profile_image_url.replace('normal','400x400')
             },
             platformCreatedAt: post.created_at,
+            createdAt: new Date().toString(),
             platformPublicMetric: platformPublicMetric
           }
 
-          await this.createTags(newPost.tags)
+          this.createTags(newPost.tags)
 
           if (foundPeople) {
             const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPeople.id}})
@@ -106,9 +108,10 @@ export class FetchContentTwitterJob extends CronJob {
               const result = await this.postRepository.create({
                 ...newPost,
                 peopleId: foundPeople.id,
-                walletAddress: userCredential.userId
+                walletAddress: userCredential.userId,
+                importBy: [userCredential.userId]
               })
-              await this.publicMetricRepository.create({
+              this.publicMetricRepository.create({
                 liked: 0,
                 comment: 0,
                 disliked: 0,
@@ -122,8 +125,8 @@ export class FetchContentTwitterJob extends CronJob {
             })
             const newKey = keyring.addFromUri('//' + result.id)
 
-            await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
-            await this.publicMetricRepository.create({
+            this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+            this.publicMetricRepository.create({
               liked: 0,
               comment: 0,
               disliked: 0,
@@ -157,7 +160,7 @@ export class FetchContentTwitterJob extends CronJob {
 
      if (filterTags.length === 0) return
 
-     await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
+     this.tagRepository.createAll(filterTags.map((filterTag:string) => {
        return {
          id: filterTag,
          hide: false
