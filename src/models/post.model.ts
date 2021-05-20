@@ -23,6 +23,7 @@ interface PlatformPublicMetric {
 @model({
   settings: {
     strictObjectIDCoercion: true,
+    allowExtendendOperators: true,
     mongodb: {
       collection: 'posts',
     },

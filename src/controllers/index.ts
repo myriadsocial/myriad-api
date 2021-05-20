@@ -38,3 +38,4 @@ export * from './dislike-post.controller';
 export * from './post-dislike.controller';
 export * from './friend.controller';
 export * from './user-user.controller';
+export * from './public-metric.controller';
