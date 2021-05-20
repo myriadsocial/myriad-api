@@ -79,6 +79,8 @@ export class FetchContentRedditJob extends CronJob {
             continue
           }
 
+          let updatedRedditPost = null
+
           const foundPerson = await this.peopleRepository.findOne({where: {username: post.author}})
           const newPost = {
             platformUser: {
@@ -97,6 +99,29 @@ export class FetchContentRedditJob extends CronJob {
             createdAt: new Date().toString()
           }
 
+          const assets:string[] = []
+
+          if (newPost.hasMedia) {
+
+            if (post.media_metadata) {
+              for (const img in post.media_metadata) {
+                assets.push(post.media_metadata[img].s.u.replace(/amp;/g, ''))
+              }
+            }
+            if (post.is_reddit_media_domain) {
+              const images = post.preview.images || []
+              const videos = post.preview.videos || []
+
+              for (let i = 0; i < images.length; i++) {
+                assets.push(images[i].source.url.replace(/amp;/g,''))
+              }
+
+              for (let i = 0; i < videos.length; i++) {
+                assets.push(videos[i].source.url.replace(/amp;/g,''))
+              }
+            }
+          }
+
           if (foundPerson) {
             const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPerson.id}})
 
@@ -113,6 +138,12 @@ export class FetchContentRedditJob extends CronJob {
                 comment: 0,
                 postId: result.id
               })
+
+              if (assets.length > 0) {
+                this.postRepository.asset(result.id).create({
+                  media_urls: assets
+                })
+              }
             }
             const result = await this.postRepository.create({
               ...newPost,
@@ -127,6 +158,12 @@ export class FetchContentRedditJob extends CronJob {
               comment: 0,
               postId: result.id
             })
+
+            if (assets.length > 0) {
+              this.postRepository.asset(result.id).create({
+                media_urls: assets
+              })
+            }
           }
 
           const result = await this.postRepository.create(newPost)
@@ -139,6 +176,12 @@ export class FetchContentRedditJob extends CronJob {
             comment: 0,
             postId: result.id
           })
+
+          if (assets.length > 0) {
+            this.postRepository.asset(result.id).create({
+              media_urls: assets
+            })
+          }
         }
       }
     } catch (err) { }

@@ -326,6 +326,7 @@ export class PostController {
     //   profile_image_url: redditUser.icon_img.split('?')[0]
     // })
 
+    let updatedReddit = null
     const newRedditPost = {
       createdAt: new Date().toString(),
       platform: 'reddit',
@@ -345,7 +346,37 @@ export class PostController {
       importBy: [importer]
     }
 
-    return this.createPost('t2_' + redditUser.id, 'reddit', newRedditPost)
+    if (newRedditPost.hasMedia) {
+      const assets:string[] = []
+
+      if (redditPost.media_metadata) {
+        for (const img in redditPost.media_metadata) {
+          assets.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''))
+        }
+      }
+      if (redditPost.is_reddit_media_domain) {
+        const images = redditPost.preview.images || []
+        const videos = redditPost.preview.videos || []
+
+        for (let i = 0; i < images.length; i++) {
+          assets.push(images[i].source.url.replace(/amp;/g,''))
+        }
+
+        for (let i = 0; i < videos.length; i++) {
+          assets.push(videos[i].source.url.replace(/amp;/g,''))
+        }
+      }
+      updatedReddit = {
+        ...newRedditPost,
+        assets: assets
+      }
+    } else {
+      updatedReddit = {
+        ...newRedditPost
+      }
+    }
+
+    return this.createPost('t2_' + redditUser.id, 'reddit', updatedReddit)
   }
 
   async twitterPost (textId: string, importer: string) {
@@ -489,8 +520,20 @@ export class PostController {
     }, true)
   }
 
-  async createPostWithPublicMetric (post:object, credential: boolean):Promise<Post> {
+  async createPostWithPublicMetric (post:any, credential: boolean):Promise<Post> {
+    const assets = [
+      ...post.assets
+    ]
+
+    delete post.assets
+
     const createdTweet = await this.postRepository.create(post)
+
+    if (post.platform === 'reddit' && assets.length > 0) {
+      await this.postRepository.asset(createdTweet.id).create({
+        media_urls: assets
+      })
+    }
     
     await this.postRepository.publicMetric(createdTweet.id).create({})
 
