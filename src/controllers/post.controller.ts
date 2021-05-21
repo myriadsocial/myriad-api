@@ -276,7 +276,8 @@ export class PostController {
       platformUser: {
         username: username,
       },
-      importBy: [importer]
+      importBy: [importer],
+      assets: []
     }
 
     return this.createPost(username, 'facebook', newFacebookPost)
@@ -444,7 +445,8 @@ export class PostController {
       link: `https://twitter.com/${twitterUser.id}/status/${textId}`, 
       platformCreatedAt: tweet.created_at,
       text: tweet.text,
-      importBy: [importer]
+      importBy: [importer],
+      assets: []
     }
 
     await this.createTags(newTweet.tags)

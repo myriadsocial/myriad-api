@@ -58,20 +58,27 @@ export class UserPostController {
     if (!limit) limit = 10
     if (!offset) offset = 0
 
+    const acceptedFriends = await this.friendRepository.find({
+      where: {
+        status: 'accepted',
+        requestorId: id
+      }
+    })
+
+    const friendIds = [
+      ...acceptedFriends.map(friend => friend.friendId),
+      id
+    ]
+
     const foundPost = await this.postRepository.find({
       where: {
-        or: [
-          {
+        or: friendIds.map(id => {
+          return {
             importBy: {
               inq: [[id]]
             }
-          },
-          {
-            walletAddress: {
-              inq: [id]
-            }
           }
-        ]
+        })
       },
       limit: limit,
       offset: offset
@@ -128,32 +135,27 @@ export class UserPostController {
     if (!limit) limit = 10
     if (!offset) offset = 0
 
-    // const acceptedFriends = await this.friendRepository.find({
-    //   where: {
-    //     status: 'accepted',
-    //     requestorId: id
-    //   }
-    // })
+    const acceptedFriends = await this.friendRepository.find({
+      where: {
+        status: 'accepted',
+        requestorId: id
+      }
+    })
 
-    // const friendIds = [
-    //   ...acceptedFriends.map(friend => friend.friendId),
-    //   id
-    // ]
+    const friendIds = [
+      ...acceptedFriends.map(friend => friend.friendId),
+      id
+    ]
 
     const foundPost = await this.postRepository.find({
       where: {
-        or: [
-          {
+        or: friendIds.map(id => {
+          return {
             importBy: {
               inq: [[id]]
             }
-          },
-          {
-            walletAddress: {
-              inq: [id]
-            }
           }
-        ]
+        })
       },
       order: [`${orderField} ${order.toUpperCase()}`],
       limit: limit,
@@ -300,7 +302,7 @@ export class UserPostController {
     limit:number, 
     offset:number
   ):Promise<Post[]> {
-    return this.postRepository.find({
+    return await this.postRepository.find({
       order: [`${orderField} ${order.toUpperCase()}`],
       limit: limit,
       offset: offset,
@@ -335,11 +337,6 @@ export class UserPostController {
               "BillGates", 
               "vitalikbuterineth"
             ]
-          },
-          {
-            platform: {
-              inq: ["twitter","facebook", "reddit"]
-            }
           }
         ]
       }
