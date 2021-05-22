@@ -95,8 +95,7 @@ export class MyriadApiApplication extends BootMixin(
     };
 
     // initialize firebase app
-    const fApp = firebaseAdmin.initializeApp();
-    console.log(fApp.options)
+    firebaseAdmin.initializeApp()
   }
 
   async migrateSchema(options?: SchemaMigrationOptions) {
