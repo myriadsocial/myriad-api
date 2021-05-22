@@ -9,37 +9,35 @@ import {
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import {Keyring} from '@polkadot/api';
-import {mnemonicGenerate} from '@polkadot/util-crypto';
+import {KeypairType} from '@polkadot/util-crypto/types';
+import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
+import {
+  FetchContentRedditJob,
+  FetchContentSocialMediaJob,
+  FetchContentTwitterJob,
+  UpdatePostsJob
+} from './jobs';
 import {
   AssetRepository,
   CommentRepository,
   ConversationRepository,
   ExperienceRepository,
+  FriendRepository,
   LikeRepository,
   PeopleRepository,
   PostRepository,
   PublicMetricRepository,
-  QueueRepository,
+
   SavedExperienceRepository,
   TagRepository,
   TransactionRepository,
   UserCredentialRepository,
-  UserRepository,
-  FriendRepository
+  UserRepository
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
-import tags from './seed-data/tags.json';
-import users from './seed-data/users.json';
 import {MySequence} from './sequence';
-import {
-  FetchContentRedditJob, 
-  FetchContentTwitterJob,
-  FetchContentSocialMediaJob, 
-  UpdatePostsJob
-} from './jobs'
-import { KeypairType } from '@polkadot/util-crypto/types';
 
 interface PlatformUser {
   username: string,
@@ -96,6 +94,10 @@ export class MyriadApiApplication extends BootMixin(
         nested: true,
       },
     };
+
+    // initialize firebase app
+    const fApp = firebaseAdmin.initializeApp();
+    console.log(fApp.options)
   }
 
   async migrateSchema(options?: SchemaMigrationOptions) {
@@ -114,12 +116,10 @@ export class MyriadApiApplication extends BootMixin(
     const assetRepository = await this.getRepository(AssetRepository)
     const likeRepository = await this.getRepository(LikeRepository)
     const conversationRepository = await this.getRepository(ConversationRepository)
-    const queueRepository = await this.getRepository(QueueRepository)
     const friendRepository = await this.getRepository(FriendRepository)
 
     await likeRepository.deleteAll()
     await conversationRepository.deleteAll()
-    // await queueRepository.deleteAll()
     await assetRepository.deleteAll()
     await tagRepo.deleteAll()
     await postsRepo.deleteAll()
@@ -134,26 +134,11 @@ export class MyriadApiApplication extends BootMixin(
     await friendRepository.deleteAll()
 
     const keyring = new Keyring({
-      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
       ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
     });
 
-    const updateUsers = users.map((user:any) => {
-      const seed = mnemonicGenerate()
-      const pair = keyring.createFromUri(seed + '', user)
-
-      return {
-        ...user,
-        id: pair.address,
-        bio: `Hello, my name is ${user.name}`,
-        example: seed,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString()
-      }
-    })
-    const newTags = await tagRepo.createAll(tags)
     const newPeople = await peopleRepo.createAll(people)
-    const newUser = await userRepo.createAll(updateUsers)
 
     for (let i = 0; i < newPeople.length; i++) {
       const person = newPeople[i]
@@ -183,7 +168,7 @@ export class MyriadApiApplication extends BootMixin(
         if (personPlatform === 'facebook') {
           if (personUsername === postAccountUsername) {
             post.peopleId = person.id
-            post.platformCreatedAt = new Date().toString() 
+            post.platformCreatedAt = new Date().toString()
           }
         }
       }
@@ -192,15 +177,11 @@ export class MyriadApiApplication extends BootMixin(
     for (let i = 0; i < posts.length; i++) {
       const post = await postsRepo.create(posts[i])
       const newKey = keyring.addFromUri('//' + post.id)
-      
+
       await postsRepo.updateById(post.id, {
         walletAddress: newKey.address,
-        // importBy: [
-        //   ...post.importBy,
-        //   ...newUser.map(user => user.id)
-        // ]
       })
-      
+
       await publicMetricRepo.create({
         liked: 0,
         comment: 0,
@@ -208,56 +189,5 @@ export class MyriadApiApplication extends BootMixin(
         postId: post.id
       })
     }
-
-    // users.forEach(async user => {
-    //   const seed = mnemonicGenerate()
-    //   const pair = keyring.createFromUri(seed + '', user)
-
-    //   await userRepo.create({
-    //     ...user,
-    //     id: pair.address,
-    //     bio: `Hello, my name is ${user.name}`,
-    //     createdAt: new Date().toString(),
-    //     updatedAt: new Date().toString()
-    //   })
-  
-      // await userRepo.savedExperiences(newUser.id).create({
-      //   name: newUser.name + " Experience",
-      //   tags: [
-      //     {
-      //       id: 'cryptocurrency',
-      //       hide: false
-      //     },
-      //     {
-      //       id: 'blockchain',
-      //       hide: false
-      //     },
-      //     {
-      //       id: 'technology',
-      //       hide: false
-      //     }
-      //   ],
-      //   people: [
-      //     {
-      //       username: "gavofyork",
-      //       platform_account_id: "33962758",
-      //       platform: "twitter",
-      //       profile_image_url: "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg",
-      //       hide: false
-      //     },
-      //     {
-      //       username: "CryptoChief",
-      //       platform_account_id: "t2_e0t5q",
-      //       platform: "reddit",
-      //       profile_image_url: "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png",
-      //       hide: false
-      //     }
-      //   ],
-      //   description: `Hello, ${newUser.name}! Welcome to myriad!`,
-      //   userId: newUser.id,
-      //   createdAt: new Date().toString(),
-      //   updatedAt: new Date().toString()
-      // })
-    // })
   }
 }
