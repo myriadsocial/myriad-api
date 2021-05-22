@@ -1,8 +1,10 @@
-import {Entity, model, property} from '@loopback/repository';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {NotificationType} from '../enums';
+import {User} from './user.model';
 
 @model({
   settings: {
+    strictObjectIDCoercion: true,
     mongodb: {
       collection: 'notifications',
     },
@@ -13,6 +15,9 @@ export class Notification extends Entity {
     type: 'string',
     id: true,
     generated: true,
+    mongodb: {
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
@@ -25,16 +30,10 @@ export class Notification extends Entity {
   })
   type: NotificationType;
 
-  @property({
-    type: 'string',
-    required: true,
-  })
+  @belongsTo(() => User, {name: 'fromUserId'})
   from: string;
 
-  @property({
-    type: 'string',
-    required: true,
-  })
+  @belongsTo(() => User, {name: 'toUserId'})
   to: string;
 
   @property({
