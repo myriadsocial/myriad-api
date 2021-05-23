@@ -117,6 +117,8 @@ export class FetchContentSocialMediaJob extends CronJob {
           post.media_metadata || post.is_reddit_media_domain ? true : false
         )
 
+        const assets:string[] = []
+
         let newPost = null
 
         newPost = {
@@ -159,6 +161,26 @@ export class FetchContentSocialMediaJob extends CronJob {
               platformCreatedAt: new Date(post.created_utc * 1000).toString()
             }
 
+            if (newPost.hasMedia) {
+              if (post.media_metadata) {
+                for (const img in post.media_metadata) {
+                  assets.push(post.media_metadata[img].s.u.replace(/amp;/g, ''))
+                }
+              }
+              if (post.is_reddit_media_domain) {
+                const images = post.preview.images || []
+                const videos = post.preview.videos || []
+  
+                for (let i = 0; i < images.length; i++) {
+                  assets.push(images[i].source.url.replace(/amp;/g,''))
+                }
+  
+                for (let i = 0; i < videos.length; i++) {
+                  assets.push(videos[i].source.url.replace(/amp;/g,''))
+                }
+              }
+            }
+
             break
 
           case "facebook":
@@ -175,17 +197,34 @@ export class FetchContentSocialMediaJob extends CronJob {
           this.createPostPublicMetric({
             ...newPost,
             walletAddress: userCredential.userId,
-            importBy: [userCredential.userId]
+            importBy: [userCredential.userId],
+            assets: assets
           }, true)
         }
 
-        this.createPostPublicMetric(newPost, false)
+        this.createPostPublicMetric({
+          ...newPost,
+          assets: assets
+        }, false)
       }
     } catch (e) {}
   }
 
-  async createPostPublicMetric(post: object, credential: boolean): Promise<void> {
+  async createPostPublicMetric(post: any, credential: boolean): Promise<void> {
+    const assets = [
+      ...post.assets
+    ]
+
+    delete post.assets
+
     const newPost = await this.postRepository.create(post)
+
+    if (post.platform === 'reddit' && assets.length > 0) {
+      this.postRepository.asset(newPost.id).create({
+        media_urls: assets
+      })
+    }
+
     this.publicMetricRepository.create({
       liked: 0,
       comment: 0,
