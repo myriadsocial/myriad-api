@@ -37,6 +37,7 @@ import {
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
 import {MySequence} from './sequence';
+import {NotificationService} from './services';
 
 interface PlatformUser {
   username: string,
@@ -82,6 +83,9 @@ export class MyriadApiApplication extends BootMixin(
     this.add(createBindingFromClass(FetchContentTwitterJob))
     this.add(createBindingFromClass(FetchContentRedditJob))
     this.add(createBindingFromClass(UpdatePostsJob))
+
+    // Add services
+    this.service(NotificationService)
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here

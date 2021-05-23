@@ -30,10 +30,8 @@ export class NotificationService {
     const createdNotification = await this.notificationRepository.create(notification)
     if (createdNotification == null) return false
 
-    const registrationTokens = [
-      'YOUR_REGISTRATION_TOKEN_1',
-      'YOUR_REGISTRATION_TOKEN_N',
-    ];
+    const registrationTokens = toUser.fcmTokens;
+    if (registrationTokens == null) return true
 
     const message = {
       notification: {
@@ -64,10 +62,8 @@ export class NotificationService {
     const createdNotification = await this.notificationRepository.create(notification)
     if (createdNotification == null) return false
 
-    const registrationTokens = [
-      'YOUR_REGISTRATION_TOKEN_1',
-      'YOUR_REGISTRATION_TOKEN_N',
-    ];
+    const registrationTokens = toUser.fcmTokens;
+    if (registrationTokens == null) return true
 
     const message = {
       notification: {
