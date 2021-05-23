@@ -38,4 +38,4 @@ export * from './user-like.controller';
 export * from './user-post.controller';
 export * from './user-user-credential.controller';
 export * from './user-user.controller';
-
+export * from './public-metric.controller';

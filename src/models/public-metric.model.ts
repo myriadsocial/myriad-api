@@ -6,7 +6,8 @@ import {Post} from './post.model';
     strictObjectIDCoercion: true,
     mongodb: {
       collection: "publicMetrics"
-    }
+    },
+    allowExtendendOperators: true,
   }
 })
 export class PublicMetric extends Entity {

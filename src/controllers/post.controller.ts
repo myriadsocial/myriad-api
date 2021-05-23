@@ -117,147 +117,6 @@ export class PostController {
     return this.postRepository.find(filter);
   }
 
-  @get('/posts/liked')
-  @response(200, {
-    description: 'Array of Post model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Post, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async findMostLiked(
-    @param.query.string("sort") sort: string
-  ): Promise<Post[]> {
-    const posts = await this.postRepository.find({include: ["publicMetric"]});
-
-    posts.sort((a, b) => {
-      const likeA = a.publicMetric.liked
-      const likeB = b.publicMetric.liked
-
-      if (likeA < likeB) return 1
-      if (likeA > likeB) return -1
-      return 0
-    })
-
-    switch(sort) {
-      case 'asc':
-        posts.sort((a, b) => {
-          const likeA = a.publicMetric.liked
-          const likeB = b.publicMetric.liked
-
-          if (likeA < likeB) return -1
-          if (likeA > likeB) return 1
-          return 0
-        })
-
-        return posts
-
-      case 'desc':
-        return posts
-
-      default:
-        return posts
-    }
-  }
-
-  @get('/posts/comments')
-  @response(200, {
-    description: 'Array of Post model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Post, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async findMostComments(
-    @param.query.string("sort") sort: string
-  ): Promise<Post[]> {
-    const posts = await this.postRepository.find({include: ["publicMetric"]});
-
-    posts.sort((a, b) => {
-      const commentA = a.publicMetric.comment
-      const commentB = b.publicMetric.comment
-
-      if (commentA < commentB) return 1
-      if (commentA > commentB) return -1
-      return 0
-    })
-
-    switch(sort) {
-      case 'asc':
-        posts.sort((a, b) => {
-          const commentA = a.publicMetric.comment
-          const commentB = b.publicMetric.comment
-
-          if (commentA < commentB) return -1
-          if (commentA > commentB) return 1
-          return 0
-        })
-
-        return posts
-
-      case 'desc':
-        return posts
-
-      default:
-        return posts
-    }
-  }
-
-  @get('/posts/dates')
-  @response(200, {
-    description: 'Array of Post model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Post, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async findNewestDate(
-    @param.query.string("sort") sort: string
-  ): Promise<Post[]> {
-    const posts = await this.postRepository.find();
-
-    posts.sort((a,b) => {
-      const dateA = a.platformCreatedAt
-      const dateB = b.platformCreatedAt
-
-      if (dateA < dateB) return 1
-      if (dateA > dateB) return -1
-      return 0
-    })
-
-    switch(sort) {
-      case "asc":
-        posts.sort((a, b) => {
-          const dateA = a.platformCreatedAt
-          const dateB = b.platformCreatedAt
-
-          if (dateA < dateB) return -1
-          if (dateA > dateB) return 1
-          return 0
-        })
-
-        return posts
-
-      case "desc":
-        return posts
-
-      default:
-        return posts
-    }
-  }
-
   @get('/posts/{id}')
   @response(200, {
     description: 'Post model instance',
@@ -417,7 +276,8 @@ export class PostController {
       platformUser: {
         username: username,
       },
-      importBy: [importer]
+      importBy: [importer],
+      assets: []
     }
 
     return this.createPost(username, 'facebook', newFacebookPost)
@@ -467,6 +327,7 @@ export class PostController {
     //   profile_image_url: redditUser.icon_img.split('?')[0]
     // })
 
+    let updatedReddit = null
     const newRedditPost = {
       createdAt: new Date().toString(),
       platform: 'reddit',
@@ -486,7 +347,37 @@ export class PostController {
       importBy: [importer]
     }
 
-    return this.createPost('t2_' + redditUser.id, 'reddit', newRedditPost)
+    if (newRedditPost.hasMedia) {
+      const assets:string[] = []
+
+      if (redditPost.media_metadata) {
+        for (const img in redditPost.media_metadata) {
+          assets.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''))
+        }
+      }
+      if (redditPost.is_reddit_media_domain) {
+        const images = redditPost.preview.images || []
+        const videos = redditPost.preview.videos || []
+
+        for (let i = 0; i < images.length; i++) {
+          assets.push(images[i].source.url.replace(/amp;/g,''))
+        }
+
+        for (let i = 0; i < videos.length; i++) {
+          assets.push(videos[i].source.url.replace(/amp;/g,''))
+        }
+      }
+      updatedReddit = {
+        ...newRedditPost,
+        assets: assets
+      }
+    } else {
+      updatedReddit = {
+        ...newRedditPost
+      }
+    }
+
+    return this.createPost('t2_' + redditUser.id, 'reddit', updatedReddit)
   }
 
   async twitterPost (textId: string, importer: string) {
@@ -554,7 +445,8 @@ export class PostController {
       link: `https://twitter.com/${twitterUser.id}/status/${textId}`, 
       platformCreatedAt: tweet.created_at,
       text: tweet.text,
-      importBy: [importer]
+      importBy: [importer],
+      assets: []
     }
 
     await this.createTags(newTweet.tags)
@@ -571,6 +463,7 @@ export class PostController {
       post,
       user: includes.users[0]
     }
+    
   }
 
   async reddit (textId: string) {    
@@ -629,8 +522,20 @@ export class PostController {
     }, true)
   }
 
-  async createPostWithPublicMetric (post:object, credential: boolean):Promise<Post> {
+  async createPostWithPublicMetric (post:any, credential: boolean):Promise<Post> {
+    const assets = [
+      ...post.assets
+    ]
+
+    delete post.assets
+
     const createdTweet = await this.postRepository.create(post)
+
+    if (post.platform === 'reddit' && assets.length > 0) {
+      await this.postRepository.asset(createdTweet.id).create({
+        media_urls: assets
+      })
+    }
     
     await this.postRepository.publicMetric(createdTweet.id).create({})
 

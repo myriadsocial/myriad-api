@@ -20,6 +20,7 @@ import {
 import {
   User,
   Post,
+  PublicMetric,
 } from '../models';
 import {
   UserRepository, 
@@ -37,6 +38,83 @@ export class UserPostController {
     @repository(PublicMetricRepository) protected publicMetricRepository: PublicMetricRepository,
     @repository(FriendRepository) protected friendRepository: FriendRepository
   ) { }
+
+  @get('users/{id}/timeline-metric', {
+    responses: {
+      '200': {
+        description: 'User timeline based metrics'
+      }
+    }
+  })
+  async findTimelineMetric(
+    @param.path.string('id') id:string,
+    @param.query.string('orderField') orderField: string,
+    @param.query.string('order') order:string,
+    @param.query.string('limit') limit:number,
+    @param.query.string('offset') offset:number
+  ):Promise<Post[]> {
+    if (!orderField) orderField = 'comment'
+    if (!order) order = 'DESC'
+    if (!limit) limit = 10
+    if (!offset) offset = 0
+
+    const acceptedFriends = await this.friendRepository.find({
+      where: {
+        status: 'accepted',
+        requestorId: id
+      }
+    })
+
+    const friendIds = [
+      ...acceptedFriends.map(friend => friend.friendId),
+      id
+    ]
+
+    const foundPost = await this.postRepository.find({
+      where: {
+        or: friendIds.map(id => {
+          return {
+            importBy: {
+              inq: [[id]]
+            }
+          }
+        })
+      },
+      limit: limit,
+      offset: offset
+    }) 
+
+    if (foundPost.length === 0) {
+      const foundPost = await this.defaultPost(orderField, order, limit, offset)
+      const postIds = foundPost.map(post => post.id)
+      const publicMetrics = await this.filterPublicMetric(orderField, order, limit, offset, postIds)
+
+      return publicMetrics.map((metric:any) => {
+        metric.post.publicMetric = {
+          id: metric.id,
+          liked: metric.liked,
+          disliked: metric.disliked,
+          comment: metric.comment,
+          postId: metric.postId
+        }
+        return metric.post
+      })
+    }
+
+    const postIds = foundPost.map(post => post.id)
+    const filterMetric = await this.filterPublicMetric(orderField, order, limit, offset, postIds)
+
+    return filterMetric.map((metric:any) => {
+      metric.post.publicMetric = {
+        id: metric.id,
+        liked: metric.liked,
+        disliked: metric.disliked,
+        comment: metric.comment,
+        postId: metric.postId
+      }
+      return metric.post
+    })
+  } 
   
   @get('/users/{id}/timeline', {
     responses: {
@@ -71,112 +149,38 @@ export class UserPostController {
 
     const foundPost = await this.postRepository.find({
       where: {
-        importBy: {
-          inq: [friendIds]
-        }
+        or: friendIds.map(id => {
+          return {
+            importBy: {
+              inq: [[id]]
+            }
+          }
+        })
       },
       order: [`${orderField} ${order.toUpperCase()}`],
       limit: limit,
-      offset: offset
+      offset: offset,
+      include: [
+        {
+          relation: 'comments',
+          scope: {
+            include: [
+              {
+                relation: 'user'
+              }
+            ]
+          }
+        },
+        {
+          relation: 'publicMetric'
+        }
+      ]
     })
 
     if (foundPost.length === 0) {
-      return this.postRepository.find({
-        order: [`${orderField} ${order.toUpperCase()}`],
-        limit: limit,
-        offset: offset,
-        where: {
-          or: [
-            {
-              tags: {
-                inq: ["cryptocurrency", "blockchain", "technology"]
-              }
-            },
-            {
-              'platformUser.username': [
-                "elonmusk", 
-                "gavofyork", 
-                "W3F_Bill", 
-                "CryptoChief", 
-                "BillGates", 
-                "vitalikbuterineth"
-              ]
-            },
-            {
-              platform: {
-                inq: ["twitter","facebook", "reddit"]
-              }
-            }
-          ]
-        }
-      } as Filter<Post>)
+      return this.defaultPost(orderField, order, limit, offset)
     }
     
-    return foundPost
-  }
-
-  @get('/users/{id}/other-timeline', {
-    responses: {
-      '200': {
-        description: 'Timeline other user'
-      }
-    }
-  })
-  async otherTimeline (
-    @param.path.string('id') id:string,
-    @param.query.string('orderField') orderField: string,
-    @param.query.string('order') order:string,
-    @param.query.string('limit') limit:number,
-    @param.query.string('offset') offset:number
-  ):Promise<Post[]> {
-    if (!orderField) orderField = 'platformCreatedAt'
-    if (!order) order = 'DESC'
-    if (!limit) limit = 10
-    if (!offset) offset = 0
-
-    const foundPost = await this.postRepository.find({
-      where: {
-        importBy: {
-          inq: [[id]]
-        }
-      },
-      order: [`${orderField} ${order.toUpperCase()}`],
-      limit: limit,
-      offset: offset
-    })
-
-    if (foundPost.length === 0) {
-      return this.postRepository.find({
-        order: [`${orderField} ${order.toUpperCase()}`],
-        limit: limit,
-        offset: offset,
-        where: {
-          or: [
-            {
-              tags: {
-                inq: ["cryptocurrency", "blockchain", "technology"]
-              }
-            },
-            {
-              'platformUser.username': [
-                "elonmusk", 
-                "gavofyork", 
-                "W3F_Bill", 
-                "CryptoChief", 
-                "BillGates", 
-                "vitalikbuterineth"
-              ]
-            },
-            {
-              platform: {
-                inq: ["twitter","facebook", "reddit"]
-              }
-            }
-          ]
-        }
-      } as Filter<Post>)
-    }
-
     return foundPost
   }
 
@@ -290,5 +294,90 @@ export class UserPostController {
     @param.query.object('where', getWhereSchemaFor(Post)) where?: Where<Post>,
   ): Promise<Count> {
     return this.userRepository.posts(id).delete(where);
+  }
+
+  async defaultPost (
+    orderField: string, 
+    order: string, 
+    limit:number, 
+    offset:number
+  ):Promise<Post[]> {
+    return await this.postRepository.find({
+      order: [`${orderField} ${order.toUpperCase()}`],
+      limit: limit,
+      offset: offset,
+      include: [
+        {
+          relation: 'comments',
+          scope: {
+            include: [
+              {
+                relation: 'user'
+              }
+            ]
+          }
+        },
+        {
+          relation: 'publicMetric'
+        }
+      ],
+      where: {
+        or: [
+          {
+            tags: {
+              inq: ["cryptocurrency", "blockchain", "technology"]
+            }
+          },
+          {
+            'platformUser.username': [
+              "elonmusk", 
+              "gavofyork", 
+              "W3F_Bill", 
+              "CryptoChief", 
+              "BillGates", 
+              "vitalikbuterineth"
+            ]
+          }
+        ]
+      }
+    } as Filter<Post>)
+  }
+
+  async filterPublicMetric(
+    orderField: string, 
+    order: string, 
+    limit: number, 
+    offset: number,
+    postIds: any[]
+  ):Promise<PublicMetric[]> {
+    return this.publicMetricRepository.find({
+      order: [`${orderField} ${order.toUpperCase()}`],
+      limit: limit,
+      offset: offset,
+      include: [
+        {
+          relation: "post",
+          scope: {
+            include: [
+              {
+                relation: 'comments',
+                scope: {
+                  include: [
+                    {
+                      relation: 'user'
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      where: {
+        postId: {
+          inq: postIds
+        }
+      } 
+    } as Filter<PublicMetric>)
   }
 }
