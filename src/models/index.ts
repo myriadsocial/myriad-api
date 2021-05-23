@@ -15,3 +15,4 @@ export * from './public-metric.model';
 export * from './conversation.model';
 export * from './dislike.model';
 export * from './friend.model';
+export * from './notification.model';
