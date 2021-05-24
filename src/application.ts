@@ -35,27 +35,17 @@ import {
   TransactionRepository,
   UserCredentialRepository,
   UserRepository,
-  FriendRepository,
   TokenRepository,
   DetailTransactionRepository,
   UserTokenRepository,
+  QueueRepository
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
 import tags from './seed-data/tags.json';
 import users from './seed-data/users.json';
 import tokens from './seed-data/tokens.json'
-import {MySequence} from './sequence';
-import {
-  FetchContentRedditJob, 
-  FetchContentTwitterJob,
-  FetchContentSocialMediaJob, 
-  UpdatePostsJob
-} from './jobs'
-import { KeypairType } from '@polkadot/util-crypto/types';
 import {polkadotApi} from './helpers/polkadotApi'
-import people from './seed-data/people.json';
-import posts from './seed-data/posts.json';
 import {MySequence} from './sequence';
 import {NotificationService} from './services';
 
@@ -99,10 +89,10 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentSocialMediaJob))
-    // this.add(createBindingFromClass(FetchContentTwitterJob))
-    // this.add(createBindingFromClass(FetchContentRedditJob))
-    // this.add(createBindingFromClass(UpdatePostsJob))
+    this.add(createBindingFromClass(FetchContentSocialMediaJob))
+    this.add(createBindingFromClass(FetchContentTwitterJob))
+    this.add(createBindingFromClass(FetchContentRedditJob))
+    this.add(createBindingFromClass(UpdatePostsJob))
 
     // Add services
     this.service(NotificationService)
@@ -183,7 +173,6 @@ export class MyriadApiApplication extends BootMixin(
       }
     })
     const newTags = await tagRepo.createAll(tags)
-    const newPeople = await peopleRepo.createAll(people)
     const newToken = await tokenRepository.createAll(tokens)
 
     for (let i = 0; i < updateUsers.length; i++) {
