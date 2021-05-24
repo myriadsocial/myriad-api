@@ -10,6 +10,7 @@ import {
   del,
   get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
@@ -18,12 +19,20 @@ import {
   response
 } from '@loopback/rest';
 import {Transaction} from '../models';
-import {TransactionRepository} from '../repositories';
+import {
+  TransactionRepository,
+  UserRepository,
+  DetailTransactionRepository,
+  TokenRepository
+} from '../repositories';
 
 export class TransactionController {
   constructor(
     @repository(TransactionRepository)
     public transactionRepository: TransactionRepository,
+    @repository(UserRepository) public userRepository: UserRepository,
+    @repository(DetailTransactionRepository) public detailTransactionRepository: DetailTransactionRepository,
+    @repository(TokenRepository) public tokenRepository: TokenRepository
   ) { }
 
   @post('/transactions')
@@ -44,6 +53,71 @@ export class TransactionController {
     })
     transaction: Omit<Transaction, 'id'>,
   ): Promise<Transaction> {
+    const foundToken = await this.tokenRepository.findOne({
+      where: {
+        id: transaction.tokenId
+      }
+    })
+
+    if (!foundToken) {
+      throw new HttpErrors.NotFound('Token not found')
+    }
+
+    const from = transaction.from
+    const to = transaction.to
+    const value = transaction.value
+    const tokenId = transaction.tokenId
+
+    const foundFromUser = await this.findDetailTransaction(from, tokenId) 
+    
+    if (foundFromUser) {
+      const detailTransactionId = foundFromUser.id
+      await this.detailTransactionRepository.updateById(detailTransactionId, {
+        sentToThem: foundFromUser.sentToThem + value
+      })
+    } else {
+      const foundUser = await this.userRepository.findOne({
+        where: {
+          id: from
+        }
+      })
+
+      if (foundUser) {
+        await this.detailTransactionRepository.create({
+          sentToMe: 0,
+          sentToThem: value,
+          userId: from,
+          tokenId: transaction.tokenId
+        })
+      }
+    }
+
+    
+    const foundToUser = await this.findDetailTransaction(to, tokenId)
+
+    if (foundToUser) {
+      const detailTransactionId = foundToUser.id
+
+      await this.detailTransactionRepository.updateById(detailTransactionId, {
+        sentToMe: foundToUser.sentToMe + value
+      })
+    } else {
+      const foundUser = await this.userRepository.findOne({
+        where: {
+          id: to
+        }
+      })
+
+      if (foundUser) {
+        await this.detailTransactionRepository.create({
+          sentToMe: value,
+          sentToThem: 0,
+          tokenId: transaction.tokenId,
+          userId: to
+        })
+      }
+    }
+
     return this.transactionRepository.create({
       ...transaction,
       createdAt: new Date().toString(),
@@ -156,5 +230,14 @@ export class TransactionController {
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.transactionRepository.deleteById(id);
+  }
+
+  async findDetailTransaction(userId: string, tokenId: string) {
+    return this.detailTransactionRepository.findOne({
+      where: {
+        userId: userId,
+        tokenId: tokenId
+      }
+    })
   }
 }

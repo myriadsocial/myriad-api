@@ -1,5 +1,6 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {User} from './user.model';
+import {Token, TokenWithRelations} from './token.model';
 
 @model({
   settings: {
@@ -63,6 +64,9 @@ export class Transaction extends Entity {
   })
   deletedAt?: string;
 
+  @belongsTo(() => Token)
+  tokenId: string;
+
   constructor(data?: Partial<Transaction>) {
     super(data);
   }
@@ -70,6 +74,7 @@ export class Transaction extends Entity {
 
 export interface TransactionRelations {
   // describe navigational properties here
+  token: TokenWithRelations
 }
 
 export type TransactionWithRelations = Transaction & TransactionRelations;
