@@ -30,6 +30,7 @@ import {polkadotApi} from '../helpers/polkadotApi'
 import {Keyring} from '@polkadot/api'
 import {KeypairType} from '@polkadot/util-crypto/types';
 import { encodeAddress } from '@polkadot/keyring';
+import {u8aToHex} from '@polkadot/util'
 
 interface User {
   platform_account_id?: string,
@@ -238,19 +239,18 @@ export class UserCredentialController {
  
     try {
       // const provider = process.env.POLKADOT_MYRIAD_RPC || ""
-      // const keyring = new Keyring({
-      //   type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-      //   ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
-      // });
+      const keyring = new Keyring({
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+      });
       const gasFee = 125000147
       const to = credential.userId
   
       for (let i = 0; i < posts.length; i++) {
         const post = posts[i]
-        const from = post.walletAddress
+        const from = keyring.addFromUri('//' + post.id)
         const transactions = await this.transactionRepository.find({
           where: {
-            to: from
+            to: u8aToHex(from.publicKey)
           },
           include: [
             {
@@ -261,24 +261,38 @@ export class UserCredentialController {
 
         if (transactions.length > 0) {
           const groupByToken = this.groupByToken(transactions)
-          console.log(groupByToken)
 
           for (const rpc in groupByToken) {
-            const api = await polkadotApi(rpc)
             const transactions = groupByToken[rpc]
+
+            if (transactions.length === 0) continue 
+
+            const api = await polkadotApi(rpc)
 
             for (let j = 0; j < transactions.length; j++) {
               const token = transactions[j].token                      
   
-              const encodeFrom = encodeAddress(from, token.address_format) 
               const encodeTo  = encodeAddress(to, token.address_format)   
-              const {data:balance} = await api.query.system.account(encodeFrom)
+              const {data:balance} = await api.query.system.account(from.publicKey)
   
               if (balance.free.toNumber()) {
                 const transfer = api.tx.balances.transfer(encodeTo, balance.free.toNumber() - gasFee)
-                
-                await transfer.signAndSend(encodeFrom)
+                await transfer.signAndSend(from)
                 await this.postRepository.updateById(post.id, {peopleId: credential.peopleId})
+
+                const foundDetailTransaction = await this.detailTransactionRepository.findOne({
+                  where: {
+                    userId: to
+                  }
+                })
+
+                if (foundDetailTransaction) {
+                  this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
+                    sentToMe: foundDetailTransaction.sentToMe + (balance.free.toNumber() - gasFee)
+                  })
+                }
+
+                console.log('success')
               }
             } 
 
@@ -295,6 +309,7 @@ export class UserCredentialController {
       }      
       return true
     } catch (err) {
+      console.log(err);
       await this.userCredentialRepository.updateById(credential.id, {isLogin: false})
       return false
     }

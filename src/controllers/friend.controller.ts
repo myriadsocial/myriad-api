@@ -49,7 +49,44 @@ export class FriendController {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself')
     }
 
-    const result = await this.friendRepository.create(friend);
+    const requestStatus = [
+      "pending", "approved", "rejected"
+    ]
+
+    const foundStatus = requestStatus.find(req => req === friend.status);
+
+    if (!foundStatus) {
+      throw new HttpErrors.UnprocessableEntity("Available status: pending, approved, rejected")
+    }
+
+    const foundFriend = await this.friendRepository.findOne({
+      where: {
+        friendId: friend.friendId,
+        requestorId: friend.requestorId
+      }
+    })
+
+    if (foundFriend && foundFriend.status === 'rejected') {
+      this.friendRepository.updateById(foundFriend.id, {
+        status: "pending",
+        updatedAt: new Date().toString()
+      })
+
+      foundFriend.status = 'pending'
+      foundFriend.updatedAt = new Date().toString()
+
+      return foundFriend
+    } 
+    
+    if (foundFriend && foundFriend.status === 'approved') {
+      throw new HttpErrors.UnprocessableEntity('You already friend with this user')
+    } 
+    
+    if (foundFriend && foundFriend.status === 'pending'){
+      throw new HttpErrors.UnprocessableEntity('Please wait for this user to approved your request')
+    }
+
+    const result = await this.friendRepository.create(friend)
 
     try {
       await this.notificationService.sendFriendRequest(friend.requestorId, friend.friendId);
@@ -57,7 +94,7 @@ export class FriendController {
       // ignored
     }
 
-    return result;
+    return result
   }
 
   // @get('/friends/count')

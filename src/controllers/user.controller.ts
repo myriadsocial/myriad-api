@@ -14,6 +14,7 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
+import {service} from '@loopback/core'
 import {Keyring} from '@polkadot/api';
 import {KeypairType} from '@polkadot/util-crypto/types';
 import {polkadotApi} from '../helpers/polkadotApi';
@@ -29,6 +30,7 @@ import {
   UserTokenRepository
 } from '../repositories';
 import {encodeAddress} from '@polkadot/util-crypto';
+import {NotificationService} from '../services'
 
 export class UserController {
   constructor(
@@ -44,7 +46,8 @@ export class UserController {
     public queueRepository: QueueRepository,
     @repository(FriendRepository) public friendRepository: FriendRepository,
     @repository(PostRepository) public postRepository: PostRepository,
-    @repository(UserTokenRepository) public userTokenRepository: UserTokenRepository
+    @repository(UserTokenRepository) public userTokenRepository: UserTokenRepository,
+    @service(NotificationService) public notificationService: NotificationService
   ) { }
 
   @post('/users')
@@ -139,13 +142,12 @@ export class UserController {
 
     const foundFriend = await this.friendRepository.findOne({
       where: {
-        status: "rejected",
         friendId: friend.friendId,
         requestorId: id
       }
     })
 
-    if (foundFriend) {
+    if (foundFriend && foundFriend.status === 'rejected') {
       this.friendRepository.updateById(foundFriend.id, {
         status: "pending",
         updatedAt: new Date().toString()
@@ -155,6 +157,20 @@ export class UserController {
       foundFriend.updatedAt = new Date().toString()
 
       return foundFriend
+    } 
+    
+    if (foundFriend && foundFriend.status === 'approved') {
+      throw new HttpErrors.UnprocessableEntity('You already friend with this user')
+    } 
+    
+    if (foundFriend && foundFriend.status === 'pending'){
+      throw new HttpErrors.UnprocessableEntity('Please wait for this user to approved your request')
+    }
+
+    try {
+      await this.notificationService.sendFriendRequest(id, friend.friendId);
+    } catch (error) {
+      // ignored
     }
 
     return this.friendRepository.create({
@@ -181,7 +197,7 @@ export class UserController {
 
     const found = requestStatus.find(req => req === status)
 
-    if (!found && status) throw new HttpErrors.UnprocessableEntity("Available status: pending, accepted, rejected")
+    if (!found && status) throw new HttpErrors.UnprocessableEntity("Available status: pending, approved, rejected")
     if ((typeof status === 'string' && !status) || status === 'all' ) {
       return this.friendRepository.find({
         where: {
