@@ -1,8 +1,8 @@
 import {ApiPromise, WsProvider} from '@polkadot/api';
 
-export async function polkadotApi(): Promise<ApiPromise> {
+export async function polkadotApi(wssProvider:string): Promise<ApiPromise> {
   try {
-    const provider = new WsProvider(process.env.POLKADOT_MYRIAD_RPC)
+    const provider = new WsProvider(wssProvider)
     const api = await new ApiPromise({provider}).isReadyOrError
 
     return api

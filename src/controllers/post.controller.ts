@@ -479,7 +479,7 @@ export class PostController {
     }
   }
 
-  async createPost(platformAccountId: string, platform: string, post: object):Promise<Post> {
+  async createPost(platformAccountId: string, platform: string, post: any):Promise<Post> {
     let foundPeople = null;
 
     if (platform === 'facebook') {
@@ -499,7 +499,17 @@ export class PostController {
     }
 
     if (!foundPeople) {
-      return this.createPostWithPublicMetric(post, false)
+      const people = await this.peopleRepository.create({
+        username: post.platformUser.username,
+        platform: post.platform,
+        platform_account_id: post.platformUser.platform_account_id,
+        profile_image_url: post.platformUser.profile_image_url,
+        hide: false
+      })
+      return this.createPostWithPublicMetric({
+        ...post,
+        peopleId: people.id
+      }, false)
     } 
 
     const foundCredential = await this.userCredentialRepository.findOne({
@@ -541,7 +551,6 @@ export class PostController {
 
     if (!credential) {
       const newKey = this.keyring().addFromUri('//' + createdTweet.id)
-
       await this.postRepository.updateById(createdTweet.id, {walletAddress: newKey.address})
     }
 
@@ -634,7 +643,7 @@ export class PostController {
   keyring() {
     return new Keyring({
       type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+      ss58Format: 42
     });
   }
 }

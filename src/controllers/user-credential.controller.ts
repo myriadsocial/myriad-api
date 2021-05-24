@@ -2,7 +2,8 @@ import {inject} from '@loopback/core';
 import {
   Filter,
   FilterExcludingWhere,
-  repository
+  repository,
+  Where
 } from '@loopback/repository';
 import {
   del,
@@ -13,15 +14,22 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
-import {UserCredential} from '../models';
-import {PeopleRepository, PostRepository, UserCredentialRepository, UserRepository} from '../repositories';
+import {UserCredential, TransactionWithRelations, Post} from '../models';
+import {
+  PeopleRepository, 
+  PostRepository, 
+  UserCredentialRepository, 
+  UserRepository, 
+  DetailTransactionRepository,
+  TransactionRepository
+} from '../repositories';
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 import {polkadotApi} from '../helpers/polkadotApi'
 import {Keyring} from '@polkadot/api'
 import {KeypairType} from '@polkadot/util-crypto/types';
-import fs from 'fs'
+import { encodeAddress } from '@polkadot/keyring';
 
 interface User {
   platform_account_id?: string,
@@ -39,6 +47,8 @@ export class UserCredentialController {
     @repository(PostRepository)
     public postRepository: PostRepository,
     @repository(UserRepository) public userRepository: UserRepository,
+    @repository(DetailTransactionRepository) public detailTransactionRepository: DetailTransactionRepository,
+    @repository (TransactionRepository) public transactionRepository: TransactionRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
     @inject('services.Rsshub') protected rsshubService: Rsshub,
@@ -219,47 +229,70 @@ export class UserCredentialController {
       where: {
         walletAddress: {
           neq: credential.userId
-        } 
-      }
+        },
+        "platformUser.platform_account_id": platform_account_id
+      } as Where
     })
 
-    const userPost = posts.filter(post => {
-      if (post.platformUser) {
-        if (post.platform === 'facebook') { 
-          return platform_account_id === post.platformUser.username
-        } else {
-          return platform_account_id === post.platformUser.platform_account_id
-        }
-      }
-
-      return false
-    })
-
-    if (userPost.length === 0) return true
+    if (posts.length === 0) return true
  
     try {
-      const api = await polkadotApi()
-      const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
-      });
+      // const provider = process.env.POLKADOT_MYRIAD_RPC || ""
+      // const keyring = new Keyring({
+      //   type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+      //   ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+      // });
       const gasFee = 125000147
       const to = credential.userId
   
-      for (let i = 0; i < userPost.length; i++) {
-        const post = userPost[i]
-        const from = keyring.addFromUri('//' + post.id)
-        const {data:balance} = await api.query.system.account(from.address)
+      for (let i = 0; i < posts.length; i++) {
+        const post = posts[i]
+        const from = post.walletAddress
+        const transactions = await this.transactionRepository.find({
+          where: {
+            to: from
+          },
+          include: [
+            {
+              relation: 'token'
+            }
+          ]
+        })
+
+        if (transactions.length > 0) {
+          const groupByToken = this.groupByToken(transactions)
+          console.log(groupByToken)
+
+          for (const rpc in groupByToken) {
+            const api = await polkadotApi(rpc)
+            const transactions = groupByToken[rpc]
+
+            for (let j = 0; j < transactions.length; j++) {
+              const token = transactions[j].token                      
   
-        if (balance.free.toNumber() > 0) {
-          const transfer = api.tx.balances.transfer(to, balance.free.toNumber() - gasFee)
+              const encodeFrom = encodeAddress(from, token.address_format) 
+              const encodeTo  = encodeAddress(to, token.address_format)   
+              const {data:balance} = await api.query.system.account(encodeFrom)
   
-          await transfer.signAndSend(from)
-          await this.postRepository.updateById(post.id, {peopleId: credential.peopleId})
+              if (balance.free.toNumber()) {
+                const transfer = api.tx.balances.transfer(encodeTo, balance.free.toNumber() - gasFee)
+                
+                await transfer.signAndSend(encodeFrom)
+                await this.postRepository.updateById(post.id, {peopleId: credential.peopleId})
+              }
+            } 
+
+            await api.disconnect()
+          }
         }
-      }
   
-      await api.disconnect()
+        // if (balance.free.toNumber()) {
+        //   const transfer = api.tx.balances.transfer(to, balance.free.toNumber() - gasFee)
+  
+        //   await transfer.signAndSend(from)
+        //   await this.postRepository.updateById(post.id, {peopleId: credential.peopleId})
+        // }
+      }      
       return true
     } catch (err) {
       await this.userCredentialRepository.updateById(credential.id, {isLogin: false})
@@ -418,5 +451,19 @@ export class UserCredentialController {
         hide: false,
       }
     }))
+  }
+
+  groupByToken(transactions: TransactionWithRelations[]) {
+    const groupByToken:any = {}
+
+    for (let j = 0; j < transactions.length; j++) {
+      if (groupByToken[transactions[j].token.rpc_address] === undefined) {
+        groupByToken[transactions[j].token.rpc_address] = []
+      }
+
+      groupByToken[transactions[j].token.rpc_address].push(transactions[j])
+    }
+
+    return groupByToken
   }
 }

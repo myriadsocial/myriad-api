@@ -79,8 +79,6 @@ export class FetchContentRedditJob extends CronJob {
             continue
           }
 
-          let updatedRedditPost = null
-
           const foundPerson = await this.peopleRepository.findOne({where: {username: post.author}})
           const newPost = {
             platformUser: {
