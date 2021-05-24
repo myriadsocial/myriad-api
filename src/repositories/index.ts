@@ -14,4 +14,7 @@ export * from './public-metric.repository';
 export * from './conversation.repository';
 export * from './dislike.repository';
 export * from './friend.repository';
+export * from './detail-transaction.repository';
+export * from './token.repository';
+export * from './user-token.repository';
 export * from './notification.repository';

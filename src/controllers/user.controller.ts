@@ -25,8 +25,10 @@ import {
   TagRepository,
   UserRepository,
   FriendRepository,
-  PostRepository
+  PostRepository,
+  UserTokenRepository
 } from '../repositories';
+import {encodeAddress} from '@polkadot/util-crypto';
 
 export class UserController {
   constructor(
@@ -41,7 +43,8 @@ export class UserController {
     @repository(QueueRepository)
     public queueRepository: QueueRepository,
     @repository(FriendRepository) public friendRepository: FriendRepository,
-    @repository(PostRepository) public postRepository: PostRepository
+    @repository(PostRepository) public postRepository: PostRepository,
+    @repository(UserTokenRepository) public userTokenRepository: UserTokenRepository
   ) { }
 
   @post('/users')
@@ -62,23 +65,29 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    user.name = user.name.replace(/\s\s+/g, ' ')
-      .trim().split(' ').map(word => {
-        return word[0].toUpperCase() + word.substr(1).toLowerCase()
-      }).join(' ')
+    if (!this.validateUsername(user.username)) {
+      throw new HttpErrors.UnprocessableEntity('Username cannot have spaces')
+    }
+
+    // user.name = user.name.replace(/\s\s+/g, ' ')
+    //   .trim().split(' ').map(word => {
+    //     return word[0].toUpperCase() + word.substr(1).toLowerCase()
+    //   }).join(' ')
 
     try {
       const foundUser = await this.userRepository.findOne({
         where: {
           or: [
             {id: user.id},
-            {name: user.name}
+            {username: user.username}
           ]
         }
       })
 
       if (!foundUser) await this.defaultTips(user.id)
       else throw new Error('UserExist')
+      
+      user.name = user.username[0].toUpperCase() + user.username.substr(1).toLowerCase()
 
       const newUser = await this.userRepository.create({
         ...user,
@@ -87,8 +96,20 @@ export class UserController {
         updatedAt: new Date().toString()
       });
 
+      this.userRepository.detailTransactions(newUser.id).create({
+        sentToMe: 100000000000000,
+        sentToThem: 0,
+        userId: newUser.id,
+        tokenId: 'MYR'
+      })
+
+      this.userTokenRepository.create({
+        userId: newUser.id,
+        tokenId: 'MYR'
+      })
+
       // await this.defaultPost(newUser.id)
-      await this.defaultExperience(newUser)
+      // await this.defaultExperience(newUser)
 
       return newUser
     } catch (err) {
@@ -320,15 +341,17 @@ export class UserController {
   }
 
   async defaultTips (userId: string):Promise<void> {
-    const api = await polkadotApi()
+    const provider = process.env.POLKADOT_MYRIAD_RPC || ""
+    const myriadPrefix = Number(process.env.POLKADOT_MYRIAD_KEYRING_PREFIX)
+    const api = await polkadotApi(provider)
     const keyring = new Keyring({
       type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
-      ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+      ss58Format: myriadPrefix
     });
 
     const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
     const from = keyring.addFromMnemonic(mnemonic);
-    const to = userId;
+    const to = encodeAddress(userId, myriadPrefix);
     const value = 100000000000000; // send 100 myria
     const {nonce} = await api.query.system.account(from.address)
 
@@ -356,5 +379,12 @@ export class UserController {
     const transfer = api.tx.balances.transfer(to, value);
     await transfer.signAndSend(from, {nonce: count});
     await api.disconnect()
+  }
+
+  validateUsername(username:string):boolean {
+    const splitUsername = username.split(' ')
+
+    if (splitUsername.length > 1) return false
+    return true 
   }
 }

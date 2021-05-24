@@ -15,4 +15,7 @@ export * from './public-metric.model';
 export * from './conversation.model';
 export * from './dislike.model';
 export * from './friend.model';
+export * from './detail-transaction.model';
+export * from './token.model';
+export * from './user-token.model';
 export * from './notification.model';
