@@ -27,10 +27,12 @@ import {
   UserRepository,
   FriendRepository,
   PostRepository,
-  UserTokenRepository
+  UserTokenRepository,
+  TransactionRepository
 } from '../repositories';
 import {encodeAddress} from '@polkadot/util-crypto';
 import {NotificationService} from '../services'
+import {u8aToHex} from '@polkadot/util'
 
 export class UserController {
   constructor(
@@ -47,6 +49,7 @@ export class UserController {
     @repository(FriendRepository) public friendRepository: FriendRepository,
     @repository(PostRepository) public postRepository: PostRepository,
     @repository(UserTokenRepository) public userTokenRepository: UserTokenRepository,
+    @repository(TransactionRepository) public transactionRepository: TransactionRepository,
     @service(NotificationService) public notificationService: NotificationService
   ) { }
 
@@ -358,7 +361,7 @@ export class UserController {
 
   async defaultTips (userId: string):Promise<void> {
     const provider = process.env.POLKADOT_MYRIAD_RPC || ""
-    const myriadPrefix = Number(process.env.POLKADOT_MYRIAD_KEYRING_PREFIX)
+    const myriadPrefix = Number(process.env.POLKADOT_KEYRING_PREFIX)
     const api = await polkadotApi(provider)
     const keyring = new Keyring({
       type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
@@ -393,7 +396,17 @@ export class UserController {
     }
 
     const transfer = api.tx.balances.transfer(to, value);
-    await transfer.signAndSend(from, {nonce: count});
+    const txhash = await transfer.signAndSend(from, {nonce: count});
+
+    this.transactionRepository.create({
+      trxHash: txhash.toString(),
+      from: u8aToHex(from.publicKey),
+      to: userId,
+      value: value,
+      state: 'success',
+      createdAt: new Date().toString(),
+      tokenId: 'MYR'
+    })
     await api.disconnect()
   }
 
