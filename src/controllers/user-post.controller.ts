@@ -2,7 +2,6 @@ import {
   Count,
   CountSchema,
   Filter,
-  PredicateComparison,
   repository,
   Where,
 } from '@loopback/repository';
@@ -39,6 +38,67 @@ export class UserPostController {
     @repository(FriendRepository) protected friendRepository: FriendRepository
   ) { }
 
+  @get('users/{id}/timeline-trending', {
+    responses: {
+      '200': {
+        description: 'User timeline based trending'
+      }
+    }
+  })
+  async findTimelineTrending(
+    @param.path.string('id') id: string,
+    @param.query.string('order') order:string,
+    @param.query.string('limit') limit:number,
+    @param.query.string('offset') offset:number
+  ):Promise<Post[]> {
+    if (!order) order = 'DESC'
+    if (!limit) limit = 10
+    if (!offset) offset = 0
+
+    const approvedFriend = await this.friendRepository.find({
+      where: {
+        status: 'approved',
+        requestorId: id
+      }
+    })
+
+    const friendIds = [
+      ...approvedFriend.map(friend => friend.friendId),
+      id
+    ]
+
+    const foundPost = await this.postRepository.find({
+      where: {
+        or: friendIds.map(id => {
+          return {
+            importBy: {
+              inq: [[id]]
+            }
+          }
+        })
+      }, 
+      include: [
+        {
+          relation: 'comments',
+          scope: {
+            include: ['user']
+          }
+        },
+        {
+          relation: 'publicMetric'
+        }
+      ],
+      limit: limit,
+      offset: offset
+    })
+
+    if (foundPost.length === 0) {
+      return this.defaultPost('platformCreatedAt', order, limit, offset)
+    }
+
+    return foundPost
+  }
+
   @get('users/{id}/timeline-metric', {
     responses: {
       '200': {
@@ -60,7 +120,7 @@ export class UserPostController {
 
     const acceptedFriends = await this.friendRepository.find({
       where: {
-        status: 'accepted',
+        status: 'approved',
         requestorId: id
       }
     })
@@ -137,7 +197,7 @@ export class UserPostController {
 
     const acceptedFriends = await this.friendRepository.find({
       where: {
-        status: 'accepted',
+        status: 'approved',
         requestorId: id
       }
     })
@@ -329,14 +389,16 @@ export class UserPostController {
             }
           },
           {
-            'platformUser.username': [
-              "elonmusk", 
-              "gavofyork", 
-              "W3F_Bill", 
-              "CryptoChief", 
-              "BillGates", 
-              "vitalikbuterineth"
-            ]
+            'platformUser.username':{
+              inq:[
+                "elonmusk", 
+                "gavofyork", 
+                "W3F_Bill", 
+                "CryptoChief", 
+                "BillGates", 
+                "vitalikbuterineth"
+              ]
+            } 
           }
         ]
       }

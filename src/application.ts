@@ -42,7 +42,6 @@ import {
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
-import tags from './seed-data/tags.json';
 import users from './seed-data/users.json';
 import tokens from './seed-data/tokens.json'
 import {polkadotApi} from './helpers/polkadotApi'
@@ -89,10 +88,10 @@ export class MyriadApiApplication extends BootMixin(
 
     // Add cron component
     this.component(CronComponent);
-    // this.add(createBindingFromClass(FetchContentSocialMediaJob))
-    // this.add(createBindingFromClass(FetchContentTwitterJob))
-    // this.add(createBindingFromClass(FetchContentRedditJob))
-    // this.add(createBindingFromClass(UpdatePostsJob))
+    this.add(createBindingFromClass(FetchContentSocialMediaJob))
+    this.add(createBindingFromClass(FetchContentTwitterJob))
+    this.add(createBindingFromClass(FetchContentRedditJob))
+    this.add(createBindingFromClass(UpdatePostsJob))
 
     // Add services
     this.service(NotificationService)
@@ -172,7 +171,7 @@ export class MyriadApiApplication extends BootMixin(
         updatedAt: new Date().toString()
       }
     })
-    const newTags = await tagRepo.createAll(tags)
+
     const newToken = await tokenRepository.createAll(tokens)
 
     for (let i = 0; i < updateUsers.length; i++) {
@@ -248,6 +247,7 @@ export class MyriadApiApplication extends BootMixin(
     }
 
     for (let i = 0; i < posts.length; i++) {
+      const {tags} = posts[i]
       const post = await postsRepo.create(posts[i])
       const newKey = keyring.addFromUri('//' + post.id)
 
@@ -261,6 +261,30 @@ export class MyriadApiApplication extends BootMixin(
         disliked: 0,
         postId: post.id
       })
+
+      for (let j = 0; j < tags.length; j++) {
+        const foundTag = await tagRepo.findOne({
+          where: {
+            or: [
+              {
+                id: tags[j]
+              },
+              {
+                id: tags[j].toLowerCase()
+              },
+              {
+                id: tags[j].toUpperCase()
+              }
+            ],
+          }
+        })
+
+        if (!foundTag) {
+          await tagRepo.create({
+            id: tags[j]
+          })
+        }
+      }
     }
 
     // users.forEach(async user => {
