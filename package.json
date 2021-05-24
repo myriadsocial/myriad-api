@@ -42,7 +42,7 @@
     "url": "https://github.com/myriadsocial/myriad-api.git"
   },
   "author": "Myriad <1@myriad.social>",
-  "license": "",
+  "license": "UNLICENSED",
   "files": [
     "README.md",
     "dist",
@@ -64,8 +64,9 @@
     "dotenv": "^8.2.0",
     "firebase-admin": "^9.8.0",
     "g": "^2.0.1",
-    "loopback-connector-mongodb": "^5.5.0",
+    "loopback-connector-mongodb": "^6.0.0",
     "loopback-connector-rest": "^3.7.0",
+    "openapi-types": "^9.0.0",
     "snoowrap": "^1.22.0",
     "tslib": "^2.0.0",
     "unique-names-generator": "^4.4.0",
