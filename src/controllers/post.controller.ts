@@ -27,6 +27,7 @@ import {
 import {Reddit, Twitter} from '../services';
 import {Keyring} from '@polkadot/api'
 import { KeypairType } from '@polkadot/util-crypto/types';
+import {u8aToHex} from '@polkadot/util'
 
 interface URL {
   url: string;
@@ -642,8 +643,7 @@ export class PostController {
 
   keyring() {
     return new Keyring({
-      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-      ss58Format: 42
+      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
     });
   }
 }
