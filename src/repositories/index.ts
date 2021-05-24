@@ -17,3 +17,4 @@ export * from './friend.repository';
 export * from './detail-transaction.repository';
 export * from './token.repository';
 export * from './user-token.repository';
+export * from './notification.repository';

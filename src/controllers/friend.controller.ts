@@ -1,31 +1,31 @@
+import {service} from '@loopback/core';
 import {
-  Count,
-  CountSchema,
   Filter,
   FilterExcludingWhere,
-  repository,
-  Where,
+  repository
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
-  patch,
-  put,
-  del,
-  requestBody,
-  response,
   HttpErrors,
+  param,
+  patch,
+  post,
+  requestBody,
+  response
 } from '@loopback/rest';
 import {Friend} from '../models';
 import {FriendRepository} from '../repositories';
+import {NotificationService} from '../services';
 
 export class FriendController {
   constructor(
     @repository(FriendRepository)
-    public friendRepository : FriendRepository,
-  ) {}
+    public friendRepository: FriendRepository,
+    @service(NotificationService)
+    public notificationService: NotificationService,
+  ) { }
 
   @post('/friends')
   @response(200, {
@@ -48,8 +48,16 @@ export class FriendController {
     if (friend.requestorId === friend.friendId) {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself')
     }
-    
-    return this.friendRepository.create(friend);
+
+    const result = await this.friendRepository.create(friend);
+
+    try {
+      await this.notificationService.sendFriendRequest(friend.requestorId, friend.friendId);
+    } catch (error) {
+      // ignored
+    }
+
+    return result;
   }
 
   // @get('/friends/count')
@@ -131,6 +139,13 @@ export class FriendController {
     })
     friend: Friend,
   ): Promise<void> {
+    if (friend.status === 'approve') {
+      try {
+        await this.notificationService.sendFriendAccept(friend.friendId, friend.requestorId);
+      } catch (error) {
+        // ignored
+      }
+    }
     await this.friendRepository.updateById(id, friend);
   }
 

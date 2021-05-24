@@ -18,3 +18,4 @@ export * from './friend.model';
 export * from './detail-transaction.model';
 export * from './token.model';
 export * from './user-token.model';
+export * from './notification.model';

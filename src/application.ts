@@ -11,17 +11,25 @@ import {ServiceMixin} from '@loopback/service-proxy';
 import {Keyring} from '@polkadot/api';
 import {mnemonicGenerate, encodeAddress} from '@polkadot/util-crypto';
 import {u8aToHex} from '@polkadot/util'
+import {KeypairType} from '@polkadot/util-crypto/types';
+import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
+import {
+  FetchContentRedditJob,
+  FetchContentSocialMediaJob,
+  FetchContentTwitterJob,
+  UpdatePostsJob
+} from './jobs';
 import {
   AssetRepository,
   CommentRepository,
   ConversationRepository,
   ExperienceRepository,
+  FriendRepository,
   LikeRepository,
   PeopleRepository,
   PostRepository,
   PublicMetricRepository,
-  QueueRepository,
   SavedExperienceRepository,
   TagRepository,
   TransactionRepository,
@@ -46,6 +54,10 @@ import {
 } from './jobs'
 import { KeypairType } from '@polkadot/util-crypto/types';
 import {polkadotApi} from './helpers/polkadotApi'
+import people from './seed-data/people.json';
+import posts from './seed-data/posts.json';
+import {MySequence} from './sequence';
+import {NotificationService} from './services';
 
 interface PlatformUser {
   username: string,
@@ -92,6 +104,9 @@ export class MyriadApiApplication extends BootMixin(
     // this.add(createBindingFromClass(FetchContentRedditJob))
     // this.add(createBindingFromClass(UpdatePostsJob))
 
+    // Add services
+    this.service(NotificationService)
+
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
     this.bootOptions = {
@@ -102,6 +117,9 @@ export class MyriadApiApplication extends BootMixin(
         nested: true,
       },
     };
+
+    // initialize firebase app
+    firebaseAdmin.initializeApp()
   }
 
   async migrateSchema(options?: SchemaMigrationOptions) {
@@ -204,6 +222,8 @@ export class MyriadApiApplication extends BootMixin(
       })
     }
 
+    const newPeople = await peopleRepo.createAll(people)
+
     for (let i = 0; i < newPeople.length; i++) {
       const person = newPeople[i]
       const personAccountId = person.platform_account_id
@@ -232,7 +252,7 @@ export class MyriadApiApplication extends BootMixin(
         if (personPlatform === 'facebook') {
           if (personUsername === postAccountUsername) {
             post.peopleId = person.id
-            post.platformCreatedAt = new Date().toString() 
+            post.platformCreatedAt = new Date().toString()
           }
         }
       }
@@ -241,15 +261,11 @@ export class MyriadApiApplication extends BootMixin(
     for (let i = 0; i < posts.length; i++) {
       const post = await postsRepo.create(posts[i])
       const newKey = keyring.addFromUri('//' + post.id)
-      
+
       await postsRepo.updateById(post.id, {
         walletAddress: u8aToHex(newKey.publicKey),
-        // importBy: [
-        //   ...post.importBy,
-        //   ...newUser.map(user => user.id)
-        // ]
       })
-      
+
       await publicMetricRepo.create({
         liked: 0,
         comment: 0,
@@ -310,5 +326,6 @@ export class MyriadApiApplication extends BootMixin(
     // })
 
     await api.disconnect()
+
   }
 }

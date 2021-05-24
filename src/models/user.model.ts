@@ -1,6 +1,10 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
+import {Conversation} from './conversation.model';
 import {Experience} from './experience.model';
+import {Friend} from './friend.model';
+import {Like} from './like.model';
+import {Post} from './post.model';
 import {SavedExperience} from './saved-experience.model';
 import {UserCredential} from './user-credential.model';
 import {Post} from './post.model';
@@ -72,7 +76,7 @@ export class User extends Entity {
     type: 'string',
     required: false
   })
-  bio?: string; 
+  bio?: string;
 
   @property({
     type: 'array',
@@ -94,6 +98,13 @@ export class User extends Entity {
     required: false,
   })
   seed_example?: string
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: false
+  })
+  fcmTokens?: string[]
 
   @property({
     type: 'date',
@@ -136,7 +147,7 @@ export class User extends Entity {
 
   @hasMany(() => User, {
     through: {
-      model: () => Friend, 
+      model: () => Friend,
       keyFrom: 'requestorId',
       keyTo: 'friendId'
     }
