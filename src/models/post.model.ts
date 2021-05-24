@@ -20,6 +20,11 @@ interface PlatformPublicMetric {
   downvote_count?: number
 }
 
+interface TipsReceived {
+  tokenId: string,
+  totalTips: number
+}
+
 @model({
   settings: {
     strictObjectIDCoercion: true,
@@ -138,11 +143,17 @@ export class Post extends Entity {
   importBy: string[]
 
   @property({
-    type: 'number',
+    type: 'array',
+    itemType: 'object',
     required: false,
-    default: 0
+    default: [
+      {
+        tokenId: "MYR",
+        totalTips: 0
+      }
+    ]
   })
-  tipsReceived: number
+  tipsReceived: TipsReceived[]
 
   @belongsTo(() => User, {name: 'user'})
   walletAddress: string;

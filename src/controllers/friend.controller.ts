@@ -176,7 +176,7 @@ export class FriendController {
     })
     friend: Friend,
   ): Promise<void> {
-    if (friend.status === 'approve') {
+    if (friend.status === 'approved') {
       try {
         await this.notificationService.sendFriendAccept(friend.friendId, friend.requestorId);
       } catch (error) {

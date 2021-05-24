@@ -34,6 +34,11 @@ interface URL {
   importer: string;
 }
 
+interface TipsReceived {
+  tokenId: string,
+  totalTips: number
+}
+
 export class PostController {
   constructor(
     @repository(PostRepository)
@@ -195,27 +200,63 @@ export class PostController {
   })
   async updateTipsById(
     @param.path.string('id') id: string,
-    @requestBody() post:{tips: number},
-  ): Promise<number> {
-    let totalTips = 0
-
+    @requestBody() detailTips:{tokenId: string,tipsReceived: number},
+  ): Promise<TipsReceived> {
     const foundPost = await this.postRepository.findOne({
       where: {
         id: id
       }
     })
 
-    if (foundPost) {
-      totalTips = foundPost.tipsReceived + post.tips
+    if (!foundPost) {
+      throw new HttpErrors.NotFound('Post not found')
     }
 
-    await this.postRepository.updateById(id, {
-      ...post,
-      tipsReceived: totalTips,
-      updatedAt: new Date().toString()
-    });
+    const foundIndex = foundPost.tipsReceived.findIndex(tips => tips.tokenId === detailTips.tokenId)
 
-    return totalTips
+    if (foundIndex === -1) {
+      this.postRepository.updateById(foundPost.id, {
+        tipsReceived: [
+          ...foundPost.tipsReceived,
+          {
+            tokenId: detailTips.tokenId,
+            totalTips: detailTips.tipsReceived
+          }
+        ],
+        updatedAt: new Date().toString()
+      })
+
+      return {
+        tokenId: detailTips.tokenId,
+        totalTips: detailTips.tipsReceived
+      }
+    } else {
+      foundPost.tipsReceived[foundIndex] = {
+        tokenId: detailTips.tokenId,
+        totalTips: foundPost.tipsReceived[foundIndex].totalTips + detailTips.tipsReceived 
+      }
+
+      this.postRepository.updateById(foundPost.id, {
+        tipsReceived: [
+          ...foundPost.tipsReceived
+        ],
+        updatedAt: new Date().toString()
+      })
+
+      return foundPost.tipsReceived[foundIndex]
+    }
+
+    // if (foundPost) {
+    //   totalTips = foundPost.tipsReceived + post.tips
+    // }
+
+    // await this.postRepository.updateById(id, {
+    //   ...post,
+    //   tipsReceived: totalTips,
+    //   updatedAt: new Date().toString()
+    // });
+
+    // return totalTips
   }
 
   @del('/posts/{id}')
@@ -552,7 +593,11 @@ export class PostController {
 
     if (!credential) {
       const newKey = this.keyring().addFromUri('//' + createdTweet.id)
-      await this.postRepository.updateById(createdTweet.id, {walletAddress: newKey.address})
+      await this.postRepository.updateById(createdTweet.id, {walletAddress: u8aToHex(newKey.publicKey)})
+
+      createdTweet.walletAddress = u8aToHex(newKey.publicKey)
+
+      return createdTweet
     }
 
     return createdTweet
