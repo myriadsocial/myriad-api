@@ -41,6 +41,72 @@ export class TagController {
     @inject('services.Reddit') protected redditService: Reddit
   ) { }
 
+  @get('/trending', {
+    responses: {
+      '200': {
+        description: 'Trending topic'
+      }
+    }
+  })
+  async trendingTopic(
+    @param.query.string('order') order:string,
+    @param.query.string('limit') limit:number,
+    @param.query.string('offset') offset:number
+  ):Promise<Tag[]> {
+    if (!order) order = "DESC";
+    if (!limit) limit = 10;
+    if (!offset) offset = 0;
+    
+    return this.tagRepository.find({
+      order: [`count ${order.toUpperCase()}`],
+      limit: limit,
+      offset: offset
+    })
+  }
+
+  @get('/trending/{topic}', {
+    responses: {
+      '200': {
+        description: 'Post based trending topic'
+      }
+    }
+  })
+  async trendingPost(
+    @param.path.string('topic') topic: string,
+    @param.query.string('order') order:string,
+    @param.query.string('limit') limit:number,
+    @param.query.string('offset') offset:number
+  ): Promise<Post[]> {
+    if (!order) order = 'DESC'
+    if (!limit) limit = 10
+    if (!offset) offset = 0
+
+    return this.postRepository.find({
+      where: {
+        tags: {
+          inq: [[topic]]
+        }
+      },
+      include: [
+        {
+          relation: 'comments',
+          scope: {
+            include: ['user']
+          }
+        },
+        {
+          relation: 'publicMetric'
+        },
+        {
+          relation: 'tags'
+        }
+      ],
+      order: [`platformCreatedAt ${order.toUpperCase()}`],
+      limit: limit,
+      offset: offset
+    })
+  }
+
   @post('/tags/{platform}')
   @response(200, {
     description: 'Tag By Platform model instance',
@@ -78,7 +144,9 @@ export class TagController {
         return this.tagRepository.create({
           id: keyword,
         })
-      } else return foundTag
+      }
+      
+      return foundTag
     } else {
       throw new HttpErrors.NotFound(`Topic ${tag.id} is not found in ${platform}`)
     }
@@ -283,13 +351,37 @@ export class TagController {
   }
 
   async updatePostTag(post:Post, keyword:string):Promise<void> {
-    const foundTag = post.tags.find(tag => tag.toLowerCase() === keyword.toLowerCase())
+    const found = post.tags.find(tag => tag.toLowerCase() === keyword.toLowerCase())
           
-    if (!foundTag) {
-      const tags = [...post.tags, keyword]
+    if (!found) {
+      this.postRepository.updateById(post.id, {tags: [...post.tags, keyword]})
+    } 
 
-      await this.postRepository.updateById(post.id, {tags})
+    const foundTag = await this.tagRepository.findOne({
+      where: {
+        or: [
+          {
+            id: keyword
+          },
+          {
+            id: keyword.toLowerCase()
+          },
+          {
+            id: keyword.toUpperCase()
+          }
+        ]
+      }
+    })
+
+    if (!foundTag) {
+      this.tagRepository.create({
+        id: keyword,
+        count: 1,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString()
+      })
     }
+    
   }
 
   async socialMediaPost(platform:string, keyword: string) {
@@ -369,6 +461,8 @@ export class TagController {
         platformCreatedAt = new Date(post.created_utc * 1000).toString()
         link = `https://reddit.com/${post.id}`
 
+        await this.createTags([keyword])
+
         return {
           ...newPost,
           title: post.title,
@@ -396,21 +490,56 @@ export class TagController {
   }
 
   async createTags(tags:string[]):Promise<void> {
-    const fetchTags = await this.tagRepository.find()
-    const filterTags = tags.filter((tag:string) => {
-      const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+    // const fetchTags = await this.tagRepository.find()
+    // const filterTags = tags.filter((tag:string) => {
+    //   const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
 
-      if (foundTag) return false
-      return true
-    })
+    //   if (foundTag) return false
+    //   return true
+    // })
 
-    if (filterTags.length === 0) return
+    // if (filterTags.length === 0) return
 
-    await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
-      return {
-        id: filterTag,
-        hide: false
+    // await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
+    //   return {
+    //     id: filterTag,
+    //     hide: false
+    //   }
+    // }))
+
+    for (let i = 0; i < tags.length; i++) {
+      const foundTag = await this.tagRepository.findOne({
+        where: {
+          or: [
+            {
+              id: tags[i].toLowerCase()
+            },
+            {
+              id: tags[i].toUpperCase()
+            },
+            {
+              id: tags[i]
+            }
+          ]
+        }
+      })
+
+      if (!foundTag) {
+        this.tagRepository.create({
+          id: tags[i],
+          count: 1,
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString()
+        })
+      } else {
+        const oneDay:number = 60 * 60 * 24 * 1000;
+          const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+
+          this.tagRepository.updateById(foundTag.id, {
+            updatedAt: new Date().toString(),
+            count: isOneDay ? 1 : foundTag.count + 1
+          }) 
       }
-    }))
+    }
  }
 }
