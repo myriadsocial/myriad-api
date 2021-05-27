@@ -75,11 +75,6 @@ export class UserController {
       throw new HttpErrors.UnprocessableEntity('Username cannot have spaces')
     }
 
-    // user.name = user.name.replace(/\s\s+/g, ' ')
-    //   .trim().split(' ').map(word => {
-    //     return word[0].toUpperCase() + word.substr(1).toLowerCase()
-    //   }).join(' ')
-
     try {
       const foundUser = await this.userRepository.findOne({
         where: {
@@ -90,7 +85,7 @@ export class UserController {
         }
       })
 
-      if (!foundUser) await this.defaultTips(user.id)
+      if (!foundUser) this.defaultTips(user.id)
       else throw new Error('UserExist')
       
       user.name = user.username[0].toUpperCase() + user.username.substr(1).toLowerCase()
@@ -194,14 +189,14 @@ export class UserController {
     const requestStatus = [
       "pending",
       "rejected",
-      "accepted",
+      "approved",
       "all"
     ]
 
     const found = requestStatus.find(req => req === status)
 
-    if (!found && status) throw new HttpErrors.UnprocessableEntity("Available status: pending, approved, rejected")
-    if ((typeof status === 'string' && !status) || status === 'all' ) {
+    if (!found && status) throw new HttpErrors.UnprocessableEntity("Please filled with corresponding status: all, pending, approved, or rejected")
+    if ((typeof status === 'string' && !status) || status === 'all' || !status ) {
       return this.friendRepository.find({
         where: {
           requestorId: id
@@ -209,6 +204,9 @@ export class UserController {
         include: [
           {
             relation: 'friend'
+          },
+          {
+            relation: 'requestor'
           }
         ]
       })
@@ -222,6 +220,9 @@ export class UserController {
       include: [
         {
           relation: 'friend'
+        },
+        {
+          relation: 'requestor'
         }
       ]
     })

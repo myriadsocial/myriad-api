@@ -71,12 +71,58 @@ export class PostController {
     })
     post: Omit<Post, 'id'>,
   ): Promise<Post> {
-    return this.postRepository.create({
+    if (post.assets && post.assets.length > 0) {
+      post.hasMedia = true
+    } 
+
+    const newPost = await this.postRepository.create({
       ...post,
+      importBy: [post.walletAddress],
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
     });
+
+    this.postRepository.publicMetric(newPost.id).create({})
+
+    const tags = post.tags
+
+    for (let i = 0; i < tags.length; i++) {
+      const foundTag = await this.tagRepository.findOne({
+        where: {
+          or: [
+            {
+              id: tags[i]
+            },
+            {
+              id: tags[i].toLowerCase(),
+            },
+            {
+              id: tags[i].toUpperCase()
+            }
+          ]
+        }
+      })
+
+      if (!foundTag) {
+        this.tagRepository.create({
+          id: tags[i],
+          count: 1,
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString()
+        })
+      } else {
+        const oneDay: number = 60 * 60 * 24 * 1000;
+        const isOneDay: boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+
+        this.tagRepository.updateById(foundTag.id, {
+          updatedAt: new Date().toString(),
+          count: isOneDay ? 1 : foundTag.count + 1
+        })
+      }
+    }
+
+    return newPost
   }
 
   @post('/posts/import')
@@ -575,19 +621,7 @@ export class PostController {
   }
 
   async createPostWithPublicMetric (post:any, credential: boolean):Promise<Post> {
-    const assets = [
-      ...post.assets
-    ]
-
-    delete post.assets
-
     const createdTweet = await this.postRepository.create(post)
-
-    if (post.platform === 'reddit' && assets.length > 0) {
-      await this.postRepository.asset(createdTweet.id).create({
-        media_urls: assets
-      })
-    }
     
     await this.postRepository.publicMetric(createdTweet.id).create({})
 
@@ -604,22 +638,57 @@ export class PostController {
   }
 
   async createTags(tags: string[]) :Promise<void> {
-    const fetchTags = await this.tagRepository.find()
-    const filterTags = tags.filter((tag:string) => {
-      const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+    // const fetchTags = await this.tagRepository.find()
+    // const filterTags = tags.filter((tag:string) => {
+    //   const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
 
-      if (foundTag) return false
-      return true
-    })
+    //   if (foundTag) return false
+    //   return true
+    // })
 
-    if (filterTags.length === 0) return
+    // if (filterTags.length === 0) return
 
-    await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
-      return {
-        id: filterTag,
-        hide: false
+    // await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
+    //   return {
+    //     id: filterTag,
+    //     hide: false
+    //   }
+    // }))
+    for (let i = 0; i < tags.length; i++) {
+      const foundTag = await this.tagRepository.findOne({
+        where: {
+          or: [
+            {
+              id: tags[i]
+            },
+            {
+              id: tags[i].toLowerCase(),
+            },
+            {
+              id: tags[i].toUpperCase()
+            }
+          ]
+          
+        }
+      })
+
+      if (foundTag) {
+        const oneDay:number = 60 * 60 * 24 * 1000;
+
+        const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay
+
+        this.tagRepository.updateById(foundTag.id, {
+          updatedAt: new Date().toString(),
+          count: isOneDay ? 1 : foundTag.count + 1
+        })
+      } else {
+        this.tagRepository.create({
+          id: tags[i],
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString()
+        })
       }
-    }))
+    }
   }
 
   async updateExperience(id: string, platformUser:any): Promise<void> {

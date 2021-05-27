@@ -1,5 +1,3 @@
-export * from './asset-post.controller';
-export * from './asset.controller';
 export * from './comment-post.controller';
 export * from './comment-user.controller';
 export * from './comment.controller';
@@ -17,7 +15,6 @@ export * from './notification.controller';
 export * from './people-post.controller';
 export * from './people-user-credential.controller';
 export * from './people.controller';
-export * from './post-asset.controller';
 export * from './post-comment.controller';
 export * from './post-dislike.controller';
 export * from './post-like.controller';
@@ -34,10 +31,10 @@ export * from './user-comment.controller';
 export * from './user-conversation.controller';
 export * from './user-credential.controller';
 export * from './user-experience.controller';
-export * from './user-like.controller';
+export * from './user-like.controller'; // Not used
 export * from './user-post.controller';
 export * from './user-user-credential.controller';
-export * from './user-user.controller';
+export * from './user-user.controller'; // Not used
 export * from './public-metric.controller';
 export * from './token-transaction.controller';
 export * from './transaction-token.controller';

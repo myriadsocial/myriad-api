@@ -23,158 +23,20 @@ import {
 } from '../models';
 import {
   UserRepository, 
-  AssetRepository, 
   PostRepository, 
   PublicMetricRepository,
-  FriendRepository
+  FriendRepository,
+  TagRepository
 } from '../repositories';
 
 export class UserPostController {
   constructor(
     @repository(UserRepository) protected userRepository: UserRepository,
-    @repository(AssetRepository) protected assetRepository: AssetRepository,
     @repository(PostRepository) protected postRepository: PostRepository,
     @repository(PublicMetricRepository) protected publicMetricRepository: PublicMetricRepository,
-    @repository(FriendRepository) protected friendRepository: FriendRepository
+    @repository(FriendRepository) protected friendRepository: FriendRepository,
+    @repository(TagRepository) protected tagRepository: TagRepository
   ) { }
-
-  @get('users/{id}/timeline-trending', {
-    responses: {
-      '200': {
-        description: 'User timeline based trending'
-      }
-    }
-  })
-  async findTimelineTrending(
-    @param.path.string('id') id: string,
-    @param.query.string('order') order:string,
-    @param.query.string('limit') limit:number,
-    @param.query.string('offset') offset:number
-  ):Promise<Post[]> {
-    if (!order) order = 'DESC'
-    if (!limit) limit = 10
-    if (!offset) offset = 0
-
-    const approvedFriend = await this.friendRepository.find({
-      where: {
-        status: 'approved',
-        requestorId: id
-      }
-    })
-
-    const friendIds = [
-      ...approvedFriend.map(friend => friend.friendId),
-      id
-    ]
-
-    const foundPost = await this.postRepository.find({
-      where: {
-        or: friendIds.map(id => {
-          return {
-            importBy: {
-              inq: [[id]]
-            }
-          }
-        })
-      }, 
-      include: [
-        {
-          relation: 'comments',
-          scope: {
-            include: ['user']
-          }
-        },
-        {
-          relation: 'publicMetric'
-        }
-      ],
-      limit: limit,
-      offset: offset
-    })
-
-    if (foundPost.length === 0) {
-      return this.defaultPost('platformCreatedAt', order, limit, offset)
-    }
-
-    return foundPost
-  }
-
-  @get('users/{id}/timeline-metric', {
-    responses: {
-      '200': {
-        description: 'User timeline based metrics'
-      }
-    }
-  })
-  async findTimelineMetric(
-    @param.path.string('id') id:string,
-    @param.query.string('orderField') orderField: string,
-    @param.query.string('order') order:string,
-    @param.query.string('limit') limit:number,
-    @param.query.string('offset') offset:number
-  ):Promise<Post[]> {
-    if (!orderField) orderField = 'comment'
-    if (!order) order = 'DESC'
-    if (!limit) limit = 10
-    if (!offset) offset = 0
-
-    const acceptedFriends = await this.friendRepository.find({
-      where: {
-        status: 'approved',
-        requestorId: id
-      }
-    })
-
-    const friendIds = [
-      ...acceptedFriends.map(friend => friend.friendId),
-      id
-    ]
-
-    const foundPost = await this.postRepository.find({
-      where: {
-        or: friendIds.map(id => {
-          return {
-            importBy: {
-              inq: [[id]]
-            }
-          }
-        })
-      },
-      limit: limit,
-      offset: offset
-    }) 
-
-    if (foundPost.length === 0) {
-      const foundPost = await this.defaultPost(orderField, order, limit, offset)
-      const postIds = foundPost.map(post => post.id)
-      const publicMetrics = await this.filterPublicMetric(orderField, order, limit, offset, postIds)
-
-      return publicMetrics.map((metric:any) => {
-        metric.post.publicMetric = {
-          id: metric.id,
-          liked: metric.liked,
-          disliked: metric.disliked,
-          comment: metric.comment,
-          postId: metric.postId
-        }
-        return metric.post
-      })
-    }
-
-    const postIds = foundPost.map(post => post.id)
-    const filterMetric = await this.filterPublicMetric(orderField, order, limit, offset, postIds)
-
-    return filterMetric.map((metric:any) => {
-      metric.post.publicMetric = {
-        id: metric.id,
-        liked: metric.liked,
-        disliked: metric.disliked,
-        comment: metric.comment,
-        postId: metric.postId
-      }
-      return metric.post
-    })
-  } 
   
   @get('/users/{id}/timeline', {
     responses: {
@@ -195,6 +57,28 @@ export class UserPostController {
     if (!limit) limit = 10
     if (!offset) offset = 0
 
+    if (orderField === 'comment') orderField = 'totalComment'
+    if (orderField === 'liked') orderField = 'totalLiked'
+    if (orderField === 'disiked') orderField = 'totalDisliked'
+
+    const orderFields = [
+      "platformCreatedAt",
+      "totalComment",
+      "totalDisliked",
+      "totalLiked"
+    ]
+
+    const orders = [
+      'DESC',
+      'ASC'
+    ]
+
+    const foundField = orderFields.find(field => field === orderField)
+    const foundOrder = orders.find(ord => ord === order.toUpperCase())
+
+    if (!foundField) throw new HttpErrors.UnprocessableEntity("Please filled with correspond field: platformCreatedAt, comment, liked, or disliked")
+    if (!foundOrder) throw new HttpErrors.UnprocessableEntity("Please filled with correspond order: ASC or DESC")
+    
     const acceptedFriends = await this.friendRepository.find({
       where: {
         status: 'approved',
@@ -207,7 +91,20 @@ export class UserPostController {
       id
     ]
 
-    const foundPost = await this.postRepository.find({
+    const foundPost = await this.postRepository.findOne({
+      where: {
+        importBy: {
+          inq: [[id]]
+        }
+      },
+      limit: 1,
+    })
+
+    if (!foundPost) {
+      return this.defaultPost(orderField, order, limit, offset, friendIds)
+    }
+    
+    return this.postRepository.find({
       where: {
         or: friendIds.map(id => {
           return {
@@ -215,7 +112,7 @@ export class UserPostController {
               inq: [[id]]
             }
           }
-        })
+        }),
       },
       order: [`${orderField} ${order.toUpperCase()}`],
       limit: limit,
@@ -236,12 +133,6 @@ export class UserPostController {
         }
       ]
     })
-
-    if (foundPost.length === 0) {
-      return this.defaultPost(orderField, order, limit, offset)
-    }
-    
-    return foundPost
   }
 
   @get('/users/{id}/posts', {
@@ -285,34 +176,55 @@ export class UserPostController {
       },
     }) post: Omit<Post, 'id'>,
   ): Promise<Post> {
-    const tags = post.text?.replace(/\s\s+/g, ' ')
-      .trim().split(' ').filter(tag => tag.startsWith('#'))
-      .map(tag => tag.substr(1))
-  
-    let assets:string[] = []
-
     if (post.assets && post.assets.length > 0) {
-      assets = post.assets
       post.hasMedia = true
     }
 
-    delete post.assets
-
     const newPost = await this.userRepository.posts(id).create({
       ...post,
-      tags,
       importBy: [id],
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
     });
 
-    await this.postRepository.publicMetric(newPost.id).create({})
+    this.postRepository.publicMetric(newPost.id).create({})
 
-    if (assets.length > 0) {
-      await this.postRepository.asset(newPost.id).create({
-        media_urls: assets
+    const tags = post.tags
+
+    for (let i = 0; i < tags.length; i++) {
+      const foundTag = await this.tagRepository.findOne({
+        where: {
+          or: [
+            {
+              id: tags[i]
+            },
+            {
+              id: tags[i].toLowerCase(),
+            },
+            {
+              id: tags[i].toUpperCase()
+            }
+          ]
+        }
       })
+
+      if (!foundTag) {
+        this.tagRepository.create({
+          id: tags[i],
+          count: 1,
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString()
+        })
+      } else {
+        const oneDay:number = 60 * 60 * 24 * 1000;
+        const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+
+        this.tagRepository.updateById(foundTag.id, {
+          updatedAt: new Date().toString(),
+          count: isOneDay ? 1 : foundTag.count + 1
+        })
+      }
     }
 
     return newPost
@@ -360,7 +272,8 @@ export class UserPostController {
     orderField: string, 
     order: string, 
     limit:number, 
-    offset:number
+    offset:number,
+    friendIds: string[]
   ):Promise<Post[]> {
     return await this.postRepository.find({
       order: [`${orderField} ${order.toUpperCase()}`],
@@ -399,47 +312,16 @@ export class UserPostController {
                 "vitalikbuterineth"
               ]
             } 
-          }
+          },
+          ...friendIds.map(id => {
+            return {
+              importBy: {
+                inq: [[id]]
+              }
+            }
+          })
         ]
       }
     } as Filter<Post>)
-  }
-
-  async filterPublicMetric(
-    orderField: string, 
-    order: string, 
-    limit: number, 
-    offset: number,
-    postIds: any[]
-  ):Promise<PublicMetric[]> {
-    return this.publicMetricRepository.find({
-      order: [`${orderField} ${order.toUpperCase()}`],
-      limit: limit,
-      offset: offset,
-      include: [
-        {
-          relation: "post",
-          scope: {
-            include: [
-              {
-                relation: 'comments',
-                scope: {
-                  include: [
-                    {
-                      relation: 'user'
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        }
-      ],
-      where: {
-        postId: {
-          inq: postIds
-        }
-      } 
-    } as Filter<PublicMetric>)
   }
 }

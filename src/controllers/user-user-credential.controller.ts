@@ -76,7 +76,7 @@ export class UserUserCredentialController {
     })
 
     if (foundUserCredential) {
-      await this.userCredentialRepository.updateById(foundUserCredential.id, userCredential)
+      this.userCredentialRepository.updateById(foundUserCredential.id, userCredential)
       return {
         ...userCredential,
         id: foundUserCredential.id

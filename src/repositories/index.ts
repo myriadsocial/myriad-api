@@ -8,7 +8,6 @@ export * from './transaction.repository';
 export * from './user-credential.repository';
 export * from './user.repository';
 export * from './queue.repository';
-export * from './asset.repository';
 export * from './like.repository';
 export * from './public-metric.repository';
 export * from './conversation.repository';

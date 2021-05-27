@@ -358,9 +358,11 @@ export class UserCredentialController {
       } 
 
       if (foundCredential.userId === publicKey) {
-        await this.userCredentialRepository.updateById(foundCredential.id, {
+        this.userCredentialRepository.updateById(foundCredential.id, {
           isLogin: true
         })
+
+        foundCredential.isLogin = true
         
         return foundCredential
       } 
@@ -423,9 +425,11 @@ export class UserCredentialController {
       } 
 
       if (foundCredential.userId === publicKey) {
-        await this.userCredentialRepository.updateById(foundCredential.id, {
+        this.userCredentialRepository.updateById(foundCredential.id, {
           isLogin: true
         })
+
+        foundCredential.isLogin = true
         
         return foundCredential
       } 
@@ -448,24 +452,25 @@ export class UserCredentialController {
 
   async fetchFollowing(platform_account_id:string):Promise<void> {
     const {data: following} = await this.twitterService.getActions(`users/${platform_account_id}/following?user.fields=profile_image_url`) 
-    const fetchPeople = await this.peopleRepository.find()
 
-    const filterFollowing = following.filter((person:any) => {
-      const foundPerson = fetchPeople.find((fetchPerson:any) => fetchPerson.platform_account_id === person.id)
+    for (let i = 0; i < following.length; i++) {
+      const person = following[i]
+      const foundPerson = await this.peopleRepository.findOne({
+        where: {
+          platform_account_id: person.id
+        }
+      })
 
-      if (foundPerson) return false
-      return true 
-    })
-
-    await this.peopleRepository.createAll(filterFollowing.map((person:any) => {
-      return {
-        username: person.username,
-        platform_account_id: person.id,
-        profile_image_url: person.profile_image_url.replace('normal', '400x400'),
-        platform: 'twitter',
-        hide: false,
+      if (!foundPerson) {
+        this.peopleRepository.create({
+          username: person.username,
+          platform_account_id: person.id,
+          profile_image_url: person.profile_image_url.replace('normal', '400x400'),
+          platform: 'twitter',
+          hide: false,
+        })
       }
-    }))
+    }
   }
 
   groupByToken(transactions: TransactionWithRelations[]) {
