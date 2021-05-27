@@ -28,16 +28,22 @@ export class Tag extends Entity {
   hide: boolean;
 
   @property({
-    type: 'date',
-    required: false,
+    type: 'number',
+    required: false
   })
-  createdAt?: string;
+  count: number;
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt?: string;
+  createdAt: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  updatedAt: string;
 
   @property({
     type: 'date',
