@@ -15,6 +15,7 @@ import {
   Reddit,
   Rsshub, Twitter
 } from '../services'
+import {u8aToHex} from '@polkadot/util'
 
 @cronJob()
 export class FetchContentSocialMediaJob extends CronJob {
@@ -153,14 +154,6 @@ export class FetchContentSocialMediaJob extends CronJob {
             break
 
           case "reddit":
-            newPost = {
-              ...newPost,
-              title: post.title,
-              text: post.selftext,
-              link: `https://reddit.com/${post.id}`,
-              platformCreatedAt: new Date(post.created_utc * 1000).toString()
-            }
-
             if (newPost.hasMedia) {
               if (post.media_metadata) {
                 for (const img in post.media_metadata) {
@@ -181,6 +174,15 @@ export class FetchContentSocialMediaJob extends CronJob {
               }
             }
 
+            newPost = {
+              ...newPost,
+              title: post.title,
+              text: post.selftext,
+              link: `https://reddit.com/${post.id}`,
+              platformCreatedAt: new Date(post.created_utc * 1000).toString(),
+              assets
+            }
+
             break
 
           case "facebook":
@@ -197,33 +199,19 @@ export class FetchContentSocialMediaJob extends CronJob {
           this.createPostPublicMetric({
             ...newPost,
             walletAddress: userCredential.userId,
-            importBy: [userCredential.userId],
-            assets: assets
+            importBy: [userCredential.userId]
           }, true)
         }
 
         this.createPostPublicMetric({
           ...newPost,
-          assets: assets
         }, false)
       }
     } catch (e) {}
   }
 
   async createPostPublicMetric(post: any, credential: boolean): Promise<void> {
-    const assets = [
-      ...post.assets
-    ]
-
-    delete post.assets
-
     const newPost = await this.postRepository.create(post)
-
-    if (post.platform === 'reddit' && assets.length > 0) {
-      this.postRepository.asset(newPost.id).create({
-        media_urls: assets
-      })
-    }
 
     this.publicMetricRepository.create({
       liked: 0,
@@ -234,12 +222,11 @@ export class FetchContentSocialMediaJob extends CronJob {
 
     if (!credential) {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
       });
       const newKey = keyring.addFromUri('//' + newPost.id)
 
-      this.postRepository.updateById(newPost.id, {walletAddress: newKey.address})
+      this.postRepository.updateById(newPost.id, {walletAddress: u8aToHex(newKey.publicKey)})
     }
   }
 
@@ -249,21 +236,38 @@ export class FetchContentSocialMediaJob extends CronJob {
   }
 
   async createTags(tags:string[]):Promise<void> {
-    const fetchTags = await this.tagRepository.find()
-    const filterTags = tags.filter((tag:string) => {
-      const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+    for (let i = 0; i < tags.length; i++) {
+      const foundTag = await this.tagRepository.findOne({
+        where: {
+          or: [
+            {
+              id: tags[i]
+            },
+            {
+              id: tags[i].toUpperCase()
+            },
+            {
+              id: tags[i].toLowerCase()
+            }
+          ]
+        }
+      })
 
-      if (foundTag) return false
-      return true
-    })
+      if (foundTag) {
+        const oneDay:number = 60 * 60 * 24 * 1000
+        const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay
 
-    if (filterTags.length === 0) return
-
-    await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
-      return {
-        id: filterTag,
-        hide: false
+        this.tagRepository.updateById(foundTag.id, {
+          count: isOneDay ? 1 : foundTag.count + 1,
+          updatedAt: new Date().toString()
+        })
+      } else {
+        this.tagRepository.create({
+          id: tags[i],
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString()
+        })
       }
-    }))
+    }
  }
 }

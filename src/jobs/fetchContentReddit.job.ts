@@ -12,6 +12,7 @@ import {
   UserCredentialRepository
 } from '../repositories';
 import {Reddit} from '../services';
+import {u8aToHex} from '@polkadot/util'
 
 @cronJob()
 export class FetchContentRedditJob extends CronJob {
@@ -46,8 +47,7 @@ export class FetchContentRedditJob extends CronJob {
     try {
       const tags = await this.tagRepository.find()
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType
       });
 
       for (let i = 0; i < tags.length; i++) {
@@ -70,10 +70,7 @@ export class FetchContentRedditJob extends CronJob {
             const foundTag = foundPost.tags.find(postTag => postTag.toLowerCase() === tag.id.toLowerCase())
 
             if (!foundTag) {
-              const tags = foundPost.tags
-              tags.push(tag.id)
-
-              this.postRepository.updateById(foundPost.id, {tags})
+              this.postRepository.updateById(foundPost.id, {tags: [...foundPost.tags, tag.id]})
             }
 
             continue
@@ -94,7 +91,8 @@ export class FetchContentRedditJob extends CronJob {
             hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
             link: `https://reddit.com/${post.id}`,
             platformCreatedAt: new Date(post.created_utc * 1000).toString(),
-            createdAt: new Date().toString()
+            createdAt: new Date().toString(),
+            assets: []
           }
 
           const assets:string[] = []
@@ -126,6 +124,7 @@ export class FetchContentRedditJob extends CronJob {
             if (userCredential) {
               const result = await this.postRepository.create({
                 ...newPost,
+                assets,
                 peopleId: foundPerson.id,
                 walletAddress: userCredential.userId,
                 importBy: [userCredential.userId]
@@ -136,50 +135,36 @@ export class FetchContentRedditJob extends CronJob {
                 comment: 0,
                 postId: result.id
               })
-
-              if (assets.length > 0) {
-                this.postRepository.asset(result.id).create({
-                  media_urls: assets
-                })
-              }
             }
             const result = await this.postRepository.create({
               ...newPost,
+              assets,
               peopleId: foundPerson.id
             })
             const newKey = keyring.addFromUri('//' + result.id)
 
-            this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+            this.postRepository.updateById(result.id, {walletAddress: u8aToHex(newKey.publicKey)})
             this.publicMetricRepository.create({
               liked: 0,
               disliked: 0,
               comment: 0,
               postId: result.id
             })
-
-            if (assets.length > 0) {
-              this.postRepository.asset(result.id).create({
-                media_urls: assets
-              })
-            }
           }
 
-          const result = await this.postRepository.create(newPost)
+          const result = await this.postRepository.create({
+            ...newPost,
+            assets
+          })
           const newKey = keyring.addFromUri('//' + result.id)
 
-          this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          this.postRepository.updateById(result.id, {walletAddress: u8aToHex(newKey.publicKey)})
           this.publicMetricRepository.create({
             liked: 0,
             disliked: 0,
             comment: 0,
             postId: result.id
           })
-
-          if (assets.length > 0) {
-            this.postRepository.asset(result.id).create({
-              media_urls: assets
-            })
-          }
         }
       }
     } catch (err) { }

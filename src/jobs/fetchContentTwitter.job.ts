@@ -12,6 +12,7 @@ import {
   UserCredentialRepository
 } from '../repositories'
 import {Twitter} from '../services'
+import {u8aToHex} from '@polkadot/util'
 
 @cronJob()
 export class FetchContentTwitterJob extends CronJob {
@@ -43,8 +44,7 @@ export class FetchContentTwitterJob extends CronJob {
   async searchPostByTag(): Promise<void> {
     try {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
       });
       const tagsRepo = await this.tagRepository.find()
 
@@ -137,7 +137,7 @@ export class FetchContentTwitterJob extends CronJob {
           const result = await this.postRepository.create(newPost)
           const newKey = keyring.addFromUri('//' + result.id)
 
-          await this.postRepository.updateById(result.id, {walletAddress: newKey.address})
+          await this.postRepository.updateById(result.id, {walletAddress: u8aToHex(newKey.publicKey)})
           await this.publicMetricRepository.create({
             liked: 0,
             comment: 0,
@@ -163,7 +163,10 @@ export class FetchContentTwitterJob extends CronJob {
      this.tagRepository.createAll(filterTags.map((filterTag:string) => {
        return {
          id: filterTag,
-         hide: false
+         hide: false,
+         count: 1,
+         createdAt: new Date().toString(),
+         updatedAt: new Date().toString()
        }
      }))
   }

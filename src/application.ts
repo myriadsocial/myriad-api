@@ -21,7 +21,6 @@ import {
   UpdatePostsJob
 } from './jobs';
 import {
-  AssetRepository,
   CommentRepository,
   ConversationRepository,
   ExperienceRepository,
@@ -89,9 +88,12 @@ export class MyriadApiApplication extends BootMixin(
     // Add cron component
     this.component(CronComponent);
     this.add(createBindingFromClass(FetchContentSocialMediaJob))
-    this.add(createBindingFromClass(FetchContentTwitterJob))
-    this.add(createBindingFromClass(FetchContentRedditJob))
     this.add(createBindingFromClass(UpdatePostsJob))
+
+
+    // Optional:
+    // this.add(createBindingFromClass(FetchContentTwitterJob))
+    // this.add(createBindingFromClass(FetchContentRedditJob))
 
     // Add services
     this.service(NotificationService)
@@ -124,7 +126,6 @@ export class MyriadApiApplication extends BootMixin(
     const userCredRepo = await this.getRepository(UserCredentialRepository)
     const commentRepo = await this.getRepository(CommentRepository)
     const publicMetricRepo = await this.getRepository(PublicMetricRepository)
-    const assetRepository = await this.getRepository(AssetRepository)
     const likeRepository = await this.getRepository(LikeRepository)
     const conversationRepository = await this.getRepository(ConversationRepository)
     const friendRepository = await this.getRepository(FriendRepository)
@@ -135,7 +136,6 @@ export class MyriadApiApplication extends BootMixin(
 
     await likeRepository.deleteAll()
     await conversationRepository.deleteAll()
-    await assetRepository.deleteAll()
     await tagRepo.deleteAll()
     await postsRepo.deleteAll()
     await peopleRepo.deleteAll()
@@ -281,7 +281,18 @@ export class MyriadApiApplication extends BootMixin(
 
         if (!foundTag) {
           await tagRepo.create({
-            id: tags[j]
+            id: tags[j],
+            count: 1,
+            createdAt: new Date().toString(),
+            updatedAt: new Date().toString()
+          })
+        } else {
+          const oneDay:number = 60 * 60 * 24 * 1000;
+          const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+
+          await tagRepo.updateById(foundTag.id, {
+            updatedAt: new Date().toString(),
+            count: isOneDay ? 1 : foundTag.count + 1
           })
         }
       }
