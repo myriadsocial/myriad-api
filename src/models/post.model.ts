@@ -1,7 +1,6 @@
 import {belongsTo, Entity, hasMany, model, property, hasOne} from '@loopback/repository';
 import {Comment} from './comment.model';
 import {People} from './people.model';
-import {Asset} from './asset.model';
 import {User} from './user.model';
 import {Like} from './like.model';
 import {PublicMetric} from './public-metric.model';
@@ -31,7 +30,7 @@ interface TipsReceived {
     mongodb: {
       collection: 'posts',
     },
-    hiddenProperties: ['wallet_address']
+    hiddenProperties: ['walletAddress','totalComment','totalLiked','totalDisliked']
   }
 })
 export class Post extends Entity {
@@ -117,6 +116,27 @@ export class Post extends Entity {
   platformCreatedAt: string
 
   @property({
+    type: 'number',
+    required: false,
+    default: 0
+  })
+  totalComment?: number
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 0
+  })
+  totalLiked?: number
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 0
+  })
+  totalDisliked?: number
+
+  @property({
     type: 'date',
     required: false,
   })
@@ -163,9 +183,6 @@ export class Post extends Entity {
 
   @belongsTo(() => People)
   peopleId: string;
-
-  @hasOne(() => Asset)
-  asset: Asset;
 
   @hasMany(() => Like)
   likes: Like[];

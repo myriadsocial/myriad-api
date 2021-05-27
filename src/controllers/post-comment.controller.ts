@@ -111,13 +111,12 @@ export class PostCommentController {
       updatedAt: new Date().toString()
     });
 
-    const comments = await this.commentRepository.find({
-      where: {
+    const totalComment = await this.commentRepository.count({
         postId: id
-      }
     })
 
-    await this.postRepository.publicMetric(id).patch({comment: comments.length})
+    this.postRepository.publicMetric(id).patch({comment: totalComment.count})
+    this.postRepository.updateById(id, {totalComment: totalComment.count})
 
     const foundAllConversation = await this.conversationRepository.find({
       where: {

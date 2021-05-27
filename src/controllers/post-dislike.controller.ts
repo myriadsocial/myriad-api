@@ -158,21 +158,24 @@ export class PostDislikeController {
   }
 
   async countDislike(postId:any): Promise<void> {
-    const dislikes = await this.dislikeRepository.find({
-      where: {
-        postId
-      }
+    const dislikes = await this.dislikeRepository.count({
+      postId,
+      status: true
     })
 
-    const likes = await this.likeRepository.find({
-      where: {
-        postId
-      }
+    const likes = await this.likeRepository.count({
+      postId,
+      status: true
     })
 
-    await this.postRepository.publicMetric(postId).patch({
-      disliked: dislikes.filter(dislike => dislike.status).length,
-      liked: likes.filter(like => like.status).length
+    this.postRepository.publicMetric(postId).patch({
+      disliked: dislikes.count,
+      liked: likes.count
+    })
+
+    this.postRepository.updateById(postId, {
+      totalDisliked: dislikes.count,
+      totalLiked: likes.count
     })
   }
 }
