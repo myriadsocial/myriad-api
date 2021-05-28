@@ -16,6 +16,7 @@ import {
   del,
   requestBody,
   response,
+  HttpErrors,
 } from '@loopback/rest';
 import {Token} from '../models';
 import {TokenRepository} from '../repositories';
@@ -41,9 +42,16 @@ export class TokenController {
         },
       },
     })
-    token: Omit<Token, 'id'>,
+    token: Token,
   ): Promise<Token> {
-    
+    const foundToken = await this.tokenRepository.findOne({
+      where: {
+        id: token.id
+      }
+    })
+
+    if (foundToken) throw new HttpErrors.UnprocessableEntity('Token already exists')
+
     return this.tokenRepository.create(token);
   }
 

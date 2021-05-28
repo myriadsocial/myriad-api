@@ -80,7 +80,7 @@ export class UserTokenController {
     })
 
     if (foundUserToken) {
-      throw new HttpErrors.UnprocessableEntity('Token already exist')
+      throw new HttpErrors.UnprocessableEntity('You already have this token')
     }
 
     return this.userTokenRepository.create(userToken)

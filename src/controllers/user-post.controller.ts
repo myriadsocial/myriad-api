@@ -59,7 +59,7 @@ export class UserPostController {
 
     if (orderField === 'comment') orderField = 'totalComment'
     if (orderField === 'liked') orderField = 'totalLiked'
-    if (orderField === 'disiked') orderField = 'totalDisliked'
+    if (orderField === 'disliked') orderField = 'totalDisliked'
 
     const orderFields = [
       "platformCreatedAt",
@@ -114,7 +114,7 @@ export class UserPostController {
           }
         }),
       },
-      order: [`${orderField} ${order.toUpperCase()}`],
+      order: [`${orderField} ${order.toUpperCase()}`, `platformCreatedAt ${order.toUpperCase()}`],
       limit: limit,
       offset: offset,
       include: [
@@ -276,7 +276,7 @@ export class UserPostController {
     friendIds: string[]
   ):Promise<Post[]> {
     return await this.postRepository.find({
-      order: [`${orderField} ${order.toUpperCase()}`],
+      order: [`${orderField} ${order.toUpperCase()}`, `platformCreatedAt ${order.toUpperCase()}`],
       limit: limit,
       offset: offset,
       include: [

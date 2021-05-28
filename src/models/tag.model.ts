@@ -29,7 +29,8 @@ export class Tag extends Entity {
 
   @property({
     type: 'number',
-    required: false
+    required: false,
+    default: 1,
   })
   count: number;
 

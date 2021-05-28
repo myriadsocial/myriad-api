@@ -16,6 +16,7 @@ import {UserToken} from './user-token.model';
     mongodb: {
       collection: 'users',
     },
+    hiddenProperties: ['seed_example']
   }
 })
 export class User extends Entity {

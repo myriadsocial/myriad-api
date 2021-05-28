@@ -96,9 +96,6 @@ export class TagController {
         },
         {
           relation: 'publicMetric'
-        },
-        {
-          relation: 'tags'
         }
       ],
       order: [`platformCreatedAt ${order.toUpperCase()}`],
