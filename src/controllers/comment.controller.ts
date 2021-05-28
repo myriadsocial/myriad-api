@@ -13,7 +13,7 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {Comment} from '../models';
+import {Comment, User, Post} from '../models';
 import {CommentRepository} from '../repositories';
 
 export class CommentController {
@@ -47,17 +47,6 @@ export class CommentController {
     });
   }
 
-  // @get('/comments/count')
-  // @response(200, {
-  //   description: 'Comment model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Comment) where?: Where<Comment>,
-  // ): Promise<Count> {
-  //   return this.commentRepository.count(where);
-  // }
-
   @get('/comments')
   @response(200, {
     description: 'Array of Comment model instances',
@@ -76,25 +65,6 @@ export class CommentController {
     return this.commentRepository.find(filter);
   }
 
-  // @patch('/comments')
-  // @response(200, {
-  //   description: 'Comment PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(Comment, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   comment: Comment,
-  //   @param.where(Comment) where?: Where<Comment>,
-  // ): Promise<Count> {
-  //   return this.commentRepository.updateAll(comment, where);
-  // }
-
   @get('/comments/{id}')
   @response(200, {
     description: 'Comment model instance',
@@ -109,6 +79,42 @@ export class CommentController {
     @param.filter(Comment, {exclude: 'where'}) filter?: FilterExcludingWhere<Comment>
   ): Promise<Comment> {
     return this.commentRepository.findById(id, filter);
+  }
+
+  @get('/comments/{id}/user', {
+    responses: {
+      '200': {
+        description: 'User belonging to Comment',
+        content: {
+          'application/json': {
+            schema: {type: 'array', items: getModelSchemaRef(User)},
+          },
+        },
+      },
+    },
+  })
+  async getUser(
+    @param.path.string('id') id: typeof Comment.prototype.id,
+  ): Promise<User> {
+    return this.commentRepository.user(id);
+  }
+
+    @get('/comments/{id}/post', {
+    responses: {
+      '200': {
+        description: 'Post belonging to Comment',
+        content: {
+          'application/json': {
+            schema: {type: 'array', items: getModelSchemaRef(Post)},
+          },
+        },
+      },
+    },
+  })
+  async getPost(
+    @param.path.string('id') id: typeof Comment.prototype.id,
+  ): Promise<Post> {
+    return this.commentRepository.post(id);
   }
 
   @patch('/comments/{id}')
@@ -128,17 +134,6 @@ export class CommentController {
   ): Promise<void> {
     await this.commentRepository.updateById(id, comment);
   }
-
-  // @put('/comments/{id}')
-  // @response(204, {
-  //   description: 'Comment PUT success',
-  // })
-  // async replaceById(
-  //   @param.path.string('id') id: string,
-  //   @requestBody() comment: Comment,
-  // ): Promise<void> {
-  //   await this.commentRepository.replaceById(id, comment);
-  // }
 
   @del('/comments/{id}')
   @response(204, {
