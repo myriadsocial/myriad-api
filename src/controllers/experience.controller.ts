@@ -40,17 +40,11 @@ export class ExperienceController {
     })
     experience: Omit<Experience, 'id'>
   ): Promise<Experience> {
-    try {
-      const newExperience = await this.experienceRepository.create({
-        ...experience,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString()
-      })
-
-      return newExperience
-    } catch (err) {
-      throw new HttpErrors.UnprocessableEntity("Experience already exists")
-    }
+    return this.experienceRepository.create({
+      ...experience,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
+    })
   }
 
   @get('/experiences')
@@ -121,45 +115,4 @@ export class ExperienceController {
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.experienceRepository.deleteById(id);
   }
-  // @get('/experiences/count')
-  // @response(200, {
-  //   description: 'Experience model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Experience) where?: Where<Experience>,
-  // ): Promise<Count> {
-  //   return this.experienceRepository.count(where);
-  // }
-
-  // @patch('/experiences')
-  // @response(200, {
-  //   description: 'Experience PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(Experience, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   experience: Experience,
-  //   @param.where(Experience) where?: Where<Experience>,
-  // ): Promise<Count> {
-  //   return this.experienceRepository.updateAll(experience, where);
-  // }
-
-  // @put('/experiences/{id}')
-  // @response(204, {
-  //   description: 'Experience PUT success',
-  // })
-  // async replaceById(
-  //   @param.path.string('id') id: string,
-  //   @requestBody() experience: Experience,
-  // ): Promise<void> {
-  //   await this.experienceRepository.replaceById(id, experience);
-  // }
-
 }

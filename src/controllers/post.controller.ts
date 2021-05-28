@@ -14,7 +14,7 @@ import {
   HttpErrors
 } from '@loopback/rest';
 import {inject} from '@loopback/core';
-import {Post} from '../models';
+import {Post, People, PublicMetric, User} from '../models';
 import {Wallet} from '../models/wallet.model';
 import {
   PostRepository, 
@@ -183,6 +183,61 @@ export class PostController {
     @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>
   ): Promise<Post> {
     return this.postRepository.findById(id, filter);
+  }
+
+  @get('/posts/{id}/people', {
+    responses: {
+      '200': {
+        description: 'People belonging to Post',
+        content: {
+          'application/json': {
+            schema: {type: 'array', items: getModelSchemaRef(People)},
+          },
+        },
+      },
+    },
+  })
+  async getPeople(
+    @param.path.string('id') id: typeof Post.prototype.id,
+  ): Promise<People> {
+    return this.postRepository.people(id);
+  }
+
+  @get('/posts/{id}/public-metric', {
+    responses: {
+      '200': {
+        description: 'Post has one PublicMetric',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(PublicMetric),
+          },
+        },
+      },
+    },
+  })
+  async get(
+    @param.path.string('id') id: string,
+    @param.query.object('filter') filter?: Filter<PublicMetric>,
+  ): Promise<PublicMetric> {
+    return this.postRepository.publicMetric(id).get(filter);
+  }
+
+  @get('/posts/{id}/user', {
+    responses: {
+      '200': {
+        description: 'User belonging to Post',
+        content: {
+          'application/json': {
+            schema: {type: 'array', items: getModelSchemaRef(User)},
+          },
+        },
+      },
+    },
+  })
+  async getUser(
+    @param.path.string('id') id: typeof Post.prototype.id,
+  ): Promise<User> {
+    return this.postRepository.user(id);
   }
 
   @get('/posts/{id}/walletaddress')

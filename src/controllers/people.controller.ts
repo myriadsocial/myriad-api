@@ -110,36 +110,6 @@ export class PeopleController {
     return this.peopleRepository.find(filter);
   }
 
-  // @get('/people/count')
-  // @response(200, {
-  //   description: 'People model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(People) where?: Where<People>,
-  // ): Promise<Count> {
-  //   return this.peopleRepository.count(where);
-  // }
-
-  // @patch('/people')
-  // @response(200, {
-  //   description: 'People PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(People, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   people: People,
-  //   @param.where(People) where?: Where<People>,
-  // ): Promise<Count> {
-  //   return this.peopleRepository.updateAll(people, where);
-  // }
-
   @get('/people/{id}')
   @response(200, {
     description: 'People model instance',
@@ -154,6 +124,25 @@ export class PeopleController {
     @param.filter(People, {exclude: 'where'}) filter?: FilterExcludingWhere<People>
   ): Promise<People> {
     return this.peopleRepository.findById(id, filter);
+  }
+
+  @get('/people/{id}/posts', {
+    responses: {
+      '200': {
+        description: 'Array of People has many Post',
+        content: {
+          'application/json': {
+            schema: { type: 'array', items: getModelSchemaRef(Post) },
+          },
+        },
+      },
+    },
+  })
+  async findPeoplePost(
+    @param.path.string('id') id: string,
+    @param.query.object('filter') filter?: Filter<Post>,
+  ): Promise<Post[]> {
+    return this.peopleRepository.posts(id).find(filter);
   }
 
   @patch('/people/{id}')

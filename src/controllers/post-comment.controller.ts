@@ -80,21 +80,21 @@ export class PostCommentController {
     })
 
     if (!foundConversation) {
-      await this.conversationRepository.create({
+      this.conversationRepository.create({
         userId: comment.userId,
         postId: id,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString()
       })
     } else {
-      await this.conversationRepository.updateById(foundConversation.id, {
+      this.conversationRepository.updateById(foundConversation.id, {
         read: true,
         unreadMessage: 0,
         updatedAt: new Date().toString()
       })
     }
 
-    await this.conversationRepository.updateAll({
+    this.conversationRepository.updateAll({
       read: false,
       updatedAt: new Date().toString()
     }, {
@@ -133,17 +133,17 @@ export class PostCommentController {
       const latestDate = foundAllConversation[i].updatedAt
       const postId = foundAllConversation[i].postId
 
-      const allComment = await this.commentRepository.find({
-        where: {
-          postId,
-          createdAt: {
-            gte: latestDate
-          }
+      const allComment = await this.commentRepository.count({
+
+        postId,
+        createdAt: {
+          gte: latestDate
         }
+      
       })
 
       await this.conversationRepository.updateById(id, {
-        unreadMessage: allComment.length
+        unreadMessage: allComment.count
       })
     }
 

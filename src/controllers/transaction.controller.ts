@@ -18,7 +18,7 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {Transaction} from '../models';
+import {Transaction, Token, User} from '../models';
 import {
   TransactionRepository,
   UserRepository,
@@ -125,16 +125,41 @@ export class TransactionController {
     });
   }
 
-  // @get('/transactions/count')
-  // @response(200, {
-  //   description: 'Transaction model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Transaction) where?: Where<Transaction>,
-  // ): Promise<Count> {
-  //   return this.transactionRepository.count(where);
-  // }
+  @get('/transactions/{id}/token', {
+    responses: {
+      '200': {
+        description: 'Token belonging to Transaction',
+        content: {
+          'application/json': {
+            schema: { type: 'array', items: getModelSchemaRef(Token) },
+          },
+        },
+      },
+    },
+  })
+  async getToken(
+    @param.path.string('id') id: typeof Transaction.prototype.id,
+  ): Promise<Token> {
+    return this.transactionRepository.token(id);
+  }
+
+  @get('/transactions/{id}/user', {
+    responses: {
+      '200': {
+        description: 'User belonging to Transaction',
+        content: {
+          'application/json': {
+            schema: {type: 'array', items: getModelSchemaRef(User)},
+          },
+        },
+      },
+    },
+  })
+  async getUser(
+    @param.path.string('id') id: typeof Transaction.prototype.id,
+  ): Promise<User> {
+    return this.transactionRepository.toUser(id);
+  }
 
   @get('/transactions')
   @response(200, {

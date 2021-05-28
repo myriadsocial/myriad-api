@@ -47,17 +47,6 @@ export class PublicMetricController {
     return this.publicMetricRepository.create(publicMetric);
   }
 
-  @get('/public-metrics/count')
-  @response(200, {
-    description: 'PublicMetric model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(PublicMetric) where?: Where<PublicMetric>,
-  ): Promise<Count> {
-    return this.publicMetricRepository.count(where);
-  }
-
   @get('/public-metrics')
   @response(200, {
     description: 'Array of PublicMetric model instances',
@@ -127,17 +116,6 @@ export class PublicMetricController {
     publicMetric: PublicMetric,
   ): Promise<void> {
     await this.publicMetricRepository.updateById(id, publicMetric);
-  }
-
-  @put('/public-metrics/{id}')
-  @response(204, {
-    description: 'PublicMetric PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() publicMetric: PublicMetric,
-  ): Promise<void> {
-    await this.publicMetricRepository.replaceById(id, publicMetric);
   }
 
   @del('/public-metrics/{id}')

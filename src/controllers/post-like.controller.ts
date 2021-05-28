@@ -97,7 +97,7 @@ export class PostLikeController {
         await this.dislikeRepository.updateById(foundDislike.id, {status: false})
       }
 
-      await this.countLike(id)
+      this.countLike(id)
       
       return newLike
     }
@@ -112,7 +112,7 @@ export class PostLikeController {
       await this.likeRepository.updateById(foundLike.id, {status: false})
     }
 
-    await this.countLike(id)
+    this.countLike(id)
     
     foundLike.status = !foundLike.status
 

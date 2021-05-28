@@ -19,7 +19,6 @@ import {
 } from '@loopback/rest';
 import {Token} from '../models';
 import {TokenRepository} from '../repositories';
-import {polkadotApi} from '../helpers/polkadotApi';
 
 export class TokenController {
   constructor(
@@ -46,17 +45,6 @@ export class TokenController {
   ): Promise<Token> {
     
     return this.tokenRepository.create(token);
-  }
-
-  @get('/tokens/count')
-  @response(200, {
-    description: 'Token model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(Token) where?: Where<Token>,
-  ): Promise<Count> {
-    return this.tokenRepository.count(where);
   }
 
   @get('/tokens')

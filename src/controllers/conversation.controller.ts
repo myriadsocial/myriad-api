@@ -17,7 +17,11 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {Conversation} from '../models';
+import {
+  Conversation,
+  User,
+  Post
+} from '../models';
 import {ConversationRepository} from '../repositories';
 
 export class ConversationController {
@@ -51,17 +55,6 @@ export class ConversationController {
     });
   }
 
-  // @get('/conversations/count')
-  // @response(200, {
-  //   description: 'Conversation model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Conversation) where?: Where<Conversation>,
-  // ): Promise<Count> {
-  //   return this.conversationRepository.count(where);
-  // }
-
   @get('/conversations')
   @response(200, {
     description: 'Array of Conversation model instances',
@@ -80,28 +73,6 @@ export class ConversationController {
     return this.conversationRepository.find(filter);
   }
 
-  // @patch('/conversations')
-  // @response(200, {
-  //   description: 'Conversation PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(Conversation, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   conversation: Conversation,
-  //   @param.where(Conversation) where?: Where<Conversation>,
-  // ): Promise<Count> {
-  //   return this.conversationRepository.updateAll({
-  //     ...conversation,
-  //     updatedAt: new Date().toString()
-  //   }, where);
-  // }
-
   @get('/conversations/{id}')
   @response(200, {
     description: 'Conversation model instance',
@@ -116,6 +87,42 @@ export class ConversationController {
     @param.filter(Conversation, {exclude: 'where'}) filter?: FilterExcludingWhere<Conversation>
   ): Promise<Conversation> {
     return this.conversationRepository.findById(id, filter);
+  }
+
+  @get('/conversations/{id}/user', {
+    responses: {
+      '200': {
+        description: 'User belonging to Conversation',
+        content: {
+          'application/json': {
+            schema: {type: 'array', items: getModelSchemaRef(User)},
+          },
+        },
+      },
+    },
+  })
+  async getUser(
+    @param.path.string('id') id: typeof Conversation.prototype.id,
+  ): Promise<User> {
+    return this.conversationRepository.user(id);
+  }
+
+  @get('/conversations/{id}/post', {
+    responses: {
+      '200': {
+        description: 'Post belonging to Conversation',
+        content: {
+          'application/json': {
+            schema: {type: 'array', items: getModelSchemaRef(Post)},
+          },
+        },
+      },
+    },
+  })
+  async getPost(
+    @param.path.string('id') id: typeof Conversation.prototype.id,
+  ): Promise<Post> {
+    return this.conversationRepository.post(id);
   }
 
   @patch('/conversations/{id}')
@@ -134,6 +141,7 @@ export class ConversationController {
     conversation: Conversation,
   ): Promise<void> {
     await this.conversationRepository.updateById(id, {
+      ...conversation,
       read: true,
       unreadMessage: 0,
       updatedAt: new Date().toString()
