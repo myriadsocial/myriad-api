@@ -138,6 +138,16 @@ export class UserController {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself')
     }
 
+    const countFriend = await this.friendRepository.count({
+      friendId: friend.friendId,
+      requestorId: id,
+      status: 'pending'
+    })
+
+    if (countFriend.count > 20) {
+      throw new HttpErrors.UnprocessableEntity("Please approved your pending request, before add new friend!")
+    }
+
     const foundFriend = await this.friendRepository.findOne({
       where: {
         friendId: friend.friendId,

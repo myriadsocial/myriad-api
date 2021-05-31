@@ -59,6 +59,16 @@ export class FriendController {
       throw new HttpErrors.UnprocessableEntity("Available status: pending, approved, rejected")
     }
 
+    const countFriend = await this.friendRepository.count({
+      friendId: friend.friendId,
+      requestorId: friend.requestorId,
+      status: 'pending'
+    })
+
+    if (countFriend.count) {
+      throw new HttpErrors.UnprocessableEntity("Please approved your pending request, before add new friend! Maximum pending request: 20")
+    }
+
     const foundFriend = await this.friendRepository.findOne({
       where: {
         friendId: friend.friendId,

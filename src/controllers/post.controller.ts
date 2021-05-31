@@ -77,7 +77,6 @@ export class PostController {
 
     const newPost = await this.postRepository.create({
       ...post,
-      importBy: [post.walletAddress],
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
