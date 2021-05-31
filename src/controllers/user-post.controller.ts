@@ -93,9 +93,16 @@ export class UserPostController {
 
     const foundPost = await this.postRepository.findOne({
       where: {
-        importBy: {
-          inq: [[id]]
-        }
+        or: [
+          {
+            importBy: {
+              inq: [[id]]
+            }
+          },
+          {
+            walletAddress: id
+          }
+        ]
       },
       limit: 1,
     })
@@ -107,12 +114,13 @@ export class UserPostController {
     return this.postRepository.find({
       where: {
         or: friendIds.map(id => {
-          return {
-            importBy: {
-              inq: [[id]]
+            return {
+              importBy: {
+                inq: [[id]]
+              },
+              walletAddress: id,
             }
-          }
-        }),
+          })
       },
       order: [`${orderField} ${order.toUpperCase()}`, `platformCreatedAt ${order.toUpperCase()}`],
       limit: limit,
