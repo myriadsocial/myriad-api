@@ -110,17 +110,25 @@ export class UserPostController {
     if (!foundPost) {
       return this.defaultPost(orderField, order, limit, offset, friendIds)
     }
+
+    const importBys = friendIds.map(id => {
+      return {
+        importBy: {
+          inq: [[id]]
+        }
+      }
+    })
     
     return this.postRepository.find({
       where: {
-        or: friendIds.map(id => {
-            return {
-              importBy: {
-                inq: [[id]]
-              },
-              walletAddress: id,
+        or: [
+          ...importBys,
+          {
+            walletAddress: {
+              inq: friendIds
             }
-          })
+          }
+        ]
       },
       order: [`${orderField} ${order.toUpperCase()}`, `platformCreatedAt ${order.toUpperCase()}`],
       limit: limit,
@@ -140,7 +148,7 @@ export class UserPostController {
           relation: 'publicMetric'
         }
       ]
-    })
+    } as Filter<Post>)
   }
 
   @get('/users/{id}/posts', {
@@ -190,7 +198,6 @@ export class UserPostController {
 
     const newPost = await this.userRepository.posts(id).create({
       ...post,
-      importBy: [id],
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
