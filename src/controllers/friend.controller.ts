@@ -1,8 +1,11 @@
 import {service} from '@loopback/core';
 import {
+  Count,
+  CountSchema,
   Filter,
   FilterExcludingWhere,
-  repository
+  repository,
+  Where
 } from '@loopback/repository';
 import {
   del,
@@ -107,16 +110,16 @@ export class FriendController {
     return result
   }
 
-  // @get('/friends/count')
-  // @response(200, {
-  //   description: 'Friend model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Friend) where?: Where<Friend>,
-  // ): Promise<Count> {
-  //   return this.friendRepository.count(where);
-  // }
+  @get('/friends/count')
+  @response(200, {
+    description: 'Friend model count',
+    content: {'application/json': {schema: CountSchema}},
+  })
+  async count(
+    @param.where(Friend) where?: Where<Friend>,
+  ): Promise<Count> {
+    return this.friendRepository.count(where);
+  }
 
   @get('/friends')
   @response(200, {
