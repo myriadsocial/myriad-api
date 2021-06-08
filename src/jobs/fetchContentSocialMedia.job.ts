@@ -199,7 +199,6 @@ export class FetchContentSocialMediaJob extends CronJob {
           this.createPostPublicMetric({
             ...newPost,
             walletAddress: userCredential.userId,
-            importBy: [userCredential.userId]
           }, true)
         }
 

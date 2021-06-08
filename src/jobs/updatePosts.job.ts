@@ -31,7 +31,7 @@ export class UpdatePostsJob extends CronJob {
 
     async performJob() {
         try {
-            await this.updatePeoplePost()
+            // await this.updatePeoplePost()
             await this.updatePeopleCredentialPost()
         } catch (e) {
             console.log(e)

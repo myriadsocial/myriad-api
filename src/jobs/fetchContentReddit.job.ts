@@ -37,7 +37,7 @@ export class FetchContentRedditJob extends CronJob {
 
   async performJob() {
     try {
-      await this.searchPostByTag()
+      this.searchPostByTag()
     } catch (e) {
       console.log(e)
     }
