@@ -32,6 +32,7 @@ import {u8aToHex} from '@polkadot/util'
 interface URL {
   url: string;
   importer: string;
+  tags?: string[];
 }
 
 interface TipsReceived {
@@ -134,16 +135,17 @@ export class PostController {
     const splitURL = post.url.split('/')
     const platform = splitURL[2].toLowerCase()
     const importer = post.importer
+    const postTags = post.tags ? post.tags : []
 
     switch (platform) {
       case 'twitter.com':
-        return this.twitterPost(splitURL[5], importer)
+        return this.twitterPost(splitURL[5], importer, postTags)
         
       case 'www.reddit.com':
-        return this.redditPost(splitURL[6], importer)
+        return this.redditPost(splitURL[6], importer, postTags)
 
       case 'www.facebook.com':
-        return this.facebookPost(post.url, importer)
+        return this.facebookPost(post.url, importer, postTags)
 
       default:
         throw new HttpErrors.NotFound("Cannot found the specified url!")
@@ -367,7 +369,7 @@ export class PostController {
     await this.postRepository.deleteById(id);
   }
 
-  async facebookPost (url: string, importer:string):Promise<Post> {
+  async facebookPost (url: string, importer:string, postTags: string[]):Promise<Post> {
     const username = url.split('/')[3]
     const textId = url.split('/')[5]
 
@@ -418,6 +420,9 @@ export class PostController {
       platformUser: {
         username: username,
       },
+      tags: [
+        ...postTags
+      ],
       importBy: [importer],
       assets: []
     }
@@ -425,7 +430,7 @@ export class PostController {
     return this.createPost(username, 'facebook', newFacebookPost)
   }
 
-  async redditPost (textId:string, importer:string):Promise<Post> {
+  async redditPost (textId:string, importer:string, postTags: string[]):Promise<Post> {
     const foundPost = await this.postRepository.findOne({
       where: {
         textId: textId,
@@ -474,7 +479,9 @@ export class PostController {
       createdAt: new Date().toString(),
       platform: 'reddit',
       textId: textId,
-      tags: [],
+      tags: [
+        ...postTags
+      ],
       hasMedia: redditPost.media_metadata || redditPost.is_reddit_media_domain ? true : false,
       platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
       link: `https://reddit.com/${textId}`,
@@ -522,7 +529,7 @@ export class PostController {
     return this.createPost('t2_' + redditUser.id, 'reddit', updatedReddit)
   }
 
-  async twitterPost (textId: string, importer: string) {
+  async twitterPost (textId: string, importer: string, postTags: string[]) {
     const foundPost = await this.postRepository.findOne({
       where: {
         textId: textId,
@@ -582,7 +589,10 @@ export class PostController {
       platform: 'twitter',
       textId: textId, 
       createdAt: new Date().toString(),
-      tags, 
+      tags: [
+        ...tags,
+        ...postTags
+      ], 
       hasMedia: tweet.attachments ? Boolean(tweet.attachments.media_keys) : false, 
       link: `https://twitter.com/${twitterUser.id}/status/${textId}`, 
       platformCreatedAt: tweet.created_at,
