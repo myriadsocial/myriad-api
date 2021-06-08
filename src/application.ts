@@ -18,7 +18,8 @@ import {
   FetchContentRedditJob,
   FetchContentSocialMediaJob,
   FetchContentTwitterJob,
-  UpdatePostsJob
+  UpdatePostsJob,
+  RemovedContentJob
 } from './jobs';
 import {
   CommentRepository,
@@ -89,6 +90,7 @@ export class MyriadApiApplication extends BootMixin(
     this.component(CronComponent);
     this.add(createBindingFromClass(FetchContentSocialMediaJob))
     this.add(createBindingFromClass(UpdatePostsJob))
+    this.add(createBindingFromClass(RemovedContentJob))
 
 
     // Optional:
@@ -298,6 +300,8 @@ export class MyriadApiApplication extends BootMixin(
       }
     }
 
+    // Unccomment till this
+
     // users.forEach(async user => {
     //   const seed = mnemonicGenerate()
     //   const pair = keyring.createFromUri(seed + '', user)
@@ -349,7 +353,7 @@ export class MyriadApiApplication extends BootMixin(
       // })
     // })
 
-    await api.disconnect()
+    // await api.disconnect()
 
   }
 }
