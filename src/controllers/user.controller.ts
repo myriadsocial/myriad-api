@@ -188,6 +188,20 @@ export class UserController {
     })
   }
 
+  @get('users/{id}/seed')
+  @response(200, {
+    description: 'Get seed'
+  })
+  async getSeed(
+    @param.path.string('id') id: string,
+  ): Promise<string> {
+    const user = await this.userRepository.findById(id);
+
+    if (!user.seed_example) throw new HttpErrors.NotFound("SeedNotFound")
+
+    return user.seed_example
+  }
+
   @get('users/{id}/friends')
   @response(200, {
     description: 'Array of friend request'
