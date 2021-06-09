@@ -353,7 +353,7 @@ export class MyriadApiApplication extends BootMixin(
       // })
     // })
 
-    // await api.disconnect()
+    await api.disconnect()
 
   }
 }
