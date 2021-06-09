@@ -44,9 +44,26 @@ export class TokenController {
     })
     token: Token,
   ): Promise<Token> {
+    token.id = token.id.toUpperCase()
+    token.token_name = token.token_name.toLowerCase()
+    token.rpc_address = token.rpc_address.toLowerCase()
+
     const foundToken = await this.tokenRepository.findOne({
       where: {
-        id: token.id
+        or: [
+          {
+            id: token.id
+          },
+          {
+            token_name: token.token_name
+          },
+          {
+            address_format: token.address_format
+          },
+          {
+            rpc_address: token.rpc_address
+          }
+        ]
       }
     })
 
@@ -124,17 +141,6 @@ export class TokenController {
     token: Token,
   ): Promise<void> {
     await this.tokenRepository.updateById(id, token);
-  }
-
-  @put('/tokens/{id}')
-  @response(204, {
-    description: 'Token PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() token: Token,
-  ): Promise<void> {
-    await this.tokenRepository.replaceById(id, token);
   }
 
   @del('/tokens/{id}')

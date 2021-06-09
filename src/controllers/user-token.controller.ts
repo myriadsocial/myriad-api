@@ -24,7 +24,7 @@ Token,
 import {
   UserRepository,
   UserTokenRepository,
-  TokenRepository
+  TokenRepository,
 } from '../repositories';
 
 export class UserTokenController {
@@ -75,7 +75,7 @@ export class UserTokenController {
     const foundUserToken = await this.userTokenRepository.findOne({
       where: {
         userId: userToken.userId,
-        tokenId: userToken.tokenId
+        tokenId: userToken.tokenId.toUpperCase()
       }
     })
 
@@ -83,56 +83,20 @@ export class UserTokenController {
       throw new HttpErrors.UnprocessableEntity('You already have this token')
     }
 
+    const foundToken = await this.tokenRepository.findOne({
+      where: {
+        id: userToken.tokenId.toUpperCase()
+      }
+    })
+
+    if (!foundToken) {
+      throw new HttpErrors.NotFound("Token not found. Please add token first!")
+    }
+
     return this.userTokenRepository.create(userToken)
   }
 
-  @post('/users/{id}/tokens', {
-    responses: {
-      '200': {
-        description: 'create a Token model instance',
-        content: {'application/json': {schema: getModelSchemaRef(Token)}},
-      },
-    },
-  })
-  async create(
-    @param.path.string('id') id: typeof User.prototype.id,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Token, {
-            title: 'NewTokenInUser'
-          }),
-        },
-      },
-    }) token: Omit<Token, 'id'>,
-  ): Promise<Token> {
-    return this.userRepository.tokens(id).create(token);
-  }
-
-  @patch('/users/{id}/tokens', {
-    responses: {
-      '200': {
-        description: 'User.Token PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
-      },
-    },
-  })
-  async patch(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Token, {partial: true}),
-        },
-      },
-    })
-    token: Partial<Token>,
-    @param.query.object('where', getWhereSchemaFor(Token)) where?: Where<Token>,
-  ): Promise<Count> {
-    return this.userRepository.tokens(id).patch(token, where);
-  }
-
-  @del('/users/{id}/tokens', {
+  @del('/users/{userId}/tokens/{tokenId}', {
     responses: {
       '200': {
         description: 'User.Token DELETE success count',
@@ -141,9 +105,12 @@ export class UserTokenController {
     },
   })
   async delete(
-    @param.path.string('id') id: string,
-    @param.query.object('where', getWhereSchemaFor(Token)) where?: Where<Token>,
+    @param.path.string('userId') userId: string,
+    @param.path.string('tokenId') tokenId: string,
   ): Promise<Count> {
-    return this.userRepository.tokens(id).delete(where);
+    return this.userTokenRepository.deleteAll({
+      userId: userId,
+      tokenId: tokenId.toUpperCase()
+    })
   }
 }
