@@ -32,71 +32,57 @@ export class UpdatePostsJob extends CronJob {
     async performJob() {
         try {
             // await this.updatePeoplePost()
-            await this.updatePeopleCredentialPost()
-        } catch (e) {
-            console.log(e)
-        }
-    }
-    
-    async updatePeoplePost() {
-        try {
-            const posts = await this.postRepository.find()
-            const people = await this.peopleRepository.find()
-            const filterPosts = posts.filter(post => !post.peopleId)
+            const countCredential = await this.userCredentialRepository.count();
 
-            filterPosts.forEach(async post => {
-                let foundPeople = null;
+            for (let i = 0; i < countCredential.count; i++) {
+                const credential = (await this.userCredentialRepository.find({
+                    limit: 1,
+                    skip: i
+                }))[0];
 
-                if (post.platformUser) {
-                    const {username, platform_account_id} = post.platformUser;
-
-                    if (post.platform === 'facebook') {     
-                        foundPeople = people.find(person => person.username === username)
-                    } else {
-                        foundPeople = people.find(person => person.platform_account_id === platform_account_id)
-                    }
-                }
-
-                if (foundPeople) {
-                    this.postRepository.updateById(post.id, {
-                        peopleId: foundPeople.id
-                    })
-                }
-            })
-        } catch (err) { }
-    }
-
-    async updatePeopleCredentialPost () {
-        try {
-            const credential = await this.userCredentialRepository.find()
-
-            for (let i = 0; i < credential.length; i++) {
                 const foundPost = await this.postRepository.find({
                     where: {
-                        peopleId: credential[i].peopleId,
-                        importBy: {
-                            nin: [[credential[i].userId]]
+                        peopleId: credential.peopleId,
+                        walletAddress: {
+                            nlike: credential.userId
                         }
                     }
                 })
 
-                const updatedPost = foundPost.map(post => {
-                    post.importBy = [
-                        ...post.importBy,
-                        credential[i].userId
-                    ]
-
-                    return post
-                })
-
-                for (let j = 0; j < updatedPost.length; j++) {
-                    this.postRepository.updateById(updatedPost[j].id, {
-                        importBy: updatedPost[j].importBy
+                for (let j = 0; j < foundPost.length; j++) {
+                    this.postRepository.updateById(foundPost[j].id, {
+                        walletAddress: credential.userId
                     })
                 }
             }
-        } catch (err) {
-
-        }
+        } catch (e) {}
     }
+    
+    // async updatePeoplePost() {
+    //     try {
+    //         const posts = await this.postRepository.find()
+    //         const people = await this.peopleRepository.find()
+    //         const filterPosts = posts.filter(post => !post.peopleId)
+
+    //         filterPosts.forEach(async post => {
+    //             let foundPeople = null;
+
+    //             if (post.platformUser) {
+    //                 const {username, platform_account_id} = post.platformUser;
+
+    //                 if (post.platform === 'facebook') {     
+    //                     foundPeople = people.find(person => person.username === username)
+    //                 } else {
+    //                     foundPeople = people.find(person => person.platform_account_id === platform_account_id)
+    //                 }
+    //             }
+
+    //             if (foundPeople) {
+    //                 this.postRepository.updateById(post.id, {
+    //                     peopleId: foundPeople.id
+    //                 })
+    //             }
+    //         })
+    //     } catch (err) { }
+    // }
 }

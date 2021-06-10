@@ -154,8 +154,6 @@ export class MyriadApiApplication extends BootMixin(
     await detailTransactionRepository.deleteAll()
     await queueRepository.deleteAll()
 
-    const api = await polkadotApi(process.env.POLKADOT_MYRIAD_RPC || "")
-
     const keyring = new Keyring({
       type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType
     });
@@ -175,6 +173,9 @@ export class MyriadApiApplication extends BootMixin(
     })
 
     const newToken = await tokenRepository.createAll(tokens)
+    // const newUser = await userRepo.createAll(updateUsers)
+
+    const api = await polkadotApi(process.env.POLKADOT_MYRIAD_RPC || "") 
 
     for (let i = 0; i < updateUsers.length; i++) {
       const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
@@ -211,6 +212,8 @@ export class MyriadApiApplication extends BootMixin(
         tokenId: 'MYR'
       })
     }
+
+    await api.disconnect()
 
     const newPeople = await peopleRepo.createAll(people)
 
@@ -352,8 +355,5 @@ export class MyriadApiApplication extends BootMixin(
       //   updatedAt: new Date().toString()
       // })
     // })
-
-    await api.disconnect()
-
   }
 }

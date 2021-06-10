@@ -72,7 +72,8 @@ export class TransactionController {
     
     if (foundFromUser) {
       const detailTransactionId = foundFromUser.id
-      await this.detailTransactionRepository.updateById(detailTransactionId, {
+      
+      this.detailTransactionRepository.updateById(detailTransactionId, {
         sentToThem: foundFromUser.sentToThem + value
       })
     } else {
@@ -83,7 +84,7 @@ export class TransactionController {
       })
 
       if (foundUser) {
-        await this.detailTransactionRepository.create({
+        this.detailTransactionRepository.create({
           sentToMe: 0,
           sentToThem: value,
           userId: from,
@@ -98,7 +99,7 @@ export class TransactionController {
     if (foundToUser) {
       const detailTransactionId = foundToUser.id
 
-      await this.detailTransactionRepository.updateById(detailTransactionId, {
+      this.detailTransactionRepository.updateById(detailTransactionId, {
         sentToMe: foundToUser.sentToMe + value
       })
     } else {
@@ -109,7 +110,7 @@ export class TransactionController {
       })
 
       if (foundUser) {
-        await this.detailTransactionRepository.create({
+        this.detailTransactionRepository.create({
           sentToMe: value,
           sentToThem: 0,
           tokenId: transaction.tokenId,
@@ -237,18 +238,7 @@ export class TransactionController {
       updatedAt: new Date().toString()
     });
   }
-
-  // @put('/transactions/{id}')
-  // @response(204, {
-  //   description: 'Transaction PUT success',
-  // })
-  // async replaceById(
-  //   @param.path.string('id') id: string,
-  //   @requestBody() transaction: Transaction,
-  // ): Promise<void> {
-  //   await this.transactionRepository.replaceById(id, transaction);
-  // }
-
+  
   @del('/transactions/{id}')
   @response(204, {
     description: 'Transaction DELETE success',

@@ -277,8 +277,18 @@ export class UserCredentialController {
   
               if (balance.free.toNumber()) {
                 const transfer = api.tx.balances.transfer(encodeTo, balance.free.toNumber() - gasFee)
-                await transfer.signAndSend(from)
-                await this.postRepository.updateById(post.id, {peopleId: credential.peopleId})
+                const txHash = await transfer.signAndSend(from)
+
+                this.postRepository.updateById(post.id, {peopleId: credential.peopleId})
+
+                this.transactionRepository.create({
+                  trxHash: txHash.toString(),
+                  from: u8aToHex(from.publicKey),
+                  to: to,
+                  value: balance.free.toNumber() - gasFee,
+                  state: "success",
+                  tokenId: token.id
+                })
 
                 const foundDetailTransaction = await this.detailTransactionRepository.findOne({
                   where: {

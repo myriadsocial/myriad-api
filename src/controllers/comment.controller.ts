@@ -132,7 +132,10 @@ export class CommentController {
     })
     comment: Comment,
   ): Promise<void> {
-    await this.commentRepository.updateById(id, comment);
+    await this.commentRepository.updateById(id, {
+      ...comment,
+      updatedAt: new Date().toString()
+    });
   }
 
   @del('/comments/{id}')

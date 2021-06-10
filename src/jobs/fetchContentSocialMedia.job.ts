@@ -41,57 +41,57 @@ export class FetchContentSocialMediaJob extends CronJob {
   }
 
   async performJob() {
-    const people = await this.peopleRepository.find()
+    const total = await this.peopleRepository.count();
 
-    for (let i = 0; i < people.length; i++) {
-      const person = people[i]
+    for (let i = 0; i < total.count; i++) {
+      const person = (await this.peopleRepository.find({
+        limit: 1,
+        skip: i
+      }))[0]
 
-      if (!person) continue
-    
-      try {
-        switch (person.platform) {
-          case "twitter":
-            const foundPosts = await this.postRepository.find({
-              order: ['textId DESC'],
-              limit: 1,
-              where: {
-                peopleId: person.id,
-                platform: person.platform
-              }
-            })
+      switch(person.platform) {
+        case "twitter":
+          const foundPosts = await this.postRepository.find({
+            order: ["textId DESC"],
+            limit: 1,
+            where: {
+              peopleId: person.id,
+              platform: person.platform
+            }
+          })
 
-            const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at,public_metrics`)
+          const { data: newPosts } = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at,public_metrics`)
 
-            if (!newPosts) break
+          if (!newPosts) break
 
-            const twitterPosts = newPosts.filter((post: any) => !post.referenced_tweets)
+          const twitterPosts = newPosts.filter((post:any) => !post.referenced_tweets)
 
-            this.socialMediaPosts(person, twitterPosts)
+          this.socialMediaPosts(person, twitterPosts)
 
-            break
+          break;
 
-          case "reddit":
-            const {data: user} = await this.redditService.getActions(`u/${person.username}.json?limit=10`)
-            const redditPosts = user.children.filter((post: any) => {
-              return post.kind === 't3'
-            }).map((post: any) => post.data)
+        case "reddit":
+          const { data: user } = await this.redditService.getActions(`u/${person.username}.json?limit=10`)
+          const redditPosts = user.children.filter((post: any) => {
+            return post.kind === 't3'
+          }).map((post: any) => post.data)
 
-            this.socialMediaPosts(person, redditPosts)
-            break
+          this.socialMediaPosts(person, redditPosts)
 
-          case "facebook":
+          break;
+        
+        case "facebook":
+          try {
             const xml = await this.rsshubService.getContents(person.platform_account_id)
-            const resultJSON = await xml2json(xml, {compact: true, trim: true})
+            const resultJSON = await xml2json(xml, { compact: true, trim: true })
             const responseFB = JSON.parse(resultJSON)
 
             const facebookPost = responseFB.rss.channel.item
             this.socialMediaPosts(person, facebookPost)
-            break
+          } catch (err) {}
 
-          default:
-            throw new Error("Platform does not exist")
-        }
-      } catch (err) {}
+          break
+      }
     }
   }
 

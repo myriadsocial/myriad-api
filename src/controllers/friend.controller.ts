@@ -68,7 +68,7 @@ export class FriendController {
       status: 'pending'
     })
 
-    if (countFriend.count) {
+    if (countFriend.count > 20) {
       throw new HttpErrors.UnprocessableEntity("Please approved your pending request, before add new friend! Maximum pending request: 20")
     }
 
