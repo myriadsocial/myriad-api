@@ -72,10 +72,12 @@ export class UserTokenController {
       }
     }) userToken: UserToken
   ):Promise<UserToken> {
+    userToken.tokenId = userToken.tokenId.toUpperCase()
+
     const foundUserToken = await this.userTokenRepository.findOne({
       where: {
         userId: userToken.userId,
-        tokenId: userToken.tokenId.toUpperCase()
+        tokenId: userToken.tokenId
       }
     })
 
@@ -85,7 +87,7 @@ export class UserTokenController {
 
     const foundToken = await this.tokenRepository.findOne({
       where: {
-        id: userToken.tokenId.toUpperCase()
+        id: userToken.tokenId
       }
     })
 
