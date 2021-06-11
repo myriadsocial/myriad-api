@@ -1,3 +1,4 @@
+import {service} from '@loopback/core';
 import {
   Filter,
   FilterExcludingWhere,
@@ -14,25 +15,17 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {service} from '@loopback/core'
 import {Keyring} from '@polkadot/api';
+import {u8aToHex} from '@polkadot/util';
+import {encodeAddress} from '@polkadot/util-crypto';
 import {KeypairType} from '@polkadot/util-crypto/types';
 import {polkadotApi} from '../helpers/polkadotApi';
-import {User,Friend} from '../models';
+import {Friend, User} from '../models';
 import {
-  ExperienceRepository,
-  PeopleRepository,
-  QueueRepository,
-  TagRepository,
-  UserRepository,
-  FriendRepository,
-  PostRepository,
-  UserTokenRepository,
-  TransactionRepository
+  ExperienceRepository, FriendRepository, PeopleRepository, PostRepository, QueueRepository,
+  TagRepository, TransactionRepository, UserRepository, UserTokenRepository
 } from '../repositories';
-import {encodeAddress} from '@polkadot/util-crypto';
-import {NotificationService} from '../services'
-import {u8aToHex} from '@polkadot/util'
+import {NotificationService} from '../services';
 
 export class UserController {
   constructor(
@@ -71,24 +64,24 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    // if (!this.validateUsername(user.username)) {
-    //   throw new HttpErrors.UnprocessableEntity('Username cannot have spaces')
-    // }
+    if (!this.validateUsername(user.username)) {
+      throw new HttpErrors.UnprocessableEntity('Username cannot have spaces')
+    }
 
     try {
-      const foundUser = await this.userRepository.findOne({
-        where: {
-          or: [
-            {id: user.id},
-            {username: user.username}
-          ]
-        }
-      })
+      // const foundUser = await this.userRepository.findOne({
+      //   where: {
+      //     or: [
+      //       {id: user.id},
+      //       {username: user.username}
+      //     ]
+      //   }
+      // })
 
-      if (!foundUser) this.defaultTips(user.id)
-      else throw new Error('UserExist')
-      
-      // user.name = user.username[0].toUpperCase() + user.username.substr(1).toLowerCase()
+      // if (!foundUser) this.defaultTips(user.id)
+      // else throw new Error('UserExist')
+
+      user.name = user.username[0].toUpperCase() + user.username.substr(1).toLowerCase()
 
       const newUser = await this.userRepository.create({
         ...user,
@@ -97,17 +90,17 @@ export class UserController {
         updatedAt: new Date().toString()
       });
 
-      this.userRepository.detailTransactions(newUser.id).create({
-        sentToMe: 100000000000000,
-        sentToThem: 0,
-        userId: newUser.id,
-        tokenId: 'MYR'
-      })
+      // this.userRepository.detailTransactions(newUser.id).create({
+      //   sentToMe: 100000000000000,
+      //   sentToThem: 0,
+      //   userId: newUser.id,
+      //   tokenId: 'MYR'
+      // })
 
-      this.userTokenRepository.create({
-        userId: newUser.id,
-        tokenId: 'MYR'
-      })
+      // this.userTokenRepository.create({
+      //   userId: newUser.id,
+      //   tokenId: 'MYR'
+      // })
 
       // await this.defaultPost(newUser.id)
       // await this.defaultExperience(newUser)
@@ -133,7 +126,7 @@ export class UserController {
   async createRequest(
     @param.path.string('id') id: string,
     @requestBody() friend: {friendId: string}
-  ):Promise<Friend> {
+  ): Promise<Friend> {
     if (friend.friendId === id) {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself')
     }
@@ -165,13 +158,13 @@ export class UserController {
       foundFriend.updatedAt = new Date().toString()
 
       return foundFriend
-    } 
-    
+    }
+
     if (foundFriend && foundFriend.status === 'approved') {
       throw new HttpErrors.UnprocessableEntity('You already friend with this user')
-    } 
-    
-    if (foundFriend && foundFriend.status === 'pending'){
+    }
+
+    if (foundFriend && foundFriend.status === 'pending') {
       throw new HttpErrors.UnprocessableEntity('Please wait for this user to approved your request')
     }
 
@@ -195,7 +188,7 @@ export class UserController {
   async requestList(
     @param.path.string('id') id: string,
     @param.query.string('status') status: string
-  ):Promise<Friend[]> {
+  ): Promise<Friend[]> {
     const requestStatus = [
       "pending",
       "rejected",
@@ -206,7 +199,7 @@ export class UserController {
     const found = requestStatus.find(req => req === status)
 
     if (!found && status) throw new HttpErrors.UnprocessableEntity("Please filled with corresponding status: all, pending, approved, or rejected")
-    if ((typeof status === 'string' && !status) || status === 'all' || !status ) {
+    if ((typeof status === 'string' && !status) || status === 'all' || !status) {
       return this.friendRepository.find({
         where: {
           requestorId: id
@@ -301,7 +294,7 @@ export class UserController {
     return this.userRepository.findById(id, filter);
   }
 
-  async defaultPost (userId:string):Promise<void> {
+  async defaultPost(userId: string): Promise<void> {
     const textIds = [
       "1385108424761872387",
       "1385164896896225282",
@@ -330,47 +323,47 @@ export class UserController {
     }
   }
 
-  async defaultExperience(user: User):Promise<void> {
+  async defaultExperience(user: User): Promise<void> {
     this.userRepository.savedExperiences(user.id).create({
-        name: user.name + " Experience",
-        tags: [
-          {
-            id: 'cryptocurrency',
-            hide: false
-          },
-          {
-            id: 'blockchain',
-            hide: false
-          },
-          {
-            id: 'technology',
-            hide: false
-          }
-        ],
-        people: [
-          {
-            username: "gavofyork",
-            platform_account_id: "33962758",
-            profile_image_url: "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg",
-            platform: "twitter",
-            hide: false
-          },
-          {
-            username: "CryptoChief",
-            platform_account_id: "t2_e0t5q",
-            profile_image_url: "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png",
-            platform: "reddit",
-            hide: false
-          }
-        ],
-        description: `Hello, ${user.name}! Welcome to myriad!`,
-        userId: user.id,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString()
-      })
+      name: user.name + " Experience",
+      tags: [
+        {
+          id: 'cryptocurrency',
+          hide: false
+        },
+        {
+          id: 'blockchain',
+          hide: false
+        },
+        {
+          id: 'technology',
+          hide: false
+        }
+      ],
+      people: [
+        {
+          username: "gavofyork",
+          platform_account_id: "33962758",
+          profile_image_url: "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg",
+          platform: "twitter",
+          hide: false
+        },
+        {
+          username: "CryptoChief",
+          platform_account_id: "t2_e0t5q",
+          profile_image_url: "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png",
+          platform: "reddit",
+          hide: false
+        }
+      ],
+      description: `Hello, ${user.name}! Welcome to myriad!`,
+      userId: user.id,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
+    })
   }
 
-  async defaultTips (userId: string):Promise<void> {
+  async defaultTips(userId: string): Promise<void> {
     const provider = process.env.POLKADOT_MYRIAD_RPC || ""
     const myriadPrefix = Number(process.env.POLKADOT_KEYRING_PREFIX)
     const api = await polkadotApi(provider)
@@ -421,10 +414,10 @@ export class UserController {
     await api.disconnect()
   }
 
-  validateUsername(username:string):boolean {
+  validateUsername(username: string): boolean {
     const splitUsername = username.split(' ')
 
     if (splitUsername.length > 1) return false
-    return true 
+    return true
   }
 }

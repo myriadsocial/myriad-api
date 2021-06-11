@@ -1,14 +1,14 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
-import {Experience} from './experience.model';
-import {SavedExperience} from './saved-experience.model';
-import {UserCredential} from './user-credential.model';
-import {Post} from './post.model';
-import {Like} from './like.model';
 import {Conversation} from './conversation.model';
-import {Friend} from './friend.model';
 import {DetailTransaction} from './detail-transaction.model';
+import {Experience} from './experience.model';
+import {Friend} from './friend.model';
+import {Like} from './like.model';
+import {Post} from './post.model';
+import {SavedExperience} from './saved-experience.model';
 import {Token} from './token.model';
+import {UserCredential} from './user-credential.model';
 import {UserToken} from './user-token.model';
 
 @model({
@@ -35,22 +35,25 @@ export class User extends Entity {
   @property({
     type: 'string',
     required: false,
-    // jsonSchema: {
-    //   maxLength: 30,
-    //   minLength: 3,
-    // },
+    jsonSchema: {
+      maxLength: 30,
+      minLength: 3,
+    },
   })
   name?: string;
 
   @property({
     type: 'string',
     required: false,
-    // jsonSchema: {
-    //   minLength: 6,
-    //   maxLength: 30
-    // }
+    index: {
+      unique: true
+    },
+    jsonSchema: {
+      minLength: 6,
+      maxLength: 30
+    }
   })
-  username?: string
+  username: string
 
   @property({
     type: 'string',

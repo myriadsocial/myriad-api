@@ -2,8 +2,7 @@ import {inject} from '@loopback/core';
 import {
   Filter,
   FilterExcludingWhere,
-  repository,
-  Where
+  repository
 } from '@loopback/repository';
 import {
   del,
@@ -14,24 +13,20 @@ import {
   patch,
   post,
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
-import {UserCredential, TransactionWithRelations, Post} from '../models';
-import {
-  PeopleRepository, 
-  PostRepository, 
-  UserCredentialRepository, 
-  UserRepository, 
-  DetailTransactionRepository,
-  TransactionRepository,
-  TokenRepository
-} from '../repositories';
-import {Reddit, Rsshub, Twitter, Facebook} from '../services';
-import {polkadotApi} from '../helpers/polkadotApi'
-import {Keyring} from '@polkadot/api'
+import {Keyring} from '@polkadot/api';
+import {encodeAddress} from '@polkadot/keyring';
+import {u8aToHex} from '@polkadot/util';
 import {KeypairType} from '@polkadot/util-crypto/types';
-import { encodeAddress } from '@polkadot/keyring';
-import {u8aToHex} from '@polkadot/util'
+import {polkadotApi} from '../helpers/polkadotApi';
+import {TransactionWithRelations, UserCredential} from '../models';
+import {
+  DetailTransactionRepository, PeopleRepository,
+  PostRepository, TokenRepository, TransactionRepository, UserCredentialRepository,
+  UserRepository
+} from '../repositories';
+import {Facebook, Reddit, Rsshub, Twitter} from '../services';
 
 interface User {
   platform_account_id?: string,
@@ -84,11 +79,11 @@ export class UserCredentialController {
     description: 'Verify User'
   })
   async verifyUser(
-    @requestBody() verifyUser: {publicKey:string, username: string, platform:string}
-  ):Promise<Boolean> {
+    @requestBody() verifyUser: {publicKey: string, username: string, platform: string}
+  ): Promise<Boolean> {
     const {publicKey, platform, username} = verifyUser
 
-    switch(platform) {
+    switch (platform) {
       case 'twitter':
         const {data: user} = await this.twitterService.getActions(`users/by/username/${username}?user.fields=profile_image_url`)
 
@@ -96,7 +91,7 @@ export class UserCredentialController {
 
         const {data: tweets} = await this.twitterService.getActions(`users/${user.id}/tweets?max_results=5`)
 
-        const foundTwitterPublicKey = tweets[0].text.split(' ').find((tweet:string) => tweet === publicKey)
+        const foundTwitterPublicKey = tweets[0].text.split(' ').find((tweet: string) => tweet === publicKey)
 
         if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
@@ -107,10 +102,10 @@ export class UserCredentialController {
           profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
         }, publicKey)
 
-        this.transferTipsToUser(twitterCredential)
-        
+        // this.transferTipsToUser(twitterCredential)
+
         // const statusTransfer = await this.transferTipsToUser(twitterCredential, user.id)
-        
+
         // if(!statusTransfer) throw new HttpErrors.NotFound('RPC Lost Connection')
 
         this.fetchFollowing(user.id)
@@ -124,7 +119,7 @@ export class UserCredentialController {
 
         if (foundRedditPost.children.length === 0) throw new HttpErrors.NotFound('Cannot find the spesified post')
 
-        const foundRedditPublicKey = foundRedditPost.children[0].data.title.split(' ').find((post:string) => post === publicKey)
+        const foundRedditPublicKey = foundRedditPost.children[0].data.title.split(' ').find((post: string) => post === publicKey)
 
         if (!foundRedditPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
@@ -135,7 +130,7 @@ export class UserCredentialController {
           profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : ''
         }, publicKey)
 
-        this.transferTipsToUser(redditCredential)
+        // this.transferTipsToUser(redditCredential)
 
         // const statusTransferReddit = await this.transferTipsToUser(redditCredential, 't2_' + redditUser.id)
 
@@ -147,20 +142,20 @@ export class UserCredentialController {
         const split = username.split('/')
         const fbUsername = split[3]
         const postId = split[5]
-        
+
         const data = await this.facebookService.getActions(fbUsername, postId)
         const foundIndex = data.search(publicKey)
         const foundPublicKey = data.substring(foundIndex, foundIndex + 50)
 
         if (foundIndex === -1) throw new HttpErrors.NotFound('Cannot find specified post - found index')
-        if (foundPublicKey.replace('"','').trim() !== publicKey) throw new HttpErrors.NotFound('Cannot find specified post')
+        if (foundPublicKey.replace('"', '').trim() !== publicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
         const facebookCredential = await this.createCredentialFB({
           platform: 'facebook',
           username: fbUsername,
         }, publicKey)
 
-        this.transferTipsToUser(facebookCredential);
+        // this.transferTipsToUser(facebookCredential);
 
         // const statusTransferFacebook = await this.transferTipsToUser(facebookCredential, fbUsername)
 
@@ -233,7 +228,7 @@ export class UserCredentialController {
     await this.userCredentialRepository.deleteById(id);
   }
 
-  async transferTipsToUser(credential:UserCredential):Promise<void> {
+  async transferTipsToUser(credential: UserCredential): Promise<void> {
     const keyring = new Keyring({
       type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
     });
@@ -244,7 +239,7 @@ export class UserCredentialController {
 
     for (let i = 0; i < totalToken.count; i++) {
       const token = (await this.tokenRepository.find({
-        limit: 1, 
+        limit: 1,
         skip: i
       }))[0]
 
@@ -275,7 +270,7 @@ export class UserCredentialController {
           }))[0]
 
           const encodeTo = encodeAddress(to, address_format)
-          const { data: balance } = await api.query.system.account(from.publicKey)
+          const {data: balance} = await api.query.system.account(from.publicKey)
 
           if (balance.free.toNumber()) {
             const transfer = api.tx.balances.transfer(encodeTo, Number(transaction.value - gasFee))
@@ -310,11 +305,11 @@ export class UserCredentialController {
         }
 
         await api.disconnect()
-      } catch (err) {}
+      } catch (err) { }
     }
   }
 
-  async createCredentialFB(user: User, publicKey:string):Promise<UserCredential> {
+  async createCredentialFB(user: User, publicKey: string): Promise<UserCredential> {
     const credentials = await this.userCredentialRepository.find({
       where: {
         userId: publicKey
@@ -327,7 +322,7 @@ export class UserCredentialController {
           id: credentials[i].peopleId
         }
       })
-      
+
       if (person && person.platform === user.platform) {
         if (person.username !== user.username) {
           throw new HttpErrors.NotFound(`This ${person.platform} does not belong to you!`)
@@ -354,7 +349,7 @@ export class UserCredentialController {
           userId: publicKey,
           isLogin: true
         })
-      } 
+      }
 
       if (foundCredential.userId === publicKey) {
         this.userCredentialRepository.updateById(foundCredential.id, {
@@ -362,12 +357,12 @@ export class UserCredentialController {
         })
 
         foundCredential.isLogin = true
-        
+
         return foundCredential
-      } 
-        
+      }
+
       throw new HttpErrors.NotFound('Credential not valid')
-    } 
+    }
 
     const newPeople = await this.peopleRepository.create({
       username: user.username,
@@ -380,7 +375,7 @@ export class UserCredentialController {
     })
   }
 
-  async createCredential(user: User, publicKey:string):Promise<UserCredential> {
+  async createCredential(user: User, publicKey: string): Promise<UserCredential> {
     // Verify credential
     const credentials = await this.userCredentialRepository.find({
       where: {
@@ -394,7 +389,7 @@ export class UserCredentialController {
           id: credentials[i].peopleId
         }
       })
-      
+
       if (person && person.platform === user.platform) {
         if (person.platform_account_id !== user.platform_account_id) {
           throw new HttpErrors.NotFound(`This ${person.platform} does not belong to you!`)
@@ -421,7 +416,7 @@ export class UserCredentialController {
           userId: publicKey,
           isLogin: true
         })
-      } 
+      }
 
       if (foundCredential.userId === publicKey) {
         this.userCredentialRepository.updateById(foundCredential.id, {
@@ -429,12 +424,12 @@ export class UserCredentialController {
         })
 
         foundCredential.isLogin = true
-        
+
         return foundCredential
-      } 
-        
+      }
+
       throw new HttpErrors.NotFound('Credential not valid')
-    } 
+    }
 
     const newPeople = await this.peopleRepository.create({
       username: user.username,
@@ -449,8 +444,8 @@ export class UserCredentialController {
     })
   }
 
-  async fetchFollowing(platform_account_id:string):Promise<void> {
-    const {data: following} = await this.twitterService.getActions(`users/${platform_account_id}/following?user.fields=profile_image_url`) 
+  async fetchFollowing(platform_account_id: string): Promise<void> {
+    const {data: following} = await this.twitterService.getActions(`users/${platform_account_id}/following?user.fields=profile_image_url`)
 
     for (let i = 0; i < following.length; i++) {
       const person = following[i]
@@ -473,7 +468,7 @@ export class UserCredentialController {
   }
 
   groupByToken(transactions: TransactionWithRelations[]) {
-    const groupByToken:any = {}
+    const groupByToken: any = {}
 
     for (let j = 0; j < transactions.length; j++) {
       if (groupByToken[transactions[j].token.rpc_address] === undefined) {
