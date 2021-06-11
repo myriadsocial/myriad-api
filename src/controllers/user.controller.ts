@@ -76,43 +76,43 @@ export class UserController {
     }
 
     try {
-      const foundUser = await this.userRepository.findOne({
-        where: {
-          or: [
-            {id: user.id},
-            {username: user.username}
-          ]
-        }
-      })
+      // const foundUser = await this.userRepository.findOne({
+      //   where: {
+      //     or: [
+      //       {id: user.id},
+      //       {username: user.username}
+      //     ]
+      //   }
+      // })
 
-      if (!foundUser) this.defaultTips(user.id)
-      else throw new Error('UserExist')
+      // if (!foundUser) this.defaultTips(user.id)
+      // else throw new Error('UserExist')
       
       user.name = user.username[0].toUpperCase() + user.username.substr(1).toLowerCase()
 
-      const newUser = await this.userRepository.create({
+      return await this.userRepository.create({
         ...user,
         bio: user.bio ? user.bio : `Hello, my name is ${user.name}!`,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString()
       });
 
-      this.userRepository.detailTransactions(newUser.id).create({
-        sentToMe: 100000000000000,
-        sentToThem: 0,
-        userId: newUser.id,
-        tokenId: 'MYR'
-      })
+      // this.userRepository.detailTransactions(newUser.id).create({
+      //   sentToMe: 100000000000000,
+      //   sentToThem: 0,
+      //   userId: newUser.id,
+      //   tokenId: 'MYR'
+      // })
 
-      this.userTokenRepository.create({
-        userId: newUser.id,
-        tokenId: 'MYR'
-      })
+      // this.userTokenRepository.create({
+      //   userId: newUser.id,
+      //   tokenId: 'MYR'
+      // })
 
       // await this.defaultPost(newUser.id)
       // await this.defaultExperience(newUser)
 
-      return newUser
+      // return newUser
     } catch (err) {
       if (err.message === 'LostConnection') {
         throw new HttpErrors.UnprocessableEntity('Myriad RPC Lost Connection')
