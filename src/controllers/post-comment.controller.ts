@@ -118,31 +118,40 @@ export class PostCommentController {
     this.postRepository.publicMetric(id).patch({comment: totalComment.count})
     this.postRepository.updateById(id, {totalComment: totalComment.count})
 
-    const foundAllConversation = await this.conversationRepository.find({
-      where: {
-        postId: id,
-        read: false,
-        userId: {
-          neq: comment.userId
-        }
+
+    const totalConversation = await this.conversationRepository.count({
+      postId: id,
+      read: false,
+      userId: {
+        neq: comment.userId
       }
     })
 
-    for (let i = 0; i < foundAllConversation.length; i++) {
-      const id = foundAllConversation[i].id
-      const latestDate = foundAllConversation[i].updatedAt
-      const postId = foundAllConversation[i].postId
+    for (let i = 0; i < totalConversation.count; i++) {
+      const conversation = (await this.conversationRepository.find({
+        where: {
+          postId: id,
+          read: false,
+          userId: {
+            neq: comment.userId
+          }
+        },
+        limit: 1,
+        skip: i
+      }))[0]
+
+      const conversationId = conversation.id;
+      const latestDate = conversation.updatedAt;
+      const postId = conversation.postId;
 
       const allComment = await this.commentRepository.count({
-
         postId,
         createdAt: {
           gte: latestDate
         }
-      
       })
 
-      await this.conversationRepository.updateById(id, {
+      await this.conversationRepository.updateById(conversationId, {
         unreadMessage: allComment.count
       })
     }

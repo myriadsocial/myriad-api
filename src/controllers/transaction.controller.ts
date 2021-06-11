@@ -88,11 +88,10 @@ export class TransactionController {
           sentToMe: 0,
           sentToThem: value,
           userId: from,
-          tokenId: transaction.tokenId
+          tokenId: tokenId
         })
       }
     }
-
     
     const foundToUser = await this.findDetailTransaction(to, tokenId)
 
@@ -109,20 +108,28 @@ export class TransactionController {
         }
       })
 
-      if (foundUser) {
-        this.detailTransactionRepository.create({
-          sentToMe: value,
-          sentToThem: 0,
-          tokenId: transaction.tokenId,
-          userId: to
+      if (!foundUser) {
+        return this.transactionRepository.create({
+          ...transaction,
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString(),
+          hasSendToUser: false
         })
       }
+
+      this.detailTransactionRepository.create({
+        sentToMe: value,
+        sentToThem: 0,
+        tokenId: tokenId,
+        userId: to
+      })
     }
 
     return this.transactionRepository.create({
       ...transaction,
       createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
+      updatedAt: new Date().toString(),
+      hasSendToUser: true
     });
   }
 

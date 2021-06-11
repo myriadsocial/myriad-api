@@ -89,13 +89,13 @@ export class MyriadApiApplication extends BootMixin(
     // Add cron component
     this.component(CronComponent);
     this.add(createBindingFromClass(FetchContentSocialMediaJob))
-    this.add(createBindingFromClass(UpdatePostsJob))
     this.add(createBindingFromClass(RemovedContentJob))
 
 
     // Optional:
     // this.add(createBindingFromClass(FetchContentTwitterJob))
     // this.add(createBindingFromClass(FetchContentRedditJob))
+    // this.add(createBindingFromClass(UpdatePostsJob))
 
     // Add services
     this.service(NotificationService)
@@ -253,18 +253,19 @@ export class MyriadApiApplication extends BootMixin(
 
     for (let i = 0; i < posts.length; i++) {
       const {tags} = posts[i]
-      const post = await postsRepo.create(posts[i])
-      const newKey = keyring.addFromUri('//' + post.id)
+      const post: any = posts[i]
+      // const post = await postsRepo.create(posts[i])
+      const newKey = keyring.addFromUri('//' + post.peopleId)
 
-      await postsRepo.updateById(post.id, {
-        walletAddress: u8aToHex(newKey.publicKey),
-      })
+      post.walletAddress = u8aToHex(newKey.publicKey);
+
+      const newPost = await postsRepo.create(post);
 
       await publicMetricRepo.create({
         liked: 0,
         comment: 0,
         disliked: 0,
-        postId: post.id
+        postId: newPost.id
       })
 
       for (let j = 0; j < tags.length; j++) {

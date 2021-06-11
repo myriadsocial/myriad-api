@@ -23,7 +23,8 @@ import {
   UserCredentialRepository, 
   UserRepository, 
   DetailTransactionRepository,
-  TransactionRepository
+  TransactionRepository,
+  TokenRepository
 } from '../repositories';
 import {Reddit, Rsshub, Twitter, Facebook} from '../services';
 import {polkadotApi} from '../helpers/polkadotApi'
@@ -49,7 +50,8 @@ export class UserCredentialController {
     public postRepository: PostRepository,
     @repository(UserRepository) public userRepository: UserRepository,
     @repository(DetailTransactionRepository) public detailTransactionRepository: DetailTransactionRepository,
-    @repository (TransactionRepository) public transactionRepository: TransactionRepository,
+    @repository(TransactionRepository) public transactionRepository: TransactionRepository,
+    @repository(TokenRepository) public tokenRepository: TokenRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
     @inject('services.Rsshub') protected rsshubService: Rsshub,
@@ -104,12 +106,14 @@ export class UserCredentialController {
           username: user.username,
           profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
         }, publicKey)
-        
-        const statusTransfer = await this.transferTipsToUser(twitterCredential, user.id)
-        
-        if(!statusTransfer) throw new HttpErrors.NotFound('RPC Lost Connection')
 
-        await this.fetchFollowing(user.id)
+        this.transferTipsToUser(twitterCredential)
+        
+        // const statusTransfer = await this.transferTipsToUser(twitterCredential, user.id)
+        
+        // if(!statusTransfer) throw new HttpErrors.NotFound('RPC Lost Connection')
+
+        this.fetchFollowing(user.id)
 
         return true
 
@@ -131,9 +135,11 @@ export class UserCredentialController {
           profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : ''
         }, publicKey)
 
-        const statusTransferReddit = await this.transferTipsToUser(redditCredential, 't2_' + redditUser.id)
+        this.transferTipsToUser(redditCredential)
 
-        if (!statusTransferReddit) throw new HttpErrors.NotFound('RPC Lost Connection')
+        // const statusTransferReddit = await this.transferTipsToUser(redditCredential, 't2_' + redditUser.id)
+
+        // if (!statusTransferReddit) throw new HttpErrors.NotFound('RPC Lost Connection')
 
         return true
 
@@ -154,9 +160,11 @@ export class UserCredentialController {
           username: fbUsername,
         }, publicKey)
 
-        const statusTransferFacebook = await this.transferTipsToUser(facebookCredential, fbUsername)
+        this.transferTipsToUser(facebookCredential);
 
-        if (!statusTransferFacebook) throw new HttpErrors.NotFound('RPC Lost Connection')
+        // const statusTransferFacebook = await this.transferTipsToUser(facebookCredential, fbUsername)
+
+        // if (!statusTransferFacebook) throw new HttpErrors.NotFound('RPC Lost Connection')
 
         return true
 
@@ -225,103 +233,84 @@ export class UserCredentialController {
     await this.userCredentialRepository.deleteById(id);
   }
 
-  async transferTipsToUser(credential:UserCredential, platform_account_id:string):Promise<boolean> {
-    const posts = await this.postRepository.find({
-      where: {
-        walletAddress: {
-          neq: credential.userId
-        },
-        "platformUser.platform_account_id": platform_account_id
-      } as Where
-    })
+  async transferTipsToUser(credential:UserCredential):Promise<void> {
+    const keyring = new Keyring({
+      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
+    });
+    const from = keyring.addFromUri('//' + credential.peopleId);
+    const gasFee = 125000147
+    const to = credential.userId
+    const totalToken = await this.tokenRepository.count()
 
-    if (posts.length === 0) return true
- 
-    try {
-      // const provider = process.env.POLKADOT_MYRIAD_RPC || ""
-      const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
-      });
-      const gasFee = 125000147
-      const to = credential.userId
-  
-      for (let i = 0; i < posts.length; i++) {
-        const post = posts[i]
-        const from = keyring.addFromUri('//' + post.id)
-        const transactions = await this.transactionRepository.find({
-          where: {
-            to: u8aToHex(from.publicKey)
-          },
-          include: [
-            {
-              relation: 'token'
-            }
-          ]
-        })
+    for (let i = 0; i < totalToken.count; i++) {
+      const token = (await this.tokenRepository.find({
+        limit: 1, 
+        skip: i
+      }))[0]
 
-        if (transactions.length > 0) {
-          const groupByToken = this.groupByToken(transactions)
+      const tokenId = token.id
+      const rpc_address = token.rpc_address
+      const address_format = token.address_format
 
-          for (const rpc in groupByToken) {
-            const transactions = groupByToken[rpc]
+      const totalTransaction = await this.transactionRepository.count({
+        to: u8aToHex(from.publicKey),
+        hasSendToUser: false,
+        tokenId: tokenId
+      })
 
-            if (transactions.length === 0) continue 
+      try {
+        if (!totalTransaction) throw new Error("No transactions")
 
-            const api = await polkadotApi(rpc)
+        const api = await polkadotApi(rpc_address);
 
-            for (let j = 0; j < transactions.length; j++) {
-              const token = transactions[j].token                      
-  
-              const encodeTo  = encodeAddress(to, token.address_format)   
-              const {data:balance} = await api.query.system.account(from.publicKey)
-  
-              if (balance.free.toNumber()) {
-                const transfer = api.tx.balances.transfer(encodeTo, balance.free.toNumber() - gasFee)
-                const txHash = await transfer.signAndSend(from)
+        for (let j = 0; j < totalTransaction.count; j++) {
+          const transaction = (await this.transactionRepository.find({
+            where: {
+              to: u8aToHex(from.publicKey),
+              hasSendToUser: false,
+              tokenId: tokenId
+            },
+            limit: 1,
+            skip: j
+          }))[0]
 
-                this.postRepository.updateById(post.id, {peopleId: credential.peopleId})
+          const encodeTo = encodeAddress(to, address_format)
+          const { data: balance } = await api.query.system.account(from.publicKey)
 
-                this.transactionRepository.create({
-                  trxHash: txHash.toString(),
-                  from: u8aToHex(from.publicKey),
-                  to: to,
-                  value: balance.free.toNumber() - gasFee,
-                  state: "success",
-                  tokenId: token.id
-                })
+          if (balance.free.toNumber()) {
+            const transfer = api.tx.balances.transfer(encodeTo, Number(transaction.value - gasFee))
+            const txHash = await transfer.signAndSend(from)
 
-                const foundDetailTransaction = await this.detailTransactionRepository.findOne({
-                  where: {
-                    userId: to
-                  }
-                })
+            this.transactionRepository.updateById(transaction.id, {
+              hasSendToUser: true
+            })
 
-                if (foundDetailTransaction) {
-                  this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
-                    sentToMe: foundDetailTransaction.sentToMe + (balance.free.toNumber() - gasFee)
-                  })
-                }
+            this.transactionRepository.create({
+              trxHash: txHash.toString(),
+              from: transaction.from,
+              to: to,
+              value: transaction.value - gasFee,
+              state: "success",
+              tokenId: token.id,
+              hasSendToUser: true
+            })
 
-                console.log('success')
+            const foundDetailTransaction = await this.detailTransactionRepository.findOne({
+              where: {
+                userId: to
               }
-            } 
+            })
 
-            await api.disconnect()
+            if (foundDetailTransaction) {
+              this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
+                sentToMe: foundDetailTransaction.sentToMe + (balance.free.toNumber() - gasFee)
+              })
+            }
           }
         }
-  
-        // if (balance.free.toNumber()) {
-        //   const transfer = api.tx.balances.transfer(to, balance.free.toNumber() - gasFee)
-  
-        //   await transfer.signAndSend(from)
-        //   await this.postRepository.updateById(post.id, {peopleId: credential.peopleId})
-        // }
-      }      
-      return true
-    } catch (err) {
-      console.log(err);
-      await this.userCredentialRepository.updateById(credential.id, {isLogin: false})
-      return false
+
+        await api.disconnect()
+      } catch (err) {}
     }
   }
 

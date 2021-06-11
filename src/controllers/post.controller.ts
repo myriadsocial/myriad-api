@@ -347,18 +347,6 @@ export class PostController {
 
       return foundPost.tipsReceived[foundIndex]
     }
-
-    // if (foundPost) {
-    //   totalTips = foundPost.tipsReceived + post.tips
-    // }
-
-    // await this.postRepository.updateById(id, {
-    //   ...post,
-    //   tipsReceived: totalTips,
-    //   updatedAt: new Date().toString()
-    // });
-
-    // return totalTips
   }
 
   @del('/posts/{id}')
@@ -427,6 +415,9 @@ export class PostController {
       assets: []
     }
 
+    this.createTags(newFacebookPost.tags)
+
+
     return this.createPost(username, 'facebook', newFacebookPost)
   }
 
@@ -474,31 +465,10 @@ export class PostController {
     //   profile_image_url: redditUser.icon_img.split('?')[0]
     // })
 
-    let updatedReddit = null
-    const newRedditPost = {
-      createdAt: new Date().toString(),
-      platform: 'reddit',
-      textId: textId,
-      tags: [
-        ...postTags
-      ],
-      hasMedia: redditPost.media_metadata || redditPost.is_reddit_media_domain ? true : false,
-      platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
-      link: `https://reddit.com/${textId}`,
-      title: redditPost.title,
-      text: redditPost.selftext,
-      platformUser: {
-        username: redditUser.name,
-        platform_account_id: 't2_' + redditUser.id,
-        profile_image_url: redditUser.icon_img.split('?')[0]
-      },
-      platformPublicMetric: this.calculateRedditVote(redditPost.upvote_ratio, redditPost.score),
-      importBy: [importer]
-    }
+    const hasMedia = redditPost.media_metadata || redditPost.is_reddit_media_domain ? true : false
+    const assets: string[] = []
 
-    if (newRedditPost.hasMedia) {
-      const assets:string[] = []
-
+    if (hasMedia) {
       if (redditPost.media_metadata) {
         for (const img in redditPost.media_metadata) {
           assets.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''))
@@ -516,17 +486,39 @@ export class PostController {
           assets.push(videos[i].source.url.replace(/amp;/g,''))
         }
       }
-      updatedReddit = {
-        ...newRedditPost,
-        assets: assets
-      }
-    } else {
-      updatedReddit = {
-        ...newRedditPost
-      }
     }
 
-    return this.createPost('t2_' + redditUser.id, 'reddit', updatedReddit)
+    const newRedditPost = {
+      createdAt: new Date().toString(),
+      platform: 'reddit',
+      textId: textId,
+      tags: [
+        ...postTags
+      ],
+      hasMedia: hasMedia,
+      platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
+      link: `https://reddit.com/${textId}`,
+      title: redditPost.title,
+      text: redditPost.selftext,
+      platformUser: {
+        username: redditUser.name,
+        platform_account_id: 't2_' + redditUser.id,
+        profile_image_url: redditUser.icon_img.split('?')[0]
+      },
+      // platformPublicMetric: this.calculateRedditVote(redditPost.upvote_ratio, redditPost.score),
+      importBy: [importer]
+    }
+    
+    this.createTags(newRedditPost.tags)
+
+    if (assets.length === 0) {
+      return this.createPost('t2_' + redditUser.id, 'reddit', newRedditPost)
+    }
+
+    return this.createPost('t2_' + redditUser.id, 'reddit', {
+      ...newRedditPost,
+      assets: assets
+    })
   }
 
   async twitterPost (textId: string, importer: string, postTags: string[]) {
@@ -570,10 +562,10 @@ export class PostController {
     //   platform: 'twitter'
     // })
 
-    const platformPublicMetric = {
-      retweet_count: tweet.public_metrics.retweet_count,
-      like_count: tweet.public_metrics.like_count,
-    }
+    // const platformPublicMetric = {
+    //   retweet_count: tweet.public_metrics.retweet_count,
+    //   like_count: tweet.public_metrics.like_count,
+    // }
 
     const tags = tweet.entities ? (tweet.entities.hashtags ?
       tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
@@ -584,8 +576,7 @@ export class PostController {
         username: twitterUser.username,
         platform_account_id: twitterUser.id,
         profile_image_url: twitterUser.profile_image_url.replace('normal','400x400')
-      }, 
-      platformPublicMetric: platformPublicMetric,
+      },
       platform: 'twitter',
       textId: textId, 
       createdAt: new Date().toString(),
@@ -601,7 +592,7 @@ export class PostController {
       assets: []
     }
 
-    await this.createTags(newTweet.tags)
+    this.createTags(newTweet.tags)
 
     return this.createPost(twitterUser.id, 'twitter', newTweet)
   }
@@ -685,39 +676,19 @@ export class PostController {
   }
 
   async createPostWithPublicMetric (post:any, credential: boolean):Promise<Post> {
-    const createdTweet = await this.postRepository.create(post)
-    
-    await this.postRepository.publicMetric(createdTweet.id).create({})
-
     if (!credential) {
-      const newKey = this.keyring().addFromUri('//' + createdTweet.id)
-      await this.postRepository.updateById(createdTweet.id, {walletAddress: u8aToHex(newKey.publicKey)})
+      const newKey = this.keyring().addFromUri('//' + post.peopleId);
 
-      createdTweet.walletAddress = u8aToHex(newKey.publicKey)
-
-      return createdTweet
+      post.walletAddress = u8aToHex(newKey.publicKey)
     }
+    const createdTweet = await this.postRepository.create(post)
+
+    this.postRepository.publicMetric(createdTweet.id).create({})
 
     return createdTweet
   }
 
   async createTags(tags: string[]) :Promise<void> {
-    // const fetchTags = await this.tagRepository.find()
-    // const filterTags = tags.filter((tag:string) => {
-    //   const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
-
-    //   if (foundTag) return false
-    //   return true
-    // })
-
-    // if (filterTags.length === 0) return
-
-    // await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
-    //   return {
-    //     id: filterTag,
-    //     hide: false
-    //   }
-    // }))
     for (let i = 0; i < tags.length; i++) {
       const foundTag = await this.tagRepository.findOne({
         where: {
@@ -738,7 +709,6 @@ export class PostController {
 
       if (foundTag) {
         const oneDay:number = 60 * 60 * 24 * 1000;
-
         const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay
 
         this.tagRepository.updateById(foundTag.id, {

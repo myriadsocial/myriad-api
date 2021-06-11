@@ -46,6 +46,12 @@ export class Transaction extends Entity {
   state: string;
 
   @property({
+    type: 'boolean',
+    required: false
+  })
+  hasSendToUser: boolean
+
+  @property({
     type: 'date',
     required: false,
     default: new Date

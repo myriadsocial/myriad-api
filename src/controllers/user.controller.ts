@@ -71,9 +71,9 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    if (!this.validateUsername(user.username)) {
-      throw new HttpErrors.UnprocessableEntity('Username cannot have spaces')
-    }
+    // if (!this.validateUsername(user.username)) {
+    //   throw new HttpErrors.UnprocessableEntity('Username cannot have spaces')
+    // }
 
     try {
       const foundUser = await this.userRepository.findOne({
@@ -88,7 +88,7 @@ export class UserController {
       if (!foundUser) this.defaultTips(user.id)
       else throw new Error('UserExist')
       
-      user.name = user.username[0].toUpperCase() + user.username.substr(1).toLowerCase()
+      // user.name = user.username[0].toUpperCase() + user.username.substr(1).toLowerCase()
 
       const newUser = await this.userRepository.create({
         ...user,

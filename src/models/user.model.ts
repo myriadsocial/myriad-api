@@ -34,26 +34,23 @@ export class User extends Entity {
 
   @property({
     type: 'string',
-    jsonSchema: {
-      maxLength: 30,
-      minLength: 3,
-    },
-    required: false
+    required: false,
+    // jsonSchema: {
+    //   maxLength: 30,
+    //   minLength: 3,
+    // },
   })
   name?: string;
 
   @property({
     type: 'string',
-    required: true,
-    index: {
-      unique: true
-    },
-    jsonSchema: {
-      minLength: 6,
-      maxLength: 30
-    }
+    required: false,
+    // jsonSchema: {
+    //   minLength: 6,
+    //   maxLength: 30
+    // }
   })
-  username: string
+  username?: string
 
   @property({
     type: 'string',

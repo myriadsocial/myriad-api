@@ -38,5 +38,19 @@
     "platform": "facebook",
     "platform_account_id": "112773940147738",
     "hide": false
+  },
+  {
+    "username": "Kur3Qr3",
+    "platform": "twitter",
+    "platform_account_id": "966725945901101056",
+    "profile_image_url": "ttps://pbs.twimg.com/profile_images/968098454236000257/wPHTajY2_400x400.jpg",
+    "hide": false
+  },
+  {
+    "username": "reverse_my_repo",
+    "platform": "reddit",
+    "platform_account_id": "t2_6wmczacm",
+    "profile_image_url": "https://www.redditstatic.com/avatars/avatar_default_07_A5A4A4.png",
+    "hide": false
   }
 ]

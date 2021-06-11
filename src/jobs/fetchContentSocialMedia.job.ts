@@ -210,6 +210,15 @@ export class FetchContentSocialMediaJob extends CronJob {
   }
 
   async createPostPublicMetric(post: any, credential: boolean): Promise<void> {
+    if (!credential) {
+      const keyring = new Keyring({
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
+      });
+      const newKey = keyring.addFromUri('//' + post.peopleId)
+
+      post.walletAddress = u8aToHex(newKey.publicKey)
+    }
+
     const newPost = await this.postRepository.create(post)
 
     this.publicMetricRepository.create({
@@ -218,15 +227,6 @@ export class FetchContentSocialMediaJob extends CronJob {
       disliked: 0,
       postId: newPost.id
     })
-
-    if (!credential) {
-      const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
-      });
-      const newKey = keyring.addFromUri('//' + newPost.id)
-
-      this.postRepository.updateById(newPost.id, {walletAddress: u8aToHex(newKey.publicKey)})
-    }
   }
 
   getFBTextId(post: any) {
