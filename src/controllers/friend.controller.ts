@@ -89,13 +89,13 @@ export class FriendController {
       foundFriend.updatedAt = new Date().toString()
 
       return foundFriend
-    } 
-    
+    }
+
     if (foundFriend && foundFriend.status === 'approved') {
       throw new HttpErrors.UnprocessableEntity('You already friend with this user')
-    } 
-    
-    if (foundFriend && foundFriend.status === 'pending'){
+    }
+
+    if (foundFriend && foundFriend.status === 'pending') {
       throw new HttpErrors.UnprocessableEntity('Please wait for this user to approved your request')
     }
 
@@ -139,25 +139,6 @@ export class FriendController {
     return this.friendRepository.find(filter);
   }
 
-  // @patch('/friends')
-  // @response(200, {
-  //   description: 'Friend PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(Friend, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   friend: Friend,
-  //   @param.where(Friend) where?: Where<Friend>,
-  // ): Promise<Count> {
-  //   return this.friendRepository.updateAll(friend, where);
-  // }
-
   @get('/friends/{id}')
   @response(200, {
     description: 'Friend model instance',
@@ -198,17 +179,6 @@ export class FriendController {
     }
     await this.friendRepository.updateById(id, friend);
   }
-
-  // @put('/friends/{id}')
-  // @response(204, {
-  //   description: 'Friend PUT success',
-  // })
-  // async replaceById(
-  //   @param.path.string('id') id: string,
-  //   @requestBody() friend: Friend,
-  // ): Promise<void> {
-  //   await this.friendRepository.replaceById(id, friend);
-  // }
 
   @del('/friends/{id}')
   @response(204, {

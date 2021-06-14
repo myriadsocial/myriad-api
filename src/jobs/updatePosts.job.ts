@@ -3,9 +3,8 @@ import {repository} from '@loopback/repository';
 import {
     PeopleRepository,
     PostRepository,
-
-
-    QueueRepository, TagRepository,
+    QueueRepository,
+    TagRepository,
     UserCredentialRepository
 } from '../repositories';
 
@@ -23,8 +22,7 @@ export class UpdatePostsJob extends CronJob {
             onTick: async () => {
                 await this.performJob();
             },
-            cronTime: '0 0 */1 * * *', // Every hour
-            // cronTime: '*/10 * * * * *',
+            cronTime: '0 0 */1 * * *',
             start: true
         })
     }
@@ -55,34 +53,6 @@ export class UpdatePostsJob extends CronJob {
                     })
                 }
             }
-        } catch (e) {}
+        } catch (e) { }
     }
-    
-    // async updatePeoplePost() {
-    //     try {
-    //         const posts = await this.postRepository.find()
-    //         const people = await this.peopleRepository.find()
-    //         const filterPosts = posts.filter(post => !post.peopleId)
-
-    //         filterPosts.forEach(async post => {
-    //             let foundPeople = null;
-
-    //             if (post.platformUser) {
-    //                 const {username, platform_account_id} = post.platformUser;
-
-    //                 if (post.platform === 'facebook') {     
-    //                     foundPeople = people.find(person => person.username === username)
-    //                 } else {
-    //                     foundPeople = people.find(person => person.platform_account_id === platform_account_id)
-    //                 }
-    //             }
-
-    //             if (foundPeople) {
-    //                 this.postRepository.updateById(post.id, {
-    //                     peopleId: foundPeople.id
-    //                 })
-    //             }
-    //         })
-    //     } catch (err) { }
-    // }
 }

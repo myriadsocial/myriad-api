@@ -9,7 +9,7 @@ export class DetailTransactionRepository extends DefaultCrudRepository<
   DetailTransactionRelations
 > {
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource, 
+    @inject('datasources.mongo') dataSource: MongoDataSource,
   ) {
     super(DetailTransaction, dataSource);
   }

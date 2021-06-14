@@ -13,7 +13,7 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {Comment, User, Post} from '../models';
+import {Comment, Post, User} from '../models';
 import {CommentRepository} from '../repositories';
 
 export class CommentController {
@@ -99,7 +99,7 @@ export class CommentController {
     return this.commentRepository.user(id);
   }
 
-    @get('/comments/{id}/post', {
+  @get('/comments/{id}/post', {
     responses: {
       '200': {
         description: 'Post belonging to Comment',

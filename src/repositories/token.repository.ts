@@ -1,9 +1,13 @@
-import {inject, Getter} from '@loopback/core';
-import {DefaultCrudRepository, repository, HasManyRepositoryFactory} from '@loopback/repository';
+import {Getter, inject} from '@loopback/core';
+import {
+  DefaultCrudRepository,
+  HasManyRepositoryFactory,
+  repository
+} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Token, TokenRelations, Transaction, DetailTransaction} from '../models';
-import {TransactionRepository} from './transaction.repository';
+import {DetailTransaction, Token, TokenRelations, Transaction} from '../models';
 import {DetailTransactionRepository} from './detail-transaction.repository';
+import {TransactionRepository} from './transaction.repository';
 
 export class TokenRepository extends DefaultCrudRepository<
   Token,
@@ -16,7 +20,11 @@ export class TokenRepository extends DefaultCrudRepository<
   public readonly detailTransactions: HasManyRepositoryFactory<DetailTransaction, typeof Token.prototype.id>;
 
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('TransactionRepository') protected transactionRepositoryGetter: Getter<TransactionRepository>, @repository.getter('DetailTransactionRepository') protected detailTransactionRepositoryGetter: Getter<DetailTransactionRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource,
+    @repository.getter('TransactionRepository')
+    protected transactionRepositoryGetter: Getter<TransactionRepository>,
+    @repository.getter('DetailTransactionRepository')
+    protected detailTransactionRepositoryGetter: Getter<DetailTransactionRepository>,
   ) {
     super(Token, dataSource);
     this.detailTransactions = this.createHasManyRepositoryFactoryFor('detailTransactions', detailTransactionRepositoryGetter,);

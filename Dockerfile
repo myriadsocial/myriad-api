@@ -1,12 +1,5 @@
 # Check out https://hub.docker.com/_/node to select a new base image
-FROM node:14-buster-slim
-
-LABEL social.myriad.api.image.authors="1@myriad.social" \
-  social.myriad.api.image.vendor="Myriadsocial" \
-  social.myriad.api.image.title="myriadsocial/myriad-api" \
-  social.myriad.api.image.description="myriad backend" \
-  social.myriad.api.image.source="https://github.com/myriadsocial/myriad-api/Dockerfile" \
-  social.myriad.api.image.documentation="https://github.com/myriadsocial/myriad-node/"
+FROM node:10-slim
 
 # Set to a non-root built-in user `node`
 USER node

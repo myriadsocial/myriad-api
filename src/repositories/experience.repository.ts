@@ -1,5 +1,10 @@
 import {Getter, inject} from '@loopback/core';
-import {BelongsToAccessor, DefaultCrudRepository, HasManyThroughRepositoryFactory, repository} from '@loopback/repository';
+import {
+  BelongsToAccessor,
+  DefaultCrudRepository,
+  HasManyThroughRepositoryFactory,
+  repository
+} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Experience, ExperienceRelations, SavedExperience, User} from '../models';
 import {SavedExperienceRepository} from './saved-experience.repository';
@@ -19,7 +24,11 @@ export class ExperienceRepository extends DefaultCrudRepository<
   >;
 
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>, @repository.getter('SavedExperienceRepository') protected savedExperienceRepositoryGetter: Getter<SavedExperienceRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource,
+    @repository.getter('UserRepository')
+    protected userRepositoryGetter: Getter<UserRepository>,
+    @repository.getter('SavedExperienceRepository')
+    protected savedExperienceRepositoryGetter: Getter<SavedExperienceRepository>,
   ) {
     super(Experience, dataSource);
     this.savedUsers = this.createHasManyThroughRepositoryFactoryFor('savedUsers', userRepositoryGetter, savedExperienceRepositoryGetter,);

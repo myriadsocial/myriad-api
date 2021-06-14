@@ -76,14 +76,6 @@ export class User extends Entity {
   bio?: string;
 
   @property({
-    type: 'array',
-    itemType: 'string',
-    required: false,
-    default: []
-  })
-  fcm_token?: string[]
-
-  @property({
     type: 'boolean',
     required: false,
     default: false,

@@ -14,25 +14,27 @@ import {
   param,
   patch,
   post,
-  put,
   requestBody,
   response
 } from '@loopback/rest';
-import {Transaction, Token, User} from '../models';
+import {Token, Transaction, User} from '../models';
 import {
-  TransactionRepository,
-  UserRepository,
   DetailTransactionRepository,
-  TokenRepository
+  TokenRepository,
+  TransactionRepository,
+  UserRepository
 } from '../repositories';
 
 export class TransactionController {
   constructor(
     @repository(TransactionRepository)
     public transactionRepository: TransactionRepository,
-    @repository(UserRepository) public userRepository: UserRepository,
-    @repository(DetailTransactionRepository) public detailTransactionRepository: DetailTransactionRepository,
-    @repository(TokenRepository) public tokenRepository: TokenRepository
+    @repository(UserRepository)
+    public userRepository: UserRepository,
+    @repository(DetailTransactionRepository)
+    public detailTransactionRepository: DetailTransactionRepository,
+    @repository(TokenRepository)
+    public tokenRepository: TokenRepository
   ) { }
 
   @post('/transactions')
@@ -68,11 +70,11 @@ export class TransactionController {
     const value = transaction.value
     const tokenId = transaction.tokenId
 
-    const foundFromUser = await this.findDetailTransaction(from, tokenId) 
-    
+    const foundFromUser = await this.findDetailTransaction(from, tokenId)
+
     if (foundFromUser) {
       const detailTransactionId = foundFromUser.id
-      
+
       this.detailTransactionRepository.updateById(detailTransactionId, {
         sentToThem: foundFromUser.sentToThem + value
       })
@@ -92,7 +94,7 @@ export class TransactionController {
         })
       }
     }
-    
+
     const foundToUser = await this.findDetailTransaction(to, tokenId)
 
     if (foundToUser) {
@@ -139,7 +141,7 @@ export class TransactionController {
         description: 'Token belonging to Transaction',
         content: {
           'application/json': {
-            schema: { type: 'array', items: getModelSchemaRef(Token) },
+            schema: {type: 'array', items: getModelSchemaRef(Token)},
           },
         },
       },
@@ -245,7 +247,7 @@ export class TransactionController {
       updatedAt: new Date().toString()
     });
   }
-  
+
   @del('/transactions/{id}')
   @response(204, {
     description: 'Transaction DELETE success',

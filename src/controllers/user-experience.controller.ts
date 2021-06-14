@@ -16,14 +16,13 @@ import {
   post,
   requestBody
 } from '@loopback/rest';
-import {
-  Experience, User
-} from '../models';
+import {Experience, User} from '../models';
 import {UserRepository} from '../repositories';
 
 export class UserExperienceController {
   constructor(
-    @repository(UserRepository) protected userRepository: UserRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
   ) { }
 
   @get('/users/{id}/experiences', {

@@ -4,19 +4,18 @@ import {
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
-  patch,
-  put,
-  del,
-  requestBody,
-  response,
   HttpErrors,
+  param,
+  patch,
+  post,
+  requestBody,
+  response
 } from '@loopback/rest';
 import {Token} from '../models';
 import {TokenRepository} from '../repositories';
@@ -24,8 +23,8 @@ import {TokenRepository} from '../repositories';
 export class TokenController {
   constructor(
     @repository(TokenRepository)
-    public tokenRepository : TokenRepository,
-  ) {}
+    public tokenRepository: TokenRepository,
+  ) { }
 
   @post('/tokens')
   @response(200, {
