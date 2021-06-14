@@ -1,34 +1,29 @@
 import {
-  Count,
-  CountSchema,
   Filter,
   FilterExcludingWhere,
-  repository,
-  Where,
+  repository
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
+  param,
   patch,
+  post,
   put,
-  del,
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
 import {
-  Conversation,
-  User,
-  Post
+  Conversation, Post, User
 } from '../models';
 import {ConversationRepository} from '../repositories';
 
 export class ConversationController {
   constructor(
     @repository(ConversationRepository)
-    public conversationRepository : ConversationRepository,
-  ) {}
+    public conversationRepository: ConversationRepository,
+  ) { }
 
   @post('/conversations')
   @response(200, {
@@ -41,7 +36,7 @@ export class ConversationController {
         'application/json': {
           schema: getModelSchemaRef(Conversation, {
             title: 'NewConversation',
-            
+
           }),
         },
       },

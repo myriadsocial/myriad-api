@@ -1,10 +1,17 @@
-import {belongsTo, Entity, hasMany, model, property, hasOne} from '@loopback/repository';
+import {
+  belongsTo,
+  Entity,
+  hasMany,
+  hasOne,
+  model,
+  property
+} from '@loopback/repository';
 import {Comment} from './comment.model';
-import {People} from './people.model';
-import {User} from './user.model';
-import {Like} from './like.model';
-import {PublicMetric} from './public-metric.model';
 import {Dislike} from './dislike.model';
+import {Like} from './like.model';
+import {People} from './people.model';
+import {PublicMetric} from './public-metric.model';
+import {User} from './user.model';
 
 interface PlatformUser {
   username: string;
@@ -30,7 +37,7 @@ interface TipsReceived {
     mongodb: {
       collection: 'posts',
     },
-    hiddenProperties: ['walletAddress','totalComment','totalLiked','totalDisliked']
+    hiddenProperties: ['walletAddress', 'totalComment', 'totalLiked', 'totalDisliked']
   }
 })
 export class Post extends Entity {
@@ -69,7 +76,7 @@ export class Post extends Entity {
     type: 'object',
     required: false
   })
-  platformPublicMetric?: PlatformPublicMetric 
+  platformPublicMetric?: PlatformPublicMetric
 
   @property({
     type: 'string',

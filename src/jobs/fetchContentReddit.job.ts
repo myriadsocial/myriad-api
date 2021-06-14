@@ -2,17 +2,16 @@ import {inject} from '@loopback/core';
 import {cronJob, CronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
 import {Keyring} from '@polkadot/api';
-import { KeypairType } from '@polkadot/util-crypto/types';
+import {u8aToHex} from '@polkadot/util';
+import {KeypairType} from '@polkadot/util-crypto/types';
 import {
   PeopleRepository,
   PostRepository,
-
-
-  PublicMetricRepository, TagRepository,
+  PublicMetricRepository,
+  TagRepository,
   UserCredentialRepository
 } from '../repositories';
 import {Reddit} from '../services';
-import {u8aToHex} from '@polkadot/util'
 
 @cronJob()
 export class FetchContentRedditJob extends CronJob {
@@ -29,8 +28,7 @@ export class FetchContentRedditJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '0 0 */1 * * *', // Every hour
-      // cronTime: '*/10 * * * * *',
+      cronTime: '0 0 */1 * * *',
       start: true
     })
   }
@@ -42,7 +40,7 @@ export class FetchContentRedditJob extends CronJob {
       console.log(e)
     }
   }
-  
+
   async searchPostByTag() {
     try {
       const tags = await this.tagRepository.find()
@@ -95,7 +93,7 @@ export class FetchContentRedditJob extends CronJob {
             assets: []
           }
 
-          const assets:string[] = []
+          const assets: string[] = []
 
           if (newPost.hasMedia) {
 
@@ -109,11 +107,11 @@ export class FetchContentRedditJob extends CronJob {
               const videos = post.preview.videos || []
 
               for (let i = 0; i < images.length; i++) {
-                assets.push(images[i].source.url.replace(/amp;/g,''))
+                assets.push(images[i].source.url.replace(/amp;/g, ''))
               }
 
               for (let i = 0; i < videos.length; i++) {
-                assets.push(videos[i].source.url.replace(/amp;/g,''))
+                assets.push(videos[i].source.url.replace(/amp;/g, ''))
               }
             }
           }

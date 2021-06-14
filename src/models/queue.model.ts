@@ -23,7 +23,6 @@ export class Queue extends Entity {
   })
   count: number;
 
-
   constructor(data?: Partial<Queue>) {
     super(data);
   }

@@ -4,18 +4,17 @@ import {
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
+  param,
   patch,
-  put,
-  del,
+  post,
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
 import {PublicMetric} from '../models';
 import {PublicMetricRepository} from '../repositories';
@@ -23,8 +22,8 @@ import {PublicMetricRepository} from '../repositories';
 export class PublicMetricController {
   constructor(
     @repository(PublicMetricRepository)
-    public publicMetricRepository : PublicMetricRepository,
-  ) {}
+    public publicMetricRepository: PublicMetricRepository,
+  ) { }
 
   @post('/public-metrics')
   @response(200, {

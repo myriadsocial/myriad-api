@@ -2,36 +2,32 @@ import {
   Count,
   CountSchema,
   Filter,
-  repository,
-  Where,
+  repository
 } from '@loopback/repository';
-  import {
+import {
   del,
   get,
   getModelSchemaRef,
-  getWhereSchemaFor,
   HttpErrors,
   param,
-  patch,
   post,
-  requestBody,
+  requestBody
 } from '@loopback/rest';
+import {Token, UserToken} from '../models';
 import {
-User,
-UserToken,
-Token,
-} from '../models';
-import {
-  UserRepository,
-  UserTokenRepository,
   TokenRepository,
+  UserRepository,
+  UserTokenRepository
 } from '../repositories';
 
 export class UserTokenController {
   constructor(
-    @repository(UserRepository) protected userRepository: UserRepository,
-    @repository(UserTokenRepository) protected userTokenRepository: UserTokenRepository,
-    @repository(TokenRepository) protected tokenRepository: TokenRepository
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
+    @repository(UserTokenRepository)
+    protected userTokenRepository: UserTokenRepository,
+    @repository(TokenRepository)
+    protected tokenRepository: TokenRepository
   ) { }
 
   @get('/users/{id}/tokens', {
@@ -71,7 +67,7 @@ export class UserTokenController {
         }
       }
     }) userToken: UserToken
-  ):Promise<UserToken> {
+  ): Promise<UserToken> {
     userToken.tokenId = userToken.tokenId.toUpperCase()
 
     const foundUserToken = await this.userTokenRepository.findOne({

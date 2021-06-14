@@ -3,7 +3,7 @@ import {
   CountSchema,
   Filter,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
   del,
@@ -13,17 +13,15 @@ import {
   param,
   patch,
   post,
-  requestBody,
+  requestBody
 } from '@loopback/rest';
-import {
-  User,
-  DetailTransaction,
-} from '../models';
+import {DetailTransaction, User} from '../models';
 import {UserRepository} from '../repositories';
 
 export class UserDetailTransactionController {
   constructor(
-    @repository(UserRepository) protected userRepository: UserRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
   ) { }
 
   @get('/users/{id}/detail-transactions', {

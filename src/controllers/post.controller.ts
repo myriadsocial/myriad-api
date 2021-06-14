@@ -1,33 +1,34 @@
+import {inject} from '@loopback/core';
 import {
   Filter,
   FilterExcludingWhere,
   repository
 } from '@loopback/repository';
 import {
-  del, get,
+  del,
+  get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
   requestBody,
-  response,
-  HttpErrors
+  response
 } from '@loopback/rest';
-import {inject} from '@loopback/core';
-import {Post, People, PublicMetric, User} from '../models';
+import {Keyring} from '@polkadot/api';
+import {u8aToHex} from '@polkadot/util';
+import {KeypairType} from '@polkadot/util-crypto/types';
+import {People, Post, PublicMetric, User} from '../models';
 import {Wallet} from '../models/wallet.model';
 import {
-  PostRepository, 
-  UserCredentialRepository, 
-  PeopleRepository, 
-  PublicMetricRepository,
   ExperienceRepository,
-  TagRepository
+  PeopleRepository,
+  PostRepository,
+  PublicMetricRepository,
+  TagRepository,
+  UserCredentialRepository
 } from '../repositories';
 import {Reddit, Twitter} from '../services';
-import {Keyring} from '@polkadot/api'
-import { KeypairType } from '@polkadot/util-crypto/types';
-import {u8aToHex} from '@polkadot/util'
 
 interface URL {
   url: string;
@@ -46,12 +47,18 @@ export class PostController {
     public postRepository: PostRepository,
     @repository(UserCredentialRepository)
     public userCredentialRepository: UserCredentialRepository,
-    @repository(PeopleRepository) public peopleRepository: PeopleRepository,
-    @repository(PublicMetricRepository) public publicMetricRepository: PublicMetricRepository,
-    @repository(ExperienceRepository) public experienceRepository: ExperienceRepository,
-    @repository(TagRepository) public tagRepository: TagRepository,
-    @inject('services.Twitter') protected twitterService: Twitter,
-    @inject('services.Reddit') protected redditService: Reddit
+    @repository(PeopleRepository)
+    public peopleRepository: PeopleRepository,
+    @repository(PublicMetricRepository)
+    public publicMetricRepository: PublicMetricRepository,
+    @repository(ExperienceRepository)
+    public experienceRepository: ExperienceRepository,
+    @repository(TagRepository)
+    public tagRepository: TagRepository,
+    @inject('services.Twitter')
+    protected twitterService: Twitter,
+    @inject('services.Reddit')
+    protected redditService: Reddit
   ) { }
 
   @post('/posts')
@@ -74,7 +81,7 @@ export class PostController {
   ): Promise<Post> {
     if (post.assets && post.assets.length > 0) {
       post.hasMedia = true
-    } 
+    }
 
     const newPost = await this.postRepository.create({
       ...post,
@@ -140,7 +147,7 @@ export class PostController {
     switch (platform) {
       case 'twitter.com':
         return this.twitterPost(splitURL[5], importer, postTags)
-        
+
       case 'www.reddit.com':
         return this.redditPost(splitURL[6], importer, postTags)
 
@@ -149,7 +156,7 @@ export class PostController {
 
       default:
         throw new HttpErrors.NotFound("Cannot found the specified url!")
-    }  
+    }
   }
 
   @get('/posts')
@@ -302,7 +309,7 @@ export class PostController {
   })
   async updateTipsById(
     @param.path.string('id') id: string,
-    @requestBody() detailTips:{tokenId: string,tipsReceived: number},
+    @requestBody() detailTips: {tokenId: string, tipsReceived: number},
   ): Promise<TipsReceived> {
     const foundPost = await this.postRepository.findOne({
       where: {
@@ -335,7 +342,7 @@ export class PostController {
     } else {
       foundPost.tipsReceived[foundIndex] = {
         tokenId: detailTips.tokenId,
-        totalTips: foundPost.tipsReceived[foundIndex].totalTips + detailTips.tipsReceived 
+        totalTips: foundPost.tipsReceived[foundIndex].totalTips + detailTips.tipsReceived
       }
 
       this.postRepository.updateById(foundPost.id, {
@@ -357,7 +364,7 @@ export class PostController {
     await this.postRepository.deleteById(id);
   }
 
-  async facebookPost (url: string, importer:string, postTags: string[]):Promise<Post> {
+  async facebookPost(url: string, importer: string, postTags: string[]): Promise<Post> {
     const username = url.split('/')[3]
     const textId = url.split('/')[5]
 
@@ -369,11 +376,6 @@ export class PostController {
     })
 
     if (foundPost) {
-      // await this.updateExperience(experienceId, {
-      //   username: foundPost.platformUser?.username,
-      //   platform: foundPost.platform
-      // })
-
       const foundImporter = foundPost.importBy.find(userId => userId === importer)
 
       if (!foundImporter) {
@@ -383,21 +385,16 @@ export class PostController {
             importer
           ]
         })
-        
+
         foundPost.importBy = [
           ...foundPost.importBy,
           importer
         ]
-      
-      } 
+
+      }
 
       return foundPost
     }
-
-    // await this.updateExperience(experienceId, {
-    //   username: username,
-    //   platform: 'facebook'
-    // })
 
     const newFacebookPost = {
       createdAt: new Date().toString(),
@@ -421,7 +418,7 @@ export class PostController {
     return this.createPost(username, 'facebook', newFacebookPost)
   }
 
-  async redditPost (textId:string, importer:string, postTags: string[]):Promise<Post> {
+  async redditPost(textId: string, importer: string, postTags: string[]): Promise<Post> {
     const foundPost = await this.postRepository.findOne({
       where: {
         textId: textId,
@@ -430,13 +427,6 @@ export class PostController {
     })
 
     if (foundPost) {
-      // await this.updateExperience(experienceId, {
-      //   id: foundPost.platformUser?.platform_account_id,
-      //   username: foundPost.platformUser?.username,
-      //   platform: foundPost.platform,
-      //   profile_image_url: foundPost.platformUser?.profile_image_url
-      // })
-
       const foundImporter = foundPost.importBy.find(userId => userId === importer)
 
       if (!foundImporter) {
@@ -451,19 +441,12 @@ export class PostController {
           ...foundPost.importBy,
           importer
         ]
-      } 
+      }
 
       return foundPost
     }
 
-    const {post: redditPost, user: redditUser} = await this.reddit(textId); 
-
-    // await this.updateExperience(experienceId, {
-    //   username: redditUser.name,
-    //   id: 't2_' + redditUser.id,
-    //   platform: 'reddit',
-    //   profile_image_url: redditUser.icon_img.split('?')[0]
-    // })
+    const {post: redditPost, user: redditUser} = await this.reddit(textId);
 
     const hasMedia = redditPost.media_metadata || redditPost.is_reddit_media_domain ? true : false
     const assets: string[] = []
@@ -479,11 +462,11 @@ export class PostController {
         const videos = redditPost.preview.videos || []
 
         for (let i = 0; i < images.length; i++) {
-          assets.push(images[i].source.url.replace(/amp;/g,''))
+          assets.push(images[i].source.url.replace(/amp;/g, ''))
         }
 
         for (let i = 0; i < videos.length; i++) {
-          assets.push(videos[i].source.url.replace(/amp;/g,''))
+          assets.push(videos[i].source.url.replace(/amp;/g, ''))
         }
       }
     }
@@ -505,10 +488,9 @@ export class PostController {
         platform_account_id: 't2_' + redditUser.id,
         profile_image_url: redditUser.icon_img.split('?')[0]
       },
-      // platformPublicMetric: this.calculateRedditVote(redditPost.upvote_ratio, redditPost.score),
       importBy: [importer]
     }
-    
+
     this.createTags(newRedditPost.tags)
 
     if (assets.length === 0) {
@@ -521,7 +503,7 @@ export class PostController {
     })
   }
 
-  async twitterPost (textId: string, importer: string, postTags: string[]) {
+  async twitterPost(textId: string, importer: string, postTags: string[]) {
     const foundPost = await this.postRepository.findOne({
       where: {
         textId: textId,
@@ -530,12 +512,6 @@ export class PostController {
     })
 
     if (foundPost) {
-      // await this.updateExperience(experienceId, {
-      //   id: foundPost.platformUser?.platform_account_id,
-      //   username: foundPost.platformUser?.username,
-      //   platform: foundPost.platform,
-      //   profile_image_url: foundPost.platformUser?.profile_image_url
-      // }) 
       const foundImporter = foundPost.importBy.find(userId => userId === importer)
 
       if (!foundImporter) {
@@ -550,23 +526,12 @@ export class PostController {
           ...foundPost.importBy,
           importer
         ]
-      } 
+      }
 
       return foundPost
     }
 
     const {post: tweet, user: twitterUser} = await this.twitter(textId)
-
-    // await this.updateExperience(experienceId, {
-    //   ...twitterUser,
-    //   platform: 'twitter'
-    // })
-
-    // const platformPublicMetric = {
-    //   retweet_count: tweet.public_metrics.retweet_count,
-    //   like_count: tweet.public_metrics.like_count,
-    // }
-
     const tags = tweet.entities ? (tweet.entities.hashtags ?
       tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
     ) : []
@@ -575,17 +540,17 @@ export class PostController {
       platformUser: {
         username: twitterUser.username,
         platform_account_id: twitterUser.id,
-        profile_image_url: twitterUser.profile_image_url.replace('normal','400x400')
+        profile_image_url: twitterUser.profile_image_url.replace('normal', '400x400')
       },
       platform: 'twitter',
-      textId: textId, 
+      textId: textId,
       createdAt: new Date().toString(),
       tags: [
         ...tags,
         ...postTags
-      ], 
-      hasMedia: tweet.attachments ? Boolean(tweet.attachments.media_keys) : false, 
-      link: `https://twitter.com/${twitterUser.id}/status/${textId}`, 
+      ],
+      hasMedia: tweet.attachments ? Boolean(tweet.attachments.media_keys) : false,
+      link: `https://twitter.com/${twitterUser.id}/status/${textId}`,
       platformCreatedAt: tweet.created_at,
       text: tweet.text,
       importBy: [importer],
@@ -597,7 +562,7 @@ export class PostController {
     return this.createPost(twitterUser.id, 'twitter', newTweet)
   }
 
-  async twitter (textId: string) {
+  async twitter(textId: string) {
     const {data: post, includes} = await this.twitterService.getActions(`tweets/${textId}?tweet.fields=referenced_tweets,attachments,entities,created_at,public_metrics&expansions=attachments.media_keys,author_id&user.fields=id,username,profile_image_url`)
 
     if (!post) throw new HttpErrors.NotFound('Cannot found the specified url!')
@@ -606,23 +571,23 @@ export class PostController {
       post,
       user: includes.users[0]
     }
-    
+
   }
 
-  async reddit (textId: string) {    
+  async reddit(textId: string) {
     const [data] = await this.redditService.getActions(textId + '.json')
     const redditPost = data.data.children[0].data
 
     const redditUser = redditPost.author
     const {data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json')
-    
+
     return {
       post: redditPost,
       user
     }
   }
 
-  async createPost(platformAccountId: string, platform: string, post: any):Promise<Post> {
+  async createPost(platformAccountId: string, platform: string, post: any): Promise<Post> {
     let foundPeople = null;
 
     if (platform === 'facebook') {
@@ -653,7 +618,7 @@ export class PostController {
         ...post,
         peopleId: people.id
       }, false)
-    } 
+    }
 
     const foundCredential = await this.userCredentialRepository.findOne({
       where: {
@@ -675,7 +640,7 @@ export class PostController {
     }, true)
   }
 
-  async createPostWithPublicMetric (post:any, credential: boolean):Promise<Post> {
+  async createPostWithPublicMetric(post: any, credential: boolean): Promise<Post> {
     if (!credential) {
       const newKey = this.keyring().addFromUri('//' + post.peopleId);
 
@@ -688,7 +653,7 @@ export class PostController {
     return createdTweet
   }
 
-  async createTags(tags: string[]) :Promise<void> {
+  async createTags(tags: string[]): Promise<void> {
     for (let i = 0; i < tags.length; i++) {
       const foundTag = await this.tagRepository.findOne({
         where: {
@@ -703,13 +668,13 @@ export class PostController {
               id: tags[i].toUpperCase()
             }
           ]
-          
+
         }
       })
 
       if (foundTag) {
-        const oneDay:number = 60 * 60 * 24 * 1000;
-        const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay
+        const oneDay: number = 60 * 60 * 24 * 1000;
+        const isOneDay: boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay
 
         this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
@@ -725,9 +690,9 @@ export class PostController {
     }
   }
 
-  async updateExperience(id: string, platformUser:any): Promise<void> {
+  async updateExperience(id: string, platformUser: any): Promise<void> {
     let foundPeople = null
-    
+
     if (platformUser.platform === 'facebook') {
       foundPeople = await this.peopleRepository.findOne({
         where: {
@@ -754,14 +719,14 @@ export class PostController {
     }
 
     const getExperience = await this.experienceRepository.findOne({
-      where: { id }
+      where: {id}
     })
 
     if (getExperience) {
       const people = getExperience.people
       const platform_account_id = foundPeople.platform_account_id
 
-      const found = people.find((person:any) => person.platform_account_id === platform_account_id)
+      const found = people.find((person: any) => person.platform_account_id === platform_account_id)
 
       if (!found) {
         await this.experienceRepository.updateById(id, {
@@ -779,7 +744,7 @@ export class PostController {
     }
   }
 
-  calculateRedditVote(upvote_ratio:number, score:number) {
+  calculateRedditVote(upvote_ratio: number, score: number) {
     const upvote = Math.floor((score * upvote_ratio) / (2 * upvote_ratio - 1))
     const downvote = upvote - score
 

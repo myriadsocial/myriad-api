@@ -1,14 +1,14 @@
 import {
   Filter,
-  repository,
+  repository
 } from '@loopback/repository';
 import {
-  param,
   get,
   getModelSchemaRef,
-  response,
+  param,
   patch,
   requestBody,
+  response
 } from '@loopback/rest';
 import {Queue} from '../models';
 import {QueueRepository} from '../repositories';
@@ -16,8 +16,8 @@ import {QueueRepository} from '../repositories';
 export class QueueController {
   constructor(
     @repository(QueueRepository)
-    public queueRepository : QueueRepository,
-  ) {}
+    public queueRepository: QueueRepository,
+  ) { }
 
   @get('/queues')
   @response(200, {
@@ -50,7 +50,7 @@ export class QueueController {
         },
       },
     }) queue: Queue
-  ):Promise<void> {
+  ): Promise<void> {
     this.queueRepository.updateById(id, queue)
   }
 }

@@ -1,6 +1,6 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {User} from './user.model';
 import {Token, TokenWithRelations} from './token.model';
+import {User} from './user.model';
 
 @model({
   settings: {

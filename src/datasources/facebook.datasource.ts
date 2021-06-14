@@ -18,7 +18,7 @@ const config = {
         url: 'https://facebook.com/{pageId}/posts/{postId}'
       },
       functions: {
-        getActions: ['pageId','postId']
+        getActions: ['pageId', 'postId']
       }
     }
   ]

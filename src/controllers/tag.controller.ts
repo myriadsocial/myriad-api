@@ -7,21 +7,21 @@ import {
 import {
   get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   post,
   requestBody,
-  response,
-  HttpErrors
+  response
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
-import { KeypairType } from '@polkadot/util-crypto/types';
+import {KeypairType} from '@polkadot/util-crypto/types';
 import {Post, Tag} from '../models';
 import {
   PeopleRepository,
   PostRepository,
-  TagRepository, 
-  UserCredentialRepository,
-  PublicMetricRepository
+  PublicMetricRepository,
+  TagRepository,
+  UserCredentialRepository
 } from '../repositories';
 import {Reddit, Twitter} from '../services';
 
@@ -37,8 +37,10 @@ export class TagController {
     public userCredentialRepository: UserCredentialRepository,
     @repository(PublicMetricRepository)
     public publicMetricRepository: PublicMetricRepository,
-    @inject('services.Twitter') protected twitterService: Twitter,
-    @inject('services.Reddit') protected redditService: Reddit
+    @inject('services.Twitter')
+    protected twitterService: Twitter,
+    @inject('services.Reddit')
+    protected redditService: Reddit
   ) { }
 
   @get('/trending', {
@@ -49,14 +51,14 @@ export class TagController {
     }
   })
   async trendingTopic(
-    @param.query.string('order') order:string,
-    @param.query.string('limit') limit:number,
-    @param.query.string('offset') offset:number
-  ):Promise<Tag[]> {
+    @param.query.string('order') order: string,
+    @param.query.string('limit') limit: number,
+    @param.query.string('offset') offset: number
+  ): Promise<Tag[]> {
     if (!order) order = "DESC";
     if (!limit) limit = 10;
     if (!offset) offset = 0;
-    
+
     return this.tagRepository.find({
       order: [`count ${order.toUpperCase()}`],
       limit: limit,
@@ -73,9 +75,9 @@ export class TagController {
   })
   async trendingPost(
     @param.path.string('topic') topic: string,
-    @param.query.string('order') order:string,
-    @param.query.string('limit') limit:number,
-    @param.query.string('offset') offset:number
+    @param.query.string('order') order: string,
+    @param.query.string('limit') limit: number,
+    @param.query.string('offset') offset: number
   ): Promise<Post[]> {
     if (!order) order = 'DESC'
     if (!limit) limit = 10
@@ -121,7 +123,7 @@ export class TagController {
       },
     })
     tag: Tag,
-    @param.path.string('platform') platform:string
+    @param.path.string('platform') platform: string
   ): Promise<Tag> {
     const keyword = tag.id.replace(/ /g, '').trim();
     const searchPost = await this.searchPostByKeyword(keyword, platform)
@@ -142,13 +144,13 @@ export class TagController {
           id: keyword,
         })
       }
-      
+
       return foundTag
     } else {
       throw new HttpErrors.NotFound(`Topic ${tag.id} is not found in ${platform}`)
     }
   }
-  
+
   @get('/tags')
   @response(200, {
     description: 'Array of Tag model instances',
@@ -182,73 +184,6 @@ export class TagController {
   ): Promise<Tag> {
     return this.tagRepository.findById(id, filter);
   }
-
-  // @get('/tags/count')
-  // @response(200, {
-  //   description: 'Tag model count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async count(
-  //   @param.where(Tag) where?: Where<Tag>,
-  // ): Promise<Count> {
-  //   return this.tagRepository.count(where);
-  // }
-
-  // @patch('/tags')
-  // @response(200, {
-  //   description: 'Tag PATCH success count',
-  //   content: {'application/json': {schema: CountSchema}},
-  // })
-  // async updateAll(
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(Tag, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   tag: Tag,
-  //   @param.where(Tag) where?: Where<Tag>,
-  // ): Promise<Count> {
-  //   return this.tagRepository.updateAll(tag, where);
-  // }
-
-  // @patch('/tags/{id}')
-  // @response(204, {
-  //   description: 'Tag PATCH success',
-  // })
-  // async updateById(
-  //   @param.path.string('id') id: string,
-  //   @requestBody({
-  //     content: {
-  //       'application/json': {
-  //         schema: getModelSchemaRef(Tag, {partial: true}),
-  //       },
-  //     },
-  //   })
-  //   tag: Tag,
-  // ): Promise<void> {
-  //   await this.tagRepository.updateById(id, tag);
-  // }
-
-  // @put('/tags/{id}')
-  // @response(204, {
-  //   description: 'Tag PUT success',
-  // })
-  // async replaceById(
-  //   @param.path.string('id') id: string,
-  //   @requestBody() tag: Tag,
-  // ): Promise<void> {
-  //   await this.tagRepository.replaceById(id, tag);
-  // }
-
-  // @del('/tags/{id}')
-  // @response(204, {
-  //   description: 'Tag DELETE success',
-  // })
-  // async deleteById(@param.path.string('id') id: string): Promise<void> {
-  //   await this.tagRepository.deleteById(id);
-  // }
 
   async searchPostByKeyword(keyword: string, platform: string): Promise<boolean> {
     if (platform === "facebook") return false
@@ -326,7 +261,7 @@ export class TagController {
     }
   }
 
-  async createPostPublicMetric(post:object, credential:boolean):Promise<void> {
+  async createPostPublicMetric(post: object, credential: boolean): Promise<void> {
     const newPost = await this.postRepository.create(post)
 
     await this.publicMetricRepository.create({
@@ -338,21 +273,21 @@ export class TagController {
 
     if (!credential) {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
         ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
       });
       const newKey = keyring.addFromUri('//' + newPost.id)
-      
+
       await this.postRepository.updateById(newPost.id, {walletAddress: newKey.address});
     }
   }
 
-  async updatePostTag(post:Post, keyword:string):Promise<void> {
+  async updatePostTag(post: Post, keyword: string): Promise<void> {
     const found = post.tags.find(tag => tag.toLowerCase() === keyword.toLowerCase())
-          
+
     if (!found) {
       this.postRepository.updateById(post.id, {tags: [...post.tags, keyword]})
-    } 
+    }
 
     const foundTag = await this.tagRepository.findOne({
       where: {
@@ -378,11 +313,11 @@ export class TagController {
         updatedAt: new Date().toString()
       })
     }
-    
+
   }
 
-  async socialMediaPost(platform:string, keyword: string) {
-    switch(platform) {
+  async socialMediaPost(platform: string, keyword: string) {
+    switch (platform) {
       case "twitter":
         const maxResult = 10
         const tweetField = "referenced_tweets,attachments,entities,created_at"
@@ -405,24 +340,24 @@ export class TagController {
 
         if (data.children.length === 0) throw new Error("Reddit post doesn't exists")
 
-        const filterPost = data.children.filter((post:any) => post.kind === 't3')
+        const filterPost = data.children.filter((post: any) => post.kind === 't3')
 
         return {
-          posts: filterPost.map((post:any) => post.data),
+          posts: filterPost.map((post: any) => post.data),
           users: {}
         }
-      
+
       default:
         throw new Error("Platform does not exists")
     }
   }
 
-  async newPost (post:any, people:any, keyword:string) {
-    let hasMedia:boolean = false
-    let link:string
-    let platformCreatedAt:string
+  async newPost(post: any, people: any, keyword: string) {
+    let hasMedia: boolean = false
+    let link: string
+    let platformCreatedAt: string
     let tags: string[] = []
-    
+
     const newPost = {
       platformUser: {
         username: people.username,
@@ -436,7 +371,7 @@ export class TagController {
 
     switch (people.platform) {
       case "twitter":
-        tags = post.entities ? (post.entities.hashtags ? 
+        tags = post.entities ? (post.entities.hashtags ?
           post.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
         ) : []
 
@@ -448,7 +383,7 @@ export class TagController {
 
         return {
           ...newPost,
-          tags: tags.find((tag:string) => tag.toLowerCase() === keyword.toLowerCase()) ? tags : [...tags, keyword],
+          tags: tags.find((tag: string) => tag.toLowerCase() === keyword.toLowerCase()) ? tags : [...tags, keyword],
           text: post.text,
           hasMedia, link, platformCreatedAt
         }
@@ -466,7 +401,7 @@ export class TagController {
           text: post.selftext,
           tags: [keyword], hasMedia, link, platformCreatedAt
         }
-      
+
       case "facebook":
         return {
           ...newPost,
@@ -486,24 +421,7 @@ export class TagController {
     }
   }
 
-  async createTags(tags:string[]):Promise<void> {
-    // const fetchTags = await this.tagRepository.find()
-    // const filterTags = tags.filter((tag:string) => {
-    //   const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
-
-    //   if (foundTag) return false
-    //   return true
-    // })
-
-    // if (filterTags.length === 0) return
-
-    // await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
-    //   return {
-    //     id: filterTag,
-    //     hide: false
-    //   }
-    // }))
-
+  async createTags(tags: string[]): Promise<void> {
     for (let i = 0; i < tags.length; i++) {
       const foundTag = await this.tagRepository.findOne({
         where: {
@@ -529,14 +447,14 @@ export class TagController {
           updatedAt: new Date().toString()
         })
       } else {
-        const oneDay:number = 60 * 60 * 24 * 1000;
-          const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+        const oneDay: number = 60 * 60 * 24 * 1000;
+        const isOneDay: boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
 
-          this.tagRepository.updateById(foundTag.id, {
-            updatedAt: new Date().toString(),
-            count: isOneDay ? 1 : foundTag.count + 1
-          }) 
+        this.tagRepository.updateById(foundTag.id, {
+          updatedAt: new Date().toString(),
+          count: isOneDay ? 1 : foundTag.count + 1
+        })
       }
     }
- }
+  }
 }

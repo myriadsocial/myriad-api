@@ -1,13 +1,28 @@
-import {inject, Getter} from '@loopback/core';
-import {DefaultCrudRepository, repository, HasManyRepositoryFactory, BelongsToAccessor, HasOneRepositoryFactory} from '@loopback/repository';
+import {Getter, inject} from '@loopback/core';
+import {
+  BelongsToAccessor,
+  DefaultCrudRepository,
+  HasManyRepositoryFactory,
+  HasOneRepositoryFactory,
+  repository
+} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Post, PostRelations, Comment, People, User, Like, PublicMetric, Dislike} from '../models';
+import {
+  Comment,
+  Dislike,
+  Like,
+  People,
+  Post,
+  PostRelations,
+  PublicMetric,
+  User
+} from '../models';
 import {CommentRepository} from './comment.repository';
-import {PeopleRepository} from './people.repository';
-import {UserRepository} from './user.repository';
-import {LikeRepository} from './like.repository';
-import {PublicMetricRepository} from './public-metric.repository';
 import {DislikeRepository} from './dislike.repository';
+import {LikeRepository} from './like.repository';
+import {PeopleRepository} from './people.repository';
+import {PublicMetricRepository} from './public-metric.repository';
+import {UserRepository} from './user.repository';
 
 export class PostRepository extends DefaultCrudRepository<
   Post,
@@ -28,7 +43,19 @@ export class PostRepository extends DefaultCrudRepository<
   public readonly dislikes: HasManyRepositoryFactory<Dislike, typeof Post.prototype.id>;
 
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('CommentRepository') protected commentRepositoryGetter: Getter<CommentRepository>, @repository.getter('PeopleRepository') protected peopleRepositoryGetter: Getter<PeopleRepository>, @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>, @repository.getter('LikeRepository') protected likeRepositoryGetter: Getter<LikeRepository>, @repository.getter('PublicMetricRepository') protected publicMetricRepositoryGetter: Getter<PublicMetricRepository>, @repository.getter('DislikeRepository') protected dislikeRepositoryGetter: Getter<DislikeRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource,
+    @repository.getter('CommentRepository')
+    protected commentRepositoryGetter: Getter<CommentRepository>,
+    @repository.getter('PeopleRepository')
+    protected peopleRepositoryGetter: Getter<PeopleRepository>,
+    @repository.getter('UserRepository')
+    protected userRepositoryGetter: Getter<UserRepository>,
+    @repository.getter('LikeRepository')
+    protected likeRepositoryGetter: Getter<LikeRepository>,
+    @repository.getter('PublicMetricRepository')
+    protected publicMetricRepositoryGetter: Getter<PublicMetricRepository>,
+    @repository.getter('DislikeRepository')
+    protected dislikeRepositoryGetter: Getter<DislikeRepository>,
   ) {
     super(Post, dataSource);
     this.dislikes = this.createHasManyRepositoryFactoryFor('dislikes', dislikeRepositoryGetter,);

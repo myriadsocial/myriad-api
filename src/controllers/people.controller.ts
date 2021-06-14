@@ -8,28 +8,28 @@ import {
   del,
   get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
   put,
   requestBody,
-  response,
-  HttpErrors
+  response
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
-import { KeypairType } from '@polkadot/util-crypto/types';
+import {KeypairType} from '@polkadot/util-crypto/types';
 import dotenv from 'dotenv';
 import {xml2json} from 'xml-js';
 import {People, Post} from '../models';
 import {
-  PeopleRepository, 
-  PostRepository, 
-  TagRepository, 
-  UserCredentialRepository, 
-  UserRepository,
-  PublicMetricRepository
+  PeopleRepository,
+  PostRepository,
+  PublicMetricRepository,
+  TagRepository,
+  UserCredentialRepository,
+  UserRepository
 } from '../repositories';
-import {Reddit, Rsshub, Twitter, Facebook} from '../services';
+import {Facebook, Reddit, Rsshub, Twitter} from '../services';
 dotenv.config()
 
 export class PeopleController {
@@ -46,10 +46,14 @@ export class PeopleController {
     public userRepository: UserRepository,
     @repository(PublicMetricRepository)
     public publicMetricRepository: PublicMetricRepository,
-    @inject('services.Twitter') protected twitterService: Twitter,
-    @inject('services.Reddit') protected redditService: Reddit,
-    @inject('services.Rsshub') protected rsshubService: Rsshub,
-    @inject('services.Facebook') protected facebookService: Facebook
+    @inject('services.Twitter')
+    protected twitterService: Twitter,
+    @inject('services.Reddit')
+    protected redditService: Reddit,
+    @inject('services.Rsshub')
+    protected rsshubService: Rsshub,
+    @inject('services.Facebook')
+    protected facebookService: Facebook
   ) { }
 
   @post('/people')
@@ -132,7 +136,7 @@ export class PeopleController {
         description: 'Array of People has many Post',
         content: {
           'application/json': {
-            schema: { type: 'array', items: getModelSchemaRef(Post) },
+            schema: {type: 'array', items: getModelSchemaRef(Post)},
           },
         },
       },
@@ -182,10 +186,10 @@ export class PeopleController {
     await this.peopleRepository.deleteById(id);
   }
 
-  async createPostByPeople(people:People):Promise<boolean> {
+  async createPostByPeople(people: People): Promise<boolean> {
     try {
       const posts = await this.socialMediaPost(people)
-      
+
       for (let i = 0; i < posts.length; i++) {
         const post = posts[i]
         const foundPost = await this.postRepository.findOne({
@@ -232,20 +236,20 @@ export class PeopleController {
 
       return true
     } catch (err) {
-      return false 
+      return false
     }
   }
 
-  async socialMediaPost(people:People) {
-    switch(people.platform) {
+  async socialMediaPost(people: People) {
+    switch (people.platform) {
       case "twitter":
         const platform_account_id = people.platform_account_id
         const maxResults = 5
         const tweetField = "attachments,entities,referenced_tweets,created_at"
 
         const {data: tweets} = await this.twitterService.getActions(`users/${platform_account_id}/tweets?max_results=${maxResults}&tweet.fields=${tweetField}`)
-        
-        if (!tweets) throw new Error("People does not exists") 
+
+        if (!tweets) throw new Error("People does not exists")
 
         const filterTweets = tweets.filter((post: any) => !post.referenced_tweets)
 
@@ -258,7 +262,7 @@ export class PeopleController {
           return !redditPost.find(e => post.data.id === e.textId) && post.kind === 't3'
         })
 
-        return filterPost.map((post:any) => post.data)
+        return filterPost.map((post: any) => post.data)
 
       case "facebook":
         const xml = await this.rsshubService.getContents(people.platform_account_id)
@@ -272,7 +276,7 @@ export class PeopleController {
     }
   }
 
-  async createPostPublicMetric(post:object, credential:boolean):Promise<void> {
+  async createPostPublicMetric(post: object, credential: boolean): Promise<void> {
     const newPost = await this.postRepository.create(post)
 
     await this.publicMetricRepository.create({
@@ -284,16 +288,16 @@ export class PeopleController {
 
     if (!credential) {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType, 
+        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
         ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
       });
       const newKey = keyring.addFromUri('//' + newPost.id)
-      
+
       await this.postRepository.updateById(newPost.id, {walletAddress: newKey.address});
     }
   }
 
-  async newPost(post:any, people:any) {    
+  async newPost(post: any, people: any) {
     const newPost = {
       platformUser: {
         username: people.username,
@@ -308,7 +312,7 @@ export class PeopleController {
 
     switch (people.platform) {
       case "twitter":
-        const tags = post.entities ? (post.entities.hashtags ? 
+        const tags = post.entities ? (post.entities.hashtags ?
           post.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
         ) : []
 
@@ -317,23 +321,23 @@ export class PeopleController {
         return {
           ...newPost,
           text: post.text,
-          tags: tags, 
-          hasMedia: post.attachments ? Boolean(post.attachments.media_keys) : false, 
-          link: `https://twitter.com/${people.platform_account_id}/status/${post.id}`, 
+          tags: tags,
+          hasMedia: post.attachments ? Boolean(post.attachments.media_keys) : false,
+          link: `https://twitter.com/${people.platform_account_id}/status/${post.id}`,
           platformCreatedAt: post.created_at
         }
 
       case "reddit":
         return {
           ...newPost,
-          tags: [], 
-          hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false, 
-          link: `https://reddit.com/${post.id}`, 
+          tags: [],
+          hasMedia: post.media_metadata || post.is_reddit_media_domain ? true : false,
+          link: `https://reddit.com/${post.id}`,
           platformCreatedAt: new Date(post.created_utc * 1000).toString(),
           title: post.title,
           text: post.selftext
         }
-      
+
       case "facebook":
         return {
           ...newPost,
@@ -347,15 +351,15 @@ export class PeopleController {
     }
   }
 
-  getFBTextId (post:any) {
+  getFBTextId(post: any) {
     const link = post.link._text.split("=")
     return link[1].substr(0, link[1].length - 3)
   }
 
-  async createTags(tags:string[]):Promise<void> {
+  async createTags(tags: string[]): Promise<void> {
     const fetchTags = await this.tagRepository.find()
-    const filterTags = tags.filter((tag:string) => {
-      const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+    const filterTags = tags.filter((tag: string) => {
+      const foundTag = fetchTags.find((fetchTag: any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
 
       if (foundTag) return false
       return true
@@ -363,11 +367,11 @@ export class PeopleController {
 
     if (filterTags.length === 0) return
 
-    await this.tagRepository.createAll(filterTags.map((filterTag:string) => {
+    await this.tagRepository.createAll(filterTags.map((filterTag: string) => {
       return {
         id: filterTag,
         hide: false
       }
     }))
- }
+  }
 }

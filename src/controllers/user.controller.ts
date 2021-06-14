@@ -22,8 +22,15 @@ import {KeypairType} from '@polkadot/util-crypto/types';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {Friend, User} from '../models';
 import {
-  ExperienceRepository, FriendRepository, PeopleRepository, PostRepository, QueueRepository,
-  TagRepository, TransactionRepository, UserRepository, UserTokenRepository
+  ExperienceRepository,
+  FriendRepository,
+  PeopleRepository,
+  PostRepository,
+  QueueRepository,
+  TagRepository,
+  TransactionRepository,
+  UserRepository,
+  UserTokenRepository
 } from '../repositories';
 import {NotificationService} from '../services';
 
@@ -39,11 +46,16 @@ export class UserController {
     public peopleRepository: PeopleRepository,
     @repository(QueueRepository)
     public queueRepository: QueueRepository,
-    @repository(FriendRepository) public friendRepository: FriendRepository,
-    @repository(PostRepository) public postRepository: PostRepository,
-    @repository(UserTokenRepository) public userTokenRepository: UserTokenRepository,
-    @repository(TransactionRepository) public transactionRepository: TransactionRepository,
-    @service(NotificationService) public notificationService: NotificationService
+    @repository(FriendRepository)
+    public friendRepository: FriendRepository,
+    @repository(PostRepository)
+    public postRepository: PostRepository,
+    @repository(UserTokenRepository)
+    public userTokenRepository: UserTokenRepository,
+    @repository(TransactionRepository)
+    public transactionRepository: TransactionRepository,
+    @service(NotificationService)
+    public notificationService: NotificationService
   ) { }
 
   @post('/users')
@@ -69,18 +81,6 @@ export class UserController {
     }
 
     try {
-      // const foundUser = await this.userRepository.findOne({
-      //   where: {
-      //     or: [
-      //       {id: user.id},
-      //       {username: user.username}
-      //     ]
-      //   }
-      // })
-
-      // if (!foundUser) this.defaultTips(user.id)
-      // else throw new Error('UserExist')
-
       user.name = user.username[0].toUpperCase() + user.username.substr(1).toLowerCase()
 
       const newUser = await this.userRepository.create({
@@ -89,21 +89,6 @@ export class UserController {
         createdAt: new Date().toString(),
         updatedAt: new Date().toString()
       });
-
-      // this.userRepository.detailTransactions(newUser.id).create({
-      //   sentToMe: 100000000000000,
-      //   sentToThem: 0,
-      //   userId: newUser.id,
-      //   tokenId: 'MYR'
-      // })
-
-      // this.userTokenRepository.create({
-      //   userId: newUser.id,
-      //   tokenId: 'MYR'
-      // })
-
-      // await this.defaultPost(newUser.id)
-      // await this.defaultExperience(newUser)
 
       return newUser
     } catch (err) {
