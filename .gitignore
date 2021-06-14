@@ -62,6 +62,3 @@ typings/
 
 # Cache used by TypeScript's incremental build
 *.tsbuildinfo
-
-# Config
-firebase-service-account.json
