@@ -349,18 +349,18 @@ export class UserController {
   }
 
   async defaultTips(userId: string): Promise<void> {
-    const provider = process.env.POLKADOT_MYRIAD_RPC || ""
-    const myriadPrefix = Number(process.env.POLKADOT_KEYRING_PREFIX)
+    const provider = process.env.MYRIAD_WS_RCP || ""
+    const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX)
     const api = await polkadotApi(provider)
     const keyring = new Keyring({
-      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
+      type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
       ss58Format: myriadPrefix
     });
 
-    const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
+    const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? "";
     const from = keyring.addFromMnemonic(mnemonic);
     const to = encodeAddress(userId, myriadPrefix);
-    const value = 100000000000000; // send 100 myria
+    const value = +(process.env.MYRIAD_ACCOUNT_DEPOSIT ?? 100000000000000)
     const {nonce} = await api.query.system.account(from.address)
 
     const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})

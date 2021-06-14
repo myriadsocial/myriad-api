@@ -12,6 +12,7 @@ import {Keyring} from '@polkadot/api';
 import {u8aToHex} from '@polkadot/util';
 import {mnemonicGenerate} from '@polkadot/util-crypto';
 import {KeypairType} from '@polkadot/util-crypto/types';
+import dotenv from 'dotenv';
 import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
 import {
@@ -42,6 +43,7 @@ import tokens from './seed-data/tokens.json';
 import users from './seed-data/users.json';
 import {MySequence} from './sequence';
 import {NotificationService} from './services';
+dotenv.config()
 
 interface PlatformUser {
   username: string,
@@ -105,7 +107,13 @@ export class MyriadApiApplication extends BootMixin(
     };
 
     // initialize firebase app
-    firebaseAdmin.initializeApp()
+    firebaseAdmin.initializeApp({
+      credential: firebaseAdmin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY,
+      }),
+    })
   }
 
   async migrateSchema(options?: SchemaMigrationOptions) {
@@ -148,7 +156,7 @@ export class MyriadApiApplication extends BootMixin(
     await queueRepository.deleteAll()
 
     const keyring = new Keyring({
-      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType
+      type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType
     });
 
     const updateUsers = users.map((user: any) => {

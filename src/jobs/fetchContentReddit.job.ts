@@ -45,7 +45,7 @@ export class FetchContentRedditJob extends CronJob {
     try {
       const tags = await this.tagRepository.find()
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType
       });
 
       for (let i = 0; i < tags.length; i++) {

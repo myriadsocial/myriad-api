@@ -18,7 +18,6 @@ import {
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
 import {KeypairType} from '@polkadot/util-crypto/types';
-import dotenv from 'dotenv';
 import {xml2json} from 'xml-js';
 import {People, Post} from '../models';
 import {
@@ -30,7 +29,6 @@ import {
   UserRepository
 } from '../repositories';
 import {Facebook, Reddit, Rsshub, Twitter} from '../services';
-dotenv.config()
 
 export class PeopleController {
   constructor(
@@ -288,8 +286,8 @@ export class PeopleController {
 
     if (!credential) {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
-        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
+        ss58Format: Number(process.env.MYRIAD_ADDRESS_PREFIX)
       });
       const newKey = keyring.addFromUri('//' + newPost.id)
 

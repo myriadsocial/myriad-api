@@ -224,7 +224,7 @@ export class UserCredentialController {
 
   async transferTipsToUser(credential: UserCredential): Promise<void> {
     const keyring = new Keyring({
-      type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
+      type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
     });
     const from = keyring.addFromUri('//' + credential.peopleId);
     const gasFee = 125000147

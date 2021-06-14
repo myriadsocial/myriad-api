@@ -212,7 +212,7 @@ export class FetchContentSocialMediaJob extends CronJob {
   async createPostPublicMetric(post: any, credential: boolean): Promise<void> {
     if (!credential) {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
       });
       const newKey = keyring.addFromUri('//' + post.peopleId)
 

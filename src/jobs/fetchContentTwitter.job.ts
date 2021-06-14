@@ -42,7 +42,7 @@ export class FetchContentTwitterJob extends CronJob {
   async searchPostByTag(): Promise<void> {
     try {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
       });
       const tagsRepo = await this.tagRepository.find()
 

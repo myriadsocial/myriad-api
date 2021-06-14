@@ -273,8 +273,8 @@ export class TagController {
 
     if (!credential) {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
-        ss58Format: Number(process.env.POLKADOT_KEYRING_PREFIX)
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
+        ss58Format: Number(process.env.MYRIAD_ADDRESS_PREFIX)
       });
       const newKey = keyring.addFromUri('//' + newPost.id)
 
