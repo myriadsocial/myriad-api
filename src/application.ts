@@ -10,8 +10,9 @@ import {
 import {ServiceMixin} from '@loopback/service-proxy';
 import {Keyring} from '@polkadot/api';
 import {u8aToHex} from '@polkadot/util';
-import {mnemonicGenerate} from '@polkadot/util-crypto';
+import {mnemonicGenerate, encodeAddress} from '@polkadot/util-crypto';
 import {KeypairType} from '@polkadot/util-crypto/types';
+import { polkadotApi } from './helpers/polkadotApi';
 import dotenv from 'dotenv';
 import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
@@ -164,17 +165,18 @@ export class MyriadApiApplication extends BootMixin(
     const newToken = await tokenRepository.createAll(tokens)
     // const newUser = await userRepo.createAll(updateUsers)
 
-    const api = await polkadotApi(process.env.POLKADOT_MYRIAD_RPC || "") 
+    const api = await polkadotApi(process.env.MYRIAD_WS_RPC || "") 
 
     for (let i = 0; i < updateUsers.length; i++) {
-      const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
+      const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? "";
       const from = keyring.addFromMnemonic(mnemonic);
-      const value = 100000000000000;
-      const {nonce} = await api.query.system.account(encodeAddress(from.address, 214))
+      const value = +(process.env.MYRIAD_ACCOUNT_DEPOSIT ?? 100000000000000);
+      const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX);
+      const {nonce} = await api.query.system.account(encodeAddress(from.address, myriadPrefix))
 
       let count: number = nonce.toJSON()
 
-      const transfer = api.tx.balances.transfer(encodeAddress(updateUsers[i].id, 214), value)
+      const transfer = api.tx.balances.transfer(encodeAddress(updateUsers[i].id, myriadPrefix), value)
 
       const newUser = await userRepo.create(updateUsers[i])
       const txHash = await transfer.signAndSend(from, {nonce: count + i});
