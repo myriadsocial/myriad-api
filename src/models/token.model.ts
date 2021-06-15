@@ -1,6 +1,6 @@
-import {Entity, model, property, hasMany} from '@loopback/repository';
-import {Transaction} from './transaction.model';
+import {Entity, hasMany, model, property} from '@loopback/repository';
 import {DetailTransaction} from './detail-transaction.model';
+import {Transaction} from './transaction.model';
 
 @model({
   settings: {

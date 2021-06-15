@@ -3,7 +3,7 @@ import {
   CountSchema,
   Filter,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
   del,
@@ -13,23 +13,23 @@ import {
   param,
   patch,
   post,
-  requestBody,
+  requestBody
 } from '@loopback/rest';
+import {Dislike, Post} from '../models';
 import {
-  Post,
-  Dislike,
-} from '../models';
-import {
-  PostRepository,
   DislikeRepository,
-  LikeRepository
+  LikeRepository,
+  PostRepository
 } from '../repositories';
 
 export class PostDislikeController {
   constructor(
-    @repository(PostRepository) protected postRepository: PostRepository,
-    @repository(DislikeRepository) protected dislikeRepository: DislikeRepository,
-    @repository(LikeRepository) protected likeRepository: LikeRepository
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
+    @repository(DislikeRepository)
+    protected dislikeRepository: DislikeRepository,
+    @repository(LikeRepository)
+    protected likeRepository: LikeRepository
   ) { }
 
   @get('/posts/{id}/dislikes', {
@@ -157,7 +157,7 @@ export class PostDislikeController {
     return this.postRepository.dislikes(id).delete(where);
   }
 
-  async countDislike(postId:any): Promise<void> {
+  async countDislike(postId: any): Promise<void> {
     const dislikes = await this.dislikeRepository.count({
       postId,
       status: true

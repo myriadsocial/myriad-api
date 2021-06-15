@@ -4,18 +4,18 @@ import {
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
+  param,
   patch,
+  post,
   put,
-  del,
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
 import {DetailTransaction} from '../models';
 import {DetailTransactionRepository} from '../repositories';
@@ -23,8 +23,8 @@ import {DetailTransactionRepository} from '../repositories';
 export class DetailTransactionController {
   constructor(
     @repository(DetailTransactionRepository)
-    public detailTransactionRepository : DetailTransactionRepository,
-  ) {}
+    public detailTransactionRepository: DetailTransactionRepository,
+  ) { }
 
   @post('/detail-transactions')
   @response(200, {

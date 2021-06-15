@@ -3,7 +3,7 @@ import {
   CountSchema,
   Filter,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
   del,
@@ -13,23 +13,23 @@ import {
   param,
   patch,
   post,
-  requestBody,
+  requestBody
 } from '@loopback/rest';
+import {Like, Post} from '../models';
 import {
-  Post,
-  Like,
-} from '../models';
-import {
-  LikeRepository, 
-  PostRepository,
-  DislikeRepository
+  DislikeRepository,
+  LikeRepository,
+  PostRepository
 } from '../repositories';
 
 export class PostLikeController {
   constructor(
-    @repository(PostRepository) protected postRepository: PostRepository,
-    @repository(LikeRepository) protected likeRepository: LikeRepository,
-    @repository(DislikeRepository) protected dislikeRepository: DislikeRepository
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
+    @repository(LikeRepository)
+    protected likeRepository: LikeRepository,
+    @repository(DislikeRepository)
+    protected dislikeRepository: DislikeRepository
   ) { }
 
   @get('/posts/{id}/likes', {
@@ -75,7 +75,7 @@ export class PostLikeController {
   ): Promise<Like> {
     const foundLike = await this.likeRepository.findOne({
       where: {
-        postId: id, 
+        postId: id,
         userId: like.userId
       }
     })
@@ -98,7 +98,7 @@ export class PostLikeController {
       }
 
       this.countLike(id)
-      
+
       return newLike
     }
 
@@ -113,7 +113,7 @@ export class PostLikeController {
     }
 
     this.countLike(id)
-    
+
     foundLike.status = !foundLike.status
 
     return foundLike
@@ -157,7 +157,7 @@ export class PostLikeController {
     return this.postRepository.likes(id).delete(where);
   }
 
-  async countLike (postId:any):Promise<void> {
+  async countLike(postId: any): Promise<void> {
     const likes = await this.likeRepository.count({
       postId,
       status: true
@@ -167,12 +167,12 @@ export class PostLikeController {
       postId,
       status: true
     })
-    
+
     this.postRepository.publicMetric(postId).patch({
       liked: likes.count,
       disliked: dislikes.count
     })
-    
+
     this.postRepository.updateById(postId, {
       totalLiked: likes.count,
       totalDisliked: dislikes.count

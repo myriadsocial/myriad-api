@@ -2,17 +2,16 @@ import {inject} from '@loopback/core'
 import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
 import {Keyring} from '@polkadot/api'
-import { KeypairType } from '@polkadot/util-crypto/types'
+import {u8aToHex} from '@polkadot/util'
+import {KeypairType} from '@polkadot/util-crypto/types'
 import {
   PeopleRepository,
   PostRepository,
-
-
-  PublicMetricRepository, TagRepository,
+  PublicMetricRepository,
+  TagRepository,
   UserCredentialRepository
 } from '../repositories'
 import {Twitter} from '../services'
-import {u8aToHex} from '@polkadot/util'
 
 @cronJob()
 export class FetchContentTwitterJob extends CronJob {
@@ -29,8 +28,7 @@ export class FetchContentTwitterJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '0 0 */1 * * *', // Every hour
-      // cronTime: '*/10 * * * * *',
+      cronTime: '0 0 */1 * * *',
       start: true
     })
   }
@@ -44,7 +42,7 @@ export class FetchContentTwitterJob extends CronJob {
   async searchPostByTag(): Promise<void> {
     try {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
       });
       const tagsRepo = await this.tagRepository.find()
 
@@ -81,7 +79,7 @@ export class FetchContentTwitterJob extends CronJob {
             retweet_count: post.public_metrics.retweet_count,
             like_count: post.public_metrics.like_count
           }
-          
+
           const newPost = {
             tags: tags.find((tagPost: string) => tagPost.toLowerCase() === tag.id.toLowerCase()) ? tags : [...tags, tag.id],
             hasMedia,
@@ -92,7 +90,7 @@ export class FetchContentTwitterJob extends CronJob {
             platformUser: {
               username,
               platform_account_id: post.author_id,
-              profile_image_url: profile_image_url.replace('normal','400x400')
+              profile_image_url: profile_image_url.replace('normal', '400x400')
             },
             platformCreatedAt: post.created_at,
             createdAt: new Date().toString(),
@@ -149,25 +147,25 @@ export class FetchContentTwitterJob extends CronJob {
     } catch (e) { }
   }
 
-  async createTags(tags:string[]):Promise<void> {
-     const fetchTags = await this.tagRepository.find()
-     const filterTags = tags.filter((tag:string) => {
-       const foundTag = fetchTags.find((fetchTag:any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
+  async createTags(tags: string[]): Promise<void> {
+    const fetchTags = await this.tagRepository.find()
+    const filterTags = tags.filter((tag: string) => {
+      const foundTag = fetchTags.find((fetchTag: any) => fetchTag.id.toLowerCase() === tag.toLowerCase())
 
-       if (foundTag) return false
-       return true
-     })
+      if (foundTag) return false
+      return true
+    })
 
-     if (filterTags.length === 0) return
+    if (filterTags.length === 0) return
 
-     this.tagRepository.createAll(filterTags.map((filterTag:string) => {
-       return {
-         id: filterTag,
-         hide: false,
-         count: 1,
-         createdAt: new Date().toString(),
-         updatedAt: new Date().toString()
-       }
-     }))
+    this.tagRepository.createAll(filterTags.map((filterTag: string) => {
+      return {
+        id: filterTag,
+        hide: false,
+        count: 1,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString()
+      }
+    }))
   }
 }

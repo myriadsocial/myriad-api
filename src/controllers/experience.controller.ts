@@ -4,14 +4,15 @@ import {
   repository
 } from '@loopback/repository';
 import {
-  del, get,
+  del,
+  get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
   requestBody,
-  response,
-  HttpErrors
+  response
 } from '@loopback/rest';
 import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
@@ -101,7 +102,7 @@ export class ExperienceController {
     if (!foundExperience) throw new HttpErrors.NotFound("Experience does not exists")
 
     if (foundExperience.userId !== experience.userId) throw new HttpErrors.UnprocessableEntity("This experience does not belong to you")
-    
+
     await this.experienceRepository.updateById(id, {
       ...experience,
       updatedAt: new Date().toString()

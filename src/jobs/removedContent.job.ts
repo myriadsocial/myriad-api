@@ -3,7 +3,6 @@ import {repository} from '@loopback/repository';
 import {PostRepository} from '../repositories';
 
 @cronJob()
-
 export class RemovedContentJob extends CronJob {
   constructor(
     @repository(PostRepository) public postRepository: PostRepository
@@ -31,6 +30,6 @@ export class RemovedContentJob extends CronJob {
         ]
       })
 
-    } catch (err) {} 
+    } catch (err) { }
   }
 }

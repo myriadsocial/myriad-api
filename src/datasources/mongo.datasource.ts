@@ -1,7 +1,5 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {AnyObject, juggler} from '@loopback/repository';
-import dotenv from 'dotenv';
-dotenv.config()
 
 const config = {
   name: 'mongo',
@@ -27,6 +25,9 @@ function updateConfig(dsConfig: AnyObject) {
   }
   if (process.env.MONGO_PASSWORD) {
     dsConfig.password = process.env.MONGO_PASSWORD
+  }
+  if (process.env.MONGO_DATABASE) {
+    dsConfig.database = process.env.MONGO_DATABASE
   }
   return dsConfig;
 }

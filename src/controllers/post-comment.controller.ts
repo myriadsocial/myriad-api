@@ -15,20 +15,21 @@ import {
   post,
   requestBody
 } from '@loopback/rest';
+import {Comment, Post} from '../models';
 import {
-  Comment, Post
-} from '../models';
-import {
-  PostRepository, 
   CommentRepository,
-  ConversationRepository
+  ConversationRepository,
+  PostRepository
 } from '../repositories';
 
 export class PostCommentController {
   constructor(
-    @repository(PostRepository) protected postRepository: PostRepository,
-    @repository(CommentRepository) protected commentRepository: CommentRepository,
-    @repository(ConversationRepository) protected conversationRepository: ConversationRepository
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
+    @repository(CommentRepository)
+    protected commentRepository: CommentRepository,
+    @repository(ConversationRepository)
+    protected conversationRepository: ConversationRepository
   ) { }
 
   @get('/posts/{id}/comments', {
@@ -112,7 +113,7 @@ export class PostCommentController {
     });
 
     const totalComment = await this.commentRepository.count({
-        postId: id
+      postId: id
     })
 
     this.postRepository.publicMetric(id).patch({comment: totalComment.count})

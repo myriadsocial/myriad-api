@@ -15,17 +15,24 @@ import {
   post,
   requestBody
 } from '@loopback/rest';
+import {Comment, User} from '../models';
 import {
-  Comment, User
-} from '../models';
-import {CommentRepository, ConversationRepository, PostRepository, UserRepository} from '../repositories';
+  CommentRepository,
+  ConversationRepository,
+  PostRepository,
+  UserRepository
+} from '../repositories';
 
 export class UserCommentController {
   constructor(
-    @repository(UserRepository) protected userRepository: UserRepository,
-    @repository(ConversationRepository) protected conversationRepository: ConversationRepository,
-    @repository(PostRepository) protected postRepository: PostRepository,
-    @repository(CommentRepository) protected commentRepository: CommentRepository
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
+    @repository(ConversationRepository)
+    protected conversationRepository: ConversationRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
+    @repository(CommentRepository)
+    protected commentRepository: CommentRepository
   ) { }
 
   @get('/users/{id}/comments', {
@@ -112,8 +119,8 @@ export class UserCommentController {
       postId: comment.postId
     })
 
-    this.postRepository.publicMetric(comment.postId).patch({ comment: totalComment.count })
-    this.postRepository.updateById(comment.postId, { totalComment: totalComment.count })
+    this.postRepository.publicMetric(comment.postId).patch({comment: totalComment.count})
+    this.postRepository.updateById(comment.postId, {totalComment: totalComment.count})
 
     const foundAllConversation = await this.conversationRepository.find({
       where: {

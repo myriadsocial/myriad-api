@@ -2,20 +2,21 @@ import {inject} from '@loopback/core'
 import {CronJob, cronJob} from '@loopback/cron'
 import {repository} from '@loopback/repository'
 import {Keyring} from '@polkadot/api'
-import { KeypairType } from '@polkadot/util-crypto/types'
+import {u8aToHex} from '@polkadot/util'
+import {KeypairType} from '@polkadot/util-crypto/types'
 import {xml2json} from 'xml-js'
 import {
   PeopleRepository,
   PostRepository,
-  PublicMetricRepository, 
+  PublicMetricRepository,
   TagRepository,
   UserCredentialRepository
 } from '../repositories'
 import {
   Reddit,
-  Rsshub, Twitter
+  Rsshub,
+  Twitter
 } from '../services'
-import {u8aToHex} from '@polkadot/util'
 
 @cronJob()
 export class FetchContentSocialMediaJob extends CronJob {
@@ -34,8 +35,7 @@ export class FetchContentSocialMediaJob extends CronJob {
       onTick: async () => {
         await this.performJob();
       },
-      cronTime: '0 0 */1 * * *', // Every hour
-      // cronTime: '*/10 * * * * *',
+      cronTime: '0 0 */1 * * *',
       start: true
     })
   }
@@ -49,7 +49,7 @@ export class FetchContentSocialMediaJob extends CronJob {
         skip: i
       }))[0]
 
-      switch(person.platform) {
+      switch (person.platform) {
         case "twitter":
           const foundPosts = await this.postRepository.find({
             order: ["textId DESC"],
@@ -60,18 +60,18 @@ export class FetchContentSocialMediaJob extends CronJob {
             }
           })
 
-          const { data: newPosts } = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at,public_metrics`)
+          const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at,public_metrics`)
 
           if (!newPosts) break
 
-          const twitterPosts = newPosts.filter((post:any) => !post.referenced_tweets)
+          const twitterPosts = newPosts.filter((post: any) => !post.referenced_tweets)
 
           this.socialMediaPosts(person, twitterPosts)
 
           break;
 
         case "reddit":
-          const { data: user } = await this.redditService.getActions(`u/${person.username}.json?limit=10`)
+          const {data: user} = await this.redditService.getActions(`u/${person.username}.json?limit=10`)
           const redditPosts = user.children.filter((post: any) => {
             return post.kind === 't3'
           }).map((post: any) => post.data)
@@ -79,16 +79,16 @@ export class FetchContentSocialMediaJob extends CronJob {
           this.socialMediaPosts(person, redditPosts)
 
           break;
-        
+
         case "facebook":
           try {
             const xml = await this.rsshubService.getContents(person.platform_account_id)
-            const resultJSON = await xml2json(xml, { compact: true, trim: true })
+            const resultJSON = await xml2json(xml, {compact: true, trim: true})
             const responseFB = JSON.parse(resultJSON)
 
             const facebookPost = responseFB.rss.channel.item
             this.socialMediaPosts(person, facebookPost)
-          } catch (err) {}
+          } catch (err) { }
 
           break
       }
@@ -118,7 +118,7 @@ export class FetchContentSocialMediaJob extends CronJob {
           post.media_metadata || post.is_reddit_media_domain ? true : false
         )
 
-        const assets:string[] = []
+        const assets: string[] = []
 
         let newPost = null
 
@@ -163,13 +163,13 @@ export class FetchContentSocialMediaJob extends CronJob {
               if (post.is_reddit_media_domain) {
                 const images = post.preview.images || []
                 const videos = post.preview.videos || []
-  
+
                 for (let i = 0; i < images.length; i++) {
-                  assets.push(images[i].source.url.replace(/amp;/g,''))
+                  assets.push(images[i].source.url.replace(/amp;/g, ''))
                 }
-  
+
                 for (let i = 0; i < videos.length; i++) {
-                  assets.push(videos[i].source.url.replace(/amp;/g,''))
+                  assets.push(videos[i].source.url.replace(/amp;/g, ''))
                 }
               }
             }
@@ -206,13 +206,13 @@ export class FetchContentSocialMediaJob extends CronJob {
           ...newPost,
         }, false)
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   async createPostPublicMetric(post: any, credential: boolean): Promise<void> {
     if (!credential) {
       const keyring = new Keyring({
-        type: process.env.POLKADOT_CRYPTO_TYPE as KeypairType,
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
       });
       const newKey = keyring.addFromUri('//' + post.peopleId)
 
@@ -234,7 +234,7 @@ export class FetchContentSocialMediaJob extends CronJob {
     return link[1].substring(0, link[1].length - 3)
   }
 
-  async createTags(tags:string[]):Promise<void> {
+  async createTags(tags: string[]): Promise<void> {
     for (let i = 0; i < tags.length; i++) {
       const foundTag = await this.tagRepository.findOne({
         where: {
@@ -253,8 +253,8 @@ export class FetchContentSocialMediaJob extends CronJob {
       })
 
       if (foundTag) {
-        const oneDay:number = 60 * 60 * 24 * 1000
-        const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay
+        const oneDay: number = 60 * 60 * 24 * 1000
+        const isOneDay: boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay
 
         this.tagRepository.updateById(foundTag.id, {
           count: isOneDay ? 1 : foundTag.count + 1,
@@ -268,5 +268,5 @@ export class FetchContentSocialMediaJob extends CronJob {
         })
       }
     }
- }
+  }
 }

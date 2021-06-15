@@ -1,5 +1,9 @@
-import {inject, Getter} from '@loopback/core';
-import {DefaultCrudRepository, repository, BelongsToAccessor} from '@loopback/repository';
+import {Getter, inject} from '@loopback/core';
+import {
+  BelongsToAccessor,
+  DefaultCrudRepository,
+  repository
+} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Comment, CommentRelations, Post, User} from '../models';
 import {PostRepository} from './post.repository';
@@ -16,7 +20,11 @@ export class CommentRepository extends DefaultCrudRepository<
   public readonly user: BelongsToAccessor<User, typeof Comment.prototype.id>;
 
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('PostRepository') protected postRepositoryGetter: Getter<PostRepository>, @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource,
+    @repository.getter('PostRepository')
+    protected postRepositoryGetter: Getter<PostRepository>,
+    @repository.getter('UserRepository')
+    protected userRepositoryGetter: Getter<UserRepository>,
   ) {
     super(Comment, dataSource);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter,);

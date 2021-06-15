@@ -8,7 +8,7 @@ const config = {
   crud: false,
   options: {
     headers: {
-      Authorization: `Bearer ${process.env.BEARER_TOKEN}`
+      Authorization: `Bearer ${process.env.TWITTER_BEARER_TOKEN}`
     }
   },
   operations: [

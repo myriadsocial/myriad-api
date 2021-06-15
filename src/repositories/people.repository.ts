@@ -1,9 +1,14 @@
-import {inject, Getter} from '@loopback/core';
-import {DefaultCrudRepository, repository, HasOneRepositoryFactory, HasManyRepositoryFactory} from '@loopback/repository';
+import {Getter, inject} from '@loopback/core';
+import {
+  DefaultCrudRepository,
+  HasManyRepositoryFactory,
+  HasOneRepositoryFactory,
+  repository
+} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {People, PeopleRelations, UserCredential, Post} from '../models';
-import {UserCredentialRepository} from './user-credential.repository';
+import {People, PeopleRelations, Post, UserCredential} from '../models';
 import {PostRepository} from './post.repository';
+import {UserCredentialRepository} from './user-credential.repository';
 
 export class PeopleRepository extends DefaultCrudRepository<
   People,
@@ -16,7 +21,11 @@ export class PeopleRepository extends DefaultCrudRepository<
   public readonly posts: HasManyRepositoryFactory<Post, typeof People.prototype.id>;
 
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('UserCredentialRepository') protected userCredentialRepositoryGetter: Getter<UserCredentialRepository>, @repository.getter('PostRepository') protected postRepositoryGetter: Getter<PostRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource,
+    @repository.getter('UserCredentialRepository')
+    protected userCredentialRepositoryGetter: Getter<UserCredentialRepository>,
+    @repository.getter('PostRepository')
+    protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(People, dataSource);
     this.posts = this.createHasManyRepositoryFactoryFor('posts', postRepositoryGetter,);

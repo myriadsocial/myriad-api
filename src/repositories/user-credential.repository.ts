@@ -1,9 +1,13 @@
-import {inject, Getter} from '@loopback/core';
-import {DefaultCrudRepository, repository, BelongsToAccessor} from '@loopback/repository';
+import {Getter, inject} from '@loopback/core';
+import {
+  BelongsToAccessor,
+  DefaultCrudRepository,
+  repository
+} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {UserCredential, UserCredentialRelations, User, People} from '../models';
-import {UserRepository} from './user.repository';
+import {People, User, UserCredential, UserCredentialRelations} from '../models';
 import {PeopleRepository} from './people.repository';
+import {UserRepository} from './user.repository';
 
 export class UserCredentialRepository extends DefaultCrudRepository<
   UserCredential,
@@ -16,7 +20,11 @@ export class UserCredentialRepository extends DefaultCrudRepository<
   public readonly people: BelongsToAccessor<People, typeof UserCredential.prototype.id>;
 
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>, @repository.getter('PeopleRepository') protected peopleRepositoryGetter: Getter<PeopleRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource,
+    @repository.getter('UserRepository')
+    protected userRepositoryGetter: Getter<UserRepository>,
+    @repository.getter('PeopleRepository')
+    protected peopleRepositoryGetter: Getter<PeopleRepository>,
   ) {
     super(UserCredential, dataSource);
     this.people = this.createBelongsToAccessorFor('people', peopleRepositoryGetter,);

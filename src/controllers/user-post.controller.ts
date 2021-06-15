@@ -3,7 +3,7 @@ import {
   CountSchema,
   Filter,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
   del,
@@ -14,30 +14,31 @@ import {
   param,
   patch,
   post,
-  requestBody,
+  requestBody
 } from '@loopback/rest';
+import {Post, User} from '../models';
 import {
-  User,
-  Post,
-  PublicMetric,
-} from '../models';
-import {
-  UserRepository, 
-  PostRepository, 
-  PublicMetricRepository,
   FriendRepository,
-  TagRepository
+  PostRepository,
+  PublicMetricRepository,
+  TagRepository,
+  UserRepository
 } from '../repositories';
 
 export class UserPostController {
   constructor(
-    @repository(UserRepository) protected userRepository: UserRepository,
-    @repository(PostRepository) protected postRepository: PostRepository,
-    @repository(PublicMetricRepository) protected publicMetricRepository: PublicMetricRepository,
-    @repository(FriendRepository) protected friendRepository: FriendRepository,
-    @repository(TagRepository) protected tagRepository: TagRepository
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
+    @repository(PublicMetricRepository)
+    protected publicMetricRepository: PublicMetricRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
+    @repository(TagRepository)
+    protected tagRepository: TagRepository
   ) { }
-  
+
   @get('/users/{id}/timeline', {
     responses: {
       '200': {
@@ -48,9 +49,9 @@ export class UserPostController {
   async findTimeline(
     @param.path.string('id') id: string,
     @param.query.string('orderField') orderField: string,
-    @param.query.string('order') order:string,
-    @param.query.string('limit') limit:number,
-    @param.query.string('offset') offset:number
+    @param.query.string('order') order: string,
+    @param.query.string('limit') limit: number,
+    @param.query.string('offset') offset: number
   ): Promise<Post[]> {
     if (!orderField) orderField = 'platformCreatedAt'
     if (!order) order = 'DESC'
@@ -78,7 +79,7 @@ export class UserPostController {
 
     if (!foundField) throw new HttpErrors.UnprocessableEntity("Please filled with correspond field: platformCreatedAt, comment, liked, or disliked")
     if (!foundOrder) throw new HttpErrors.UnprocessableEntity("Please filled with correspond order: ASC or DESC")
-    
+
     const acceptedFriends = await this.friendRepository.find({
       where: {
         status: 'approved',
@@ -118,7 +119,7 @@ export class UserPostController {
         }
       }
     })
-    
+
     return this.postRepository.find({
       where: {
         or: [
@@ -233,8 +234,8 @@ export class UserPostController {
           updatedAt: new Date().toString()
         })
       } else {
-        const oneDay:number = 60 * 60 * 24 * 1000;
-        const isOneDay:boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+        const oneDay: number = 60 * 60 * 24 * 1000;
+        const isOneDay: boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
 
         this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
@@ -284,13 +285,13 @@ export class UserPostController {
     return this.userRepository.posts(id).delete(where);
   }
 
-  async defaultPost (
-    orderField: string, 
-    order: string, 
-    limit:number, 
-    offset:number,
+  async defaultPost(
+    orderField: string,
+    order: string,
+    limit: number,
+    offset: number,
     friendIds: string[]
-  ):Promise<Post[]> {
+  ): Promise<Post[]> {
     return await this.postRepository.find({
       order: [`${orderField} ${order.toUpperCase()}`, `platformCreatedAt ${order.toUpperCase()}`],
       limit: limit,
@@ -318,16 +319,16 @@ export class UserPostController {
             }
           },
           {
-            'platformUser.username':{
-              inq:[
-                "elonmusk", 
-                "gavofyork", 
-                "W3F_Bill", 
-                "CryptoChief", 
-                "BillGates", 
+            'platformUser.username': {
+              inq: [
+                "elonmusk",
+                "gavofyork",
+                "W3F_Bill",
+                "CryptoChief",
+                "BillGates",
                 "vitalikbuterineth"
               ]
-            } 
+            }
           },
           ...friendIds.map(id => {
             return {

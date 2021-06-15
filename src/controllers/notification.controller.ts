@@ -4,18 +4,18 @@ import {
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
+  param,
   patch,
+  post,
   put,
-  del,
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
@@ -23,8 +23,8 @@ import {NotificationRepository} from '../repositories';
 export class NotificationsController {
   constructor(
     @repository(NotificationRepository)
-    public notificationRepository : NotificationRepository,
-  ) {}
+    public notificationRepository: NotificationRepository,
+  ) { }
 
   @post('/notifications')
   @response(200, {

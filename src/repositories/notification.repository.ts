@@ -1,5 +1,9 @@
 import {Getter, inject} from '@loopback/core';
-import {BelongsToAccessor, DefaultCrudRepository, repository} from '@loopback/repository';
+import {
+  BelongsToAccessor,
+  DefaultCrudRepository,
+  repository
+} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Notification, NotificationRelations, User} from '../models';
 import {UserRepository} from './user.repository';

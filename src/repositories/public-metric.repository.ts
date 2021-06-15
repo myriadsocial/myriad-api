@@ -1,7 +1,10 @@
-import {inject, Getter} from '@loopback/core';
-import {DefaultCrudRepository, repository, BelongsToAccessor} from '@loopback/repository';
+import {Getter, inject} from '@loopback/core';
+import {
+  BelongsToAccessor, DefaultCrudRepository,
+  repository
+} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {PublicMetric, PublicMetricRelations, Post} from '../models';
+import {Post, PublicMetric, PublicMetricRelations} from '../models';
 import {PostRepository} from './post.repository';
 
 export class PublicMetricRepository extends DefaultCrudRepository<
@@ -13,7 +16,9 @@ export class PublicMetricRepository extends DefaultCrudRepository<
   public readonly post: BelongsToAccessor<Post, typeof PublicMetric.prototype.id>;
 
   constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource, @repository.getter('PostRepository') protected postRepositoryGetter: Getter<PostRepository>,
+    @inject('datasources.mongo') dataSource: MongoDataSource,
+    @repository.getter('PostRepository')
+    protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(PublicMetric, dataSource);
     this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter,);
