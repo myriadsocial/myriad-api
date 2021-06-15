@@ -22,9 +22,7 @@ import {KeypairType} from '@polkadot/util-crypto/types';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {TransactionWithRelations, UserCredential} from '../models';
 import {
-  DetailTransactionRepository, PeopleRepository,
-  PostRepository, TokenRepository, TransactionRepository, UserCredentialRepository,
-  UserRepository
+  DetailTransactionRepository, PeopleRepository,TokenRepository, TransactionRepository, UserCredentialRepository,
 } from '../repositories';
 import {Facebook, Reddit, Rsshub, Twitter} from '../services';
 
@@ -41,15 +39,11 @@ export class UserCredentialController {
     public userCredentialRepository: UserCredentialRepository,
     @repository(PeopleRepository)
     public peopleRepository: PeopleRepository,
-    @repository(PostRepository)
-    public postRepository: PostRepository,
-    @repository(UserRepository) public userRepository: UserRepository,
     @repository(DetailTransactionRepository) public detailTransactionRepository: DetailTransactionRepository,
     @repository(TransactionRepository) public transactionRepository: TransactionRepository,
     @repository(TokenRepository) public tokenRepository: TokenRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
-    @inject('services.Rsshub') protected rsshubService: Rsshub,
     @inject('services.Facebook') protected facebookService: Facebook,
   ) { }
 
@@ -102,7 +96,7 @@ export class UserCredentialController {
           profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
         }, publicKey)
 
-        // this.transferTipsToUser(twitterCredential)
+        this.transferTipsToUser(twitterCredential)
 
         // const statusTransfer = await this.transferTipsToUser(twitterCredential, user.id)
 
@@ -130,7 +124,7 @@ export class UserCredentialController {
           profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : ''
         }, publicKey)
 
-        // this.transferTipsToUser(redditCredential)
+        this.transferTipsToUser(redditCredential)
 
         // const statusTransferReddit = await this.transferTipsToUser(redditCredential, 't2_' + redditUser.id)
 
@@ -155,7 +149,7 @@ export class UserCredentialController {
           username: fbUsername,
         }, publicKey)
 
-        // this.transferTipsToUser(facebookCredential);
+        this.transferTipsToUser(facebookCredential);
 
         // const statusTransferFacebook = await this.transferTipsToUser(facebookCredential, fbUsername)
 

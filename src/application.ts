@@ -47,24 +47,7 @@ import tokens from './seed-data/tokens.json'
 import {polkadotApi} from './helpers/polkadotApi'
 import {MySequence} from './sequence';
 import {NotificationService} from './services';
-
-interface PlatformUser {
-  username: string,
-  platform_account_id?: string
-}
-
-interface Post {
-  tags?: string[],
-  platformUser: PlatformUser,
-  platform?: string,
-  text?: string,
-  textId?: string,
-  hasMedia?: boolean,
-  link?: string,
-  createdAt?: string,
-  peopleId?: string,
-  platformCreatedAt?: string
-}
+import {Post} from './interfaces'
 
 export {ApplicationConfig};
 
@@ -161,59 +144,64 @@ export class MyriadApiApplication extends BootMixin(
     const updateUsers = users.map((user:any) => {
       const seed = mnemonicGenerate()
       const pair = keyring.createFromUri(seed + '', user)
+      const name = user.name
+
+      delete user.name
+      delete user.username
 
       return {
         ...user,
         id: u8aToHex(pair.publicKey),
         seed_example: seed,
-        bio: `Hello, my name is ${user.name}`,
+        bio: `Hello, my name is ${name}`,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString()
       }
     })
 
     const newToken = await tokenRepository.createAll(tokens)
-    const newUser = await userRepo.createAll(updateUsers)
+    // const newUser = await userRepo.createAll(updateUsers)
 
-    // const api = await polkadotApi(process.env.POLKADOT_MYRIAD_RPC || "") 
+    const api = await polkadotApi(process.env.POLKADOT_MYRIAD_RPC || "") 
 
-    // for (let i = 0; i < updateUsers.length; i++) {
-    //   const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
-    //   const from = keyring.addFromMnemonic(mnemonic);
-    //   const value = 100000000000000;
-    //   const {nonce} = await api.query.system.account(encodeAddress(from.address, 214))
+    for (let i = 0; i < updateUsers.length; i++) {
+      const mnemonic = 'chalk cargo recipe ring loud deputy element hole moral soon lock credit';
+      const from = keyring.addFromMnemonic(mnemonic);
+      const value = 100000000000000;
+      const {nonce} = await api.query.system.account(encodeAddress(from.address, 214))
 
-    //   let count: number = nonce.toJSON()
+      let count: number = nonce.toJSON()
 
-    //   const transfer = api.tx.balances.transfer(encodeAddress(updateUsers[i].id, 214), value)
+      const transfer = api.tx.balances.transfer(encodeAddress(updateUsers[i].id, 214), value)
 
-    //   const newUser = await userRepo.create(updateUsers[i])
-    //   const txHash = await transfer.signAndSend(from, {nonce: count + i});
+      const newUser = await userRepo.create(updateUsers[i])
+      const txHash = await transfer.signAndSend(from, {nonce: count + i});
 
-    //   await transactionRepo.create({
-    //     trxHash: txHash.toString(),
-    //     from: u8aToHex(from.publicKey),
-    //     to: updateUsers[i].id,
-    //     value: value,
-    //     state: 'success',
-    //     createdAt: new Date().toString(),
-    //     tokenId: 'MYR'
-    //   })
+      await transactionRepo.create({
+        trxHash: txHash.toString(),
+        from: u8aToHex(from.publicKey),
+        to: updateUsers[i].id,
+        value: value,
+        state: 'success',
+        createdAt: new Date().toString(),
+        tokenId: 'MYR',
+        hasSendToUser: true
+      })
 
-    //   await userTokenRepository.create({
-    //     userId: newUser.id,
-    //     tokenId: "MYR"
-    //   })
+      await userTokenRepository.create({
+        userId: newUser.id,
+        tokenId: "MYR"
+      })
 
-    //   await detailTransactionRepository.create({
-    //     sentToMe: 100000000000000,
-    //     sentToThem: 0,
-    //     userId: newUser.id,
-    //     tokenId: 'MYR'
-    //   })
-    // }
+      await detailTransactionRepository.create({
+        sentToMe: 100000000000000,
+        sentToThem: 0,
+        userId: newUser.id,
+        tokenId: 'MYR'
+      })
+    }
 
-    // await api.disconnect()
+    await api.disconnect()
 
     const newPeople = await peopleRepo.createAll(people)
 

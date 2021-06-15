@@ -23,7 +23,7 @@ import {polkadotApi} from '../helpers/polkadotApi';
 import {Friend, User} from '../models';
 import {
   ExperienceRepository, FriendRepository, PeopleRepository, PostRepository, QueueRepository,
-  TagRepository, TransactionRepository, UserRepository, UserTokenRepository
+  TransactionRepository, UserRepository, UserTokenRepository
 } from '../repositories';
 import {NotificationService} from '../services';
 
@@ -33,8 +33,6 @@ export class UserController {
     public userRepository: UserRepository,
     @repository(ExperienceRepository)
     public experienceRepository: ExperienceRepository,
-    @repository(TagRepository)
-    public tagRepository: TagRepository,
     @repository(PeopleRepository)
     public peopleRepository: PeopleRepository,
     @repository(QueueRepository)
@@ -64,24 +62,24 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    if (!this.validateUsername(user.username)) {
-      throw new HttpErrors.UnprocessableEntity('Username cannot have spaces')
-    }
-
     try {
-      // const foundUser = await this.userRepository.findOne({
-      //   where: {
-      //     or: [
-      //       {id: user.id},
-      //       {username: user.username}
-      //     ]
-      //   }
-      // })
+      const foundUser = await this.userRepository.findOne({
+        where: {
+          id: user.id
+        }
+      })
 
-      // if (!foundUser) this.defaultTips(user.id)
-      // else throw new Error('UserExist')
+      if (foundUser) {
+        this.updateById(foundUser.id, {
+          is_online: true
+        } as User)
 
-      user.name = user.username[0].toUpperCase() + user.username.substr(1).toLowerCase()
+        foundUser.is_online = true;
+
+        return foundUser
+      }
+
+      await this.defaultTips(user.id)
 
       const newUser = await this.userRepository.create({
         ...user,
@@ -90,29 +88,24 @@ export class UserController {
         updatedAt: new Date().toString()
       });
 
-      // this.userRepository.detailTransactions(newUser.id).create({
-      //   sentToMe: 100000000000000,
-      //   sentToThem: 0,
-      //   userId: newUser.id,
-      //   tokenId: 'MYR'
-      // })
+      this.userRepository.detailTransactions(newUser.id).create({
+        sentToMe: 100000000000000,
+        sentToThem: 0,
+        userId: newUser.id,
+        tokenId: 'MYR'
+      })
 
-      // this.userTokenRepository.create({
-      //   userId: newUser.id,
-      //   tokenId: 'MYR'
-      // })
+      this.userTokenRepository.create({
+        userId: newUser.id,
+        tokenId: 'MYR'
+      })
 
-      // await this.defaultPost(newUser.id)
       // await this.defaultExperience(newUser)
 
       return newUser
     } catch (err) {
       if (err.message === 'LostConnection') {
         throw new HttpErrors.UnprocessableEntity('Myriad RPC Lost Connection')
-      }
-
-      if (err.message === 'UserExist') {
-        throw new HttpErrors.UnprocessableEntity('User already Exists')
       }
 
       throw new HttpErrors.UnprocessableEntity('Error RPC');
@@ -294,33 +287,24 @@ export class UserController {
     return this.userRepository.findById(id, filter);
   }
 
-  async defaultPost(userId: string): Promise<void> {
-    const textIds = [
-      "1385108424761872387",
-      "1385164896896225282",
-      "1027306774356025345",
-      "ms508t",
-      "fy9zev",
-      "463517661740029",
-      "10157789183586961"
-    ]
-
-    const posts = await this.postRepository.find({
+  @get('users/{username}/example-seed/{id}')
+  @response(200, {
+    description: 'Get seed instance'
+  })
+  async getSeed(
+    @param.path.string('username') username: string
+  ): Promise<object> {
+    const getUser = await this.userRepository.findOne({
       where: {
-        textId: {
-          inq: textIds
-        }
+        username: username
       }
     })
 
-    for (let i = 0; i < posts.length; i++) {
-      this.postRepository.updateById(posts[i].id, {
-        importBy: [
-          ...posts[i].importBy,
-          userId
-        ]
-      })
+    if (getUser && getUser.seed_example) return {
+      seed: getUser.seed_example
     }
+    
+    throw new HttpErrors.NotFound('Seed Not Found')
   }
 
   async defaultExperience(user: User): Promise<void> {

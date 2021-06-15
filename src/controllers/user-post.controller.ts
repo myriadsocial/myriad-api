@@ -198,6 +198,7 @@ export class UserPostController {
 
     const newPost = await this.userRepository.posts(id).create({
       ...post,
+      walletAddress: id,
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
