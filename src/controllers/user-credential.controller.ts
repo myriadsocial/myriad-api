@@ -24,14 +24,8 @@ import {TransactionWithRelations, UserCredential} from '../models';
 import {
   DetailTransactionRepository, PeopleRepository,TokenRepository, TransactionRepository, UserCredentialRepository,
 } from '../repositories';
-import {Facebook, Reddit, Rsshub, Twitter} from '../services';
-
-interface User {
-  platform_account_id?: string,
-  username: string,
-  platform: string,
-  profile_image_url?: string
-}
+import {Facebook, Reddit, Twitter} from '../services';
+import {User} from '../interfaces'
 
 export class UserCredentialController {
   constructor(
