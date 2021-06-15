@@ -22,22 +22,11 @@ import {KeypairType} from '@polkadot/util-crypto/types';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {TransactionWithRelations, UserCredential} from '../models';
 import {
-  DetailTransactionRepository,
-  PeopleRepository,
-  PostRepository,
-  TokenRepository,
-  TransactionRepository,
-  UserCredentialRepository,
-  UserRepository
-} from '../repositories';
-import {Facebook, Reddit, Rsshub, Twitter} from '../services';
+  DetailTransactionRepository, PeopleRepository,TokenRepository, TransactionRepository, UserCredentialRepository,
 
-interface User {
-  platform_account_id?: string,
-  username: string,
-  platform: string,
-  profile_image_url?: string
-}
+} from '../repositories';
+import {Facebook, Reddit, Twitter} from '../services';
+import {User} from '../interfaces'
 
 export class UserCredentialController {
   constructor(
@@ -45,24 +34,12 @@ export class UserCredentialController {
     public userCredentialRepository: UserCredentialRepository,
     @repository(PeopleRepository)
     public peopleRepository: PeopleRepository,
-    @repository(PostRepository)
-    public postRepository: PostRepository,
-    @repository(UserRepository)
-    public userRepository: UserRepository,
-    @repository(DetailTransactionRepository)
-    public detailTransactionRepository: DetailTransactionRepository,
-    @repository(TransactionRepository)
-    public transactionRepository: TransactionRepository,
-    @repository(TokenRepository)
-    public tokenRepository: TokenRepository,
-    @inject('services.Twitter')
-    protected twitterService: Twitter,
-    @inject('services.Reddit')
-    protected redditService: Reddit,
-    @inject('services.Rsshub')
-    protected rsshubService: Rsshub,
-    @inject('services.Facebook')
-    protected facebookService: Facebook,
+    @repository(DetailTransactionRepository) public detailTransactionRepository: DetailTransactionRepository,
+    @repository(TransactionRepository) public transactionRepository: TransactionRepository,
+    @repository(TokenRepository) public tokenRepository: TokenRepository,
+    @inject('services.Twitter') protected twitterService: Twitter,
+    @inject('services.Reddit') protected redditService: Reddit,
+    @inject('services.Facebook') protected facebookService: Facebook,
   ) { }
 
   @post('/user-credentials')
@@ -114,6 +91,12 @@ export class UserCredentialController {
           profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
         }, publicKey)
 
+        this.transferTipsToUser(twitterCredential)
+
+        // const statusTransfer = await this.transferTipsToUser(twitterCredential, user.id)
+
+        // if(!statusTransfer) throw new HttpErrors.NotFound('RPC Lost Connection')
+
         this.fetchFollowing(user.id)
 
         return true
@@ -136,6 +119,12 @@ export class UserCredentialController {
           profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : ''
         }, publicKey)
 
+        this.transferTipsToUser(redditCredential)
+
+        // const statusTransferReddit = await this.transferTipsToUser(redditCredential, 't2_' + redditUser.id)
+
+        // if (!statusTransferReddit) throw new HttpErrors.NotFound('RPC Lost Connection')
+
         return true
 
       case 'facebook':
@@ -154,6 +143,12 @@ export class UserCredentialController {
           platform: 'facebook',
           username: fbUsername,
         }, publicKey)
+
+        this.transferTipsToUser(facebookCredential);
+
+        // const statusTransferFacebook = await this.transferTipsToUser(facebookCredential, fbUsername)
+
+        // if (!statusTransferFacebook) throw new HttpErrors.NotFound('RPC Lost Connection')
 
         return true
 

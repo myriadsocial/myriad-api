@@ -16,7 +16,7 @@ import {UserToken} from './user-token.model';
     mongodb: {
       collection: 'users',
     },
-    hiddenProperties: ['seed_example']
+    hiddenProperties: ['seed_example', 'name', 'username']
   }
 })
 export class User extends Entity {
@@ -35,25 +35,25 @@ export class User extends Entity {
   @property({
     type: 'string',
     required: false,
-    jsonSchema: {
-      maxLength: 30,
-      minLength: 3,
-    },
+    // jsonSchema: {
+    //   maxLength: 30,
+    //   minLength: 3,
+    // },
   })
   name?: string;
 
   @property({
     type: 'string',
     required: false,
-    index: {
-      unique: true
-    },
-    jsonSchema: {
-      minLength: 6,
-      maxLength: 30
-    }
+    // index: {
+    //   unique: true
+    // },
+    // jsonSchema: {
+    //   minLength: 6,
+    //   maxLength: 30
+    // }
   })
-  username: string
+  username?: string
 
   @property({
     type: 'string',
@@ -94,6 +94,13 @@ export class User extends Entity {
     required: false
   })
   fcmTokens?: string[]
+
+  @property({
+    type: 'boolean',
+    required: false,
+    default: true
+  })
+  is_online?: boolean
 
   @property({
     type: 'date',

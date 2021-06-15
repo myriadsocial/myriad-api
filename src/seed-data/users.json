@@ -1,22 +1,20 @@
 [
     {
-        "username": "hakim",
+        "name": "Myria"
+    },
+    {
         "name": "Hakim"
     },
     {
-        "username": "muchtar",
         "name": "Muchtar"
     },
     {
-        "username": "irman",
         "name": "Irman"
     },
     {
-        "username": "husni",
         "name": "Husni"
     },
     {
-        "username": "imam",
         "name": "Imam"
     }
 ]
