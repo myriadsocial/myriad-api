@@ -210,16 +210,19 @@ export class FetchContentSocialMediaJob extends CronJob {
   }
 
   async createPostPublicMetric(post: any, credential: boolean): Promise<void> {
+
+    const newPost = await this.postRepository.create(post)
+
     if (!credential) {
       const keyring = new Keyring({
         type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
       });
-      const newKey = keyring.addFromUri('//' + post.peopleId)
+      const newKey = keyring.addFromUri('//' + post.id)
 
-      post.walletAddress = u8aToHex(newKey.publicKey)
+      this.postRepository.updateById(newPost.id, {
+        walletAddress: u8aToHex(newKey.publicKey)
+      })
     }
-
-    const newPost = await this.postRepository.create(post)
 
     this.publicMetricRepository.create({
       liked: 0,

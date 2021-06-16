@@ -641,12 +641,15 @@ export class PostController {
   }
 
   async createPostWithPublicMetric(post: any, credential: boolean): Promise<Post> {
-    if (!credential) {
-      const newKey = this.keyring().addFromUri('//' + post.peopleId);
-
-      post.walletAddress = u8aToHex(newKey.publicKey)
-    }
     const createdTweet = await this.postRepository.create(post)
+
+    if (!credential) {
+      const newKey = this.keyring().addFromUri('//' + createdTweet.id);
+
+      this.postRepository.updateById(createdTweet.id, {
+        walletAddress: u8aToHex(newKey.publicKey)
+      })
+    }
 
     this.postRepository.publicMetric(createdTweet.id).create({})
 

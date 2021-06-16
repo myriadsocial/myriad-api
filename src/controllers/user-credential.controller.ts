@@ -94,7 +94,7 @@ export class UserCredentialController {
           profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
         }, publicKey)
 
-        this.transferTipsToUser(twitterCredential)
+        // this.transferTipsToUser(twitterCredential)
 
         // const statusTransfer = await this.transferTipsToUser(twitterCredential, user.id)
 
@@ -122,7 +122,7 @@ export class UserCredentialController {
           profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : ''
         }, publicKey)
 
-        this.transferTipsToUser(redditCredential)
+        // this.transferTipsToUser(redditCredential)
 
         // const statusTransferReddit = await this.transferTipsToUser(redditCredential, 't2_' + redditUser.id)
 
@@ -147,7 +147,7 @@ export class UserCredentialController {
           username: fbUsername,
         }, publicKey)
 
-        this.transferTipsToUser(facebookCredential);
+        // this.transferTipsToUser(facebookCredential);
 
         // const statusTransferFacebook = await this.transferTipsToUser(facebookCredential, fbUsername)
 
