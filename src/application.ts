@@ -149,9 +149,6 @@ export class MyriadApiApplication extends BootMixin(
       const pair = keyring.createFromUri(seed + '', user)
       const name = user.name
 
-      delete user.name
-      delete user.username
-
       return {
         ...user,
         id: u8aToHex(pair.publicKey),
