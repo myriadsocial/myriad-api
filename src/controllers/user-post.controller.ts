@@ -92,25 +92,25 @@ export class UserPostController {
       id
     ]
 
-    const foundPost = await this.postRepository.findOne({
-      where: {
-        or: [
-          {
-            importBy: {
-              inq: [[id]]
-            }
-          },
-          {
-            walletAddress: id
-          }
-        ]
-      },
-      limit: 1,
-    })
+    // const foundPost = await this.postRepository.findOne({
+    //   where: {
+    //     or: [
+    //       {
+    //         importBy: {
+    //           inq: [[id]]
+    //         }
+    //       },
+    //       {
+    //         walletAddress: id
+    //       }
+    //     ]
+    //   },
+    //   limit: 1,
+    // })
 
-    if (!foundPost) {
-      return this.defaultPost(orderField, order, limit, offset, friendIds)
-    }
+    // if (!foundPost) {
+    //   return this.defaultPost(orderField, order, limit, offset, friendIds)
+    // }
 
     const importBys = friendIds.map(id => {
       return {
@@ -127,6 +127,23 @@ export class UserPostController {
           {
             walletAddress: {
               inq: friendIds
+            }
+          },
+          {
+            tags: {
+              inq: ["cryptocurrency", "blockchain", "technology"]
+            }
+          },
+          {
+            'platformUser.username': {
+              inq: [
+                "elonmusk",
+                "gavofyork",
+                "W3F_Bill",
+                "CryptoChief",
+                "BillGates",
+                "vitalikbuterineth"
+              ]
             }
           }
         ]

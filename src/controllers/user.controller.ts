@@ -26,6 +26,9 @@ import {
   TransactionRepository, UserRepository, UserTokenRepository
 } from '../repositories';
 import {NotificationService} from '../services';
+import dotenv from 'dotenv';
+
+dotenv.config()
 
 export class UserController {
   constructor(

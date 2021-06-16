@@ -1,5 +1,6 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {User} from './user.model';
+import { FriendStatusType } from '../enums';
 
 @model({
   settings: {
@@ -23,6 +24,9 @@ export class Friend extends Entity {
   @property({
     type: 'string',
     required: false,
+    jsonSchema: {
+      enum: Object.values(FriendStatusType)
+    },
     default: 'pending'
   })
   status: string

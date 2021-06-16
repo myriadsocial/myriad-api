@@ -27,6 +27,9 @@ import {
 } from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {User} from '../interfaces'
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export class UserCredentialController {
   constructor(
