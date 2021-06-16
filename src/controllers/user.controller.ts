@@ -308,7 +308,7 @@ export class UserController {
     if (getUser && getUser.seed_example) return {
       seed: getUser.seed_example
     }
-    
+
     throw new HttpErrors.NotFound('Seed Not Found')
   }
 
@@ -353,7 +353,7 @@ export class UserController {
   }
 
   async defaultTips(userId: string): Promise<void> {
-    const provider = process.env.MYRIAD_WS_RCP || ""
+    const provider = process.env.MYRIAD_WS_RPC || ""
     const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX)
     const api = await polkadotApi(provider)
     const keyring = new Keyring({
