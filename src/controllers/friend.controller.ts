@@ -52,16 +52,6 @@ export class FriendController {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself')
     }
 
-    const requestStatus = [
-      "pending", "approved", "rejected"
-    ]
-
-    const foundStatus = requestStatus.find(req => req === friend.status);
-
-    if (!foundStatus) {
-      throw new HttpErrors.UnprocessableEntity("Available status: pending, approved, rejected")
-    }
-
     const countFriend = await this.friendRepository.count({
       friendId: friend.friendId,
       requestorId: friend.requestorId,
