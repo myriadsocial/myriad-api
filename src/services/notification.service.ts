@@ -24,7 +24,7 @@ export class NotificationService {
     notification.type = NotificationType.FRIEND_REQUEST
     notification.from = fromUser.id
     notification.to = toUser.id
-    notification.message = fromUser.name + ' send you friend request'
+    notification.message = fromUser.name + ' sent you friend request'
     notification.createdAt = new Date().toString()
 
     const createdNotification = await this.notificationRepository.create(notification)
