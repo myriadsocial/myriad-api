@@ -15,11 +15,7 @@ export class Token extends Entity {
     type: 'string',
     id: true,
     generated: false,
-    required: true,
-    jsonSchema: {
-      maxLength: 3,
-      minLength: 3
-    }
+    required: true
   })
   id: string;
 

@@ -53,15 +53,15 @@ export class TokenController {
           {
             id: token.id
           },
-          {
-            token_name: token.token_name
-          },
-          {
-            address_format: token.address_format
-          },
-          {
-            rpc_address: token.rpc_address
-          }
+          // {
+          //   token_name: token.token_name
+          // },
+          // {
+          //   address_format: token.address_format
+          // },
+          // {
+          //   rpc_address: token.rpc_address
+          // }
         ]
       }
     })

@@ -57,7 +57,7 @@ export class TransactionController {
   ): Promise<Transaction> {
     const foundToken = await this.tokenRepository.findOne({
       where: {
-        id: transaction.tokenId
+        id: transaction.tokenId.toUpperCase()
       }
     })
 
@@ -68,7 +68,7 @@ export class TransactionController {
     const from = transaction.from
     const to = transaction.to
     const value = transaction.value
-    const tokenId = transaction.tokenId
+    const tokenId = transaction.tokenId.toUpperCase()
 
     const foundFromUser = await this.findDetailTransaction(from, tokenId)
 
@@ -90,7 +90,7 @@ export class TransactionController {
           sentToMe: 0,
           sentToThem: value,
           userId: from,
-          tokenId: tokenId
+          tokenId: tokenId.toUpperCase()
         })
       }
     }
