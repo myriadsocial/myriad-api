@@ -400,6 +400,7 @@ export class UserController {
       to: userId,
       value: value,
       state: 'success',
+      hasSendToUser: true,
       createdAt: new Date().toString(),
       tokenId: 'MYR'
     })
