@@ -1,4 +1,6 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {User} from './user.model';
+import {Token} from './token.model';
 
 @model({
   settings: {
@@ -29,16 +31,12 @@ export class DetailTransaction extends Entity {
     type: 'number',
   })
   sentToThem: number;
+  
+  @belongsTo(() => User)
+  userId: string;
 
-  @property({
-    type: 'string',
-  })
-  userId?: string;
-
-  @property({
-    type: 'string',
-  })
-  tokenId?: string;
+  @belongsTo(() => Token)
+  tokenId: string;
 
   constructor(data?: Partial<DetailTransaction>) {
     super(data);
