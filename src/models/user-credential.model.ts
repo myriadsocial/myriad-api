@@ -22,18 +22,6 @@ export class UserCredential extends Entity {
   id?: string;
 
   @property({
-    type: 'string',
-    required: false,
-  })
-  access_token?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  refresh_token?: string;
-
-  @property({
     type: 'boolean',
     required: true,
   })
