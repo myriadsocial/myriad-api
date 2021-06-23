@@ -77,16 +77,20 @@ export class UserCredentialController {
 
     switch (platform) {
       case 'twitter':
+        // Fetch data user from twitter api
         const {data: user} = await this.twitterService.getActions(`users/by/username/${username}?user.fields=profile_image_url`)
 
         if (!user) throw new HttpErrors.NotFound('Invalid username')
 
+        // Fetch post timeline based on twitter userId from twitter api
         const {data: tweets} = await this.twitterService.getActions(`users/${user.id}/tweets?max_results=5`)
 
+        // Verify that the publicKey is existing in user twitter
         const foundTwitterPublicKey = tweets[0].text.split(' ').find((tweet: string) => tweet === publicKey)
 
         if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
+        // Add new credential
         const twitterCredential = await this.createCredential({
           platform_account_id: user.id,
           platform: platform,
@@ -105,16 +109,20 @@ export class UserCredentialController {
         return true
 
       case 'reddit':
+        // Fetch data user from reddit api
         const {data: redditUser} = await this.redditService.getActions(`user/${username}/about.json`)
 
+        // Fetch post timeline based on reddit username from reddit api
         const {data: foundRedditPost} = await this.redditService.getActions(`user/${username}/.json?limit=1`)
 
         if (foundRedditPost.children.length === 0) throw new HttpErrors.NotFound('Cannot find the spesified post')
 
+        // Verify that the publicKey is existing in user reddit
         const foundRedditPublicKey = foundRedditPost.children[0].data.title.split(' ').find((post: string) => post === publicKey)
 
         if (!foundRedditPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
-
+        
+        // Add new credential
         const redditCredential = await this.createCredential({
           platform_account_id: 't2_' + redditUser.id,
           platform: 'reddit',
@@ -221,12 +229,16 @@ export class UserCredentialController {
   }
 
   async transferTipsToUser(credential: UserCredential): Promise<void> {
+    // Create keyring instance
     const keyring = new Keyring({
       type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
     });
+
+    // Adding an accoutn based on peopleId/postId
     const from = keyring.addFromUri('//' + credential.peopleId);
-    const gasFee = 125000147
-    const to = credential.userId
+    const gasFee = 125000147 // Gas fee for every transaction
+    const to = credential.userId // Sending address
+    
     const totalToken = await this.tokenRepository.count()
 
     for (let i = 0; i < totalToken.count; i++) {
@@ -254,7 +266,7 @@ export class UserCredentialController {
           const transaction = (await this.transactionRepository.find({
             where: {
               to: u8aToHex(from.publicKey),
-              hasSendToUser: false,
+              // hasSendToUser: false,
               tokenId: tokenId
             },
             limit: 1,
