@@ -30,7 +30,9 @@ import {
 } from '../repositories';
 import {Reddit, Twitter} from '../services';
 import {TipsReceived, URL} from '../interfaces'
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class PostController {
   constructor(
     @repository(PostRepository)

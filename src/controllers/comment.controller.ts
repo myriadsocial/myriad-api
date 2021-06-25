@@ -15,7 +15,9 @@ import {
 } from '@loopback/rest';
 import {Comment, Post, User} from '../models';
 import {CommentRepository} from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class CommentController {
   constructor(
     @repository(CommentRepository)

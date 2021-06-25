@@ -24,7 +24,9 @@ import {
   TransactionRepository,
   UserRepository
 } from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class TransactionController {
   constructor(
     @repository(TransactionRepository)

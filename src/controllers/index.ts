@@ -21,3 +21,4 @@ export * from './user-detail-transaction.controller';
 export * from './user-experience.controller';
 export * from './user-post.controller';
 export * from './user-token.controller';
+export * from './authentication.controller';

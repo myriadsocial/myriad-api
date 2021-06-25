@@ -28,9 +28,11 @@ import {
 import {Facebook, Reddit, Twitter} from '../services';
 import {User} from '../interfaces'
 import dotenv from 'dotenv';
+import {authenticate} from '@loopback/authentication';
 
 dotenv.config();
 
+@authenticate("jwt")
 export class UserCredentialController {
   constructor(
     @repository(UserCredentialRepository)

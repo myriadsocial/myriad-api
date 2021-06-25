@@ -52,6 +52,8 @@
     "!*/__tests__"
   ],
   "dependencies": {
+    "@loopback/authentication": "^7.3.1",
+    "@loopback/authentication-jwt": "^0.9.1",
     "@loopback/boot": "^3.4.1",
     "@loopback/core": "^2.16.1",
     "@loopback/cron": "^0.5.1",
@@ -60,8 +62,11 @@
     "@loopback/rest-explorer": "^3.3.1",
     "@loopback/service-proxy": "^3.2.1",
     "@polkadot/api": "^4.14.1",
+    "@types/bcryptjs": "^2.4.2",
+    "bcryptjs": "^2.4.3",
     "dotenv": "^10.0.0",
     "firebase-admin": "^9.9.0",
+    "isemail": "^3.2.0",
     "loopback-connector-mongodb": "^6.0.1",
     "loopback-connector-rest": "^4.0.1",
     "snoowrap": "^1.23.0",

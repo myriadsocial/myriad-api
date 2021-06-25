@@ -21,7 +21,9 @@ import {
   LikeRepository,
   PostRepository
 } from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class PostDislikeController {
   constructor(
     @repository(PostRepository)

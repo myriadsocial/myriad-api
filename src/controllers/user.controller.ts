@@ -27,9 +27,11 @@ import {
 } from '../repositories';
 import {NotificationService} from '../services';
 import dotenv from 'dotenv';
+import {authenticate} from '@loopback/authentication';
 
 dotenv.config()
 
+@authenticate("jwt")
 export class UserController {
   constructor(
     @repository(UserRepository)

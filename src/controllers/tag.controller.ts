@@ -24,7 +24,9 @@ import {
   UserCredentialRepository
 } from '../repositories';
 import {Reddit, Twitter} from '../services';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class TagController {
   constructor(
     @repository(TagRepository)

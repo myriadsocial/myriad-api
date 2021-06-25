@@ -417,6 +417,27 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
+"@loopback/authentication-jwt@^0.9.1":
+  version "0.9.1"
+  resolved "https://registry.yarnpkg.com/@loopback/authentication-jwt/-/authentication-jwt-0.9.1.tgz#0b9265da247fbff6a8b0951f8412c46d3829f67a"
+  integrity sha512-5/6LJcP888GF/jNJVAALG/wRPto4i3xJEST73r3E1DI5e7qu9jEgiCfy6vtafIDxIvUkL0YnlqiCqpK7ajA1QA==
+  dependencies:
+    "@loopback/security" "^0.5.1"
+    "@types/bcryptjs" "2.4.2"
+    bcryptjs "^2.4.3"
+    jsonwebtoken "^8.5.1"
+
+"@loopback/authentication@^7.3.1":
+  version "7.3.1"
+  resolved "https://registry.yarnpkg.com/@loopback/authentication/-/authentication-7.3.1.tgz#a8641d361ed3cbac84890dc9c4f4e21c6f757c4e"
+  integrity sha512-KPR0Z2cwyr3bwkZSZfh8f1UotTtv2uIex330nEAlrAgnLDj1lV22BiC+xMUKxMJgDJkYlhAzYfP61WuCp8QQWw==
+  dependencies:
+    "@loopback/security" "^0.5.1"
+    "@types/express" "^4.17.12"
+    "@types/lodash" "^4.14.170"
+    lodash "^4.17.21"
+    tslib "^2.2.0"
+
 "@loopback/boot@^3.4.1":
   version "3.4.1"
   resolved "https://registry.yarnpkg.com/@loopback/boot/-/boot-3.4.1.tgz#d2eeeebd8a50587e1859c2741fb26e42d6a22c29"
@@ -625,6 +646,14 @@
     tslib "^2.2.0"
     type-is "^1.6.18"
     validator "^13.6.0"
+
+"@loopback/security@^0.5.1":
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/@loopback/security/-/security-0.5.1.tgz#e7b61157ed8772f1dfd08042e2d576d21a565c04"
+  integrity sha512-mSJHe5c5lA4zuevh0KF3Pkahwts0D8iRZ+l7t905iQu9kqvSNlZ1wWByN/9frOajHSaCmQEFpv/YO7bTTW/YnQ==
+  dependencies:
+    debug "^4.3.1"
+    tslib "^2.2.0"
 
 "@loopback/service-proxy@^3.2.1":
   version "3.2.1"
@@ -996,6 +1025,11 @@
   resolved "https://registry.yarnpkg.com/@tootallnate/once/-/once-1.1.2.tgz#ccb91445360179a04e7fe6aff78c00ffc1eeaf82"
   integrity sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==
 
+"@types/bcryptjs@2.4.2", "@types/bcryptjs@^2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@types/bcryptjs/-/bcryptjs-2.4.2.tgz#e3530eac9dd136bfdfb0e43df2c4c5ce1f77dfae"
+  integrity sha512-LiMQ6EOPob/4yUL66SZzu6Yh77cbzJFYll+ZfaPiPPFswtIlA/Fs1MzdKYA7JApHU49zQTbJGX3PDmCpIdDBRQ==
+
 "@types/bn.js@^4.11.6":
   version "4.11.6"
   resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-4.11.6.tgz#c306c70d9358aaea33cd4eda092a742b9505967c"
@@ -1104,6 +1138,11 @@
   version "7.0.7"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.7.tgz#98a993516c859eb0d5c4c8f098317a9ea68db9ad"
   integrity sha512-cxWFQVseBm6O9Gbw1IWb8r6OS4OhSt3hPZLkFApLjM8TEXROBuQGLAH2i2gZpcXdLBIrpXuTDhH7Vbm1iXmNGA==
+
+"@types/lodash@^4.14.170":
+  version "4.14.170"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.170.tgz#0d67711d4bf7f4ca5147e9091b847479b87925d6"
+  integrity sha512-bpcvu/MKHHeYX+qeEN8GE7DIravODWdACVA1ctevD8CN24RhPZIKMn9ntfAsrvLfSX3cR5RrBKAbYm9bGs0A+Q==
 
 "@types/long@^4.0.0", "@types/long@^4.0.1":
   version "4.0.1"
@@ -1550,6 +1589,11 @@ bcrypt-pbkdf@^1.0.0:
   integrity sha1-pDAdOJtqQ/m2f/PKEaP2Y342Dp4=
   dependencies:
     tweetnacl "^0.14.3"
+
+bcryptjs@^2.4.3:
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/bcryptjs/-/bcryptjs-2.4.3.tgz#9ab5627b93e60621ff7cdac5da9733027df1d0cb"
+  integrity sha1-mrVie5PmBiH/fNrF2pczAn3x0Ms=
 
 bignumber.js@^9.0.0:
   version "9.0.1"
@@ -3413,6 +3457,13 @@ isarray@~1.0.0:
   resolved "https://registry.yarnpkg.com/isarray/-/isarray-1.0.0.tgz#bb935d48582cba168c06834957a54a3e07124f11"
   integrity sha1-u5NdSFgsuhaMBoNJV6VKPgcSTxE=
 
+isemail@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/isemail/-/isemail-3.2.0.tgz#59310a021931a9fb06bbb51e155ce0b3f236832c"
+  integrity sha512-zKqkK+O+dGqevc93KNsbZ/TqTUFd46MwWjYOoMrjIMZ51eU7DtQG3Wmd9SQQT7i7RVnuTPEiYEWHU3MSbxC1Tg==
+  dependencies:
+    punycode "2.x.x"
+
 isexe@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/isexe/-/isexe-2.0.0.tgz#e8fbf374dc556ff8947a10dcb0572d633f2cfa10"
@@ -4633,7 +4684,7 @@ pumpify@^2.0.0:
     inherits "^2.0.3"
     pump "^3.0.0"
 
-punycode@^2.1.0, punycode@^2.1.1:
+punycode@2.x.x, punycode@^2.1.0, punycode@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.1.1.tgz#b58b010ac40c22c5657616c8d2c2c02c7bf479ec"
   integrity sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==

@@ -18,7 +18,9 @@ import {
 } from '@loopback/rest';
 import {PublicMetric} from '../models';
 import {PublicMetricRepository} from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class PublicMetricController {
   constructor(
     @repository(PublicMetricRepository)
