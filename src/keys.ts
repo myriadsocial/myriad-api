@@ -9,7 +9,7 @@ dotenv.config()
 
 export namespace TokenServiceConstants {
   export const TOKEN_SECRET_VALUE = process.env.TOKEN_SECRET_KEY || "";
-  export const TOKEN_EXPIRES_IN_VALUE = process.env.TOKEN_EXPIRES_IN || "0h";
+  export const TOKEN_EXPIRES_IN_VALUE = `${process.env.TOKEN_EXPIRES_IN}h` || "0h";
 }
 export namespace TokenServiceBindings {
   export const TOKEN_SECRET = BindingKey.create<string>(
