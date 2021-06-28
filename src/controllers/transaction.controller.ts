@@ -24,7 +24,9 @@ import {
   TransactionRepository,
   UserRepository
 } from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class TransactionController {
   constructor(
     @repository(TransactionRepository)
@@ -65,42 +67,30 @@ export class TransactionController {
       throw new HttpErrors.NotFound('Token not found')
     }
 
-    const from = transaction.from
-    const to = transaction.to
-    const value = transaction.value
-    const tokenId = transaction.tokenId.toUpperCase()
+    const from = transaction.from;
+    const to = transaction.to;
+    const value = transaction.value * 10 ** foundToken.token_decimal;
+    const tokenId = transaction.tokenId.toUpperCase();
 
     const foundFromUser = await this.findDetailTransaction(from, tokenId)
 
     if (foundFromUser) {
-      const detailTransactionId = foundFromUser.id
-
-      this.detailTransactionRepository.updateById(detailTransactionId, {
+      this.detailTransactionRepository.updateById(foundFromUser.id, {
         sentToThem: foundFromUser.sentToThem + value
       })
     } else {
-      const foundUser = await this.userRepository.findOne({
-        where: {
-          id: from
-        }
+      this.detailTransactionRepository.create({
+        sentToMe: 0,
+        sentToThem: value,
+        userId: from,
+        tokenId: tokenId.toUpperCase()
       })
-
-      if (foundUser) {
-        this.detailTransactionRepository.create({
-          sentToMe: 0,
-          sentToThem: value,
-          userId: from,
-          tokenId: tokenId.toUpperCase()
-        })
-      }
     }
 
     const foundToUser = await this.findDetailTransaction(to, tokenId)
 
     if (foundToUser) {
-      const detailTransactionId = foundToUser.id
-
-      this.detailTransactionRepository.updateById(detailTransactionId, {
+      this.detailTransactionRepository.updateById(foundToUser.id, {
         sentToMe: foundToUser.sentToMe + value
       })
     } else {
@@ -113,6 +103,7 @@ export class TransactionController {
       if (!foundUser) {
         return this.transactionRepository.create({
           ...transaction,
+          value: value,
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
           hasSendToUser: false
@@ -129,6 +120,7 @@ export class TransactionController {
 
     return this.transactionRepository.create({
       ...transaction,
+      value: value,
       createdAt: new Date().toString(),
       updatedAt: new Date().toString(),
       hasSendToUser: true

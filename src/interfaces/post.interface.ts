@@ -1,6 +1,7 @@
 export interface PlatformUser {
   username: string,
-  platform_account_id?: string
+  platform_account_id?: string,
+  profile_image_url?: string;
 }
 
 export interface Post {
@@ -14,4 +15,11 @@ export interface Post {
   createdAt?: string,
   peopleId?: string,
   platformCreatedAt?: string
+}
+
+export interface PlatformPublicMetric {
+  retweet_count?: number,
+  like_count?: number,
+  upvote_count?: number,
+  downvote_count?: number
 }

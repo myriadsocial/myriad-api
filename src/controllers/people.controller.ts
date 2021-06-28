@@ -18,6 +18,7 @@ import {
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
 import {KeypairType} from '@polkadot/util-crypto/types';
+import { u8aToHex } from '@polkadot/util';
 import {xml2json} from 'xml-js';
 import {People, Post} from '../models';
 import {
@@ -29,7 +30,9 @@ import {
   UserRepository
 } from '../repositories';
 import {Facebook, Reddit, Rsshub, Twitter} from '../services';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class PeopleController {
   constructor(
     @repository(PeopleRepository)
@@ -274,25 +277,32 @@ export class PeopleController {
     }
   }
 
-  async createPostPublicMetric(post: object, credential: boolean): Promise<void> {
+  async createPostPublicMetric(post: any, credential: boolean): Promise<void> {
+    // const newPost = await this.postRepository.create(post)
+
+ 
+
+    if (!credential) {
+      const keyring = new Keyring({
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
+        // ss58Format: Number(process.env.MYRIAD_ADDRESS_PREFIX)
+      });
+      // const newKey = keyring.addFromUri('//' + newPost.id)
+      const newKey = keyring.addFromUri('//' + post.peopleId);
+
+      post.walletAddress = u8aToHex(newKey.publicKey)
+
+      // await this.postRepository.updateById(newPost.id, {walletAddress: newKey.address});
+    }
+
     const newPost = await this.postRepository.create(post)
 
-    await this.publicMetricRepository.create({
+    this.publicMetricRepository.create({
       liked: 0,
       disliked: 0,
       comment: 0,
       postId: newPost.id
     })
-
-    if (!credential) {
-      const keyring = new Keyring({
-        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-        ss58Format: Number(process.env.MYRIAD_ADDRESS_PREFIX)
-      });
-      const newKey = keyring.addFromUri('//' + newPost.id)
-
-      await this.postRepository.updateById(newPost.id, {walletAddress: newKey.address});
-    }
   }
 
   async newPost(post: any, people: any) {

@@ -18,3 +18,4 @@ export * from './user-credential.model';
 export * from './user-token.model';
 export * from './user.model';
 export * from './wallet.model';
+export * from './authentication.model';

@@ -12,24 +12,7 @@ import {Like} from './like.model';
 import {People} from './people.model';
 import {PublicMetric} from './public-metric.model';
 import {User} from './user.model';
-
-interface PlatformUser {
-  username: string;
-  platform_account_id: string;
-  profile_image_url?: string;
-}
-
-interface PlatformPublicMetric {
-  retweet_count?: number,
-  like_count?: number,
-  upvote_count?: number,
-  downvote_count?: number
-}
-
-interface TipsReceived {
-  tokenId: string,
-  totalTips: number
-}
+import {TipsReceived, PlatformUser, PlatformPublicMetric} from '../interfaces'
 
 @model({
   settings: {

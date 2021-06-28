@@ -22,7 +22,9 @@ import {
   PostRepository,
   UserRepository
 } from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class UserCommentController {
   constructor(
     @repository(UserRepository)

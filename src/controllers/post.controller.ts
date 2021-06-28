@@ -29,18 +29,10 @@ import {
   UserCredentialRepository
 } from '../repositories';
 import {Reddit, Twitter} from '../services';
+import {TipsReceived, URL} from '../interfaces'
+import {authenticate} from '@loopback/authentication';
 
-interface URL {
-  url: string;
-  importer: string;
-  tags?: string[];
-}
-
-interface TipsReceived {
-  tokenId: string,
-  totalTips: number
-}
-
+@authenticate("jwt")
 export class PostController {
   constructor(
     @repository(PostRepository)
@@ -378,20 +370,21 @@ export class PostController {
     if (foundPost) {
       const foundImporter = foundPost.importBy.find(userId => userId === importer)
 
-      if (!foundImporter) {
-        await this.postRepository.updateById(foundPost.id, {
-          importBy: [
-            ...foundPost.importBy,
-            importer
-          ]
-        })
+      if (foundImporter) {
+        throw new HttpErrors.UnprocessableEntity("You have already import this post")
+      }
 
-        foundPost.importBy = [
+      await this.postRepository.updateById(foundPost.id, {
+        importBy: [
           ...foundPost.importBy,
           importer
         ]
+      })
 
-      }
+      foundPost.importBy = [
+        ...foundPost.importBy,
+        importer
+      ]
 
       return foundPost
     }
@@ -429,19 +422,21 @@ export class PostController {
     if (foundPost) {
       const foundImporter = foundPost.importBy.find(userId => userId === importer)
 
-      if (!foundImporter) {
-        await this.postRepository.updateById(foundPost.id, {
-          importBy: [
-            ...foundPost.importBy,
-            importer
-          ]
-        })
+      if (foundImporter) {
+        throw new HttpErrors.UnprocessableEntity("You have already import this post")
+      }
 
-        foundPost.importBy = [
+      await this.postRepository.updateById(foundPost.id, {
+        importBy: [
           ...foundPost.importBy,
           importer
         ]
-      }
+      })
+
+      foundPost.importBy = [
+        ...foundPost.importBy,
+        importer
+      ]
 
       return foundPost
     }
@@ -514,20 +509,22 @@ export class PostController {
     if (foundPost) {
       const foundImporter = foundPost.importBy.find(userId => userId === importer)
 
-      if (!foundImporter) {
-        await this.postRepository.updateById(foundPost.id, {
-          importBy: [
-            ...foundPost.importBy,
-            importer
-          ]
-        })
+      if (foundImporter) {
+        throw new HttpErrors.UnprocessableEntity("You have already import this post")
+      }
 
-        foundPost.importBy = [
+      await this.postRepository.updateById(foundPost.id, {
+        importBy: [
           ...foundPost.importBy,
           importer
         ]
-      }
+      })
 
+      foundPost.importBy = [
+        ...foundPost.importBy,
+        importer
+      ]
+      
       return foundPost
     }
 
@@ -641,15 +638,20 @@ export class PostController {
   }
 
   async createPostWithPublicMetric(post: any, credential: boolean): Promise<Post> {
-    const createdTweet = await this.postRepository.create(post)
+    // const createdTweet = await this.postRepository.create(post)
 
     if (!credential) {
-      const newKey = this.keyring().addFromUri('//' + createdTweet.id);
+      // const newKey = this.keyring().addFromUri('//' + createdTweet.id);
+      const newKey = this.keyring().addFromUri('//' + post.peopleId);
 
-      this.postRepository.updateById(createdTweet.id, {
-        walletAddress: u8aToHex(newKey.publicKey)
-      })
+      post.walletAddress = u8aToHex(newKey.publicKey);
+
+      // this.postRepository.updateById(createdTweet.id, {
+      //   walletAddress: u8aToHex(newKey.publicKey)
+      // })
     }
+
+    const createdTweet = await this.postRepository.create(post)
 
     this.postRepository.publicMetric(createdTweet.id).create({})
 

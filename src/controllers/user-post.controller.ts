@@ -24,7 +24,9 @@ import {
   TagRepository,
   UserRepository
 } from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class UserPostController {
   constructor(
     @repository(UserRepository)

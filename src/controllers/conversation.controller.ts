@@ -18,7 +18,9 @@ import {
   Conversation, Post, User
 } from '../models';
 import {ConversationRepository} from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate("jwt")
 export class ConversationController {
   constructor(
     @repository(ConversationRepository)
