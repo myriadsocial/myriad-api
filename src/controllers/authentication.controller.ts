@@ -1,8 +1,6 @@
-import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {get, getJsonSchemaRef, post, requestBody} from '@loopback/rest';
-import {UserProfile} from '@loopback/security';
+import {getJsonSchemaRef, HttpErrors, post, requestBody} from '@loopback/rest';
 import * as _ from 'lodash';
 import {PasswordHasherBindings, TokenServiceBindings, UserServiceBindings} from '../keys';
 import {Authentication} from '../models';
@@ -11,8 +9,9 @@ import {validateCredentials} from '../services';
 import {BcryptHasher} from '../services/hash.password.service';
 import {JWTService} from '../services/jwt.service';
 import {MyAuthService} from '../services/authentication.service';
-import {OPERATION_SECURITY_SPEC} from '../utils/security-spec';
+import dotenv from 'dotenv'
 
+dotenv.config()
 
 export class AuthenticationController {
   constructor(
@@ -45,6 +44,16 @@ export class AuthenticationController {
   async signup(
     @requestBody() authData: Authentication
   ) {
+    const foundAuth = await this.authenticationRepository.findOne({
+      where: {
+        email: authData.email
+      }
+    })
+
+    if (foundAuth) {
+      throw new HttpErrors.UnprocessableEntity("Email Already Exist")
+    }
+
     validateCredentials(_.pick(authData, ['email', 'password']));
     authData.password = await this.hasher.hashPassword(authData.password)
     const savedUser = await this.authenticationRepository.create(authData);
@@ -76,7 +85,7 @@ export class AuthenticationController {
   })
   async login(
     @requestBody() credentials: Credentials,
-  ): Promise<{token: string}> {
+  ): Promise<{access_token: string, token_type: string, expires: number}> {
     // make sure user exist,password should be valid
     const user = await this.authServie.verifyCredentials(credentials);
     // console.log(user);
@@ -84,6 +93,6 @@ export class AuthenticationController {
     // console.log(userProfile);
 
     const token = await this.jwtService.generateToken(userProfile);
-    return Promise.resolve({token: token})
+    return Promise.resolve({access_token: token, token_type: "bearer", expires: Number(process.env.TOKEN_EXPIRES_IN) * 3600})
   }
 }
