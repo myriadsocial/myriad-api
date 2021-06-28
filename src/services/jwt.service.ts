@@ -3,36 +3,43 @@ import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {promisify} from 'util';
 import {TokenServiceBindings} from '../keys';
+import {TokenService} from '@loopback/authentication';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
 const verifyAsync = promisify(jwt.verify);
 
-export class JWTService {
-  // @inject('authentication.jwt.secret')
-  @inject(TokenServiceBindings.TOKEN_SECRET)
-  public readonly jwtSecret: string;
+export class JWTService implements TokenService {
+  constructor(
+    @inject(TokenServiceBindings.TOKEN_SECRET)
+    private jwtSecret: string,
+    @inject(TokenServiceBindings.TOKEN_EXPIRES_IN)
+    private jwtExpiresIn: string,
+  ) {}
 
-  @inject(TokenServiceBindings.TOKEN_EXPIRES_IN)
-  public readonly expiresSecret: string;
-
-  async generateToken(userProfile: UserProfile): Promise<string> {
-    if (!userProfile) {
+  async generateToken(authProfile: UserProfile): Promise<string> {
+    if (!authProfile) {
       throw new HttpErrors.Unauthorized(
         'Error while generating token :userProfile is null'
       )
     }
-    let token = '';
+    const authInfoForToken = {
+      id: authProfile[securityId],
+      name: authProfile.name,
+      email: authProfile.email,
+    };
+    let token: string;
     try {
-      token = await signAsync(userProfile, this.jwtSecret, {
-        expiresIn: this.expiresSecret
+      token = await signAsync(authInfoForToken, this.jwtSecret, {
+        expiresIn: Number(this.jwtExpiresIn)
       });
-      return token;
     } catch (err) {
       throw new HttpErrors.Unauthorized(
         `error generating token ${err}`
       )
     }
+    
+    return token;
   }
 
   async verifyToken(token: string): Promise<UserProfile> {
@@ -43,10 +50,10 @@ export class JWTService {
       )
     };
 
-    let userProfile: UserProfile;
+    let authProfile: UserProfile;
     try {
       const decryptedToken = await verifyAsync(token, this.jwtSecret);
-      userProfile = Object.assign(
+      authProfile = Object.assign(
         {[securityId]: '', id: '', name: ''},
         {[securityId]: decryptedToken.id, id: decryptedToken.id, name: decryptedToken.name}
       );
@@ -54,6 +61,6 @@ export class JWTService {
     catch (err) {
       throw new HttpErrors.Unauthorized(`Error verifying token:${err.message}`)
     }
-    return userProfile;
+    return authProfile;
   }
 }

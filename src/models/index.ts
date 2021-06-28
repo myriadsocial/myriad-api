@@ -19,3 +19,5 @@ export * from './user-token.model';
 export * from './user.model';
 export * from './wallet.model';
 export * from './authentication.model';
+export * from './auth-credential.model';
+export * from './refresh-token.model';

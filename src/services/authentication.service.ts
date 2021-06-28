@@ -4,7 +4,7 @@ import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {PasswordHasherBindings} from '../keys';
-import {Authentication} from '../models';
+import {Authentication, AuthenticationWithRelations} from '../models';
 import {Credentials, AuthenticationRepository} from '../repositories/authentication.repository';
 import {BcryptHasher} from './hash.password.service';
 
@@ -19,18 +19,30 @@ export class MyAuthService implements UserService<Authentication, Credentials>{
 
   ) {}
   async verifyCredentials(credentials: Credentials): Promise<Authentication> {
+    const invalidCredentialsError = 'Invalid email or password.';
     // implement this method
     const foundAuth = await this.authenticationRepository.findOne({
       where: {
         email: credentials.email
       }
     });
+
     if (!foundAuth) {
-      throw new HttpErrors.NotFound('auth not found');
+      throw new HttpErrors.Unauthorized(invalidCredentialsError);
     }
-    const passwordMatched = await this.hasher.comparePassword(credentials.password, foundAuth.password)
-    if (!passwordMatched)
+
+    const credentialsFound = await this.authenticationRepository.findCredentials(foundAuth.id,);
+
+    if (!credentialsFound) {
+      throw new HttpErrors.Unauthorized(invalidCredentialsError);
+    }
+
+    const passwordMatched = await this.hasher.comparePassword(credentials.password, credentialsFound.password);
+
+    if (!passwordMatched) {
       throw new HttpErrors.Unauthorized('password is not valid');
+    }
+    
     return foundAuth;
   }
 
@@ -43,4 +55,17 @@ export class MyAuthService implements UserService<Authentication, Credentials>{
     // throw new Error('Method not implemented.');
   }
 
+  async findAuthById(id: string): Promise<Authentication & AuthenticationWithRelations> {
+    const userNotfound = 'invalid User';
+    const foundAuth = await this.authenticationRepository.findOne({
+      where: {
+        id: id
+      },
+    });
+
+    if (!foundAuth) {
+      throw new HttpErrors.Unauthorized(userNotfound);
+    }
+    return foundAuth;
+  }
 }
