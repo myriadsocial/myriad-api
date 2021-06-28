@@ -22,6 +22,9 @@ export class Authentication extends Entity {
   @property({
     type: 'string',
     required: true,
+    index: {
+      unique: true
+    }
   })
   email: string;
 
