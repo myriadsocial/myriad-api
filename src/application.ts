@@ -36,7 +36,10 @@ import {
   TransactionRepository,
   UserCredentialRepository,
   UserRepository,
-  UserTokenRepository
+  UserTokenRepository,
+  AuthenticationRepository,
+  AuthCredentialRepository,
+  RefreshTokenRepository
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
@@ -46,14 +49,8 @@ import {MySequence} from './sequence';
 import {NotificationService} from './services';
 import {Post} from './interfaces'
 
-import {AuthenticationComponent, registerAuthenticationStrategy} from '@loopback/authentication';
-// import {SECURITY_SCHEME_SPEC} from './utils/security-spec';
-import {SECURITY_SCHEME_SPEC} from '@loopback/authentication-jwt';
-import {JWTStrategy} from './authentication-strategies/jwt-strategies';
-import {PasswordHasherBindings, TokenServiceBindings, TokenServiceConstants, UserServiceBindings} from './keys';
-import {BcryptHasher} from './services/hash.password.service';
-import {JWTService} from './services/jwt.service';
-import {MyAuthService} from './services/authentication.service';
+import {AuthenticationComponent} from '@loopback/authentication';
+import {JWTAuthenticationComponent} from './jwt-authentication-component'
 
 dotenv.config()
 
@@ -65,14 +62,9 @@ export class MyriadApiApplication extends BootMixin(
   constructor(options: ApplicationConfig = {}) {
     super(options);
 
-    // setup binding
-    this.setupBinding();
-
-    // Add security spec
-    this.addSecuritySpec();
-
     this.component(AuthenticationComponent);
-    registerAuthenticationStrategy(this, JWTStrategy)
+    // Mount jwt component
+    this.component(JWTAuthenticationComponent);
 
     // Set up the custom sequence
     this.sequence(MySequence);
@@ -119,41 +111,6 @@ export class MyriadApiApplication extends BootMixin(
     })
   }
 
-  setupBinding(): void {
-    // this.bind('service.hasher').toClass(BcryptHasher);
-    // this.bind('rounds').to(10);
-    // this.bind('service.user.service').toClass(MyAuthService)
-    // this.bind('service.jwt.service').toClass(JWTService);
-    // this.bind('authentication.jwt.secret').to('dvchgdvcjsdbhcbdjbvjb');
-    // this.bind('authentication.jwt.expiresIn').to('7h');
-
-    this.bind(PasswordHasherBindings.PASSWORD_HASHER).toClass(BcryptHasher);
-    this.bind(PasswordHasherBindings.ROUNDS).to(10)
-    this.bind(UserServiceBindings.USER_SERVICE).toClass(MyAuthService);
-    this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
-    this.bind(TokenServiceBindings.TOKEN_SECRET).to(TokenServiceConstants.TOKEN_SECRET_VALUE)
-    this.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(TokenServiceConstants.TOKEN_EXPIRES_IN_VALUE);
-  }
-
-  addSecuritySpec(): void {
-    this.api({
-      openapi: '3.0.0',
-      info: {
-        title: 'test application',
-        version: '1.0.0',
-      },
-      paths: {},
-      components: {securitySchemes: SECURITY_SCHEME_SPEC},
-      security: [
-        {
-          // secure all endpoints with 'jwt'
-          jwt: [],
-        },
-      ],
-      servers: [{url: '/'}],
-    });
-  }
-
   async migrateSchema(options?: SchemaMigrationOptions) {
     await super.migrateSchema(options)
 
@@ -174,6 +131,9 @@ export class MyriadApiApplication extends BootMixin(
     const detailTransactionRepository = await this.getRepository(DetailTransactionRepository)
     const userTokenRepository = await this.getRepository(UserTokenRepository)
     const queueRepository = await this.getRepository(QueueRepository)
+    const authenticationRepository = await this.getRepository(AuthenticationRepository)
+    const authCredentialRepository = await this.getRepository(AuthCredentialRepository)
+    const refreshTokenRepository = await this.getRepository(RefreshTokenRepository)
 
     await likeRepository.deleteAll()
     await conversationRepository.deleteAll()
@@ -192,6 +152,9 @@ export class MyriadApiApplication extends BootMixin(
     await userTokenRepository.deleteAll()
     await detailTransactionRepository.deleteAll()
     await queueRepository.deleteAll()
+    await authenticationRepository.deleteAll()
+    await authCredentialRepository.deleteAll()
+    await refreshTokenRepository.deleteAll()
 
     const keyring = new Keyring({
       type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType
@@ -213,49 +176,49 @@ export class MyriadApiApplication extends BootMixin(
     })
 
     const newToken = await tokenRepository.createAll(tokens)
-    // const newUser = await userRepo.createAll(updateUsers)
+    const newUser = await userRepo.createAll(updateUsers)
 
-    const api = await polkadotApi(process.env.MYRIAD_WS_RPC || "") 
+    // const api = await polkadotApi(process.env.MYRIAD_WS_RPC || "") 
 
-    for (let i = 0; i < updateUsers.length; i++) {
-      const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? "";
-      const from = keyring.addFromMnemonic(mnemonic);
-      const value = +(process.env.MYRIAD_ACCOUNT_DEPOSIT ?? 100000000000000);
-      const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX);
-      const {nonce} = await api.query.system.account(encodeAddress(from.address, myriadPrefix))
+    // for (let i = 0; i < updateUsers.length; i++) {
+    //   const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? "";
+    //   const from = keyring.addFromMnemonic(mnemonic);
+    //   const value = +(process.env.MYRIAD_ACCOUNT_DEPOSIT ?? 100000000000000);
+    //   const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX);
+    //   const {nonce} = await api.query.system.account(encodeAddress(from.address, myriadPrefix))
 
-      let count: number = nonce.toJSON()
+    //   let count: number = nonce.toJSON()
 
-      const transfer = api.tx.balances.transfer(encodeAddress(updateUsers[i].id, myriadPrefix), value)
+    //   const transfer = api.tx.balances.transfer(encodeAddress(updateUsers[i].id, myriadPrefix), value)
 
-      const newUser = await userRepo.create(updateUsers[i])
-      const txHash = await transfer.signAndSend(from, {nonce: count + i});
+    //   const newUser = await userRepo.create(updateUsers[i])
+    //   const txHash = await transfer.signAndSend(from, {nonce: count + i});
 
-      await transactionRepo.create({
-        trxHash: txHash.toString(),
-        from: u8aToHex(from.publicKey),
-        to: updateUsers[i].id,
-        value: value,
-        state: 'success',
-        createdAt: new Date().toString(),
-        tokenId: 'MYR',
-        hasSendToUser: true
-      })
+    //   await transactionRepo.create({
+    //     trxHash: txHash.toString(),
+    //     from: u8aToHex(from.publicKey),
+    //     to: updateUsers[i].id,
+    //     value: value,
+    //     state: 'success',
+    //     createdAt: new Date().toString(),
+    //     tokenId: 'MYR',
+    //     hasSendToUser: true
+    //   })
 
-      await userTokenRepository.create({
-        userId: newUser.id,
-        tokenId: "MYR"
-      })
+    //   await userTokenRepository.create({
+    //     userId: newUser.id,
+    //     tokenId: "MYR"
+    //   })
 
-      await detailTransactionRepository.create({
-        sentToMe: 100000000000000,
-        sentToThem: 0,
-        userId: newUser.id,
-        tokenId: 'MYR'
-      })
-    }
+    //   await detailTransactionRepository.create({
+    //     sentToMe: 100000000000000,
+    //     sentToThem: 0,
+    //     userId: newUser.id,
+    //     tokenId: 'MYR'
+    //   })
+    // }
 
-    await api.disconnect()
+    // await api.disconnect()
 
     const newPeople = await peopleRepo.createAll(people)
 

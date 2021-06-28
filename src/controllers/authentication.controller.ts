@@ -1,17 +1,39 @@
+import {
+  authenticate,
+  TokenService,
+  UserService,
+} from '@loopback/authentication';
 import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {getJsonSchemaRef, HttpErrors, post, requestBody} from '@loopback/rest';
-import * as _ from 'lodash';
-import {PasswordHasherBindings, TokenServiceBindings, UserServiceBindings} from '../keys';
+import {
+  getJsonSchemaRef, 
+  HttpErrors, 
+  post, 
+  requestBody} from '@loopback/rest';
+import {
+  PasswordHasherBindings, 
+  TokenServiceBindings, 
+  AuthServiceBindings, 
+  RefreshTokenServiceBindings
+} from '../keys';
 import {Authentication} from '../models';
 import {Credentials, AuthenticationRepository} from '../repositories';
-import {validateCredentials} from '../services';
+import {RefreshtokenService, validateCredentials} from '../services';
 import {BcryptHasher} from '../services/hash.password.service';
 import {JWTService} from '../services/jwt.service';
 import {MyAuthService} from '../services/authentication.service';
+import {RefreshTokenService, TokenObject} from '../interfaces';
+import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
+
+import * as _ from 'lodash';
+
 import dotenv from 'dotenv'
 
 dotenv.config()
+
+type RefreshGrant = {
+  refreshToken: string;
+};
 
 export class AuthenticationController {
   constructor(
@@ -23,12 +45,18 @@ export class AuthenticationController {
     public hasher: BcryptHasher,
 
     // @inject('service.user.service')
-    @inject(UserServiceBindings.USER_SERVICE)
-    public authServie: MyAuthService,
+    @inject(AuthServiceBindings.AUTH_SERVICE)
+    public authService: MyAuthService,
 
     // @inject('service.jwt.service')
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     public jwtService: JWTService,
+
+    @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
+    public refreshService: RefreshtokenService,
+    
+    @inject(SecurityBindings.USER, {optional: true})
+    private auth: UserProfile,
   ) {}
 
   @post('/signup', {
@@ -42,11 +70,11 @@ export class AuthenticationController {
     }
   })
   async signup(
-    @requestBody() authData: Authentication
-  ) {
+    @requestBody() newUserRequest: {email: string, password: string},
+  ):Promise<Authentication> {
     const foundAuth = await this.authenticationRepository.findOne({
       where: {
-        email: authData.email
+        email: newUserRequest.email
       }
     })
 
@@ -54,14 +82,16 @@ export class AuthenticationController {
       throw new HttpErrors.UnprocessableEntity("Email Already Exist")
     }
 
-    validateCredentials(_.pick(authData, ['email', 'password']));
-    authData.password = await this.hasher.hashPassword(authData.password)
-    const savedUser = await this.authenticationRepository.create(authData);
+    validateCredentials(_.pick(newUserRequest, ['email', 'password']));
+    const password = await this.hasher.hashPassword(newUserRequest.password)
+    const savedUser = await this.authenticationRepository.create(
+      _.omit(newUserRequest, 'password')
+    );
     // delete savedUser.password;
-    return {
-      id: savedUser.id,
-      email: savedUser.email
-    }
+
+    await this.authenticationRepository.authCredential(savedUser.id).create({password});
+
+    return savedUser
   }
 
   @post('/login', {
@@ -73,26 +103,94 @@ export class AuthenticationController {
             schema: {
               type: 'object',
               properties: {
-                token: {
-                  type: 'string'
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                accessToken: {
+                  type: 'string',
+                },
+                refreshToken: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
-  async login(
-    @requestBody() credentials: Credentials,
-  ): Promise<{access_token: string, token_type: string, expires: number}> {
-    // make sure user exist,password should be valid
-    const user = await this.authServie.verifyCredentials(credentials);
-    // console.log(user);
-    const userProfile = await this.authServie.convertToUserProfile(user);
-    // console.log(userProfile);
+  async refreshLogin(
+    @requestBody({
+      description: 'The input of login function',
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['email', 'password'],
+            properties: {
+              email: {
+                type: 'string',
+                format: 'email',
+              },
+              password: {
+                type: 'string',
+                minLength: 6,
+              },
+            },
+          }
+        },
+      },
+    }) credentials: Credentials,
+  ): Promise<TokenObject> {
+    // ensure the user exists, and the password is correct
+    const user = await this.authService.verifyCredentials(credentials);
+    // convert a User object into a UserProfile object (reduced set of properties)
+    const userProfile: UserProfile =
+      this.authService.convertToUserProfile(user);
+    const accessToken = await this.jwtService.generateToken(userProfile);
+    const tokens = await this.refreshService.generateToken(
+      userProfile,
+      accessToken,
+    );
+    return tokens;
+  }
 
-    const token = await this.jwtService.generateToken(userProfile);
-    return Promise.resolve({access_token: token, token_type: "bearer", expires: Number(process.env.TOKEN_EXPIRES_IN) * 3600})
+  @post('/refresh', {
+    responses: {
+      '200': {
+        description: 'Token',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                accessToken: {
+                  type: 'object',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async refresh(
+    @requestBody({
+      description: 'Reissuing Acess Token',
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['refreshToken'],
+            properties: {
+              refreshToken: {
+                type: 'string',
+              },
+            },
+          }
+        },
+      },
+    }) refreshGrant: {refreshToken: string},
+  ): Promise<TokenObject> {
+    return this.refreshService.refreshToken(refreshGrant.refreshToken);
   }
 }

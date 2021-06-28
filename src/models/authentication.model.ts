@@ -1,4 +1,5 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, hasOne, model, property} from '@loopback/repository';
+import {AuthCredential} from './auth-credential.model';
 
 @model({
   settings: {
@@ -29,11 +30,19 @@ export class Authentication extends Entity {
   email: string;
 
   @property({
-    type: 'string',
-    required: true,
+    type: 'boolean',
   })
-  password: string;
+  emailVerified?: boolean;
 
+  @property({
+    type: 'string',
+  })
+  verificationToken?: string;
+
+  @hasOne(() => AuthCredential)
+  authCredential: AuthCredential;
+
+  [prop: string]: any;
 
   constructor(data?: Partial<Authentication>) {
     super(data);
