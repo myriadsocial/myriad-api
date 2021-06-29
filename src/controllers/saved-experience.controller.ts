@@ -17,7 +17,7 @@ import {SavedExperience} from '../models';
 import {SavedExperienceRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class SavedExperienceController {
   constructor(
     @repository(SavedExperienceRepository)

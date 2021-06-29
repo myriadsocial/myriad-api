@@ -20,7 +20,7 @@ import {
 import {ConversationRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class ConversationController {
   constructor(
     @repository(ConversationRepository)

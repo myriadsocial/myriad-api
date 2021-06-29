@@ -21,7 +21,7 @@ import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class NotificationsController {
   constructor(
     @repository(NotificationRepository)

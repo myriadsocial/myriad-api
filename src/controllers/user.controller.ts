@@ -31,7 +31,7 @@ import {authenticate} from '@loopback/authentication';
 
 dotenv.config()
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class UserController {
   constructor(
     @repository(UserRepository)

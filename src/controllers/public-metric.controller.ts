@@ -20,7 +20,7 @@ import {PublicMetric} from '../models';
 import {PublicMetricRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class PublicMetricController {
   constructor(
     @repository(PublicMetricRepository)

@@ -1,8 +1,3 @@
-import {
-  authenticate,
-  TokenService,
-  UserService,
-} from '@loopback/authentication';
 import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {
@@ -22,18 +17,14 @@ import {RefreshtokenService, validateCredentials} from '../services';
 import {BcryptHasher} from '../services/hash.password.service';
 import {JWTService} from '../services/jwt.service';
 import {MyAuthService} from '../services/authentication.service';
-import {RefreshTokenService, TokenObject} from '../interfaces';
-import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
+import {NewAuthRequest, RefreshGrant, TokenObject} from '../interfaces';
+import {SecurityBindings, UserProfile} from '@loopback/security';
 
 import * as _ from 'lodash';
 
 import dotenv from 'dotenv'
 
 dotenv.config()
-
-type RefreshGrant = {
-  refreshToken: string;
-};
 
 export class AuthenticationController {
   constructor(
@@ -70,11 +61,11 @@ export class AuthenticationController {
     }
   })
   async signup(
-    @requestBody() newUserRequest: {email: string, password: string},
+    @requestBody() newAuthRequest: NewAuthRequest,
   ):Promise<Authentication> {
     const foundAuth = await this.authenticationRepository.findOne({
       where: {
-        email: newUserRequest.email
+        email: newAuthRequest.email
       }
     })
 
@@ -82,10 +73,10 @@ export class AuthenticationController {
       throw new HttpErrors.UnprocessableEntity("Email Already Exist")
     }
 
-    validateCredentials(_.pick(newUserRequest, ['email', 'password']));
-    const password = await this.hasher.hashPassword(newUserRequest.password)
+    validateCredentials(_.pick(newAuthRequest, ['email', 'password']));
+    const password = await this.hasher.hashPassword(newAuthRequest.password)
     const savedUser = await this.authenticationRepository.create(
-      _.omit(newUserRequest, 'password')
+      _.omit(newAuthRequest, 'password')
     );
     // delete savedUser.password;
 
@@ -189,7 +180,7 @@ export class AuthenticationController {
           }
         },
       },
-    }) refreshGrant: {refreshToken: string},
+    }) refreshGrant: RefreshGrant,
   ): Promise<TokenObject> {
     return this.refreshService.refreshToken(refreshGrant.refreshToken);
   }

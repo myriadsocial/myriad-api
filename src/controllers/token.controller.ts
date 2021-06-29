@@ -21,7 +21,7 @@ import {Token} from '../models';
 import {TokenRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class TokenController {
   constructor(
     @repository(TokenRepository)

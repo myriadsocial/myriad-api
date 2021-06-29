@@ -32,7 +32,7 @@ import {
 import {Facebook, Reddit, Rsshub, Twitter} from '../services';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class PeopleController {
   constructor(
     @repository(PeopleRepository)

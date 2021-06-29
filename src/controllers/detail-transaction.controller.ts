@@ -21,7 +21,7 @@ import {DetailTransaction} from '../models';
 import {DetailTransactionRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class DetailTransactionController {
   constructor(
     @repository(DetailTransactionRepository)

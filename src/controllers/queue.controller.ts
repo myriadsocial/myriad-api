@@ -14,7 +14,7 @@ import {Queue} from '../models';
 import {QueueRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class QueueController {
   constructor(
     @repository(QueueRepository)

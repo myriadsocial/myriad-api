@@ -18,7 +18,7 @@ import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class ExperienceController {
   constructor(
     @repository(ExperienceRepository)

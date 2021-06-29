@@ -23,7 +23,7 @@ import {FriendRepository} from '../repositories';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class FriendController {
   constructor(
     @repository(FriendRepository)

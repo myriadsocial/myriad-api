@@ -19,7 +19,7 @@ import {DetailTransaction, User} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class UserDetailTransactionController {
   constructor(
     @repository(UserRepository)

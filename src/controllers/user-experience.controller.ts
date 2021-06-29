@@ -20,7 +20,7 @@ import {Experience, User} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class UserExperienceController {
   constructor(
     @repository(UserRepository)

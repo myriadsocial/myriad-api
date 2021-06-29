@@ -21,7 +21,7 @@ import {
 } from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-@authenticate("jwt")
+// @authenticate("jwt")
 export class UserTokenController {
   constructor(
     @repository(UserRepository)
