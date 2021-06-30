@@ -26,7 +26,7 @@ import {
 
 } from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
-import {User} from '../interfaces'
+import {User, VerifyUser} from '../interfaces'
 import dotenv from 'dotenv';
 import {authenticate} from '@loopback/authentication';
 
@@ -70,10 +70,36 @@ export class UserCredentialController {
 
   @post('/verify')
   @response(200, {
-    description: 'Verify User'
+    description: 'Verify User',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'boolean'
+        }
+      }
+    }
   })
   async verifyUser(
-    @requestBody() verifyUser: {publicKey: string, username: string, platform: string}
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              publicKey: {
+                type: 'string'
+              },
+              username: {
+                type: 'string'
+              },
+              platform: {
+                type: 'string'
+              }
+            }
+          }
+        }
+      }
+    }) verifyUser: VerifyUser
   ): Promise<Boolean> {
     const {publicKey, platform, username} = verifyUser
 

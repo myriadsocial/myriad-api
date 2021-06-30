@@ -131,17 +131,6 @@ export class NotificationsController {
     await this.notificationRepository.updateById(id, notification);
   }
 
-  @put('/notifications/{id}')
-  @response(204, {
-    description: 'Notification PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() notification: Notification,
-  ): Promise<void> {
-    await this.notificationRepository.replaceById(id, notification);
-  }
-
   @del('/notifications/{id}')
   @response(204, {
     description: 'Notification DELETE success',

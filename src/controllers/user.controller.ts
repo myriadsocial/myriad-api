@@ -28,6 +28,7 @@ import {
 import {NotificationService} from '../services';
 import dotenv from 'dotenv';
 import {authenticate} from '@loopback/authentication';
+import { FriendId } from '../interfaces';
 
 dotenv.config()
 
@@ -124,11 +125,25 @@ export class UserController {
 
   @post('/users/{id}/friends')
   @response(200, {
-    description: 'Request friends'
+    description: 'Request friends',
+    content: {'application/json': {schema: getModelSchemaRef(Friend)}}
   })
   async createRequest(
     @param.path.string('id') id: string,
-    @requestBody() friend: {friendId: string}
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              friendId: {
+                type: 'string'
+              }
+            }
+          }
+        }
+      }
+    }) friend: FriendId
   ): Promise<Friend> {
     if (friend.friendId === id) {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself')
@@ -186,7 +201,17 @@ export class UserController {
 
   @get('users/{id}/friends')
   @response(200, {
-    description: 'Array of friend request'
+    description: 'Array of friend request',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Friend, {
+            includeRelations: true
+          })
+        }
+      }
+    }
   })
   async requestList(
     @param.path.string('id') id: string,
@@ -407,12 +432,5 @@ export class UserController {
       tokenId: 'MYR'
     })
     await api.disconnect()
-  }
-
-  validateUsername(username: string): boolean {
-    const splitUsername = username.split(' ')
-
-    if (splitUsername.length > 1) return false
-    return true
   }
 }

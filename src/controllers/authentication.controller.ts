@@ -1,7 +1,6 @@
 import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {
-  getJsonSchemaRef, 
+import { 
   HttpErrors, 
   post, 
   requestBody} from '@loopback/rest';
@@ -18,7 +17,7 @@ import {BcryptHasher} from '../services/hash.password.service';
 import {JWTService} from '../services/jwt.service';
 import {MyAuthService} from '../services/authentication.service';
 import {NewAuthRequest, RefreshGrant, TokenObject} from '../interfaces';
-import {SecurityBindings, UserProfile} from '@loopback/security';
+import {UserProfile} from '@loopback/security';
 
 import * as _ from 'lodash';
 
@@ -45,9 +44,6 @@ export class AuthenticationController {
 
     @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
     public refreshService: RefreshtokenService,
-    
-    @inject(SecurityBindings.USER, {optional: true})
-    private auth: UserProfile,
   ) {}
 
   @post('/signup', {
@@ -55,13 +51,46 @@ export class AuthenticationController {
       '200': {
         description: 'Authentication',
         content: {
-          schema: getJsonSchemaRef(Authentication)
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string'
+                },
+                email: {
+                  type: 'string'
+                }
+              }
+            }
+          }
         }
       }
     }
   })
   async signup(
-    @requestBody() newAuthRequest: NewAuthRequest,
+    @requestBody({
+      description: 'The input of signup function',
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['email', 'password'],
+            properties: {
+              email: {
+                type: 'string',
+                format: 'email',
+              },
+              password: {
+                type: 'string',
+                minLength: 6,
+              },
+            },
+          }
+        },
+      },
+    }) newAuthRequest: NewAuthRequest,
   ):Promise<Authentication> {
     const foundAuth = await this.authenticationRepository.findOne({
       where: {
@@ -97,6 +126,12 @@ export class AuthenticationController {
                 accessToken: {
                   type: 'string',
                 },
+                tokenType: {
+                  type: 'string'
+                },
+                expiresIn: {
+                  type: 'string'
+                },
                 refreshToken: {
                   type: 'string',
                 },
@@ -107,7 +142,7 @@ export class AuthenticationController {
       },
     },
   })
-  async refreshLogin(
+  async login(
     @requestBody({
       description: 'The input of login function',
       required: true,
@@ -154,7 +189,7 @@ export class AuthenticationController {
               type: 'object',
               properties: {
                 accessToken: {
-                  type: 'object',
+                  type: 'string',
                 },
               },
             },

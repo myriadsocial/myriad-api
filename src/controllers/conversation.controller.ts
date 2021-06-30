@@ -145,17 +145,6 @@ export class ConversationController {
     });
   }
 
-  @put('/conversations/{id}')
-  @response(204, {
-    description: 'Conversation PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() conversation: Conversation,
-  ): Promise<void> {
-    await this.conversationRepository.replaceById(id, conversation);
-  }
-
   @del('/conversations/{id}')
   @response(204, {
     description: 'Conversation DELETE success',

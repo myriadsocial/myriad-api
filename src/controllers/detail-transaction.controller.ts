@@ -131,17 +131,6 @@ export class DetailTransactionController {
     await this.detailTransactionRepository.updateById(id, detailTransaction);
   }
 
-  @put('/detail-transactions/{id}')
-  @response(204, {
-    description: 'DetailTransaction PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() detailTransaction: DetailTransaction,
-  ): Promise<void> {
-    await this.detailTransactionRepository.replaceById(id, detailTransaction);
-  }
-
   @del('/detail-transactions/{id}')
   @response(204, {
     description: 'DetailTransaction DELETE success',
