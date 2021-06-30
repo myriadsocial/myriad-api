@@ -168,17 +168,6 @@ export class PeopleController {
     await this.peopleRepository.updateById(id, people);
   }
 
-  @put('/people/{id}')
-  @response(204, {
-    description: 'People PUT success',
-  })
-  async replaceById(
-    @param.path.string('id') id: string,
-    @requestBody() people: People,
-  ): Promise<void> {
-    await this.peopleRepository.replaceById(id, people);
-  }
-
   @del('/people/{id}')
   @response(204, {
     description: 'People DELETE success',

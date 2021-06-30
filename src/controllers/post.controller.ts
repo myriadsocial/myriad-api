@@ -29,7 +29,7 @@ import {
   UserCredentialRepository
 } from '../repositories';
 import {Reddit, Twitter} from '../services';
-import {TipsReceived, URL} from '../interfaces'
+import {DetailTips, TipsReceived, URL} from '../interfaces'
 import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -126,10 +126,34 @@ export class PostController {
 
   @post('/posts/import')
   @response(200, {
-    description: 'Import post'
+    description: 'Post',
+    content: {'application/json': {schema: getModelSchemaRef(Post)}}
   })
   async importURL(
-    @requestBody() post: URL,
+    @requestBody({
+      description: 'Import post',
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              url: {
+                type: 'string'
+              },
+              importer: {
+                type: 'string'
+              },
+              tags: {
+                type: 'array',
+                items: {
+                  type: 'string'
+                }
+              }
+            }
+          }
+        }
+      }
+    }) post: URL,
   ): Promise<Post> {
     const splitURL = post.url.split('/')
     const platform = splitURL[2].toLowerCase()
@@ -301,7 +325,23 @@ export class PostController {
   })
   async updateTipsById(
     @param.path.string('id') id: string,
-    @requestBody() detailTips: {tokenId: string, tipsReceived: number},
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              tokenId: {
+                type: 'string'
+              },
+              tipsReceived: {
+                type: 'number'
+              }
+            }
+          }
+        }
+      }
+    }) detailTips: DetailTips,
   ): Promise<TipsReceived> {
     const foundPost = await this.postRepository.findOne({
       where: {
