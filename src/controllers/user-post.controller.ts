@@ -85,34 +85,22 @@ export class UserPostController {
     const acceptedFriends = await this.friendRepository.find({
       where: {
         status: 'approved',
-        requestorId: id
+        or: [
+          {
+            friendId: id
+          },
+          {
+            requestorId: id
+          }
+        ]
       }
     })
 
     const friendIds = [
       ...acceptedFriends.map(friend => friend.friendId),
+      ...acceptedFriends.map(friend => friend.requestorId),
       id
     ]
-
-    // const foundPost = await this.postRepository.findOne({
-    //   where: {
-    //     or: [
-    //       {
-    //         importBy: {
-    //           inq: [[id]]
-    //         }
-    //       },
-    //       {
-    //         walletAddress: id
-    //       }
-    //     ]
-    //   },
-    //   limit: 1,
-    // })
-
-    // if (!foundPost) {
-    //   return this.defaultPost(orderField, order, limit, offset, friendIds)
-    // }
 
     const importBys = friendIds.map(id => {
       return {
