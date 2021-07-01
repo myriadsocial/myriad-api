@@ -15,11 +15,11 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {Keyring} from '@polkadot/api';
-import {u8aToHex} from '@polkadot/util';
-import {encodeAddress} from '@polkadot/util-crypto';
-import {KeypairType} from '@polkadot/util-crypto/types';
-import {polkadotApi} from '../helpers/polkadotApi';
+// import {Keyring} from '@polkadot/api';
+// import {u8aToHex} from '@polkadot/util';
+// import {encodeAddress} from '@polkadot/util-crypto';
+// import {KeypairType} from '@polkadot/util-crypto/types';
+// import {polkadotApi} from '../helpers/polkadotApi';
 import {Friend, User} from '../models';
 import {
   ExperienceRepository, FriendRepository, PeopleRepository, PostRepository, QueueRepository,
@@ -90,21 +90,13 @@ export class UserController {
         return foundUser
       }
 
-      await this.defaultTips(user.id)
-
       const newUser = await this.userRepository.create({
         ...user,
+        username: user.username?.toLowerCase().replace(/\s+/g,''),
         bio: user.bio ? user.bio : `Hello, my name is ${user.name}!`,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString()
       });
-
-      this.userRepository.detailTransactions(newUser.id).create({
-        sentToMe: 100000000000000,
-        sentToThem: 0,
-        userId: newUser.id,
-        tokenId: 'MYR'
-      })
 
       this.userTokenRepository.create({
         userId: newUser.id,
@@ -112,7 +104,6 @@ export class UserController {
       })
 
       // await this.defaultExperience(newUser)
-
       return newUser
     } catch (err) {
       if (err.message === 'LostConnection') {
@@ -322,7 +313,7 @@ export class UserController {
     return this.userRepository.findById(id, filter);
   }
 
-  @get('users/{username}/example-seed/{id}')
+  @get('users/{username}/example-seed')
   @response(200, {
     description: 'Get seed instance'
   })
@@ -342,95 +333,95 @@ export class UserController {
     throw new HttpErrors.NotFound('Seed Not Found')
   }
 
-  async defaultExperience(user: User): Promise<void> {
-    this.userRepository.savedExperiences(user.id).create({
-      name: user.name + " Experience",
-      tags: [
-        {
-          id: 'cryptocurrency',
-          hide: false
-        },
-        {
-          id: 'blockchain',
-          hide: false
-        },
-        {
-          id: 'technology',
-          hide: false
-        }
-      ],
-      people: [
-        {
-          username: "gavofyork",
-          platform_account_id: "33962758",
-          profile_image_url: "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg",
-          platform: "twitter",
-          hide: false
-        },
-        {
-          username: "CryptoChief",
-          platform_account_id: "t2_e0t5q",
-          profile_image_url: "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png",
-          platform: "reddit",
-          hide: false
-        }
-      ],
-      description: `Hello, ${user.name}! Welcome to myriad!`,
-      userId: user.id,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
-    })
-  }
+  // async defaultExperience(user: User): Promise<void> {
+  //   this.userRepository.savedExperiences(user.id).create({
+  //     name: user.name + " Experience",
+  //     tags: [
+  //       {
+  //         id: 'cryptocurrency',
+  //         hide: false
+  //       },
+  //       {
+  //         id: 'blockchain',
+  //         hide: false
+  //       },
+  //       {
+  //         id: 'technology',
+  //         hide: false
+  //       }
+  //     ],
+  //     people: [
+  //       {
+  //         username: "gavofyork",
+  //         platform_account_id: "33962758",
+  //         profile_image_url: "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg",
+  //         platform: "twitter",
+  //         hide: false
+  //       },
+  //       {
+  //         username: "CryptoChief",
+  //         platform_account_id: "t2_e0t5q",
+  //         profile_image_url: "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png",
+  //         platform: "reddit",
+  //         hide: false
+  //       }
+  //     ],
+  //     description: `Hello, ${user.name}! Welcome to myriad!`,
+  //     userId: user.id,
+  //     createdAt: new Date().toString(),
+  //     updatedAt: new Date().toString()
+  //   })
+  // }
 
-  async defaultTips(userId: string): Promise<void> {
-    const provider = process.env.MYRIAD_WS_RPC || ""
-    const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX)
-    const api = await polkadotApi(provider)
-    const keyring = new Keyring({
-      type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-      ss58Format: myriadPrefix
-    });
+  // async defaultTips(userId: string): Promise<void> {
+  //   const provider = process.env.MYRIAD_WS_RPC || ""
+  //   const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX)
+  //   const api = await polkadotApi(provider)
+  //   const keyring = new Keyring({
+  //     type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
+  //     ss58Format: myriadPrefix
+  //   });
 
-    const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? "";
-    const from = keyring.addFromMnemonic(mnemonic);
-    const to = encodeAddress(userId, myriadPrefix);
-    const value = +(process.env.MYRIAD_ACCOUNT_DEPOSIT ?? 100000000000000)
-    const {nonce} = await api.query.system.account(from.address)
+  //   const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? "";
+  //   const from = keyring.addFromMnemonic(mnemonic);
+  //   const to = encodeAddress(userId, myriadPrefix);
+  //   const value = +(process.env.MYRIAD_ACCOUNT_DEPOSIT ?? 100000000000000)
+  //   const {nonce} = await api.query.system.account(from.address)
 
-    const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
+  //   const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
 
-    let count: number = nonce.toJSON()
+  //   let count: number = nonce.toJSON()
 
-    if (!foundQueue) {
-      const queue = await this.queueRepository.create({
-        id: 'admin',
-        count
-      })
+  //   if (!foundQueue) {
+  //     const queue = await this.queueRepository.create({
+  //       id: 'admin',
+  //       count
+  //     })
 
-      await this.queueRepository.updateById(queue.id, {count: count + 1})
-    } else {
-      if (foundQueue.count >= nonce.toJSON()) {
-        count = foundQueue.count
-      } else {
-        count = nonce.toJSON()
-      }
+  //     await this.queueRepository.updateById(queue.id, {count: count + 1})
+  //   } else {
+  //     if (foundQueue.count >= nonce.toJSON()) {
+  //       count = foundQueue.count
+  //     } else {
+  //       count = nonce.toJSON()
+  //     }
 
-      await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
-    }
+  //     await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
+  //   }
 
-    const transfer = api.tx.balances.transfer(to, value);
-    const txhash = await transfer.signAndSend(from, {nonce: count});
+  //   const transfer = api.tx.balances.transfer(to, value);
+  //   const txhash = await transfer.signAndSend(from, {nonce: count});
 
-    this.transactionRepository.create({
-      trxHash: txhash.toString(),
-      from: u8aToHex(from.publicKey),
-      to: userId,
-      value: value,
-      state: 'success',
-      hasSendToUser: true,
-      createdAt: new Date().toString(),
-      tokenId: 'MYR'
-    })
-    await api.disconnect()
-  }
+  //   this.transactionRepository.create({
+  //     trxHash: txhash.toString(),
+  //     from: u8aToHex(from.publicKey),
+  //     to: userId,
+  //     value: value,
+  //     state: 'success',
+  //     hasSendToUser: true,
+  //     createdAt: new Date().toString(),
+  //     tokenId: 'MYR'
+  //   })
+  //   await api.disconnect()
+  // }
 }
