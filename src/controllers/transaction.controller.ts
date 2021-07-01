@@ -69,7 +69,7 @@ export class TransactionController {
 
     const from = transaction.from;
     const to = transaction.to;
-    const value = transaction.value * 10 ** foundToken.token_decimal;
+    const value = transaction.value;
     const tokenId = transaction.tokenId.toUpperCase();
 
     const foundFromUser = await this.findDetailTransaction(from, tokenId)
