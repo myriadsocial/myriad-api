@@ -1,5 +1,6 @@
 [
   {
+    "name": "Elon Musk",
     "username": "elonmusk",
     "platform": "twitter",
     "platform_account_id": "44196397",
@@ -7,6 +8,7 @@
     "hide": false
   },
   {
+    "name": "Gavin Wood",
     "username": "gavofyork",
     "platform": "twitter",
     "platform_account_id": "33962758",
@@ -14,6 +16,7 @@
     "hide": false
   },
   {
+    "name": "W3F_Bill",
     "username": "W3F_Bill",
     "platform": "reddit",
     "platform_account_id": "t2_5turjfiq",
@@ -21,6 +24,7 @@
     "hide": false
   },
   {
+    "name": "CryptoChief",
     "username": "CryptoChief",
     "platform": "reddit",
     "platform_account_id": "t2_e0t5q",
@@ -28,18 +32,23 @@
     "hide": false
   },
   {
+    "name": "Bill Gates",
     "username": "BillGates",
     "platform": "facebook",
     "platform_account_id": "216311481960",
+    "profile_image_url": "https://scontent.fcgk28-1.fna.fbcdn.net/v/t1.6435-9/204173448_10158058210816961_332280879240637422_n.jpg?_nc_cat=1&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=heMsDPZZNOEAX9yi3H1&_nc_ht=scontent.fcgk28-1.fna&oh=3e8853ad3000808813a31b3f9226564c&oe=60E445DB",
     "hide": false
   },
   {
+    "name": "Vitalik Buterin",
     "username": "vitalikbuterineth",
     "platform": "facebook",
     "platform_account_id": "112773940147738",
+    "profile_image_url": "https://scontent.fcgk28-1.fna.fbcdn.net/v/t1.6435-9/132495414_400670321358097_47798745312266205_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=iBuCNCHxcdgAX-LMciC&_nc_ht=scontent.fcgk28-1.fna&oh=a54043e8dd8bdf1012854ca98728e8d6&oe=60E40AF5",
     "hide": false
   },
   {
+    "name": "QR3",
     "username": "Kur3Qr3",
     "platform": "twitter",
     "platform_account_id": "966725945901101056",
@@ -47,6 +56,7 @@
     "hide": false
   },
   {
+    "name": "reverse_my_repo",
     "username": "reverse_my_repo",
     "platform": "reddit",
     "platform_account_id": "t2_6wmczacm",

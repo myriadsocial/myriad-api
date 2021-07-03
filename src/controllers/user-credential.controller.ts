@@ -106,57 +106,26 @@ export class UserCredentialController {
     switch (platform) {
       case 'twitter':
         // Fetch data user from twitter api
-        const {data: user} = await this.twitterService.getActions(`users/by/username/${username}?user.fields=profile_image_url`)
-
-        if (!user) throw new HttpErrors.NotFound('Invalid username')
-
-        // Fetch post timeline based on twitter userId from twitter api
-        const {data: tweets} = await this.twitterService.getActions(`users/${user.id}/tweets?max_results=5`)
-
-        // Verify that the publicKey is existing in user twitter
-        const foundTwitterPublicKey = tweets[0].text.split(' ').find((tweet: string) => tweet === publicKey)
-
-        if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
+        const twitterUser = await this.twitter(username, publicKey);
 
         // Add new credential
-        const twitterCredential = await this.createCredential({
-          platform_account_id: user.id,
-          platform: platform,
-          username: user.username,
-          profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : ''
-        }, publicKey)
+        const twitterCredential = await this.createCredential(twitterUser)
 
         // this.transferTipsToUser(twitterCredential)
 
-        // const statusTransfer = await this.transferTipsToUser(twitterCredential, user.id)
+        // const statusTransfer = await this.transferTipsToUser(twitterCredential, twitterUser.id)
 
         // if(!statusTransfer) throw new HttpErrors.NotFound('RPC Lost Connection')
 
-        this.fetchFollowing(user.id)
+        if (twitterUser.id) this.fetchFollowing(twitterUser.id);
 
         return true
 
       case 'reddit':
-        // Fetch data user from reddit api
-        const {data: redditUser} = await this.redditService.getActions(`user/${username}/about.json`)
-
-        // Fetch post timeline based on reddit username from reddit api
-        const {data: foundRedditPost} = await this.redditService.getActions(`user/${username}/.json?limit=1`)
-
-        if (foundRedditPost.children.length === 0) throw new HttpErrors.NotFound('Cannot find the spesified post')
-
-        // Verify that the publicKey is existing in user reddit
-        const foundRedditPublicKey = foundRedditPost.children[0].data.title.split(' ').find((post: string) => post === publicKey)
-
-        if (!foundRedditPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
+        const redditUser = await this.reddit(username, publicKey);
         
         // Add new credential
-        const redditCredential = await this.createCredential({
-          platform_account_id: 't2_' + redditUser.id,
-          platform: 'reddit',
-          username: redditUser.name,
-          profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : ''
-        }, publicKey)
+        const redditCredential = await this.createCredential(redditUser)
 
         // this.transferTipsToUser(redditCredential)
 
@@ -167,21 +136,9 @@ export class UserCredentialController {
         return true
 
       case 'facebook':
-        const split = username.split('/')
-        const fbUsername = split[3]
-        const postId = split[5]
+        const facebookUser = await this.facebook(username, publicKey);
 
-        const data = await this.facebookService.getActions(fbUsername, postId)
-        const foundIndex = data.search(publicKey)
-        const foundPublicKey = data.substring(foundIndex, foundIndex + 50)
-
-        if (foundIndex === -1) throw new HttpErrors.NotFound('Cannot find specified post - found index')
-        if (foundPublicKey.replace('"', '').trim() !== publicKey) throw new HttpErrors.NotFound('Cannot find specified post')
-
-        const facebookCredential = await this.createCredentialFB({
-          platform: 'facebook',
-          username: fbUsername,
-        }, publicKey)
+        const facebookCredential = await this.createCredential(facebookUser);
 
         // this.transferTipsToUser(facebookCredential);
 
@@ -256,6 +213,216 @@ export class UserCredentialController {
     await this.userCredentialRepository.deleteById(id);
   }
 
+  async twitter(username: string, publicKey: string): Promise<User> {
+    const {data: user} = await this.twitterService.getActions(`2/users/by/username/${username}?user.fields=profile_image_url`)
+
+    if (!user) throw new HttpErrors.NotFound('Invalid username')
+
+    // Fetch post timeline based on twitter userId from twitter api
+    const {data: tweets} = await this.twitterService.getActions(`2/users/${user.id}/tweets?max_results=5`)
+
+    // Verify that the publicKey is existing in user twitter
+    const foundTwitterPublicKey = tweets[0].text.split(' ').find((tweet: string) => tweet === publicKey)
+
+    if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
+
+    return {
+      id: user.id,
+      name: user.name,
+      platform_account_id: user.id,
+      platform: "twitter",
+      username: user.username,
+      profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : '',
+      publicKey: publicKey
+    }
+  }
+
+  async reddit(username: string, publicKey: string): Promise<User> {
+    // Fetch data user from reddit api
+    const {data: redditUser} = await this.redditService.getActions(`user/${username}/about.json`)
+
+    // Fetch post timeline based on reddit username from reddit api
+    const {data: foundRedditPost} = await this.redditService.getActions(`user/${username}/.json?limit=1`)
+
+    if (foundRedditPost.children.length === 0) throw new HttpErrors.NotFound('Cannot find the spesified post')
+
+    // Verify that the publicKey is existing in user reddit
+    const foundRedditPublicKey = foundRedditPost.children[0].data.title.split(' ').find((post: string) => post === publicKey)
+
+    if (!foundRedditPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
+
+    console.log(redditUser.subreddit.title, ">> name")
+
+    return {
+      name: redditUser.subreddit.title ? redditUser.subreddit.title : redditUser.name,
+      platform_account_id: 't2_' + redditUser.id,
+      platform: 'reddit',
+      username: redditUser.name,
+      profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : '',
+      publicKey: publicKey
+    }
+  }
+
+  async facebook(username: string, publicKey: string): Promise<User> {
+    const data = await this.facebookService.getActions(username, "");  
+    const foundIndex = data.search(publicKey);
+
+    if (foundIndex === -1) throw new HttpErrors.NotFound('Cannot find specified post');
+
+    let profile_image_url = '';
+    let name = '';
+    let platform_account_id = '';
+    let userName = '';
+
+    // Get profile image url
+    const profileImageUrlIndex = data.search('meta property="og:image" content="');
+    const profileImageUrlString = data.substring(profileImageUrlIndex + 'meta property="og:image" content="'.length);
+
+    for (let i = 0; i < profileImageUrlString.length; i++) {
+      if (profileImageUrlString[i] === '"') break
+
+      profile_image_url += profileImageUrlString[i];
+    }
+
+    // Get name
+    const nameIndex = data.search('meta property="og:title" content="');
+    const nameString = data.substring(nameIndex + 'meta property="og:title" content="'.length);
+
+    for (let i = 0; i < 50; i++) {
+      if (nameString[i] === '"') break
+
+      name += nameString[i]
+    }
+
+    // Get platform account id
+    const platformAccountIdIndex = data.search('content="fb://page');
+    const platformAccountIdString = data.substring(platformAccountIdIndex + 'content="fb://page/'.length);
+
+    for (let i = 0; i < 50; i++) {
+      if (platformAccountIdString[i] === '?') break
+
+      platform_account_id += platformAccountIdString[i];
+    }
+
+    // Get username
+    const usernameIndex = data.search('meta http-equiv="refresh" content="0; URL=/');
+    const usernameString = data.substring(usernameIndex + 'meta http-equiv="refresh" content="0; URL=/'.length);
+
+    for (let i = 0; i < 50; i++) {
+      if (usernameString[i] === '/') break
+
+      userName += usernameString[i]
+    }
+
+    return {
+      name: name,
+      username: userName,
+      platform_account_id: platform_account_id,
+      platform: "facebook",
+      profile_image_url: profile_image_url.replace(/amp;/g, ''),
+      publicKey: publicKey
+    }
+  }
+
+  async createCredential(user: User): Promise<UserCredential> {
+    const {
+      name, 
+      platform_account_id, 
+      username, 
+      platform, 
+      profile_image_url, 
+      publicKey
+    } = user
+
+    // Verify credential
+    const foundPlatformCredential = await this.userCredentialRepository.findOne({
+      where: {
+        userId: publicKey,
+        platform: platform
+      }
+    })
+
+    if (foundPlatformCredential) {
+      const person = await this.peopleRepository.findOne({
+        where: {
+          id: foundPlatformCredential.peopleId
+        }
+      })
+
+      if (person && person.platform_account_id !== platform_account_id) {
+        throw new HttpErrors.NotFound(`This ${person.platform} does not belong to you!`)
+      }
+    }
+
+    const foundPeople = await this.peopleRepository.findOne({
+      where: {
+        platform_account_id: platform_account_id,
+        platform: platform
+      }
+    })
+
+    if (foundPeople) {
+      const foundCredential = await this.userCredentialRepository.findOne({
+        where: {
+          peopleId: foundPeople.id,
+          platform: platform
+        }
+      })
+
+      if (!foundCredential) {
+        return this.peopleRepository.userCredential(foundPeople.id).create({
+          userId: publicKey,
+          isLogin: true
+        })
+      }
+
+      if (foundCredential.userId === user.publicKey) {
+        this.userCredentialRepository.updateById(foundCredential.id, {
+          isLogin: true
+        })
+
+        foundCredential.isLogin = true
+
+        return foundCredential
+      }
+
+      throw new HttpErrors.NotFound('Credential Invalid')
+    }
+
+    const newPeople = await this.peopleRepository.create({
+      name, username, platform_account_id, platform, profile_image_url
+    });
+
+    return this.peopleRepository.userCredential(newPeople.id).create({
+      userId: publicKey,
+      platform: platform,
+      isLogin: true
+    })
+  }
+
+  async fetchFollowing(platform_account_id: string): Promise<void> {
+    const {data: following} = await this.twitterService.getActions(`2/users/${platform_account_id}/following?user.fields=profile_image_url`)
+
+    for (let i = 0; i < following.length; i++) {
+      const person = following[i]
+      const foundPerson = await this.peopleRepository.findOne({
+        where: {
+          platform_account_id: person.id
+        }
+      })
+
+      if (!foundPerson) {
+        this.peopleRepository.create({
+          username: person.username,
+          platform_account_id: person.id,
+          profile_image_url: person.profile_image_url.replace('normal', '400x400'),
+          platform: 'twitter',
+          hide: false,
+        })
+      }
+    }
+  }
+
   async transferTipsToUser(credential: UserCredential): Promise<void> {
     // Create keyring instance
     const keyring = new Keyring({
@@ -264,7 +431,6 @@ export class UserCredentialController {
 
     // Adding an accoutn based on peopleId/postId
     const from = keyring.addFromUri('//' + credential.peopleId);
-    const gasFee = 125000147 // Gas fee for every transaction
     const to = credential.userId // Sending address
     
     const totalToken = await this.tokenRepository.count()
@@ -276,6 +442,7 @@ export class UserCredentialController {
       }))[0]
 
       const tokenId = token.id
+      const gasFee = token.token_gas_fee
       const rpc_address = token.rpc_address
       const address_format = token.address_format
 
@@ -294,7 +461,7 @@ export class UserCredentialController {
           const transaction = (await this.transactionRepository.find({
             where: {
               to: u8aToHex(from.publicKey),
-              // hasSendToUser: false,
+              hasSendToUser: false,
               tokenId: tokenId
             },
             limit: 1,
@@ -339,177 +506,5 @@ export class UserCredentialController {
         await api.disconnect()
       } catch (err) { }
     }
-  }
-
-  async createCredentialFB(user: User, publicKey: string): Promise<UserCredential> {
-    const credentials = await this.userCredentialRepository.find({
-      where: {
-        userId: publicKey
-      }
-    })
-
-    for (let i = 0; i < credentials.length; i++) {
-      const person = await this.peopleRepository.findOne({
-        where: {
-          id: credentials[i].peopleId
-        }
-      })
-
-      if (person && person.platform === user.platform) {
-        if (person.username !== user.username) {
-          throw new HttpErrors.NotFound(`This ${person.platform} does not belong to you!`)
-        }
-      }
-    }
-
-    const foundPeople = await this.peopleRepository.findOne({
-      where: {
-        username: user.username,
-        platform: user.platform
-      }
-    })
-
-    if (foundPeople) {
-      const foundCredential = await this.userCredentialRepository.findOne({
-        where: {
-          peopleId: foundPeople.id
-        }
-      })
-
-      if (!foundCredential) {
-        return this.peopleRepository.userCredential(foundPeople.id).create({
-          userId: publicKey,
-          isLogin: true
-        })
-      }
-
-      if (foundCredential.userId === publicKey) {
-        this.userCredentialRepository.updateById(foundCredential.id, {
-          isLogin: true
-        })
-
-        foundCredential.isLogin = true
-
-        return foundCredential
-      }
-
-      throw new HttpErrors.NotFound('Credential not valid')
-    }
-
-    const newPeople = await this.peopleRepository.create({
-      username: user.username,
-      platform: user.platform,
-    })
-
-    return this.peopleRepository.userCredential(newPeople.id).create({
-      userId: publicKey,
-      isLogin: true
-    })
-  }
-
-  async createCredential(user: User, publicKey: string): Promise<UserCredential> {
-    // Verify credential
-    const credentials = await this.userCredentialRepository.find({
-      where: {
-        userId: publicKey
-      }
-    })
-
-    for (let i = 0; i < credentials.length; i++) {
-      const person = await this.peopleRepository.findOne({
-        where: {
-          id: credentials[i].peopleId
-        }
-      })
-
-      if (person && person.platform === user.platform) {
-        if (person.platform_account_id !== user.platform_account_id) {
-          throw new HttpErrors.NotFound(`This ${person.platform} does not belong to you!`)
-        }
-      }
-    }
-
-    const foundPeople = await this.peopleRepository.findOne({
-      where: {
-        platform_account_id: user.platform_account_id,
-        platform: user.platform
-      }
-    })
-
-    if (foundPeople) {
-      const foundCredential = await this.userCredentialRepository.findOne({
-        where: {
-          peopleId: foundPeople.id
-        }
-      })
-
-      if (!foundCredential) {
-        return this.peopleRepository.userCredential(foundPeople.id).create({
-          userId: publicKey,
-          isLogin: true
-        })
-      }
-
-      if (foundCredential.userId === publicKey) {
-        this.userCredentialRepository.updateById(foundCredential.id, {
-          isLogin: true
-        })
-
-        foundCredential.isLogin = true
-
-        return foundCredential
-      }
-
-      throw new HttpErrors.NotFound('Credential not valid')
-    }
-
-    const newPeople = await this.peopleRepository.create({
-      username: user.username,
-      platform_account_id: user.platform_account_id,
-      platform: user.platform,
-      profile_image_url: user.profile_image_url
-    })
-
-    return this.peopleRepository.userCredential(newPeople.id).create({
-      userId: publicKey,
-      isLogin: true
-    })
-  }
-
-  async fetchFollowing(platform_account_id: string): Promise<void> {
-    const {data: following} = await this.twitterService.getActions(`users/${platform_account_id}/following?user.fields=profile_image_url`)
-
-    for (let i = 0; i < following.length; i++) {
-      const person = following[i]
-      const foundPerson = await this.peopleRepository.findOne({
-        where: {
-          platform_account_id: person.id
-        }
-      })
-
-      if (!foundPerson) {
-        this.peopleRepository.create({
-          username: person.username,
-          platform_account_id: person.id,
-          profile_image_url: person.profile_image_url.replace('normal', '400x400'),
-          platform: 'twitter',
-          hide: false,
-        })
-      }
-    }
-  }
-
-  groupByToken(transactions: TransactionWithRelations[]) {
-    const groupByToken: any = {}
-
-    for (let j = 0; j < transactions.length; j++) {
-      if (groupByToken[transactions[j].token.rpc_address] === undefined) {
-        groupByToken[transactions[j].token.rpc_address] = []
-      }
-
-      groupByToken[transactions[j].token.rpc_address].push(transactions[j])
-    }
-
-    return groupByToken
   }
 }

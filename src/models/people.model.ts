@@ -23,6 +23,12 @@ export class People extends Entity {
 
   @property({
     type: 'string',
+    required: false
+  })
+  name?: string
+
+  @property({
+    type: 'string',
     required: true,
   })
   username: string;
