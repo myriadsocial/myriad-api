@@ -72,6 +72,18 @@ export class UserTokenController {
   ): Promise<UserToken> {
     userToken.tokenId = userToken.tokenId.toUpperCase()
 
+    // Check if token exist in database
+    const foundToken = await this.tokenRepository.findOne({
+      where: {
+        id: userToken.tokenId
+      }
+    })
+
+    if (!foundToken) {
+      throw new HttpErrors.NotFound("Token not found. Please add token first!")
+    }
+
+    // Check if user already has the token
     const foundUserToken = await this.userTokenRepository.findOne({
       where: {
         userId: userToken.userId,
@@ -81,16 +93,6 @@ export class UserTokenController {
 
     if (foundUserToken) {
       throw new HttpErrors.UnprocessableEntity('You already have this token')
-    }
-
-    const foundToken = await this.tokenRepository.findOne({
-      where: {
-        id: userToken.tokenId
-      }
-    })
-
-    if (!foundToken) {
-      throw new HttpErrors.NotFound("Token not found. Please add token first!")
     }
 
     return this.userTokenRepository.create(userToken)
