@@ -49,7 +49,7 @@ export class FetchContentTwitterJob extends CronJob {
       for (let i = 0; i < tagsRepo.length; i++) {
         const tag = tagsRepo[i]
         const tweetField = 'referenced_tweets,attachments,entities,created_at,public_metrics'
-        const {data: newPosts, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=10&tweet.fields=${tweetField}&expansions=author_id&user.fields=id,username,profile_image_url&query=${tag.id}`)
+        const {data: newPosts, includes} = await this.twitterService.getActions(`2/tweets/search/recent?max_results=10&tweet.fields=${tweetField}&expansions=author_id&user.fields=id,username,profile_image_url&query=${tag.id}`)
 
         if (!newPosts) continue
 

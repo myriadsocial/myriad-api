@@ -60,7 +60,7 @@ export class FetchContentSocialMediaJob extends CronJob {
             }
           })
 
-          const {data: newPosts} = await this.twitterService.getActions(`users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at,public_metrics`)
+          const {data: newPosts} = await this.twitterService.getActions(`2/users/${person.platform_account_id}/tweets?since_id=${foundPosts[0].textId}&tweet.fields=attachments,entities,referenced_tweets,created_at,public_metrics`)
 
           if (!newPosts) break
 
