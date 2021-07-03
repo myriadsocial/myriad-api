@@ -27,6 +27,11 @@ export class UserCredential extends Entity {
   })
   isLogin: boolean;
 
+  @property({
+    type: 'string'
+  })
+  platform: string
+
   @belongsTo(() => People)
   peopleId: string;
 
