@@ -442,7 +442,7 @@ export class UserCredentialController {
       }))[0]
 
       const tokenId = token.id
-      const gasFee = token.token_gas_fee
+      const gasFee = token.token_gas_fee ? token.token_gas_fee : 125000147;
       const rpc_address = token.rpc_address
       const address_format = token.address_format
 

@@ -26,10 +26,22 @@ export class Token extends Entity {
   token_name: string;
 
   @property({
+    type: 'string',
+    required: true
+  })
+  token_image: string
+
+  @property({
     type: 'number',
     required: true,
   })
   token_decimal: number;
+
+  @property({
+    type: 'number',
+    required: false
+  })
+  token_gas_fee?: number;
 
   @property({
     type: 'number',
