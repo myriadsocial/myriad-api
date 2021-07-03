@@ -1,8 +1,11 @@
 export interface User {
+  id?: string,
+  name?: string,
   platform_account_id?: string,
   username: string,
   platform: string,
-  profile_image_url?: string
+  profile_image_url?: string,
+  publicKey: string
 }
 
 export interface FriendId {
