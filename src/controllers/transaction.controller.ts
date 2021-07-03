@@ -22,9 +22,18 @@ import {
   DetailTransactionRepository,
   TokenRepository,
   TransactionRepository,
-  UserRepository
+  UserRepository,
+  QueueRepository
 } from '../repositories';
+import {polkadotApi} from '../helpers/polkadotApi';
+import {KeypairType} from '@polkadot/util-crypto/types';
+import {u8aToHex} from '@polkadot/util';
 import {authenticate} from '@loopback/authentication';
+
+import dotenv from 'dotenv';
+import Keyring, { encodeAddress } from '@polkadot/keyring';
+
+dotenv.config();
 
 // @authenticate("jwt")
 export class TransactionController {
@@ -36,7 +45,9 @@ export class TransactionController {
     @repository(DetailTransactionRepository)
     public detailTransactionRepository: DetailTransactionRepository,
     @repository(TokenRepository)
-    public tokenRepository: TokenRepository
+    public tokenRepository: TokenRepository,
+    @repository(QueueRepository)
+    public queueRepository: QueueRepository
   ) { }
 
   @post('/transactions')
@@ -72,6 +83,7 @@ export class TransactionController {
     const value = transaction.value;
     const tokenId = transaction.tokenId.toUpperCase();
 
+    // Detail transaction of FROM
     const foundFromUser = await this.findDetailTransaction(from, tokenId)
 
     if (foundFromUser) {
@@ -87,6 +99,10 @@ export class TransactionController {
       })
     }
 
+    // Reward to FROM for doing transactions
+    this.sentMyriadReward(from); 
+
+    // Detail Transaction of TO
     const foundToUser = await this.findDetailTransaction(to, tokenId)
 
     if (foundToUser) {
@@ -94,6 +110,7 @@ export class TransactionController {
         sentToMe: foundToUser.sentToMe + value
       })
     } else {
+      // TO maybe doesn't exist yet in myriad
       const foundUser = await this.userRepository.findOne({
         where: {
           id: to
@@ -255,5 +272,76 @@ export class TransactionController {
         tokenId: tokenId
       }
     })
+  }
+
+  async sentMyriadReward(userId: string):Promise<void> {
+    const provider = process.env.MYRIAD_WS_RPC || "";
+    const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX);
+    const api = await polkadotApi(provider);
+    const keyring = new Keyring({
+      type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
+      ss58Format: myriadPrefix
+    })
+
+    const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? "";
+    const from  = keyring.addFromMnemonic(mnemonic);
+    const to = encodeAddress(userId, myriadPrefix);
+    const reward = +(1 * 10 ** 12);
+    const {nonce} = await api.query.system.account(from.address);
+
+    const foundQueue = await this.queueRepository.findOne({
+      where: {
+        id: "admin"
+      }
+    })
+
+    let count: number = nonce.toJSON();
+    
+    if (!foundQueue) {
+      const queue = await this.queueRepository.create({
+        id: "admin",
+        count
+      })
+
+      await this.queueRepository.updateById(queue.id, {count: count + 1});
+    } else {
+      if (foundQueue.count >= nonce.toJSON()) {
+        count = foundQueue.count
+      } else {
+        count = nonce.toJSON()
+      }
+
+      await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
+    }
+
+    const transfer = api.tx.balances.transfer(to, reward);
+    const txhash = await transfer.signAndSend(from, {nonce: count});
+
+    this.transactionRepository.create({
+      trxHash: txhash.toString(),
+      from: u8aToHex(from.publicKey),
+      to: userId,
+      value: reward,
+      state: 'success',
+      createdAt: new Date().toString(),
+      tokenId: 'MYR'
+    })
+
+    const foundUserDetailTransaction = await this.findDetailTransaction(userId, "MYR");
+
+    if (foundUserDetailTransaction) {
+      this.detailTransactionRepository.updateById(foundUserDetailTransaction.id, {
+        sentToMe: foundUserDetailTransaction.sentToMe + reward
+      })
+    } else {
+      this.detailTransactionRepository.create({
+        sentToMe: reward,
+        sentToThem: 0,
+        userId: userId,
+        tokenId: "MYR"
+      })
+    }
+
+    await api.disconnect()
   }
 }
