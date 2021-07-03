@@ -28,8 +28,8 @@ import {
   TagRepository,
   UserCredentialRepository
 } from '../repositories';
-import {Reddit, Twitter} from '../services';
-import {DetailTips, TipsReceived, URL} from '../interfaces'
+import {Reddit, Twitter, Facebook} from '../services';
+import {DetailTips, DetailUrl, TipsReceived, URL} from '../interfaces'
 import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -50,7 +50,9 @@ export class PostController {
     @inject('services.Twitter')
     protected twitterService: Twitter,
     @inject('services.Reddit')
-    protected redditService: Reddit
+    protected redditService: Reddit,
+    @inject('services.Facebook')
+    protected facebookService: Facebook
   ) { }
 
   @post('/posts')
@@ -156,23 +158,112 @@ export class PostController {
     }) post: URL,
   ): Promise<Post> {
     const splitURL = post.url.split('/')
-    const platform = splitURL[2].toLowerCase()
-    const importer = post.importer
-    const postTags = post.tags ? post.tags : []
+    const checkPlatform = splitURL[2].toLowerCase().split('.');
+    
+    let platform: string;
+    let textId: string;
+
+    if (checkPlatform.length > 2) {
+      platform = checkPlatform[1];
+    } else {
+      platform = checkPlatform[0]
+    }
+
+    if (platform == 'twitter' || platform == 'facebook') {
+      textId = splitURL[5]
+    } else {
+      textId = splitURL[6]
+    }
+
+    return this.socialMediaPost({
+      platform: platform,
+      textId: textId,
+      username: splitURL[3],
+      postTags: post.tags ? post.tags : [],
+      importer: post.importer
+    })
+  }
+
+  async socialMediaPost(detailUrl: DetailUrl): Promise<Post> {
+    const {textId, platform, postTags, importer, username} = detailUrl;
+    const foundPost = await this.postRepository.findOne({
+      where: {textId, platform}
+    })
+
+    let newPost;
+
+    if (foundPost) {
+      const foundImporter = foundPost.importBy.find(userId => userId === importer)
+
+      if (foundImporter) {
+        throw new HttpErrors.UnprocessableEntity("You have already import this post")
+      }
+
+      this.postRepository.updateById(foundPost.id, {
+        importBy: [
+          ...foundPost.importBy,
+          importer
+        ]
+      })
+
+      foundPost.importBy = [
+        ...foundPost.importBy,
+        importer
+      ]
+      
+      return foundPost
+    }
 
     switch (platform) {
-      case 'twitter.com':
-        return this.twitterPost(splitURL[5], importer, postTags)
+      case 'twitter':
+        const tweet = await this.twitter(textId);
+        const tags = tweet.tags.filter((tag: string) => {
+          return !postTags.map((postTag: string) => postTag.toLowerCase()).includes(tag.toLowerCase())
+        })
+        
+        newPost = {
+          ...tweet,
+          tags: [
+            ...tags,
+            ...postTags
+          ],
+          importBy: [importer]
+        }
+        break;
 
-      case 'www.reddit.com':
-        return this.redditPost(splitURL[6], importer, postTags)
+      case 'reddit':
+        const redditPost = await this.reddit(textId);        
 
-      case 'www.facebook.com':
-        return this.facebookPost(post.url, importer, postTags)
+        newPost = {
+          ...redditPost,
+          tags: postTags,
+          importBy: [importer],
+        }
+        break;
 
-      default:
+      case 'facebook':
+        if (!username) {
+          throw new HttpErrors.UnprocessableEntity("Username not found!")
+        } 
+
+        const facebookPost = await this.facebook(username, textId);
+        
+        newPost = {
+          ...facebookPost,
+          tags: postTags,
+          importBy: [importer],
+          assets: []
+        }
+
+        break;
+
+      default: 
         throw new HttpErrors.NotFound("Cannot found the specified url!")
     }
+
+    this.createTags(newPost.tags);
+
+    return this.createPost(newPost);
   }
 
   @get('/posts')
@@ -396,306 +487,231 @@ export class PostController {
     await this.postRepository.deleteById(id);
   }
 
-  async facebookPost(url: string, importer: string, postTags: string[]): Promise<Post> {
-    const username = url.split('/')[3]
-    const textId = url.split('/')[5]
-
-    const foundPost = await this.postRepository.findOne({
-      where: {
-        textId: textId,
-        platform: 'facebook',
-      }
-    })
-
-    if (foundPost) {
-      const foundImporter = foundPost.importBy.find(userId => userId === importer)
-
-      if (foundImporter) {
-        throw new HttpErrors.UnprocessableEntity("You have already import this post")
-      }
-
-      await this.postRepository.updateById(foundPost.id, {
-        importBy: [
-          ...foundPost.importBy,
-          importer
-        ]
-      })
-
-      foundPost.importBy = [
-        ...foundPost.importBy,
-        importer
-      ]
-
-      return foundPost
-    }
-
-    const newFacebookPost = {
-      createdAt: new Date().toString(),
-      platform: 'facebook',
-      textId: textId,
-      platformCreatedAt: new Date().toString(),
-      link: url,
-      platformUser: {
-        username: username,
-      },
-      tags: [
-        ...postTags
-      ],
-      importBy: [importer],
-      assets: []
-    }
-
-    this.createTags(newFacebookPost.tags)
-
-
-    return this.createPost(username, 'facebook', newFacebookPost)
-  }
-
-  async redditPost(textId: string, importer: string, postTags: string[]): Promise<Post> {
-    const foundPost = await this.postRepository.findOne({
-      where: {
-        textId: textId,
-        platform: 'reddit'
-      }
-    })
-
-    if (foundPost) {
-      const foundImporter = foundPost.importBy.find(userId => userId === importer)
-
-      if (foundImporter) {
-        throw new HttpErrors.UnprocessableEntity("You have already import this post")
-      }
-
-      await this.postRepository.updateById(foundPost.id, {
-        importBy: [
-          ...foundPost.importBy,
-          importer
-        ]
-      })
-
-      foundPost.importBy = [
-        ...foundPost.importBy,
-        importer
-      ]
-
-      return foundPost
-    }
-
-    const {post: redditPost, user: redditUser} = await this.reddit(textId);
-
-    const hasMedia = redditPost.media_metadata || redditPost.is_reddit_media_domain ? true : false
-    const assets: string[] = []
-
-    if (hasMedia) {
-      if (redditPost.media_metadata) {
-        for (const img in redditPost.media_metadata) {
-          assets.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''))
-        }
-      }
-      if (redditPost.is_reddit_media_domain) {
-        const images = redditPost.preview.images || []
-        const videos = redditPost.preview.videos || []
-
-        for (let i = 0; i < images.length; i++) {
-          assets.push(images[i].source.url.replace(/amp;/g, ''))
-        }
-
-        for (let i = 0; i < videos.length; i++) {
-          assets.push(videos[i].source.url.replace(/amp;/g, ''))
-        }
-      }
-    }
-
-    const newRedditPost = {
-      createdAt: new Date().toString(),
-      platform: 'reddit',
-      textId: textId,
-      tags: [
-        ...postTags
-      ],
-      hasMedia: hasMedia,
-      platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
-      link: `https://reddit.com/${textId}`,
-      title: redditPost.title,
-      text: redditPost.selftext,
-      platformUser: {
-        username: redditUser.name,
-        platform_account_id: 't2_' + redditUser.id,
-        profile_image_url: redditUser.icon_img.split('?')[0]
-      },
-      importBy: [importer]
-    }
-
-    this.createTags(newRedditPost.tags)
-
-    if (assets.length === 0) {
-      return this.createPost('t2_' + redditUser.id, 'reddit', newRedditPost)
-    }
-
-    return this.createPost('t2_' + redditUser.id, 'reddit', {
-      ...newRedditPost,
-      assets: assets
-    })
-  }
-
-  async twitterPost(textId: string, importer: string, postTags: string[]) {
-    const foundPost = await this.postRepository.findOne({
-      where: {
-        textId: textId,
-        platform: 'twitter'
-      }
-    })
-
-    if (foundPost) {
-      const foundImporter = foundPost.importBy.find(userId => userId === importer)
-
-      if (foundImporter) {
-        throw new HttpErrors.UnprocessableEntity("You have already import this post")
-      }
-
-      await this.postRepository.updateById(foundPost.id, {
-        importBy: [
-          ...foundPost.importBy,
-          importer
-        ]
-      })
-
-      foundPost.importBy = [
-        ...foundPost.importBy,
-        importer
-      ]
-      
-      return foundPost
-    }
-
-    const {post: tweet, user: twitterUser} = await this.twitter(textId)
-    const tags = tweet.entities ? (tweet.entities.hashtags ?
-      tweet.entities.hashtags.map((hashtag: any) => hashtag.tag) : []
-    ) : []
-
-    const newTweet = {
-      platformUser: {
-        username: twitterUser.username,
-        platform_account_id: twitterUser.id,
-        profile_image_url: twitterUser.profile_image_url.replace('normal', '400x400')
-      },
-      platform: 'twitter',
-      textId: textId,
-      createdAt: new Date().toString(),
-      tags: [
-        ...tags,
-        ...postTags
-      ],
-      hasMedia: tweet.attachments ? Boolean(tweet.attachments.media_keys) : false,
-      link: `https://twitter.com/${twitterUser.id}/status/${textId}`,
-      platformCreatedAt: tweet.created_at,
-      text: tweet.text,
-      importBy: [importer],
-      assets: []
-    }
-
-    this.createTags(newTweet.tags)
-
-    return this.createPost(twitterUser.id, 'twitter', newTweet)
-  }
-
   async twitter(textId: string) {
-    const {data: post, includes} = await this.twitterService.getActions(`tweets/${textId}?tweet.fields=referenced_tweets,attachments,entities,created_at,public_metrics&expansions=attachments.media_keys,author_id&user.fields=id,username,profile_image_url`)
+    const {
+      id_str, 
+      full_text, 
+      created_at, 
+      user, 
+      entities,
+      extended_entities
+    } = await this.twitterService.getActions(`1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`);
 
-    if (!post) throw new HttpErrors.NotFound('Cannot found the specified url!')
+    if (!id_str) throw new HttpErrors.NotFound('Cannot found the specified url!')
+
+    let assets: string[] = [];
+    let hasMedia: boolean = true;
+
+    const twitterTags = entities ? (entities.hashtags ?
+      entities.hashtags.map((hashtag: any) => hashtag.text) : []
+    ) : [];
+
+    if (!extended_entities) hasMedia = false
+    else {
+      const media = extended_entities.media;
+
+      for (let i = 0; i < media.length; i++) {
+        if (media[i].type == 'photo') {
+          assets.push(media[i].media_url_https);
+        } else {
+          const videoInfo = media[i].video_info.variants
+
+          for (let j = 0; j < videoInfo.length; j++) {
+            if (videoInfo[j].content_type === "video/mp4") {
+              assets.push(videoInfo[j].url.split("?tag=12")[0]);
+              break
+            }
+          }
+        }
+      }
+    }
 
     return {
-      post,
-      user: includes.users[0]
+      platform: 'twitter',
+      createdAt: new Date().toString(),
+      textId: id_str,
+      text: full_text,
+      tags: twitterTags,
+      platformCreatedAt: new Date(created_at).toString(),
+      assets: assets,
+      link: `https://twitter.com/${user.id_str}/status/${textId}`,
+      hasMedia: hasMedia,
+      platformUser: {
+        name: user.name,
+        username: user.screen_name,
+        platform_account_id: user.id_str,
+        profile_image_url: user.profile_image_url_https.replace('normal', '400x400')
+      }
     }
-
   }
 
   async reddit(textId: string) {
     const [data] = await this.redditService.getActions(textId + '.json')
     const redditPost = data.data.children[0].data
+    const assets: string[] = [];
+
+    let hasMedia:boolean = false;
+
+    if (redditPost.post_hint === "image") {
+      assets.push(redditPost.url)
+      hasMedia = true;
+    }
+
+    if (redditPost.is_video) {
+      assets.push(redditPost.media.reddit_video.fallback_url)
+      hasMedia = true
+    }
+
+    if (redditPost.media_metadata) {
+      for (const img in redditPost.media_metadata) {
+        if (redditPost.media_metadata[img].e === "Image") {
+          assets.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''));
+        }
+
+        if (redditPost.media_metadata[img].e === "RedditVideo") {
+          assets.push(`https://reddit.com/link/${textId}/video/${redditPost.media_metadata[img].id}/player`)
+        }
+      }
+
+      hasMedia = true
+    }
 
     const redditUser = redditPost.author
     const {data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json')
 
     return {
-      post: redditPost,
-      user
+      platform: 'reddit',
+      createdAt: new Date().toString(),
+      textId: textId,
+      platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
+      title: redditPost.title,
+      text: redditPost.selftext,
+      link: `https://reddit.com/${textId}`,
+      hasMedia,
+      assets,
+      platformUser: {
+        name: user.subreddit.title ? user.subreddit.title : user.name,
+        username: user.name,
+        platform_account_id: 't2_' + user.id,
+        profile_image_url: user.icon_img.split('?')[0]
+      }
+    }
+  }
+  
+  async facebook(username: string, textId: string) {
+    let platform_account_id: string = '';
+    let profile_image_url: string = '';
+
+    const data = await this.facebookService.getActions(username, textId);
+    const findSocialMedialPostingIndex = data.search('"SocialMediaPosting"');
+    const post = data.substring(findSocialMedialPostingIndex);
+    
+    // Get platform created at
+    const findDateCreatedIndex = post.search('"dateCreated"');
+    const findDateModifiedIndex = post.search('"dateModified"');
+    const platformCreatedAt = post.substring(findDateCreatedIndex + '"dateCreated"'.length + 2, findDateModifiedIndex - 2)
+
+    // Get platform account id
+    const findEntityIdIndex = post.search('"entity_id"');
+    const entityIndex = post.substring(findEntityIdIndex + '"entity_id"'.length + 2);
+
+    for (let i = 0; i < entityIndex.length; i++) {
+      if (entityIndex[i] == '"') break
+      else {
+        platform_account_id += entityIndex[i]
+      }
+    }
+
+    // Get profile image url
+    const findIndex = post.search(`"identifier":${platform_account_id}`);
+    const getString = post.substring(findIndex);
+    const findImageIndex = getString.search('"image"');
+    const getImageString = getString.substring(findImageIndex + '"image"'.length + 2);
+
+    for (let i = 0; i < getImageString.length; i++) {
+      if (getImageString[i] == '"') break
+      else {
+        profile_image_url += getImageString[i];
+      }
+    }
+
+    // Get name
+    let arrayName = [];
+
+    for (let i = findIndex - 1; i > 0; i--) {
+      if (post[i] === ":") break;
+
+      if (post[i] == '"' || post[i] == ",") continue
+      else arrayName.unshift(post[i])
+    } 
+
+    // Get username
+    const getUrl = post.substring(findIndex + `"identifier":${platform_account_id},"url":"`.length);
+
+    let url = '';
+
+    for (let i = 0; getUrl.length; i++) {
+      if (getUrl[i] === '"') break
+      else {
+        url += getUrl[i]
+      }
+    }
+
+    const userName = url.replace(/\\/g, '').split('/')[3]
+
+    return {
+      createdAt: new Date().toString(),
+      platform: "facebook",
+      textId: textId,
+      platformCreatedAt: platformCreatedAt,
+      link:  `https://facebook.com/${username}/posts/${textId}`,
+      platformUser: {
+        name: arrayName.join(''),
+        username: userName,
+        platform_account_id: platform_account_id,
+        profile_image_url: profile_image_url.split('\\').join('')
+      },
+      assets: []
     }
   }
 
-  async createPost(platformAccountId: string, platform: string, post: any): Promise<Post> {
-    let foundPeople = null;
+  async createPost(post: any): Promise<Post> {
+    const {platformUser, platform} = post;
 
-    if (platform === 'facebook') {
-      foundPeople = await this.peopleRepository.findOne({
-        where: {
-          username: platformAccountId,
-          platform: platform
-        }
-      })
-    } else {
-      foundPeople = await this.peopleRepository.findOne({
-        where: {
-          platform_account_id: platformAccountId,
-          platform: platform
-        }
-      })
-    }
+    let foundPeople = await this.peopleRepository.findOne({
+      where: {
+        platform_account_id: platformUser.platform_account_id,
+        platform: platform
+      }
+    });
 
     if (!foundPeople) {
       const people = await this.peopleRepository.create({
-        username: post.platformUser.username,
-        platform: post.platform,
-        platform_account_id: post.platformUser.platform_account_id,
-        profile_image_url: post.platformUser.profile_image_url,
+        ...platformUser,
         hide: false
       })
       return this.createPostWithPublicMetric({
         ...post,
         peopleId: people.id
-      }, false)
-    }
-
-    const foundCredential = await this.userCredentialRepository.findOne({
-      where: {
-        peopleId: foundPeople.id
-      }
-    })
-
-    if (!foundCredential) {
-      return this.createPostWithPublicMetric({
-        ...post,
-        peopleId: foundPeople.id
-      }, false)
+      })
     }
 
     return this.createPostWithPublicMetric({
       ...post,
       peopleId: foundPeople.id,
-      walletAddress: foundCredential.userId
-    }, true)
+    })
   }
 
-  async createPostWithPublicMetric(post: any, credential: boolean): Promise<Post> {
-    // const createdTweet = await this.postRepository.create(post)
+  async createPostWithPublicMetric(post: any): Promise<Post> {
+    const newKey = this.keyring().addFromUri('//' + post.peopleId);
 
-    if (!credential) {
-      // const newKey = this.keyring().addFromUri('//' + createdTweet.id);
-      const newKey = this.keyring().addFromUri('//' + post.peopleId);
+    post.walletAddress = u8aToHex(newKey.publicKey);
 
-      post.walletAddress = u8aToHex(newKey.publicKey);
+    const createdPost = await this.postRepository.create(post)
 
-      // this.postRepository.updateById(createdTweet.id, {
-      //   walletAddress: u8aToHex(newKey.publicKey)
-      // })
-    }
+    this.postRepository.publicMetric(createdPost.id).create({})
 
-    const createdTweet = await this.postRepository.create(post)
-
-    this.postRepository.publicMetric(createdTweet.id).create({})
-
-    return createdTweet
+    return createdPost
   }
 
   async createTags(tags: string[]): Promise<void> {
