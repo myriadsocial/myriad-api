@@ -326,7 +326,7 @@ export class TagController {
         const expansionsField = "author_id"
         const userField = "id,username,profile_image_url"
 
-        const {data: tweets, includes} = await this.twitterService.getActions(`tweets/search/recent?max_results=${maxResult}&tweet.fields=${tweetField}&expansions=${expansionsField}&user.fields=${userField}&query=${keyword}`)
+        const {data: tweets, includes} = await this.twitterService.getActions(`2/tweets/search/recent?max_results=${maxResult}&tweet.fields=${tweetField}&expansions=${expansionsField}&user.fields=${userField}&query=${keyword}`)
 
         if (!tweets) throw new Error("Tweets doesn't exists")
 

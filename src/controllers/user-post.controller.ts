@@ -64,23 +64,13 @@ export class UserPostController {
     if (orderField === 'liked') orderField = 'totalLiked'
     if (orderField === 'disliked') orderField = 'totalDisliked'
 
-    const orderFields = [
-      "platformCreatedAt",
-      "totalComment",
-      "totalDisliked",
-      "totalLiked"
-    ]
-
-    const orders = [
-      'DESC',
-      'ASC'
-    ]
-
+    const orderFields = ["platformCreatedAt", "totalComment", "totalDisliked", "totalLiked"];
+    const orders = ['DESC', 'ASC'];
     const foundField = orderFields.find(field => field === orderField)
     const foundOrder = orders.find(ord => ord === order.toUpperCase())
 
-    if (!foundField) throw new HttpErrors.UnprocessableEntity("Please filled with correspond field: platformCreatedAt, comment, liked, or disliked")
-    if (!foundOrder) throw new HttpErrors.UnprocessableEntity("Please filled with correspond order: ASC or DESC")
+    if (!foundField) throw new HttpErrors.UnprocessableEntity("Please filled with correspond field: platformCreatedAt, comment, liked, or disliked");
+    if (!foundOrder) throw new HttpErrors.UnprocessableEntity("Please filled with correspond order: ASC or DESC");
 
     const acceptedFriends = await this.friendRepository.find({
       where: {

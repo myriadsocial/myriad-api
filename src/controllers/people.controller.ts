@@ -237,7 +237,7 @@ export class PeopleController {
         const maxResults = 5
         const tweetField = "attachments,entities,referenced_tweets,created_at"
 
-        const {data: tweets} = await this.twitterService.getActions(`users/${platform_account_id}/tweets?max_results=${maxResults}&tweet.fields=${tweetField}`)
+        const {data: tweets} = await this.twitterService.getActions(`2/users/${platform_account_id}/tweets?max_results=${maxResults}&tweet.fields=${tweetField}`)
 
         if (!tweets) throw new Error("People does not exists")
 
