@@ -7,7 +7,7 @@ dotenv.config();
 const config = {
   name: 'twitter',
   connector: 'rest',
-  baseURL: 'https://api.twitter.com/2/',
+  baseURL: 'https://api.twitter.com/',
   crud: false,
   options: {
     headers: {
@@ -18,7 +18,7 @@ const config = {
     {
       template: {
         method: 'GET',
-        url: 'https://api.twitter.com/2/{action}'
+        url: 'https://api.twitter.com/{action}'
       },
       functions: {
         getActions: ['action']
