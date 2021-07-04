@@ -190,6 +190,59 @@ export class UserController {
     })
   }
 
+  @get('users/{id}/approved-friends')
+  @response(200, {
+    description: 'Array of approved friend list',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(User, {includeRelations: true})
+        }
+      }
+    }
+  })
+  async friendList(
+    @param.path.string('id') id: string
+  ): Promise<User> {
+    const foundUser = await this.userRepository.findById(id);
+
+    if (!foundUser) {
+      throw new HttpErrors.NotFound("User not found!");
+    }
+
+    const friends = await this.friendRepository.find({
+      where: {
+        or: [
+          {
+            requestorId: id
+          },
+          {
+            friendId: id
+          }
+        ],
+        status: 'approved'
+      }
+    })
+
+    const friendIds = friends.map(friend => friend.friendId);
+    const requestorIds = friends.map(friend => friend.requestorId);
+    const ids = [...friendIds.filter(id => !requestorIds.includes(id)), ...requestorIds]
+      .filter(userId => userId != id);
+
+    const users = await this.userRepository.find({
+      where: {
+        id: {
+          inq: ids
+        }
+      }
+    })
+    
+    foundUser.friends = users
+
+    return foundUser
+  }
+
   @get('users/{id}/friends')
   @response(200, {
     description: 'Array of friend request',
@@ -208,16 +261,11 @@ export class UserController {
     @param.path.string('id') id: string,
     @param.query.string('status') status: string
   ): Promise<Friend[]> {
-    const requestStatus = [
-      "pending",
-      "rejected",
-      "approved",
-      "all"
-    ]
-
-    const found = requestStatus.find(req => req === status)
+    const requestStatus = ["pending", "rejected", "approved", "all"];
+    const found = requestStatus.find(req => req === status);
 
     if (!found && status) throw new HttpErrors.UnprocessableEntity("Please filled with corresponding status: all, pending, approved, or rejected")
+    
     if ((typeof status === 'string' && !status) || status === 'all' || !status) {
       return this.friendRepository.find({
         where: {
