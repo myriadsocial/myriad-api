@@ -82,25 +82,6 @@ export class TokenController {
     return this.tokenRepository.find(filter);
   }
 
-  @patch('/tokens')
-  @response(200, {
-    description: 'Token PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Token, {partial: true}),
-        },
-      },
-    })
-    token: Token,
-    @param.where(Token) where?: Where<Token>,
-  ): Promise<Count> {
-    return this.tokenRepository.updateAll(token, where);
-  }
-
   @get('/tokens/{id}')
   @response(200, {
     description: 'Token model instance',
