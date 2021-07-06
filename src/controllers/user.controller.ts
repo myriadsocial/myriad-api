@@ -15,20 +15,15 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-// import {Keyring} from '@polkadot/api';
-// import {u8aToHex} from '@polkadot/util';
-// import {encodeAddress} from '@polkadot/util-crypto';
-// import {KeypairType} from '@polkadot/util-crypto/types';
-// import {polkadotApi} from '../helpers/polkadotApi';
-import {Friend, User} from '../models';
+import {Friend, User, DetailTransaction} from '../models';
 import {
   ExperienceRepository, FriendRepository, PeopleRepository, PostRepository, QueueRepository,
   TransactionRepository, UserRepository, UserTokenRepository
 } from '../repositories';
 import {NotificationService} from '../services';
+import { FriendId } from '../interfaces';
 import dotenv from 'dotenv';
 import {authenticate} from '@loopback/authentication';
-import { FriendId } from '../interfaces';
 
 dotenv.config()
 
@@ -64,54 +59,52 @@ export class UserController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(User, {
-            title: 'NewUser',
-
-          }),
+          schema: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string'
+              },
+              name: {
+                type: 'string'
+              }
+            }
+          }
         },
       },
     })
     user: User,
   ): Promise<User> {
-    try {
-      const foundUser = await this.userRepository.findOne({
-        where: {
-          id: user.id
-        }
-      })
-
-      if (foundUser) {
-        this.updateById(foundUser.id, {
-          is_online: true
-        } as User)
-
-        foundUser.is_online = true;
-
-        return foundUser
+    const foundUser = await this.userRepository.findOne({
+      where: {
+        id: user.id
       }
+    })
 
-      const newUser = await this.userRepository.create({
-        ...user,
-        username: user.username?.toLowerCase().replace(/\s+/g,''),
-        bio: user.bio ? user.bio : `Hello, my name is ${user.name}!`,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString()
-      });
+    if (foundUser) {
+      this.updateById(foundUser.id, {
+        is_online: true
+      } as User)
 
-      this.userTokenRepository.create({
-        userId: newUser.id,
-        tokenId: 'MYR'
-      })
+      foundUser.is_online = true;
 
-      // await this.defaultExperience(newUser)
-      return newUser
-    } catch (err) {
-      if (err.message === 'LostConnection') {
-        throw new HttpErrors.UnprocessableEntity('Myriad RPC Lost Connection')
-      }
-
-      throw new HttpErrors.UnprocessableEntity('Error RPC');
+      return foundUser
     }
+
+    const newUser = await this.userRepository.create({
+      ...user,
+      username: user.name?.toLowerCase().replace(/\s+/g,'').trim(),
+      bio: user.bio ? user.bio : `Hello, my name is ${user.name[0].toUpperCase() + user.name.substring(1).toLowerCase()}!`,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString()
+    });
+
+    this.userTokenRepository.create({
+      userId: newUser.id,
+      tokenId: 'MYR'
+    })
+
+    return newUser
   }
 
   @post('/users/{id}/friends')
@@ -197,7 +190,7 @@ export class UserController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(User, {includeRelations: true})
+          items: getModelSchemaRef(User)
         }
       }
     }
@@ -206,11 +199,6 @@ export class UserController {
     @param.path.string('id') id: string
   ): Promise<User> {
     const foundUser = await this.userRepository.findById(id);
-
-    if (!foundUser) {
-      throw new HttpErrors.NotFound("User not found!");
-    }
-
     const friends = await this.friendRepository.find({
       where: {
         or: [
@@ -227,8 +215,10 @@ export class UserController {
 
     const friendIds = friends.map(friend => friend.friendId);
     const requestorIds = friends.map(friend => friend.requestorId);
-    const ids = [...friendIds.filter(id => !requestorIds.includes(id)), ...requestorIds]
-      .filter(userId => userId != id);
+    const ids = [
+      ...friendIds.filter(id => !requestorIds.includes(id)), 
+      ...requestorIds
+    ].filter(userId => userId != id);
 
     const users = await this.userRepository.find({
       where: {
@@ -250,9 +240,7 @@ export class UserController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(Friend, {
-            includeRelations: true
-          })
+          items: getModelSchemaRef(Friend)
         }
       }
     }
@@ -296,6 +284,25 @@ export class UserController {
         }
       ]
     })
+  }
+
+  @get('/users/{id}/detail-transactions', {
+    responses: {
+      '200': {
+        description: 'Array of User has many DetailTransaction',
+        content: {
+          'application/json': {
+            schema: {type: 'array', items: getModelSchemaRef(DetailTransaction)},
+          },
+        },
+      },
+    },
+  })
+  async findDetailTransaction(
+    @param.path.string('id') id: string,
+    @param.query.object('filter') filter?: Filter<DetailTransaction>,
+  ): Promise<DetailTransaction[]> {
+    return this.userRepository.detailTransactions(id).find(filter);
   }
 
   @get('/users')
@@ -419,57 +426,5 @@ export class UserController {
   //     createdAt: new Date().toString(),
   //     updatedAt: new Date().toString()
   //   })
-  // }
-
-  // async defaultTips(userId: string): Promise<void> {
-  //   const provider = process.env.MYRIAD_WS_RPC || ""
-  //   const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX)
-  //   const api = await polkadotApi(provider)
-  //   const keyring = new Keyring({
-  //     type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-  //     ss58Format: myriadPrefix
-  //   });
-
-  //   const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? "";
-  //   const from = keyring.addFromMnemonic(mnemonic);
-  //   const to = encodeAddress(userId, myriadPrefix);
-  //   const value = +(process.env.MYRIAD_ACCOUNT_DEPOSIT ?? 100000000000000)
-  //   const {nonce} = await api.query.system.account(from.address)
-
-  //   const foundQueue = await this.queueRepository.findOne({where: {id: 'admin'}})
-
-  //   let count: number = nonce.toJSON()
-
-  //   if (!foundQueue) {
-  //     const queue = await this.queueRepository.create({
-  //       id: 'admin',
-  //       count
-  //     })
-
-  //     await this.queueRepository.updateById(queue.id, {count: count + 1})
-  //   } else {
-  //     if (foundQueue.count >= nonce.toJSON()) {
-  //       count = foundQueue.count
-  //     } else {
-  //       count = nonce.toJSON()
-  //     }
-
-  //     await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
-  //   }
-
-  //   const transfer = api.tx.balances.transfer(to, value);
-  //   const txhash = await transfer.signAndSend(from, {nonce: count});
-
-  //   this.transactionRepository.create({
-  //     trxHash: txhash.toString(),
-  //     from: u8aToHex(from.publicKey),
-  //     to: userId,
-  //     value: value,
-  //     state: 'success',
-  //     hasSendToUser: true,
-  //     createdAt: new Date().toString(),
-  //     tokenId: 'MYR'
-  //   })
-  //   await api.disconnect()
   // }
 }
