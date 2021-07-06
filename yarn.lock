@@ -12,7 +12,7 @@
     "@open-web3/orml-types" "^0.9.4-7"
     "@polkadot/api-derive" "^4.14.1"
 
-"@acala-network/api@^1.0.1":
+"@acala-network/api@1.0.1", "@acala-network/api@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@acala-network/api/-/api-1.0.1.tgz#658424d80ca14f9f14599fba5171a2bb09416e21"
   integrity sha512-83TobO+tuJjiSRECTXS7PW0Hbp3DcFcwtJV4ER4BwPyVruAVdOdvrH4Vnx0avEPgd8GZIclYmqIr2JcB6/UjyA==
@@ -23,6 +23,20 @@
     "@open-web3/orml-api-derive" "^0.9.4-7"
     "@polkadot/api" "^4.14.1"
     "@polkadot/rpc-core" "^4.14.1"
+
+"@acala-network/sdk-core@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@acala-network/sdk-core/-/sdk-core-1.0.1.tgz#14cdb0ba488e335b945a61399fa1061531810fce"
+  integrity sha512-DscPCIj6vR0Iv4hra2vxa6GdnNWMZLttzWtx/gTVtIlhDle5HENa5xItAelhkM6ZUfp3OwKxH3iNPs+vhB3W7A==
+  dependencies:
+    "@acala-network/api" "1.0.1"
+    "@acala-network/type-definitions" "1.0.1"
+    "@polkadot/api" "^4.14.1"
+    "@polkadot/types" "^4.14.1"
+    "@types/events" "^3.0.0"
+    bignumber.js "^9.0.0"
+    events "^3.2.0"
+    lodash "^4.17.20"
 
 "@acala-network/type-definitions@1.0.1":
   version "1.0.1"
@@ -1422,6 +1436,11 @@
   version "4.1.5"
   resolved "https://registry.yarnpkg.com/@types/debug/-/debug-4.1.5.tgz#b14efa8852b7768d898906613c23f688713e02cd"
   integrity sha512-Q1y515GcOdTHgagaVFhHnIFQ38ygs/kmxdNpvpou+raI9UO3YZcHDngBSYKQklcKlvA7iuQlmIKbzvmxcOE9CQ==
+
+"@types/events@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@types/events/-/events-3.0.0.tgz#2862f3f58a9a7f7c3e78d79f130dd4d71c25c2a7"
+  integrity sha512-EaObqwIvayI5a8dCzhFrjKzVwKLxjoG9T6Ppd5CEo07LRKfQ8Yokw54r5+Wq7FaBQ+yXRvQAYPrHwya1/UFt9g==
 
 "@types/express-jwt@0.0.42":
   version "0.0.42"
@@ -2890,6 +2909,11 @@ eventemitter3@^4.0.7:
   version "4.0.7"
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-4.0.7.tgz#2de9b68f6528d5644ef5c59526a1b4a07306169f"
   integrity sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==
+
+events@^3.2.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/events/-/events-3.3.0.tgz#31a95ad0a924e2d2c419a813aeb2c4e878ea7400"
+  integrity sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==
 
 execa@^4.0.0:
   version "4.1.0"
