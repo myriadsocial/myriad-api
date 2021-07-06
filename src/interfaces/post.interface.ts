@@ -1,7 +1,12 @@
 export interface PlatformUser {
+  name: string,
   username: string,
   platform_account_id?: string,
-  profile_image_url?: string;
+  profile_image_url?: string
+}
+
+export interface ExtendedPlatformUser extends PlatformUser {
+  platform: string
 }
 
 export interface Post {
