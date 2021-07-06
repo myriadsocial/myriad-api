@@ -53,8 +53,7 @@ export class Transaction extends Entity {
 
   @property({
     type: 'date',
-    required: false,
-    default: new Date
+    required: false
   })
   createdAt?: string;
 
