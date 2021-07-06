@@ -48,7 +48,12 @@ export class TagController {
   @get('/trending', {
     responses: {
       '200': {
-        description: 'Trending topic'
+        description: 'Trending topic',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(Tag)
+          }
+        }
       }
     }
   })
@@ -71,7 +76,12 @@ export class TagController {
   @get('/trending/{topic}', {
     responses: {
       '200': {
-        description: 'Post based trending topic'
+        description: 'Post based trending topic',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(Post)
+          }
+        }
       }
     }
   })
