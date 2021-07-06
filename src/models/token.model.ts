@@ -39,12 +39,6 @@ export class Token extends Entity {
 
   @property({
     type: 'number',
-    required: false
-  })
-  token_gas_fee?: number;
-
-  @property({
-    type: 'number',
     required: true,
   })
   address_format: number;
