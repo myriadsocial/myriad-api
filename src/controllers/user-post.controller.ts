@@ -181,11 +181,27 @@ export class UserPostController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Post, {
-            title: 'NewPostInUser',
-            exclude: ['id'],
-            optional: ['walletAddress']
-          }),
+          schema: {
+            type: 'object',
+            required: ['text'],
+            properties: {
+              text: {
+                type: 'string'
+              },
+              tags: {
+                type: 'array',
+                items: {
+                  type: 'string'
+                }
+              },
+              assets: {
+                type: 'array',
+                items: {
+                  type: 'string'
+                }
+              }
+            }
+          },
         },
       },
     }) post: Omit<Post, 'id'>,
@@ -194,9 +210,12 @@ export class UserPostController {
       post.hasMedia = true
     }
 
+    delete post.platformUser;
+
     const newPost = await this.userRepository.posts(id).create({
       ...post,
       walletAddress: id,
+      platform: 'myriad',
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
