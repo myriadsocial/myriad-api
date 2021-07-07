@@ -70,7 +70,7 @@ export class UserPostController {
     const foundOrder = orders.find(ord => ord === order.toUpperCase())
 
     if (!foundField) throw new HttpErrors.UnprocessableEntity("The following fields are mandatory: platformCreatedAt, comment, liked, or disliked");
-    if (!foundOrder) throw new HttpErrors.UnprocessableEntity("Please filled with correspond order: ASC or DESC");
+    if (!foundOrder) throw new HttpErrors.UnprocessableEntity("Please choose one of the following order values: ASC or DESC");
 
     const acceptedFriends = await this.friendRepository.find({
       where: {
