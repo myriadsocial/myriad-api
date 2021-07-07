@@ -25,7 +25,7 @@ export class UserCredential extends Entity {
     type: 'boolean',
     required: true,
   })
-  isLogin: boolean;
+  isVerified: boolean;
 
   @property({
     type: 'string'

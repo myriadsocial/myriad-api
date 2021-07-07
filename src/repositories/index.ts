@@ -19,4 +19,4 @@ export * from './user-token.repository';
 export * from './user.repository';
 export * from './authentication.repository';
 export * from './auth-credential.repository';
-export * from './refresh-token.repository'
+export * from './refresh-token.repository';

@@ -7,7 +7,8 @@ import {UserCredential} from './user-credential.model';
     strictObjectIDCoercion: true,
     mongodb: {
       collection: 'people'
-    }
+    },
+    hiddenProperties: ["totalTips"]
   }
 })
 export class People extends Entity {
@@ -56,6 +57,12 @@ export class People extends Entity {
     default: false
   })
   hide?: boolean
+
+  @property({
+    type: 'number',
+    default: 0
+  })
+  totalTips: number
 
   @hasOne(() => UserCredential)
   userCredential: UserCredential;
