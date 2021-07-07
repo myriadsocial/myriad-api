@@ -1,6 +1,7 @@
 import {Entity, hasMany, hasOne, model, property} from '@loopback/repository';
 import {Post} from './post.model';
 import {UserCredential} from './user-credential.model';
+import {Tip} from './tip.model';
 
 @model({
   settings: {
@@ -57,18 +58,15 @@ export class People extends Entity {
     default: false
   })
   hide?: boolean
-
-  @property({
-    type: 'number',
-    default: 0
-  })
-  totalTips: number
-
+  
   @hasOne(() => UserCredential)
   userCredential: UserCredential;
 
   @hasMany(() => Post)
   posts: Post[];
+
+  @hasMany(() => Tip)
+  tips: Tip[];
 
   constructor(data?: Partial<People>) {
     super(data);

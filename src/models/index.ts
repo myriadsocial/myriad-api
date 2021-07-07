@@ -21,3 +21,4 @@ export * from './wallet.model';
 export * from './authentication.model';
 export * from './auth-credential.model';
 export * from './refresh-token.model';
+export * from './tip.model';
