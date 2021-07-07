@@ -1,5 +1,4 @@
 export interface User {
-  id?: string,
   name?: string,
   platform_account_id?: string,
   username: string,

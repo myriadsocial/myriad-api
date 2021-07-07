@@ -99,10 +99,8 @@ export class UserController {
       updatedAt: new Date().toString()
     });
 
-    this.userTokenRepository.create({
-      userId: newUser.id,
-      tokenId: 'MYR'
-    })
+    this.createToken(newUser.id, "MYR")
+    this.createToken(newUser.id, "AUSD")
 
     return newUser
   }
@@ -386,6 +384,38 @@ export class UserController {
     }
 
     throw new HttpErrors.NotFound('Seed Not Found')
+  }
+
+  async createToken(userId: string, tokenId: string): Promise<void> {
+    let token = null;
+    if (tokenId === 'MYR') {
+      token = {
+        id: "MYR",
+        token_name: "myria",
+        token_decimal: 12,
+        token_image: "token_image",
+        address_format: 214,
+        rpc_address: "wss://rpc.myriad.systems"
+      }
+    } else {
+      token = {
+        id: "AUSD",
+        token_name: "ausd",
+        token_decimal: 12,
+        token_image: "https://apps.acala.network/static/media/AUSD.439bc3f2.png",
+        address_format: 42,
+        rpc_address: "wss://acala-mandala.api.onfinality.io/public-ws"
+      }
+    }
+
+    try {
+      await this.userRepository.tokens(userId).create(token)
+    } catch {
+      this.userTokenRepository.create({
+        userId: userId,
+        tokenId: tokenId
+      })
+    }
   }
 
   // async defaultExperience(user: User): Promise<void> {

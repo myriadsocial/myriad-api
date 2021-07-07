@@ -15,21 +15,24 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {Keyring} from '@polkadot/api';
+import {WsProvider, ApiPromise , Keyring} from '@polkadot/api';
 import {encodeAddress} from '@polkadot/keyring';
 import {u8aToHex} from '@polkadot/util';
 import {KeypairType} from '@polkadot/util-crypto/types';
 import {polkadotApi} from '../helpers/polkadotApi';
-import {TransactionWithRelations, UserCredential} from '../models';
+import {UserCredential} from '../models';
 import {
   DetailTransactionRepository, PeopleRepository,TokenRepository, TransactionRepository, UserCredentialRepository,
-
+  UserTokenRepository
 } from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {User, VerifyUser} from '../interfaces'
 import dotenv from 'dotenv';
+import {options} from "@acala-network/api";
 import {authenticate} from '@loopback/authentication';
-
+import {ApiOptions} from '@polkadot/api/types';
+// import {AugmentedQueries} from '@polkadot/api/types/storage';
+import '@acala-network/types/interfaces/augment-api';
 dotenv.config();
 
 // @authenticate("jwt")
@@ -42,31 +45,11 @@ export class UserCredentialController {
     @repository(DetailTransactionRepository) public detailTransactionRepository: DetailTransactionRepository,
     @repository(TransactionRepository) public transactionRepository: TransactionRepository,
     @repository(TokenRepository) public tokenRepository: TokenRepository,
+    @repository(UserTokenRepository) public userTokenRepository: UserTokenRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
     @inject('services.Facebook') protected facebookService: Facebook,
   ) { }
-
-  @post('/user-credentials')
-  @response(200, {
-    description: 'UserCredential model instance',
-    content: {'application/json': {schema: getModelSchemaRef(UserCredential)}},
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(UserCredential, {
-            title: 'NewUserCredential',
-
-          }),
-        },
-      },
-    })
-    userCredential: UserCredential,
-  ): Promise<UserCredential> {
-    return this.userCredentialRepository.create(userCredential)
-  }
 
   @post('/verify')
   @response(200, {
@@ -101,7 +84,7 @@ export class UserCredentialController {
       }
     }) verifyUser: VerifyUser
   ): Promise<Boolean> {
-    const {publicKey, platform, username} = verifyUser
+    const {publicKey, platform, username} = verifyUser;
 
     switch (platform) {
       case 'twitter':
@@ -109,17 +92,17 @@ export class UserCredentialController {
         const twitterUser = await this.twitter(username, publicKey);
 
         // Add new credential
-        const twitterCredential = await this.createCredential(twitterUser)
+        const twitterCredential = await this.createCredential(twitterUser);
 
-        // this.transferTipsToUser(twitterCredential)
+        return this.transferTips(twitterCredential);
 
         // const statusTransfer = await this.transferTipsToUser(twitterCredential, twitterUser.id)
 
         // if(!statusTransfer) throw new HttpErrors.NotFound('RPC Lost Connection')
 
-        if (twitterUser.id) this.fetchFollowing(twitterUser.id);
+        // if (twitterUser.id) this.fetchFollowing(twitterUser.id);
 
-        return true
+        // return true
 
       case 'reddit':
         const redditUser = await this.reddit(username, publicKey);
@@ -133,7 +116,7 @@ export class UserCredentialController {
 
         // if (!statusTransferReddit) throw new HttpErrors.NotFound('RPC Lost Connection')
 
-        return true
+        return this.transferTips(redditCredential)
 
       case 'facebook':
         const facebookUser = await this.facebook(username, publicKey);
@@ -146,7 +129,7 @@ export class UserCredentialController {
 
         // if (!statusTransferFacebook) throw new HttpErrors.NotFound('RPC Lost Connection')
 
-        return true
+        return this.transferTips(facebookCredential)
 
       default:
         throw new HttpErrors.NotFound('Platform does not exist')
@@ -227,7 +210,6 @@ export class UserCredentialController {
     if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post')
 
     return {
-      id: user.id,
       name: user.name,
       platform_account_id: user.id,
       platform: "twitter",
@@ -324,7 +306,7 @@ export class UserCredentialController {
     }
   }
 
-  async createCredential(user: User): Promise<UserCredential> {
+  async createCredential(user: User) {
     const {
       name, 
       platform_account_id, 
@@ -372,16 +354,17 @@ export class UserCredentialController {
       if (!foundCredential) {
         return this.peopleRepository.userCredential(foundPeople.id).create({
           userId: publicKey,
-          isLogin: true
+          platform: platform,
+          isVerified: true
         })
       }
 
       if (foundCredential.userId === user.publicKey) {
         this.userCredentialRepository.updateById(foundCredential.id, {
-          isLogin: true
+          isVerified: true
         })
 
-        foundCredential.isLogin = true
+        foundCredential.isVerified = true
 
         return foundCredential
       }
@@ -393,14 +376,20 @@ export class UserCredentialController {
       name, username, platform_account_id, platform, profile_image_url
     });
 
+    if (platform === 'twitter') {
+      this.fetchFollowing(platform_account_id || '');
+    }
+
     return this.peopleRepository.userCredential(newPeople.id).create({
       userId: publicKey,
       platform: platform,
-      isLogin: true
+      isVerified: true
     })
   }
 
   async fetchFollowing(platform_account_id: string): Promise<void> {
+    if (!platform_account_id) return
+
     const {data: following} = await this.twitterService.getActions(`2/users/${platform_account_id}/following?user.fields=profile_image_url`)
 
     for (let i = 0; i < following.length; i++) {
@@ -413,98 +402,310 @@ export class UserCredentialController {
 
       if (!foundPerson) {
         this.peopleRepository.create({
+          name: person.name,
           username: person.username,
           platform_account_id: person.id,
-          profile_image_url: person.profile_image_url.replace('normal', '400x400'),
           platform: 'twitter',
+          profile_image_url: person.profile_image_url.replace('normal', '400x400'),
           hide: false,
         })
       }
     }
   }
 
-  async transferTipsToUser(credential: UserCredential): Promise<void> {
-    // Create keyring instance
+  async transferTips(credential: UserCredential): Promise<boolean> {
     const keyring = new Keyring({
       type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-    });
+    })
 
     // Adding an accoutn based on peopleId/postId
     const from = keyring.addFromUri('//' + credential.peopleId);
     const to = credential.userId // Sending address
-    
-    const totalToken = await this.tokenRepository.count()
 
-    for (let i = 0; i < totalToken.count; i++) {
-      const token = (await this.tokenRepository.find({
-        limit: 1,
-        skip: i
-      }))[0]
+    const foundPeople = await this.peopleRepository.findOne({
+      where: {
+        id: credential.peopleId
+      }
+    })
 
-      const tokenId = token.id
-      const gasFee = token.token_gas_fee ? token.token_gas_fee : 125000147;
-      const rpc_address = token.rpc_address
-      const address_format = token.address_format
+    if (foundPeople && foundPeople.totalTips > 0) {
+      const tokenId = "AUSD";
+      const rpc_address = "wss://acala-mandala.api.onfinality.io/public-ws"
+      const address_format = 42
+      
+      // Initialize rpc web socket
+      const provider = new WsProvider(rpc_address)
+      const api = await new ApiPromise(
+        options({
+          provider
+        }) as ApiOptions
+      ).isReadyOrError
 
-      const totalTransaction = await this.transactionRepository.count({
-        to: u8aToHex(from.publicKey),
-        hasSendToUser: false,
-        tokenId: tokenId
+      // ACA to AUSD conversion
+      const ausdAcaPoolString = (await api.query.dex.liquidityPool([
+        { Token: 'ACA' },
+        { Token: 'AUSD'}
+      ])).toString();
+
+      const ausdAcaPool = ausdAcaPoolString.substring(1, ausdAcaPoolString.length - 1)
+        .replace(/"/g, '').split(',');
+
+      const ausd = parseInt(ausdAcaPool[1]) / 10 ** 12;
+      const aca = parseInt(ausdAcaPool[0]) / 10 ** 13;
+
+      const ausdPerAca = ausd / aca;
+
+      const encodeTo = encodeAddress(to, address_format)
+      
+      // Get transacation payment info
+      const {weight, partialFee} = await api.tx.currencies
+        .transfer(encodeTo, {TOKEN: tokenId}, Number(foundPeople.totalTips))
+        .paymentInfo(from);
+
+      const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13
+
+      // Get tx fee in AUSD
+      const txFee = Math.floor(txFeeInAca * ausdPerAca * 10 ** 12 * 1.01);
+
+      if (txFee > foundPeople.totalTips) {
+        this.userCredentialRepository.deleteById(credential.id)
+
+        throw new HttpErrors.UnprocessableEntity("Tx fee is not enough");
+      }
+
+      const transfer = api.tx.currencies
+        .transfer(encodeTo, {TOKEN: tokenId}, Number(foundPeople.totalTips) - txFee);
+
+      const txHash = await transfer.signAndSend(from);
+
+      this.peopleRepository.updateById(foundPeople.id, {
+        totalTips: 0
       })
 
-      try {
-        if (!totalTransaction) throw new Error("No transactions")
+      this.transactionRepository.updateAll({
+        hasSendToUser: true
+      }, {
+        to: u8aToHex(from.publicKey),
+        hasSendToUser: false
+      })
 
-        const api = await polkadotApi(rpc_address);
+      this.transactionRepository.create({
+        trxHash: txHash.toString(),
+        from: u8aToHex(from.publicKey),
+        to: to,
+        value: foundPeople.totalTips - txFee,
+        state: "success",
+        tokenId: tokenId,
+        hasSendToUser: true
+      })
 
-        for (let j = 0; j < totalTransaction.count; j++) {
-          const transaction = (await this.transactionRepository.find({
-            where: {
-              to: u8aToHex(from.publicKey),
-              hasSendToUser: false,
-              tokenId: tokenId
-            },
-            limit: 1,
-            skip: j
-          }))[0]
-
-          const encodeTo = encodeAddress(to, address_format)
-          const {data: balance} = await api.query.system.account(from.publicKey)
-
-          if (balance.free.toNumber()) {
-            const transfer = api.tx.balances.transfer(encodeTo, Number(transaction.value - gasFee))
-            const txHash = await transfer.signAndSend(from)
-
-            this.transactionRepository.updateById(transaction.id, {
-              hasSendToUser: true
-            })
-
-            this.transactionRepository.create({
-              trxHash: txHash.toString(),
-              from: transaction.from,
-              to: to,
-              value: transaction.value - gasFee,
-              state: "success",
-              tokenId: token.id,
-              hasSendToUser: true
-            })
-
-            const foundDetailTransaction = await this.detailTransactionRepository.findOne({
-              where: {
-                userId: to
-              }
-            })
-
-            if (foundDetailTransaction) {
-              this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
-                sentToMe: foundDetailTransaction.sentToMe + (balance.free.toNumber() - gasFee)
-              })
-            }
-          }
+      const foundDetailTransaction = await this.detailTransactionRepository.findOne({
+        where: {
+          userId: to
         }
+      })
 
-        await api.disconnect()
-      } catch (err) { }
+      if (foundDetailTransaction) {
+        this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
+          sentToMe: foundDetailTransaction.sentToMe + (foundPeople.totalTips - txFee)
+        })
+      }
     }
+    
+    return true
   }
+
+  // async transferTipsToUser(credential: UserCredential): Promise<boolean> {
+  //   const keyring = new Keyring({
+  //     type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
+  //   })
+
+  //   // Adding an accoutn based on peopleId/postId
+  //   const from = keyring.addFromUri('//' + credential.peopleId);
+  //   const to = credential.userId // Sending address
+
+  //   const totalTransaction = await this.transactionRepository.count({
+  //     to: u8aToHex(from.publicKey),
+  //     hasSendToUser: false,
+  //     tokenId: "AUSD"
+  //   })
+
+  //   if (!totalTransaction) return true
+
+  //   const tokenId = "AUSD";
+  //   const rpc_address = "wss://acala-mandala.api.onfinality.io/public-ws"
+  //   const address_format = 42
+    
+  //   const provider = new WsProvider(rpc_address)
+  //   const api = await new ApiPromise(
+  //     options({
+  //       provider
+  //     }) as ApiOptions
+  //   ).isReadyOrError
+
+  //   // ACA to AUSD conversion
+  //   const ausdAcaPoolString = (await api.query.dex.liquidityPool([
+  //     { Token: 'ACA' },
+  //     { Token: 'AUSD'}
+  //   ])).toString();
+
+  //   const ausdAcaPool = ausdAcaPoolString.substring(1, ausdAcaPoolString.length - 1)
+  //     .replace(/"/g, '').split(',');
+
+  //   const ausd = parseInt(ausdAcaPool[1]) / 10 ** 12;
+  //   const aca = parseInt(ausdAcaPool[0]) / 10 ** 13;
+
+  //   const ausdPerAca = ausd / aca;
+
+  //   for (let j = 0; j < totalTransaction.count; j++) {
+  //     const transaction = (await this.transactionRepository.find({
+  //       where: {
+  //         to: u8aToHex(from.publicKey),
+  //         hasSendToUser: false,
+  //         tokenId: tokenId
+  //       },
+  //       limit: 1,
+  //       skip: j
+  //     }))[0]
+
+  //     const encodeTo = encodeAddress(to, address_format)
+      
+  //     // Get transacation payment info
+  //     const {weight, partialFee} = await api.tx.currencies
+  //       .transfer(encodeTo, {TOKEN: tokenId}, Number(transaction.value))
+  //       .paymentInfo(from);
+
+  //     const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13
+
+  //     // Get tx fee in AUSD
+  //     const txFee = Math.floor(txFeeInAca * ausdPerAca * 10 ** 12 * 1.01);
+
+  //     if (txFee > Number(transaction.value)) {
+  //       this.userCredentialRepository.deleteById(credential.id)
+  //       throw new HttpErrors.UnprocessableEntity(`Tx fee is not enough`)
+  //     }
+      
+  //     const transfer = api.tx.currencies
+  //       .transfer(encodeTo, {TOKEN: tokenId}, Number(transaction.value) - txFee);
+
+  //     const txHash = await transfer.signAndSend(from);
+
+  //     this.transactionRepository.updateById(transaction.id, {
+  //       hasSendToUser: true
+  //     })
+
+  //     this.transactionRepository.create({
+  //       trxHash: txHash.toString(),
+  //       from: transaction.from,
+  //       to: to,
+  //       value: +transaction.value - txFee,
+  //       state: "success",
+  //       tokenId: tokenId,
+  //       hasSendToUser: true
+  //     })
+
+  //     const foundDetailTransaction = await this.detailTransactionRepository.findOne({
+  //       where: {
+  //         userId: to
+  //       }
+  //     })
+
+  //     if (foundDetailTransaction) {
+  //       this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
+  //         sentToMe: foundDetailTransaction.sentToMe + (transaction.value - txFee)
+  //       })
+  //     }
+  //   }
+
+  //   return true
+  // }
+
+  // async transferTipsToUser(credential: UserCredential): Promise<void> {
+  //   // Create keyring instance
+  //   const keyring = new Keyring({
+  //     type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
+  //   });
+
+  //   // Adding an accoutn based on peopleId/postId
+  //   const from = keyring.addFromUri('//' + credential.peopleId);
+  //   const to = credential.userId // Sending address
+    
+  //   const totalToken = await this.userTokenRepository.count({
+  //     userId: to
+  //   })
+
+  //   for (let i = 0; i < totalToken.count; i++) {
+  //     const token = (await this.tokenRepository.find({
+  //       limit: 1,
+  //       skip: i
+  //     }))[0]
+
+  //     const totalTransaction = await this.transactionRepository.count({
+  //       to: u8aToHex(from.publicKey),
+  //       hasSendToUser: false,
+  //       tokenId: token.id
+  //     })
+
+  //     if (!totalTransaction) continue
+      
+  //     const tokenId = token.id
+  //     const txFee = token.token_gas_fee ? token.token_gas_fee : 125000147;
+  //     const rpc_address = token.rpc_address
+  //     const address_format = token.address_format
+
+  //     const api = await polkadotApi(rpc_address);      
+      
+  //     for (let j = 0; j < totalTransaction.count; j++) {
+  //       const transaction = (await this.transactionRepository.find({
+  //         where: {
+  //           to: u8aToHex(from.publicKey),
+  //           hasSendToUser: false,
+  //           tokenId: tokenId
+  //         },
+  //         limit: 1,
+  //         skip: j
+  //       }))[0]
+
+  //       const encodeTo = encodeAddress(to, address_format)
+  //       const {data: balance} = await api.query.system.account(from.publicKey)
+  //       // const data = (await api.query.tokens.accounts(
+  //       //   u8aToHex(from.publicKey), 
+  //       //   {Token: tokenId}
+  //       // )).free.toJSON()
+
+  //       if (balance.free.toNumber()) {
+  //         const transfer = api.tx.balances.transfer(encodeTo, Number(transaction.value - txFee))
+  //         const txHash = await transfer.signAndSend(from)
+
+  //         this.transactionRepository.updateById(transaction.id, {
+  //           hasSendToUser: true
+  //         })
+
+  //         this.transactionRepository.create({
+  //           trxHash: txHash.toString(),
+  //           from: transaction.from,
+  //           to: to,
+  //           value: transaction.value - txFee,
+  //           state: "success",
+  //           tokenId: token.id,
+  //           hasSendToUser: true
+  //         })
+
+  //         const foundDetailTransaction = await this.detailTransactionRepository.findOne({
+  //           where: {
+  //             userId: to
+  //           }
+  //         })
+
+  //         if (foundDetailTransaction) {
+  //           this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
+  //             sentToMe: foundDetailTransaction.sentToMe + (balance.free.toNumber() - txFee)
+  //           })
+  //         }
+  //       }
+  //     }
+
+  //     await api.disconnect()
+  //   }
+  // }
 }

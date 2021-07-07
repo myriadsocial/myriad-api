@@ -17,13 +17,15 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {Token, Transaction, User} from '../models';
+import {People, Token, Transaction, User} from '../models';
 import {
   DetailTransactionRepository,
   TokenRepository,
   TransactionRepository,
   UserRepository,
-  QueueRepository
+  QueueRepository,
+  PostRepository,
+  PeopleRepository
 } from '../repositories';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {KeypairType} from '@polkadot/util-crypto/types';
@@ -47,7 +49,11 @@ export class TransactionController {
     @repository(TokenRepository)
     public tokenRepository: TokenRepository,
     @repository(QueueRepository)
-    public queueRepository: QueueRepository
+    public queueRepository: QueueRepository,
+    @repository(PostRepository) 
+    public postRepository: PostRepository,
+    @repository(PeopleRepository)
+    public peopleRepository: PeopleRepository
   ) { }
 
   @post('/transactions')
@@ -78,6 +84,12 @@ export class TransactionController {
       throw new HttpErrors.NotFound('Token not found')
     }
 
+    // Check if user exist
+    await this.userRepository.findById(transaction.from);
+
+    // Reward to FROM for doing transactions
+    this.sentMyriadReward(transaction.from); 
+
     const from = transaction.from;
     const to = transaction.to;
     const value = transaction.value;
@@ -99,9 +111,6 @@ export class TransactionController {
       })
     }
 
-    // Reward to FROM for doing transactions
-    this.sentMyriadReward(from); 
-
     // Detail Transaction of TO
     const foundToUser = await this.findDetailTransaction(to, tokenId)
 
@@ -117,6 +126,26 @@ export class TransactionController {
         }
       })
 
+      // Save total tips in people
+      const foundPost = await this.postRepository.findOne({
+        where: {
+          walletAddress: to
+        }
+      })
+
+      const foundPeople = await this.peopleRepository.findOne({
+        where: {
+          id: foundPost?.peopleId
+        }
+      })
+
+      if (foundPeople) {
+        this.peopleRepository.updateById(foundPeople.id, {
+          totalTips: foundPeople.totalTips + Number(value)
+        })
+      }
+
+      // If the public key is not belong to user
       if (!foundUser) {
         return this.transactionRepository.create({
           ...transaction,
@@ -127,6 +156,7 @@ export class TransactionController {
         })
       }
 
+      // If detail transaction belong to user
       this.detailTransactionRepository.create({
         sentToMe: value,
         sentToThem: 0,
@@ -198,28 +228,6 @@ export class TransactionController {
     return this.transactionRepository.find(filter);
   }
 
-  @patch('/transactions')
-  @response(200, {
-    description: 'Transaction PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Transaction, {partial: true}),
-        },
-      },
-    })
-    transaction: Transaction,
-    @param.where(Transaction) where?: Where<Transaction>,
-  ): Promise<Count> {
-    return this.transactionRepository.updateAll({
-      ...transaction,
-      updatedAt: new Date().toString()
-    }, where);
-  }
-
   @get('/transactions/{id}')
   @response(200, {
     description: 'Transaction model instance',
@@ -275,7 +283,7 @@ export class TransactionController {
   }
 
   async sentMyriadReward(userId: string):Promise<void> {
-    const provider = process.env.MYRIAD_WS_RPC || "";
+    const provider = process.env.LOCAL_WS_RPC || "";
     const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX);
     const api = await polkadotApi(provider);
     const keyring = new Keyring({
@@ -295,6 +303,23 @@ export class TransactionController {
       }
     })
 
+    let foundAdmin = await this.userRepository.findOne({
+      where: {
+        id: u8aToHex(from.publicKey)
+      }
+    });
+
+    if (!foundAdmin) {
+      foundAdmin = await this.userRepository.create({
+        id: u8aToHex(from.publicKey),
+        name: 'Myriad',
+        username: 'myriad',
+        skip_tour: true,
+        is_online: false
+      })
+    }
+
+    // Set queueu if there is multiplet transactions
     let count: number = nonce.toJSON();
     
     if (!foundQueue) {
@@ -314,6 +339,7 @@ export class TransactionController {
       await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
     }
 
+    // Transaction reward
     const transfer = api.tx.balances.transfer(to, reward);
     const txhash = await transfer.signAndSend(from, {nonce: count});
 
@@ -322,6 +348,7 @@ export class TransactionController {
       from: u8aToHex(from.publicKey),
       to: userId,
       value: reward,
+      hasSendToUser: true,
       state: 'success',
       createdAt: new Date().toString(),
       tokenId: 'MYR'
