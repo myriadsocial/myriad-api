@@ -76,7 +76,7 @@ export class TagController {
   @get('/trending/{topic}', {
     responses: {
       '200': {
-        description: 'Post based trending topic',
+        description: 'Posts from the trending topic',
         content: {
           'application/json': {
             schema: getModelSchemaRef(Post)
