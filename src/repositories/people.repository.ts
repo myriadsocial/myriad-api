@@ -6,9 +6,10 @@ import {
   repository
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {People, PeopleRelations, Post, UserCredential} from '../models';
+import {People, PeopleRelations, Post, UserCredential, Tip} from '../models';
 import {PostRepository} from './post.repository';
 import {UserCredentialRepository} from './user-credential.repository';
+import {TipRepository} from './tip.repository';
 
 export class PeopleRepository extends DefaultCrudRepository<
   People,
@@ -20,14 +21,18 @@ export class PeopleRepository extends DefaultCrudRepository<
 
   public readonly posts: HasManyRepositoryFactory<Post, typeof People.prototype.id>;
 
+  public readonly tips: HasManyRepositoryFactory<Tip, typeof People.prototype.id>;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserCredentialRepository')
     protected userCredentialRepositoryGetter: Getter<UserCredentialRepository>,
     @repository.getter('PostRepository')
-    protected postRepositoryGetter: Getter<PostRepository>,
+    protected postRepositoryGetter: Getter<PostRepository>, @repository.getter('TipRepository') protected tipRepositoryGetter: Getter<TipRepository>,
   ) {
     super(People, dataSource);
+    this.tips = this.createHasManyRepositoryFactoryFor('tips', tipRepositoryGetter,);
+    this.registerInclusionResolver('tips', this.tips.inclusionResolver);
     this.posts = this.createHasManyRepositoryFactoryFor('posts', postRepositoryGetter,);
     this.registerInclusionResolver('posts', this.posts.inclusionResolver);
     this.userCredential = this.createHasOneRepositoryFactoryFor('userCredential', userCredentialRepositoryGetter);

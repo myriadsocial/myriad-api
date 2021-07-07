@@ -1,10 +1,7 @@
 import {
-  Count,
-  CountSchema,
   Filter,
   FilterExcludingWhere,
-  repository,
-  Where
+  repository
 } from '@loopback/repository';
 import {
   del,
@@ -17,7 +14,7 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {People, Token, Transaction, User} from '../models';
+import {Token, Transaction, User} from '../models';
 import {
   DetailTransactionRepository,
   TokenRepository,
@@ -25,7 +22,8 @@ import {
   UserRepository,
   QueueRepository,
   PostRepository,
-  PeopleRepository
+  PeopleRepository,
+  TipRepository,
 } from '../repositories';
 import {polkadotApi} from '../helpers/polkadotApi';
 import {KeypairType} from '@polkadot/util-crypto/types';
@@ -52,8 +50,8 @@ export class TransactionController {
     public queueRepository: QueueRepository,
     @repository(PostRepository) 
     public postRepository: PostRepository,
-    @repository(PeopleRepository)
-    public peopleRepository: PeopleRepository
+    @repository(TipRepository)
+    public tipRepository: TipRepository
   ) { }
 
   @post('/transactions')
@@ -126,22 +124,29 @@ export class TransactionController {
         }
       })
 
-      // Save total tips in people
+      // Find post to get peopleId
       const foundPost = await this.postRepository.findOne({
         where: {
           walletAddress: to
         }
       })
 
-      const foundPeople = await this.peopleRepository.findOne({
+      const foundTip = await this.tipRepository.findOne({
         where: {
-          id: foundPost?.peopleId
+          peopleId: foundPost?.peopleId,
+          tokenId: tokenId
         }
       })
 
-      if (foundPeople) {
-        this.peopleRepository.updateById(foundPeople.id, {
-          totalTips: foundPeople.totalTips + Number(value)
+      if (foundTip) {
+        this.tipRepository.updateById(foundTip.id, {
+          totalTips: foundTip.totalTips + Number(value) 
+        })
+      } else {
+        this.tipRepository.create({
+          totalTips: Number(value),
+          tokenId: tokenId,
+          peopleId: foundPost?.peopleId
         })
       }
 

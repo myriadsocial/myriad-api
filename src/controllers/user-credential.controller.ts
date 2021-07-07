@@ -23,7 +23,7 @@ import {polkadotApi} from '../helpers/polkadotApi';
 import {UserCredential} from '../models';
 import {
   DetailTransactionRepository, PeopleRepository,TokenRepository, TransactionRepository, UserCredentialRepository,
-  UserTokenRepository
+  UserTokenRepository, TipRepository
 } from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {User, VerifyUser} from '../interfaces'
@@ -46,6 +46,7 @@ export class UserCredentialController {
     @repository(TransactionRepository) public transactionRepository: TransactionRepository,
     @repository(TokenRepository) public tokenRepository: TokenRepository,
     @repository(UserTokenRepository) public userTokenRepository: UserTokenRepository,
+    @repository(TipRepository) public tipRepository: TipRepository,
     @inject('services.Twitter') protected twitterService: Twitter,
     @inject('services.Reddit') protected redditService: Reddit,
     @inject('services.Facebook') protected facebookService: Facebook,
@@ -425,11 +426,22 @@ export class UserCredentialController {
     const foundPeople = await this.peopleRepository.findOne({
       where: {
         id: credential.peopleId
-      }
+      },
+      include: [
+        {
+          relation: 'tips',
+          scope: {
+            where: {
+              totalTips: {
+                gt: 0
+              }
+            }
+          }
+        }
+      ]
     })
 
-    if (foundPeople && foundPeople.totalTips > 0) {
-      const tokenId = "AUSD";
+    if (foundPeople && foundPeople.tips && foundPeople.tips.length > 0) {
       const rpc_address = "wss://acala-mandala.api.onfinality.io/public-ws"
       const address_format = 42
       
@@ -455,60 +467,70 @@ export class UserCredentialController {
 
       const ausdPerAca = ausd / aca;
 
-      const encodeTo = encodeAddress(to, address_format)
-      
-      // Get transacation payment info
-      const {weight, partialFee} = await api.tx.currencies
-        .transfer(encodeTo, {TOKEN: tokenId}, Number(foundPeople.totalTips))
-        .paymentInfo(from);
+      const encodeTo = encodeAddress(to, address_format);
 
-      const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13
+      let countError = 0;
 
-      // Get tx fee in AUSD
-      const txFee = Math.floor(txFeeInAca * ausdPerAca * 10 ** 12 * 1.01);
+      for (let i = 0; i < foundPeople.tips.length; i++) {
+        const {id, tokenId, totalTips} = foundPeople.tips[i];
 
-      if (txFee > foundPeople.totalTips) {
-        this.userCredentialRepository.deleteById(credential.id)
+        // Get transacation payment info
+        const {weight, partialFee} = await api.tx.currencies
+          .transfer(encodeTo, {TOKEN: tokenId}, Number(totalTips))
+          .paymentInfo(from);
 
-        throw new HttpErrors.UnprocessableEntity(`Tx fee is not enough. Please send ${txFee / 10 ** 12} AUSD to this account ${encodeAddress(from.publicKey, 42)}`);
-      }
+        const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13
 
-      const transfer = api.tx.currencies
-        .transfer(encodeTo, {TOKEN: tokenId}, Number(foundPeople.totalTips) - txFee);
+        // Get tx fee in AUSD
+        const txFee = Math.floor(txFeeInAca * ausdPerAca * 10 ** 12 * 1.01);
 
-      const txHash = await transfer.signAndSend(from);
+        if (txFee > totalTips) {
+          countError++;
 
-      this.peopleRepository.updateById(foundPeople.id, {
-        totalTips: 0
-      })
+          if (i === foundPeople.tips.length - 1 && countError > 0) {
+            this.userCredentialRepository.deleteById(credential.id);
 
-      this.transactionRepository.updateAll({
-        hasSendToUser: true
-      }, {
-        to: u8aToHex(from.publicKey),
-        hasSendToUser: false
-      })
+            throw new HttpErrors.UnprocessableEntity(`Tx fee is not enough. Please send ${(txFee * countError) / 10 ** 12} AUSD to this account ${encodeAddress(from.publicKey, 42)}`);
+          }
 
-      this.transactionRepository.create({
-        trxHash: txHash.toString(),
-        from: u8aToHex(from.publicKey),
-        to: to,
-        value: foundPeople.totalTips - txFee,
-        state: "success",
-        tokenId: tokenId,
-        hasSendToUser: true
-      })
-
-      const foundDetailTransaction = await this.detailTransactionRepository.findOne({
-        where: {
-          userId: to
+          continue;
         }
-      })
 
-      if (foundDetailTransaction) {
-        this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
-          sentToMe: foundDetailTransaction.sentToMe + (foundPeople.totalTips - txFee)
+        const transfer = api.tx.currencies
+          .transfer(encodeTo, {TOKEN: tokenId}, Number(totalTips) - txFee);
+
+        const txHash = await transfer.signAndSend(from);
+
+        this.tipRepository.updateById(id, {totalTips: 0})
+
+        this.transactionRepository.updateAll({
+          hasSendToUser: true
+        }, {
+          to: u8aToHex(from.publicKey),
+          hasSendToUser: false
         })
+
+        this.transactionRepository.create({
+          trxHash: txHash.toString(),
+          from: u8aToHex(from.publicKey),
+          to: to,
+          value: totalTips - txFee,
+          state: "success",
+          tokenId: tokenId,
+          hasSendToUser: true
+        })
+
+        const foundDetailTransaction = await this.detailTransactionRepository.findOne({
+          where: {
+            userId: to
+          }
+        })
+
+        if (foundDetailTransaction) {
+          this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
+            sentToMe: foundDetailTransaction.sentToMe + (totalTips - txFee)
+          })
+        }
       }
     }
     
