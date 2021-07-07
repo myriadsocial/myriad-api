@@ -470,7 +470,7 @@ export class UserCredentialController {
       if (txFee > foundPeople.totalTips) {
         this.userCredentialRepository.deleteById(credential.id)
 
-        throw new HttpErrors.UnprocessableEntity("Tx fee is not enough");
+        throw new HttpErrors.UnprocessableEntity(`Tx fee is not enough. Please send ${txFee / 10 ** 12} AUSD to this account ${encodeAddress(from.publicKey, 42)}`);
       }
 
       const transfer = api.tx.currencies
