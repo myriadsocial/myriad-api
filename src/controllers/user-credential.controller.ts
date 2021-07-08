@@ -19,7 +19,6 @@ import {WsProvider, ApiPromise , Keyring} from '@polkadot/api';
 import {encodeAddress} from '@polkadot/keyring';
 import {u8aToHex} from '@polkadot/util';
 import {KeypairType} from '@polkadot/util-crypto/types';
-import {polkadotApi} from '../helpers/polkadotApi';
 import {UserCredential} from '../models';
 import {
   DetailTransactionRepository, PeopleRepository,TokenRepository, TransactionRepository, UserCredentialRepository,
@@ -89,48 +88,22 @@ export class UserCredentialController {
 
     switch (platform) {
       case 'twitter':
-        // Fetch data user from twitter api
-        const twitterUser = await this.twitter(username, publicKey);
+        const twitterUser = await this.twitter(username, publicKey);  // Fetch data user from twitter api
+        const twitterCredential = await this.createCredential(twitterUser); // Add new credential
 
-        // Add new credential
-        const twitterCredential = await this.createCredential(twitterUser);
-
-        return this.transferTips(twitterCredential);
-
-        // const statusTransfer = await this.transferTipsToUser(twitterCredential, twitterUser.id)
-
-        // if(!statusTransfer) throw new HttpErrors.NotFound('RPC Lost Connection')
-
-        // if (twitterUser.id) this.fetchFollowing(twitterUser.id);
-
-        // return true
+        return this.claimTips(twitterCredential);
 
       case 'reddit':
         const redditUser = await this.reddit(username, publicKey);
-        
-        // Add new credential
         const redditCredential = await this.createCredential(redditUser)
 
-        // this.transferTipsToUser(redditCredential)
-
-        // const statusTransferReddit = await this.transferTipsToUser(redditCredential, 't2_' + redditUser.id)
-
-        // if (!statusTransferReddit) throw new HttpErrors.NotFound('RPC Lost Connection')
-
-        return this.transferTips(redditCredential)
+        return this.claimTips(redditCredential)
 
       case 'facebook':
         const facebookUser = await this.facebook(username, publicKey);
-
         const facebookCredential = await this.createCredential(facebookUser);
 
-        // this.transferTipsToUser(facebookCredential);
-
-        // const statusTransferFacebook = await this.transferTipsToUser(facebookCredential, fbUsername)
-
-        // if (!statusTransferFacebook) throw new HttpErrors.NotFound('RPC Lost Connection')
-
-        return this.transferTips(facebookCredential)
+        return this.claimTips(facebookCredential)
 
       default:
         throw new HttpErrors.NotFound('Platform does not exist')
@@ -414,7 +387,7 @@ export class UserCredentialController {
     }
   }
 
-  async transferTips(credential: UserCredential): Promise<boolean> {
+  async claimTips(credential: UserCredential): Promise<boolean> {
     const keyring = new Keyring({
       type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
     })
@@ -442,47 +415,49 @@ export class UserCredentialController {
     })
 
     if (foundPeople && foundPeople.tips && foundPeople.tips.length > 0) {
-      const rpc_address = "wss://acala-mandala.api.onfinality.io/public-ws"
-      const address_format = 42
-      
-      // Initialize rpc web socket
-      const provider = new WsProvider(rpc_address)
-      const api = await new ApiPromise(
-        options({
-          provider
-        }) as ApiOptions
-      ).isReadyOrError
-
-      // ACA to AUSD conversion
-      const ausdAcaPoolString = (await api.query.dex.liquidityPool([
-        { Token: 'ACA' },
-        { Token: 'AUSD'}
-      ])).toString();
-
-      const ausdAcaPool = ausdAcaPoolString.substring(1, ausdAcaPoolString.length - 1)
-        .replace(/"/g, '').split(',');
-
-      const ausd = parseInt(ausdAcaPool[1]) / 10 ** 12;
-      const aca = parseInt(ausdAcaPool[0]) / 10 ** 13;
-
-      const ausdPerAca = ausd / aca;
-
-      const encodeTo = encodeAddress(to, address_format);
-
-      let countError = 0;
+      let rpc_address = null;
+      let provider = null;
+      let api = null;
 
       for (let i = 0; i < foundPeople.tips.length; i++) {
+        const getToken = await this.tokenRepository.findById(foundPeople.tips[i].tokenId);
         const {id, tokenId, totalTips} = foundPeople.tips[i];
 
-        // Get transacation payment info
+        if (api === null || rpc_address !== getToken.rpc_address) {
+          rpc_address = getToken.rpc_address;
+          provider = new WsProvider(rpc_address);
+
+          if (tokenId === 'ACA' || tokenId === 'AUSD' || tokenId === 'DOT') {
+            api = await new ApiPromise(
+              options({
+                provider: provider
+              }) as ApiOptions
+            ).isReadyOrError;
+          } else {
+            api = await new ApiPromise({provider}).isReadyOrError;
+          }
+        }
+
+        const ausdAcaPoolString = (await api.query.dex.liquidityPool([
+          { Token: 'ACA' },
+          { Token: 'AUSD' }
+        ])).toString()
+
+        const ausdAcaPool = ausdAcaPoolString.substring(1, ausdAcaPoolString.length - 1)
+          .replace(/"/g, '').split(',') || [];
+
+        const ausd = parseInt(ausdAcaPool[1]) / 10 ** 12;
+        const aca = parseInt(ausdAcaPool[0]) / 10 ** 13;
+
+        const ausdPerAca = ausd / aca;
         const {weight, partialFee} = await api.tx.currencies
-          .transfer(encodeTo, {TOKEN: tokenId}, Number(totalTips))
+          .transfer(to, {TOKEN: tokenId}, Number(totalTips))
           .paymentInfo(from);
 
-        const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13
-
-        // Get tx fee in AUSD
+        const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13;
         const txFee = Math.floor(txFeeInAca * ausdPerAca * 10 ** 12 * 1.01);
+
+        let countError: number = 0;
 
         if (txFee > totalTips) {
           countError++;
@@ -490,14 +465,14 @@ export class UserCredentialController {
           if (i === foundPeople.tips.length - 1 && countError > 0) {
             this.userCredentialRepository.deleteById(credential.id);
 
-            throw new HttpErrors.UnprocessableEntity(`Tx fee is not enough. Please send ${(txFee * countError) / 10 ** 12} AUSD to this account ${encodeAddress(from.publicKey, 42)}`);
+            throw new HttpErrors.UnprocessableEntity(`Tx fee is not enough. Please send ${((txFee * countError) / 10 ** 12).toFixed(3)} AUSD to this account ${encodeAddress(from.publicKey, 42)} to claim your tips`);
           }
 
           continue;
         }
 
         const transfer = api.tx.currencies
-          .transfer(encodeTo, {TOKEN: tokenId}, Number(totalTips) - txFee);
+          .transfer(to, {TOKEN: tokenId}, Number(totalTips) - txFee);
 
         const txHash = await transfer.signAndSend(from);
 
@@ -532,202 +507,10 @@ export class UserCredentialController {
           })
         }
       }
+
+      if (api !== null) await api.disconnect()
     }
     
     return true
   }
-
-  // async transferTipsToUser(credential: UserCredential): Promise<boolean> {
-  //   const keyring = new Keyring({
-  //     type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-  //   })
-
-  //   // Adding an accoutn based on peopleId/postId
-  //   const from = keyring.addFromUri('//' + credential.peopleId);
-  //   const to = credential.userId // Sending address
-
-  //   const totalTransaction = await this.transactionRepository.count({
-  //     to: u8aToHex(from.publicKey),
-  //     hasSendToUser: false,
-  //     tokenId: "AUSD"
-  //   })
-
-  //   if (!totalTransaction) return true
-
-  //   const tokenId = "AUSD";
-  //   const rpc_address = "wss://acala-mandala.api.onfinality.io/public-ws"
-  //   const address_format = 42
-    
-  //   const provider = new WsProvider(rpc_address)
-  //   const api = await new ApiPromise(
-  //     options({
-  //       provider
-  //     }) as ApiOptions
-  //   ).isReadyOrError
-
-  //   // ACA to AUSD conversion
-  //   const ausdAcaPoolString = (await api.query.dex.liquidityPool([
-  //     { Token: 'ACA' },
-  //     { Token: 'AUSD'}
-  //   ])).toString();
-
-  //   const ausdAcaPool = ausdAcaPoolString.substring(1, ausdAcaPoolString.length - 1)
-  //     .replace(/"/g, '').split(',');
-
-  //   const ausd = parseInt(ausdAcaPool[1]) / 10 ** 12;
-  //   const aca = parseInt(ausdAcaPool[0]) / 10 ** 13;
-
-  //   const ausdPerAca = ausd / aca;
-
-  //   for (let j = 0; j < totalTransaction.count; j++) {
-  //     const transaction = (await this.transactionRepository.find({
-  //       where: {
-  //         to: u8aToHex(from.publicKey),
-  //         hasSendToUser: false,
-  //         tokenId: tokenId
-  //       },
-  //       limit: 1,
-  //       skip: j
-  //     }))[0]
-
-  //     const encodeTo = encodeAddress(to, address_format)
-      
-  //     // Get transacation payment info
-  //     const {weight, partialFee} = await api.tx.currencies
-  //       .transfer(encodeTo, {TOKEN: tokenId}, Number(transaction.value))
-  //       .paymentInfo(from);
-
-  //     const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13
-
-  //     // Get tx fee in AUSD
-  //     const txFee = Math.floor(txFeeInAca * ausdPerAca * 10 ** 12 * 1.01);
-
-  //     if (txFee > Number(transaction.value)) {
-  //       this.userCredentialRepository.deleteById(credential.id)
-  //       throw new HttpErrors.UnprocessableEntity(`Tx fee is not enough`)
-  //     }
-      
-  //     const transfer = api.tx.currencies
-  //       .transfer(encodeTo, {TOKEN: tokenId}, Number(transaction.value) - txFee);
-
-  //     const txHash = await transfer.signAndSend(from);
-
-  //     this.transactionRepository.updateById(transaction.id, {
-  //       hasSendToUser: true
-  //     })
-
-  //     this.transactionRepository.create({
-  //       trxHash: txHash.toString(),
-  //       from: transaction.from,
-  //       to: to,
-  //       value: +transaction.value - txFee,
-  //       state: "success",
-  //       tokenId: tokenId,
-  //       hasSendToUser: true
-  //     })
-
-  //     const foundDetailTransaction = await this.detailTransactionRepository.findOne({
-  //       where: {
-  //         userId: to
-  //       }
-  //     })
-
-  //     if (foundDetailTransaction) {
-  //       this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
-  //         sentToMe: foundDetailTransaction.sentToMe + (transaction.value - txFee)
-  //       })
-  //     }
-  //   }
-
-  //   return true
-  // }
-
-  // async transferTipsToUser(credential: UserCredential): Promise<void> {
-  //   // Create keyring instance
-  //   const keyring = new Keyring({
-  //     type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-  //   });
-
-  //   // Adding an accoutn based on peopleId/postId
-  //   const from = keyring.addFromUri('//' + credential.peopleId);
-  //   const to = credential.userId // Sending address
-    
-  //   const totalToken = await this.userTokenRepository.count({
-  //     userId: to
-  //   })
-
-  //   for (let i = 0; i < totalToken.count; i++) {
-  //     const token = (await this.tokenRepository.find({
-  //       limit: 1,
-  //       skip: i
-  //     }))[0]
-
-  //     const totalTransaction = await this.transactionRepository.count({
-  //       to: u8aToHex(from.publicKey),
-  //       hasSendToUser: false,
-  //       tokenId: token.id
-  //     })
-
-  //     if (!totalTransaction) continue
-      
-  //     const tokenId = token.id
-  //     const txFee = token.token_gas_fee ? token.token_gas_fee : 125000147;
-  //     const rpc_address = token.rpc_address
-  //     const address_format = token.address_format
-
-  //     const api = await polkadotApi(rpc_address);      
-      
-  //     for (let j = 0; j < totalTransaction.count; j++) {
-  //       const transaction = (await this.transactionRepository.find({
-  //         where: {
-  //           to: u8aToHex(from.publicKey),
-  //           hasSendToUser: false,
-  //           tokenId: tokenId
-  //         },
-  //         limit: 1,
-  //         skip: j
-  //       }))[0]
-
-  //       const encodeTo = encodeAddress(to, address_format)
-  //       const {data: balance} = await api.query.system.account(from.publicKey)
-  //       // const data = (await api.query.tokens.accounts(
-  //       //   u8aToHex(from.publicKey), 
-  //       //   {Token: tokenId}
-  //       // )).free.toJSON()
-
-  //       if (balance.free.toNumber()) {
-  //         const transfer = api.tx.balances.transfer(encodeTo, Number(transaction.value - txFee))
-  //         const txHash = await transfer.signAndSend(from)
-
-  //         this.transactionRepository.updateById(transaction.id, {
-  //           hasSendToUser: true
-  //         })
-
-  //         this.transactionRepository.create({
-  //           trxHash: txHash.toString(),
-  //           from: transaction.from,
-  //           to: to,
-  //           value: transaction.value - txFee,
-  //           state: "success",
-  //           tokenId: token.id,
-  //           hasSendToUser: true
-  //         })
-
-  //         const foundDetailTransaction = await this.detailTransactionRepository.findOne({
-  //           where: {
-  //             userId: to
-  //           }
-  //         })
-
-  //         if (foundDetailTransaction) {
-  //           this.detailTransactionRepository.updateById(foundDetailTransaction.id, {
-  //             sentToMe: foundDetailTransaction.sentToMe + (balance.free.toNumber() - txFee)
-  //           })
-  //         }
-  //       }
-  //     }
-
-  //     await api.disconnect()
-  //   }
-  // }
 }
