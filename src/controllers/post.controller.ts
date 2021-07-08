@@ -64,10 +64,27 @@ export class PostController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Post, {
-            title: 'NewPost',
-            exclude: ['id'],
-          }),
+          schema: {
+            type: 'object',
+            required: ['text'],
+            properties: {
+              text: {
+                type: 'string'
+              },
+              tags: {
+                type: 'array',
+                items: {
+                  type: 'string'
+                }
+              },
+              assets: {
+                type: 'array',
+                items: {
+                  type: 'string'
+                }
+              }
+            }
+          },
         },
       },
     })
@@ -77,8 +94,11 @@ export class PostController {
       post.hasMedia = true
     }
 
+    delete post.platformUser
+
     const newPost = await this.postRepository.create({
       ...post,
+      platform: 'myriad',
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
@@ -157,6 +177,9 @@ export class PostController {
       }
     }) post: URL,
   ): Promise<Post> {
+    // Format twitter https://twitter.com/{userId}/status/{tweetId}
+    // Format reddit https://www.reddit.com/{subreddit_name_prefixed}/comments/{postId}/{title}/
+    // Format facebook https://facebook.com/{userId}/posts/{postId}
     const splitURL = post.url.split('/')
     const checkPlatform = splitURL[2].toLowerCase().split('.');
     
@@ -434,16 +457,7 @@ export class PostController {
       }
     }) detailTips: DetailTips,
   ): Promise<TipsReceived> {
-    const foundPost = await this.postRepository.findOne({
-      where: {
-        id: id
-      }
-    })
-
-    if (!foundPost) {
-      throw new HttpErrors.NotFound('Post not found')
-    }
-
+    const foundPost = await this.postRepository.findById(id);
     const foundIndex = foundPost.tipsReceived.findIndex(tips => tips.tokenId === detailTips.tokenId)
 
     if (foundIndex === -1) {
@@ -462,21 +476,21 @@ export class PostController {
         tokenId: detailTips.tokenId,
         totalTips: detailTips.tipsReceived
       }
-    } else {
-      foundPost.tipsReceived[foundIndex] = {
-        tokenId: detailTips.tokenId,
-        totalTips: foundPost.tipsReceived[foundIndex].totalTips + detailTips.tipsReceived
-      }
-
-      this.postRepository.updateById(foundPost.id, {
-        tipsReceived: [
-          ...foundPost.tipsReceived
-        ],
-        updatedAt: new Date().toString()
-      })
-
-      return foundPost.tipsReceived[foundIndex]
+    } 
+    
+    foundPost.tipsReceived[foundIndex] = {
+      tokenId: detailTips.tokenId,
+      totalTips: foundPost.tipsReceived[foundIndex].totalTips + detailTips.tipsReceived
     }
+
+    this.postRepository.updateById(foundPost.id, {
+      tipsReceived: [
+        ...foundPost.tipsReceived
+      ],
+      updatedAt: new Date().toString()
+    })
+
+    return foundPost.tipsReceived[foundIndex]
   }
 
   @del('/posts/{id}')
@@ -526,11 +540,16 @@ export class PostController {
       }
     }
 
+    const urls = entities.urls.map((url: any) => url.expanded_url);
+
+    const findUrlInFullText = full_text.search("https://t.co/");
+    const text = full_text.substring(0, findUrlInFullText !== -1 ? findUrlInFullText : full_text.length).trim();
+
     return {
       platform: 'twitter',
       createdAt: new Date().toString(),
       textId: id_str,
-      text: full_text,
+      text: (text + ' ' + urls.join(' ')).trim(),
       tags: twitterTags,
       platformCreatedAt: new Date(created_at).toString(),
       assets: assets,
@@ -550,16 +569,19 @@ export class PostController {
     const redditPost = data.data.children[0].data
     const assets: string[] = [];
 
+    let url = redditPost.url_overridden_by_dest ? redditPost.url_overridden_by_dest : '';
     let hasMedia:boolean = false;
 
     if (redditPost.post_hint === "image") {
-      assets.push(redditPost.url)
+      assets.push(redditPost.url);
       hasMedia = true;
+      url = '';
     }
 
     if (redditPost.is_video) {
-      assets.push(redditPost.media.reddit_video.fallback_url)
-      hasMedia = true
+      assets.push(redditPost.media.reddit_video.fallback_url);
+      hasMedia = true;
+      url = '';
     }
 
     if (redditPost.media_metadata) {
@@ -585,7 +607,7 @@ export class PostController {
       textId: textId,
       platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
       title: redditPost.title,
-      text: redditPost.selftext,
+      text: (redditPost.selftext + " " + url).trim(),
       link: `https://reddit.com/${textId}`,
       hasMedia,
       assets,
@@ -688,6 +710,7 @@ export class PostController {
     if (!foundPeople) {
       const people = await this.peopleRepository.create({
         ...platformUser,
+        platform,
         hide: false
       })
       return this.createPostWithPublicMetric({
