@@ -26,7 +26,8 @@ import {
   UserTokenRepository,
   AuthenticationRepository,
   AuthCredentialRepository,
-  RefreshTokenRepository
+  RefreshTokenRepository,
+  TipRepository
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
@@ -76,10 +77,16 @@ export class InitDatabase extends BootMixin(
     const postSeedData = this.preparePostSeed(newPeople, posts);
 
     for (let i = 0; i < newUsers.length; i++) {
-      await userTokenRepository.create({
-        userId: newUsers[i].id,
-        tokenId: "MYR"
-      })
+      await userTokenRepository.createAll([
+        {
+          userId: newUsers[i].id,
+          tokenId: "MYR"
+        },
+        {
+          userId: newUsers[i].id,
+          tokenId: "AUSD"
+        }
+      ])
     }
 
     for (let i = 0; i < postSeedData.length; i++) {
@@ -158,6 +165,7 @@ export class InitDatabase extends BootMixin(
     const authenticationRepository = await this.getRepository(AuthenticationRepository)
     const authCredentialRepository = await this.getRepository(AuthCredentialRepository)
     const refreshTokenRepository = await this.getRepository(RefreshTokenRepository)
+    const tipRepository = await this.getRepository(TipRepository)
 
     await likeRepository.deleteAll()
     await conversationRepository.deleteAll()
@@ -179,6 +187,7 @@ export class InitDatabase extends BootMixin(
     await authenticationRepository.deleteAll()
     await authCredentialRepository.deleteAll()
     await refreshTokenRepository.deleteAll()
+    await tipRepository.deleteAll()
 
     return {
       tokenRepository,
