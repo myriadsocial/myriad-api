@@ -324,7 +324,7 @@ export class TransactionController {
       })
     }
 
-    // Set queueu if there is multiplet transactions
+    // Set queueu if there is multiple transactions
     let count: number = nonce.toJSON();
     
     if (!foundQueue) {
