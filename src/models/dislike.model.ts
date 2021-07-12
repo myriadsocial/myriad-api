@@ -23,16 +23,15 @@ export class Dislike extends Entity {
 
   @property({
     type: 'boolean',
-    required: false,
-    default: false,
+    required: false
   })
-  status?: boolean;
+  status: boolean;
 
-  @belongsTo(() => User)
-  userId: string;
+  @belongsTo(() => User, {name: 'user'})
+  user_id: string;
 
-  @belongsTo(() => Post)
-  postId: string;
+  @belongsTo(() => Post, {name: 'post'})
+  post_id: string;
 
   constructor(data?: Partial<Dislike>) {
     super(data);

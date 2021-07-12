@@ -31,29 +31,31 @@ export class Comment extends Entity {
     type: 'date',
     required: false,
   })
-  createdAt?: string;
+  created_at?: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt?: string;
+  updated_at?: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  deletedAt?: string;
+  deleted_at?: string;
 
-  @belongsTo(() => Post, {}, {
+  @belongsTo(() => Post, {
+    name: 'post'
+  }, {
     mongodb: {
       dataType: 'ObjectId'
     }
   })
-  postId: string;
+  post_id: string;
 
-  @belongsTo(() => User)
-  userId: string;
+  @belongsTo(() => User, {name: 'user'})
+  user_id: string;
 
   constructor(data?: Partial<Comment>) {
     super(data);

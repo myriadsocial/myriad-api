@@ -29,7 +29,7 @@ export class AuthCredential extends Entity {
     type: 'string',
     required: true,
   })
-  authenticationId: string;
+  authentication_id: string;
 
   // Define well-known properties here
 

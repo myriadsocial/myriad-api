@@ -33,25 +33,25 @@ export class Conversation extends Entity {
     required: false,
     default: 0
   })
-  unreadMessage: number
+  unread_message: number
 
   @property({
     type: 'date',
     required: false,
   })
-  createdAt: string
+  created_at: string
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt: string
+  updated_at: string
 
-  @belongsTo(() => User)
-  userId: string;
+  @belongsTo(() => User, {name: 'user'})
+  user_id: string;
 
-  @belongsTo(() => Post)
-  postId: string;
+  @belongsTo(() => Post, {name: 'post'})
+  post_id: string;
 
   constructor(data?: Partial<Conversation>) {
     super(data);

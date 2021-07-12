@@ -32,15 +32,15 @@ export class Authentication extends Entity {
   @property({
     type: 'boolean',
   })
-  emailVerified?: boolean;
+  email_verified?: boolean;
 
   @property({
     type: 'string',
   })
-  verificationToken?: string;
+  verification_token?: string;
 
-  @hasOne(() => AuthCredential)
-  authCredential: AuthCredential;
+  @hasOne(() => AuthCredential, {keyTo: 'authentication_id'})
+  credential: AuthCredential;
 
   [prop: string]: any;
 
