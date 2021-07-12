@@ -25,11 +25,11 @@ export class AuthenticationRepository extends DefaultCrudRepository<
   ) {
     super(Authentication, dataSource);
     this.authCredential = this.createHasOneRepositoryFactoryFor(
-      'authCredential',
+      'credential',
       authCredentialRepositoryGetter,
     );
     this.registerInclusionResolver(
-      'authCredential',
+      'credential',
       this.authCredential.inclusionResolver,
     );
   }

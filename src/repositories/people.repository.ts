@@ -35,7 +35,7 @@ export class PeopleRepository extends DefaultCrudRepository<
     this.registerInclusionResolver('tips', this.tips.inclusionResolver);
     this.posts = this.createHasManyRepositoryFactoryFor('posts', postRepositoryGetter,);
     this.registerInclusionResolver('posts', this.posts.inclusionResolver);
-    this.userCredential = this.createHasOneRepositoryFactoryFor('userCredential', userCredentialRepositoryGetter);
-    this.registerInclusionResolver('userCredential', this.userCredential.inclusionResolver);
+    this.userCredential = this.createHasOneRepositoryFactoryFor('credential', userCredentialRepositoryGetter);
+    this.registerInclusionResolver('credential', this.userCredential.inclusionResolver);
   }
 }
