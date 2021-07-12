@@ -8,7 +8,7 @@ import {Entity, model, property} from '@loopback/repository';
     }
   }
 })
-export class UserToken extends Entity {
+export class UserCrypto extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -23,22 +23,22 @@ export class UserToken extends Entity {
     type: 'string',
     required: true,
   })
-  userId: string;
+  user_id: string;
 
   @property({
     type: 'string',
     required: true,
   })
-  tokenId: string;
+  cryptocurrency_id: string;
 
 
-  constructor(data?: Partial<UserToken>) {
+  constructor(data?: Partial<UserCrypto>) {
     super(data);
   }
 }
 
-export interface UserTokenRelations {
+export interface UserCryptoRelations {
   // describe navigational properties here
 }
 
-export type UserTokenWithRelations = UserToken & UserTokenRelations;
+export type UserCryptoWithRelations = UserCrypto & UserCryptoRelations;
