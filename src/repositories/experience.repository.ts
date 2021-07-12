@@ -31,8 +31,8 @@ export class ExperienceRepository extends DefaultCrudRepository<
     protected savedExperienceRepositoryGetter: Getter<SavedExperienceRepository>,
   ) {
     super(Experience, dataSource);
-    this.savedUsers = this.createHasManyThroughRepositoryFactoryFor('savedUsers', userRepositoryGetter, savedExperienceRepositoryGetter,);
-    this.registerInclusionResolver('savedUsers', this.savedUsers.inclusionResolver);
+    this.savedUsers = this.createHasManyThroughRepositoryFactoryFor('users', userRepositoryGetter, savedExperienceRepositoryGetter,);
+    this.registerInclusionResolver('users', this.savedUsers.inclusionResolver);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter,);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
   }
