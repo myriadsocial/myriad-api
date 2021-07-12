@@ -38,19 +38,19 @@ export class Tag extends Entity {
     type: 'date',
     required: false,
   })
-  createdAt: string;
+  created_at: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt: string;
+  updated_at: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  deletedAt?: string;
+  deleted_at?: string;
 
   constructor(data?: Partial<Tag>) {
     super(data);

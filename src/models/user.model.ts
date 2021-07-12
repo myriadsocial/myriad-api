@@ -1,15 +1,15 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
 import {Conversation} from './conversation.model';
-import {DetailTransaction} from './detail-transaction.model';
+import {TransactionHistory} from './transaction-history.model';
 import {Experience} from './experience.model';
 import {Friend} from './friend.model';
 import {Like} from './like.model';
 import {Post} from './post.model';
 import {SavedExperience} from './saved-experience.model';
-import {Token} from './token.model';
+import {Cryptocurrency} from './cryptocurrency.model';
 import {UserCredential} from './user-credential.model';
-import {UserToken} from './user-token.model';
+import {UserCrypto} from './user-crypto.model';
 
 @model({
   settings: {
@@ -52,7 +52,7 @@ export class User extends Entity {
     required: false,
     default: ''
   })
-  profilePictureURL?: string;
+  profile_picture_url?: string;
 
   @property({
     type: 'boolean',
@@ -85,7 +85,7 @@ export class User extends Entity {
     itemType: 'string',
     required: false
   })
-  fcmTokens?: string[]
+  fcm_tokens?: string[]
 
   @property({
     type: 'boolean',
@@ -98,55 +98,67 @@ export class User extends Entity {
     type: 'date',
     required: false,
   })
-  createdAt?: string;
+  created_at?: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt?: string;
+  updated_at?: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  deletedAt?: string;
+  deleted_at?: string;
 
-  @hasMany(() => Experience)
+  @hasMany(() => Experience, {keyTo: 'user_id'})
   experiences: Experience[];
 
-  @hasMany(() => Comment)
+  @hasMany(() => Comment, {keyTo: 'user_id'})
   comments: Comment[];
 
-  @hasMany(() => Experience, {through: {model: () => SavedExperience, keyFrom: 'user_id', keyTo: 'experience_id'}})
+  @hasMany(() => Experience, {
+    through: {
+      model: () => SavedExperience, 
+      keyFrom: 'user_id', 
+      keyTo: 'experience_id'
+    }
+  })
   savedExperiences: Experience[];
 
-  @hasMany(() => UserCredential)
-  userCredentials: UserCredential[];
+  @hasMany(() => UserCredential, {keyTo: 'user_id'})
+  credentials: UserCredential[];
 
   @hasMany(() => Post, {keyTo: 'walletAddress'})
   posts: Post[];
 
-  @hasMany(() => Like)
+  @hasMany(() => Like, {keyTo: 'user_id'})
   likes: Like[];
 
-  @hasMany(() => Conversation)
+  @hasMany(() => Conversation, {keyTo: 'user_id'})
   conversations: Conversation[];
 
   @hasMany(() => User, {
     through: {
       model: () => Friend,
-      keyFrom: 'requestorId',
-      keyTo: 'friendId'
+      keyFrom: 'requestor_id',
+      keyTo: 'friend_id'
     }
   })
   friends: User[];
 
-  @hasMany(() => DetailTransaction)
-  detailTransactions: DetailTransaction[];
+  @hasMany(() => TransactionHistory, {keyTo: 'user_id'})
+  transactionHistories: TransactionHistory[];
 
-  @hasMany(() => Token, {through: {model: () => UserToken}})
-  tokens: Token[];
+  @hasMany(() => Cryptocurrency, {
+    through: {
+      model: () => UserCrypto,
+      keyFrom: 'user_id',
+      keyTo: 'cryptocurrency_id'
+    }
+  })
+  cryptocurrencies: Cryptocurrency[];
 
   constructor(data?: Partial<User>) {
     super(data);

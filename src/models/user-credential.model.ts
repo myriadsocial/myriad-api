@@ -19,24 +19,24 @@ export class UserCredential extends Entity {
       dataType: 'ObjectId'
     }
   })
-  id?: string;
+  id: string;
 
   @property({
     type: 'boolean',
     required: true,
   })
-  isVerified: boolean;
+  is_verified: boolean;
 
   @property({
     type: 'string'
   })
   platform: string
 
-  @belongsTo(() => People)
-  peopleId: string;
+  @belongsTo(() => People, {name: 'people'})
+  people_id: string;
 
-  @belongsTo(() => User)
-  userId: string
+  @belongsTo(() => User, {name: 'user'})
+  user_id: string
 
   constructor(data?: Partial<UserCredential>) {
     super(data);

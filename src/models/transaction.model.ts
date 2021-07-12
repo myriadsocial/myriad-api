@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {Token, TokenWithRelations} from './token.model';
+import {Cryptocurrency, CryptocurrencyWithRelations} from './cryptocurrency.model';
 import {User} from './user.model';
 
 @model({
@@ -25,7 +25,7 @@ export class Transaction extends Entity {
     type: 'string',
     required: true,
   })
-  trxHash: string;
+  trx_hash: string;
 
   @belongsTo(() => User, {name: 'fromUser'})
   from: string;
@@ -49,28 +49,33 @@ export class Transaction extends Entity {
     type: 'boolean',
     required: false
   })
-  hasSendToUser: boolean
+  has_sent_to_user: boolean
 
   @property({
     type: 'date',
     required: false
   })
-  createdAt?: string;
+  created_at?: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt?: string;
+  updated_at?: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  deletedAt?: string;
+  deleted_at?: string;
 
-  @belongsTo(() => Token)
-  tokenId: string;
+  @property({
+    type: 'string'
+  })
+  post_id?: string
+
+  @belongsTo(() => Cryptocurrency, {name: 'cryptocurrency'})
+  cryptocurrency_id: string;
 
   constructor(data?: Partial<Transaction>) {
     super(data);
@@ -79,7 +84,7 @@ export class Transaction extends Entity {
 
 export interface TransactionRelations {
   // describe navigational properties here
-  token: TokenWithRelations
+  cryptocurrency: CryptocurrencyWithRelations
 }
 
 export type TransactionWithRelations = Transaction & TransactionRelations;

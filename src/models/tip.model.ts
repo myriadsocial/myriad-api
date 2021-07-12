@@ -1,4 +1,5 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {Cryptocurrency} from './cryptocurrency.model';
 
 @model({
   settings: {
@@ -6,7 +7,7 @@ import {Entity, model, property} from '@loopback/repository';
     mongodb: {
       collection: 'tips'
     },
-    hiddenProperties: ['totalTips']
+    hiddenProperties: ['total_tips']
   }
 })
 export class Tip extends Entity {
@@ -19,23 +20,25 @@ export class Tip extends Entity {
     }
   })
   id?: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  tokenId: string;
-
   @property({
     type: 'number',
     required: true,
   })
-  totalTips: number;
+  total_tips: number;
 
   @property({
     type: 'string',
   })
-  peopleId?: string;
+  people_id?: string;
+  
+  @property({
+    type: 'object',
+    required: false
+  })
+  cryptocurrency: Cryptocurrency
+
+  @belongsTo(() => Cryptocurrency, {name: 'cryptocurrency'})
+  cryptocurrency_id: string;
 
   constructor(data?: Partial<Tip>) {
     super(data);
@@ -44,6 +47,7 @@ export class Tip extends Entity {
 
 export interface TipRelations {
   // describe navigational properties here
+  cryptocurrency: Cryptocurrency
 }
 
 export type TipWithRelations = Tip & TipRelations;
