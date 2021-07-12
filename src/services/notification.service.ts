@@ -1,17 +1,17 @@
-import {BindingScope, injectable} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import { BindingScope, injectable } from '@loopback/core';
+import { repository } from '@loopback/repository';
 import * as firebaseAdmin from 'firebase-admin';
-import {NotificationType} from '../enums';
-import {Notification} from '../models';
-import {NotificationRepository, UserRepository} from '../repositories';
+import { NotificationType } from '../enums';
+import { Notification } from '../models';
+import { NotificationRepository, UserRepository } from '../repositories';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class NotificationService {
   constructor(
     @repository(UserRepository)
-    public userRepository: UserRepository,
+    protected userRepository: UserRepository,
     @repository(NotificationRepository)
-    public notificationRepository: NotificationRepository,
+    protected notificationRepository: NotificationRepository,
   ) { }
 
   async sendFriendRequest(from: string, to: string): Promise<boolean> {
@@ -25,12 +25,12 @@ export class NotificationService {
     notification.from = fromUser.id
     notification.to = toUser.id
     notification.message = fromUser.name + ' sent you friend request'
-    notification.createdAt = new Date().toString()
+    notification.created_at = new Date().toString()
 
     const createdNotification = await this.notificationRepository.create(notification)
     if (createdNotification == null) return false
 
-    const registrationTokens = toUser.fcmTokens;
+    const registrationTokens = toUser.fcm_tokens;
     if (registrationTokens == null) return true
 
     const message = {
@@ -57,12 +57,12 @@ export class NotificationService {
     notification.from = fromUser.id
     notification.to = toUser.id
     notification.message = fromUser.name + ' accept your friend request'
-    notification.createdAt = new Date().toString()
+    notification.created_at = new Date().toString()
 
     const createdNotification = await this.notificationRepository.create(notification)
     if (createdNotification == null) return false
 
-    const registrationTokens = toUser.fcmTokens;
+    const registrationTokens = toUser.fcm_tokens;
     if (registrationTokens == null) return true
 
     const message = {
