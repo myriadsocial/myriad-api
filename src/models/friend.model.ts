@@ -35,19 +35,19 @@ export class Friend extends Entity {
     type: 'date',
     required: false
   })
-  createdAt?: string
+  created_at?: string
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt?: string
+  updated_at?: string
 
-  @belongsTo(() => User)
-  friendId: string;
+  @belongsTo(() => User, {name: 'friend'})
+  friend_id: string;
 
-  @belongsTo(() => User)
-  requestorId: string;
+  @belongsTo(() => User, {name: 'requestor'})
+  requestor_id: string;
 
   constructor(data?: Partial<Friend>) {
     super(data);

@@ -59,19 +59,19 @@ export class Experience extends Entity {
     type: 'date',
     required: false,
   })
-  createdAt?: string;
+  created_at?: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt?: string;
+  updated_at?: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  deletedAt?: string;
+  deleted_at?: string;
 
   @property({
     type: 'boolean',
@@ -85,11 +85,17 @@ export class Experience extends Entity {
   })
   description: string
 
-  @belongsTo(() => User)
-  userId: string;
+  @belongsTo(() => User, {name: 'user'})
+  user_id: string;
 
-  @hasMany(() => User, {through: {model: () => SavedExperience, keyFrom: 'experience_id', keyTo: 'user_id'}})
-  savedUsers: User[];
+  @hasMany(() => User, {
+    through: {
+      model: () => SavedExperience, 
+      keyFrom: 'experience_id', 
+      keyTo: 'user_id'
+    }
+  })
+  users: User[];
 
   constructor(data?: Partial<Experience>) {
     super(data);

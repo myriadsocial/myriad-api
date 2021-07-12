@@ -23,16 +23,15 @@ export class Like extends Entity {
 
   @property({
     type: 'boolean',
-    required: false,
-    default: false
+    required: false
   })
   status: boolean;
 
-  @belongsTo(() => Post)
-  postId: string;
+  @belongsTo(() => Post, {name: 'post'})
+  post_id: string;
 
-  @belongsTo(() => User)
-  userId: string;
+  @belongsTo(() => User, {name: 'user'})
+  user_id: string;
 
   constructor(data?: Partial<Like>) {
     super(data);
