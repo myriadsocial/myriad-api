@@ -42,8 +42,8 @@ export class PublicMetric extends Entity {
   })
   comment: number;
 
-  @belongsTo(() => Post)
-  postId: string;
+  @belongsTo(() => Post, {name: 'post'})
+  post_id: string;
 
   constructor(data?: Partial<PublicMetric>) {
     super(data);

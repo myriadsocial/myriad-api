@@ -5,7 +5,7 @@ import {Authentication} from '.';
   settings: {
       strictObjectIDCoercion: true,
       mongodb: {
-        collection: 'refresh-tokens'
+        collection: 'refreshTokens'
       }
   }
 })
@@ -20,14 +20,14 @@ export class RefreshToken extends Entity {
   })
   id?: string;
 
-  @belongsTo(() => Authentication)
-  authenticationId: string;
+  @belongsTo(() => Authentication, {name: 'authentication'})
+  authentication_id: string;
 
   @property({
     type: 'string',
     required: true,
   })
-  refreshToken: string;
+  refresh_token: string;
 
   // Define well-known properties here
 

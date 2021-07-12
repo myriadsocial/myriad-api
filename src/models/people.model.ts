@@ -1,15 +1,14 @@
 import {Entity, hasMany, hasOne, model, property} from '@loopback/repository';
 import {Post} from './post.model';
 import {UserCredential} from './user-credential.model';
-import {Tip} from './tip.model';
+import {Tip, TipWithRelations} from './tip.model';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
       collection: 'people'
-    },
-    hiddenProperties: ["totalTips"]
+    }
   }
 })
 export class People extends Entity {
@@ -59,13 +58,13 @@ export class People extends Entity {
   })
   hide?: boolean
   
-  @hasOne(() => UserCredential)
-  userCredential: UserCredential;
+  @hasOne(() => UserCredential, {keyTo: 'people_id'})
+  credential: UserCredential;
 
-  @hasMany(() => Post)
+  @hasMany(() => Post, {keyTo: 'people_id'})
   posts: Post[];
 
-  @hasMany(() => Tip)
+  @hasMany(() => Tip, {keyTo: 'people_id'})
   tips: Tip[];
 
   constructor(data?: Partial<People>) {

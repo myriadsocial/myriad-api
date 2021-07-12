@@ -13,6 +13,7 @@ import {People} from './people.model';
 import {PublicMetric} from './public-metric.model';
 import {User} from './user.model';
 import {TipsReceived, PlatformUser, PlatformPublicMetric} from '../interfaces'
+import {Transaction} from './transaction.model';
 
 @model({
   settings: {
@@ -20,7 +21,7 @@ import {TipsReceived, PlatformUser, PlatformPublicMetric} from '../interfaces'
     mongodb: {
       collection: 'posts',
     },
-    hiddenProperties: ['walletAddress', 'totalComment', 'totalLiked', 'totalDisliked']
+    hiddenProperties: ['walletAddress', 'total_comment', 'total_liked', 'total_disliked']
   }
 })
 export class Post extends Entity {
@@ -32,7 +33,7 @@ export class Post extends Entity {
       dataType: 'ObjectId',
     },
   })
-  id?: string;
+  id: string;
 
   @property({
     type: 'array',
@@ -46,7 +47,7 @@ export class Post extends Entity {
     type: 'object',
     required: false,
   })
-  platformUser?: PlatformUser;
+  platform_user?: PlatformUser;
 
   @property({
     type: 'string',
@@ -59,7 +60,7 @@ export class Post extends Entity {
     type: 'object',
     required: false
   })
-  platformPublicMetric?: PlatformPublicMetric
+  platform_metric?: PlatformPublicMetric
 
   @property({
     type: 'string',
@@ -77,14 +78,14 @@ export class Post extends Entity {
     type: 'string',
     required: false,
   })
-  textId?: string;
+  text_id?: string;
 
   @property({
     type: 'boolean',
     required: false,
     default: false
   })
-  hasMedia: boolean
+  has_media: boolean
 
   @property({
     type: 'string',
@@ -103,54 +104,53 @@ export class Post extends Entity {
     type: 'date',
     required: false,
   })
-  platformCreatedAt: string
-
-  @property({
-    type: 'number',
-    required: false,
-    default: 0
-  })
-  totalComment?: number
-
-  @property({
-    type: 'number',
-    required: false,
-    default: 0
-  })
-  totalLiked?: number
-
-  @property({
-    type: 'number',
-    required: false,
-    default: 0
-  })
-  totalDisliked?: number
-
-  @property({
-    type: 'date',
-    required: false,
-  })
-  createdAt?: string;
-
-  @property({
-    type: 'date',
-    required: false,
-  })
-  updatedAt?: string;
-
-  @property({
-    type: 'date',
-    required: false,
-  })
-  deletedAt?: string;
+  platform_created_at: string
 
   @property({
     type: 'array',
     itemType: 'string',
-    required: false,
     default: []
   })
-  importBy: string[]
+  import_by: string[]
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 0
+  })
+  total_comment?: number
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 0
+  })
+  total_liked?: number
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 0
+  })
+  total_disliked?: number
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  created_at?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  updated_at?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  deleted_at?: string;
 
   @property({
     type: 'array',
@@ -158,30 +158,40 @@ export class Post extends Entity {
     required: false,
     default: [
       {
-        tokenId: "MYR",
-        totalTips: 0
+        cryptocurrency_id: "MYR",
+        total_tips: 0
+      },
+      {
+        cryptocurrency_id: "AUSD",
+        total_tips: 0
       }
     ]
   })
-  tipsReceived: TipsReceived[]
+  tips_received: TipsReceived[]
+
+  @belongsTo(() => User, {name: 'importer'})
+  importer_id: string
 
   @belongsTo(() => User, {name: 'user'})
   walletAddress: string;
 
-  @hasMany(() => Comment)
+  @hasMany(() => Comment, {keyTo: 'post_id'})
   comments: Comment[];
 
-  @belongsTo(() => People)
-  peopleId: string;
+  @belongsTo(() => People, {name: 'people'})
+  people_id: string;
 
-  @hasMany(() => Like)
+  @hasMany(() => Like, {keyTo: 'post_id'})
   likes: Like[];
 
-  @hasOne(() => PublicMetric)
-  publicMetric: PublicMetric;
+  @hasOne(() => PublicMetric, {keyTo: 'post_id'})
+  metric: PublicMetric;
 
-  @hasMany(() => Dislike)
+  @hasMany(() => Dislike, {keyTo: 'post_id'})
   dislikes: Dislike[];
+
+  @hasMany(() => Transaction, {keyTo: 'post_id'})
+  transactions: Transaction[];
 
   constructor(data?: Partial<Post>) {
     super(data);
