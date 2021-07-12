@@ -1,6 +1,6 @@
 import {HttpErrors} from '@loopback/rest';
 import * as isEmail from 'isemail';
-import {Credentials} from '../repositories'
+import {Credentials} from '../../repositories'
 
 export function validateCredentials(credentials: Credentials) {
   if (!isEmail.validate(credentials.email)) {

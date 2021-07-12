@@ -3,9 +3,9 @@ import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
-import {PasswordHasherBindings} from '../keys';
-import {Authentication, AuthenticationWithRelations} from '../models';
-import {Credentials, AuthenticationRepository} from '../repositories/authentication.repository';
+import {PasswordHasherBindings} from '../../keys';
+import {Authentication, AuthenticationWithRelations} from '../../models';
+import {Credentials, AuthenticationRepository} from '../../repositories/authentication.repository';
 import {BcryptHasher} from './hash.password.service';
 
 export class MyAuthService implements UserService<Authentication, Credentials>{
