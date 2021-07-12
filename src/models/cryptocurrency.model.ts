@@ -1,16 +1,16 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
-import {DetailTransaction} from './detail-transaction.model';
+import {TransactionHistory} from './transaction-history.model';
 import {Transaction} from './transaction.model';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'tokens'
+      collection: 'cryptocurrencies'
     }
   }
 })
-export class Token extends Entity {
+export class Cryptocurrency extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -23,19 +23,19 @@ export class Token extends Entity {
     type: 'string',
     required: true,
   })
-  token_name: string;
+  name: string;
 
   @property({
     type: 'string',
     required: true
   })
-  token_image: string
+  image: string
 
   @property({
     type: 'number',
     required: true,
   })
-  token_decimal: number;
+  decimal: number;
 
   @property({
     type: 'number',
@@ -49,19 +49,25 @@ export class Token extends Entity {
   })
   rpc_address: string;
 
-  @hasMany(() => Transaction)
+  @property({
+    type: 'boolean',
+    required: true
+  })
+  is_native: boolean
+
+  @hasMany(() => Transaction, {keyTo: 'cryptocurrency_id'})
   transactions: Transaction[];
 
-  @hasMany(() => DetailTransaction)
-  detailTransactions: DetailTransaction[];
+  @hasMany(() => TransactionHistory, {keyTo: 'cryptocurrency_id'})
+  transactionHistories: TransactionHistory[];
 
-  constructor(data?: Partial<Token>) {
+  constructor(data?: Partial<Cryptocurrency>) {
     super(data);
   }
 }
 
-export interface TokenRelations {
+export interface CryptocurrencyRelations {
   // describe navigational properties here
 }
 
-export type TokenWithRelations = Token & TokenRelations;
+export type CryptocurrencyWithRelations = Cryptocurrency & CryptocurrencyRelations;
