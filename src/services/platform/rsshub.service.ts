@@ -1,6 +1,6 @@
 import {inject, Provider} from '@loopback/core';
 import {getService} from '@loopback/service-proxy';
-import {RsshubDataSource} from '../datasources';
+import {RsshubDataSource} from '../../datasources';
 
 export interface Rsshub {
   // this is where you define the Node.js methods that will be

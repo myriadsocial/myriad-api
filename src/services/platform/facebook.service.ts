@@ -1,6 +1,6 @@
 import {inject, Provider} from '@loopback/core';
 import {getService} from '@loopback/service-proxy';
-import {FacebookDataSource} from '../datasources';
+import {FacebookDataSource} from '../../datasources';
 
 export interface Facebook {
   // this is where you define the Node.js methods that will be

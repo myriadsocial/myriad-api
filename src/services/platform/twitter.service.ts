@@ -1,6 +1,6 @@
 import {inject, Provider} from '@loopback/core';
 import {getService} from '@loopback/service-proxy';
-import {TwitterDataSource} from '../datasources';
+import {TwitterDataSource} from '../../datasources';
 
 export interface Twitter {
   // this is where you define the Node.js methods that will be

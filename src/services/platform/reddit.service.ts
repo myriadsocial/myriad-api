@@ -1,6 +1,6 @@
 import {inject, Provider} from '@loopback/core';
 import {getService} from '@loopback/service-proxy';
-import {RedditDataSource} from '../datasources';
+import {RedditDataSource} from '../../datasources';
 
 export interface Reddit {
   // this is where you define the Node.js methods that will be
