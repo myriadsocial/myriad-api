@@ -269,7 +269,6 @@ export class UserCredentialController {
       if (getImageString[i] == '"') break
 
       profile_image_url += getImageString[i];
-
     }
 
     // Get name
