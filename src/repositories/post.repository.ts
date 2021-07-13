@@ -57,7 +57,9 @@ export class PostRepository extends DefaultCrudRepository<
     @repository.getter('PublicMetricRepository')
     protected publicMetricRepositoryGetter: Getter<PublicMetricRepository>,
     @repository.getter('DislikeRepository')
-    protected dislikeRepositoryGetter: Getter<DislikeRepository>, @repository.getter('TransactionRepository') protected transactionRepositoryGetter: Getter<TransactionRepository>,
+    protected dislikeRepositoryGetter: Getter<DislikeRepository>, 
+    @repository.getter('TransactionRepository') 
+    protected transactionRepositoryGetter: Getter<TransactionRepository>,
   ) {
     super(Post, dataSource);
     this.transactions = this.createHasManyRepositoryFactoryFor('transactions', transactionRepositoryGetter,);
