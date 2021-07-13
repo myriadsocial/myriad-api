@@ -29,7 +29,9 @@ export class TransactionRepository extends DefaultCrudRepository<
     @repository.getter('UserRepository')
     protected userRepositoryGetter: Getter<UserRepository>,
     @repository.getter('TokenRepository')
-    protected tokenRepositoryGetter: Getter<TokenRepository>, @repository.getter('PostRepository') protected postRepositoryGetter: Getter<PostRepository>,
+    protected tokenRepositoryGetter: Getter<TokenRepository>,
+    @repository.getter('PostRepository') 
+    protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(Transaction, dataSource);
     this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter,);
