@@ -12,7 +12,6 @@ import {
   param,
   patch,
   post,
-  put,
   requestBody,
   response
 } from '@loopback/rest';
@@ -30,7 +29,7 @@ import {
   UserRepository
 } from '../repositories';
 import {Facebook, Reddit, Rsshub, Twitter} from '../services';
-import {authenticate} from '@loopback/authentication';
+// import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class PeopleController {

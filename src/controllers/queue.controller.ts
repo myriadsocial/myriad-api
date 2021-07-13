@@ -12,7 +12,7 @@ import {
 } from '@loopback/rest';
 import {Queue} from '../models';
 import {QueueRepository} from '../repositories';
-import {authenticate} from '@loopback/authentication';
+// import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class QueueController {

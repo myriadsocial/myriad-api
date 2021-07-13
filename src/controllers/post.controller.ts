@@ -30,7 +30,7 @@ import {
 } from '../repositories';
 import {Reddit, Twitter, Facebook} from '../services';
 import {DetailTips, DetailUrl, TipsReceived, URL} from '../interfaces'
-import {authenticate} from '@loopback/authentication';
+// import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class PostController {
@@ -688,6 +688,7 @@ export class PostController {
     if (!foundPeople) {
       const people = await this.peopleRepository.create({
         ...platformUser,
+        platform,
         hide: false
       })
       return this.createPostWithPublicMetric({

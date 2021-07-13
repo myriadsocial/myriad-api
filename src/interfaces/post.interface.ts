@@ -19,7 +19,8 @@ export interface Post {
   link?: string,
   createdAt?: string,
   peopleId?: string,
-  platformCreatedAt?: string
+  platformCreatedAt?: string,
+  updatedAt?: string
 }
 
 export interface PlatformPublicMetric {

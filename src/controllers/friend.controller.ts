@@ -21,7 +21,7 @@ import {
 import {Friend} from '../models';
 import {FriendRepository} from '../repositories';
 import {NotificationService} from '../services';
-import {authenticate} from '@loopback/authentication';
+// import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class FriendController {

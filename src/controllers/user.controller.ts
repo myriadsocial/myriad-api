@@ -23,7 +23,7 @@ import {
 import {NotificationService} from '../services';
 import { FriendId } from '../interfaces';
 import dotenv from 'dotenv';
-import {authenticate} from '@loopback/authentication';
+// import {authenticate} from '@loopback/authentication';
 
 dotenv.config()
 

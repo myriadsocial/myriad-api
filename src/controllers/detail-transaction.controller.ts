@@ -13,13 +13,12 @@ import {
   param,
   patch,
   post,
-  put,
   requestBody,
   response
 } from '@loopback/rest';
 import {DetailTransaction} from '../models';
 import {DetailTransactionRepository} from '../repositories';
-import {authenticate} from '@loopback/authentication';
+// import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class DetailTransactionController {
