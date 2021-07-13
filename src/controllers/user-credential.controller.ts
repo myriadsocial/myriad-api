@@ -1,3 +1,4 @@
+import {options} from "@acala-network/api";
 import {inject} from '@loopback/core';
 import {
   Filter,
@@ -15,22 +16,21 @@ import {
   requestBody,
   response
 } from '@loopback/rest';
-import {WsProvider, ApiPromise , Keyring} from '@polkadot/api';
+import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
+// import {authenticate} from '@loopback/authentication';
+import {ApiOptions} from '@polkadot/api/types';
 import {encodeAddress} from '@polkadot/keyring';
 import {u8aToHex} from '@polkadot/util';
 import {KeypairType} from '@polkadot/util-crypto/types';
+import dotenv from 'dotenv';
+import {PlatformType} from '../enums';
+import {User, VerifyUser} from '../interfaces';
 import {UserCredential} from '../models';
 import {
-  DetailTransactionRepository, PeopleRepository,TokenRepository, TransactionRepository, UserCredentialRepository,
-  UserTokenRepository, TipRepository
+  DetailTransactionRepository, PeopleRepository, TipRepository, TokenRepository, TransactionRepository, UserCredentialRepository,
+  UserTokenRepository
 } from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
-import {User, VerifyUser} from '../interfaces'
-import dotenv from 'dotenv';
-import {options} from "@acala-network/api";
-// import {authenticate} from '@loopback/authentication';
-import {ApiOptions} from '@polkadot/api/types';
-import { PlatformType } from '../enums';
 
 dotenv.config();
 
@@ -235,7 +235,7 @@ export class UserCredentialController {
     const fbUser = usernameSplit[3];
     const postId = usernameSplit[5];
 
-    const data = await this.facebookService.getActions(fbUser, postId);  
+    const data = await this.facebookService.getActions(fbUser, postId);
     const foundIndex = data.search(publicKey);
     const getPublicKey = data.substring(foundIndex, foundIndex + 66);
 
@@ -247,7 +247,7 @@ export class UserCredentialController {
 
     const findSocialMedialPostingIndex = data.search('"SocialMediaPosting"');
     const post = data.substring(findSocialMedialPostingIndex);
-    
+
     // Get platform account id
     const findEntityIdIndex = post.search('"entity_id"');
     const entityIndex = post.substring(findEntityIdIndex + '"entity_id"'.length + 2);
@@ -269,7 +269,7 @@ export class UserCredentialController {
       if (getImageString[i] == '"') break
 
       profile_image_url += getImageString[i];
-      
+
     }
 
     // Get name
@@ -278,9 +278,9 @@ export class UserCredentialController {
     for (let i = findIndex - 1; i > 0; i--) {
       if (post[i] === ":") break;
       if (post[i] == '"' || post[i] == ",") continue
-      
+
       arrayName.unshift(post[i])
-    } 
+    }
 
     // Get username
     const getUrl = post.substring(findIndex + `"identifier":${platform_account_id},"url":"`.length);
@@ -296,7 +296,7 @@ export class UserCredentialController {
 
     if (!userName && !arrayName.join('')) {
       throw new HttpErrors.NotFound('Cannot find specified post')
-    } 
+    }
 
     return {
       name: arrayName.join(''),
@@ -310,11 +310,11 @@ export class UserCredentialController {
 
   async createCredential(user: User) {
     const {
-      name, 
-      platform_account_id, 
-      username, 
-      platform, 
-      profile_image_url, 
+      name,
+      platform_account_id,
+      username,
+      platform,
+      profile_image_url,
       publicKey
     } = user
 
@@ -446,7 +446,7 @@ export class UserCredentialController {
     if (foundPeople && foundPeople.tips && foundPeople.tips.length > 0) {
       const rpc_address = "wss://acala-mandala.api.onfinality.io/public-ws"
       const address_format = 42
-      
+
       // Initialize rpc web socket
       const provider = new WsProvider(rpc_address)
       const api = await new ApiPromise(
@@ -457,8 +457,8 @@ export class UserCredentialController {
 
       // ACA to AUSD conversion
       const ausdAcaPoolString = (await api.query.dex.liquidityPool([
-        { Token: 'ACA' },
-        { Token: 'AUSD'}
+        {Token: 'ACA'},
+        {Token: 'AUSD'}
       ])).toString();
 
       const ausdAcaPool = ausdAcaPoolString.substring(1, ausdAcaPoolString.length - 1)
