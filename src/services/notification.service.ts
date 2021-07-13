@@ -1,8 +1,8 @@
 import {BindingScope, injectable, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {NotificationType} from '../enums';
-import {Notification} from '../models';
-import {NotificationRepository, UserRepository} from '../repositories';
+import {Comment, Notification} from '../models';
+import {NotificationRepository, PostRepository, UserRepository} from '../repositories';
 import { FCMService } from './fcm.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -10,6 +10,8 @@ export class NotificationService {
   constructor(
     @repository(UserRepository)
     public userRepository: UserRepository,
+    @repository(PostRepository)
+    public postRepository: PostRepository,
     @repository(NotificationRepository)
     public notificationRepository: NotificationRepository,
     @service(FCMService)
@@ -26,13 +28,17 @@ export class NotificationService {
     notification.type = NotificationType.FRIEND_REQUEST
     notification.from = fromUser.id
     notification.to = toUser.id
-    notification.message = fromUser.name + ' sent you friend request'
+    notification.referenceId = toUser.id
+    notification.message = 'sent you friend request'
     notification.createdAt = new Date().toString()
 
     const createdNotification = await this.notificationRepository.create(notification)
     if (createdNotification == null) return false
 
-    await this.fcmService.sendNotification(toUser.fcmTokens, 'Friend Request', notification.message)
+    const title = 'Friend Request Accepted'
+    const body = fromUser.name + ' ' + notification.message
+    await this.fcmService.sendNotification(toUser.fcmTokens, title, body)
+
     return true
   }
 
@@ -46,13 +52,41 @@ export class NotificationService {
     notification.type = NotificationType.FRIEND_ACCEPT
     notification.from = fromUser.id
     notification.to = toUser.id
-    notification.message = fromUser.name + ' accept your friend request'
+    notification.referenceId = toUser.id
+    notification.message = 'accept your friend request'
     notification.createdAt = new Date().toString()
 
     const createdNotification = await this.notificationRepository.create(notification)
     if (createdNotification == null) return false
 
-    await this.fcmService.sendNotification(toUser.fcmTokens, 'Friend Request Accepted', notification.message)
+    const title = 'Friend Request Accepted'
+    const body = fromUser.name + ' ' + notification.message
+    await this.fcmService.sendNotification(toUser.fcmTokens, title, body)
+
+    return true
+  }
+
+  async sendPostComment(from: string, comment: Comment): Promise<boolean> {
+    const fromUser = await this.userRepository.findById(from);
+    if (fromUser == null) return false
+    const toUser = await this.postRepository.user(comment.postId);
+    if (toUser == null) return false
+
+    const notification = new Notification()
+    notification.type = NotificationType.POST_COMMENT
+    notification.from = fromUser.id
+    notification.to = toUser.id
+    notification.referenceId = comment.id
+    notification.message = 'commented: ' + comment.text
+    notification.createdAt = new Date().toString()
+
+    const createdNotification = await this.notificationRepository.create(notification)
+    if (createdNotification == null) return false
+
+    const title = 'New Comment'
+    const body = fromUser.name + ' ' + notification.message
+    await this.fcmService.sendNotification(toUser.fcmTokens, title, body)
+
     return true
   }
 }
