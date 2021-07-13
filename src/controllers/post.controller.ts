@@ -18,6 +18,8 @@ import {
 import {Keyring} from '@polkadot/api';
 import {u8aToHex} from '@polkadot/util';
 import {KeypairType} from '@polkadot/util-crypto/types';
+import {PlatformType} from '../enums';
+import {DetailTips, DetailUrl, TipsReceived, URL} from '../interfaces';
 import {People, Post, PublicMetric, User} from '../models';
 import {Wallet} from '../models/wallet.model';
 import {
@@ -28,9 +30,7 @@ import {
   TagRepository,
   UserCredentialRepository
 } from '../repositories';
-import {Reddit, Twitter, Facebook} from '../services';
-import {DetailTips, DetailUrl, TipsReceived, URL} from '../interfaces'
-import { PlatformType } from '../enums';
+import {Facebook, Reddit, Twitter} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -160,7 +160,7 @@ export class PostController {
   ): Promise<Post> {
     const splitURL = post.url.split('/')
     const checkPlatform = splitURL[2].toLowerCase().split('.');
-    
+
     let platform: string;
     let textId: string;
 
@@ -211,7 +211,7 @@ export class PostController {
         ...foundPost.importBy,
         importer
       ]
-      
+
       return foundPost
     }
 
@@ -221,7 +221,7 @@ export class PostController {
         const tags = tweet.tags.filter((tag: string) => {
           return !postTags.map((postTag: string) => postTag.toLowerCase()).includes(tag.toLowerCase())
         })
-        
+
         newPost = {
           ...tweet,
           tags: [
@@ -233,7 +233,7 @@ export class PostController {
         break;
 
       case PlatformType.REDDIT:
-        const redditPost = await this.reddit(textId);        
+        const redditPost = await this.reddit(textId);
 
         newPost = {
           ...redditPost,
@@ -245,10 +245,10 @@ export class PostController {
       case PlatformType.FACEBOOK:
         if (!username) {
           throw new HttpErrors.UnprocessableEntity("Username not found!")
-        } 
+        }
 
         const facebookPost = await this.facebook(username, textId);
-        
+
         newPost = {
           ...facebookPost,
           tags: postTags,
@@ -258,7 +258,7 @@ export class PostController {
 
         break;
 
-      default: 
+      default:
         throw new HttpErrors.NotFound("Cannot found the specified url!")
     }
 
@@ -490,10 +490,10 @@ export class PostController {
 
   async twitter(textId: string) {
     const {
-      id_str, 
-      full_text, 
-      created_at, 
-      user, 
+      id_str,
+      full_text,
+      created_at,
+      user,
       entities,
       extended_entities
     } = await this.twitterService.getActions(`1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`);
@@ -551,7 +551,7 @@ export class PostController {
     const redditPost = data.data.children[0].data
     const assets: string[] = [];
 
-    let hasMedia:boolean = false;
+    let hasMedia: boolean = false;
 
     if (redditPost.post_hint === "image") {
       assets.push(redditPost.url)
@@ -598,7 +598,7 @@ export class PostController {
       }
     }
   }
-  
+
   async facebook(username: string, textId: string) {
     let platform_account_id: string = '';
     let profile_image_url: string = '';
@@ -606,7 +606,7 @@ export class PostController {
     const data = await this.facebookService.getActions(username, textId);
     const findSocialMedialPostingIndex = data.search('"SocialMediaPosting"');
     const post = data.substring(findSocialMedialPostingIndex);
-    
+
     // Get platform created at
     const findDateCreatedIndex = post.search('"dateCreated"');
     const findDateModifiedIndex = post.search('"dateModified"');
@@ -630,9 +630,9 @@ export class PostController {
 
     for (let i = 0; i < getImageString.length; i++) {
       if (getImageString[i] == '"') break
-      
+
       profile_image_url += getImageString[i];
-      
+
     }
 
     // Get name
@@ -643,7 +643,7 @@ export class PostController {
       if (post[i] == '"' || post[i] == ",") continue
 
       arrayName.unshift(post[i])
-    } 
+    }
 
     // Get username
     const getUrl = post.substring(findIndex + `"identifier":${platform_account_id},"url":"`.length);
@@ -652,7 +652,7 @@ export class PostController {
 
     for (let i = 0; getUrl.length; i++) {
       if (getUrl[i] === '"') break
-      
+
       url += getUrl[i]
     }
 
@@ -663,7 +663,7 @@ export class PostController {
       platform: PlatformType.FACEBOOK,
       textId: textId,
       platformCreatedAt: platformCreatedAt,
-      link:  `https://facebook.com/${username}/posts/${textId}`,
+      link: `https://facebook.com/${username}/posts/${textId}`,
       platformUser: {
         name: arrayName.join(''),
         username: userName,

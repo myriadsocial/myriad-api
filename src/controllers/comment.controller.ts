@@ -1,3 +1,5 @@
+// import {authenticate} from '@loopback/authentication';
+import {service} from '@loopback/core';
 import {
   Filter,
   FilterExcludingWhere,
@@ -15,9 +17,7 @@ import {
 } from '@loopback/rest';
 import {Comment, Post, User} from '../models';
 import {CommentRepository} from '../repositories';
-// import {authenticate} from '@loopback/authentication';
-import { service } from '@loopback/core';
-import { NotificationService } from '../services';
+import {NotificationService} from '../services';
 
 // @authenticate("jwt")
 export class CommentController {
