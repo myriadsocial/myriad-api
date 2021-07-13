@@ -476,7 +476,7 @@ export class UserCredentialController {
 
         // Get transacation payment info
         const {weight, partialFee} = await api.tx.currencies
-          .transfer(encodeTo, {TOKEN: tokenId}, Number(totalTips))
+          .transfer(encodeTo, {Token: tokenId}, Number(totalTips))
           .paymentInfo(from);
 
         const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13
@@ -497,7 +497,7 @@ export class UserCredentialController {
         }
 
         const transfer = api.tx.currencies
-          .transfer(encodeTo, {TOKEN: tokenId}, Number(totalTips) - txFee);
+          .transfer(encodeTo, {Token: tokenId}, Number(totalTips) - txFee);
 
         const txHash = await transfer.signAndSend(from);
 
