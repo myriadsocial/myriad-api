@@ -43,7 +43,7 @@ export class NotificationService {
     if (toUser == null) return false
 
     const notification = new Notification()
-    notification.type = NotificationType.FRIEND_REQUEST
+    notification.type = NotificationType.FRIEND_ACCEPT
     notification.from = fromUser.id
     notification.to = toUser.id
     notification.message = fromUser.name + ' accept your friend request'
