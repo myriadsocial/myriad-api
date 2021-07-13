@@ -652,7 +652,6 @@ export class PostController {
 
     for (let i = 0; getUrl.length; i++) {
       if (getUrl[i] === '"') break
-
       url += getUrl[i]
     }
 
