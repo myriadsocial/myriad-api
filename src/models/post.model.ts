@@ -157,11 +157,8 @@ export class Post extends Entity {
     type: 'array',
     itemType: 'object',
     required: false,
+    //TODO: move to single file config
     default: [
-      {
-        tokenId: "MYR",
-        totalTips: 0
-      },
       {
         tokenId: "AUSD",
         totalTips: 0
