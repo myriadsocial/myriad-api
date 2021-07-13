@@ -5,10 +5,10 @@ import {
   repository
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Token, Transaction, TransactionRelations, User, Post} from '../models';
+import {Post, Token, Transaction, TransactionRelations, User} from '../models';
+import {PostRepository} from './post.repository';
 import {TokenRepository} from './token.repository';
 import {UserRepository} from './user.repository';
-import {PostRepository} from './post.repository';
 
 export class TransactionRepository extends DefaultCrudRepository<
   Transaction,
@@ -30,7 +30,7 @@ export class TransactionRepository extends DefaultCrudRepository<
     protected userRepositoryGetter: Getter<UserRepository>,
     @repository.getter('TokenRepository')
     protected tokenRepositoryGetter: Getter<TokenRepository>,
-    @repository.getter('PostRepository') 
+    @repository.getter('PostRepository')
     protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(Transaction, dataSource);

@@ -14,15 +14,15 @@ import {
   People,
   Post,
   PostRelations,
-  PublicMetric,
-  User, Transaction} from '../models';
+  PublicMetric, Transaction, User
+} from '../models';
 import {CommentRepository} from './comment.repository';
 import {DislikeRepository} from './dislike.repository';
 import {LikeRepository} from './like.repository';
 import {PeopleRepository} from './people.repository';
 import {PublicMetricRepository} from './public-metric.repository';
-import {UserRepository} from './user.repository';
 import {TransactionRepository} from './transaction.repository';
+import {UserRepository} from './user.repository';
 
 export class PostRepository extends DefaultCrudRepository<
   Post,
@@ -57,8 +57,8 @@ export class PostRepository extends DefaultCrudRepository<
     @repository.getter('PublicMetricRepository')
     protected publicMetricRepositoryGetter: Getter<PublicMetricRepository>,
     @repository.getter('DislikeRepository')
-    protected dislikeRepositoryGetter: Getter<DislikeRepository>, 
-    @repository.getter('TransactionRepository') 
+    protected dislikeRepositoryGetter: Getter<DislikeRepository>,
+    @repository.getter('TransactionRepository')
     protected transactionRepositoryGetter: Getter<TransactionRepository>,
   ) {
     super(Post, dataSource);
