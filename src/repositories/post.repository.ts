@@ -15,14 +15,14 @@ import {
   Post,
   PostRelations,
   PublicMetric,
-  User
-} from '../models';
+  User, Transaction} from '../models';
 import {CommentRepository} from './comment.repository';
 import {DislikeRepository} from './dislike.repository';
 import {LikeRepository} from './like.repository';
 import {PeopleRepository} from './people.repository';
 import {PublicMetricRepository} from './public-metric.repository';
 import {UserRepository} from './user.repository';
+import {TransactionRepository} from './transaction.repository';
 
 export class PostRepository extends DefaultCrudRepository<
   Post,
@@ -42,6 +42,8 @@ export class PostRepository extends DefaultCrudRepository<
 
   public readonly dislikes: HasManyRepositoryFactory<Dislike, typeof Post.prototype.id>;
 
+  public readonly transactions: HasManyRepositoryFactory<Transaction, typeof Post.prototype.id>;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('CommentRepository')
@@ -55,9 +57,11 @@ export class PostRepository extends DefaultCrudRepository<
     @repository.getter('PublicMetricRepository')
     protected publicMetricRepositoryGetter: Getter<PublicMetricRepository>,
     @repository.getter('DislikeRepository')
-    protected dislikeRepositoryGetter: Getter<DislikeRepository>,
+    protected dislikeRepositoryGetter: Getter<DislikeRepository>, @repository.getter('TransactionRepository') protected transactionRepositoryGetter: Getter<TransactionRepository>,
   ) {
     super(Post, dataSource);
+    this.transactions = this.createHasManyRepositoryFactoryFor('transactions', transactionRepositoryGetter,);
+    this.registerInclusionResolver('transactions', this.transactions.inclusionResolver);
     this.dislikes = this.createHasManyRepositoryFactoryFor('dislikes', dislikeRepositoryGetter,);
     this.registerInclusionResolver('dislikes', this.dislikes.inclusionResolver);
     this.publicMetric = this.createHasOneRepositoryFactoryFor('publicMetric', publicMetricRepositoryGetter);

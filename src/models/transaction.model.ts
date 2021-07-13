@@ -1,6 +1,7 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {Token, TokenWithRelations} from './token.model';
 import {User} from './user.model';
+import {Post} from './post.model';
 
 @model({
   settings: {
@@ -71,6 +72,9 @@ export class Transaction extends Entity {
 
   @belongsTo(() => Token)
   tokenId: string;
+
+  @belongsTo(() => Post)
+  postId: string;
 
   constructor(data?: Partial<Transaction>) {
     super(data);
