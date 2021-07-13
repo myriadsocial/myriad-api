@@ -13,6 +13,7 @@ import {People} from './people.model';
 import {PublicMetric} from './public-metric.model';
 import {User} from './user.model';
 import {TipsReceived, PlatformUser, PlatformPublicMetric} from '../interfaces'
+import {Transaction} from './transaction.model';
 
 @model({
   settings: {
@@ -160,6 +161,10 @@ export class Post extends Entity {
       {
         tokenId: "MYR",
         totalTips: 0
+      },
+      {
+        tokenId: "AUSD",
+        totalTips: 0
       }
     ]
   })
@@ -182,6 +187,9 @@ export class Post extends Entity {
 
   @hasMany(() => Dislike)
   dislikes: Dislike[];
+
+  @hasMany(() => Transaction)
+  transactions: Transaction[];
 
   constructor(data?: Partial<Post>) {
     super(data);

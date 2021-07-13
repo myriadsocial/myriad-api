@@ -5,9 +5,10 @@ import {
   repository
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Token, Transaction, TransactionRelations, User} from '../models';
+import {Token, Transaction, TransactionRelations, User, Post} from '../models';
 import {TokenRepository} from './token.repository';
 import {UserRepository} from './user.repository';
+import {PostRepository} from './post.repository';
 
 export class TransactionRepository extends DefaultCrudRepository<
   Transaction,
@@ -21,14 +22,18 @@ export class TransactionRepository extends DefaultCrudRepository<
 
   public readonly token: BelongsToAccessor<Token, typeof Transaction.prototype.id>;
 
+  public readonly post: BelongsToAccessor<Post, typeof Transaction.prototype.id>;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserRepository')
     protected userRepositoryGetter: Getter<UserRepository>,
     @repository.getter('TokenRepository')
-    protected tokenRepositoryGetter: Getter<TokenRepository>,
+    protected tokenRepositoryGetter: Getter<TokenRepository>, @repository.getter('PostRepository') protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(Transaction, dataSource);
+    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter,);
+    this.registerInclusionResolver('post', this.post.inclusionResolver);
     this.token = this.createBelongsToAccessorFor('token', tokenRepositoryGetter,);
     this.registerInclusionResolver('token', this.token.inclusionResolver);
     this.fromUser = this.createBelongsToAccessorFor('fromUser', userRepositoryGetter,);
