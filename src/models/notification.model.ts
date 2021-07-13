@@ -38,6 +38,12 @@ export class Notification extends Entity {
 
   @property({
     type: 'string',
+    required: false,
+  })
+  referenceId?: string;
+  
+  @property({
+    type: 'string',
     required: true,
   })
   message: string;

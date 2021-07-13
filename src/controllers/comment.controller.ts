@@ -16,12 +16,16 @@ import {
 import {Comment, Post, User} from '../models';
 import {CommentRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import { service } from '@loopback/core';
+import { NotificationService } from '../services';
 
 // @authenticate("jwt")
 export class CommentController {
   constructor(
     @repository(CommentRepository)
     public commentRepository: CommentRepository,
+    @service(NotificationService)
+    public notificationService: NotificationService,
   ) { }
 
   @post('/comments')
@@ -42,11 +46,19 @@ export class CommentController {
     })
     comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    return this.commentRepository.create({
+    const result = await this.commentRepository.create({
       ...comment,
       createdAt: new Date().toString(),
       updatedAt: new Date().toString()
     });
+
+    try {
+      await this.notificationService.sendPostComment(comment.userId, result);
+    } catch (error) {
+      // ignored
+    }
+
+    return result
   }
 
   @get('/comments')
