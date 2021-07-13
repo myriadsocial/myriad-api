@@ -30,6 +30,7 @@ import dotenv from 'dotenv';
 import {options} from "@acala-network/api";
 // import {authenticate} from '@loopback/authentication';
 import {ApiOptions} from '@polkadot/api/types';
+import { PlatformType } from '../enums';
 
 dotenv.config();
 
@@ -86,7 +87,8 @@ export class UserCredentialController {
     const {publicKey, platform, username} = verifyUser;
 
     switch (platform) {
-      case 'twitter':
+      // TODO: move to single constant enum platform
+      case PlatformType.TWITTER:
         // Fetch data user from twitter api
         const twitterUser = await this.twitter(username, publicKey);
 
@@ -97,7 +99,8 @@ export class UserCredentialController {
 
         return true
 
-      case 'reddit':
+      // TODO: move to single constant enum platform
+      case PlatformType.REDDIT:
         const redditUser = await this.reddit(username, publicKey);
         const redditCredential = await this.createCredential(redditUser)
 
@@ -105,7 +108,8 @@ export class UserCredentialController {
 
         return true
 
-      case 'facebook':
+      // TODO: move to single constant enum platform
+      case PlatformType.FACEBOOK:
         const facebookUser = await this.facebook(username, publicKey);
 
         const facebookCredential = await this.createCredential(facebookUser);
@@ -195,7 +199,7 @@ export class UserCredentialController {
     return {
       name: user.name,
       platform_account_id: user.id,
-      platform: "twitter",
+      platform: PlatformType.TWITTER, // TODO: move to single constant enum platform,
       username: user.username,
       profile_image_url: user.profile_image_url ? user.profile_image_url.replace('normal', '400x400') : '',
       publicKey: publicKey
@@ -219,7 +223,7 @@ export class UserCredentialController {
     return {
       name: redditUser.subreddit.title ? redditUser.subreddit.title : redditUser.name,
       platform_account_id: 't2_' + redditUser.id,
-      platform: 'reddit',
+      platform: PlatformType.REDDIT, // TODO: move to single constant enum platform,
       username: redditUser.name,
       profile_image_url: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : '',
       publicKey: publicKey
@@ -263,9 +267,9 @@ export class UserCredentialController {
 
     for (let i = 0; i < getImageString.length; i++) {
       if (getImageString[i] == '"') break
-      else {
-        profile_image_url += getImageString[i];
-      }
+
+      profile_image_url += getImageString[i];
+      
     }
 
     // Get name
@@ -273,9 +277,9 @@ export class UserCredentialController {
 
     for (let i = findIndex - 1; i > 0; i--) {
       if (post[i] === ":") break;
-
       if (post[i] == '"' || post[i] == ",") continue
-      else arrayName.unshift(post[i])
+      
+      arrayName.unshift(post[i])
     } 
 
     // Get username
@@ -285,9 +289,7 @@ export class UserCredentialController {
 
     for (let i = 0; getUrl.length; i++) {
       if (getUrl[i] === '"') break
-      else {
-        url += getUrl[i]
-      }
+      url += getUrl[i]
     }
 
     const userName = url.replace(/\\/g, '').split('/')[3];
@@ -301,7 +303,7 @@ export class UserCredentialController {
       username: userName,
       platform_account_id: platform_account_id,
       profile_image_url: profile_image_url.split('\\').join(''),
-      platform: 'facebook',
+      platform: PlatformType.FACEBOOK, // TODO: move to single constant enum platform
       publicKey: publicKey
     }
   }
@@ -405,7 +407,7 @@ export class UserCredentialController {
           name: person.name,
           username: person.username,
           platform_account_id: person.id,
-          platform: 'twitter',
+          platform: PlatformType.TWITTER,
           profile_image_url: person.profile_image_url.replace('normal', '400x400'),
           hide: false,
         })
@@ -480,8 +482,6 @@ export class UserCredentialController {
 
         // Get tx fee in AUSD
         const txFee = Math.floor(txFeeInAca * ausdPerAca * 10 ** 12);
-
-        console.log(txFee)
 
         const transfer = api.tx.currencies
           .transfer(encodeTo, {Token: tokenId}, Number(totalTips) - txFee);

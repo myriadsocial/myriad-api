@@ -30,6 +30,7 @@ import {
 } from '../repositories';
 import {Reddit, Twitter, Facebook} from '../services';
 import {DetailTips, DetailUrl, TipsReceived, URL} from '../interfaces'
+import { PlatformType } from '../enums';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -215,7 +216,7 @@ export class PostController {
     }
 
     switch (platform) {
-      case 'twitter':
+      case PlatformType.TWITTER:
         const tweet = await this.twitter(textId);
         const tags = tweet.tags.filter((tag: string) => {
           return !postTags.map((postTag: string) => postTag.toLowerCase()).includes(tag.toLowerCase())
@@ -231,7 +232,7 @@ export class PostController {
         }
         break;
 
-      case 'reddit':
+      case PlatformType.REDDIT:
         const redditPost = await this.reddit(textId);        
 
         newPost = {
@@ -241,7 +242,7 @@ export class PostController {
         }
         break;
 
-      case 'facebook':
+      case PlatformType.FACEBOOK:
         if (!username) {
           throw new HttpErrors.UnprocessableEntity("Username not found!")
         } 
@@ -527,7 +528,7 @@ export class PostController {
     }
 
     return {
-      platform: 'twitter',
+      platform: PlatformType.TWITTER,
       createdAt: new Date().toString(),
       textId: id_str,
       text: full_text,
@@ -580,7 +581,7 @@ export class PostController {
     const {data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json')
 
     return {
-      platform: 'reddit',
+      platform: PlatformType.REDDIT,
       createdAt: new Date().toString(),
       textId: textId,
       platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
@@ -617,9 +618,8 @@ export class PostController {
 
     for (let i = 0; i < entityIndex.length; i++) {
       if (entityIndex[i] == '"') break
-      else {
-        platform_account_id += entityIndex[i]
-      }
+
+      platform_account_id += entityIndex[i]
     }
 
     // Get profile image url
@@ -630,9 +630,9 @@ export class PostController {
 
     for (let i = 0; i < getImageString.length; i++) {
       if (getImageString[i] == '"') break
-      else {
-        profile_image_url += getImageString[i];
-      }
+      
+      profile_image_url += getImageString[i];
+      
     }
 
     // Get name
@@ -640,9 +640,9 @@ export class PostController {
 
     for (let i = findIndex - 1; i > 0; i--) {
       if (post[i] === ":") break;
-
       if (post[i] == '"' || post[i] == ",") continue
-      else arrayName.unshift(post[i])
+
+      arrayName.unshift(post[i])
     } 
 
     // Get username
@@ -652,16 +652,15 @@ export class PostController {
 
     for (let i = 0; getUrl.length; i++) {
       if (getUrl[i] === '"') break
-      else {
-        url += getUrl[i]
-      }
+      
+      url += getUrl[i]
     }
 
     const userName = url.replace(/\\/g, '').split('/')[3]
 
     return {
       createdAt: new Date().toString(),
-      platform: "facebook",
+      platform: PlatformType.FACEBOOK,
       textId: textId,
       platformCreatedAt: platformCreatedAt,
       link:  `https://facebook.com/${username}/posts/${textId}`,
