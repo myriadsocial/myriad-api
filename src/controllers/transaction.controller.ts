@@ -288,7 +288,7 @@ export class TransactionController {
   }
 
   async sentMyriadReward(userId: string):Promise<void> {
-    const provider = process.env.LOCAL_WS_RPC || "";
+    const provider = process.env.MYRIAD_WS_RPC || "";
     const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX);
     const api = await polkadotApi(provider);
     const keyring = new Keyring({
