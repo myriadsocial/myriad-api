@@ -26,7 +26,8 @@ import {
   UserTokenRepository,
   AuthenticationRepository,
   AuthCredentialRepository,
-  RefreshTokenRepository
+  RefreshTokenRepository,
+  TipRepository
 } from './repositories';
 import people from './seed-data/people.json';
 import posts from './seed-data/posts.json';
@@ -69,7 +70,8 @@ export class InitDatabase extends BootMixin(
 
     const userSeedData = this.prepareUserSeed(users);
 
-    const newToken = await tokenRepository.createAll(tokens)
+    await tokenRepository.createAll(tokens)
+    
     const newUsers = await userRepository.createAll(userSeedData)
     const newPeople = await peopleRepository.createAll(people)
 
@@ -158,6 +160,7 @@ export class InitDatabase extends BootMixin(
     const authenticationRepository = await this.getRepository(AuthenticationRepository)
     const authCredentialRepository = await this.getRepository(AuthCredentialRepository)
     const refreshTokenRepository = await this.getRepository(RefreshTokenRepository)
+    const tipRepository = await this.getRepository(TipRepository)
 
     await likeRepository.deleteAll()
     await conversationRepository.deleteAll()
@@ -179,6 +182,7 @@ export class InitDatabase extends BootMixin(
     await authenticationRepository.deleteAll()
     await authCredentialRepository.deleteAll()
     await refreshTokenRepository.deleteAll()
+    await tipRepository.deleteAll()
 
     return {
       tokenRepository,
@@ -215,33 +219,15 @@ export class InitDatabase extends BootMixin(
     for (let i = 0; i < people.length; i++) {
       const person = people[i]
       const personAccountId = person.platform_account_id
-      const personUsername = person.username
-      const personPlatform = person.platform
 
       for (let j = 0; j < posts.length; j++) {
         const post: Post = posts[j]
         const postAccountId = post.platformUser.platform_account_id
-        const postAccountUsername = post.platformUser.username
 
-        post.createdAt = new Date().toString()
-
-        if (personPlatform === 'twitter') {
-          if (personAccountId === postAccountId) {
-            post.peopleId = person.id
-          }
-        }
-
-        if (personPlatform === 'reddit') {
-          if (personAccountId === postAccountId) {
-            post.peopleId = person.id
-          }
-        }
-
-        if (personPlatform === 'facebook') {
-          if (personUsername === postAccountUsername) {
-            post.peopleId = person.id
-            post.platformCreatedAt = new Date().toString()
-          }
+        if (personAccountId === postAccountId) {
+          post.peopleId = person.id
+          post.createdAt = new Date().toString()
+          post.updatedAt = new Date().toString()
         }
       }
     }

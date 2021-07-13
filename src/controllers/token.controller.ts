@@ -19,7 +19,7 @@ import {
 } from '@loopback/rest';
 import {Token} from '../models';
 import {TokenRepository} from '../repositories';
-import {authenticate} from '@loopback/authentication';
+// import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class TokenController {

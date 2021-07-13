@@ -10,7 +10,6 @@ import {
   param,
   patch,
   post,
-  put,
   requestBody,
   response
 } from '@loopback/rest';
@@ -18,7 +17,7 @@ import {
   Conversation, Post, User
 } from '../models';
 import {ConversationRepository} from '../repositories';
-import {authenticate} from '@loopback/authentication';
+// import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class ConversationController {

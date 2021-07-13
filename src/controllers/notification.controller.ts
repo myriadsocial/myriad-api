@@ -13,13 +13,12 @@ import {
   param,
   patch,
   post,
-  put,
   requestBody,
   response
 } from '@loopback/rest';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
-import {authenticate} from '@loopback/authentication';
+// import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class NotificationsController {
