@@ -55,6 +55,13 @@ export class User extends Entity {
   profilePictureURL?: string;
 
   @property({
+    type: 'string',
+    required: false,
+    default: null
+  })
+  bannerImageUrl?: string
+
+  @property({
     type: 'boolean',
     required: false,
     default: false,
