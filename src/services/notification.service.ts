@@ -1,9 +1,9 @@
-import {BindingScope, injectable} from '@loopback/core';
+import {BindingScope, injectable, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import * as firebaseAdmin from 'firebase-admin';
 import {NotificationType} from '../enums';
 import {Notification} from '../models';
 import {NotificationRepository, UserRepository} from '../repositories';
+import { FCMService } from './fcm.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class NotificationService {
@@ -12,6 +12,8 @@ export class NotificationService {
     public userRepository: UserRepository,
     @repository(NotificationRepository)
     public notificationRepository: NotificationRepository,
+    @service(FCMService)
+    public fcmService: FCMService,
   ) { }
 
   async sendFriendRequest(from: string, to: string): Promise<boolean> {
@@ -30,19 +32,7 @@ export class NotificationService {
     const createdNotification = await this.notificationRepository.create(notification)
     if (createdNotification == null) return false
 
-    const registrationTokens = toUser.fcmTokens;
-    if (registrationTokens == null) return true
-
-    const message = {
-      notification: {
-        title: 'Friend Request',
-        body: notification.message
-      },
-      tokens: registrationTokens,
-    };
-
-    await firebaseAdmin.messaging().sendMulticast(message);
-
+    await this.fcmService.sendNotification(toUser.fcmTokens, 'Friend Request', notification.message)
     return true
   }
 
@@ -62,19 +52,7 @@ export class NotificationService {
     const createdNotification = await this.notificationRepository.create(notification)
     if (createdNotification == null) return false
 
-    const registrationTokens = toUser.fcmTokens;
-    if (registrationTokens == null) return true
-
-    const message = {
-      notification: {
-        title: 'Friend Request Accepted',
-        body: notification.message
-      },
-      tokens: registrationTokens,
-    };
-
-    await firebaseAdmin.messaging().sendMulticast(message);
-
+    await this.fcmService.sendNotification(toUser.fcmTokens, 'Friend Request Accepted', notification.message)
     return true
   }
 }

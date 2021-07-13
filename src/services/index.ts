@@ -1,4 +1,5 @@
 export * from './facebook.service';
+export * from './fcm.service';
 export * from './notification.service';
 export * from './reddit.service';
 export * from './rsshub.service';

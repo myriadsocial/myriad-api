@@ -15,7 +15,7 @@ import {
   FetchContentSocialMediaJob, RemovedContentJob
 } from './jobs';
 import {MySequence} from './sequence';
-import {NotificationService} from './services';
+import {FCMService, NotificationService} from './services';
 
 import {AuthenticationComponent} from '@loopback/authentication';
 import {JWTAuthenticationComponent} from './jwt-authentication-component'
@@ -57,6 +57,7 @@ export class MyriadApiApplication extends BootMixin(
     // this.add(createBindingFromClass(UpdatePostsJob))
 
     // Add services
+    this.service(FCMService)
     this.service(NotificationService)
 
     this.projectRoot = __dirname;
