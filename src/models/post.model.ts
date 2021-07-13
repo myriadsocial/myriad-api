@@ -6,14 +6,14 @@ import {
   model,
   property
 } from '@loopback/repository';
+import {PlatformPublicMetric, PlatformUser, TipsReceived} from '../interfaces';
 import {Comment} from './comment.model';
 import {Dislike} from './dislike.model';
 import {Like} from './like.model';
 import {People} from './people.model';
 import {PublicMetric} from './public-metric.model';
-import {User} from './user.model';
-import {TipsReceived, PlatformUser, PlatformPublicMetric} from '../interfaces'
 import {Transaction} from './transaction.model';
+import {User} from './user.model';
 
 @model({
   settings: {
