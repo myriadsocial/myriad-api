@@ -415,6 +415,7 @@ export class UserCredentialController {
     }
   }
 
+  //TODO: use dynamic currency from db
   async transferTips(credential: UserCredential): Promise<void> {
     const keyring = new Keyring({
       type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
