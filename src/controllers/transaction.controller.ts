@@ -328,12 +328,10 @@ export class TransactionController {
     let count: number = nonce.toJSON();
     
     if (!foundQueue) {
-      const queue = await this.queueRepository.create({
+      await this.queueRepository.create({
         id: "admin",
-        count
+        count: count + 1
       })
-
-      await this.queueRepository.updateById(queue.id, {count: count + 1});
     } else {
       if (foundQueue.count >= nonce.toJSON()) {
         count = foundQueue.count
