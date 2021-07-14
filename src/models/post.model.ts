@@ -163,10 +163,6 @@ export class Post extends Entity {
         tokenId: "AUSD",
         totalTips: 0
       },
-      {
-        tokenId: "AUSD",
-        totalTips: 0
-      }
     ]
   })
   tipsReceived: TipsReceived[]
