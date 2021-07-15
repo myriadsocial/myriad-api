@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myriad-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: myriad-api
+  template:
+    metadata:
+      labels:
+        name: myriad-api
+    spec:
+      containers:
+      - name: myriad-api
+        image: myriadsocial/myriad-api:1.0.0
+        command: []
+        env:
+          - name: PORT
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: PORT
+          - name: MYRIAD_WS_RPC
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MYRIAD_WS_RPC
+          - name: MYRIAD_CRYPTO
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MYRIAD_CRYPTO_TYPE
+
+          - name: MYRIAD_ADDRESS_PREFIX
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MYRIAD_CRYPTO_TYPE
+          - name: MYRIAD_FAUCET_MNEMONIC
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MYRIAD_FAUCET_MNEMONIC
+          - name: MYRIAD_ACCOUNT_DEPOSIT
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MYRIAD_ACCOUNT_DEPOSIT
+          - name: MONGO_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MONGO_HOST
+          - name: MONGO_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MONGO_PORT
+          - name: MONGO_USER
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MONGO_USER
+          - name: MONGO_PASSWORD
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MONGO_PASSWORD
+          - name: MONGO_DATABASE
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: MONGO_DATABASE
+
+          - name: FIREBASE_PROJECT_ID
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: FIREBASE_PROJECT_ID
+          - name: FIREBASE_CLIENT_EMAIL
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: FIREBASE_CLIENT_EMAIL
+          - name: FIREBASE_PRIVATE_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: FIREBASE_PRIVATE_KEY
+          - name: TWITTER_BEARER_TOKEN
+            valueFrom:
+              configMapKeyRef:
+                name: application-configs
+                key: TWITTER_BEARER_TOKEN

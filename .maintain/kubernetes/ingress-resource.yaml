@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-resource
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: 35.187.229.120.nip.io
+    http:
+      paths:
+      - backend:
+          serviceName: hello-app
+          servicePort: 8080
+        path: /hello
+      - backend:
+          serviceName: hello-app2
+          servicePort: 8181
+        path: /hello2
