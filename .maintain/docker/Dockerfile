@@ -8,9 +8,9 @@ LABEL social.myriad.api.image.authors="1@myriad.social" \
   social.myriad.api.image.vendor="Myriadsocial" \
   social.myriad.api.image.title="myriadsocial/myriad-api" \
   social.myriad.api.image.description="myriad-api" \
-  social.myriad.api.image.source="https://github.com/myriadsocial/myriad-api/blob/${VCS_REF}/.maintain/docker/Dockerfile" \
   social.myriad.api.image.revision="${VCS_REF}" \
   social.myriad.api.image.created="${BUILD_DATE}" \
+  social.myriad.api.image.source="https://github.com/myriadsocial/myriad-api/blob/${VCS_REF}/.maintain/docker/Dockerfile" \
   social.myriad.api.image.documentation="https://github.com/myriadsocial/myriad-api/tree/${VCS_REF}"
 
 # Change default user name
