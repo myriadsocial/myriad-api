@@ -1,5 +1,7 @@
 {
-  "editor.rulers": [80],
+  "editor.rulers": [
+    80
+  ],
   "editor.tabCompletion": "on",
   "editor.tabSize": 2,
   "editor.trimAutoWhitespace": true,
@@ -8,7 +10,6 @@
     "source.organizeImports": true,
     "source.fixAll.eslint": true
   },
-
   "files.exclude": {
     "**/.DS_Store": true,
     "**/.git": true,
@@ -19,7 +20,6 @@
   },
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-
   "typescript.tsdk": "./node_modules/typescript/lib",
   "typescript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": false,
   "typescript.preferences.quoteStyle": "single",
