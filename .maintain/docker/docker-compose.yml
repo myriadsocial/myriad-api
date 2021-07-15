@@ -4,16 +4,21 @@ services:
   api:
     image: myriadsocial/myriad-api:1.0.0
     environment:
+      - HOST=0.0.0.0
       - PORT=3000
-      - MYRIAD_WS_RPC=ws://parachain-alice:9944
+      - MYRIAD_WS_RPC=ws://node:9944
       - MYRIAD_CRYPTO_TYPE=sr25519
       - MYRIAD_ADDRESS_PREFIX=214
-      - MYRIAD_FAUCET_MNEMONIC=gown bless stove mind foam nephew also rebel live half setup thunder
+      - MYRIAD_FAUCET_MNEMONIC=bottom drive obey lake curtain smoke basket hold race lonely fit walk//Dave
       - MONGO_HOST=mongo
       - MONGO_PORT=27017
       - MONGO_USER=api
       - MONGO_PASSWORD=passw0rd
       - MONGO_DATABASE=myriad
+      - TOKEN_SECRET_KEY=passw0rd
+      - TOKEN_EXPIRES_IN=36000
+      - REFRESH_TOKEN_SECRET_KEY=passw0rd
+      - REFRESH_TOKEN_EXPIRES_IN=216000
       - FIREBASE_PROJECT_ID=
       - FIREBASE_CLIENT_EMAIL=
       - FIREBASE_PRIVATE_KEY=
@@ -22,7 +27,7 @@ services:
       - 3001:3000
     networks:
       myriad:
-        ipv4_address: 172.27.1.7
+        ipv4_address: 172.27.1.4
         aliases:
           - api
 
