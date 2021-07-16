@@ -1,26 +1,33 @@
 # Check out https://hub.docker.com/_/node to select a new base image
-FROM node:10-slim
+FROM node:14-buster-slim
 
-# Set to a non-root built-in user `node`
-USER node
+# Change default user name
+RUN usermod -d /home/myriad -l myriad node && \
+  groupmod -n myriad node && \
+  mkdir -p /home/myriad && \
+  chown -R myriad:myriad /home/myriad
 
-# Create app directory (with user `node`)
-RUN mkdir -p /home/node/app
+# Set to a non-root built-in user `myriad`
+USER myriad
 
-WORKDIR /home/node/app
+# Create app directory (with user `myriad`)
+RUN mkdir -p /home/myriad/app
+
+WORKDIR /home/myriad/app
 
 # Install app dependencies
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
 # where available (npm@5+)
-COPY --chown=node package*.json ./
+COPY --chown=myriad package*.json ./
 
-RUN npm install
+RUN yarn install
 
 # Bundle app source code
-COPY --chown=node . .
+COPY --chown=myriad . .
 
-RUN npm run build
+RUN yarn run build
 
+ENV NODE_ENV=production
 # Bind to all network interfaces so that it can be mapped to the host OS
 ENV HOST=0.0.0.0 PORT=3000
 
