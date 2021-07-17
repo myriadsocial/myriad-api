@@ -8,20 +8,21 @@ const config = {
   crud: false,
   options: {
     headers: {
-      "user-agent": "Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion"
-    }
+      'user-agent':
+        'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
+    },
   },
   operations: [
     {
       template: {
         method: 'GET',
-        url: 'https://facebook.com/{pageId}/posts/{postId}'
+        url: 'https://facebook.com/{pageId}/posts/{postId}',
       },
       functions: {
-        getActions: ['pageId', 'postId']
-      }
-    }
-  ]
+        getActions: ['pageId', 'postId'],
+      },
+    },
+  ],
 };
 
 // Observe application's life cycle to disconnect the datasource when
@@ -29,8 +30,10 @@ const config = {
 // gracefully. The `stop()` method is inherited from `juggler.DataSource`.
 // Learn more at https://loopback.io/doc/en/lb4/Life-cycle.html
 @lifeCycleObserver('datasource')
-export class FacebookDataSource extends juggler.DataSource
-  implements LifeCycleObserver {
+export class FacebookDataSource
+  extends juggler.DataSource
+  implements LifeCycleObserver
+{
   static dataSourceName = 'facebook';
   static readonly defaultConfig = config;
 
