@@ -4,16 +4,17 @@ import {
   hasMany,
   hasOne,
   model,
-  property
+  property,
 } from '@loopback/repository';
-import {PlatformPublicMetric, PlatformUser, TipsReceived} from '../interfaces';
 import {Comment} from './comment.model';
 import {Dislike} from './dislike.model';
 import {Like} from './like.model';
-import {People} from './people.model';
+import {People, PeopleWithRelations} from './people.model';
 import {PublicMetric} from './public-metric.model';
-import {Transaction} from './transaction.model';
 import {User} from './user.model';
+import {Transaction} from './transaction.model';
+import {PlatformUser} from '../interfaces';
+import {PostTip} from './post-tip.model';
 
 @model({
   settings: {
@@ -21,8 +22,13 @@ import {User} from './user.model';
     mongodb: {
       collection: 'posts',
     },
-    hiddenProperties: ['walletAddress', 'totalComment', 'totalLiked', 'totalDisliked']
-  }
+    hiddenProperties: [
+      'walletAddress',
+      'totalComment',
+      'totalLiked',
+      'totalDisliked',
+    ],
+  },
 })
 export class Post extends Entity {
   @property({
@@ -33,13 +39,13 @@ export class Post extends Entity {
       dataType: 'ObjectId',
     },
   })
-  id?: string;
+  id: string;
 
   @property({
     type: 'array',
     itemType: 'string',
     required: false,
-    default: []
+    default: [],
   })
   tags: string[];
 
@@ -52,25 +58,21 @@ export class Post extends Entity {
   @property({
     type: 'string',
     required: false,
-    default: 'myriad'
+    default: 'myriad',
   })
-  platform?: string
-
-  @property({
-    type: 'object',
-    required: false
-  })
-  platformPublicMetric?: PlatformPublicMetric
+  platform?: string;
 
   @property({
     type: 'string',
-    required: false
+    required: false,
+    default: null,
   })
-  title?: string
+  title?: string;
 
   @property({
     type: 'string',
-    required: false
+    required: false,
+    default: null,
   })
   text?: string;
 
@@ -83,49 +85,58 @@ export class Post extends Entity {
   @property({
     type: 'boolean',
     required: false,
-    default: false
+    default: false,
   })
-  hasMedia: boolean
+  hasMedia?: boolean;
 
   @property({
     type: 'string',
-    required: false
+    required: false,
+    default: null,
   })
-  link?: string
+  link?: string;
 
   @property({
     type: 'array',
     itemType: 'string',
-    required: false
+    required: false,
+    default: [],
   })
-  assets?: string[]
+  assets?: string[];
 
   @property({
     type: 'date',
     required: false,
   })
-  platformCreatedAt: string
+  platformCreatedAt?: string;
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    default: [],
+  })
+  importBy: string[];
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
-  totalComment?: number
+  totalComment?: number;
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
-  totalLiked?: number
+  totalLiked?: number;
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
-  totalDisliked?: number
+  totalDisliked?: number;
 
   @property({
     type: 'date',
@@ -145,27 +156,10 @@ export class Post extends Entity {
   })
   deletedAt?: string;
 
-  @property({
-    type: 'array',
-    itemType: 'string',
-    required: false,
-    default: []
-  })
-  importBy: string[]
+  // TODO: Add new field to describe the first importer
+  @belongsTo(() => User, {name: 'importer'})
+  importerId: string;
 
-  @property({
-    type: 'array',
-    itemType: 'object',
-    required: false,
-    //TODO: move to single file config
-    default: [
-      {
-        tokenId: "AUSD",
-        totalTips: 0
-      },
-    ]
-  })
-  tipsReceived: TipsReceived[]
 
   @belongsTo(() => User, {name: 'user'})
   walletAddress: string;
@@ -179,14 +173,20 @@ export class Post extends Entity {
   @hasMany(() => Like)
   likes: Like[];
 
+  // TODO: Simplified variable
   @hasOne(() => PublicMetric)
-  publicMetric: PublicMetric;
+  metric: PublicMetric;
 
   @hasMany(() => Dislike)
   dislikes: Dislike[];
 
   @hasMany(() => Transaction)
   transactions: Transaction[];
+
+  // TODO: Remove tipsReceived field and change with postTip
+  // TODO: Add new relation
+  @hasMany(() => PostTip)
+  postTips: PostTip[];
 
   constructor(data?: Partial<Post>) {
     super(data);
@@ -195,6 +195,7 @@ export class Post extends Entity {
 
 export interface PostRelations {
   // describe navigational properties here
+  people: PeopleWithRelations;
 }
 
 export type PostWithRelations = Post & PostRelations;
