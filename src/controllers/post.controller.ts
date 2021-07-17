@@ -101,8 +101,8 @@ export class PostController {
     this.postRepository
       .publicMetric(newPost.id)
       .create({}) as Promise<PublicMetric>;
-    
-      // TODO: move logic to tagService
+
+    // TODO: move logic to tagService
     if (_post.tags.length > 0) {
       this.tagService.createTags(_post.tags) as Promise<void>;
     }

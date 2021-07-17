@@ -1,7 +1,9 @@
+import {KeyringPair} from '@polkadot/keyring/types';
+
 export interface PaymentInfo {
   total: number;
   to: string;
-  from: any;
+  from: KeyringPair;
   cryptoId: string;
   decimal: number;
   isNative?: boolean;
