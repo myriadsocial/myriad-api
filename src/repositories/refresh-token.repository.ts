@@ -1,5 +1,5 @@
 import {inject} from '@loopback/core';
-import {DefaultCrudRepository, juggler} from '@loopback/repository';
+import {DefaultCrudRepository} from '@loopback/repository';
 import {RefreshToken, RefreshTokenRelations} from '../models';
 import {MongoDataSource} from '../datasources';
 
@@ -9,8 +9,8 @@ export class RefreshTokenRepository extends DefaultCrudRepository<
   RefreshTokenRelations
 > {
   constructor(
-    @inject('datasources.mongo') 
-    dataSource: MongoDataSource
+    @inject('datasources.mongo')
+    dataSource: MongoDataSource,
   ) {
     super(RefreshToken, dataSource);
   }

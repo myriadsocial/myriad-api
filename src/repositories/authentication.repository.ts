@@ -1,13 +1,21 @@
 import {Getter, inject} from '@loopback/core';
-import {DefaultCrudRepository, HasOneRepositoryFactory, repository} from '@loopback/repository';
-import {Authentication, AuthCredential, AuthenticationRelations} from '../models';
+import {
+  DefaultCrudRepository,
+  HasOneRepositoryFactory,
+  repository,
+} from '@loopback/repository';
+import {
+  Authentication,
+  AuthCredential,
+  AuthenticationRelations,
+} from '../models';
 import {AuthCredentialRepository} from './auth-credential.repository';
 import {MongoDataSource} from '../datasources';
 
 export type Credentials = {
   email: string;
   password: string;
-}
+};
 
 export class AuthenticationRepository extends DefaultCrudRepository<
   Authentication,
@@ -25,11 +33,11 @@ export class AuthenticationRepository extends DefaultCrudRepository<
   ) {
     super(Authentication, dataSource);
     this.authCredential = this.createHasOneRepositoryFactoryFor(
-      'authCredential',
+      'credential',
       authCredentialRepositoryGetter,
     );
     this.registerInclusionResolver(
-      'authCredential',
+      'credential',
       this.authCredential.inclusionResolver,
     );
   }
