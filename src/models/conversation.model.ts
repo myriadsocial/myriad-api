@@ -6,9 +6,9 @@ import {User} from './user.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'conversations'
-    }
-  }
+      collection: 'conversations',
+    },
+  },
 })
 export class Conversation extends Entity {
   @property({
@@ -16,36 +16,36 @@ export class Conversation extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
   @property({
     type: 'boolean',
     required: false,
-    default: true
+    default: true,
   })
   read: boolean;
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
-  unreadMessage: number
+  unreadMessage: number;
 
   @property({
     type: 'date',
     required: false,
   })
-  createdAt: string
+  createdAt: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt: string
+  updatedAt: string;
 
   @belongsTo(() => User)
   userId: string;
