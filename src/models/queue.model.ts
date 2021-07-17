@@ -4,9 +4,9 @@ import {Entity, model, property} from '@loopback/repository';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'queues'
-    }
-  }
+      collection: 'queues',
+    },
+  },
 })
 export class Queue extends Entity {
   @property({
@@ -21,7 +21,7 @@ export class Queue extends Entity {
     type: 'number',
     required: true,
   })
-  count: number;
+  priority: number; // TODO: Change variable count to priority
 
   constructor(data?: Partial<Queue>) {
     super(data);
