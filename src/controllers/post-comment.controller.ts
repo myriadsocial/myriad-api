@@ -1,9 +1,10 @@
+import {service} from '@loopback/core';
 import {
   Count,
   CountSchema,
   Filter,
   repository,
-  Where
+  Where,
 } from '@loopback/repository';
 import {
   del,
@@ -13,14 +14,16 @@ import {
   param,
   patch,
   post,
-  requestBody
+  requestBody,
 } from '@loopback/rest';
 import {Comment, Post} from '../models';
 import {
   CommentRepository,
   ConversationRepository,
-  PostRepository
+  PostRepository,
+  PublicMetricRepository,
 } from '../repositories';
+import {MetricService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -31,8 +34,14 @@ export class PostCommentController {
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
     @repository(ConversationRepository)
-    protected conversationRepository: ConversationRepository
-  ) { }
+    protected conversationRepository: ConversationRepository,
+    @repository(PublicMetricRepository)
+    protected publicMetricRepository: PublicMetricRepository,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
+    @service(MetricService)
+    protected metricService: MetricService,
+  ) {}
 
   @get('/posts/{id}/comments', {
     responses: {
@@ -69,97 +78,32 @@ export class PostCommentController {
           schema: getModelSchemaRef(Comment, {
             title: 'NewCommentInPost',
             exclude: ['id'],
-            optional: ['postId']
+            optional: ['postId'],
           }),
         },
       },
-    }) comment: Omit<Comment, 'id'>,
+    })
+    comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    const foundConversation = await this.conversationRepository.findOne({
-      where: {
-        userId: comment.userId,
-        postId: id
-      }
-    })
+    // TODO: Remove current logic
+    // TODO: count metric in metricService
+    this.metricService.countComment(id) as Promise<void>;
 
-    if (!foundConversation) {
-      this.conversationRepository.create({
-        userId: comment.userId,
-        postId: id,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString()
-      })
-    } else {
-      this.conversationRepository.updateById(foundConversation.id, {
-        read: true,
-        unreadMessage: 0,
-        updatedAt: new Date().toString()
-      })
+    comment.createdAt = new Date().toString();
+    comment.updatedAt = new Date().toString();
+
+    const newComment = await this.postRepository.comments(id).create(comment);
+
+    try {
+      await this.notificationService.sendPostComment(
+        comment.userId,
+        newComment,
+      );
+    } catch (error) {
+      // ignored
     }
 
-    this.conversationRepository.updateAll({
-      read: false,
-      updatedAt: new Date().toString()
-    }, {
-      postId: id,
-      read: true,
-      userId: {
-        neq: comment.userId
-      }
-    })
-
-    const newComment = await this.postRepository.comments(id).create({
-      ...comment,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
-    });
-
-    const totalComment = await this.commentRepository.count({
-      postId: id
-    })
-
-    this.postRepository.publicMetric(id).patch({comment: totalComment.count})
-    this.postRepository.updateById(id, {totalComment: totalComment.count})
-
-
-    const totalConversation = await this.conversationRepository.count({
-      postId: id,
-      read: false,
-      userId: {
-        neq: comment.userId
-      }
-    })
-
-    for (let i = 0; i < totalConversation.count; i++) {
-      const conversation = (await this.conversationRepository.find({
-        where: {
-          postId: id,
-          read: false,
-          userId: {
-            neq: comment.userId
-          }
-        },
-        limit: 1,
-        skip: i
-      }))[0]
-
-      const conversationId = conversation.id;
-      const latestDate = conversation.updatedAt;
-      const postId = conversation.postId;
-
-      const allComment = await this.commentRepository.count({
-        postId,
-        createdAt: {
-          gte: latestDate
-        }
-      })
-
-      await this.conversationRepository.updateById(conversationId, {
-        unreadMessage: allComment.count
-      })
-    }
-
-    return newComment
+    return newComment;
   }
 
   @patch('/posts/{id}/comments', {
@@ -180,12 +124,10 @@ export class PostCommentController {
       },
     })
     comment: Partial<Comment>,
-    @param.query.object('where', getWhereSchemaFor(Comment)) where?: Where<Comment>,
+    @param.query.object('where', getWhereSchemaFor(Comment))
+    where?: Where<Comment>,
   ): Promise<Count> {
-    return this.postRepository.comments(id).patch({
-      ...comment,
-      updatedAt: new Date().toString()
-    }, where);
+    return this.postRepository.comments(id).patch(comment, where);
   }
 
   @del('/posts/{id}/comments', {
@@ -198,7 +140,8 @@ export class PostCommentController {
   })
   async delete(
     @param.path.string('id') id: string,
-    @param.query.object('where', getWhereSchemaFor(Comment)) where?: Where<Comment>,
+    @param.query.object('where', getWhereSchemaFor(Comment))
+    where?: Where<Comment>,
   ): Promise<Count> {
     return this.postRepository.comments(id).delete(where);
   }
