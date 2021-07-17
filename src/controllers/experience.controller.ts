@@ -1,8 +1,4 @@
-import {
-  Filter,
-  FilterExcludingWhere,
-  repository
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -12,7 +8,7 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
 import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
@@ -22,8 +18,8 @@ import {ExperienceRepository} from '../repositories';
 export class ExperienceController {
   constructor(
     @repository(ExperienceRepository)
-    public experienceRepository: ExperienceRepository,
-  ) { }
+    protected experienceRepository: ExperienceRepository,
+  ) {}
 
   @post('/experiences')
   @response(200, {
@@ -41,13 +37,11 @@ export class ExperienceController {
         },
       },
     })
-    experience: Omit<Experience, 'id'>
+    experience: Omit<Experience, 'id'>,
   ): Promise<Experience> {
-    return this.experienceRepository.create({
-      ...experience,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
-    })
+    experience.createdAt = new Date().toString();
+    experience.updatedAt = new Date().toString();
+    return this.experienceRepository.create(experience);
   }
 
   @get('/experiences')
@@ -79,7 +73,8 @@ export class ExperienceController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Experience, {exclude: 'where'}) filter?: FilterExcludingWhere<Experience>
+    @param.filter(Experience, {exclude: 'where'})
+    filter?: FilterExcludingWhere<Experience>,
   ): Promise<Experience> {
     return this.experienceRepository.findById(id, filter);
   }
@@ -99,16 +94,16 @@ export class ExperienceController {
     })
     experience: Experience,
   ): Promise<void> {
-    const foundExperience = await this.experienceRepository.findOne({where: {id}})
+    const foundExperience = await this.experienceRepository.findById(id);
 
-    if (!foundExperience) throw new HttpErrors.NotFound("Experience does not exists")
+    if (foundExperience.userId !== experience.userId)
+      throw new HttpErrors.UnprocessableEntity(
+        'This experience does not belong to you',
+      );
 
-    if (foundExperience.userId !== experience.userId) throw new HttpErrors.UnprocessableEntity("This experience does not belong to you")
+    experience.updatedAt = new Date().toString();
 
-    await this.experienceRepository.updateById(id, {
-      ...experience,
-      updatedAt: new Date().toString()
-    });
+    await this.experienceRepository.updateById(id, experience);
   }
 
   @del('/experiences/{id}')

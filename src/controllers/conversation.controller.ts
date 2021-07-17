@@ -1,8 +1,4 @@
-import {
-  Filter,
-  FilterExcludingWhere,
-  repository
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -11,11 +7,9 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
-import {
-  Conversation, Post, User
-} from '../models';
+import {Conversation, Post, User} from '../models';
 import {ConversationRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -23,8 +17,8 @@ import {ConversationRepository} from '../repositories';
 export class ConversationController {
   constructor(
     @repository(ConversationRepository)
-    public conversationRepository: ConversationRepository,
-  ) { }
+    protected conversationRepository: ConversationRepository,
+  ) {}
 
   @post('/conversations')
   @response(200, {
@@ -37,18 +31,15 @@ export class ConversationController {
         'application/json': {
           schema: getModelSchemaRef(Conversation, {
             title: 'NewConversation',
-
           }),
         },
       },
     })
     conversation: Conversation,
   ): Promise<Conversation> {
-    return this.conversationRepository.create({
-      ...conversation,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
-    });
+    conversation.createdAt = new Date().toString();
+    conversation.updatedAt = new Date().toString();
+    return this.conversationRepository.create(conversation);
   }
 
   @get('/conversations')
@@ -80,7 +71,8 @@ export class ConversationController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Conversation, {exclude: 'where'}) filter?: FilterExcludingWhere<Conversation>
+    @param.filter(Conversation, {exclude: 'where'})
+    filter?: FilterExcludingWhere<Conversation>,
   ): Promise<Conversation> {
     return this.conversationRepository.findById(id, filter);
   }
@@ -136,12 +128,10 @@ export class ConversationController {
     })
     conversation: Conversation,
   ): Promise<void> {
-    await this.conversationRepository.updateById(id, {
-      ...conversation,
-      read: true,
-      unreadMessage: 0,
-      updatedAt: new Date().toString()
-    });
+    conversation.read = true;
+    conversation.unreadMessage = 0;
+    conversation.updatedAt = new Date().toString();
+    await this.conversationRepository.updateById(id, conversation);
   }
 
   @del('/conversations/{id}')
