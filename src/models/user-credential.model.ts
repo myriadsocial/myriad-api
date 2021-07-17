@@ -1,4 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {PlatformType} from '../enums';
 import {People} from './people.model';
 import {User} from './user.model';
 
@@ -6,9 +7,9 @@ import {User} from './user.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'userCredentials'
-    }
-  }
+      collection: 'userCredentials',
+    },
+  },
 })
 export class UserCredential extends Entity {
   @property({
@@ -16,10 +17,10 @@ export class UserCredential extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
-  id?: string;
+  id: string;
 
   @property({
     type: 'boolean',
@@ -27,16 +28,20 @@ export class UserCredential extends Entity {
   })
   isVerified: boolean;
 
+  // TODO: move to single constant enum platform
   @property({
-    type: 'string'
+    type: 'string',
+    jsonSchema: {
+      enum: Object.values(PlatformType),
+    },
   })
-  platform: string
+  platform: PlatformType; 
 
   @belongsTo(() => People)
   peopleId: string;
 
   @belongsTo(() => User)
-  userId: string
+  userId: string;
 
   constructor(data?: Partial<UserCredential>) {
     super(data);
@@ -47,4 +52,5 @@ export interface UserCredentialRelations {
   // describe navigational properties here
 }
 
-export type UserCredentialWithRelations = UserCredential & UserCredentialRelations;
+export type UserCredentialWithRelations = UserCredential &
+  UserCredentialRelations;

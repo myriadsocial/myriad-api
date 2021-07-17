@@ -1,4 +1,5 @@
 import {Entity, model, property} from '@loopback/repository';
+import {OrderFieldType, OrderType} from '../enums';
 
 @model({
   settings: {
@@ -6,7 +7,14 @@ import {Entity, model, property} from '@loopback/repository';
     mongodb: {
       collection: 'tags',
     },
-  }
+    scope: {
+      order: [
+        `${OrderFieldType.COUNT} ${OrderType.DESC}`,
+        `${OrderFieldType.UPDATEDAT} ${OrderType.DESC}`,
+      ],
+      limit: 10,
+    },
+  },
 })
 export class Tag extends Entity {
   @property({
@@ -23,7 +31,7 @@ export class Tag extends Entity {
 
   @property({
     type: 'boolean',
-    default: false
+    default: false,
   })
   hide: boolean;
 
