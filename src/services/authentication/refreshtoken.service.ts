@@ -1,22 +1,27 @@
 import {TokenService} from '@loopback/authentication';
-import {BindingScope, inject, injectable, generateUniqueId} from '@loopback/core';
+import {
+  BindingScope,
+  inject,
+  injectable,
+  generateUniqueId,
+} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {promisify} from 'util';
 import {
-    RefreshTokenServiceBindings,
-    TokenServiceBindings,
-    AuthServiceBindings,
-} from '../keys';
-import {RefreshToken, RefreshTokenRelations} from '../models';
-import {RefreshTokenRepository} from '../repositories';
-import {TokenObject} from '../interfaces';
+  RefreshTokenServiceBindings,
+  TokenServiceBindings,
+  AuthServiceBindings,
+} from '../../keys';
+import {RefreshToken, RefreshTokenRelations} from '../../models';
+import {RefreshTokenRepository} from '../../repositories';
+import {TokenObject} from '../../interfaces';
 import {MyAuthService} from './authentication.service';
 
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 
-dotenv.config()
+dotenv.config();
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -53,7 +58,7 @@ export class RefreshtokenService {
     });
     const result = {
       accessToken: token,
-      tokenType: "Bearer",
+      tokenType: 'Bearer',
       expiresIn: `${this.refreshExpiresIn} seconds`,
       refreshToken: refreshToken,
     };
