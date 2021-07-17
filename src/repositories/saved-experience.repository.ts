@@ -8,9 +8,7 @@ export class SavedExperienceRepository extends DefaultCrudRepository<
   typeof SavedExperience.prototype.id,
   SavedExperienceRelations
 > {
-  constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource,
-  ) {
+  constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
     super(SavedExperience, dataSource);
   }
 }
