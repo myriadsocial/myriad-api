@@ -8,9 +8,7 @@ export class TagRepository extends DefaultCrudRepository<
   typeof Tag.prototype.id,
   TagRelations
 > {
-  constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource,
-  ) {
+  constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
     super(Tag, dataSource);
   }
 }

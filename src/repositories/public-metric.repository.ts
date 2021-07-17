@@ -1,7 +1,8 @@
 import {Getter, inject} from '@loopback/core';
 import {
-  BelongsToAccessor, DefaultCrudRepository,
-  repository
+  BelongsToAccessor,
+  DefaultCrudRepository,
+  repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Post, PublicMetric, PublicMetricRelations} from '../models';
@@ -12,8 +13,10 @@ export class PublicMetricRepository extends DefaultCrudRepository<
   typeof PublicMetric.prototype.id,
   PublicMetricRelations
 > {
-
-  public readonly post: BelongsToAccessor<Post, typeof PublicMetric.prototype.id>;
+  public readonly post: BelongsToAccessor<
+    Post,
+    typeof PublicMetric.prototype.id
+  >;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
@@ -21,7 +24,7 @@ export class PublicMetricRepository extends DefaultCrudRepository<
     protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(PublicMetric, dataSource);
-    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter,);
+    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter);
     this.registerInclusionResolver('post', this.post.inclusionResolver);
   }
 }

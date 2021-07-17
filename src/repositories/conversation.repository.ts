@@ -2,7 +2,7 @@ import {Getter, inject} from '@loopback/core';
 import {
   BelongsToAccessor,
   DefaultCrudRepository,
-  repository
+  repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Conversation, ConversationRelations, Post, User} from '../models';
@@ -14,10 +14,15 @@ export class ConversationRepository extends DefaultCrudRepository<
   typeof Conversation.prototype.id,
   ConversationRelations
 > {
+  public readonly user: BelongsToAccessor<
+    User,
+    typeof Conversation.prototype.id
+  >;
 
-  public readonly user: BelongsToAccessor<User, typeof Conversation.prototype.id>;
-
-  public readonly post: BelongsToAccessor<Post, typeof Conversation.prototype.id>;
+  public readonly post: BelongsToAccessor<
+    Post,
+    typeof Conversation.prototype.id
+  >;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
@@ -27,9 +32,9 @@ export class ConversationRepository extends DefaultCrudRepository<
     protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(Conversation, dataSource);
-    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter,);
+    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter);
     this.registerInclusionResolver('post', this.post.inclusionResolver);
-    this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter,);
+    this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
   }
 }
