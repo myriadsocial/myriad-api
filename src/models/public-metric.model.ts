@@ -5,10 +5,10 @@ import {Post} from './post.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: "publicMetrics"
+      collection: 'publicMetrics',
     },
     allowExtendendOperators: true,
-  }
+  },
 })
 export class PublicMetric extends Entity {
   @property({
@@ -16,29 +16,29 @@ export class PublicMetric extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
   liked: number;
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
   disliked: number;
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
   comment: number;
 

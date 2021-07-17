@@ -7,8 +7,8 @@ import {User} from './user.model';
     strictObjectIDCoercion: true,
     mongodb: {
       collection: 'comments',
-    }
-  }
+    },
+  },
 })
 export class Comment extends Entity {
   @property({
@@ -45,11 +45,7 @@ export class Comment extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => Post, {}, {
-    mongodb: {
-      dataType: 'ObjectId'
-    }
-  })
+  @belongsTo(() => Post)
   postId: string;
 
   @belongsTo(() => User)

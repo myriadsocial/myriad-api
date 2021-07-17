@@ -8,7 +8,7 @@ import {User} from './user.model';
     mongodb: {
       collection: 'notifications',
     },
-  }
+  },
 })
 export class Notification extends Entity {
   @property({

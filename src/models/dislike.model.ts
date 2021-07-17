@@ -6,9 +6,9 @@ import {User} from './user.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'dislikes'
-    }
-  }
+      collection: 'dislikes',
+    },
+  },
 })
 export class Dislike extends Entity {
   @property({
@@ -16,17 +16,16 @@ export class Dislike extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
   @property({
     type: 'boolean',
     required: false,
-    default: false,
   })
-  status?: boolean;
+  status: boolean;
 
   @belongsTo(() => User)
   userId: string;
