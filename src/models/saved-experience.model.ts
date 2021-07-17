@@ -4,9 +4,9 @@ import {Entity, model, property} from '@loopback/repository';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: "savedExperiences"
-    }
-  }
+      collection: 'savedExperiences',
+    },
+  },
 })
 export class SavedExperience extends Entity {
   @property({
@@ -14,8 +14,8 @@ export class SavedExperience extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id: string;
 
@@ -23,13 +23,13 @@ export class SavedExperience extends Entity {
     type: 'string',
     required: true,
   })
-  user_id: string;
+  userId: string;
 
   @property({
     type: 'string',
     required: true,
   })
-  experience_id: string;
+  experienceId: string;
 
   constructor(data?: Partial<SavedExperience>) {
     super(data);
@@ -40,4 +40,5 @@ export interface SavedExperienceRelations {
   // describe navigational properties here
 }
 
-export type SavedExperienceWithRelations = SavedExperience & SavedExperienceRelations;
+export type SavedExperienceWithRelations = SavedExperience &
+  SavedExperienceRelations;
