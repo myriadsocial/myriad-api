@@ -5,9 +5,9 @@ import {AuthCredential} from './auth-credential.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'authentications'
-    }
-  }
+      collection: 'authentications',
+    },
+  },
 })
 export class Authentication extends Entity {
   @property({
@@ -15,8 +15,8 @@ export class Authentication extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
@@ -24,8 +24,8 @@ export class Authentication extends Entity {
     type: 'string',
     required: true,
     index: {
-      unique: true
-    }
+      unique: true,
+    },
   })
   email: string;
 
@@ -40,9 +40,7 @@ export class Authentication extends Entity {
   verificationToken?: string;
 
   @hasOne(() => AuthCredential)
-  authCredential: AuthCredential;
-
-  [prop: string]: any;
+  credential: AuthCredential;
 
   constructor(data?: Partial<Authentication>) {
     super(data);
@@ -53,4 +51,5 @@ export interface AuthenticationRelations {
   // describe navigational properties here
 }
 
-export type AuthenticationWithRelations = Authentication & AuthenticationRelations;
+export type AuthenticationWithRelations = Authentication &
+  AuthenticationRelations;
