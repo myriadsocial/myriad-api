@@ -41,7 +41,7 @@ export class Notification extends Entity {
     required: false,
   })
   referenceId?: string;
-  
+
   @property({
     type: 'string',
     required: true,
