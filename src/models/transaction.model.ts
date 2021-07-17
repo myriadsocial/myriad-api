@@ -1,15 +1,17 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {Token, TokenWithRelations} from './token.model';
+import {
+  Cryptocurrency,
+  CryptocurrencyWithRelations,
+} from './cryptocurrency.model';
 import {User} from './user.model';
-import {Post} from './post.model';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
       collection: 'transactions',
-    }
-  }
+    },
+  },
 })
 export class Transaction extends Entity {
   @property({
@@ -48,13 +50,13 @@ export class Transaction extends Entity {
 
   @property({
     type: 'boolean',
-    required: false
+    required: false,
   })
-  hasSendToUser: boolean
+  hasSentToUser: boolean;
 
   @property({
     type: 'date',
-    required: false
+    required: false,
   })
   createdAt?: string;
 
@@ -70,11 +72,13 @@ export class Transaction extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => Token)
-  tokenId: string;
+  @property({
+    type: 'string',
+  })
+  postId?: string;
 
-  @belongsTo(() => Post)
-  postId: string;
+  @belongsTo(() => Cryptocurrency)
+  cryptocurrencyId: string;
 
   constructor(data?: Partial<Transaction>) {
     super(data);
@@ -83,7 +87,7 @@ export class Transaction extends Entity {
 
 export interface TransactionRelations {
   // describe navigational properties here
-  token: TokenWithRelations
+  cryptocurrency: CryptocurrencyWithRelations;
 }
 
 export type TransactionWithRelations = Transaction & TransactionRelations;
