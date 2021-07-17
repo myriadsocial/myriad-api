@@ -5,22 +5,30 @@ import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {
   RestExplorerBindings,
-  RestExplorerComponent
+  RestExplorerComponent,
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import dotenv from 'dotenv';
 import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
-import {
-  FetchContentSocialMediaJob, RemovedContentJob
-} from './jobs';
+import {FetchContentSocialMediaJob} from './jobs';
 import {MySequence} from './sequence';
-import {FCMService, NotificationService} from './services';
-
+import {
+  NotificationService,
+  UserCredentialService,
+  TransactionService,
+  FriendService,
+  SocialMediaService,
+  TagService,
+  PostService,
+  MetricService,
+  CryptocurrencyService,
+  FCMService,
+} from './services';
 import {AuthenticationComponent} from '@loopback/authentication';
-import {JWTAuthenticationComponent} from './jwt-authentication-component'
+import {JWTAuthenticationComponent} from './jwt-authentication-component';
 
-dotenv.config()
+dotenv.config();
 
 export {ApplicationConfig};
 
@@ -29,10 +37,6 @@ export class MyriadApiApplication extends BootMixin(
 ) {
   constructor(options: ApplicationConfig = {}) {
     super(options);
-
-    this.component(AuthenticationComponent);
-    // Mount jwt component
-    this.component(JWTAuthenticationComponent);
 
     // Set up the custom sequence
     this.sequence(MySequence);
@@ -44,21 +48,14 @@ export class MyriadApiApplication extends BootMixin(
     this.configure(RestExplorerBindings.COMPONENT).to({
       path: '/explorer',
     });
-    this.component(RestExplorerComponent);
 
-    // Add cron component
-    this.component(CronComponent);
-    // Deactivate cron job for now
-    // this.add(createBindingFromClass(FetchContentSocialMediaJob))
-    // this.add(createBindingFromClass(RemovedContentJob))
-    // Optional:
-    // this.add(createBindingFromClass(FetchContentTwitterJob))
-    // this.add(createBindingFromClass(FetchContentRedditJob))
-    // this.add(createBindingFromClass(UpdatePostsJob))
+    // Bind component
+    this.bindComponent();
 
-    // Add services
-    this.service(FCMService)
-    this.service(NotificationService)
+    // Bind services
+    this.bindService();
+
+    this.add(createBindingFromClass(FetchContentSocialMediaJob));
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -74,10 +71,35 @@ export class MyriadApiApplication extends BootMixin(
     // initialize firebase app
     firebaseAdmin.initializeApp({
       credential: firebaseAdmin.credential.cert({
-        projectId: (process.env.FIREBASE_PROJECT_ID ?? ""),
-        clientEmail: (process.env.FIREBASE_CLIENT_EMAIL ?? ""),
-        privateKey: (process.env.FIREBASE_PRIVATE_KEY ?? "").replace(/\\n/g, '\n'),
+        projectId: process.env.FIREBASE_PROJECT_ID ?? '',
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL ?? '',
+        privateKey: (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(
+          /\\n/g,
+          '\n',
+        ),
       }),
-    })
+    });
+  }
+
+  bindComponent() {
+    // Add component
+    this.component(CronComponent); // Add cron component
+    this.component(RestExplorerComponent);
+    this.component(AuthenticationComponent);
+    this.component(JWTAuthenticationComponent); // Mount jwt component
+  }
+
+  bindService() {
+    // Add services
+    this.service(NotificationService);
+    this.service(FriendService);
+    this.service(UserCredentialService);
+    this.service(TransactionService);
+    this.service(SocialMediaService);
+    this.service(CryptocurrencyService);
+    this.service(PostService);
+    this.service(TagService);
+    this.service(MetricService);
+    this.service(FCMService);
   }
 }
