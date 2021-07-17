@@ -1,9 +1,10 @@
+import {service} from '@loopback/core';
 import {
   Count,
   CountSchema,
   Filter,
   repository,
-  Where
+  Where,
 } from '@loopback/repository';
 import {
   del,
@@ -13,14 +14,11 @@ import {
   param,
   patch,
   post,
-  requestBody
+  requestBody,
 } from '@loopback/rest';
-import {Like, Post} from '../models';
-import {
-  DislikeRepository,
-  LikeRepository,
-  PostRepository
-} from '../repositories';
+import {Dislike, Like, Post} from '../models';
+import {LikeRepository, PostRepository} from '../repositories';
+import {MetricService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -30,9 +28,8 @@ export class PostLikeController {
     protected postRepository: PostRepository,
     @repository(LikeRepository)
     protected likeRepository: LikeRepository,
-    @repository(DislikeRepository)
-    protected dislikeRepository: DislikeRepository
-  ) { }
+    @service(MetricService) public metricService: MetricService,
+  ) {}
 
   @get('/posts/{id}/likes', {
     responses: {
@@ -66,59 +63,27 @@ export class PostLikeController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Like, {
-            title: 'NewLikeInPost',
-            exclude: ['id'],
-            optional: ['postId']
-          }),
+          schema: {
+            type: 'object',
+            properties: {
+              userId: {
+                type: 'string',
+              },
+            },
+          },
         },
       },
-    }) like: Omit<Like, 'id'>,
-  ): Promise<Like> {
-    const foundLike = await this.likeRepository.findOne({
-      where: {
-        postId: id,
-        userId: like.userId
-      }
     })
-
-    const foundDislike = await this.dislikeRepository.findOne({
-      where: {
+    like: Omit<Like, 'id'>,
+  ): Promise<Like | Dislike> {
+    // TODO: Move logic to service
+    return this.metricService.likeDislikeSystem(
+      {
+        userId: like.userId,
         postId: id,
-        userId: like.userId
-      }
-    })
-
-    if (!foundLike) {
-      const newLike = await this.postRepository.likes(id).create({
-        ...like,
-        status: true
-      });
-
-      if (foundDislike && foundDislike.status) {
-        await this.dislikeRepository.updateById(foundDislike.id, {status: false})
-      }
-
-      this.countLike(id)
-
-      return newLike
-    }
-
-    if (!foundLike.status) {
-      await this.likeRepository.updateById(foundLike.id, {status: true})
-
-      if (foundDislike && foundDislike.status) {
-        await this.dislikeRepository.updateById(foundDislike.id, {status: false})
-      }
-    } else {
-      await this.likeRepository.updateById(foundLike.id, {status: false})
-    }
-
-    this.countLike(id)
-
-    foundLike.status = !foundLike.status
-
-    return foundLike
+      },
+      true,
+    );
   }
 
   @patch('/posts/{id}/likes', {
@@ -157,27 +122,5 @@ export class PostLikeController {
     @param.query.object('where', getWhereSchemaFor(Like)) where?: Where<Like>,
   ): Promise<Count> {
     return this.postRepository.likes(id).delete(where);
-  }
-
-  async countLike(postId: any): Promise<void> {
-    const likes = await this.likeRepository.count({
-      postId,
-      status: true
-    })
-
-    const dislikes = await this.dislikeRepository.count({
-      postId,
-      status: true
-    })
-
-    this.postRepository.publicMetric(postId).patch({
-      liked: likes.count,
-      disliked: dislikes.count
-    })
-
-    this.postRepository.updateById(postId, {
-      totalLiked: likes.count,
-      totalDisliked: dislikes.count
-    })
   }
 }
