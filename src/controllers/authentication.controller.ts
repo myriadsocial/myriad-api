@@ -1,49 +1,46 @@
 import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import { 
-  HttpErrors, 
-  post, 
-  requestBody} from '@loopback/rest';
+import {HttpErrors, post, requestBody} from '@loopback/rest';
 import {
-  PasswordHasherBindings, 
-  TokenServiceBindings, 
-  AuthServiceBindings, 
-  RefreshTokenServiceBindings
+  PasswordHasherBindings,
+  TokenServiceBindings,
+  AuthServiceBindings,
+  RefreshTokenServiceBindings,
 } from '../keys';
 import {Authentication} from '../models';
 import {Credentials, AuthenticationRepository} from '../repositories';
 import {RefreshtokenService, validateCredentials} from '../services';
-import {BcryptHasher} from '../services/hash.password.service';
-import {JWTService} from '../services/jwt.service';
-import {MyAuthService} from '../services/authentication.service';
+import {BcryptHasher} from '../services/authentication/hash.password.service';
+import {JWTService} from '../services/authentication/jwt.service';
+import {MyAuthService} from '../services/authentication/authentication.service';
 import {NewAuthRequest, RefreshGrant, TokenObject} from '../interfaces';
 import {UserProfile} from '@loopback/security';
 
 import * as _ from 'lodash';
 
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 
-dotenv.config()
+dotenv.config();
 
 export class AuthenticationController {
   constructor(
     @repository(AuthenticationRepository)
-    public authenticationRepository: AuthenticationRepository,
+    protected authenticationRepository: AuthenticationRepository,
 
     // @inject('service.hasher')
     @inject(PasswordHasherBindings.PASSWORD_HASHER)
-    public hasher: BcryptHasher,
+    protected hasher: BcryptHasher,
 
     // @inject('service.user.service')
     @inject(AuthServiceBindings.AUTH_SERVICE)
-    public authService: MyAuthService,
+    protected authService: MyAuthService,
 
     // @inject('service.jwt.service')
     @inject(TokenServiceBindings.TOKEN_SERVICE)
-    public jwtService: JWTService,
+    protected jwtService: JWTService,
 
     @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
-    public refreshService: RefreshtokenService,
+    protected refreshService: RefreshtokenService,
   ) {}
 
   @post('/signup', {
@@ -56,17 +53,17 @@ export class AuthenticationController {
               type: 'object',
               properties: {
                 id: {
-                  type: 'string'
+                  type: 'string',
                 },
                 email: {
-                  type: 'string'
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   async signup(
     @requestBody({
@@ -87,31 +84,34 @@ export class AuthenticationController {
                 minLength: 6,
               },
             },
-          }
+          },
         },
       },
-    }) newAuthRequest: NewAuthRequest,
-  ):Promise<Authentication> {
+    })
+    newAuthRequest: NewAuthRequest,
+  ): Promise<Authentication> {
     const foundAuth = await this.authenticationRepository.findOne({
       where: {
-        email: newAuthRequest.email
-      }
-    })
+        email: newAuthRequest.email,
+      },
+    });
 
     if (foundAuth) {
-      throw new HttpErrors.UnprocessableEntity("Email Already Exist")
+      throw new HttpErrors.UnprocessableEntity('Email Already Exist');
     }
 
     validateCredentials(_.pick(newAuthRequest, ['email', 'password']));
-    const password = await this.hasher.hashPassword(newAuthRequest.password)
+    const password = await this.hasher.hashPassword(newAuthRequest.password);
     const savedUser = await this.authenticationRepository.create(
-      _.omit(newAuthRequest, 'password')
+      _.omit(newAuthRequest, 'password'),
     );
     // delete savedUser.password;
 
-    await this.authenticationRepository.authCredential(savedUser.id).create({password});
+    await this.authenticationRepository
+      .authCredential(savedUser.id)
+      .create({password});
 
-    return savedUser
+    return savedUser;
   }
 
   @post('/login', {
@@ -127,10 +127,10 @@ export class AuthenticationController {
                   type: 'string',
                 },
                 tokenType: {
-                  type: 'string'
+                  type: 'string',
                 },
                 expiresIn: {
-                  type: 'string'
+                  type: 'string',
                 },
                 refreshToken: {
                   type: 'string',
@@ -161,10 +161,11 @@ export class AuthenticationController {
                 minLength: 6,
               },
             },
-          }
+          },
         },
       },
-    }) credentials: Credentials,
+    })
+    credentials: Credentials,
   ): Promise<TokenObject> {
     // ensure the user exists, and the password is correct
     const user = await this.authService.verifyCredentials(credentials);
@@ -212,10 +213,11 @@ export class AuthenticationController {
                 type: 'string',
               },
             },
-          }
+          },
         },
       },
-    }) refreshGrant: RefreshGrant,
+    })
+    refreshGrant: RefreshGrant,
   ): Promise<TokenObject> {
     return this.refreshService.refreshToken(refreshGrant.refreshToken);
   }
