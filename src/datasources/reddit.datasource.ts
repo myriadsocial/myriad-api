@@ -7,21 +7,19 @@ const config = {
   baseURL: 'https://reddit.com',
   crud: false,
   options: {
-    headers: {
-
-    }
+    headers: {},
   },
   operations: [
     {
       template: {
         method: 'GET',
-        url: 'https://reddit.com/{actions}'
+        url: 'https://reddit.com/{actions}',
       },
       functions: {
-        getActions: ['actions']
-      }
-    }
-  ]
+        getActions: ['actions'],
+      },
+    },
+  ],
 };
 
 // Observe application's life cycle to disconnect the datasource when
@@ -29,8 +27,10 @@ const config = {
 // gracefully. The `stop()` method is inherited from `juggler.DataSource`.
 // Learn more at https://loopback.io/doc/en/lb4/Life-cycle.html
 @lifeCycleObserver('datasource')
-export class RedditDataSource extends juggler.DataSource
-  implements LifeCycleObserver {
+export class RedditDataSource
+  extends juggler.DataSource
+  implements LifeCycleObserver
+{
   static dataSourceName = 'reddit';
   static readonly defaultConfig = config;
 

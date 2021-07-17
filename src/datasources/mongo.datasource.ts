@@ -14,20 +14,20 @@ const config = {
 
 function updateConfig(dsConfig: AnyObject) {
   if (process.env.MONGO_HOST) {
-    dsConfig.host = process.env.MONGO_HOST
+    dsConfig.host = process.env.MONGO_HOST;
   }
-  const envPort = parseInt(process.env.MONGO_PORT || '')
+  const envPort = parseInt(process.env.MONGO_PORT ?? '');
   if (Number.isInteger(envPort)) {
-    dsConfig.port = envPort
+    dsConfig.port = envPort;
   }
   if (process.env.MONGO_USER) {
-    dsConfig.user = process.env.MONGO_USER
+    dsConfig.user = process.env.MONGO_USER;
   }
   if (process.env.MONGO_PASSWORD) {
-    dsConfig.password = process.env.MONGO_PASSWORD
+    dsConfig.password = process.env.MONGO_PASSWORD;
   }
   if (process.env.MONGO_DATABASE) {
-    dsConfig.database = process.env.MONGO_DATABASE
+    dsConfig.database = process.env.MONGO_DATABASE;
   }
   return dsConfig;
 }
@@ -37,8 +37,10 @@ function updateConfig(dsConfig: AnyObject) {
 // gracefully. The `stop()` method is inherited from `juggler.DataSource`.
 // Learn more at https://loopback.io/doc/en/lb4/Life-cycle.html
 @lifeCycleObserver('datasource')
-export class MongoDataSource extends juggler.DataSource
-  implements LifeCycleObserver {
+export class MongoDataSource
+  extends juggler.DataSource
+  implements LifeCycleObserver
+{
   static readonly dataSourceName = config.name;
   static readonly defaultConfig = config;
 
