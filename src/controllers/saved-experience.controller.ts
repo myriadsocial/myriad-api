@@ -1,8 +1,4 @@
-import {
-  Filter,
-  FilterExcludingWhere,
-  repository
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -11,7 +7,7 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
 import {SavedExperience} from '../models';
 import {SavedExperienceRepository} from '../repositories';
@@ -21,8 +17,8 @@ import {SavedExperienceRepository} from '../repositories';
 export class SavedExperienceController {
   constructor(
     @repository(SavedExperienceRepository)
-    public savedExperienceRepository: SavedExperienceRepository,
-  ) { }
+    protected savedExperienceRepository: SavedExperienceRepository,
+  ) {}
 
   @post('/saved-experiences')
   @response(200, {
@@ -35,7 +31,6 @@ export class SavedExperienceController {
         'application/json': {
           schema: getModelSchemaRef(SavedExperience, {
             title: 'NewSavedExperience',
-
           }),
         },
       },
@@ -74,7 +69,8 @@ export class SavedExperienceController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(SavedExperience, {exclude: 'where'}) filter?: FilterExcludingWhere<SavedExperience>
+    @param.filter(SavedExperience, {exclude: 'where'})
+    filter?: FilterExcludingWhere<SavedExperience>,
   ): Promise<SavedExperience> {
     return this.savedExperienceRepository.findById(id, filter);
   }
