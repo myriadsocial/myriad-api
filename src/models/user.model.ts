@@ -1,23 +1,21 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
 import {Conversation} from './conversation.model';
-import {DetailTransaction} from './detail-transaction.model';
+import {TransactionHistory} from './transaction-history.model';
 import {Experience} from './experience.model';
 import {Friend} from './friend.model';
-import {Like} from './like.model';
 import {Post} from './post.model';
 import {SavedExperience} from './saved-experience.model';
-import {Token} from './token.model';
+import {Cryptocurrency} from './cryptocurrency.model';
 import {UserCredential} from './user-credential.model';
-import {UserToken} from './user-token.model';
+import {UserCrypto} from './user-crypto.model';
 
 @model({
   settings: {
     mongodb: {
       collection: 'users',
     },
-    hiddenProperties: ['seed_example']
-  }
+  },
 })
 export class User extends Entity {
   @property({
@@ -43,14 +41,11 @@ export class User extends Entity {
 
   @property({
     type: 'string',
-    required: false
   })
-  username?: string
+  username?: string;
 
   @property({
     type: 'string',
-    required: false,
-    default: ''
   })
   profilePictureURL?: string;
 
@@ -63,59 +58,48 @@ export class User extends Entity {
 
   @property({
     type: 'boolean',
-    required: false,
     default: false,
   })
   anonymous?: boolean;
 
   @property({
     type: 'string',
-    required: false
+    required: false,
   })
   bio?: string;
 
   @property({
     type: 'boolean',
-    required: false,
     default: false,
   })
-  skip_tour: boolean
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  seed_example?: string
+  skipTour?: boolean;
 
   @property({
     type: 'array',
     itemType: 'string',
-    required: false
+    required: false,
+    default: [],
   })
-  fcmTokens?: string[]
+  fcmTokens?: string[];
 
   @property({
     type: 'boolean',
-    required: false,
-    default: true
+    default: true,
   })
-  is_online?: boolean
+  isOnline?: boolean;
 
   @property({
     type: 'date',
-    required: false,
   })
   createdAt?: string;
 
   @property({
     type: 'date',
-    required: false,
   })
   updatedAt?: string;
 
   @property({
     type: 'date',
-    required: false,
   })
   deletedAt?: string;
 
@@ -125,17 +109,20 @@ export class User extends Entity {
   @hasMany(() => Comment)
   comments: Comment[];
 
-  @hasMany(() => Experience, {through: {model: () => SavedExperience, keyFrom: 'user_id', keyTo: 'experience_id'}})
+  @hasMany(() => Experience, {
+    through: {
+      model: () => SavedExperience,
+      keyFrom: 'userId',
+      keyTo: 'experienceId',
+    },
+  })
   savedExperiences: Experience[];
 
   @hasMany(() => UserCredential)
-  userCredentials: UserCredential[];
+  credentials: UserCredential[];
 
   @hasMany(() => Post, {keyTo: 'walletAddress'})
   posts: Post[];
-
-  @hasMany(() => Like)
-  likes: Like[];
 
   @hasMany(() => Conversation)
   conversations: Conversation[];
@@ -144,16 +131,22 @@ export class User extends Entity {
     through: {
       model: () => Friend,
       keyFrom: 'requestorId',
-      keyTo: 'friendId'
-    }
+      keyTo: 'friendId',
+    },
   })
   friends: User[];
 
-  @hasMany(() => DetailTransaction)
-  detailTransactions: DetailTransaction[];
+  @hasMany(() => TransactionHistory)
+  transactionHistories: TransactionHistory[];
 
-  @hasMany(() => Token, {through: {model: () => UserToken}})
-  tokens: Token[];
+  @hasMany(() => Cryptocurrency, {
+    through: {
+      model: () => UserCrypto,
+      keyFrom: 'userId',
+      keyTo: 'cryptocurrencyId',
+    },
+  })
+  cryptocurrencies: Cryptocurrency[];
 
   constructor(data?: Partial<User>) {
     super(data);
@@ -162,7 +155,6 @@ export class User extends Entity {
 
 export interface UserRelations {
   // describe navigational properties here
-  friends: User[];
 }
 
 export type UserWithRelations = User & UserRelations;

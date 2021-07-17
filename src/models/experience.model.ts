@@ -1,4 +1,10 @@
-import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
+import {
+  belongsTo,
+  Entity,
+  hasMany,
+  model,
+  property,
+} from '@loopback/repository';
 import {SavedExperience} from './saved-experience.model';
 import {User} from './user.model';
 
@@ -8,7 +14,7 @@ import {User} from './user.model';
     mongodb: {
       collection: 'experiences',
     },
-  }
+  },
 })
 export class Experience extends Entity {
   @property({
@@ -35,25 +41,25 @@ export class Experience extends Entity {
   name: string;
 
   @property({
-    type: "array",
-    itemType: "object",
+    type: 'array',
+    itemType: 'object',
     required: false,
   })
-  tags: object[]
+  tags: object[];
 
   @property({
-    type: "array",
-    itemType: "object",
-    required: false
+    type: 'array',
+    itemType: 'object',
+    required: false,
   })
-  people: object[]
+  people: object[];
 
   @property({
     type: 'string',
     required: false,
-    default: ''
+    default: '',
   })
-  layout: string
+  layout: string;
 
   @property({
     type: 'date',
@@ -75,21 +81,27 @@ export class Experience extends Entity {
 
   @property({
     type: 'boolean',
-    default: false
+    default: false,
   })
-  default?: boolean
+  default?: boolean;
 
   @property({
     type: 'string',
     required: false,
   })
-  description: string
+  description: string;
 
   @belongsTo(() => User)
   userId: string;
 
-  @hasMany(() => User, {through: {model: () => SavedExperience, keyFrom: 'experience_id', keyTo: 'user_id'}})
-  savedUsers: User[];
+  @hasMany(() => User, {
+    through: {
+      model: () => SavedExperience,
+      keyFrom: 'experienceId',
+      keyTo: 'userId',
+    },
+  })
+  users: User[];
 
   constructor(data?: Partial<Experience>) {
     super(data);
