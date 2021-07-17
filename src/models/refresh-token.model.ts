@@ -3,11 +3,11 @@ import {Authentication} from '.';
 
 @model({
   settings: {
-      strictObjectIDCoercion: true,
-      mongodb: {
-        collection: 'refresh-tokens'
-      }
-  }
+    strictObjectIDCoercion: true,
+    mongodb: {
+      collection: 'refreshTokens',
+    },
+  },
 })
 export class RefreshToken extends Entity {
   @property({
@@ -15,8 +15,8 @@ export class RefreshToken extends Entity {
     id: true,
     generated: true,
     mongodb: {
-        dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
@@ -28,12 +28,6 @@ export class RefreshToken extends Entity {
     required: true,
   })
   refreshToken: string;
-
-  // Define well-known properties here
-
-  // Indexer property to allow additional data
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [prop: string]: any;
 
   constructor(data?: Partial<RefreshToken>) {
     super(data);

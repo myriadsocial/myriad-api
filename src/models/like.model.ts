@@ -6,9 +6,9 @@ import {User} from './user.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: "likes"
-    }
-  }
+      collection: 'likes',
+    },
+  },
 })
 export class Like extends Entity {
   @property({
@@ -16,15 +16,14 @@ export class Like extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
   @property({
     type: 'boolean',
     required: false,
-    default: false
   })
   status: boolean;
 

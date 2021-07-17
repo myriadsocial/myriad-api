@@ -4,9 +4,9 @@ import {Entity, model, property} from '@loopback/repository';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'authCredentials'
-    }
-  }
+      collection: 'authCredentials',
+    },
+  },
 })
 export class AuthCredential extends Entity {
   @property({
@@ -14,8 +14,8 @@ export class AuthCredential extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
@@ -30,12 +30,6 @@ export class AuthCredential extends Entity {
     required: true,
   })
   authenticationId: string;
-
-  // Define well-known properties here
-
-  // Indexer property to allow additional data
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [prop: string]: any;
 
   constructor(data?: Partial<AuthCredential>) {
     super(data);
