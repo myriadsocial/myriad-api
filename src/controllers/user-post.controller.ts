@@ -57,7 +57,7 @@ export class UserPostController {
         };
       });
 
-      // TODO: move to single constant enum 
+      // TODO: move to single constant enum
       where = {
         or: [
           ...importBys,
