@@ -52,9 +52,9 @@ export class User extends Entity {
   @property({
     type: 'string',
     required: false,
-    default: null
+    default: null,
   })
-  bannerImageUrl?: string
+  bannerImageUrl?: string;
 
   @property({
     type: 'boolean',
