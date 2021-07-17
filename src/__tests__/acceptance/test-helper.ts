@@ -1,6 +1,7 @@
 import {
-  Client, createRestAppClient,
-  givenHttpServerConfig
+  Client,
+  createRestAppClient,
+  givenHttpServerConfig,
 } from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
 

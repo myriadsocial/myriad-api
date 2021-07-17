@@ -35,7 +35,7 @@ export class UserCredential extends Entity {
       enum: Object.values(PlatformType),
     },
   })
-  platform: PlatformType; 
+  platform: PlatformType;
 
   @belongsTo(() => People)
   peopleId: string;
