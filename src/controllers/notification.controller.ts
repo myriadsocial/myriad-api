@@ -1,11 +1,4 @@
-import {
-  Count,
-  CountSchema,
-  Filter,
-  FilterExcludingWhere,
-  repository,
-  Where
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -14,7 +7,7 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
@@ -24,8 +17,8 @@ import {NotificationRepository} from '../repositories';
 export class NotificationsController {
   constructor(
     @repository(NotificationRepository)
-    public notificationRepository: NotificationRepository,
-  ) { }
+    protected notificationRepository: NotificationRepository,
+  ) {}
 
   @post('/notifications')
   @response(200, {
@@ -48,17 +41,6 @@ export class NotificationsController {
     return this.notificationRepository.create(notification);
   }
 
-  @get('/notifications/count')
-  @response(200, {
-    description: 'Notification model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(Notification) where?: Where<Notification>,
-  ): Promise<Count> {
-    return this.notificationRepository.count(where);
-  }
-
   @get('/notifications')
   @response(200, {
     description: 'Array of Notification model instances',
@@ -77,25 +59,6 @@ export class NotificationsController {
     return this.notificationRepository.find(filter);
   }
 
-  @patch('/notifications')
-  @response(200, {
-    description: 'Notification PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Notification, {partial: true}),
-        },
-      },
-    })
-    notification: Notification,
-    @param.where(Notification) where?: Where<Notification>,
-  ): Promise<Count> {
-    return this.notificationRepository.updateAll(notification, where);
-  }
-
   @get('/notifications/{id}')
   @response(200, {
     description: 'Notification model instance',
@@ -107,7 +70,8 @@ export class NotificationsController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Notification, {exclude: 'where'}) filter?: FilterExcludingWhere<Notification>
+    @param.filter(Notification, {exclude: 'where'})
+    filter?: FilterExcludingWhere<Notification>,
   ): Promise<Notification> {
     return this.notificationRepository.findById(id, filter);
   }
