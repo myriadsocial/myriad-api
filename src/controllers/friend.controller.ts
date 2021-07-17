@@ -1,36 +1,31 @@
 import {service} from '@loopback/core';
-import {
-  Count,
-  CountSchema,
-  Filter,
-  FilterExcludingWhere,
-  repository,
-  Where
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
   getModelSchemaRef,
-  HttpErrors,
   param,
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
+import {FriendStatusType} from '../enums';
 import {Friend} from '../models';
 import {FriendRepository} from '../repositories';
-import {NotificationService} from '../services';
+import {FriendService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class FriendController {
   constructor(
     @repository(FriendRepository)
-    public friendRepository: FriendRepository,
+    protected friendRepository: FriendRepository,
     @service(NotificationService)
-    public notificationService: NotificationService,
-  ) { }
+    protected notificationService: NotificationService,
+    @service(FriendService)
+    protected friendService: FriendService,
+  ) {}
 
   @post('/friends')
   @response(200, {
@@ -50,67 +45,26 @@ export class FriendController {
     })
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
-    if (friend.requestorId === friend.friendId) {
-      throw new HttpErrors.UnprocessableEntity('Cannot add itself')
-    }
+    // TODO: Move logic to service
+    const foundFriend = await this.friendService.findFriend(
+      friend.friendId,
+      friend.requestorId,
+    );
 
-    const countFriend = await this.friendRepository.count({
-      friendId: friend.friendId,
-      requestorId: friend.requestorId,
-      status: 'pending'
-    })
-
-    if (countFriend.count > 20) {
-      throw new HttpErrors.UnprocessableEntity("Please approved your pending request, before add new friend! Maximum pending request: 20")
-    }
-
-    const foundFriend = await this.friendRepository.findOne({
-      where: {
-        friendId: friend.friendId,
-        requestorId: friend.requestorId
-      }
-    })
-
-    if (foundFriend && foundFriend.status === 'rejected') {
-      this.friendRepository.updateById(foundFriend.id, {
-        status: "pending",
-        updatedAt: new Date().toString()
-      })
-
-      foundFriend.status = 'pending'
-      foundFriend.updatedAt = new Date().toString()
-
-      return foundFriend
-    }
-
-    if (foundFriend && foundFriend.status === 'approved') {
-      throw new HttpErrors.UnprocessableEntity('You already friend with this user')
-    }
-
-    if (foundFriend && foundFriend.status === 'pending') {
-      throw new HttpErrors.UnprocessableEntity('Please wait for this user to approved your request')
-    }
-
-    const result = await this.friendRepository.create(friend)
+    if (foundFriend) return foundFriend;
 
     try {
-      await this.notificationService.sendFriendRequest(friend.requestorId, friend.friendId);
+      await this.notificationService.sendFriendRequest(
+        friend.requestorId,
+        friend.friendId,
+      );
     } catch (error) {
       // ignored
     }
 
-    return result
-  }
+    friend.createdAt = new Date().toString();
 
-  @get('/friends/count')
-  @response(200, {
-    description: 'Friend model count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async count(
-    @param.where(Friend) where?: Where<Friend>,
-  ): Promise<Count> {
-    return this.friendRepository.count(where);
+    return this.friendRepository.create(friend);
   }
 
   @get('/friends')
@@ -125,9 +79,7 @@ export class FriendController {
       },
     },
   })
-  async find(
-    @param.filter(Friend) filter?: Filter<Friend>,
-  ): Promise<Friend[]> {
+  async find(@param.filter(Friend) filter?: Filter<Friend>): Promise<Friend[]> {
     return this.friendRepository.find(filter);
   }
 
@@ -142,7 +94,8 @@ export class FriendController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Friend, {exclude: 'where'}) filter?: FilterExcludingWhere<Friend>
+    @param.filter(Friend, {exclude: 'where'})
+    filter?: FilterExcludingWhere<Friend>,
   ): Promise<Friend> {
     return this.friendRepository.findById(id, filter);
   }
@@ -162,9 +115,12 @@ export class FriendController {
     })
     friend: Friend,
   ): Promise<void> {
-    if (friend.status === 'approved') {
+    if (friend.status === FriendStatusType.APPROVED) {
       try {
-        await this.notificationService.sendFriendAccept(friend.friendId, friend.requestorId);
+        await this.notificationService.sendFriendAccept(
+          friend.friendId,
+          friend.requestorId,
+        );
       } catch (error) {
         // ignored
       }
