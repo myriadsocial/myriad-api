@@ -1,22 +1,22 @@
+// TODO: Rename UserToken to UserCrypto
 import {Entity, model, property} from '@loopback/repository';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'tips'
+      collection: 'userTokens',
     },
-    hiddenProperties: ['totalTips']
-  }
+  },
 })
-export class Tip extends Entity {
+export class UserCrypto extends Entity {
   @property({
     type: 'string',
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
@@ -24,26 +24,21 @@ export class Tip extends Entity {
     type: 'string',
     required: true,
   })
-  tokenId: string;
-
-  @property({
-    type: 'number',
-    required: true,
-  })
-  totalTips: number;
+  userId: string;
 
   @property({
     type: 'string',
+    required: true,
   })
-  peopleId?: string;
+  cryptocurrencyId: string;
 
-  constructor(data?: Partial<Tip>) {
+  constructor(data?: Partial<UserCrypto>) {
     super(data);
   }
 }
 
-export interface TipRelations {
+export interface UserCryptoRelations {
   // describe navigational properties here
 }
 
-export type TipWithRelations = Tip & TipRelations;
+export type UserCryptoWithRelations = UserCrypto & UserCryptoRelations;
