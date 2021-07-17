@@ -160,7 +160,6 @@ export class Post extends Entity {
   @belongsTo(() => User, {name: 'importer'})
   importerId: string;
 
-
   @belongsTo(() => User, {name: 'user'})
   walletAddress: string;
 
