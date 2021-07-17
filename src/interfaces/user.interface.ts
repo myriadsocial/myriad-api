@@ -1,18 +1,17 @@
+import {PlatformType} from '../enums';
+
 export interface User {
-  name?: string,
-  platform_account_id?: string,
-  username: string,
-  platform: string,
-  profile_image_url?: string,
-  publicKey: string
+  name?: string;
 }
 
-export interface FriendId {
-  friendId: string
-}
+export type FriendId = {
+  friendId: string;
+};
 
-export interface VerifyUser {
-  publicKey: string, 
-  username: string, 
-  platform: string
+export interface ExtendedUser extends User {
+  platformAccountId?: string;
+  username: string;
+  platform: PlatformType;
+  profileImageURL?: string;
+  publicKey: string;
 }

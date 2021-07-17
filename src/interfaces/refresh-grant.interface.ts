@@ -1,3 +1,3 @@
 export interface RefreshGrant {
-    refreshToken: string;
-};
+  refreshToken: string;
+}
