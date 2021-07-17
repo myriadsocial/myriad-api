@@ -1,31 +1,10 @@
 export interface PlatformUser {
-  name: string,
-  username: string,
-  platform_account_id?: string,
-  profile_image_url?: string
+  name: string;
+  username: string;
+  platformAccountId?: string;
+  profileImageURL?: string;
 }
 
 export interface ExtendedPlatformUser extends PlatformUser {
-  platform: string
-}
-
-export interface Post {
-  tags?: string[],
-  platformUser: PlatformUser,
-  platform?: string,
-  text?: string,
-  textId?: string,
-  hasMedia?: boolean,
-  link?: string,
-  createdAt?: string,
-  peopleId?: string,
-  platformCreatedAt?: string,
-  updatedAt?: string
-}
-
-export interface PlatformPublicMetric {
-  retweet_count?: number,
-  like_count?: number,
-  upvote_count?: number,
-  downvote_count?: number
+  platform: string;
 }
