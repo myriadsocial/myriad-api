@@ -14,7 +14,6 @@ import {
   TokenServiceConstants,
   AuthServiceBindings,
   PasswordHasherBindings,
-
 } from './keys';
 import {
   RefreshTokenRepository,
@@ -22,10 +21,10 @@ import {
   AuthenticationRepository,
 } from './repositories';
 import {MyAuthService, RefreshtokenService} from './services';
-import {JWTAuthenticationStrategy} from './services/jwt.auth.strategy';
-import {JWTService} from './services/jwt.service';
-import {SecuritySpecEnhancer} from './services/security.spec.enhancer';
-import {BcryptHasher} from './services/hash.password.service';
+import {JWTAuthenticationStrategy} from './services/authentication/jwt.auth.strategy';
+import {JWTService} from './services/authentication/jwt.service';
+import {SecuritySpecEnhancer} from './services/authentication/security.spec.enhancer';
+import {BcryptHasher} from './services/authentication/hash.password.service';
 
 export class JWTAuthenticationComponent implements Component {
   bindings: Binding[] = [
@@ -40,7 +39,9 @@ export class JWTAuthenticationComponent implements Component {
 
     // user bindings
     Binding.bind(AuthServiceBindings.AUTH_SERVICE).toClass(MyAuthService),
-    Binding.bind(AuthServiceBindings.AUTH_REPOSITORY).toClass(AuthenticationRepository),
+    Binding.bind(AuthServiceBindings.AUTH_REPOSITORY).toClass(
+      AuthenticationRepository,
+    ),
     Binding.bind(AuthServiceBindings.AUTH_CREDENTIAL_REPOSITORY).toClass(
       AuthCredentialRepository,
     ),
@@ -66,7 +67,7 @@ export class JWTAuthenticationComponent implements Component {
     ),
     // HasherBinding
     Binding.bind(PasswordHasherBindings.PASSWORD_HASHER).toClass(BcryptHasher),
-    Binding.bind(PasswordHasherBindings.ROUNDS).to(10)
+    Binding.bind(PasswordHasherBindings.ROUNDS).to(10),
   ];
   constructor(@inject(CoreBindings.APPLICATION_INSTANCE) app: Application) {
     registerAuthenticationStrategy(app, JWTAuthenticationStrategy);
