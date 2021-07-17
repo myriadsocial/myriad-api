@@ -1,6 +1,6 @@
 import {inject, Provider} from '@loopback/core';
 import {getService} from '@loopback/service-proxy';
-import {RsshubDataSource} from '../datasources';
+import {RsshubDataSource} from '../../datasources';
 
 export interface Rsshub {
   // this is where you define the Node.js methods that will be
@@ -14,7 +14,7 @@ export class RsshubProvider implements Provider<Rsshub> {
     // rsshub must match the name property in the datasource json file
     @inject('datasources.rsshub')
     protected dataSource: RsshubDataSource = new RsshubDataSource(),
-  ) { }
+  ) {}
 
   value(): Promise<Rsshub> {
     return getService(this.dataSource);
