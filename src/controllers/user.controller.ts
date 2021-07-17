@@ -106,7 +106,7 @@ export class UserController {
     @param.path.string('id') id: string,
     @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
   ): Promise<User[]> {
-        // TODO: Move to service
+    // TODO: Move to service
     const friendIds = await this.friendService.getFriendIds(id);
 
     return this.userRepository.find({
