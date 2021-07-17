@@ -8,9 +8,7 @@ export class QueueRepository extends DefaultCrudRepository<
   typeof Queue.prototype.id,
   QueueRelations
 > {
-  constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource,
-  ) {
+  constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
     super(Queue, dataSource);
   }
 }

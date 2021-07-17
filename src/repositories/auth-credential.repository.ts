@@ -8,9 +8,7 @@ export class AuthCredentialRepository extends DefaultCrudRepository<
   typeof AuthCredential.prototype.id,
   AuthCredentialRelations
 > {
-  constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource,
-  ) {
+  constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
     super(AuthCredential, dataSource);
   }
 }

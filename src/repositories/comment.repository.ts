@@ -2,7 +2,7 @@ import {Getter, inject} from '@loopback/core';
 import {
   BelongsToAccessor,
   DefaultCrudRepository,
-  repository
+  repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Comment, CommentRelations, Post, User} from '../models';
@@ -14,7 +14,6 @@ export class CommentRepository extends DefaultCrudRepository<
   typeof Comment.prototype.id,
   CommentRelations
 > {
-
   public readonly post: BelongsToAccessor<Post, typeof Comment.prototype.id>;
 
   public readonly user: BelongsToAccessor<User, typeof Comment.prototype.id>;
@@ -27,9 +26,9 @@ export class CommentRepository extends DefaultCrudRepository<
     protected userRepositoryGetter: Getter<UserRepository>,
   ) {
     super(Comment, dataSource);
-    this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter,);
+    this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
-    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter,);
+    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter);
     this.registerInclusionResolver('post', this.post.inclusionResolver);
   }
 }
