@@ -1,66 +1,27 @@
-// import {authenticate} from '@loopback/authentication';
-import {service} from '@loopback/core';
-import {
-  Filter,
-  FilterExcludingWhere,
-  repository
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
   getModelSchemaRef,
   param,
   patch,
-  post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
 import {Comment, Post, User} from '../models';
 import {CommentRepository} from '../repositories';
-import {NotificationService} from '../services';
+// import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class CommentController {
   constructor(
     @repository(CommentRepository)
-    public commentRepository: CommentRepository,
-    @service(NotificationService)
-    public notificationService: NotificationService,
-  ) { }
+    protected commentRepository: CommentRepository,
+  ) {}
 
-  @post('/comments')
-  @response(200, {
-    description: 'Comment model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Comment)}},
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Comment, {
-            title: 'NewComment',
-            exclude: ['id'],
-          }),
-        },
-      },
-    })
-    comment: Omit<Comment, 'id'>,
-  ): Promise<Comment> {
-    const result = await this.commentRepository.create({
-      ...comment,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
-    });
-
-    try {
-      await this.notificationService.sendPostComment(comment.userId, result);
-    } catch (error) {
-      // ignored
-    }
-
-    return result
-  }
-
+  // TODO: Remove endpoint POST /comments
+  // TODO: Move the endpoint to post-comment.controller.ts
+  // TODO: Change POST /comments to POST /posts/{id}/comments
   @get('/comments')
   @response(200, {
     description: 'Array of Comment model instances',
@@ -90,7 +51,8 @@ export class CommentController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Comment, {exclude: 'where'}) filter?: FilterExcludingWhere<Comment>
+    @param.filter(Comment, {exclude: 'where'})
+    filter?: FilterExcludingWhere<Comment>,
   ): Promise<Comment> {
     return this.commentRepository.findById(id, filter);
   }
@@ -146,10 +108,8 @@ export class CommentController {
     })
     comment: Comment,
   ): Promise<void> {
-    await this.commentRepository.updateById(id, {
-      ...comment,
-      updatedAt: new Date().toString()
-    });
+    comment.updatedAt = new Date().toString();
+    await this.commentRepository.updateById(id, comment);
   }
 
   @del('/comments/{id}')
