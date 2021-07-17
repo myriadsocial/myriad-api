@@ -1,14 +1,14 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {User, UserWithRelations} from './user.model';
-import { FriendStatusType } from '../enums';
+import {FriendStatusType} from '../enums';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'friends'
-    }
-  }
+      collection: 'friends',
+    },
+  },
 })
 export class Friend extends Entity {
   @property({
@@ -16,32 +16,33 @@ export class Friend extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
+  // TODO: move to single constant enum platform
   @property({
     type: 'string',
     required: false,
     jsonSchema: {
-      enum: Object.values(FriendStatusType)
+      enum: Object.values(FriendStatusType),
     },
-    default: 'pending'
+    default: FriendStatusType.PENDING,
   })
-  status: string
-
-  @property({
-    type: 'date',
-    required: false
-  })
-  createdAt?: string
+  status: string;
 
   @property({
     type: 'date',
     required: false,
   })
-  updatedAt?: string
+  createdAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  updatedAt?: string;
 
   @belongsTo(() => User)
   friendId: string;
@@ -56,8 +57,8 @@ export class Friend extends Entity {
 
 export interface FriendRelations {
   // describe navigational properties here
-  friend: UserWithRelations,
-  requestor: UserWithRelations 
+  friend: UserWithRelations;
+  requestor: UserWithRelations;
 }
 
 export type FriendWithRelations = Friend & FriendRelations;
