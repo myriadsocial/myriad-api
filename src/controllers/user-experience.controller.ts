@@ -3,18 +3,17 @@ import {
   CountSchema,
   Filter,
   repository,
-  Where
+  Where,
 } from '@loopback/repository';
 import {
   del,
   get,
   getModelSchemaRef,
   getWhereSchemaFor,
-  HttpErrors,
   param,
   patch,
   post,
-  requestBody
+  requestBody,
 } from '@loopback/rest';
 import {Experience, User} from '../models';
 import {UserRepository} from '../repositories';
@@ -25,12 +24,13 @@ export class UserExperienceController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-  ) { }
+  ) {}
 
   @get('/users/{id}/experiences', {
     responses: {
       '200': {
-        description: 'Array of User has many Experience through SavedExperience',
+        description:
+          'Array of User has many Experience through SavedExperience',
         content: {
           'application/json': {
             schema: {type: 'array', items: getModelSchemaRef(Experience)},
@@ -65,21 +65,16 @@ export class UserExperienceController {
           }),
         },
       },
-    }) experience: Omit<Experience, 'id'>,
+    })
+    experience: Omit<Experience, 'id'>,
   ): Promise<Experience> {
-    try {
-      const newExperience = await this.userRepository.savedExperiences(id).create({
-        ...experience,
-        userId: id,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString()
-      });
+    experience.createdAt = new Date().toString();
+    experience.updatedAt = new Date().toString();
+    const newExperience = await this.userRepository
+      .savedExperiences(id)
+      .create(experience);
 
-      return newExperience
-
-    } catch (err) {
-      throw new HttpErrors.UnprocessableEntity("Experience already exists")
-    }
+    return newExperience;
   }
 
   @patch('/users/{id}/experiences', {
@@ -100,12 +95,11 @@ export class UserExperienceController {
       },
     })
     experience: Partial<Experience>,
-    @param.query.object('where', getWhereSchemaFor(Experience)) where?: Where<Experience>,
+    @param.query.object('where', getWhereSchemaFor(Experience))
+    where?: Where<Experience>,
   ): Promise<Count> {
-    return this.userRepository.savedExperiences(id).patch({
-      ...experience,
-      updatedAt: new Date().toString()
-    }, where);
+    experience.updatedAt = new Date().toString();
+    return this.userRepository.savedExperiences(id).patch(experience, where);
   }
 
   @del('/users/{id}/experiences', {
@@ -118,7 +112,8 @@ export class UserExperienceController {
   })
   async delete(
     @param.path.string('id') id: string,
-    @param.query.object('where', getWhereSchemaFor(Experience)) where?: Where<Experience>,
+    @param.query.object('where', getWhereSchemaFor(Experience))
+    where?: Where<Experience>,
   ): Promise<Count> {
     return this.userRepository.savedExperiences(id).delete(where);
   }
