@@ -1,16 +1,16 @@
 import {Entity, hasMany, hasOne, model, property} from '@loopback/repository';
 import {Post} from './post.model';
 import {UserCredential} from './user-credential.model';
-import {Tip} from './tip.model';
+import {PersonTip} from './person-tip.model';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'people'
+      collection: 'people',
     },
-    hiddenProperties: ["totalTips"]
-  }
+    hiddenProperties: ['totalTips'],
+  },
 })
 export class People extends Entity {
   @property({
@@ -18,16 +18,16 @@ export class People extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
-  id?: string;
+  id: string;
 
   @property({
     type: 'string',
-    required: false
+    required: false,
   })
-  name?: string
+  name?: string;
 
   @property({
     type: 'string',
@@ -45,28 +45,28 @@ export class People extends Entity {
     type: 'string',
     required: false,
   })
-  platform_account_id: string;
+  platformAccountId: string;
 
   @property({
     type: 'string',
-    required: false
+    required: false,
   })
-  profile_image_url: string;
+  profileImageURL: string;
 
   @property({
     type: 'boolean',
-    default: false
+    default: false,
   })
-  hide?: boolean
-  
+  hide?: boolean;
+
   @hasOne(() => UserCredential)
-  userCredential: UserCredential;
+  credential: UserCredential;
 
   @hasMany(() => Post)
   posts: Post[];
 
-  @hasMany(() => Tip)
-  tips: Tip[];
+  @hasMany(() => PersonTip)
+  personTips: PersonTip[];
 
   constructor(data?: Partial<People>) {
     super(data);
