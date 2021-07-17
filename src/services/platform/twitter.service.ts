@@ -2,6 +2,7 @@ import {inject, Provider} from '@loopback/core';
 import {getService} from '@loopback/service-proxy';
 import {TwitterDataSource} from '../../datasources';
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 export interface Twitter {
   // this is where you define the Node.js methods that will be
   // mapped to REST/SOAP/gRPC operations as stated in the datasource

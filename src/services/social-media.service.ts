@@ -173,6 +173,7 @@ export class SocialMediaService {
     const assets: string[] = [];
     let hasMedia = true;
 
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
     const twitterTags = entities
       ? entities.hashtags
         ? entities.hashtags.map((hashtag: any) => hashtag.text)
