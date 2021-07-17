@@ -1,59 +1,50 @@
 import {service} from '@loopback/core';
-import {
-  Filter,
-  FilterExcludingWhere,
-  repository
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
   getModelSchemaRef,
-  HttpErrors,
   param,
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
-import {Friend, User, DetailTransaction} from '../models';
+import {User} from '../models';
+import {FriendRepository, UserRepository} from '../repositories';
 import {
-  ExperienceRepository, FriendRepository, PeopleRepository, PostRepository, QueueRepository,
-  TransactionRepository, UserRepository, UserTokenRepository
-} from '../repositories';
-import {NotificationService} from '../services';
-import { FriendId } from '../interfaces';
+  CryptocurrencyService,
+  NotificationService,
+  FriendService,
+} from '../services';
 import dotenv from 'dotenv';
 // import {authenticate} from '@loopback/authentication';
 
-dotenv.config()
+dotenv.config();
 
 // @authenticate("jwt")
 export class UserController {
   constructor(
     @repository(UserRepository)
-    public userRepository: UserRepository,
-    @repository(ExperienceRepository)
-    public experienceRepository: ExperienceRepository,
-    @repository(PeopleRepository)
-    public peopleRepository: PeopleRepository,
-    @repository(QueueRepository)
-    public queueRepository: QueueRepository,
+    protected userRepository: UserRepository,
     @repository(FriendRepository)
-    public friendRepository: FriendRepository,
-    @repository(PostRepository)
-    public postRepository: PostRepository,
-    @repository(UserTokenRepository)
-    public userTokenRepository: UserTokenRepository,
-    @repository(TransactionRepository)
-    public transactionRepository: TransactionRepository,
+    protected friendRepository: FriendRepository,
     @service(NotificationService)
-    public notificationService: NotificationService
-  ) { }
+    protected notificationService: NotificationService,
+    @service(CryptocurrencyService)
+    protected cryptocurrencyService: CryptocurrencyService,
+    @service(FriendService)
+    protected friendService: FriendService,
+  ) {}
 
   @post('/users')
   @response(200, {
     description: 'User model instance',
-    content: {'application/json': {schema: getModelSchemaRef(User)}},
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User),
+      },
+    },
   })
   async create(
     @requestBody({
@@ -61,124 +52,42 @@ export class UserController {
         'application/json': {
           schema: {
             type: 'object',
+            required: ['id', 'name'],
             properties: {
               id: {
-                type: 'string'
+                type: 'string',
               },
               name: {
-                type: 'string'
-              }
-            }
-          }
+                type: 'string',
+              },
+            },
+          },
         },
       },
     })
     user: User,
   ): Promise<User> {
     const foundUser = await this.userRepository.findOne({
-      where: {
-        id: user.id
-      }
-    })
-
-    if (foundUser) {
-      this.updateById(foundUser.id, {
-        is_online: true
-      } as User)
-
-      foundUser.is_online = true;
-
-      return foundUser
-    }
-
-    const newUser = await this.userRepository.create({
-      ...user,
-      username: user.name?.toLowerCase().replace(/\s+/g,'').trim(),
-      bio: user.bio ? user.bio : `Hello, my name is ${user.name[0].toUpperCase() + user.name.substring(1).toLowerCase()}!`,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
+      where: {id: user.id},
     });
 
-    this.createToken(newUser.id, "MYR")
-    this.createToken(newUser.id, "AUSD")
+    if (foundUser) {
+      foundUser.isOnline = true;
 
-    return newUser
-  }
+      this.updateById(foundUser.id, foundUser) as Promise<void>;
 
-  @post('/users/{id}/friends')
-  @response(200, {
-    description: 'Request friends',
-    content: {'application/json': {schema: getModelSchemaRef(Friend)}}
-  })
-  async createRequest(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              friendId: {
-                type: 'string'
-              }
-            }
-          }
-        }
-      }
-    }) friend: FriendId
-  ): Promise<Friend> {
-    if (friend.friendId === id) {
-      throw new HttpErrors.UnprocessableEntity('Cannot add itself')
+      return foundUser;
     }
 
-    const countFriend = await this.friendRepository.count({
-      friendId: friend.friendId,
-      requestorId: id,
-      status: 'pending'
-    })
+    // TODO: Move to service
+    this.cryptocurrencyService.defaultCrypto(user.id) as Promise<void>;
 
-    if (countFriend.count > 20) {
-      throw new HttpErrors.UnprocessableEntity("Please approved your pending request, before add new friend!")
-    }
+    user.username = user.name?.toLowerCase().replace(/\s+/g, '').trim();
+    user.bio = `Hello, my name is ${user.name}!`;
+    user.createdAt = new Date().toString();
+    user.updatedAt = new Date().toString();
 
-    const foundFriend = await this.friendRepository.findOne({
-      where: {
-        friendId: friend.friendId,
-        requestorId: id
-      }
-    })
-
-    if (foundFriend && foundFriend.status === 'rejected') {
-      this.friendRepository.updateById(foundFriend.id, {
-        status: "pending",
-        updatedAt: new Date().toString()
-      })
-
-      foundFriend.status = 'pending'
-      foundFriend.updatedAt = new Date().toString()
-
-      return foundFriend
-    }
-
-    if (foundFriend && foundFriend.status === 'approved') {
-      throw new HttpErrors.UnprocessableEntity('You already friend with this user')
-    }
-
-    if (foundFriend && foundFriend.status === 'pending') {
-      throw new HttpErrors.UnprocessableEntity('Please wait for this user to approved your request')
-    }
-
-    try {
-      await this.notificationService.sendFriendRequest(id, friend.friendId);
-    } catch (error) {
-      // ignored
-    }
-
-    return this.friendRepository.create({
-      createdAt: new Date().toString(),
-      friendId: friend.friendId,
-      requestorId: id
-    })
+    return this.userRepository.create(user);
   }
 
   @get('users/{id}/approved-friends')
@@ -188,119 +97,26 @@ export class UserController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(User)
-        }
-      }
-    }
-  })
-  async friendList(
-    @param.path.string('id') id: string
-  ): Promise<User> {
-    const foundUser = await this.userRepository.findById(id);
-    const friends = await this.friendRepository.find({
-      where: {
-        or: [
-          {
-            requestorId: id
-          },
-          {
-            friendId: id
-          }
-        ],
-        status: 'approved'
-      }
-    })
-
-    const friendIds = friends.map(friend => friend.friendId);
-    const requestorIds = friends.map(friend => friend.requestorId);
-    const ids = [
-      ...friendIds.filter(id => !requestorIds.includes(id)), 
-      ...requestorIds
-    ].filter(userId => userId != id);
-
-    const users = await this.userRepository.find({
-      where: {
-        id: {
-          inq: ids
-        }
-      }
-    })
-    
-    foundUser.friends = users
-
-    return foundUser
-  }
-
-  @get('users/{id}/friends')
-  @response(200, {
-    description: 'Array of friend request',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Friend)
-        }
-      }
-    }
-  })
-  async requestList(
-    @param.path.string('id') id: string,
-    @param.query.string('status') status: string
-  ): Promise<Friend[]> {
-    const requestStatus = ["pending", "rejected", "approved", "all"];
-    const found = requestStatus.find(req => req === status);
-
-    if (!found && status) throw new HttpErrors.UnprocessableEntity("Please filled with corresponding status: all, pending, approved, or rejected")
-    
-    if ((typeof status === 'string' && !status) || status === 'all' || !status) {
-      return this.friendRepository.find({
-        where: {
-          requestorId: id
-        },
-        include: [
-          {
-            relation: 'friend'
-          },
-          {
-            relation: 'requestor'
-          }
-        ]
-      })
-    }
-
-    return this.friendRepository.find({
-      where: {
-        requestorId: id,
-        status: status
-      },
-      include: [
-        {
-          relation: 'friend'
-        },
-        {
-          relation: 'requestor'
-        }
-      ]
-    })
-  }
-
-  @get('/users/{id}/detail-transactions', {
-    responses: {
-      '200': {
-        description: 'Array of User has many DetailTransaction',
-        content: {
-          'application/json': {
-            schema: {type: 'array', items: getModelSchemaRef(DetailTransaction)},
-          },
+          items: getModelSchemaRef(User, {includeRelations: true}),
         },
       },
     },
   })
-  async findDetailTransaction(
+  async userFriendList(
     @param.path.string('id') id: string,
-    @param.query.object('filter') filter?: Filter<DetailTransaction>,
-  ): Promise<DetailTransaction[]> {
-    return this.userRepository.detailTransactions(id).find(filter);
+    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
+  ): Promise<User[]> {
+        // TODO: Move to service
+    const friendIds = await this.friendService.getFriendIds(id);
+
+    return this.userRepository.find({
+      ...filter,
+      where: {
+        id: {
+          inq: friendIds,
+        },
+      },
+    });
   }
 
   @get('/users')
@@ -310,14 +126,12 @@ export class UserController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(User, {includeRelations: true}),
+          items: getModelSchemaRef(User),
         },
       },
     },
   })
-  async find(
-    @param.filter(User) filter?: Filter<User>,
-  ): Promise<User[]> {
+  async find(@param.filter(User) filter?: Filter<User>): Promise<User[]> {
     return this.userRepository.find(filter);
   }
 
@@ -330,16 +144,16 @@ export class UserController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(User, {partial: true}),
+          schema: getModelSchemaRef(User, {
+            partial: true,
+          }),
         },
       },
     })
     user: User,
   ): Promise<void> {
-    await this.userRepository.updateById(id, {
-      ...user,
-      updatedAt: new Date().toString(),
-    });
+    user.updatedAt = new Date().toString();
+    await this.userRepository.updateById(id, user);
   }
 
   @del('/users/{id}')
@@ -361,100 +175,11 @@ export class UserController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>
+    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
   ): Promise<User> {
     return this.userRepository.findById(id, filter);
   }
 
-  @get('users/{username}/example-seed')
-  @response(200, {
-    description: 'Get seed instance'
-  })
-  async getSeed(
-    @param.path.string('username') username: string
-  ): Promise<object> {
-    const getUser = await this.userRepository.findOne({
-      where: {
-        username: username
-      }
-    })
-
-    if (getUser && getUser.seed_example) return {
-      seed: getUser.seed_example
-    }
-
-    throw new HttpErrors.NotFound('Seed Not Found')
-  }
-
-  async createToken(userId: string, tokenId: string): Promise<void> {
-    let token = null;
-    if (tokenId === 'MYR') {
-      token = {
-        id: "MYR",
-        token_name: "myria",
-        token_decimal: 12,
-        token_image: "token_image",
-        address_format: 214,
-        rpc_address: "wss://rpc.myriad.systems"
-      }
-    } else {
-      token = {
-        id: "AUSD",
-        token_name: "ausd",
-        token_decimal: 12,
-        token_image: "https://apps.acala.network/static/media/AUSD.439bc3f2.png",
-        address_format: 42,
-        rpc_address: "wss://acala-mandala.api.onfinality.io/public-ws"
-      }
-    }
-
-    try {
-      await this.userRepository.tokens(userId).create(token)
-    } catch {
-      this.userTokenRepository.create({
-        userId: userId,
-        tokenId: tokenId
-      })
-    }
-  }
-
-  // async defaultExperience(user: User): Promise<void> {
-  //   this.userRepository.savedExperiences(user.id).create({
-  //     name: user.name + " Experience",
-  //     tags: [
-  //       {
-  //         id: 'cryptocurrency',
-  //         hide: false
-  //       },
-  //       {
-  //         id: 'blockchain',
-  //         hide: false
-  //       },
-  //       {
-  //         id: 'technology',
-  //         hide: false
-  //       }
-  //     ],
-  //     people: [
-  //       {
-  //         username: "gavofyork",
-  //         platform_account_id: "33962758",
-  //         profile_image_url: "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg",
-  //         platform: "twitter",
-  //         hide: false
-  //       },
-  //       {
-  //         username: "CryptoChief",
-  //         platform_account_id: "t2_e0t5q",
-  //         profile_image_url: "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png",
-  //         platform: "reddit",
-  //         hide: false
-  //       }
-  //     ],
-  //     description: `Hello, ${user.name}! Welcome to myriad!`,
-  //     userId: user.id,
-  //     createdAt: new Date().toString(),
-  //     updatedAt: new Date().toString()
-  //   })
-  // }
+  // TODO: Remove unused endpoint GET /users/{username}/example-seed
+  // TODO: Remove method defaultExperience
 }
