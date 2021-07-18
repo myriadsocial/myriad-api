@@ -72,7 +72,7 @@ export class FriendService {
     return foundFriend;
   }
 
-  async getFriendIds(id: string): Promise<string[]> {
+  async getApprovedFriendIds(id: string): Promise<string[]> {
     const friends = await this.friendRepository.find({
       where: {
         or: [
