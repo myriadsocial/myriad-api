@@ -108,8 +108,7 @@ export class CryptocurrencyService {
   }
 
   async claimTips(credential: UserCredential): Promise<void> {
-    const userId = credential.userId;
-    const peopleId = credential.peopleId;
+    const {userId, peopleId} = credential;
     const keyring = new Keyring({
       type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
     });
