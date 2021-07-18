@@ -32,7 +32,7 @@ export class PostService {
   async getPostFromSocialMediaPost(detailUrl: DetailUrl): Promise<Post> {
     const {textId, platform, postTags, importer, username} = detailUrl;
     const foundPost = await this.postRepository.findOne({
-      where: {textId: textId, platform},
+      where: {textId, platform},
     });
 
     if (foundPost) {
@@ -55,39 +55,29 @@ export class PostService {
       return foundPost;
     }
 
-    let newPost = null;
+    let newPost: Omit<Post, 'id'>;
+    let tags: string[] = postTags;
 
     switch (platform) {
       case PlatformType.TWITTER: {
-        const tweet = await this.socialMediaService.fetchTweet(textId);
-        const tags = !tweet.tags
+        newPost = await this.socialMediaService.fetchTweet(textId);
+        tags = !newPost.tags
           ? []
-          : tweet.tags.filter((tag: string) => {
+          : newPost.tags.filter((tag: string) => {
               return !postTags
                 .map((postTag: string) => postTag.toLowerCase())
                 .includes(tag.toLowerCase());
             });
+        tags = [...tags, ...postTags];
 
-        newPost = {
-          ...tweet,
-          tags: [...tags, ...postTags],
-          importBy: [importer],
-          importerId: importer,
-        } as Post;
         break;
       }
 
       case PlatformType.REDDIT: {
-        const redditPost = await this.socialMediaService.fetchRedditPost(
+        newPost = await this.socialMediaService.fetchRedditPost(
           textId,
         );
 
-        newPost = {
-          ...redditPost,
-          tags: postTags,
-          importBy: [importer],
-          importerId: importer,
-        } as Post;
         break;
       }
 
@@ -96,17 +86,10 @@ export class PostService {
           throw new HttpErrors.UnprocessableEntity('Username not found!');
         }
 
-        const facebookPost = await this.socialMediaService.fetchFacebookPost(
+        newPost = await this.socialMediaService.fetchFacebookPost(
           username,
           textId,
         );
-
-        newPost = {
-          ...facebookPost,
-          tags: postTags,
-          importBy: [importer],
-          importerId: importer,
-        } as Post;
 
         break;
       }
@@ -114,6 +97,10 @@ export class PostService {
       default:
         throw new HttpErrors.NotFound('Cannot found the specified url!');
     }
+
+    newPost.tags = tags;
+    newPost.importBy = [importer];
+    newPost.importerId = importer;
 
     this.tagService.createTags(newPost.tags) as Promise<void>;
 
@@ -123,7 +110,7 @@ export class PostService {
   async createPost(post: Omit<Post, 'id'>): Promise<Post> {
     const {platformUser, platform} = post;
 
-    const foundPeople = await this.peopleRepository.findOne({
+    let foundPeople = await this.peopleRepository.findOne({
       where: {
         platformAccountId: platformUser?.platformAccountId,
         platform: platform,
@@ -131,14 +118,10 @@ export class PostService {
     });
 
     if (!foundPeople) {
-      const people = await this.peopleRepository.create({
+      foundPeople = await this.peopleRepository.create({
         ...platformUser,
         platform,
         hide: false,
-      });
-      return this.createPostWithPublicMetric({
-        ...post,
-        peopleId: people.id,
       });
     }
 
