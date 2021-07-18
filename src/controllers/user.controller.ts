@@ -107,7 +107,7 @@ export class UserController {
     @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
   ): Promise<User[]> {
     // TODO: Move to service
-    const friendIds = await this.friendService.getFriendIds(id);
+    const friendIds = await this.friendService.getApprovedFriendIds(id);
 
     return this.userRepository.find({
       ...filter,
