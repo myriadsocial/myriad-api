@@ -94,13 +94,8 @@ export class TransactionService {
           foundTransactionHistory.id,
           foundTransactionHistory,
         ) as Promise<void>;
-      } else {
-        transactionHistory.createdAt = new Date().toString();
-        transactionHistory.updatedAt = new Date().toString();
 
-        this.transactionHistoryRepository.create(
-          transactionHistory,
-        ) as Promise<TransactionHistory>;
+        return
       }
     } else {
       if (foundTransactionHistory) {
@@ -112,15 +107,17 @@ export class TransactionService {
           foundTransactionHistory.id,
           foundTransactionHistory,
         ) as Promise<void>;
-      } else {
-        transactionHistory.createdAt = new Date().toString();
-        transactionHistory.updatedAt = new Date().toString();
 
-        this.transactionHistoryRepository.create(
-          transactionHistory,
-        ) as Promise<TransactionHistory>;
+        return
       }
     }
+
+    transactionHistory.createdAt = new Date().toString();
+    transactionHistory.updatedAt = new Date().toString();
+
+    this.transactionHistoryRepository.create(
+      transactionHistory,
+    ) as Promise<TransactionHistory>;
   }
 
   async isTotalTipInPersonUpdated(
