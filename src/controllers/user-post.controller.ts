@@ -47,8 +47,8 @@ export class UserPostController {
     let where = null;
     // TODO: move logic to service
     if (!topic) {
-      const getFriendIds = await this.friendService.getFriendIds(id);
-      const friendIds = [...getFriendIds, id];
+      const getApprovedFriendIds = await this.friendService.getApprovedFriendIds(id);
+      const friendIds = [...getApprovedFriendIds, id];
       const importBys = friendIds.map(friendId => {
         return {
           importBy: {
