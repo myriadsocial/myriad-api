@@ -32,7 +32,7 @@
     "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && yarn run posttest",
     "docker:build": "./.maintain/docker/build-image.sh",
     "docker:run": "./.maintain/docker/start-docker-compose.sh",
-    "docker:stop": "./.maintain/docker/stop-docker-compose.sh",
+    "docker:down": "./.maintain/docker/stop-docker-compose.sh",
     "premigrate": "yarn run build",
     "migrate": "node ./dist/migrate",
     "preopenapi-spec": "yarn run build",
