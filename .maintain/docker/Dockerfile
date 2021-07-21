@@ -4,14 +4,14 @@ FROM node:14-buster-slim
 ARG VCS_REF
 ARG BUILD_DATE
 
-LABEL social.myriad.api.image.authors="1@myriad.social" \
-  social.myriad.api.image.vendor="Myriadsocial" \
-  social.myriad.api.image.title="myriadsocial/myriad-api" \
-  social.myriad.api.image.description="myriad-api" \
-  social.myriad.api.image.source="https://github.com/myriadsocial/myriad-api/blob/${VCS_REF}/.maintain/docker/Dockerfile" \
-  social.myriad.api.image.revision="${VCS_REF}" \
-  social.myriad.api.image.created="${BUILD_DATE}" \
-  social.myriad.api.image.documentation="https://github.com/myriadsocial/myriad-api/tree/${VCS_REF}"
+LABEL social.myriad.image.title="myriadsocial/myriad-api" \
+  social.myriad.image.description="myriad-api" \
+  social.myriad.image.authors="myriad.dev@blocksphere.id" \
+  social.myriad.image.vendor="Blocksphere" \
+  social.myriad.image.revision="${VCS_REF}" \
+  social.myriad.image.created="${BUILD_DATE}" \
+  social.myriad.image.source="https://github.com/myriadsocial/myriad-api/blob/${VCS_REF}/.maintain/docker/Dockerfile" \
+  social.myriad.image.documentation="https://github.com/myriadsocial/myriad-api/tree/${VCS_REF}"
 
 # Change default user name
 RUN usermod -d /home/myriad -l myriad node && \

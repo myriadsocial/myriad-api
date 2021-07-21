@@ -2,18 +2,20 @@
   "name": "myriad-api",
   "version": "1.0.0",
   "description": "myriad-api",
-  "keywords": [
-    "loopback-application",
-    "loopback",
-    "myriad-api",
-    "myriad"
-  ],
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "engines": {
     "node": ">=10.16",
     "yarn": ">=1.21.1"
   },
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Myriad Dev Team <myriad.dev@blocksphere.id>",
+  "homepage": "https://myriad.social",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myriadsocial/myriad-api.git"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "lb-tsc",
     "build:watch": "lb-tsc --watch",
@@ -28,8 +30,9 @@
     "test": "lb-mocha --allow-console-logs \"dist/__tests__\"",
     "posttest": "yarn run lint",
     "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && yarn run posttest",
-    "docker:build": "docker build -t myriadsocial/myriad-api .",
-    "docker:run": "docker run -p 3000:3000 -d myriadsocial/myriad-api",
+    "docker:build": "./.maintain/docker/build-image.sh",
+    "docker:run": "./.maintain/docker/start-docker-compose.sh",
+    "docker:down": "./.maintain/docker/stop-docker-compose.sh",
     "premigrate": "yarn run build",
     "migrate": "node ./dist/migrate",
     "preopenapi-spec": "yarn run build",
@@ -39,18 +42,6 @@
     "clean": "lb-clean dist *.tsbuildinfo .eslintcache",
     "rebuild": "yarn run clean && yarn run build"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/myriadsocial/myriad-api.git"
-  },
-  "author": "Myriad <1@myriad.social>",
-  "license": "UNLICENSED",
-  "files": [
-    "README.md",
-    "dist",
-    "src",
-    "!*/__tests__"
-  ],
   "dependencies": {
     "@acala-network/api": "^1.0.1",
     "@loopback/authentication": "^7.3.1",
