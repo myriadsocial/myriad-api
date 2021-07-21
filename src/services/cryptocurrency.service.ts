@@ -199,7 +199,7 @@ export class CryptocurrencyService {
     const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
     const from = keyring.addFromMnemonic(mnemonic);
     const to = userId;
-    const reward = +(process.env.MYRIAD_REWARD ?? 0) * 10 ** myriadDecimal;
+    const reward = +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) * 10 ** myriadDecimal;
     const {nonce} = await api.query.system.account(from.address);
     const getNonce = await this.getQueueNumber(nonce.toJSON());
 
