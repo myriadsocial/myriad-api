@@ -17,3 +17,10 @@ export enum DefaultInq {
   TAGS = 'cryptocurrency,blockchain,technology',
   PEOPLE = 'elonmusk,gavofyork,W3F_Bill,CryptoChief,BillGates,vitalikbuterineth',
 }
+
+export enum TimelineType {
+  EXPERIENCE = 'experience',
+  TRENDING = 'trending',
+  FRIEND = 'friend',
+  ALL = 'all'
+}
