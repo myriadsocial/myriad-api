@@ -1,4 +1,5 @@
 import {repository} from '@loopback/repository';
+import {OrderFieldType, OrderType} from '../enums';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
 
@@ -45,5 +46,17 @@ export class TagService {
         }) as Promise<void>;
       }
     }
+  }
+
+  async trendingTopics(): Promise<string[]> {
+    const trendingTopic = await this.tagRepository.find({
+      order: [
+        `${OrderFieldType.COUNT} ${OrderType.DESC}`,
+        `${OrderFieldType.UPDATEDAT} ${OrderType.DESC}`
+      ],
+      limit: 5
+    })
+
+    return trendingTopic.map(tag => tag.id);
   }
 }
