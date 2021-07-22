@@ -31,6 +31,12 @@ export class SavedExperience extends Entity {
   })
   experienceId: string;
 
+  @property({
+    type: 'boolean',
+    default: true
+  })
+  hasSelected: boolean;
+
   constructor(data?: Partial<SavedExperience>) {
     super(data);
   }
