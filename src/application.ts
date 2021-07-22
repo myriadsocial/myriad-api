@@ -23,6 +23,8 @@ import {
   PostService,
   MetricService,
   CryptocurrencyService,
+  FilterService,
+  ExperienceService,
   FCMService,
 } from './services';
 import {AuthenticationComponent} from '@loopback/authentication';
@@ -90,6 +92,8 @@ export class MyriadApiApplication extends BootMixin(
     this.service(PostService);
     this.service(TagService);
     this.service(MetricService);
+    this.service(ExperienceService);
+    this.service(FilterService);
 
     // 3rd party service
     this.service(FCMService);
