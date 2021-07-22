@@ -149,7 +149,6 @@ export class SocialMediaService {
             'normal',
             '400x400',
           ),
-          hide: false,
         }) as Promise<People>;
       }
     }
