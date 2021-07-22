@@ -96,7 +96,7 @@ export class ExperienceController {
   ): Promise<void> {
     const foundExperience = await this.experienceRepository.findById(id);
 
-    if (foundExperience.userId !== experience.userId)
+    if (foundExperience.creatorId !== experience.creatorId)
       throw new HttpErrors.UnprocessableEntity(
         'This experience does not belong to you',
       );
