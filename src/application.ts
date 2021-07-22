@@ -55,7 +55,11 @@ export class MyriadApiApplication extends BootMixin(
     // Bind services
     this.bindService();
 
-    this.add(createBindingFromClass(FetchContentSocialMediaJob));
+    // Bind job
+    this.bindJob();
+
+    // Firebase initialization
+    this.firebaseInit();
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -67,18 +71,6 @@ export class MyriadApiApplication extends BootMixin(
         nested: true,
       },
     };
-
-    // initialize firebase app
-    firebaseAdmin.initializeApp({
-      credential: firebaseAdmin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID ?? '',
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL ?? '',
-        privateKey: (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(
-          /\\n/g,
-          '\n',
-        ),
-      }),
-    });
   }
 
   bindComponent() {
@@ -101,5 +93,26 @@ export class MyriadApiApplication extends BootMixin(
 
     // 3rd party service
     this.service(FCMService);
+  }
+
+  bindJob() {
+    this.add(createBindingFromClass(FetchContentSocialMediaJob));
+  }
+
+  firebaseInit() {
+    try {
+      firebaseAdmin.initializeApp({
+        credential: firebaseAdmin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID ?? '',
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL ?? '',
+          privateKey: (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(
+            /\\n/g,
+            '\n',
+          ),
+        }),
+      });
+    } catch {
+      firebaseAdmin.initializeApp();
+    }
   }
 }
