@@ -9,7 +9,7 @@ import {PersonTip} from './person-tip.model';
     mongodb: {
       collection: 'people',
     },
-    hiddenProperties: ['totalTips'],
+    // TODO: removed unused line
   },
 })
 export class People extends Entity {
@@ -53,11 +53,7 @@ export class People extends Entity {
   })
   profileImageURL: string;
 
-  @property({
-    type: 'boolean',
-    default: false,
-  })
-  hide?: boolean;
+  // TODO: removed unused field (hide property)
 
   @hasOne(() => UserCredential)
   credential: UserCredential;
