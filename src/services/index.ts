@@ -17,4 +17,6 @@ export * from './social-media.service';
 export * from './user-credential.service';
 export * from './post.service';
 export * from './metric.service';
+export * from './experience.service';
+export * from './filter.service';
 export * from './fcm.service';
