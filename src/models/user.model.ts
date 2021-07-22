@@ -103,7 +103,7 @@ export class User extends Entity {
   })
   deletedAt?: string;
 
-  @hasMany(() => Experience)
+  @hasMany(() => Experience, {keyTo: 'creatorId'})
   experiences: Experience[];
 
   @hasMany(() => Comment)
