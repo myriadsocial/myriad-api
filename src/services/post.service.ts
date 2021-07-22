@@ -121,7 +121,6 @@ export class PostService {
       foundPeople = await this.peopleRepository.create({
         ...platformUser,
         platform,
-        hide: false,
       });
     }
 
