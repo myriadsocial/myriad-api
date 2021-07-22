@@ -5,6 +5,7 @@ import {
   model,
   property,
 } from '@loopback/repository';
+import {People} from './people.model';
 import {SavedExperience} from './saved-experience.model';
 import {User} from './user.model';
 
@@ -30,9 +31,6 @@ export class Experience extends Entity {
   @property({
     type: 'string',
     required: true,
-    index: {
-      unique: true,
-    },
     jsonSchema: {
       maxLength: 50,
       minLength: 1,
@@ -42,24 +40,17 @@ export class Experience extends Entity {
 
   @property({
     type: 'array',
-    itemType: 'object',
+    itemType: 'string',
     required: false,
   })
-  tags: object[];
+  tags: string[];
 
   @property({
     type: 'array',
     itemType: 'object',
     required: false,
   })
-  people: object[];
-
-  @property({
-    type: 'string',
-    required: false,
-    default: '',
-  })
-  layout: string;
+  people: People[];
 
   @property({
     type: 'date',
@@ -80,19 +71,13 @@ export class Experience extends Entity {
   deletedAt?: string;
 
   @property({
-    type: 'boolean',
-    default: false,
-  })
-  default?: boolean;
-
-  @property({
     type: 'string',
     required: false,
   })
   description: string;
 
-  @belongsTo(() => User)
-  userId: string;
+  @belongsTo(() => User, {name: 'user'})
+  creatorId: string;
 
   @hasMany(() => User, {
     through: {
