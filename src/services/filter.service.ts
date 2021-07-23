@@ -15,12 +15,12 @@ export class FilterService {
   ) {}
 
   async filterByExperience(userId: string): Promise<Where | null> {
-    const foundSelectedExperience = await this.experienceService.getSelectedExperience(userId);
+    const experience = await this.experienceService.getExperience(userId);
 
-    if (!foundSelectedExperience) return null;
+    if (!experience) return null;
 
-    const tags = foundSelectedExperience.tags;
-    const personIds = foundSelectedExperience.people.map(person => person.id);
+    const tags = experience.tags;
+    const personIds = experience.people.map(person => person.id);
 
     return {
       or: [
@@ -75,9 +75,9 @@ export class FilterService {
     const approvedFriendIds = await this.friendService.getApprovedFriendIds(userId);
     const trendingTopics = await this.tagService.trendingTopics();
 
-    const foundSelectedExperience = await this.experienceService.getSelectedExperience(userId);
-    const experienceTopics: string[] = foundSelectedExperience ? foundSelectedExperience.tags : [];
-    const experiencePersonIds: string[] = foundSelectedExperience ? foundSelectedExperience.people.map(person => person.id) : [];
+    const experience = await this.experienceService.getExperience(userId);
+    const experienceTopics: string[] = experience ? experience.tags : [];
+    const experiencePersonIds: string[] = experience ? experience.people.map(person => person.id) : [];
 
     const friends = [...approvedFriendIds, userId];
     const topics = [...trendingTopics, ...experienceTopics];
