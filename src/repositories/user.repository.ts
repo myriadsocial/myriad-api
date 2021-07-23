@@ -13,7 +13,7 @@ import {
   Experience,
   Friend,
   Post,
-  SavedExperience,
+  UserExperience,
   Cryptocurrency,
   User,
   UserCredential,
@@ -26,7 +26,7 @@ import {TransactionHistoryRepository} from './transaction-history.repository';
 import {ExperienceRepository} from './experience.repository';
 import {FriendRepository} from './friend.repository';
 import {PostRepository} from './post.repository';
-import {SavedExperienceRepository} from './saved-experience.repository';
+import {UserExperienceRepository} from './user-experience.repository';
 import {CryptocurrencyRepository} from './cryptocurrency.repository';
 import {UserCredentialRepository} from './user-credential.repository';
 import {UserCryptoRepository} from './user-crypto.repository';
@@ -46,10 +46,10 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
-  public readonly savedExperiences: HasManyThroughRepositoryFactory<
+  public readonly userExperiences: HasManyThroughRepositoryFactory<
     Experience,
     typeof Experience.prototype.id,
-    SavedExperience,
+    UserExperience,
     typeof User.prototype.id
   >;
 
@@ -93,8 +93,8 @@ export class UserRepository extends DefaultCrudRepository<
     protected experienceRepositoryGetter: Getter<ExperienceRepository>,
     @repository.getter('CommentRepository')
     protected commentRepositoryGetter: Getter<CommentRepository>,
-    @repository.getter('SavedExperienceRepository')
-    protected savedExperienceRepositoryGetter: Getter<SavedExperienceRepository>,
+    @repository.getter('UserExperienceRepository')
+    protected userExperienceRepositoryGetter: Getter<UserExperienceRepository>,
     @repository.getter('UserCredentialRepository')
     protected userCredentialRepositoryGetter: Getter<UserCredentialRepository>,
     @repository.getter('PostRepository')
@@ -157,14 +157,14 @@ export class UserRepository extends DefaultCrudRepository<
       'credentials',
       this.userCredentials.inclusionResolver,
     );
-    this.savedExperiences = this.createHasManyThroughRepositoryFactoryFor(
-      'savedExperiences',
+    this.userExperiences = this.createHasManyThroughRepositoryFactoryFor(
+      'userExperiences',
       experienceRepositoryGetter,
-      savedExperienceRepositoryGetter,
+      userExperienceRepositoryGetter,
     );
     this.registerInclusionResolver(
-      'savedExperiences',
-      this.savedExperiences.inclusionResolver,
+      'userExperiences',
+      this.userExperiences.inclusionResolver,
     );
     this.comments = this.createHasManyRepositoryFactoryFor(
       'comments',

@@ -1,11 +1,10 @@
 import {
   belongsTo,
   Entity,
-  hasMany,
   model,
   property,
 } from '@loopback/repository';
-import {SavedExperience} from './saved-experience.model';
+import {People} from './people.model';
 import {User} from './user.model';
 
 @model({
@@ -30,9 +29,6 @@ export class Experience extends Entity {
   @property({
     type: 'string',
     required: true,
-    index: {
-      unique: true,
-    },
     jsonSchema: {
       maxLength: 50,
       minLength: 1,
@@ -42,24 +38,17 @@ export class Experience extends Entity {
 
   @property({
     type: 'array',
-    itemType: 'object',
+    itemType: 'string',
     required: false,
   })
-  tags: object[];
+  tags: string[];
 
   @property({
     type: 'array',
     itemType: 'object',
     required: false,
   })
-  people: object[];
-
-  @property({
-    type: 'string',
-    required: false,
-    default: '',
-  })
-  layout: string;
+  people: People[];
 
   @property({
     type: 'date',
@@ -80,28 +69,22 @@ export class Experience extends Entity {
   deletedAt?: string;
 
   @property({
-    type: 'boolean',
-    default: false,
-  })
-  default?: boolean;
-
-  @property({
     type: 'string',
     required: false,
+    jsonSchema: {
+      maxLength: 280,
+    },
   })
   description: string;
 
-  @belongsTo(() => User)
-  userId: string;
-
-  @hasMany(() => User, {
-    through: {
-      model: () => SavedExperience,
-      keyFrom: 'experienceId',
-      keyTo: 'userId',
-    },
+  @property({
+    type: 'number',
+    default: 0,
   })
-  users: User[];
+  cloned: number;
+
+  @belongsTo(() => User, {name: 'user'})
+  creatorId: string;
 
   constructor(data?: Partial<Experience>) {
     super(data);

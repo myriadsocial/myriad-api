@@ -17,7 +17,7 @@ import {
   PostRepository,
   PublicMetricRepository,
   QueueRepository,
-  SavedExperienceRepository,
+  UserExperienceRepository,
   TagRepository,
   CryptocurrencyRepository,
   TransactionRepository,
@@ -160,8 +160,8 @@ export class InitDatabase extends BootMixin(
       TransactionRepository,
     );
     const userRepository = await this.getRepository(UserRepository);
-    const savedExperienceRepository = await this.getRepository(
-      SavedExperienceRepository,
+    const userExperienceRepository = await this.getRepository(
+      UserExperienceRepository,
     );
     const experienceRepository = await this.getRepository(ExperienceRepository);
     const userCredRepository = await this.getRepository(
@@ -203,7 +203,7 @@ export class InitDatabase extends BootMixin(
     await peopleRepository.deleteAll();
     await transactionRepository.deleteAll();
     await userRepository.deleteAll();
-    await savedExperienceRepository.deleteAll();
+    await userExperienceRepository.deleteAll();
     await experienceRepository.deleteAll();
     await userCredRepository.deleteAll();
     await commentRepository.deleteAll();
