@@ -10,13 +10,13 @@ export class ExperienceService {
     protected experienceRepository: ExperienceRepository,
   ) {}
 
-  async getSelectedExperience(userId: string): Promise<Experience | null> {
-    const selectedUserSavedExperience = await this.savedExperienceRepository.findOne({
+  async getExperience(userId: string): Promise<Experience | null> {
+    const experience = await this.savedExperienceRepository.findOne({
       where: {userId, hasSelected: true }
     })
 
-    if (!selectedUserSavedExperience) return null;
+    if (!experience) return null;
 
-    return this.experienceRepository.findById(selectedUserSavedExperience.experienceId);
+    return this.experienceRepository.findById(experience.experienceId);
   }
 }
