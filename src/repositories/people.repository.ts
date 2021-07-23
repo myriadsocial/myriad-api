@@ -6,13 +6,7 @@ import {
   repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {
-  People,
-  PeopleRelations,
-  Post,
-  UserCredential,
-  PersonTip,
-} from '../models';
+import {People, PeopleRelations, Post, UserCredential, PersonTip} from '../models';
 import {PostRepository} from './post.repository';
 import {UserCredentialRepository} from './user-credential.repository';
 import {PersonTipRepository} from './person-tip.repository';
@@ -27,15 +21,9 @@ export class PeopleRepository extends DefaultCrudRepository<
     typeof People.prototype.id
   >;
 
-  public readonly posts: HasManyRepositoryFactory<
-    Post,
-    typeof People.prototype.id
-  >;
+  public readonly posts: HasManyRepositoryFactory<Post, typeof People.prototype.id>;
 
-  public readonly personTips: HasManyRepositoryFactory<
-    PersonTip,
-    typeof People.prototype.id
-  >;
+  public readonly personTips: HasManyRepositoryFactory<PersonTip, typeof People.prototype.id>;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
@@ -51,22 +39,13 @@ export class PeopleRepository extends DefaultCrudRepository<
       'personTips',
       personTipRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'personTips',
-      this.personTips.inclusionResolver,
-    );
-    this.posts = this.createHasManyRepositoryFactoryFor(
-      'posts',
-      postRepositoryGetter,
-    );
+    this.registerInclusionResolver('personTips', this.personTips.inclusionResolver);
+    this.posts = this.createHasManyRepositoryFactoryFor('posts', postRepositoryGetter);
     this.registerInclusionResolver('posts', this.posts.inclusionResolver);
     this.userCredential = this.createHasOneRepositoryFactoryFor(
       'credential',
       userCredentialRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'credential',
-      this.userCredential.inclusionResolver,
-    );
+    this.registerInclusionResolver('credential', this.userCredential.inclusionResolver);
   }
 }

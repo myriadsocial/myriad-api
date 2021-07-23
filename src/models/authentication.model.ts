@@ -51,5 +51,4 @@ export interface AuthenticationRelations {
   // describe navigational properties here
 }
 
-export type AuthenticationWithRelations = Authentication &
-  AuthenticationRelations;
+export type AuthenticationWithRelations = Authentication & AuthenticationRelations;

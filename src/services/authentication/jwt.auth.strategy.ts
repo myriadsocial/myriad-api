@@ -27,9 +27,7 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
     const authHeaderValue = request.headers.authorization;
 
     if (!authHeaderValue.startsWith('Bearer')) {
-      throw new HttpErrors.Unauthorized(
-        `Authorization header is not of type 'Bearer'.`,
-      );
+      throw new HttpErrors.Unauthorized(`Authorization header is not of type 'Bearer'.`);
     }
 
     //split the string into 2 parts : 'Bearer ' and the `xxx.yyy.zzz`

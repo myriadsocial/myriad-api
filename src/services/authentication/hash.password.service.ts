@@ -8,10 +8,7 @@ export interface PasswordHasher<T = string> {
 }
 
 export class BcryptHasher implements PasswordHasher<string> {
-  async comparePassword(
-    provdedPass: string,
-    storedPass: string,
-  ): Promise<boolean> {
+  async comparePassword(provdedPass: string, storedPass: string): Promise<boolean> {
     const passwordMatches = await compare(provdedPass, storedPass);
     return passwordMatches;
   }

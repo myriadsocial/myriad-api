@@ -1,10 +1,7 @@
 import {FilterExcludingWhere, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param} from '@loopback/rest';
 import {Post} from '../models';
-import {
-  PostRepository,
-  PublicMetricRepository,
-} from '../repositories';
+import {PostRepository, PublicMetricRepository} from '../repositories';
 import {service} from '@loopback/core';
 import {FilterService, FriendService, TagService} from '../services';
 import {TimelineType} from '../enums';
@@ -22,7 +19,7 @@ export class UserPostController {
     @service(TagService)
     protected tagService: TagService,
     @service(FilterService)
-    protected filterService: FilterService
+    protected filterService: FilterService,
   ) {}
 
   @get('/users/{id}/timeline', {
@@ -61,13 +58,13 @@ export class UserPostController {
 
       case TimelineType.ALL:
         where = await this.filterService.showAll(id);
-        break
+        break;
 
       default:
-        return []
+        return [];
     }
 
-    if (where === null) return []
+    if (where === null) return [];
 
     return this.postRepository.find({
       ...filter,

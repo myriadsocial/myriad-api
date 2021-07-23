@@ -33,10 +33,7 @@ export class PostRepository extends DefaultCrudRepository<
   typeof Post.prototype.id,
   PostRelations
 > {
-  public readonly comments: HasManyRepositoryFactory<
-    Comment,
-    typeof Post.prototype.id
-  >;
+  public readonly comments: HasManyRepositoryFactory<Comment, typeof Post.prototype.id>;
 
   public readonly people: BelongsToAccessor<People, typeof Post.prototype.id>;
 
@@ -44,30 +41,15 @@ export class PostRepository extends DefaultCrudRepository<
 
   public readonly importer: BelongsToAccessor<User, typeof Post.prototype.id>;
 
-  public readonly likes: HasManyRepositoryFactory<
-    Like,
-    typeof Post.prototype.id
-  >;
+  public readonly likes: HasManyRepositoryFactory<Like, typeof Post.prototype.id>;
 
-  public readonly publicMetric: HasOneRepositoryFactory<
-    PublicMetric,
-    typeof Post.prototype.id
-  >;
+  public readonly publicMetric: HasOneRepositoryFactory<PublicMetric, typeof Post.prototype.id>;
 
-  public readonly dislikes: HasManyRepositoryFactory<
-    Dislike,
-    typeof Post.prototype.id
-  >;
+  public readonly dislikes: HasManyRepositoryFactory<Dislike, typeof Post.prototype.id>;
 
-  public readonly transactions: HasManyRepositoryFactory<
-    Transaction,
-    typeof Post.prototype.id
-  >;
+  public readonly transactions: HasManyRepositoryFactory<Transaction, typeof Post.prototype.id>;
 
-  public readonly postTips: HasManyRepositoryFactory<
-    PostTip,
-    typeof Post.prototype.id
-  >;
+  public readonly postTips: HasManyRepositoryFactory<PostTip, typeof Post.prototype.id>;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
@@ -89,53 +71,29 @@ export class PostRepository extends DefaultCrudRepository<
     protected postTipRepositoryGetter: Getter<PostTipRepository>,
   ) {
     super(Post, dataSource);
-    this.postTips = this.createHasManyRepositoryFactoryFor(
-      'postTips',
-      postTipRepositoryGetter,
-    );
+    this.postTips = this.createHasManyRepositoryFactoryFor('postTips', postTipRepositoryGetter);
     this.registerInclusionResolver('postTips', this.postTips.inclusionResolver);
     this.transactions = this.createHasManyRepositoryFactoryFor(
       'transactions',
       transactionRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'transactions',
-      this.transactions.inclusionResolver,
-    );
-    this.dislikes = this.createHasManyRepositoryFactoryFor(
-      'dislikes',
-      dislikeRepositoryGetter,
-    );
+    this.registerInclusionResolver('transactions', this.transactions.inclusionResolver);
+    this.dislikes = this.createHasManyRepositoryFactoryFor('dislikes', dislikeRepositoryGetter);
     this.registerInclusionResolver('dislikes', this.dislikes.inclusionResolver);
     this.publicMetric = this.createHasOneRepositoryFactoryFor(
       'metric',
       publicMetricRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'metric',
-      this.publicMetric.inclusionResolver,
-    );
-    this.likes = this.createHasManyRepositoryFactoryFor(
-      'likes',
-      likeRepositoryGetter,
-    );
+    this.registerInclusionResolver('metric', this.publicMetric.inclusionResolver);
+    this.likes = this.createHasManyRepositoryFactoryFor('likes', likeRepositoryGetter);
     this.registerInclusionResolver('likes', this.likes.inclusionResolver);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
-    this.importer = this.createBelongsToAccessorFor(
-      'importer',
-      userRepositoryGetter,
-    );
+    this.importer = this.createBelongsToAccessorFor('importer', userRepositoryGetter);
     this.registerInclusionResolver('importer', this.importer.inclusionResolver);
-    this.people = this.createBelongsToAccessorFor(
-      'people',
-      peopleRepositoryGetter,
-    );
+    this.people = this.createBelongsToAccessorFor('people', peopleRepositoryGetter);
     this.registerInclusionResolver('people', this.people.inclusionResolver);
-    this.comments = this.createHasManyRepositoryFactoryFor(
-      'comments',
-      commentRepositoryGetter,
-    );
+    this.comments = this.createHasManyRepositoryFactoryFor('comments', commentRepositoryGetter);
     this.registerInclusionResolver('comments', this.comments.inclusionResolver);
   }
 }

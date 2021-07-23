@@ -17,24 +17,15 @@ export class UserCredentialService {
   ) {}
 
   async createCredential(user: ExtendedUser) {
-    const {
-      name,
-      platformAccountId,
-      username,
-      platform,
-      profileImageURL,
-      publicKey,
-    } = user;
+    const {name, platformAccountId, username, platform, profileImageURL, publicKey} = user;
 
     // Verify credential
-    const foundPlatformCredential = await this.userCredentialRepository.findOne(
-      {
-        where: {
-          userId: publicKey,
-          platform: platform,
-        },
+    const foundPlatformCredential = await this.userCredentialRepository.findOne({
+      where: {
+        userId: publicKey,
+        platform: platform,
       },
-    );
+    });
 
     if (foundPlatformCredential) {
       const person = await this.peopleRepository.findOne({
@@ -44,9 +35,7 @@ export class UserCredentialService {
       });
 
       if (person && person.platformAccountId !== platformAccountId) {
-        throw new HttpErrors.NotFound(
-          `This ${person.platform} does not belong to you!`,
-        );
+        throw new HttpErrors.NotFound(`This ${person.platform} does not belong to you!`);
       }
     }
 
@@ -72,9 +61,7 @@ export class UserCredentialService {
 
       if (foundCredential.userId === user.publicKey) {
         if (foundCredential.isVerified) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You already verified this account',
-          );
+          throw new HttpErrors.UnprocessableEntity('You already verified this account');
         }
 
         foundCredential.isVerified = true;
@@ -98,9 +85,7 @@ export class UserCredentialService {
     });
 
     if (platform === PlatformType.TWITTER) {
-      this.socialMediaService.fetchTwitterFollowing(
-        platformAccountId ?? '',
-      ) as Promise<void>;
+      this.socialMediaService.fetchTwitterFollowing(platformAccountId ?? '') as Promise<void>;
     }
 
     return this.peopleRepository.userCredential(newPeople.id).create({

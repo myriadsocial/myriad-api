@@ -1,9 +1,5 @@
 import {Getter, inject} from '@loopback/core';
-import {
-  BelongsToAccessor,
-  DefaultCrudRepository,
-  repository,
-} from '@loopback/repository';
+import {BelongsToAccessor, DefaultCrudRepository, repository} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Conversation, ConversationRelations, Post, User} from '../models';
 import {PostRepository} from './post.repository';
@@ -14,15 +10,9 @@ export class ConversationRepository extends DefaultCrudRepository<
   typeof Conversation.prototype.id,
   ConversationRelations
 > {
-  public readonly user: BelongsToAccessor<
-    User,
-    typeof Conversation.prototype.id
-  >;
+  public readonly user: BelongsToAccessor<User, typeof Conversation.prototype.id>;
 
-  public readonly post: BelongsToAccessor<
-    Post,
-    typeof Conversation.prototype.id
-  >;
+  public readonly post: BelongsToAccessor<Post, typeof Conversation.prototype.id>;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,

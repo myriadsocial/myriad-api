@@ -98,9 +98,7 @@ export class PostController {
 
     const newPost = await this.postRepository.create(_post);
 
-    this.postRepository
-      .publicMetric(newPost.id)
-      .create({}) as Promise<PublicMetric>;
+    this.postRepository.publicMetric(newPost.id).create({}) as Promise<PublicMetric>;
 
     // TODO: move logic to tagService
     if (_post.tags.length > 0) {
@@ -141,10 +139,7 @@ export class PostController {
       platform = checkPlatform[0];
     }
 
-    if (
-      platform === PlatformType.TWITTER ||
-      platform === PlatformType.FACEBOOK
-    ) {
+    if (platform === PlatformType.TWITTER || platform === PlatformType.FACEBOOK) {
       textId = splitURL[5];
     } else {
       textId = splitURL[6];

@@ -65,5 +65,4 @@ export interface TransactionHistoryRelations {
   // describe navigational properties here
 }
 
-export type TransactionHistoryWithRelations = TransactionHistory &
-  TransactionHistoryRelations;
+export type TransactionHistoryWithRelations = TransactionHistory & TransactionHistoryRelations;

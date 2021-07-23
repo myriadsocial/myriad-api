@@ -1,8 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {
-  Cryptocurrency,
-  CryptocurrencyWithRelations,
-} from './cryptocurrency.model';
+import {Cryptocurrency, CryptocurrencyWithRelations} from './cryptocurrency.model';
 import {User} from './user.model';
 
 @model({

@@ -12,11 +12,7 @@ import {
 } from '@loopback/rest';
 import {User} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
-import {
-  CryptocurrencyService,
-  NotificationService,
-  FriendService,
-} from '../services';
+import {CryptocurrencyService, NotificationService, FriendService} from '../services';
 import dotenv from 'dotenv';
 // import {authenticate} from '@loopback/authentication';
 

@@ -1,11 +1,5 @@
 import {service} from '@loopback/core';
-import {
-  Count,
-  CountSchema,
-  Filter,
-  repository,
-  Where,
-} from '@loopback/repository';
+import {Count, CountSchema, Filter, repository, Where} from '@loopback/repository';
 import {
   del,
   get,
@@ -95,10 +89,7 @@ export class PostCommentController {
     const newComment = await this.postRepository.comments(id).create(comment);
 
     try {
-      await this.notificationService.sendPostComment(
-        comment.userId,
-        newComment,
-      );
+      await this.notificationService.sendPostComment(comment.userId, newComment);
     } catch (error) {
       // ignored
     }

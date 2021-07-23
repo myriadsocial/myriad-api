@@ -66,28 +66,19 @@ export class TransactionService {
     ) as Promise<void>;
   }
 
-  async recordTransactionHistory(
-    transactionHistory: TransactionHistory,
-  ): Promise<void> {
-    const {
-      sentToMe,
-      sentToThem,
-      userId,
-      cryptocurrencyId: cryptoId,
-    } = transactionHistory;
+  async recordTransactionHistory(transactionHistory: TransactionHistory): Promise<void> {
+    const {sentToMe, sentToThem, userId, cryptocurrencyId: cryptoId} = transactionHistory;
 
-    const foundTransactionHistory =
-      await this.transactionHistoryRepository.findOne({
-        where: {
-          userId: userId,
-          cryptocurrencyId: cryptoId,
-        },
-      });
+    const foundTransactionHistory = await this.transactionHistoryRepository.findOne({
+      where: {
+        userId: userId,
+        cryptocurrencyId: cryptoId,
+      },
+    });
 
     if (sentToMe) {
       if (foundTransactionHistory) {
-        foundTransactionHistory.sentToMe =
-          foundTransactionHistory.sentToMe + sentToMe;
+        foundTransactionHistory.sentToMe = foundTransactionHistory.sentToMe + sentToMe;
         foundTransactionHistory.updatedAt = new Date().toString();
 
         this.transactionHistoryRepository.updateById(
@@ -95,29 +86,26 @@ export class TransactionService {
           foundTransactionHistory,
         ) as Promise<void>;
 
-        return
+        return;
       }
     } else {
       if (foundTransactionHistory) {
         foundTransactionHistory.updatedAt = new Date().toString();
-        foundTransactionHistory.sentToThem =
-          foundTransactionHistory.sentToThem + sentToThem;
+        foundTransactionHistory.sentToThem = foundTransactionHistory.sentToThem + sentToThem;
 
         this.transactionHistoryRepository.updateById(
           foundTransactionHistory.id,
           foundTransactionHistory,
         ) as Promise<void>;
 
-        return
+        return;
       }
     }
 
     transactionHistory.createdAt = new Date().toString();
     transactionHistory.updatedAt = new Date().toString();
 
-    this.transactionHistoryRepository.create(
-      transactionHistory,
-    ) as Promise<TransactionHistory>;
+    this.transactionHistoryRepository.create(transactionHistory) as Promise<TransactionHistory>;
   }
 
   async isTotalTipInPersonUpdated(
@@ -161,11 +149,7 @@ export class TransactionService {
     return false;
   }
 
-  async totalTipInPost(
-    postId: string,
-    cryptoId: string,
-    value: number,
-  ): Promise<void> {
+  async totalTipInPost(postId: string, cryptoId: string, value: number): Promise<void> {
     const foundPostTips = await this.postTipRepository.findOne({
       where: {
         postId,

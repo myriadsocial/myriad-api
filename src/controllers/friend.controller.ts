@@ -46,18 +46,12 @@ export class FriendController {
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
     // TODO: Move logic to service
-    const foundFriend = await this.friendService.findFriend(
-      friend.friendId,
-      friend.requestorId,
-    );
+    const foundFriend = await this.friendService.findFriend(friend.friendId, friend.requestorId);
 
     if (foundFriend) return foundFriend;
 
     try {
-      await this.notificationService.sendFriendRequest(
-        friend.requestorId,
-        friend.friendId,
-      );
+      await this.notificationService.sendFriendRequest(friend.requestorId, friend.friendId);
     } catch (error) {
       // ignored
     }
@@ -117,10 +111,7 @@ export class FriendController {
   ): Promise<void> {
     if (friend.status === FriendStatusType.APPROVED) {
       try {
-        await this.notificationService.sendFriendAccept(
-          friend.friendId,
-          friend.requestorId,
-        );
+        await this.notificationService.sendFriendAccept(friend.friendId, friend.requestorId);
       } catch (error) {
         // ignored
       }

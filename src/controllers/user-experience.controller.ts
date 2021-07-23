@@ -1,10 +1,4 @@
-import {
-  Count,
-  CountSchema,
-  Filter,
-  repository,
-  Where,
-} from '@loopback/repository';
+import {Count, CountSchema, Filter, repository, Where} from '@loopback/repository';
 import {
   del,
   get,
@@ -29,8 +23,7 @@ export class UserExperienceController {
   @get('/users/{id}/experiences', {
     responses: {
       '200': {
-        description:
-          'Array of User has many Experience through SavedExperience',
+        description: 'Array of User has many Experience through SavedExperience',
         content: {
           'application/json': {
             schema: {type: 'array', items: getModelSchemaRef(Experience)},
@@ -70,9 +63,7 @@ export class UserExperienceController {
   ): Promise<Experience> {
     experience.createdAt = new Date().toString();
     experience.updatedAt = new Date().toString();
-    const newExperience = await this.userRepository
-      .savedExperiences(id)
-      .create(experience);
+    const newExperience = await this.userRepository.savedExperiences(id).create(experience);
 
     return newExperience;
   }

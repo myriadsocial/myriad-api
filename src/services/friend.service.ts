@@ -12,10 +12,7 @@ export class FriendService {
     protected friendRepository: FriendRepository,
   ) {}
 
-  async findFriend(
-    friendId: string,
-    requestorId: string,
-  ): Promise<Friend | null> {
+  async findFriend(friendId: string, requestorId: string): Promise<Friend | null> {
     if (friendId === requestorId) {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself');
     }
@@ -48,9 +45,7 @@ export class FriendService {
     });
 
     if (foundFriend && foundFriend.status === FriendStatusType.APPROVED) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You already friend with this user',
-      );
+      throw new HttpErrors.UnprocessableEntity('You already friend with this user');
     }
 
     if (foundFriend && foundFriend.status === FriendStatusType.PENDING) {

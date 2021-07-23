@@ -5,10 +5,7 @@ import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {PasswordHasherBindings} from '../../keys';
 import {Authentication, AuthenticationWithRelations} from '../../models';
-import {
-  Credentials,
-  AuthenticationRepository,
-} from '../../repositories/authentication.repository';
+import {Credentials, AuthenticationRepository} from '../../repositories/authentication.repository';
 import {BcryptHasher} from './hash.password.service';
 
 export class MyAuthService implements UserService<Authentication, Credentials> {
@@ -33,8 +30,7 @@ export class MyAuthService implements UserService<Authentication, Credentials> {
       throw new HttpErrors.Unauthorized(invalidCredentialsError);
     }
 
-    const credentialsFound =
-      await this.authenticationRepository.findCredentials(foundAuth.id);
+    const credentialsFound = await this.authenticationRepository.findCredentials(foundAuth.id);
 
     if (!credentialsFound) {
       throw new HttpErrors.Unauthorized(invalidCredentialsError);
@@ -61,9 +57,7 @@ export class MyAuthService implements UserService<Authentication, Credentials> {
     // throw new Error('Method not implemented.');
   }
 
-  async findAuthById(
-    id: string,
-  ): Promise<Authentication & AuthenticationWithRelations> {
+  async findAuthById(id: string): Promise<Authentication & AuthenticationWithRelations> {
     const userNotfound = 'invalid User';
     const foundAuth = await this.authenticationRepository.findOne({
       where: {

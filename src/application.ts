@@ -3,10 +3,7 @@ import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
 import {CronComponent} from '@loopback/cron';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
-import {
-  RestExplorerBindings,
-  RestExplorerComponent,
-} from '@loopback/rest-explorer';
+import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import dotenv from 'dotenv';
 import * as firebaseAdmin from 'firebase-admin';

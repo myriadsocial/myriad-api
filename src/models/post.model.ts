@@ -1,11 +1,4 @@
-import {
-  belongsTo,
-  Entity,
-  hasMany,
-  hasOne,
-  model,
-  property,
-} from '@loopback/repository';
+import {belongsTo, Entity, hasMany, hasOne, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
 import {Dislike} from './dislike.model';
 import {Like} from './like.model';
@@ -22,12 +15,7 @@ import {PostTip} from './post-tip.model';
     mongodb: {
       collection: 'posts',
     },
-    hiddenProperties: [
-      'walletAddress',
-      'totalComment',
-      'totalLiked',
-      'totalDisliked',
-    ],
+    hiddenProperties: ['walletAddress', 'totalComment', 'totalLiked', 'totalDisliked'],
   },
 })
 export class Post extends Entity {

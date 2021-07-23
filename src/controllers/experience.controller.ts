@@ -56,9 +56,7 @@ export class ExperienceController {
       },
     },
   })
-  async find(
-    @param.filter(Experience) filter?: Filter<Experience>,
-  ): Promise<Experience[]> {
+  async find(@param.filter(Experience) filter?: Filter<Experience>): Promise<Experience[]> {
     return this.experienceRepository.find(filter);
   }
 
@@ -97,9 +95,7 @@ export class ExperienceController {
     const foundExperience = await this.experienceRepository.findById(id);
 
     if (foundExperience.creatorId !== experience.creatorId)
-      throw new HttpErrors.UnprocessableEntity(
-        'This experience does not belong to you',
-      );
+      throw new HttpErrors.UnprocessableEntity('This experience does not belong to you');
 
     experience.updatedAt = new Date().toString();
 

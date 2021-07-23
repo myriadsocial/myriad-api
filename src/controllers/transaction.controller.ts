@@ -1,14 +1,6 @@
 import {service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {
-  del,
-  get,
-  getModelSchemaRef,
-  param,
-  post,
-  requestBody,
-  response,
-} from '@loopback/rest';
+import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
 import {Transaction, TransactionHistory} from '../models';
 import {
   CryptocurrencyRepository,
@@ -65,27 +57,22 @@ export class TransactionController {
     const {from, to, value, cryptocurrencyId: cryptoId, postId} = transaction;
 
     // Validate if crypto already exist
-    await this.cryptocurrencyRepository.findById(
-      transaction.cryptocurrencyId.toUpperCase(),
-    );
+    await this.cryptocurrencyRepository.findById(transaction.cryptocurrencyId.toUpperCase());
 
     // Validate if user FROM exist
     await this.userRepository.findById(transaction.from);
 
     // Validate if post exist
     // And count total tip in person and post
-    const isPeopleTipUpdated =
-      await this.transactionService.isTotalTipInPersonUpdated(
-        transaction.to,
-        postId,
-        cryptoId,
-        value,
-      );
+    const isPeopleTipUpdated = await this.transactionService.isTotalTipInPersonUpdated(
+      transaction.to,
+      postId,
+      cryptoId,
+      value,
+    );
 
     // Reward to FROM for doing transactions
-    this.cryptocurrencyService.sendMyriadReward(
-      transaction.from,
-    ) as Promise<void>;
+    this.cryptocurrencyService.sendMyriadReward(transaction.from) as Promise<void>;
 
     // record transaction history of FROM
     this.transactionService.recordTransactionHistory({
@@ -128,9 +115,7 @@ export class TransactionController {
       },
     },
   })
-  async find(
-    @param.filter(Transaction) filter?: Filter<Transaction>,
-  ): Promise<Transaction[]> {
+  async find(@param.filter(Transaction) filter?: Filter<Transaction>): Promise<Transaction[]> {
     return this.transactionRepository.find(filter);
   }
 

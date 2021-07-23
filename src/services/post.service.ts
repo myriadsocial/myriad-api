@@ -1,9 +1,5 @@
 import {repository} from '@loopback/repository';
-import {
-  PeopleRepository,
-  PostRepository,
-  PostTipRepository,
-} from '../repositories';
+import {PeopleRepository, PostRepository, PostTipRepository} from '../repositories';
 import {HttpErrors} from '@loopback/rest';
 import {DetailUrl} from '../interfaces';
 import {Post, PostTip, PublicMetric} from '../models';
@@ -36,14 +32,10 @@ export class PostService {
     });
 
     if (foundPost) {
-      const foundImporter = foundPost.importBy.find(
-        (userId: string) => userId === importer,
-      );
+      const foundImporter = foundPost.importBy.find((userId: string) => userId === importer);
 
       if (foundImporter) {
-        throw new HttpErrors.UnprocessableEntity(
-          'You have already import this post',
-        );
+        throw new HttpErrors.UnprocessableEntity('You have already import this post');
       }
 
       foundPost.importBy.push(importer);
@@ -74,9 +66,7 @@ export class PostService {
       }
 
       case PlatformType.REDDIT: {
-        newPost = await this.socialMediaService.fetchRedditPost(
-          textId,
-        );
+        newPost = await this.socialMediaService.fetchRedditPost(textId);
 
         break;
       }
@@ -86,10 +76,7 @@ export class PostService {
           throw new HttpErrors.UnprocessableEntity('Username not found!');
         }
 
-        newPost = await this.socialMediaService.fetchFacebookPost(
-          username,
-          textId,
-        );
+        newPost = await this.socialMediaService.fetchFacebookPost(username, textId);
 
         break;
       }
@@ -140,9 +127,7 @@ export class PostService {
 
     const createdPost = await this.postRepository.create(post);
 
-    this.postRepository
-      .publicMetric(createdPost.id)
-      .create({}) as Promise<PublicMetric>;
+    this.postRepository.publicMetric(createdPost.id).create({}) as Promise<PublicMetric>;
 
     this.postRepository
       .postTips(createdPost.id)

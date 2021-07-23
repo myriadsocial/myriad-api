@@ -1,13 +1,5 @@
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {
-  del,
-  get,
-  getModelSchemaRef,
-  param,
-  patch,
-  requestBody,
-  response,
-} from '@loopback/rest';
+import {del, get, getModelSchemaRef, param, patch, requestBody, response} from '@loopback/rest';
 import {Comment, Post, User} from '../models';
 import {CommentRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
@@ -34,9 +26,7 @@ export class CommentController {
       },
     },
   })
-  async find(
-    @param.filter(Comment) filter?: Filter<Comment>,
-  ): Promise<Comment[]> {
+  async find(@param.filter(Comment) filter?: Filter<Comment>): Promise<Comment[]> {
     return this.commentRepository.find(filter);
   }
 
@@ -69,9 +59,7 @@ export class CommentController {
       },
     },
   })
-  async getUser(
-    @param.path.string('id') id: typeof Comment.prototype.id,
-  ): Promise<User> {
+  async getUser(@param.path.string('id') id: typeof Comment.prototype.id): Promise<User> {
     return this.commentRepository.user(id);
   }
 
@@ -87,9 +75,7 @@ export class CommentController {
       },
     },
   })
-  async getPost(
-    @param.path.string('id') id: typeof Comment.prototype.id,
-  ): Promise<Post> {
+  async getPost(@param.path.string('id') id: typeof Comment.prototype.id): Promise<Post> {
     return this.commentRepository.post(id);
   }
 

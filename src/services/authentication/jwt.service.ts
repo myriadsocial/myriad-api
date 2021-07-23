@@ -19,9 +19,7 @@ export class JWTService implements TokenService {
 
   async generateToken(authProfile: UserProfile): Promise<string> {
     if (!authProfile) {
-      throw new HttpErrors.Unauthorized(
-        'Error while generating token :userProfile is null',
-      );
+      throw new HttpErrors.Unauthorized('Error while generating token :userProfile is null');
     }
     const authInfoForToken = {
       id: authProfile[securityId],
@@ -42,9 +40,7 @@ export class JWTService implements TokenService {
 
   async verifyToken(token: string): Promise<UserProfile> {
     if (!token) {
-      throw new HttpErrors.Unauthorized(
-        `Error verifying token:'token' is null`,
-      );
+      throw new HttpErrors.Unauthorized(`Error verifying token:'token' is null`);
     }
 
     let authProfile: UserProfile;

@@ -13,11 +13,7 @@ import {
 } from '@loopback/rest';
 import {UserCredential, VerifyUser} from '../models';
 import {UserCredentialRepository} from '../repositories';
-import {
-  CryptocurrencyService,
-  SocialMediaService,
-  UserCredentialService,
-} from '../services';
+import {CryptocurrencyService, SocialMediaService, UserCredentialService} from '../services';
 import dotenv from 'dotenv';
 import {PlatformType} from '../enums';
 // import {authenticate} from '@loopback/authentication';
@@ -64,26 +60,17 @@ export class UserCredentialController {
     // TODO: move logic to service
     switch (platform) {
       case PlatformType.TWITTER:
-        platformUser = await this.socialMediaService.verifyToTwitter(
-          username,
-          publickey,
-        ); // Fetch data user from twitter api // Add new credential
+        platformUser = await this.socialMediaService.verifyToTwitter(username, publickey); // Fetch data user from twitter api // Add new credential
 
         break;
 
       case PlatformType.REDDIT:
-        platformUser = await this.socialMediaService.verifyToReddit(
-          username,
-          publickey,
-        );
+        platformUser = await this.socialMediaService.verifyToReddit(username, publickey);
 
         break;
 
       case PlatformType.FACEBOOK:
-        platformUser = await this.socialMediaService.verifyToFacebook(
-          username,
-          publickey,
-        );
+        platformUser = await this.socialMediaService.verifyToFacebook(username, publickey);
 
         break;
 
@@ -91,9 +78,7 @@ export class UserCredentialController {
         throw new HttpErrors.NotFound('Platform does not exist');
     }
 
-    const userCredential = await this.userCredentialService.createCredential(
-      platformUser,
-    );
+    const userCredential = await this.userCredentialService.createCredential(platformUser);
 
     this.cryptocurrencyService.claimTips(userCredential) as Promise<void>;
 

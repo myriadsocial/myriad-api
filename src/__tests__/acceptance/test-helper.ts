@@ -1,8 +1,4 @@
-import {
-  Client,
-  createRestAppClient,
-  givenHttpServerConfig,
-} from '@loopback/testlab';
+import {Client, createRestAppClient, givenHttpServerConfig} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
 
 export async function setupApplication(): Promise<AppWithClient> {

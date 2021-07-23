@@ -1,9 +1,5 @@
 import {inject, Getter} from '@loopback/core';
-import {
-  DefaultCrudRepository,
-  repository,
-  BelongsToAccessor,
-} from '@loopback/repository';
+import {DefaultCrudRepository, repository, BelongsToAccessor} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {PersonTip, PersonTipRelations, Cryptocurrency} from '../models';
 import {CryptocurrencyRepository} from './cryptocurrency.repository';
@@ -13,10 +9,7 @@ export class PersonTipRepository extends DefaultCrudRepository<
   typeof PersonTip.prototype.id,
   PersonTipRelations
 > {
-  public readonly cryptocurrency: BelongsToAccessor<
-    Cryptocurrency,
-    typeof PersonTip.prototype.id
-  >;
+  public readonly cryptocurrency: BelongsToAccessor<Cryptocurrency, typeof PersonTip.prototype.id>;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
@@ -28,9 +21,6 @@ export class PersonTipRepository extends DefaultCrudRepository<
       'cryptocurrency',
       cryptocurrencyRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'cryptocurrency',
-      this.cryptocurrency.inclusionResolver,
-    );
+    this.registerInclusionResolver('cryptocurrency', this.cryptocurrency.inclusionResolver);
   }
 }
