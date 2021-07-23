@@ -375,15 +375,17 @@ export class PostController {
       wallet.walletAddress = resultPost.walletAddress != null
         ? resultPost.walletAddress : ''
 
-      const resultUser = await this.userCredentialRepository.findOne({
-        where: {
-          peopleId: resultPost.peopleId
-        }
-      })
+      if (resultPost.peopleId) {
+        const resultUser = await this.userCredentialRepository.findOne({
+          where: {
+            peopleId: resultPost.peopleId
+          }
+        })
 
-      if (resultUser != null) {
-        wallet.walletAddress = resultUser.userId != null
-          ? resultUser.userId : ''
+        if (resultUser != null) {
+          wallet.walletAddress = resultUser.userId != null
+            ? resultUser.userId : ''
+        }
       }
     }
 
