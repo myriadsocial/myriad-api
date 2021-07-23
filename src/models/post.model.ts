@@ -144,7 +144,6 @@ export class Post extends Entity {
   })
   deletedAt?: string;
 
-  // TODO: Add new field to describe the first importer
   @belongsTo(() => User, {name: 'importer'})
   importerId: string;
 
@@ -160,7 +159,6 @@ export class Post extends Entity {
   @hasMany(() => Like)
   likes: Like[];
 
-  // TODO: Simplified variable
   @hasOne(() => PublicMetric)
   metric: PublicMetric;
 
@@ -170,8 +168,6 @@ export class Post extends Entity {
   @hasMany(() => Transaction)
   transactions: Transaction[];
 
-  // TODO: Remove tipsReceived field and change with postTip
-  // TODO: Add new relation
   @hasMany(() => PostTip)
   postTips: PostTip[];
 

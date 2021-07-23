@@ -100,7 +100,6 @@ export class PostController {
 
     this.postRepository.publicMetric(newPost.id).create({}) as Promise<PublicMetric>;
 
-    // TODO: move logic to tagService
     if (_post.tags.length > 0) {
       this.tagService.createTags(_post.tags) as Promise<void>;
     }
@@ -145,7 +144,6 @@ export class PostController {
       textId = splitURL[6];
     }
 
-    // TODO: move logic to postService
     return this.postService.getPostFromSocialMediaPost({
       platform: platform,
       textId: textId,
@@ -213,6 +211,4 @@ export class PostController {
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.postRepository.deleteById(id);
   }
-
-  // TODO: remove unused method and endpoint
 }

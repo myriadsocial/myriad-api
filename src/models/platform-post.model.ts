@@ -1,4 +1,3 @@
-// TODO: Add new model
 import {Entity, model, property} from '@loopback/repository';
 
 @model()

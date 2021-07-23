@@ -37,7 +37,6 @@ export class UserCryptoController {
     })
     userCrypto: UserCrypto,
   ): Promise<UserCrypto> {
-    // TODO: Move all logic to cryptocurrencyService
     await this.cryptocurrencyService.isUserHasCrypto(
       userCrypto.userId,
       userCrypto.cryptocurrencyId,

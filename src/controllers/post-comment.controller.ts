@@ -79,8 +79,6 @@ export class PostCommentController {
     })
     comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    // TODO: Remove current logic
-    // TODO: count metric in metricService
     this.metricService.countComment(id) as Promise<void>;
 
     comment.createdAt = new Date().toString();

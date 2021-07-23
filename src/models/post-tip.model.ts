@@ -1,4 +1,3 @@
-// TODO: Add new PostTip model
 import {Entity, model, property} from '@loopback/repository';
 
 @model({

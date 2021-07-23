@@ -21,7 +21,7 @@ export class Queue extends Entity {
     type: 'number',
     required: true,
   })
-  priority: number; // TODO: Change variable count to priority
+  priority: number;
 
   constructor(data?: Partial<Queue>) {
     super(data);

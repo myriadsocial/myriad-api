@@ -45,7 +45,6 @@ export class FriendController {
     })
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
-    // TODO: Move logic to service
     const foundFriend = await this.friendService.findFriend(friend.friendId, friend.requestorId);
 
     if (foundFriend) return foundFriend;

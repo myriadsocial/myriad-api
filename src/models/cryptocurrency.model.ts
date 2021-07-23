@@ -1,4 +1,3 @@
-// TODO: Change token model to cryptocurrency model
 import {Entity, model, property} from '@loopback/repository';
 
 @model({

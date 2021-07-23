@@ -70,7 +70,6 @@ export class PostLikeController {
     })
     like: Omit<Like, 'id'>,
   ): Promise<Like | Dislike> {
-    // TODO: Move logic to service
     return this.metricService.likeDislikeSystem(
       {
         userId: like.userId,
