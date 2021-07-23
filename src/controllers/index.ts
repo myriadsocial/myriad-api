@@ -10,7 +10,6 @@ export * from './post-dislike.controller';
 export * from './post-like.controller';
 export * from './post.controller';
 export * from './queue.controller';
-export * from './saved-experience.controller';
 export * from './tag.controller';
 export * from './cryptocurrency.controller';
 export * from './transaction.controller';
