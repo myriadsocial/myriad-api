@@ -56,8 +56,6 @@ export class UserCredentialController {
 
     let platformUser = null;
 
-    // TODO: move to single constant enum platform
-    // TODO: move logic to service
     switch (platform) {
       case PlatformType.TWITTER:
         platformUser = await this.socialMediaService.verifyToTwitter(username, publickey); // Fetch data user from twitter api // Add new credential
@@ -145,6 +143,4 @@ export class UserCredentialController {
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.userCredentialRepository.deleteById(id);
   }
-
-  // TODO: Move all method services
 }

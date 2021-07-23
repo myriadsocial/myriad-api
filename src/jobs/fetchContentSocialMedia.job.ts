@@ -14,7 +14,6 @@ export class FetchContentSocialMediaJob extends CronJob {
   }
 
   async performJob() {
-    // TODO: Removing for this sprint 10
     console.log('hello world');
   }
 }

@@ -42,7 +42,6 @@ export class UserPostController {
   ): Promise<Post[]> {
     let where = null;
 
-    // TODO: improve timeline filter logic
     switch (sortBy) {
       case TimelineType.EXPERIENCE:
         where = await this.filterService.filterByExperience(id);

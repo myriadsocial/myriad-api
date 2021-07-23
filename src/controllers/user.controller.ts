@@ -75,7 +75,6 @@ export class UserController {
       return foundUser;
     }
 
-    // TODO: Move to service
     this.cryptocurrencyService.defaultCrypto(user.id) as Promise<void>;
 
     user.username = user.name?.toLowerCase().replace(/\s+/g, '').trim();
@@ -102,7 +101,6 @@ export class UserController {
     @param.path.string('id') id: string,
     @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
   ): Promise<User[]> {
-    // TODO: Move to service
     const friendIds = await this.friendService.getApprovedFriendIds(id);
 
     return this.userRepository.find({
@@ -175,7 +173,4 @@ export class UserController {
   ): Promise<User> {
     return this.userRepository.findById(id, filter);
   }
-
-  // TODO: Remove unused endpoint GET /users/{username}/example-seed
-  // TODO: Remove method defaultExperience
 }

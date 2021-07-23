@@ -1,4 +1,3 @@
-// TODO: Rename DetailTransaction model to TransactionHistory model
 import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {User} from './user.model';
 import {Cryptocurrency} from './cryptocurrency.model';

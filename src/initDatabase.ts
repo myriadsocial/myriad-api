@@ -37,6 +37,7 @@ import userSeed from './seed-data/users.json';
 import {DefaultCrypto} from './enums';
 import {People, Post} from './models';
 import {User} from './interfaces';
+import { DateUtils } from './helpers/date-utils';
 
 export {ApplicationConfig};
 
@@ -108,6 +109,8 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
 
       if (!tags) tags = [];
 
+      const {day, today} = new DateUtils();
+
       for (const tag of tags) {
         const foundTag = await tagRepository.findOne({
           where: {
@@ -133,9 +136,8 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
             updatedAt: new Date().toString(),
           });
         } else {
-          const oneDay: number = 60 * 60 * 24 * 1000;
-          const isOneDay: boolean =
-            new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+          const oneDay = day;
+          const isOneDay = today(foundTag.updatedAt) > oneDay;
 
           await tagRepository.updateById(foundTag.id, {
             updatedAt: new Date().toString(),
@@ -154,7 +156,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     const userRepository = await this.getRepository(UserRepository);
     const savedExperienceRepository = await this.getRepository(SavedExperienceRepository);
     const experienceRepository = await this.getRepository(ExperienceRepository);
-    const userCredRepository = await this.getRepository(UserCredentialRepository);
+    const userCredentialRepository = await this.getRepository(UserCredentialRepository);
     const commentRepository = await this.getRepository(CommentRepository);
     const publicMetricRepository = await this.getRepository(PublicMetricRepository);
     const likeRepository = await this.getRepository(LikeRepository);
@@ -179,7 +181,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     await userRepository.deleteAll();
     await savedExperienceRepository.deleteAll();
     await experienceRepository.deleteAll();
-    await userCredRepository.deleteAll();
+    await userCredentialRepository.deleteAll();
     await commentRepository.deleteAll();
     await publicMetricRepository.deleteAll();
     await friendRepository.deleteAll();

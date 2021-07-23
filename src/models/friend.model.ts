@@ -21,7 +21,6 @@ export class Friend extends Entity {
   })
   id?: string;
 
-  // TODO: move to single constant enum platform
   @property({
     type: 'string',
     required: false,

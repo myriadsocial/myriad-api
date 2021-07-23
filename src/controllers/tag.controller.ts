@@ -21,8 +21,6 @@ export class TagController {
     @repository(PostRepository)
     protected postRepository: PostRepository,
   ) {}
-  // TODO: Remove GET /trending
-  // TODO: Move all logic to GET /tags
 
   @post('/tags')
   @response(200, {
@@ -101,6 +99,4 @@ export class TagController {
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.tagRepository.deleteById(id);
   }
-
-  // TODO: Removed unused method and endpoint
 }

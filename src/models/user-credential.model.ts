@@ -28,7 +28,6 @@ export class UserCredential extends Entity {
   })
   isVerified: boolean;
 
-  // TODO: move to single constant enum platform
   @property({
     type: 'string',
     jsonSchema: {

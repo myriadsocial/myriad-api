@@ -11,9 +11,6 @@ export class CommentController {
     protected commentRepository: CommentRepository,
   ) {}
 
-  // TODO: Remove endpoint POST /comments
-  // TODO: Move the endpoint to post-comment.controller.ts
-  // TODO: Change POST /comments to POST /posts/{id}/comments
   @get('/comments')
   @response(200, {
     description: 'Array of Comment model instances',

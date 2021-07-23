@@ -1,4 +1,3 @@
-// TODO: Change Tip model to PersonTip model
 import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {Cryptocurrency} from './cryptocurrency.model';
 

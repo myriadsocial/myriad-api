@@ -1,5 +1,6 @@
 import {repository} from '@loopback/repository';
 import {OrderFieldType, OrderType} from '../enums';
+import { DateUtils } from '../helpers/date-utils';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
 
@@ -10,6 +11,7 @@ export class TagService {
   ) {}
 
   async createTags(tags: string[]): Promise<void> {
+    const {today, day} = new DateUtils();
     for (const tag of tags) {
       const foundTag = await this.tagRepository.findOne({
         where: {
@@ -35,13 +37,12 @@ export class TagService {
           updatedAt: new Date().toString(),
         }) as Promise<Tag>;
       } else {
-        const oneDay: number = 60 * 60 * 24 * 1000;
-        const isOneDay: boolean =
-          new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+        const oneDay = day;
+        const isToday = today(foundTag.updatedAt) > oneDay;
 
         this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
-          count: isOneDay ? 1 : foundTag.count + 1,
+          count: isToday ? 1 : foundTag.count + 1,
         }) as Promise<void>;
       }
     }

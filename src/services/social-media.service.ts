@@ -40,7 +40,7 @@ export class SocialMediaService {
     return {
       name: user.name,
       platformAccountId: user.id,
-      platform: PlatformType.TWITTER, // TODO: move to single constant enum platform
+      platform: PlatformType.TWITTER,
       username: user.username,
       profileImageURL: user.profile_image_url
         ? user.profile_image_url.replace('normal', '400x400')
@@ -71,7 +71,7 @@ export class SocialMediaService {
     return {
       name: redditUser.subreddit.title ? redditUser.subreddit.title : redditUser.name,
       platformAccountId: 't2_' + redditUser.id,
-      platform: PlatformType.REDDIT, // TODO: move to single constant enum platform
+      platform: PlatformType.REDDIT,
       username: redditUser.name,
       profileImageURL: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : '',
       publicKey: publicKey,
@@ -93,7 +93,7 @@ export class SocialMediaService {
       name,
       username: userName,
       platformAccountId,
-      platform: PlatformType.FACEBOOK, // TODO: move to single constant enum platform
+      platform: PlatformType.FACEBOOK,
       profileImageURL,
       publicKey: publicKey,
     };
@@ -118,7 +118,7 @@ export class SocialMediaService {
           name: person.name,
           username: person.username,
           platformAccountId: person.id,
-          platform: PlatformType.TWITTER, // TODO: move to single constant enum platform
+          platform: PlatformType.TWITTER,
           profileImageURL: person.profile_image_url.replace('normal', '400x400'),
         }) as Promise<People>;
       }
@@ -177,7 +177,7 @@ export class SocialMediaService {
       .trim();
 
     return {
-      platform: PlatformType.TWITTER, // TODO: move to single constant enum platform
+      platform: PlatformType.TWITTER,
       createdAt: new Date().toString(),
       textId: idStr,
       text: (text + ' ' + urls.join(' ')).trim(),
@@ -235,7 +235,7 @@ export class SocialMediaService {
     const {data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json');
 
     return {
-      platform: PlatformType.REDDIT, // TODO: move to single constant enum platform,
+      platform: PlatformType.REDDIT,
       createdAt: new Date().toString(),
       textId: textId,
       platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),

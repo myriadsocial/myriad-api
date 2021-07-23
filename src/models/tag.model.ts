@@ -6,7 +6,6 @@ import {Entity, model, property} from '@loopback/repository';
     mongodb: {
       collection: 'tags',
     },
-    // TODO: Remove default filter
   },
 })
 export class Tag extends Entity {
@@ -21,8 +20,6 @@ export class Tag extends Entity {
     },
   })
   id: string;
-
-  // TODO: Remove unused field (hide property)
 
   @property({
     type: 'number',

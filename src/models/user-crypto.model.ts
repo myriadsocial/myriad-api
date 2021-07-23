@@ -1,4 +1,3 @@
-// TODO: Rename UserToken to UserCrypto
 import {Entity, model, property} from '@loopback/repository';
 
 @model({

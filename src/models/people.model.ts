@@ -9,7 +9,6 @@ import {PersonTip} from './person-tip.model';
     mongodb: {
       collection: 'people',
     },
-    // TODO: removed unused line
   },
 })
 export class People extends Entity {
@@ -52,8 +51,6 @@ export class People extends Entity {
     required: false,
   })
   profileImageURL: string;
-
-  // TODO: removed unused field (hide property)
 
   @hasOne(() => UserCredential)
   credential: UserCredential;
