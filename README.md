@@ -67,4 +67,9 @@ yarn test
 Please check out [LoopBack 4 documentation](https://loopback.io/doc/en/lb4/) to
 understand how you can continue to add features to this application.
 
+<!-- Ignored https://github.com/gaurav-nelson/github-action-markdown-link-check/issues/110 -->
+<!-- markdown-link-check-disable -->
+
 [![LoopBack](<https://github.com/strongloop/loopback-next/raw/master/docs/site/imgs/branding/Powered-by-LoopBack-Badge-(blue)-@2x.png>)](http://loopback.io/)
+
+<!-- markdown-link-check-enable -->
