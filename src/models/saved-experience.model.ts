@@ -33,7 +33,7 @@ export class SavedExperience extends Entity {
 
   @property({
     type: 'boolean',
-    default: true
+    default: true,
   })
   hasSelected: boolean;
 
@@ -46,5 +46,4 @@ export interface SavedExperienceRelations {
   // describe navigational properties here
 }
 
-export type SavedExperienceWithRelations = SavedExperience &
-  SavedExperienceRelations;
+export type SavedExperienceWithRelations = SavedExperience & SavedExperienceRelations;

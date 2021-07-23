@@ -2,11 +2,7 @@ import {BindingScope, injectable, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {NotificationType} from '../enums';
 import {Comment, Notification} from '../models';
-import {
-  NotificationRepository,
-  PostRepository,
-  UserRepository,
-} from '../repositories';
+import {NotificationRepository, PostRepository, UserRepository} from '../repositories';
 import {FCMService} from './fcm.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -36,9 +32,7 @@ export class NotificationService {
     notification.message = 'sent you friend request';
     notification.createdAt = new Date().toString();
 
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
+    const createdNotification = await this.notificationRepository.create(notification);
     if (createdNotification == null) return false;
 
     const title = 'Friend Request Accepted';
@@ -62,9 +56,7 @@ export class NotificationService {
     notification.message = 'accept your friend request';
     notification.createdAt = new Date().toString();
 
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
+    const createdNotification = await this.notificationRepository.create(notification);
     if (createdNotification == null) return false;
 
     const title = 'Friend Request Accepted';
@@ -88,9 +80,7 @@ export class NotificationService {
     notification.message = 'commented: ' + comment.text;
     notification.createdAt = new Date().toString();
 
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
+    const createdNotification = await this.notificationRepository.create(notification);
     if (createdNotification == null) return false;
 
     const title = 'New Comment';

@@ -40,9 +40,7 @@ import {User} from './interfaces';
 
 export {ApplicationConfig};
 
-export class InitDatabase extends BootMixin(
-  ServiceMixin(RepositoryMixin(RestApplication)),
-) {
+export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApplication))) {
   constructor(options: ApplicationConfig = {}) {
     super(options);
 
@@ -78,10 +76,7 @@ export class InitDatabase extends BootMixin(
     const newUsers = await userRepository.createAll(userSeedData);
     const newPeople = await peopleRepository.createAll(peopleSeed);
 
-    const postSeedData = this.preparePostSeed(
-      newPeople,
-      postSeed as Omit<Post, 'id'>[],
-    );
+    const postSeedData = this.preparePostSeed(newPeople, postSeed as Omit<Post, 'id'>[]);
 
     for (const user of newUsers) {
       await userCryptoRepository.createAll([
@@ -140,8 +135,7 @@ export class InitDatabase extends BootMixin(
         } else {
           const oneDay: number = 60 * 60 * 24 * 1000;
           const isOneDay: boolean =
-            new Date().getTime() - new Date(foundTag.updatedAt).getTime() >
-            oneDay;
+            new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
 
           await tagRepository.updateById(foundTag.id, {
             updatedAt: new Date().toString(),
@@ -156,43 +150,23 @@ export class InitDatabase extends BootMixin(
     const tagRepository = await this.getRepository(TagRepository);
     const postRepository = await this.getRepository(PostRepository);
     const peopleRepository = await this.getRepository(PeopleRepository);
-    const transactionRepository = await this.getRepository(
-      TransactionRepository,
-    );
+    const transactionRepository = await this.getRepository(TransactionRepository);
     const userRepository = await this.getRepository(UserRepository);
-    const savedExperienceRepository = await this.getRepository(
-      SavedExperienceRepository,
-    );
+    const savedExperienceRepository = await this.getRepository(SavedExperienceRepository);
     const experienceRepository = await this.getRepository(ExperienceRepository);
-    const userCredRepository = await this.getRepository(
-      UserCredentialRepository,
-    );
+    const userCredRepository = await this.getRepository(UserCredentialRepository);
     const commentRepository = await this.getRepository(CommentRepository);
-    const publicMetricRepository = await this.getRepository(
-      PublicMetricRepository,
-    );
+    const publicMetricRepository = await this.getRepository(PublicMetricRepository);
     const likeRepository = await this.getRepository(LikeRepository);
-    const conversationRepository = await this.getRepository(
-      ConversationRepository,
-    );
+    const conversationRepository = await this.getRepository(ConversationRepository);
     const friendRepository = await this.getRepository(FriendRepository);
-    const cryptocurrencyRepository = await this.getRepository(
-      CryptocurrencyRepository,
-    );
-    const transactionHistoryRepository = await this.getRepository(
-      TransactionHistoryRepository,
-    );
+    const cryptocurrencyRepository = await this.getRepository(CryptocurrencyRepository);
+    const transactionHistoryRepository = await this.getRepository(TransactionHistoryRepository);
     const userCryptoRepository = await this.getRepository(UserCryptoRepository);
     const queueRepository = await this.getRepository(QueueRepository);
-    const authenticationRepository = await this.getRepository(
-      AuthenticationRepository,
-    );
-    const authCredentialRepository = await this.getRepository(
-      AuthCredentialRepository,
-    );
-    const refreshTokenRepository = await this.getRepository(
-      RefreshTokenRepository,
-    );
+    const authenticationRepository = await this.getRepository(AuthenticationRepository);
+    const authCredentialRepository = await this.getRepository(AuthCredentialRepository);
+    const refreshTokenRepository = await this.getRepository(RefreshTokenRepository);
     const postTipRepository = await this.getRepository(PostTipRepository);
     const personTipRepository = await this.getRepository(PersonTipRepository);
 

@@ -1,9 +1,5 @@
 import {Getter, inject} from '@loopback/core';
-import {
-  BelongsToAccessor,
-  DefaultCrudRepository,
-  repository,
-} from '@loopback/repository';
+import {BelongsToAccessor, DefaultCrudRepository, repository} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Friend, FriendRelations, User} from '../models';
 import {UserRepository} from './user.repository';
@@ -15,10 +11,7 @@ export class FriendRepository extends DefaultCrudRepository<
 > {
   public readonly friend: BelongsToAccessor<User, typeof Friend.prototype.id>;
 
-  public readonly requestor: BelongsToAccessor<
-    User,
-    typeof Friend.prototype.id
-  >;
+  public readonly requestor: BelongsToAccessor<User, typeof Friend.prototype.id>;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
@@ -26,18 +19,9 @@ export class FriendRepository extends DefaultCrudRepository<
     protected userRepositoryGetter: Getter<UserRepository>,
   ) {
     super(Friend, dataSource);
-    this.requestor = this.createBelongsToAccessorFor(
-      'requestor',
-      userRepositoryGetter,
-    );
-    this.registerInclusionResolver(
-      'requestor',
-      this.requestor.inclusionResolver,
-    );
-    this.friend = this.createBelongsToAccessorFor(
-      'friend',
-      userRepositoryGetter,
-    );
+    this.requestor = this.createBelongsToAccessorFor('requestor', userRepositoryGetter);
+    this.registerInclusionResolver('requestor', this.requestor.inclusionResolver);
+    this.friend = this.createBelongsToAccessorFor('friend', userRepositoryGetter);
     this.registerInclusionResolver('friend', this.friend.inclusionResolver);
   }
 }

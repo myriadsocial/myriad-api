@@ -1,16 +1,7 @@
 import {inject, Getter} from '@loopback/core';
-import {
-  DefaultCrudRepository,
-  repository,
-  BelongsToAccessor,
-} from '@loopback/repository';
+import {DefaultCrudRepository, repository, BelongsToAccessor} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {
-  TransactionHistory,
-  TransactionHistoryRelations,
-  User,
-  Cryptocurrency,
-} from '../models';
+import {TransactionHistory, TransactionHistoryRelations, User, Cryptocurrency} from '../models';
 import {UserRepository} from './user.repository';
 import {CryptocurrencyRepository} from './cryptocurrency.repository';
 
@@ -19,10 +10,7 @@ export class TransactionHistoryRepository extends DefaultCrudRepository<
   typeof TransactionHistory.prototype.id,
   TransactionHistoryRelations
 > {
-  public readonly user: BelongsToAccessor<
-    User,
-    typeof TransactionHistory.prototype.id
-  >;
+  public readonly user: BelongsToAccessor<User, typeof TransactionHistory.prototype.id>;
 
   public readonly cryptocurrency: BelongsToAccessor<
     Cryptocurrency,
@@ -41,10 +29,7 @@ export class TransactionHistoryRepository extends DefaultCrudRepository<
       'cryptocurrency',
       cryptocurrencyRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'cryptocurrency',
-      this.cryptocurrency.inclusionResolver,
-    );
+    this.registerInclusionResolver('cryptocurrency', this.cryptocurrency.inclusionResolver);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
   }

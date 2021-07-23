@@ -29,9 +29,7 @@ import {BcryptHasher} from './services/authentication/hash.password.service';
 export class JWTAuthenticationComponent implements Component {
   bindings: Binding[] = [
     // token bindings
-    Binding.bind(TokenServiceBindings.TOKEN_SECRET).to(
-      TokenServiceConstants.TOKEN_SECRET_VALUE,
-    ),
+    Binding.bind(TokenServiceBindings.TOKEN_SECRET).to(TokenServiceConstants.TOKEN_SECRET_VALUE),
     Binding.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(
       TokenServiceConstants.TOKEN_EXPIRES_IN_VALUE,
     ),
@@ -39,17 +37,11 @@ export class JWTAuthenticationComponent implements Component {
 
     // user bindings
     Binding.bind(AuthServiceBindings.AUTH_SERVICE).toClass(MyAuthService),
-    Binding.bind(AuthServiceBindings.AUTH_REPOSITORY).toClass(
-      AuthenticationRepository,
-    ),
-    Binding.bind(AuthServiceBindings.AUTH_CREDENTIAL_REPOSITORY).toClass(
-      AuthCredentialRepository,
-    ),
+    Binding.bind(AuthServiceBindings.AUTH_REPOSITORY).toClass(AuthenticationRepository),
+    Binding.bind(AuthServiceBindings.AUTH_CREDENTIAL_REPOSITORY).toClass(AuthCredentialRepository),
     createBindingFromClass(SecuritySpecEnhancer),
     ///refresh bindings
-    Binding.bind(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE).toClass(
-      RefreshtokenService,
-    ),
+    Binding.bind(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE).toClass(RefreshtokenService),
 
     //  Refresh token bindings
     Binding.bind(RefreshTokenServiceBindings.REFRESH_SECRET).to(
@@ -62,9 +54,7 @@ export class JWTAuthenticationComponent implements Component {
       RefreshTokenConstants.REFRESH_ISSUER_VALUE,
     ),
     //refresh token repository binding
-    Binding.bind(RefreshTokenServiceBindings.REFRESH_REPOSITORY).toClass(
-      RefreshTokenRepository,
-    ),
+    Binding.bind(RefreshTokenServiceBindings.REFRESH_REPOSITORY).toClass(RefreshTokenRepository),
     // HasherBinding
     Binding.bind(PasswordHasherBindings.PASSWORD_HASHER).toClass(BcryptHasher),
     Binding.bind(PasswordHasherBindings.ROUNDS).to(10),

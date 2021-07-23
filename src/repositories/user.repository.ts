@@ -36,15 +36,9 @@ export class UserRepository extends DefaultCrudRepository<
   typeof User.prototype.id,
   UserRelations
 > {
-  public readonly experiences: HasManyRepositoryFactory<
-    Experience,
-    typeof User.prototype.id
-  >;
+  public readonly experiences: HasManyRepositoryFactory<Experience, typeof User.prototype.id>;
 
-  public readonly comments: HasManyRepositoryFactory<
-    Comment,
-    typeof User.prototype.id
-  >;
+  public readonly comments: HasManyRepositoryFactory<Comment, typeof User.prototype.id>;
 
   public readonly savedExperiences: HasManyThroughRepositoryFactory<
     Experience,
@@ -58,15 +52,9 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
-  public readonly posts: HasManyRepositoryFactory<
-    Post,
-    typeof User.prototype.id
-  >;
+  public readonly posts: HasManyRepositoryFactory<Post, typeof User.prototype.id>;
 
-  public readonly conversations: HasManyRepositoryFactory<
-    Conversation,
-    typeof User.prototype.id
-  >;
+  public readonly conversations: HasManyRepositoryFactory<Conversation, typeof User.prototype.id>;
 
   public readonly friends: HasManyThroughRepositoryFactory<
     User,
@@ -118,10 +106,7 @@ export class UserRepository extends DefaultCrudRepository<
       cryptocurrencyRepositoryGetter,
       userCryptoRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'cryptocurrencies',
-      this.cryptocurrencies.inclusionResolver,
-    );
+    this.registerInclusionResolver('cryptocurrencies', this.cryptocurrencies.inclusionResolver);
     this.transactionHistories = this.createHasManyRepositoryFactoryFor(
       'transactionHistories',
       transactionHistoryRepositoryGetter,
@@ -140,44 +125,26 @@ export class UserRepository extends DefaultCrudRepository<
       'conversations',
       conversationRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'conversations',
-      this.conversations.inclusionResolver,
-    );
-    this.posts = this.createHasManyRepositoryFactoryFor(
-      'posts',
-      postRepositoryGetter,
-    );
+    this.registerInclusionResolver('conversations', this.conversations.inclusionResolver);
+    this.posts = this.createHasManyRepositoryFactoryFor('posts', postRepositoryGetter);
     this.registerInclusionResolver('posts', this.posts.inclusionResolver);
     this.userCredentials = this.createHasManyRepositoryFactoryFor(
       'credentials',
       userCredentialRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'credentials',
-      this.userCredentials.inclusionResolver,
-    );
+    this.registerInclusionResolver('credentials', this.userCredentials.inclusionResolver);
     this.savedExperiences = this.createHasManyThroughRepositoryFactoryFor(
       'savedExperiences',
       experienceRepositoryGetter,
       savedExperienceRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'savedExperiences',
-      this.savedExperiences.inclusionResolver,
-    );
-    this.comments = this.createHasManyRepositoryFactoryFor(
-      'comments',
-      commentRepositoryGetter,
-    );
+    this.registerInclusionResolver('savedExperiences', this.savedExperiences.inclusionResolver);
+    this.comments = this.createHasManyRepositoryFactoryFor('comments', commentRepositoryGetter);
     this.registerInclusionResolver('comments', this.comments.inclusionResolver);
     this.experiences = this.createHasManyRepositoryFactoryFor(
       'experiences',
       experienceRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'experiences',
-      this.experiences.inclusionResolver,
-    );
+    this.registerInclusionResolver('experiences', this.experiences.inclusionResolver);
   }
 }

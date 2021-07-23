@@ -63,5 +63,4 @@ export interface CryptocurrencyRelations {
   // describe navigational properties here
 }
 
-export type CryptocurrencyWithRelations = Cryptocurrency &
-  CryptocurrencyRelations;
+export type CryptocurrencyWithRelations = Cryptocurrency & CryptocurrencyRelations;

@@ -1,9 +1,5 @@
 import {Getter, inject} from '@loopback/core';
-import {
-  BelongsToAccessor,
-  DefaultCrudRepository,
-  repository,
-} from '@loopback/repository';
+import {BelongsToAccessor, DefaultCrudRepository, repository} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Post, PublicMetric, PublicMetricRelations} from '../models';
 import {PostRepository} from './post.repository';
@@ -13,10 +9,7 @@ export class PublicMetricRepository extends DefaultCrudRepository<
   typeof PublicMetric.prototype.id,
   PublicMetricRelations
 > {
-  public readonly post: BelongsToAccessor<
-    Post,
-    typeof PublicMetric.prototype.id
-  >;
+  public readonly post: BelongsToAccessor<Post, typeof PublicMetric.prototype.id>;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,

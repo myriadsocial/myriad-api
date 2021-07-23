@@ -37,8 +37,7 @@ export class TagService {
       } else {
         const oneDay: number = 60 * 60 * 24 * 1000;
         const isOneDay: boolean =
-          new Date().getTime() - new Date(foundTag.updatedAt).getTime() >
-          oneDay;
+          new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
 
         this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
@@ -52,10 +51,10 @@ export class TagService {
     const trendingTopic = await this.tagRepository.find({
       order: [
         `${OrderFieldType.COUNT} ${OrderType.DESC}`,
-        `${OrderFieldType.UPDATEDAT} ${OrderType.DESC}`
+        `${OrderFieldType.UPDATEDAT} ${OrderType.DESC}`,
       ],
-      limit: 5
-    })
+      limit: 5,
+    });
 
     return trendingTopic.map(tag => tag.id);
   }

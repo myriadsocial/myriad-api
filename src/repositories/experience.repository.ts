@@ -6,12 +6,7 @@ import {
   repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {
-  Experience,
-  ExperienceRelations,
-  SavedExperience,
-  User,
-} from '../models';
+import {Experience, ExperienceRelations, SavedExperience, User} from '../models';
 import {SavedExperienceRepository} from './saved-experience.repository';
 import {UserRepository} from './user.repository';
 

@@ -55,10 +55,7 @@ export class MetricService {
       .patch({comment: totalComment.count + 1}) as Promise<Count>;
   }
 
-  async likeDislikeSystem(
-    metric: LikeDislikeMetric,
-    isLike: boolean,
-  ): Promise<Like | Dislike> {
+  async likeDislikeSystem(metric: LikeDislikeMetric, isLike: boolean): Promise<Like | Dislike> {
     if (!metric.postId || !metric.userId) {
       throw new HttpErrors.NotFound('Error');
     }
@@ -84,13 +81,11 @@ export class MetricService {
       // If user doesn't has dislike collection in database
       if (!foundDislike) {
         // Create new dislike collection
-        const newDislike = await this.postRepository
-          .dislikes(metric.postId)
-          .create({
-            postId: metric.postId,
-            userId: metric.userId,
-            status: true,
-          });
+        const newDislike = await this.postRepository.dislikes(metric.postId).create({
+          postId: metric.postId,
+          userId: metric.userId,
+          status: true,
+        });
 
         // Check if post has been liked by user
         // If true, set status to false

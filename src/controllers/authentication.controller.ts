@@ -107,9 +107,7 @@ export class AuthenticationController {
     );
     // delete savedUser.password;
 
-    await this.authenticationRepository
-      .authCredential(savedUser.id)
-      .create({password});
+    await this.authenticationRepository.authCredential(savedUser.id).create({password});
 
     return savedUser;
   }
@@ -170,13 +168,9 @@ export class AuthenticationController {
     // ensure the user exists, and the password is correct
     const user = await this.authService.verifyCredentials(credentials);
     // convert a User object into a UserProfile object (reduced set of properties)
-    const userProfile: UserProfile =
-      this.authService.convertToUserProfile(user);
+    const userProfile: UserProfile = this.authService.convertToUserProfile(user);
     const accessToken = await this.jwtService.generateToken(userProfile);
-    const tokens = await this.refreshService.generateToken(
-      userProfile,
-      accessToken,
-    );
+    const tokens = await this.refreshService.generateToken(userProfile, accessToken);
     return tokens;
   }
 

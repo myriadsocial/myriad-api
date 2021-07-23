@@ -46,8 +46,7 @@ export class CryptocurrencyService {
         id: 'MYR',
         name: 'myria',
         decimal: 12,
-        image:
-          'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
+        image: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
         addressFormat: 214,
         rpcAddress: process.env.MYRIAD_WS_RPC ?? RpcType.LOCALRPC,
         isNative: true,
@@ -65,9 +64,7 @@ export class CryptocurrencyService {
 
     for (const cryptocurrency of cryptocurrencies) {
       try {
-        await this.userRepository
-          .cryptocurrencies(userId)
-          .create(cryptocurrency);
+        await this.userRepository.cryptocurrencies(userId).create(cryptocurrency);
       } catch {
         this.userCryptoRepository.create({
           userId: userId,
@@ -77,21 +74,14 @@ export class CryptocurrencyService {
     }
   }
 
-  async isUserHasCrypto(
-    userId: string,
-    cryptocurrencyId: string,
-  ): Promise<void> {
+  async isUserHasCrypto(userId: string, cryptocurrencyId: string): Promise<void> {
     cryptocurrencyId = cryptocurrencyId.toUpperCase();
 
     // Check if token exist in database
-    const foundCryptocurrency = await this.cryptocurrencyRepository.findById(
-      cryptocurrencyId,
-    );
+    const foundCryptocurrency = await this.cryptocurrencyRepository.findById(cryptocurrencyId);
 
     if (!foundCryptocurrency) {
-      throw new HttpErrors.NotFound(
-        'Cryptocurrency not found. Please add crypto first!',
-      );
+      throw new HttpErrors.NotFound('Cryptocurrency not found. Please add crypto first!');
     }
 
     // Check if user already has the crypto
@@ -225,10 +215,7 @@ export class CryptocurrencyService {
     await api.disconnect();
   }
 
-  async getTransactionFee(
-    cryptoApi: ApiPromise,
-    paymentInfo: PaymentInfo,
-  ): Promise<number> {
+  async getTransactionFee(cryptoApi: ApiPromise, paymentInfo: PaymentInfo): Promise<number> {
     const {total, to, from, cryptoId, decimal, isNative} = paymentInfo;
 
     let txFee = 0;
@@ -241,10 +228,7 @@ export class CryptocurrencyService {
       txFee = Math.floor(+weight.toString() + +partialFee.toString());
     } else {
       const cryptoAcaPoolString = (
-        await cryptoApi.query.dex.liquidityPool([
-          {Token: 'ACA'},
-          {Token: cryptoId},
-        ])
+        await cryptoApi.query.dex.liquidityPool([{Token: 'ACA'}, {Token: cryptoId}])
       ).toString();
 
       const cryptoAcaPool = cryptoAcaPoolString
@@ -261,8 +245,7 @@ export class CryptocurrencyService {
         .transfer(to, {Token: cryptoId}, Number(total))
         .paymentInfo(from);
 
-      const txFeeInAca =
-        (+weight.toString() + +partialFee.toString()) / 10 ** 13;
+      const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13;
 
       txFee = Math.floor(txFeeInAca * cryptoPerAca * 10 ** decimal);
     }
@@ -270,10 +253,7 @@ export class CryptocurrencyService {
     return txFee;
   }
 
-  async sendTipsToUser(
-    cryptoApi: ApiPromise,
-    paymentInfo: PaymentInfo,
-  ): Promise<string> {
+  async sendTipsToUser(cryptoApi: ApiPromise, paymentInfo: PaymentInfo): Promise<string> {
     const {total, to, from, cryptoId, isNative, txFee, nonce} = paymentInfo;
 
     let txHash = null;
@@ -282,11 +262,7 @@ export class CryptocurrencyService {
     if (isNative) {
       transfer = cryptoApi.tx.balances.transfer(to, total - txFee);
     } else {
-      transfer = cryptoApi.tx.currencies.transfer(
-        to,
-        {Token: cryptoId},
-        total - txFee,
-      );
+      transfer = cryptoApi.tx.currencies.transfer(to, {Token: cryptoId}, total - txFee);
     }
 
     if (nonce) txHash = await transfer.signAndSend(from, {nonce});

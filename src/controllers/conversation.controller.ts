@@ -54,9 +54,7 @@ export class ConversationController {
       },
     },
   })
-  async find(
-    @param.filter(Conversation) filter?: Filter<Conversation>,
-  ): Promise<Conversation[]> {
+  async find(@param.filter(Conversation) filter?: Filter<Conversation>): Promise<Conversation[]> {
     return this.conversationRepository.find(filter);
   }
 
@@ -89,9 +87,7 @@ export class ConversationController {
       },
     },
   })
-  async getUser(
-    @param.path.string('id') id: typeof Conversation.prototype.id,
-  ): Promise<User> {
+  async getUser(@param.path.string('id') id: typeof Conversation.prototype.id): Promise<User> {
     return this.conversationRepository.user(id);
   }
 
@@ -107,9 +103,7 @@ export class ConversationController {
       },
     },
   })
-  async getPost(
-    @param.path.string('id') id: typeof Conversation.prototype.id,
-  ): Promise<Post> {
+  async getPost(@param.path.string('id') id: typeof Conversation.prototype.id): Promise<Post> {
     return this.conversationRepository.post(id);
   }
 
