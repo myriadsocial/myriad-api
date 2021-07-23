@@ -43,10 +43,23 @@ export class FilterService {
 
     if (!trendingTopics.length) return null;
 
+    const joinTopics = trendingTopics.join('|');
+    const regexTopic = new RegExp(joinTopics, 'i');
+
     return {
-      tags: {
-        inq: trendingTopics,
-      },
+      or: [
+        {
+          tags: {
+            inq: trendingTopics,
+          },
+        },
+        {
+          text: regexTopic,
+        },
+        {
+          title: regexTopic,
+        },
+      ],
     };
   }
 
