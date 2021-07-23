@@ -1,6 +1,6 @@
 import {repository} from '@loopback/repository';
 import {OrderFieldType, OrderType} from '../enums';
-import { DateUtils } from '../helpers/date-utils';
+import {DateUtils} from '../helpers/date-utils';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
 
