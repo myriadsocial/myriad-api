@@ -37,7 +37,7 @@ import userSeed from './seed-data/users.json';
 import {DefaultCrypto} from './enums';
 import {People, Post} from './models';
 import {User} from './interfaces';
-import { DateUtils } from './helpers/date-utils';
+import {DateUtils} from './helpers/date-utils';
 
 export {ApplicationConfig};
 
