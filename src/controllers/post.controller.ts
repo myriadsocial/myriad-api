@@ -9,7 +9,7 @@ import {
   patch,
   post,
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {UrlUtils} from '../helpers/url.utils';
@@ -22,7 +22,7 @@ import {
   PeopleRepository,
   PostRepository,
   TransactionRepository,
-  UserCredentialRepository,
+  UserCredentialRepository
 } from '../repositories';
 import {PostService, SocialMediaService, TagService} from '../services';
 // import {authenticate} from '@loopback/authentication';
