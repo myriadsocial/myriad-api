@@ -22,6 +22,9 @@ export class FilterService {
     const tags = experience.tags;
     const personIds = experience.people.map(person => person.id);
 
+    const joinTags = tags.join('|');
+    const regexTag = new RegExp(joinTags, 'i');
+
     return {
       or: [
         {
@@ -33,6 +36,12 @@ export class FilterService {
           peopleId: {
             inq: personIds,
           },
+        },
+        {
+          text: regexTag,
+        },
+        {
+          title: regexTag,
         },
       ],
     };
@@ -98,6 +107,9 @@ export class FilterService {
     const topics = [...trendingTopics, ...experienceTopics];
     const personIds = experiencePersonIds;
 
+    const joinTopics = topics.join('|');
+    const regexTopic = new RegExp(joinTopics, 'i');
+
     if (!friends.length && !topics.length && !personIds.length) return null;
 
     return {
@@ -106,6 +118,12 @@ export class FilterService {
           tags: {
             inq: topics,
           },
+        },
+        {
+          title: regexTopic,
+        },
+        {
+          text: regexTopic,
         },
         {
           peopleId: {
