@@ -1,9 +1,9 @@
 import {FilterExcludingWhere, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param} from '@loopback/rest';
 import {Post} from '../models';
-import {PostRepository, PublicMetricRepository} from '../repositories';
+import {PostRepository} from '../repositories';
 import {service} from '@loopback/core';
-import {FilterService, FriendService, TagService} from '../services';
+import {FilterService} from '../services';
 import {TimelineType} from '../enums';
 // import {authenticate} from '@loopback/authentication';
 
@@ -12,12 +12,6 @@ export class UserPostController {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(PublicMetricRepository)
-    protected publicMetricRepository: PublicMetricRepository,
-    @service(FriendService)
-    protected friendService: FriendService,
-    @service(TagService)
-    protected tagService: TagService,
     @service(FilterService)
     protected filterService: FilterService,
   ) {}
