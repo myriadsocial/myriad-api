@@ -11,7 +11,7 @@ export class TagService {
   ) {}
 
   async createTags(tags: string[]): Promise<void> {
-    const {today, day} = new DateUtils();
+    const {isToday} = new DateUtils();
     for (const tag of tags) {
       const foundTag = await this.tagRepository.findOne({
         where: {
@@ -37,12 +37,9 @@ export class TagService {
           updatedAt: new Date().toString(),
         }) as Promise<Tag>;
       } else {
-        const oneDay = day;
-        const isToday = today(foundTag.updatedAt) > oneDay;
-
         this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
-          count: isToday ? 1 : foundTag.count + 1,
+          count: isToday(foundTag.updatedAt) ? 1 : foundTag.count + 1,
         }) as Promise<void>;
       }
     }
