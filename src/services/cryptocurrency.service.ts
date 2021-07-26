@@ -134,20 +134,20 @@ export class CryptocurrencyService {
         const {
           id: tipId,
           total: total,
-          cryptocurrency: {rpcAddress, isNative, decimal, id: cryptoId},
+          cryptocurrency: {rpcAddress, isNative, decimal, id: cryptocurrencyId},
         } = tip;
 
         // Set crypto api
         if (!api || initRpcAddress !== rpcAddress) {
           initRpcAddress = rpcAddress;
-          api = await this.cryptoApi(initRpcAddress, cryptoId);
+          api = await this.cryptoApi(initRpcAddress, cryptocurrencyId);
         }
 
         const paymentInfo = {
           total,
           to,
           from,
-          cryptoId,
+          cryptocurrencyId,
           decimal,
           isNative,
           fromString: u8aToHex(from.publicKey),
@@ -197,7 +197,7 @@ export class CryptocurrencyService {
       total: reward,
       to,
       from,
-      cryptoId: DefaultCrypto.MYR,
+      cryptocurrencyId: DefaultCrypto.MYR,
       isNative,
       nonce: getNonce,
       fromString: u8aToHex(from.publicKey),
@@ -216,7 +216,7 @@ export class CryptocurrencyService {
   }
 
   async getTransactionFee(cryptoApi: ApiPromise, paymentInfo: PaymentInfo): Promise<number> {
-    const {total, to, from, cryptoId, decimal, isNative} = paymentInfo;
+    const {total, to, from, cryptocurrencyId, decimal, isNative} = paymentInfo;
 
     let txFee = 0;
 
@@ -228,7 +228,7 @@ export class CryptocurrencyService {
       txFee = Math.floor(+weight.toString() + +partialFee.toString());
     } else {
       const cryptoAcaPoolString = (
-        await cryptoApi.query.dex.liquidityPool([{Token: 'ACA'}, {Token: cryptoId}])
+        await cryptoApi.query.dex.liquidityPool([{Token: 'ACA'}, {Token: cryptocurrencyId}])
       ).toString();
 
       const cryptoAcaPool = cryptoAcaPoolString
@@ -242,7 +242,7 @@ export class CryptocurrencyService {
 
       // Get transaction fee
       const {weight, partialFee} = await cryptoApi.tx.currencies
-        .transfer(to, {Token: cryptoId}, Number(total))
+        .transfer(to, {Token: cryptocurrencyId}, Number(total))
         .paymentInfo(from);
 
       const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13;
@@ -254,7 +254,7 @@ export class CryptocurrencyService {
   }
 
   async sendTipsToUser(cryptoApi: ApiPromise, paymentInfo: PaymentInfo): Promise<string> {
-    const {total, to, from, cryptoId, isNative, txFee, nonce} = paymentInfo;
+    const {total, to, from, cryptocurrencyId, isNative, txFee, nonce} = paymentInfo;
 
     let txHash = null;
     let transfer = null;
@@ -262,7 +262,7 @@ export class CryptocurrencyService {
     if (isNative) {
       transfer = cryptoApi.tx.balances.transfer(to, total - txFee);
     } else {
-      transfer = cryptoApi.tx.currencies.transfer(to, {Token: cryptoId}, total - txFee);
+      transfer = cryptoApi.tx.currencies.transfer(to, {Token: cryptocurrencyId}, total - txFee);
     }
 
     if (nonce) txHash = await transfer.signAndSend(from, {nonce});
@@ -271,11 +271,11 @@ export class CryptocurrencyService {
     return txHash.toString();
   }
 
-  async cryptoApi(rpcAddress: string, cryptoId: string): Promise<ApiPromise> {
+  async cryptoApi(rpcAddress: string, cryptocurrencyId: string): Promise<ApiPromise> {
     let api = null;
     const provider = new WsProvider(rpcAddress);
 
-    if (cryptoId === 'ACA' || cryptoId === 'AUSD' || cryptoId === 'DOT') {
+    if (cryptocurrencyId === 'ACA' || cryptocurrencyId === 'AUSD' || cryptocurrencyId === 'DOT') {
       api = await new ApiPromise(
         options({
           provider,

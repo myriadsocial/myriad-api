@@ -27,7 +27,7 @@ export class TransactionService {
   ) {}
 
   async recordTransaction(paymentInfo: PaymentInfo): Promise<void> {
-    const {tipId, fromString, txHash, to, total, txFee, cryptoId} = paymentInfo;
+    const {tipId, fromString, txHash, to, total, txFee, cryptocurrencyId} = paymentInfo;
 
     if (tipId) {
       this.personTipRepository.updateById(tipId, {total: 0}) as Promise<void>;
@@ -48,7 +48,7 @@ export class TransactionService {
       to: to,
       value: total - txFee,
       state: 'success',
-      cryptocurrencyId: cryptoId,
+      cryptocurrencyId: cryptocurrencyId,
       createdAt: new Date().toString(),
       updatedAt: new Date().toString(),
       hasSentToUser: true,
@@ -58,7 +58,7 @@ export class TransactionService {
       sentToMe: +(total - txFee),
       sentToThem: 0,
       userId: to,
-      cryptocurrencyId: cryptoId,
+      cryptocurrencyId: cryptocurrencyId,
     };
 
     this.recordTransactionHistory(
@@ -67,12 +67,12 @@ export class TransactionService {
   }
 
   async recordTransactionHistory(transactionHistory: TransactionHistory): Promise<void> {
-    const {sentToMe, sentToThem, userId, cryptocurrencyId: cryptoId} = transactionHistory;
+    const {sentToMe, sentToThem, userId, cryptocurrencyId: cryptocurrencyId} = transactionHistory;
 
     const foundTransactionHistory = await this.transactionHistoryRepository.findOne({
       where: {
-        userId: userId,
-        cryptocurrencyId: cryptoId,
+        userId,
+        cryptocurrencyId,
       },
     });
 
@@ -111,7 +111,7 @@ export class TransactionService {
   async isTotalTipInPersonUpdated(
     userId: string,
     postId: string | undefined,
-    cryptoId: string,
+    cryptocurrencyId: string,
     value: number,
   ): Promise<boolean> {
     if (!postId) return false;
@@ -123,7 +123,7 @@ export class TransactionService {
       const foundPersonTip = await this.personTipRepository.findOne({
         where: {
           peopleId: foundPost.peopleId,
-          cryptocurrencyId: cryptoId,
+          cryptocurrencyId: cryptocurrencyId,
         },
       });
 
@@ -134,26 +134,26 @@ export class TransactionService {
       } else {
         this.personTipRepository.create({
           total: value,
-          cryptocurrencyId: cryptoId,
+          cryptocurrencyId: cryptocurrencyId,
           peopleId: foundPost.peopleId,
         }) as Promise<PostTip>;
       }
 
-      this.totalTipInPost(postId, cryptoId, value) as Promise<void>;
+      this.totalTipInPost(postId, cryptocurrencyId, value) as Promise<void>;
 
       return true;
     }
 
-    this.totalTipInPost(postId, cryptoId, value) as Promise<void>;
+    this.totalTipInPost(postId, cryptocurrencyId, value) as Promise<void>;
 
     return false;
   }
 
-  async totalTipInPost(postId: string, cryptoId: string, value: number): Promise<void> {
+  async totalTipInPost(postId: string, cryptocurrencyId: string, value: number): Promise<void> {
     const foundPostTips = await this.postTipRepository.findOne({
       where: {
         postId,
-        cryptocurrencyId: cryptoId,
+        cryptocurrencyId: cryptocurrencyId,
       },
     });
 
@@ -164,7 +164,7 @@ export class TransactionService {
     } else {
       this.postTipRepository.create({
         postId,
-        cryptocurrencyId: cryptoId,
+        cryptocurrencyId: cryptocurrencyId,
         total: value,
       }) as Promise<PostTip>;
     }
