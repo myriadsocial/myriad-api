@@ -54,7 +54,7 @@ export class TransactionController {
     // TODO: Update person total tip if user does not exist
     // TODO: Update post total tips
 
-    const {from, to, value, cryptocurrencyId: cryptoId, postId} = transaction;
+    const {from, to, value, cryptocurrencyId, postId} = transaction;
 
     // Validate if crypto already exist
     await this.cryptocurrencyRepository.findById(transaction.cryptocurrencyId.toUpperCase());
@@ -67,7 +67,7 @@ export class TransactionController {
     const isPeopleTipUpdated = await this.transactionService.isTotalTipInPersonUpdated(
       transaction.to,
       postId,
-      cryptoId,
+      cryptocurrencyId,
       value,
     );
 
@@ -79,7 +79,7 @@ export class TransactionController {
       sentToThem: value,
       sentToMe: 0,
       userId: from,
-      cryptocurrencyId: cryptoId,
+      cryptocurrencyId: cryptocurrencyId,
     } as Omit<TransactionHistory, 'id'>) as Promise<void>;
 
     transaction.createdAt = new Date().toString();
@@ -96,7 +96,7 @@ export class TransactionController {
       sentToThem: 0,
       sentToMe: value,
       userId: to,
-      cryptocurrencyId: cryptoId,
+      cryptocurrencyId: cryptocurrencyId,
     } as Omit<TransactionHistory, 'id'>) as Promise<void>;
 
     transaction.hasSentToUser = true;

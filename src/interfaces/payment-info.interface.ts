@@ -4,7 +4,7 @@ export interface PaymentInfo {
   total: number;
   to: string;
   from: KeyringPair;
-  cryptoId: string;
+  cryptocurrencyId: string;
   decimal: number;
   isNative?: boolean;
   txFee: number;
