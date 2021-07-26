@@ -8,10 +8,10 @@ export class DateUtils {
   constructor() {
     // In miliseconds
     this.second = 1000;
-    this.minute = 60 * 1000;
-    this.hour = 60 * 60 * 1000;
-    this.day = 24 * 60 * 60 * 1000;
-    this.year = 365 * 24 * 60 * 60 * 1000;
+    this.minute = 60 * this.second;
+    this.hour = 60 * this.minute;
+    this.day = 24 * this.hour;
+    this.year = 365 * this.day;
   }
 
   today(date: string): number {
