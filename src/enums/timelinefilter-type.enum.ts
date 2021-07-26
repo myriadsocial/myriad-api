@@ -19,8 +19,8 @@ export enum DefaultInq {
 }
 
 export enum TimelineType {
+  ALL = 'all',
   EXPERIENCE = 'experience',
   TRENDING = 'trending',
   FRIEND = 'friend',
-  ALL = 'all',
 }
