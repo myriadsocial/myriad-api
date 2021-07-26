@@ -1,20 +1,13 @@
 export class DateUtils {
-  second: number;
-  minute: number;
-  hour: number;
-  day: number;
-  year: number;
+  second = 1000;
+  minute = 60 * this.second;
+  hour = 60 * this.minute;
+  day = 24 * this.hour;
+  year = 365 * this.day;
 
-  constructor() {
-    // In miliseconds
-    this.second = 1000;
-    this.minute = 60 * this.second;
-    this.hour = 60 * this.minute;
-    this.day = 24 * this.hour;
-    this.year = 365 * this.day;
-  }
+  constructor() {}
 
-  today(date: string): number {
-    return new Date().getTime() - new Date(date).getTime();
+  isToday(date: string): boolean {
+    return new Date().getTime() - new Date(date).getTime() > this.day;
   }
 }

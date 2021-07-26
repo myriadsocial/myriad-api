@@ -109,7 +109,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
 
       if (!tags) tags = [];
 
-      const {day, today} = new DateUtils();
+      const {isToday} = new DateUtils();
 
       for (const tag of tags) {
         const foundTag = await tagRepository.findOne({
@@ -136,12 +136,9 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
             updatedAt: new Date().toString(),
           });
         } else {
-          const oneDay = day;
-          const isOneDay = today(foundTag.updatedAt) > oneDay;
-
           await tagRepository.updateById(foundTag.id, {
             updatedAt: new Date().toString(),
-            count: isOneDay ? 1 : foundTag.count + 1,
+            count: isToday(foundTag.updatedAt) ? 1 : foundTag.count + 1,
           });
         }
       }
