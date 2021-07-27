@@ -25,8 +25,6 @@ import {
   UserCredentialRepository
 } from '../repositories';
 import {PostService, SocialMediaService, TagService} from '../services';
-// import {authenticate} from '@loopback/authentication';
-
 // @authenticate("jwt")
 export class PostController {
   constructor(
