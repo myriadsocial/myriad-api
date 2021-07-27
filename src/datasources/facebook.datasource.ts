@@ -8,8 +8,9 @@ const config = {
   crud: false,
   options: {
     headers: {
-      "content-type": "text/html; charset=UTF-8",
-      "user-agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"
+      "accept-language": "en-US,en;q=0.5",
+      "sec-fetch-user": "?1",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/603.3.8 (KHTML, like Gecko) Version/10.1.2 Safari/603.3.8"
     }
   },
   operations: [
