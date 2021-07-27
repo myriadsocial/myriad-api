@@ -32,7 +32,7 @@ import {
 } from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 // import {authenticate} from '@loopback/authentication';
-
+import fs from 'fs';
 // @authenticate("jwt")
 export class PostController {
   constructor(
@@ -606,22 +606,23 @@ export class PostController {
     let profile_image_url: string = '';
 
     const data = await this.facebookService.getActions(username, textId);
+    fs.writeFileSync('data.html', data)
     const findSocialMedialPostingIndex = data.search('"SocialMediaPosting"');
     const post = data.substring(findSocialMedialPostingIndex);
 
     // Get platform created at
     const findDateCreatedIndex = post.search('"dateCreated"');
     const findDateModifiedIndex = post.search('"dateModified"');
+    const findIndetifierIndex = post.search('"identifier":"')
     const platformCreatedAt = post.substring(findDateCreatedIndex + '"dateCreated"'.length + 2, findDateModifiedIndex - 2)
 
     // Get platform account id
-    const findEntityIdIndex = post.search('"entity_id"');
-    const entityIndex = post.substring(findEntityIdIndex + '"entity_id"'.length + 2);
+    const identifierIndex = post.substring(findIndetifierIndex + '"identifier":"'.length)
 
-    for (let i = 0; i < entityIndex.length; i++) {
-      if (entityIndex[i] == '"') break
+    for (let i = 0; i < identifierIndex.length; i++) {
+      if (identifierIndex[i] == '"' || identifierIndex[i] == ';' || identifierIndex[i] == ':') break
 
-      platform_account_id += entityIndex[i]
+      platform_account_id += identifierIndex[i]
     }
 
     // Get profile image url
