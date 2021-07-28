@@ -1,15 +1,15 @@
 import {service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
+import dotenv from 'dotenv';
 import {Transaction, TransactionHistory} from '../models';
 import {
   CryptocurrencyRepository,
   PostTipRepository,
   TransactionRepository,
-  UserRepository,
+  UserRepository
 } from '../repositories';
 import {CryptocurrencyService, TransactionService} from '../services';
-import dotenv from 'dotenv';
 // import {authenticate} from '@loopback/authentication';
 
 dotenv.config();
