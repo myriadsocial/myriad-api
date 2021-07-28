@@ -117,7 +117,7 @@ export class UserController {
       tokenId: 'AUSD',
     });
 
-    this.createToken(newUser.id, 'MYR');
+    this.createToken(newUser.id, 'MYRIA');
     this.createToken(newUser.id, 'AUSD');
 
     return newUser;
@@ -408,10 +408,10 @@ export class UserController {
 
   async createToken(userId: string, tokenId: string): Promise<void> {
     let token = null;
-    if (tokenId === 'MYR') {
+    if (tokenId === 'MYRIA') {
       token = {
-        id: 'MYR',
-        token_name: 'myria',
+        id: 'MYRIA',
+        token_name: 'myriad',
         token_decimal: 12,
         token_image: 'token_image',
         address_format: 214,
@@ -439,58 +439,60 @@ export class UserController {
   }
 
   async defaultAcalaTips(userId: string): Promise<void> {
-    const rpcAddress = process.env.ACALA_WS_RPC ?? '';
-    const provider = new WsProvider(rpcAddress);
-    const api = await new ApiPromise(options({provider}) as ApiOptions).isReadyOrError;
-    const keyring = new Keyring({
-      type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-    });
-
-    const mnemonic = process.env.ACALA_FAUCET_MNEMONIC ?? '';
-    const from = keyring.addFromMnemonic(mnemonic);
-    const to = userId;
-    const value = 10 * 10 ** 12;
-
-    const {nonce} = await api.query.system.account(from.address);
-
-    const queue = await this.queueRepository.findOne({
-      where: {
-        id: 'acala',
-      },
-    });
-
-    let count: number = nonce.toJSON();
-
-    if (!queue) {
-      await this.queueRepository.create({
-        id: 'acala',
-        count: count + 1,
+    try {
+      const rpcAddress = 'wss://acala-mandala.api.onfinality.io/public-ws';
+      const provider = new WsProvider(rpcAddress);
+      const api = await new ApiPromise(options({provider}) as ApiOptions).isReadyOrError;
+      const keyring = new Keyring({
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
       });
-    } else {
-      if (queue.count >= nonce.toJSON()) {
-        count = queue.count;
+
+      const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
+      const from = keyring.addFromMnemonic(mnemonic);
+      const to = userId;
+      const value = 10 * 10 ** 12;
+
+      const {nonce} = await api.query.system.account(from.address);
+
+      const queue = await this.queueRepository.findOne({
+        where: {
+          id: 'acala',
+        },
+      });
+
+      let count: number = nonce.toJSON();
+
+      if (!queue) {
+        await this.queueRepository.create({
+          id: 'acala',
+          count: count + 1,
+        });
       } else {
-        count = nonce.toJSON();
+        if (queue.count >= nonce.toJSON()) {
+          count = queue.count;
+        } else {
+          count = nonce.toJSON();
+        }
+
+        await this.queueRepository.updateById(queue.id, {count: count + 1});
       }
 
-      await this.queueRepository.updateById(queue.id, {count: count + 1});
-    }
+      const transfer = api.tx.currencies.transfer(to, {Token: 'AUSD'}, value);
+      const txHash = await transfer.signAndSend(from, {nonce: count});
 
-    const transfer = api.tx.currencies.transfer(to, {Token: 'AUSD'}, value);
-    const txHash = await transfer.signAndSend(from, {nonce: count});
+      this.transactionRepository.create({
+        trxHash: txHash.toString(),
+        from: u8aToHex(from.publicKey),
+        to: userId,
+        value: value,
+        state: 'success',
+        hasSendToUser: true,
+        createdAt: new Date().toString(),
+        tokenId: 'AUSD',
+      });
 
-    this.transactionRepository.create({
-      trxHash: txHash.toString(),
-      from: u8aToHex(from.publicKey),
-      to: userId,
-      value: value,
-      state: 'success',
-      hasSendToUser: true,
-      createdAt: new Date().toString(),
-      tokenId: 'AUSD',
-    });
-
-    await api.disconnect();
+      await api.disconnect();
+    } catch {}
   }
 
   // async defaultExperience(user: User): Promise<void> {

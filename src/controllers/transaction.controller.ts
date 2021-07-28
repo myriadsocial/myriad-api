@@ -1,8 +1,4 @@
-import {
-  Filter,
-  FilterExcludingWhere,
-  repository
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -12,26 +8,23 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
+import Keyring, {encodeAddress} from '@polkadot/keyring';
+import {u8aToHex} from '@polkadot/util';
+import {KeypairType} from '@polkadot/util-crypto/types';
+import dotenv from 'dotenv';
+import {polkadotApi} from '../helpers/polkadotApi';
 import {Token, Transaction, User} from '../models';
 import {
   DetailTransactionRepository,
+  PostRepository,
+  QueueRepository,
+  TipRepository,
   TokenRepository,
   TransactionRepository,
   UserRepository,
-  QueueRepository,
-  PostRepository,
-  PeopleRepository,
-  TipRepository,
 } from '../repositories';
-import {polkadotApi} from '../helpers/polkadotApi';
-import {KeypairType} from '@polkadot/util-crypto/types';
-import {u8aToHex} from '@polkadot/util';
-import {authenticate} from '@loopback/authentication';
-
-import dotenv from 'dotenv';
-import Keyring, { encodeAddress } from '@polkadot/keyring';
 
 dotenv.config();
 
@@ -48,11 +41,11 @@ export class TransactionController {
     public tokenRepository: TokenRepository,
     @repository(QueueRepository)
     public queueRepository: QueueRepository,
-    @repository(PostRepository) 
+    @repository(PostRepository)
     public postRepository: PostRepository,
     @repository(TipRepository)
-    public tipRepository: TipRepository
-  ) { }
+    public tipRepository: TipRepository,
+  ) {}
 
   @post('/transactions')
   @response(200, {
@@ -74,19 +67,19 @@ export class TransactionController {
   ): Promise<Transaction> {
     const foundToken = await this.tokenRepository.findOne({
       where: {
-        id: transaction.tokenId.toUpperCase()
-      }
-    })
+        id: transaction.tokenId.toUpperCase(),
+      },
+    });
 
     if (!foundToken) {
-      throw new HttpErrors.NotFound('Token not found')
+      throw new HttpErrors.NotFound('Token not found');
     }
 
     // Check if user exist
     await this.userRepository.findById(transaction.from);
 
     // Reward to FROM for doing transactions
-    this.sentMyriadReward(transaction.from); 
+    this.sentMyriadReward(transaction.from);
 
     const from = transaction.from;
     const to = transaction.to;
@@ -94,60 +87,60 @@ export class TransactionController {
     const tokenId = transaction.tokenId.toUpperCase();
 
     // Detail transaction of FROM
-    const foundFromUser = await this.findDetailTransaction(from, tokenId)
+    const foundFromUser = await this.findDetailTransaction(from, tokenId);
 
     if (foundFromUser) {
       this.detailTransactionRepository.updateById(foundFromUser.id, {
-        sentToThem: foundFromUser.sentToThem + value
-      })
+        sentToThem: foundFromUser.sentToThem + value,
+      });
     } else {
       this.detailTransactionRepository.create({
         sentToMe: 0,
         sentToThem: value,
         userId: from,
-        tokenId: tokenId.toUpperCase()
-      })
+        tokenId: tokenId.toUpperCase(),
+      });
     }
 
     // Detail Transaction of TO
-    const foundToUser = await this.findDetailTransaction(to, tokenId)
+    const foundToUser = await this.findDetailTransaction(to, tokenId);
 
     if (foundToUser) {
       this.detailTransactionRepository.updateById(foundToUser.id, {
-        sentToMe: foundToUser.sentToMe + value
-      })
+        sentToMe: foundToUser.sentToMe + value,
+      });
     } else {
       // TO maybe doesn't exist yet in myriad
       const foundUser = await this.userRepository.findOne({
         where: {
-          id: to
-        }
-      })
+          id: to,
+        },
+      });
 
       // Find post to get peopleId
       const foundPost = await this.postRepository.findOne({
         where: {
-          walletAddress: to
-        }
-      })
+          walletAddress: to,
+        },
+      });
 
       const foundTip = await this.tipRepository.findOne({
         where: {
           peopleId: foundPost?.peopleId,
-          tokenId: tokenId
-        }
-      })
+          tokenId: tokenId,
+        },
+      });
 
       if (foundTip) {
         this.tipRepository.updateById(foundTip.id, {
-          totalTips: foundTip.totalTips + Number(value) 
-        })
+          totalTips: foundTip.totalTips + Number(value),
+        });
       } else {
         this.tipRepository.create({
           totalTips: Number(value),
           tokenId: tokenId,
-          peopleId: foundPost?.peopleId
-        })
+          peopleId: foundPost?.peopleId,
+        });
       }
 
       // If the public key is not belong to user
@@ -157,8 +150,8 @@ export class TransactionController {
           value: value,
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
-          hasSendToUser: false
-        })
+          hasSendToUser: false,
+        });
       }
 
       // If detail transaction belong to user
@@ -166,8 +159,8 @@ export class TransactionController {
         sentToMe: value,
         sentToThem: 0,
         tokenId: tokenId,
-        userId: to
-      })
+        userId: to,
+      });
     }
 
     return this.transactionRepository.create({
@@ -175,7 +168,7 @@ export class TransactionController {
       value: value,
       createdAt: new Date().toString(),
       updatedAt: new Date().toString(),
-      hasSendToUser: true
+      hasSendToUser: true,
     });
   }
 
@@ -191,9 +184,7 @@ export class TransactionController {
       },
     },
   })
-  async getToken(
-    @param.path.string('id') id: typeof Transaction.prototype.id,
-  ): Promise<Token> {
+  async getToken(@param.path.string('id') id: typeof Transaction.prototype.id): Promise<Token> {
     return this.transactionRepository.token(id);
   }
 
@@ -209,9 +200,7 @@ export class TransactionController {
       },
     },
   })
-  async getUser(
-    @param.path.string('id') id: typeof Transaction.prototype.id,
-  ): Promise<User> {
+  async getUser(@param.path.string('id') id: typeof Transaction.prototype.id): Promise<User> {
     return this.transactionRepository.toUser(id);
   }
 
@@ -227,9 +216,7 @@ export class TransactionController {
       },
     },
   })
-  async find(
-    @param.filter(Transaction) filter?: Filter<Transaction>,
-  ): Promise<Transaction[]> {
+  async find(@param.filter(Transaction) filter?: Filter<Transaction>): Promise<Transaction[]> {
     return this.transactionRepository.find(filter);
   }
 
@@ -244,7 +231,7 @@ export class TransactionController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Transaction, {exclude: 'where'}) filter?: FilterExcludingWhere<Transaction>
+    @param.filter(Transaction, {exclude: 'where'}) filter?: FilterExcludingWhere<Transaction>,
   ): Promise<Transaction> {
     return this.transactionRepository.findById(id, filter);
   }
@@ -266,7 +253,7 @@ export class TransactionController {
   ): Promise<void> {
     await this.transactionRepository.updateById(id, {
       ...transaction,
-      updatedAt: new Date().toString()
+      updatedAt: new Date().toString(),
     });
   }
 
@@ -282,36 +269,36 @@ export class TransactionController {
     return this.detailTransactionRepository.findOne({
       where: {
         userId: userId,
-        tokenId: tokenId
-      }
-    })
+        tokenId: tokenId,
+      },
+    });
   }
 
-  async sentMyriadReward(userId: string):Promise<void> {
-    const provider = process.env.MYRIAD_WS_RPC || "";
+  async sentMyriadReward(userId: string): Promise<void> {
+    const provider = process.env.MYRIAD_WS_RPC || '';
     const myriadPrefix = Number(process.env.MYRIAD_ADDRESS_PREFIX);
     const api = await polkadotApi(provider);
     const keyring = new Keyring({
       type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-      ss58Format: myriadPrefix
-    })
+      ss58Format: myriadPrefix,
+    });
 
-    const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? "";
-    const from  = keyring.addFromMnemonic(mnemonic);
+    const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
+    const from = keyring.addFromMnemonic(mnemonic);
     const to = encodeAddress(userId, myriadPrefix);
     const reward = +(1 * 10 ** 12);
     const {nonce} = await api.query.system.account(from.address);
 
     const foundQueue = await this.queueRepository.findOne({
       where: {
-        id: "admin"
-      }
-    })
+        id: 'admin',
+      },
+    });
 
     let foundAdmin = await this.userRepository.findOne({
       where: {
-        id: u8aToHex(from.publicKey)
-      }
+        id: u8aToHex(from.publicKey),
+      },
     });
 
     if (!foundAdmin) {
@@ -320,26 +307,26 @@ export class TransactionController {
         name: 'Myriad',
         username: 'myriad',
         skip_tour: true,
-        is_online: false
-      })
+        is_online: false,
+      });
     }
 
     // Set queueu if there is multiple transactions
     let count: number = nonce.toJSON();
-    
+
     if (!foundQueue) {
       await this.queueRepository.create({
-        id: "admin",
-        count: count + 1
-      })
+        id: 'admin',
+        count: count + 1,
+      });
     } else {
       if (foundQueue.count >= nonce.toJSON()) {
-        count = foundQueue.count
+        count = foundQueue.count;
       } else {
-        count = nonce.toJSON()
+        count = nonce.toJSON();
       }
 
-      await this.queueRepository.updateById(foundQueue.id, {count: count + 1})
+      await this.queueRepository.updateById(foundQueue.id, {count: count + 1});
     }
 
     // Transaction reward
@@ -354,24 +341,24 @@ export class TransactionController {
       hasSendToUser: true,
       state: 'success',
       createdAt: new Date().toString(),
-      tokenId: 'MYR'
-    })
+      tokenId: 'MYRIA',
+    });
 
-    const foundUserDetailTransaction = await this.findDetailTransaction(userId, "MYR");
+    const foundUserDetailTransaction = await this.findDetailTransaction(userId, 'MYRIA');
 
     if (foundUserDetailTransaction) {
       this.detailTransactionRepository.updateById(foundUserDetailTransaction.id, {
-        sentToMe: foundUserDetailTransaction.sentToMe + reward
-      })
+        sentToMe: foundUserDetailTransaction.sentToMe + reward,
+      });
     } else {
       this.detailTransactionRepository.create({
         sentToMe: reward,
         sentToThem: 0,
         userId: userId,
-        tokenId: "MYR"
-      })
+        tokenId: 'MYRIA',
+      });
     }
 
-    await api.disconnect()
+    await api.disconnect();
   }
 }
