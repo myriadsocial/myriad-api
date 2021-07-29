@@ -1,10 +1,4 @@
-import {
-  Count,
-  CountSchema,
-  Filter,
-  repository,
-  Where
-} from '@loopback/repository';
+import {Count, CountSchema, Filter, repository, Where} from '@loopback/repository';
 import {
   del,
   get,
@@ -14,7 +8,7 @@ import {
   param,
   patch,
   post,
-  requestBody
+  requestBody,
 } from '@loopback/rest';
 import {Post, User} from '../models';
 import {
@@ -22,7 +16,7 @@ import {
   PostRepository,
   PublicMetricRepository,
   TagRepository,
-  UserRepository
+  UserRepository,
 } from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -38,67 +32,73 @@ export class UserPostController {
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
     @repository(TagRepository)
-    protected tagRepository: TagRepository
-  ) { }
+    protected tagRepository: TagRepository,
+  ) {}
 
   @get('/users/{id}/timeline', {
     responses: {
       '200': {
-        description: 'User timeline'
-      }
-    }
+        description: 'User timeline',
+      },
+    },
   })
   async findTimeline(
     @param.path.string('id') id: string,
     @param.query.string('orderField') orderField: string,
     @param.query.string('order') order: string,
     @param.query.string('limit') limit: number,
-    @param.query.string('offset') offset: number
+    @param.query.string('offset') offset: number,
   ): Promise<Post[]> {
-    if (!orderField) orderField = 'platformCreatedAt'
-    if (!order) order = 'DESC'
-    if (!limit) limit = 10
-    if (!offset) offset = 0
+    if (!orderField) orderField = 'platformCreatedAt';
+    if (!order) order = 'DESC';
+    if (!limit) limit = 10;
+    if (!offset) offset = 0;
 
-    if (orderField === 'comment') orderField = 'totalComment'
-    if (orderField === 'liked') orderField = 'totalLiked'
-    if (orderField === 'disliked') orderField = 'totalDisliked'
+    if (orderField === 'comment') orderField = 'totalComment';
+    if (orderField === 'liked') orderField = 'totalLiked';
+    if (orderField === 'disliked') orderField = 'totalDisliked';
 
-    const orderFields = ["platformCreatedAt", "totalComment", "totalDisliked", "totalLiked"];
+    const orderFields = ['platformCreatedAt', 'totalComment', 'totalDisliked', 'totalLiked'];
     const orders = ['DESC', 'ASC'];
-    const foundField = orderFields.find(field => field === orderField)
-    const foundOrder = orders.find(ord => ord === order.toUpperCase())
+    const foundField = orderFields.find(field => field === orderField);
+    const foundOrder = orders.find(ord => ord === order.toUpperCase());
 
-    if (!foundField) throw new HttpErrors.UnprocessableEntity("The following fields are mandatory: platformCreatedAt, comment, liked, or disliked");
-    if (!foundOrder) throw new HttpErrors.UnprocessableEntity("Please choose one of the following order values: ASC or DESC");
+    if (!foundField)
+      throw new HttpErrors.UnprocessableEntity(
+        'The following fields are mandatory: platformCreatedAt, comment, liked, or disliked',
+      );
+    if (!foundOrder)
+      throw new HttpErrors.UnprocessableEntity(
+        'Please choose one of the following order values: ASC or DESC',
+      );
 
     const acceptedFriends = await this.friendRepository.find({
       where: {
         status: 'approved',
         or: [
           {
-            friendId: id
+            friendId: id,
           },
           {
-            requestorId: id
-          }
-        ]
-      }
-    })
+            requestorId: id,
+          },
+        ],
+      },
+    });
 
     const friendIds = [
       ...acceptedFriends.map(friend => friend.friendId),
       ...acceptedFriends.map(friend => friend.requestorId),
-      id
-    ]
+      id,
+    ];
 
     const importBys = friendIds.map(id => {
       return {
         importBy: {
-          inq: [[id]]
-        }
-      }
-    })
+          inq: [[id]],
+        },
+      };
+    });
 
     return this.postRepository.find({
       where: {
@@ -106,27 +106,27 @@ export class UserPostController {
           ...importBys,
           {
             walletAddress: {
-              inq: friendIds
-            }
+              inq: friendIds,
+            },
           },
           {
             tags: {
-              inq: ["cryptocurrency", "blockchain", "technology"]
-            }
+              inq: ['cryptocurrency', 'blockchain', 'technology'],
+            },
           },
           {
             'platformUser.username': {
               inq: [
-                "elonmusk",
-                "gavofyork",
-                "W3F_Bill",
-                "CryptoChief",
-                "BillGates",
-                "vitalikbuterineth"
-              ]
-            }
-          }
-        ]
+                'elonmusk',
+                'gavofyork',
+                'W3F_Bill',
+                'CryptoChief',
+                'BillGates',
+                'vitalikbuterineth',
+              ],
+            },
+          },
+        ],
       },
       order: [`${orderField} ${order.toUpperCase()}`, `platformCreatedAt ${order.toUpperCase()}`],
       limit: limit,
@@ -137,16 +137,16 @@ export class UserPostController {
           scope: {
             include: [
               {
-                relation: 'user'
-              }
-            ]
-          }
+                relation: 'user',
+              },
+            ],
+          },
         },
         {
-          relation: 'publicMetric'
-        }
-      ]
-    } as Filter<Post>)
+          relation: 'publicMetric',
+        },
+      ],
+    } as Filter<Post>);
   }
 
   @get('/users/{id}/posts', {
@@ -186,28 +186,42 @@ export class UserPostController {
             required: ['text'],
             properties: {
               text: {
-                type: 'string'
+                type: 'string',
               },
               tags: {
                 type: 'array',
                 items: {
-                  type: 'string'
-                }
+                  type: 'string',
+                },
               },
-              assets: {
-                type: 'array',
-                items: {
-                  type: 'string'
-                }
-              }
-            }
+              asset: {
+                type: 'object',
+                properties: {
+                  images: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                    },
+                  },
+                  videos: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
-    }) post: Omit<Post, 'id'>,
+    })
+    post: Omit<Post, 'id'>,
   ): Promise<Post> {
-    if (post.assets && post.assets.length > 0) {
-      post.hasMedia = true
+    if (post.asset) {
+      if (post.asset.images.length > 0 || post.asset.videos.length > 0) {
+        post.hasMedia = true;
+      }
     }
 
     delete post.platformUser;
@@ -218,49 +232,50 @@ export class UserPostController {
       platform: 'myriad',
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
+      updatedAt: new Date().toString(),
     });
 
-    this.postRepository.publicMetric(newPost.id).create({})
+    this.postRepository.publicMetric(newPost.id).create({});
 
-    const tags = post.tags
+    const tags = post.tags;
 
     for (let i = 0; i < tags.length; i++) {
       const foundTag = await this.tagRepository.findOne({
         where: {
           or: [
             {
-              id: tags[i]
+              id: tags[i],
             },
             {
               id: tags[i].toLowerCase(),
             },
             {
-              id: tags[i].toUpperCase()
-            }
-          ]
-        }
-      })
+              id: tags[i].toUpperCase(),
+            },
+          ],
+        },
+      });
 
       if (!foundTag) {
         this.tagRepository.create({
           id: tags[i],
           count: 1,
           createdAt: new Date().toString(),
-          updatedAt: new Date().toString()
-        })
+          updatedAt: new Date().toString(),
+        });
       } else {
         const oneDay: number = 60 * 60 * 24 * 1000;
-        const isOneDay: boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+        const isOneDay: boolean =
+          new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
 
         this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
-          count: isOneDay ? 1 : foundTag.count + 1
-        })
+          count: isOneDay ? 1 : foundTag.count + 1,
+        });
       }
     }
 
-    return newPost
+    return newPost;
   }
 
   @patch('/users/{id}/posts', {
