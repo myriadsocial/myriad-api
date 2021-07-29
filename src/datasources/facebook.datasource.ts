@@ -4,7 +4,7 @@ import {juggler} from '@loopback/repository';
 const config = {
   name: 'facebook',
   connector: 'rest',
-  baseURL: 'https://mbasic.facebook.com',
+  baseURL: 'https://facebook.com',
   crud: false,
   options: {
     headers: {
@@ -16,7 +16,7 @@ const config = {
     {
       template: {
         method: 'GET',
-        url: 'https://mbasic.facebook.com/{pageId}/posts/{postId}',
+        url: 'https://facebook.com/{pageId}/posts/{postId}',
       },
       functions: {
         getActions: ['pageId', 'postId'],
