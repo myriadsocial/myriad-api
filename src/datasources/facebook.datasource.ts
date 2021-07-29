@@ -4,7 +4,7 @@ import {juggler} from '@loopback/repository';
 const config = {
   name: 'facebook',
   connector: 'rest',
-  baseURL: 'https://facebook.com',
+  baseURL: 'https://mbasic.facebook.com',
   crud: false,
   options: {
     headers: {
