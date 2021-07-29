@@ -1,13 +1,13 @@
 import {belongsTo, Entity, hasMany, hasOne, model, property} from '@loopback/repository';
+import {Asset} from '../interfaces/asset.interface';
 import {Comment} from './comment.model';
 import {Dislike} from './dislike.model';
 import {Like} from './like.model';
 import {People, PeopleWithRelations} from './people.model';
-import {PublicMetric} from './public-metric.model';
-import {User} from './user.model';
-import {Transaction} from './transaction.model';
 import {PostTip} from './post-tip.model';
-import {Asset} from '../interfaces/asset.interface';
+import {PublicMetric} from './public-metric.model';
+import {Transaction} from './transaction.model';
+import {User} from './user.model';
 
 @model({
   settings: {
