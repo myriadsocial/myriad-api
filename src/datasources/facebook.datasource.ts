@@ -6,13 +6,7 @@ const config = {
   connector: 'rest',
   baseURL: 'https://mbasic.facebook.com',
   crud: false,
-  options: {
-    // headers: {
-    //   'accept-language': 'en-US,en;q=0.5',
-    //   'sec-fetch-user': '?1',
-    //   'content-type': 'text/html',
-    // },
-  },
+  options: {},
   operations: [
     {
       template: {
