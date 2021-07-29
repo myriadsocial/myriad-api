@@ -4,19 +4,18 @@ import {juggler} from '@loopback/repository';
 const config = {
   name: 'facebook',
   connector: 'rest',
-  baseURL: 'https://mbasic.facebook.com',
+  baseURL: 'https://facebook.com',
   crud: false,
   options: {
     headers: {
-      "content-type": "text/html",
-      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
+      "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBDV/iPhone11,8;FBMD/iPhone;FBSN/iOS;FBSV/13.3.1;FBSS/2;FBID/phone;FBLC/en_US;FBOP/5;FBCR/]"
     }
   },
   operations: [
     {
       template: {
         method: 'GET',
-        url: 'https://mbasic.facebook.com/{pageId}/posts/{postId}',
+        url: 'https://facebook.com/{pageId}/posts/{postId}',
       },
       functions: {
         getActions: ['pageId', 'postId'],
