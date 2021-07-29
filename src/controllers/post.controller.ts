@@ -647,8 +647,6 @@ export class PostController {
       url += getUrl[i];
     }
 
-    const userName = url.replace(/\\/g, '').split('/')[3];
-
     return {
       createdAt: new Date().toString(),
       platform: PlatformType.FACEBOOK,
@@ -657,11 +655,10 @@ export class PostController {
       link: `https://facebook.com/${username}/posts/${textId}`,
       platformUser: {
         name: arrayName.join(''),
-        username: userName,
+        username: username,
         platform_account_id: platform_account_id,
         profile_image_url: profile_image_url.split('\\').join(''),
       },
-      assets: [],
     };
   }
 
