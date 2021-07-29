@@ -1,9 +1,5 @@
 import {inject} from '@loopback/core';
-import {
-  Filter,
-  FilterExcludingWhere,
-  repository
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -13,13 +9,13 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
 import {Keyring} from '@polkadot/api';
 import {u8aToHex} from '@polkadot/util';
 import {KeypairType} from '@polkadot/util-crypto/types';
 import {PlatformType} from '../enums';
-import {DetailTips, DetailUrl, TipsReceived, URL} from '../interfaces';
+import {Asset, DetailTips, DetailUrl, TipsReceived, URL} from '../interfaces';
 import {People, Post, PublicMetric, User} from '../models';
 import {Wallet} from '../models/wallet.model';
 import {
@@ -28,11 +24,9 @@ import {
   PostRepository,
   PublicMetricRepository,
   TagRepository,
-  UserCredentialRepository
+  UserCredentialRepository,
 } from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
-// import {authenticate} from '@loopback/authentication';
-import fs from 'fs';
 // @authenticate("jwt")
 export class PostController {
   constructor(
@@ -53,8 +47,8 @@ export class PostController {
     @inject('services.Reddit')
     protected redditService: Reddit,
     @inject('services.Facebook')
-    protected facebookService: Facebook
-  ) { }
+    protected facebookService: Facebook,
+  ) {}
 
   @post('/posts')
   @response(200, {
@@ -74,63 +68,66 @@ export class PostController {
     })
     post: Omit<Post, 'id'>,
   ): Promise<Post> {
-    if (post.assets && post.assets.length > 0) {
-      post.hasMedia = true
+    if (post.asset) {
+      if (post.asset.images.length > 0 || post.asset.videos.length > 0) {
+        post.hasMedia = true;
+      }
     }
 
     const newPost = await this.postRepository.create({
       ...post,
       platformCreatedAt: new Date().toString(),
       createdAt: new Date().toString(),
-      updatedAt: new Date().toString()
+      updatedAt: new Date().toString(),
     });
 
-    this.postRepository.publicMetric(newPost.id).create({})
+    this.postRepository.publicMetric(newPost.id).create({});
 
-    const tags = post.tags
+    const tags = post.tags;
 
     for (let i = 0; i < tags.length; i++) {
       const foundTag = await this.tagRepository.findOne({
         where: {
           or: [
             {
-              id: tags[i]
+              id: tags[i],
             },
             {
               id: tags[i].toLowerCase(),
             },
             {
-              id: tags[i].toUpperCase()
-            }
-          ]
-        }
-      })
+              id: tags[i].toUpperCase(),
+            },
+          ],
+        },
+      });
 
       if (!foundTag) {
         this.tagRepository.create({
           id: tags[i],
           count: 1,
           createdAt: new Date().toString(),
-          updatedAt: new Date().toString()
-        })
+          updatedAt: new Date().toString(),
+        });
       } else {
         const oneDay: number = 60 * 60 * 24 * 1000;
-        const isOneDay: boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
+        const isOneDay: boolean =
+          new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
 
         this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
-          count: isOneDay ? 1 : foundTag.count + 1
-        })
+          count: isOneDay ? 1 : foundTag.count + 1,
+        });
       }
     }
 
-    return newPost
+    return newPost;
   }
 
   @post('/posts/import')
   @response(200, {
     description: 'Post',
-    content: {'application/json': {schema: getModelSchemaRef(Post)}}
+    content: {'application/json': {schema: getModelSchemaRef(Post)}},
   })
   async importURL(
     @requestBody({
@@ -141,24 +138,25 @@ export class PostController {
             type: 'object',
             properties: {
               url: {
-                type: 'string'
+                type: 'string',
               },
               importer: {
-                type: 'string'
+                type: 'string',
               },
               tags: {
                 type: 'array',
                 items: {
-                  type: 'string'
-                }
-              }
-            }
-          }
-        }
-      }
-    }) post: URL,
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+    post: URL,
   ): Promise<Post> {
-    const splitURL = post.url.split('/')
+    const splitURL = post.url.split('/');
     const checkPlatform = splitURL[2].toLowerCase().split('.');
 
     let platform: string;
@@ -167,13 +165,13 @@ export class PostController {
     if (checkPlatform.length > 2) {
       platform = checkPlatform[1];
     } else {
-      platform = checkPlatform[0]
+      platform = checkPlatform[0];
     }
 
     if (platform == 'twitter' || platform == 'facebook') {
-      textId = splitURL[5]
+      textId = splitURL[5];
     } else {
-      textId = splitURL[6]
+      textId = splitURL[6];
     }
 
     return this.socialMediaPost({
@@ -181,55 +179,48 @@ export class PostController {
       textId: textId,
       username: splitURL[3],
       postTags: post.tags ? post.tags : [],
-      importer: post.importer
-    })
+      importer: post.importer,
+    });
   }
 
   async socialMediaPost(detailUrl: DetailUrl): Promise<Post> {
     const {textId, platform, postTags, importer, username} = detailUrl;
     const foundPost = await this.postRepository.findOne({
-      where: {textId, platform}
-    })
+      where: {textId, platform},
+    });
 
     let newPost;
 
     if (foundPost) {
-      const foundImporter = foundPost.importBy.find(userId => userId === importer)
+      const foundImporter = foundPost.importBy.find(userId => userId === importer);
 
       if (foundImporter) {
-        throw new HttpErrors.UnprocessableEntity("You have already import this post")
+        throw new HttpErrors.UnprocessableEntity('You have already import this post');
       }
 
       this.postRepository.updateById(foundPost.id, {
-        importBy: [
-          ...foundPost.importBy,
-          importer
-        ]
-      })
+        importBy: [...foundPost.importBy, importer],
+      });
 
-      foundPost.importBy = [
-        ...foundPost.importBy,
-        importer
-      ]
+      foundPost.importBy = [...foundPost.importBy, importer];
 
-      return foundPost
+      return foundPost;
     }
 
     switch (platform) {
       case PlatformType.TWITTER:
         const tweet = await this.twitter(textId);
         const tags = tweet.tags.filter((tag: string) => {
-          return !postTags.map((postTag: string) => postTag.toLowerCase()).includes(tag.toLowerCase())
-        })
+          return !postTags
+            .map((postTag: string) => postTag.toLowerCase())
+            .includes(tag.toLowerCase());
+        });
 
         newPost = {
           ...tweet,
-          tags: [
-            ...tags,
-            ...postTags
-          ],
-          importBy: [importer]
-        }
+          tags: [...tags, ...postTags],
+          importBy: [importer],
+        };
         break;
 
       case PlatformType.REDDIT:
@@ -239,12 +230,12 @@ export class PostController {
           ...redditPost,
           tags: postTags,
           importBy: [importer],
-        }
+        };
         break;
 
       case PlatformType.FACEBOOK:
         if (!username) {
-          throw new HttpErrors.UnprocessableEntity("Username not found!")
+          throw new HttpErrors.UnprocessableEntity('Username not found!');
         }
 
         const facebookPost = await this.facebook(username, textId);
@@ -253,13 +244,12 @@ export class PostController {
           ...facebookPost,
           tags: postTags,
           importBy: [importer],
-          assets: []
-        }
+        };
 
         break;
 
       default:
-        throw new HttpErrors.NotFound("Cannot found the specified url!")
+        throw new HttpErrors.NotFound('Cannot found the specified url!');
     }
 
     this.createTags(newPost.tags);
@@ -279,9 +269,7 @@ export class PostController {
       },
     },
   })
-  async find(
-    @param.filter(Post) filter?: Filter<Post>,
-  ): Promise<Post[]> {
+  async find(@param.filter(Post) filter?: Filter<Post>): Promise<Post[]> {
     return this.postRepository.find(filter);
   }
 
@@ -296,7 +284,7 @@ export class PostController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>
+    @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
   ): Promise<Post> {
     return this.postRepository.findById(id, filter);
   }
@@ -313,9 +301,7 @@ export class PostController {
       },
     },
   })
-  async getPeople(
-    @param.path.string('id') id: typeof Post.prototype.id,
-  ): Promise<People> {
+  async getPeople(@param.path.string('id') id: typeof Post.prototype.id): Promise<People> {
     return this.postRepository.people(id);
   }
 
@@ -350,9 +336,7 @@ export class PostController {
       },
     },
   })
-  async getUser(
-    @param.path.string('id') id: typeof Post.prototype.id,
-  ): Promise<User> {
+  async getUser(@param.path.string('id') id: typeof Post.prototype.id): Promise<User> {
     return this.postRepository.user(id);
   }
 
@@ -365,26 +349,22 @@ export class PostController {
       },
     },
   })
-  async findByIdGetWalletAddress(
-    @param.path.string('id') id: string
-  ): Promise<Wallet> {
-    const resultPost: Post = await this.postRepository.findById(id)
+  async findByIdGetWalletAddress(@param.path.string('id') id: string): Promise<Wallet> {
+    const resultPost: Post = await this.postRepository.findById(id);
 
-    const wallet = new Wallet()
+    const wallet = new Wallet();
     if (resultPost != null) {
-      wallet.walletAddress = resultPost.walletAddress != null
-        ? resultPost.walletAddress : ''
+      wallet.walletAddress = resultPost.walletAddress != null ? resultPost.walletAddress : '';
 
       if (resultPost.peopleId) {
         const resultUser = await this.userCredentialRepository.findOne({
           where: {
-            peopleId: resultPost.peopleId
-          }
-        })
+            peopleId: resultPost.peopleId,
+          },
+        });
 
         if (resultUser != null) {
-          wallet.walletAddress = resultUser.userId != null
-            ? resultUser.userId : ''
+          wallet.walletAddress = resultUser.userId != null ? resultUser.userId : '';
         }
       }
     }
@@ -409,7 +389,7 @@ export class PostController {
   ): Promise<void> {
     await this.postRepository.updateById(id, {
       ...post,
-      updatedAt: new Date().toString()
+      updatedAt: new Date().toString(),
     });
   }
 
@@ -426,28 +406,31 @@ export class PostController {
             type: 'object',
             properties: {
               tokenId: {
-                type: 'string'
+                type: 'string',
               },
               tipsReceived: {
-                type: 'number'
-              }
-            }
-          }
-        }
-      }
-    }) detailTips: DetailTips,
+                type: 'number',
+              },
+            },
+          },
+        },
+      },
+    })
+    detailTips: DetailTips,
   ): Promise<TipsReceived> {
     const foundPost = await this.postRepository.findOne({
       where: {
-        id: id
-      }
-    })
+        id: id,
+      },
+    });
 
     if (!foundPost) {
-      throw new HttpErrors.NotFound('Post not found')
+      throw new HttpErrors.NotFound('Post not found');
     }
 
-    const foundIndex = foundPost.tipsReceived.findIndex(tips => tips.tokenId === detailTips.tokenId)
+    const foundIndex = foundPost.tipsReceived.findIndex(
+      tips => tips.tokenId === detailTips.tokenId,
+    );
 
     if (foundIndex === -1) {
       this.postRepository.updateById(foundPost.id, {
@@ -455,30 +438,28 @@ export class PostController {
           ...foundPost.tipsReceived,
           {
             tokenId: detailTips.tokenId,
-            totalTips: detailTips.tipsReceived
-          }
+            totalTips: detailTips.tipsReceived,
+          },
         ],
-        updatedAt: new Date().toString()
-      })
+        updatedAt: new Date().toString(),
+      });
 
       return {
         tokenId: detailTips.tokenId,
-        totalTips: detailTips.tipsReceived
-      }
+        totalTips: detailTips.tipsReceived,
+      };
     } else {
       foundPost.tipsReceived[foundIndex] = {
         tokenId: detailTips.tokenId,
-        totalTips: foundPost.tipsReceived[foundIndex].totalTips + detailTips.tipsReceived
-      }
+        totalTips: foundPost.tipsReceived[foundIndex].totalTips + detailTips.tipsReceived,
+      };
 
       this.postRepository.updateById(foundPost.id, {
-        tipsReceived: [
-          ...foundPost.tipsReceived
-        ],
-        updatedAt: new Date().toString()
-      })
+        tipsReceived: [...foundPost.tipsReceived],
+        updatedAt: new Date().toString(),
+      });
 
-      return foundPost.tipsReceived[foundIndex]
+      return foundPost.tipsReceived[foundIndex];
     }
   }
 
@@ -491,38 +472,39 @@ export class PostController {
   }
 
   async twitter(textId: string) {
-    const {
-      id_str,
-      full_text,
-      created_at,
-      user,
-      entities,
-      extended_entities
-    } = await this.twitterService.getActions(`1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`);
+    const {id_str, full_text, created_at, user, entities, extended_entities} =
+      await this.twitterService.getActions(
+        `1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`,
+      );
 
-    if (!id_str) throw new HttpErrors.NotFound('Cannot found the specified url!')
+    if (!id_str) throw new HttpErrors.NotFound('Cannot found the specified url!');
 
-    let assets: string[] = [];
+    const asset: Asset = {
+      images: [],
+      videos: [],
+    };
     let hasMedia: boolean = true;
 
-    const twitterTags = entities ? (entities.hashtags ?
-      entities.hashtags.map((hashtag: any) => hashtag.text) : []
-    ) : [];
+    const twitterTags = entities
+      ? entities.hashtags
+        ? entities.hashtags.map((hashtag: any) => hashtag.text)
+        : []
+      : [];
 
-    if (!extended_entities) hasMedia = false
+    if (!extended_entities) hasMedia = false;
     else {
       const media = extended_entities.media;
 
       for (let i = 0; i < media.length; i++) {
         if (media[i].type == 'photo') {
-          assets.push(media[i].media_url_https);
+          asset.images.push(media[i].media_url_https);
         } else {
-          const videoInfo = media[i].video_info.variants
+          const videoInfo = media[i].video_info.variants;
 
           for (let j = 0; j < videoInfo.length; j++) {
-            if (videoInfo[j].content_type === "video/mp4") {
-              assets.push(videoInfo[j].url.split("?tag=12")[0]);
-              break
+            if (videoInfo[j].content_type === 'video/mp4') {
+              asset.videos.push(videoInfo[j].url.split('?tag=12')[0]);
+              break;
             }
           }
         }
@@ -536,51 +518,56 @@ export class PostController {
       text: full_text,
       tags: twitterTags,
       platformCreatedAt: new Date(created_at).toString(),
-      assets: assets,
+      asset: asset,
       link: `https://twitter.com/${user.id_str}/status/${textId}`,
       hasMedia: hasMedia,
       platformUser: {
         name: user.name,
         username: user.screen_name,
         platform_account_id: user.id_str,
-        profile_image_url: user.profile_image_url_https.replace('normal', '400x400')
-      }
-    }
+        profile_image_url: user.profile_image_url_https.replace('normal', '400x400'),
+      },
+    };
   }
 
   async reddit(textId: string) {
-    const [data] = await this.redditService.getActions(textId + '.json')
-    const redditPost = data.data.children[0].data
-    const assets: string[] = [];
+    const [data] = await this.redditService.getActions(textId + '.json');
+    const redditPost = data.data.children[0].data;
+    const asset: Asset = {
+      images: [],
+      videos: [],
+    };
 
     let hasMedia: boolean = false;
 
-    if (redditPost.post_hint === "image") {
-      assets.push(redditPost.url)
+    if (redditPost.post_hint === 'image') {
+      asset.images.push(redditPost.url);
       hasMedia = true;
     }
 
     if (redditPost.is_video) {
-      assets.push(redditPost.media.reddit_video.fallback_url)
-      hasMedia = true
+      asset.videos.push(redditPost.media.reddit_video.fallback_url);
+      hasMedia = true;
     }
 
     if (redditPost.media_metadata) {
       for (const img in redditPost.media_metadata) {
-        if (redditPost.media_metadata[img].e === "Image") {
-          assets.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''));
+        if (redditPost.media_metadata[img].e === 'Image') {
+          asset.images.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''));
         }
 
-        if (redditPost.media_metadata[img].e === "RedditVideo") {
-          assets.push(`https://reddit.com/link/${textId}/video/${redditPost.media_metadata[img].id}/player`)
+        if (redditPost.media_metadata[img].e === 'RedditVideo') {
+          asset.videos.push(
+            `https://reddit.com/link/${textId}/video/${redditPost.media_metadata[img].id}/player`,
+          );
         }
       }
 
-      hasMedia = true
+      hasMedia = true;
     }
 
-    const redditUser = redditPost.author
-    const {data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json')
+    const redditUser = redditPost.author;
+    const {data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json');
 
     return {
       platform: PlatformType.REDDIT,
@@ -591,14 +578,14 @@ export class PostController {
       text: redditPost.selftext,
       link: `https://reddit.com/${textId}`,
       hasMedia,
-      assets,
+      asset,
       platformUser: {
         name: user.subreddit.title ? user.subreddit.title : user.name,
         username: user.name,
         platform_account_id: 't2_' + user.id,
-        profile_image_url: user.icon_img.split('?')[0]
-      }
-    }
+        profile_image_url: user.icon_img.split('?')[0],
+      },
+    };
   }
 
   async facebook(username: string, textId: string) {
@@ -606,23 +593,26 @@ export class PostController {
     let profile_image_url: string = '';
 
     const data = await this.facebookService.getActions(username, textId);
-    fs.writeFileSync('data.html', data)
     const findSocialMedialPostingIndex = data.search('"SocialMediaPosting"');
     const post = data.substring(findSocialMedialPostingIndex);
 
     // Get platform created at
     const findDateCreatedIndex = post.search('"dateCreated"');
     const findDateModifiedIndex = post.search('"dateModified"');
-    const findIndetifierIndex = post.search('"identifier":"')
-    const platformCreatedAt = post.substring(findDateCreatedIndex + '"dateCreated"'.length + 2, findDateModifiedIndex - 2)
+    const findIndetifierIndex = post.search('"identifier":"');
+    const platformCreatedAt = post.substring(
+      findDateCreatedIndex + '"dateCreated"'.length + 2,
+      findDateModifiedIndex - 2,
+    );
 
     // Get platform account id
-    const identifierIndex = post.substring(findIndetifierIndex + '"identifier":"'.length)
+    const identifierIndex = post.substring(findIndetifierIndex + '"identifier":"'.length);
 
     for (let i = 0; i < identifierIndex.length; i++) {
-      if (identifierIndex[i] == '"' || identifierIndex[i] == ';' || identifierIndex[i] == ':') break
+      if (identifierIndex[i] == '"' || identifierIndex[i] == ';' || identifierIndex[i] == ':')
+        break;
 
-      platform_account_id += identifierIndex[i]
+      platform_account_id += identifierIndex[i];
     }
 
     // Get profile image url
@@ -632,20 +622,19 @@ export class PostController {
     const getImageString = getString.substring(findImageIndex + '"image"'.length + 2);
 
     for (let i = 0; i < getImageString.length; i++) {
-      if (getImageString[i] == '"') break
+      if (getImageString[i] == '"') break;
 
       profile_image_url += getImageString[i];
-
     }
 
     // Get name
     let arrayName = [];
 
     for (let i = findIndex - 1; i > 0; i--) {
-      if (post[i] === ":") break;
-      if (post[i] == '"' || post[i] == ",") continue
+      if (post[i] === ':') break;
+      if (post[i] == '"' || post[i] == ',') continue;
 
-      arrayName.unshift(post[i])
+      arrayName.unshift(post[i]);
     }
 
     // Get username
@@ -654,11 +643,11 @@ export class PostController {
     let url = '';
 
     for (let i = 0; getUrl.length; i++) {
-      if (getUrl[i] === '"') break
-      url += getUrl[i]
+      if (getUrl[i] === '"') break;
+      url += getUrl[i];
     }
 
-    const userName = url.replace(/\\/g, '').split('/')[3]
+    const userName = url.replace(/\\/g, '').split('/')[3];
 
     return {
       createdAt: new Date().toString(),
@@ -670,10 +659,10 @@ export class PostController {
         name: arrayName.join(''),
         username: userName,
         platform_account_id: platform_account_id,
-        profile_image_url: profile_image_url.split('\\').join('')
+        profile_image_url: profile_image_url.split('\\').join(''),
       },
-      assets: []
-    }
+      assets: [],
+    };
   }
 
   async createPost(post: any): Promise<Post> {
@@ -682,26 +671,26 @@ export class PostController {
     let foundPeople = await this.peopleRepository.findOne({
       where: {
         platform_account_id: platformUser.platform_account_id,
-        platform: platform
-      }
+        platform: platform,
+      },
     });
 
     if (!foundPeople) {
       const people = await this.peopleRepository.create({
         ...platformUser,
         platform,
-        hide: false
-      })
+        hide: false,
+      });
       return this.createPostWithPublicMetric({
         ...post,
-        peopleId: people.id
-      })
+        peopleId: people.id,
+      });
     }
 
     return this.createPostWithPublicMetric({
       ...post,
       peopleId: foundPeople.id,
-    })
+    });
   }
 
   async createPostWithPublicMetric(post: any): Promise<Post> {
@@ -709,11 +698,11 @@ export class PostController {
 
     post.walletAddress = u8aToHex(newKey.publicKey);
 
-    const createdPost = await this.postRepository.create(post)
+    const createdPost = await this.postRepository.create(post);
 
-    this.postRepository.publicMetric(createdPost.id).create({})
+    this.postRepository.publicMetric(createdPost.id).create({});
 
-    return createdPost
+    return createdPost;
   }
 
   async createTags(tags: string[]): Promise<void> {
@@ -722,54 +711,54 @@ export class PostController {
         where: {
           or: [
             {
-              id: tags[i]
+              id: tags[i],
             },
             {
               id: tags[i].toLowerCase(),
             },
             {
-              id: tags[i].toUpperCase()
-            }
-          ]
-
-        }
-      })
+              id: tags[i].toUpperCase(),
+            },
+          ],
+        },
+      });
 
       if (foundTag) {
         const oneDay: number = 60 * 60 * 24 * 1000;
-        const isOneDay: boolean = new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay
+        const isOneDay: boolean =
+          new Date().getTime() - new Date(foundTag.updatedAt).getTime() > oneDay;
 
         this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
-          count: isOneDay ? 1 : foundTag.count + 1
-        })
+          count: isOneDay ? 1 : foundTag.count + 1,
+        });
       } else {
         this.tagRepository.create({
           id: tags[i],
           createdAt: new Date().toString(),
-          updatedAt: new Date().toString()
-        })
+          updatedAt: new Date().toString(),
+        });
       }
     }
   }
 
   async updateExperience(id: string, platformUser: any): Promise<void> {
-    let foundPeople = null
+    let foundPeople = null;
 
     if (platformUser.platform === 'facebook') {
       foundPeople = await this.peopleRepository.findOne({
         where: {
           username: platformUser.username,
-          platform: platformUser.platform
-        }
-      })
+          platform: platformUser.platform,
+        },
+      });
     } else {
       foundPeople = await this.peopleRepository.findOne({
         where: {
           platform_account_id: platformUser.id,
-          platform: platformUser.platform
-        }
-      })
+          platform: platformUser.platform,
+        },
+      });
     }
 
     if (!foundPeople) {
@@ -778,43 +767,48 @@ export class PostController {
         platform: platformUser.platform,
         platform_account_id: platformUser.id,
         profile_image_url: platformUser.profile_image_url,
-      })
+      });
     }
 
     const getExperience = await this.experienceRepository.findOne({
-      where: {id}
-    })
+      where: {id},
+    });
 
     if (getExperience) {
-      const people = getExperience.people
-      const platform_account_id = foundPeople.platform_account_id
+      const people = getExperience.people;
+      const platform_account_id = foundPeople.platform_account_id;
 
-      const found = people.find((person: any) => person.platform_account_id === platform_account_id)
+      const found = people.find(
+        (person: any) => person.platform_account_id === platform_account_id,
+      );
 
       if (!found) {
         await this.experienceRepository.updateById(id, {
-          people: [...getExperience.people, {
-            username: foundPeople.username,
-            platform: foundPeople.platform,
-            platform_account_id: foundPeople.platform_account_id,
-            profile_image_url: foundPeople.profile_image_url.replace('normal', '400x400'),
-            hide: foundPeople.hide
-          }]
-        })
+          people: [
+            ...getExperience.people,
+            {
+              username: foundPeople.username,
+              platform: foundPeople.platform,
+              platform_account_id: foundPeople.platform_account_id,
+              profile_image_url: foundPeople.profile_image_url.replace('normal', '400x400'),
+              hide: foundPeople.hide,
+            },
+          ],
+        });
       }
     } else {
-      throw new HttpErrors.NotFound('Experience Not Found')
+      throw new HttpErrors.NotFound('Experience Not Found');
     }
   }
 
   calculateRedditVote(upvote_ratio: number, score: number) {
-    const upvote = Math.floor((score * upvote_ratio) / (2 * upvote_ratio - 1))
-    const downvote = upvote - score
+    const upvote = Math.floor((score * upvote_ratio) / (2 * upvote_ratio - 1));
+    const downvote = upvote - score;
 
     return {
       upvote_count: upvote,
-      downvote_count: downvote
-    }
+      downvote_count: downvote,
+    };
   }
 
   keyring() {

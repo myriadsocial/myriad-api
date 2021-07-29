@@ -4,12 +4,13 @@ import {repository} from '@loopback/repository';
 import {Keyring} from '@polkadot/api';
 import {u8aToHex} from '@polkadot/util';
 import {KeypairType} from '@polkadot/util-crypto/types';
+import {Asset} from '../interfaces';
 import {
   PeopleRepository,
   PostRepository,
   PublicMetricRepository,
   TagRepository,
-  UserCredentialRepository
+  UserCredentialRepository,
 } from '../repositories';
 import {Reddit} from '../services';
 
@@ -21,7 +22,7 @@ export class FetchContentRedditJob extends CronJob {
     @repository(PeopleRepository) public peopleRepository: PeopleRepository,
     @repository(TagRepository) public tagRepository: TagRepository,
     @repository(UserCredentialRepository) public userCredentialRepository: UserCredentialRepository,
-    @repository(PublicMetricRepository) public publicMetricRepository: PublicMetricRepository
+    @repository(PublicMetricRepository) public publicMetricRepository: PublicMetricRepository,
   ) {
     super({
       name: 'fetch-content-reddit-job',
@@ -29,57 +30,63 @@ export class FetchContentRedditJob extends CronJob {
         await this.performJob();
       },
       cronTime: '0 0 */1 * * *',
-      start: true
-    })
+      start: true,
+    });
   }
 
   async performJob() {
     try {
-      this.searchPostByTag()
+      this.searchPostByTag();
     } catch (e) {
-      console.log(e)
+      console.log(e);
     }
   }
 
   async searchPostByTag() {
     try {
-      const tags = await this.tagRepository.find()
+      const tags = await this.tagRepository.find();
       const keyring = new Keyring({
-        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType
+        type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
       });
 
       for (let i = 0; i < tags.length; i++) {
-        const tag = tags[i]
-        const {data} = await this.redditService.getActions(`search.json?q=${tag.id}&sort=new&limit=10`)
+        const tag = tags[i];
+        const {data} = await this.redditService.getActions(
+          `search.json?q=${tag.id}&sort=new&limit=10`,
+        );
 
-        if (data.children.length === 0) continue
+        if (data.children.length === 0) continue;
 
         const posts = data.children.filter((post: any) => {
-          return post.kind === 't3'
-        })
+          return post.kind === 't3';
+        });
 
         for (let j = 0; j < posts.length; j++) {
-          const post = posts[j].data
-          const {data: userAbout} = await this.redditService.getActions(`u/${post.author}/about.json`)
-          const profile_image_url = userAbout.icon_img.split('?')[0]
-          const foundPost = await this.postRepository.findOne({where: {textId: post.id}})
+          const post = posts[j].data;
+          const {data: userAbout} = await this.redditService.getActions(
+            `u/${post.author}/about.json`,
+          );
+          const profile_image_url = userAbout.icon_img.split('?')[0];
+          const foundPost = await this.postRepository.findOne({where: {textId: post.id}});
 
           if (foundPost) {
-            const foundTag = foundPost.tags.find(postTag => postTag.toLowerCase() === tag.id.toLowerCase())
+            const foundTag = foundPost.tags.find(
+              postTag => postTag.toLowerCase() === tag.id.toLowerCase(),
+            );
 
             if (!foundTag) {
-              this.postRepository.updateById(foundPost.id, {tags: [...foundPost.tags, tag.id]})
+              this.postRepository.updateById(foundPost.id, {tags: [...foundPost.tags, tag.id]});
             }
 
-            continue
+            continue;
           }
 
-          const foundPerson = await this.peopleRepository.findOne({where: {username: post.author}})
+          const foundPerson = await this.peopleRepository.findOne({where: {username: post.author}});
           const newPost = {
             platformUser: {
               username: post.author,
               platform_account_id: post.author_fullname,
-              profile_image_url
+              profile_image_url,
             },
             tags: [tag.id],
             platform: 'reddit',
@@ -90,81 +97,85 @@ export class FetchContentRedditJob extends CronJob {
             link: `https://reddit.com/${post.id}`,
             platformCreatedAt: new Date(post.created_utc * 1000).toString(),
             createdAt: new Date().toString(),
-            assets: []
-          }
+            assets: [],
+          };
 
-          const assets: string[] = []
+          const asset: Asset = {
+            images: [],
+            videos: [],
+          };
 
           if (newPost.hasMedia) {
-
             if (post.media_metadata) {
               for (const img in post.media_metadata) {
-                assets.push(post.media_metadata[img].s.u.replace(/amp;/g, ''))
+                asset.images.push(post.media_metadata[img].s.u.replace(/amp;/g, ''));
               }
             }
             if (post.is_reddit_media_domain) {
-              const images = post.preview.images || []
-              const videos = post.preview.videos || []
+              const images = post.preview.images || [];
+              const videos = post.preview.videos || [];
 
               for (let i = 0; i < images.length; i++) {
-                assets.push(images[i].source.url.replace(/amp;/g, ''))
+                asset.images.push(images[i].source.url.replace(/amp;/g, ''));
               }
 
               for (let i = 0; i < videos.length; i++) {
-                assets.push(videos[i].source.url.replace(/amp;/g, ''))
+                asset.videos.push(videos[i].source.url.replace(/amp;/g, ''));
               }
             }
           }
 
           if (foundPerson) {
-            const userCredential = await this.userCredentialRepository.findOne({where: {peopleId: foundPerson.id}})
+            const userCredential = await this.userCredentialRepository.findOne({
+              where: {peopleId: foundPerson.id},
+            });
 
             if (userCredential) {
               const result = await this.postRepository.create({
                 ...newPost,
-                assets,
+                asset,
                 peopleId: foundPerson.id,
                 walletAddress: userCredential.userId,
-                importBy: [userCredential.userId]
-              })
+                importBy: [userCredential.userId],
+              });
               this.publicMetricRepository.create({
                 liked: 0,
                 disliked: 0,
                 comment: 0,
-                postId: result.id
-              })
+                postId: result.id,
+              });
             }
             const result = await this.postRepository.create({
               ...newPost,
-              assets,
-              peopleId: foundPerson.id
-            })
-            const newKey = keyring.addFromUri('//' + result.id)
+              asset,
+              peopleId: foundPerson.id,
+            });
+            const newKey = keyring.addFromUri('//' + result.id);
 
-            this.postRepository.updateById(result.id, {walletAddress: u8aToHex(newKey.publicKey)})
+            this.postRepository.updateById(result.id, {walletAddress: u8aToHex(newKey.publicKey)});
             this.publicMetricRepository.create({
               liked: 0,
               disliked: 0,
               comment: 0,
-              postId: result.id
-            })
+              postId: result.id,
+            });
           }
 
           const result = await this.postRepository.create({
             ...newPost,
-            assets
-          })
-          const newKey = keyring.addFromUri('//' + result.id)
+            asset,
+          });
+          const newKey = keyring.addFromUri('//' + result.id);
 
-          this.postRepository.updateById(result.id, {walletAddress: u8aToHex(newKey.publicKey)})
+          this.postRepository.updateById(result.id, {walletAddress: u8aToHex(newKey.publicKey)});
           this.publicMetricRepository.create({
             liked: 0,
             disliked: 0,
             comment: 0,
-            postId: result.id
-          })
+            postId: result.id,
+          });
         }
       }
-    } catch (err) { }
+    } catch (err) {}
   }
 }

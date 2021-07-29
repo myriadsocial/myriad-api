@@ -1,12 +1,5 @@
-import {
-  belongsTo,
-  Entity,
-  hasMany,
-  hasOne,
-  model,
-  property
-} from '@loopback/repository';
-import {PlatformPublicMetric, PlatformUser, TipsReceived} from '../interfaces';
+import {belongsTo, Entity, hasMany, hasOne, model, property} from '@loopback/repository';
+import {Asset, PlatformPublicMetric, PlatformUser, TipsReceived} from '../interfaces';
 import {Comment} from './comment.model';
 import {Dislike} from './dislike.model';
 import {Like} from './like.model';
@@ -21,8 +14,8 @@ import {User} from './user.model';
     mongodb: {
       collection: 'posts',
     },
-    hiddenProperties: ['walletAddress', 'totalComment', 'totalLiked', 'totalDisliked']
-  }
+    hiddenProperties: ['walletAddress', 'totalComment', 'totalLiked', 'totalDisliked'],
+  },
 })
 export class Post extends Entity {
   @property({
@@ -39,7 +32,7 @@ export class Post extends Entity {
     type: 'array',
     itemType: 'string',
     required: false,
-    default: []
+    default: [],
   })
   tags: string[];
 
@@ -52,25 +45,25 @@ export class Post extends Entity {
   @property({
     type: 'string',
     required: false,
-    default: 'myriad'
+    default: 'myriad',
   })
-  platform?: string
+  platform?: string;
 
   @property({
     type: 'object',
-    required: false
+    required: false,
   })
-  platformPublicMetric?: PlatformPublicMetric
+  platformPublicMetric?: PlatformPublicMetric;
 
   @property({
     type: 'string',
-    required: false
+    required: false,
   })
-  title?: string
+  title?: string;
 
   @property({
     type: 'string',
-    required: false
+    required: false,
   })
   text?: string;
 
@@ -83,49 +76,48 @@ export class Post extends Entity {
   @property({
     type: 'boolean',
     required: false,
-    default: false
+    default: false,
   })
-  hasMedia: boolean
+  hasMedia: boolean;
 
   @property({
     type: 'string',
-    required: false
+    required: false,
   })
-  link?: string
+  link?: string;
 
   @property({
-    type: 'array',
-    itemType: 'string',
-    required: false
+    type: 'object',
+    required: false,
   })
-  assets?: string[]
+  asset?: Asset;
 
   @property({
     type: 'date',
     required: false,
   })
-  platformCreatedAt: string
+  platformCreatedAt: string;
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
-  totalComment?: number
+  totalComment?: number;
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
-  totalLiked?: number
+  totalLiked?: number;
 
   @property({
     type: 'number',
     required: false,
-    default: 0
+    default: 0,
   })
-  totalDisliked?: number
+  totalDisliked?: number;
 
   @property({
     type: 'date',
@@ -149,9 +141,9 @@ export class Post extends Entity {
     type: 'array',
     itemType: 'string',
     required: false,
-    default: []
+    default: [],
   })
-  importBy: string[]
+  importBy: string[];
 
   @property({
     type: 'array',
@@ -160,12 +152,12 @@ export class Post extends Entity {
     //TODO: move to single file config
     default: [
       {
-        tokenId: "AUSD",
-        totalTips: 0
+        tokenId: 'AUSD',
+        totalTips: 0,
       },
-    ]
+    ],
   })
-  tipsReceived: TipsReceived[]
+  tipsReceived: TipsReceived[];
 
   @belongsTo(() => User, {name: 'user'})
   walletAddress: string;
