@@ -60,6 +60,7 @@
     "isemail": "^3.2.0",
     "loopback-connector-mongodb": "^6.0.1",
     "loopback-connector-rest": "^4.0.1",
+    "puppeteer": "^10.1.0",
     "tslib": "^2.0.0",
     "xml-js": "^1.6.11"
   },
@@ -69,6 +70,7 @@
     "@loopback/testlab": "^3.4.1",
     "@types/bcryptjs": "^2.4.2",
     "@types/node": "^10.17.60",
+    "@types/puppeteer": "^5.4.4",
     "@types/twitter": "^1.7.0",
     "eslint": "^7.28.0",
     "source-map-support": "^0.5.19",

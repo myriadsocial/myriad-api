@@ -9,13 +9,13 @@ import {
   patch,
   post,
   requestBody,
-  response,
+  response
 } from '@loopback/rest';
+import dotenv from 'dotenv';
+import {PlatformType} from '../enums';
 import {UserCredential, VerifyUser} from '../models';
 import {UserCredentialRepository} from '../repositories';
 import {CryptocurrencyService, SocialMediaService, UserCredentialService} from '../services';
-import dotenv from 'dotenv';
-import {PlatformType} from '../enums';
 // import {authenticate} from '@loopback/authentication';
 
 dotenv.config();
