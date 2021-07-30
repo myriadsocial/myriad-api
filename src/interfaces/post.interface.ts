@@ -1,10 +1,5 @@
-export interface PlatformUser {
-  name: string;
-  username: string;
-  platformAccountId?: string;
-  profileImageURL?: string;
-}
+import {Post, People} from "../models";
 
-export interface ExtendedPlatformUser extends PlatformUser {
-  platform: string;
+export interface ExtendedPost extends Post {
+  platformUser?: Omit<People, 'id'>
 }
