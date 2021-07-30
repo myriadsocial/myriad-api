@@ -6,38 +6,38 @@ import {ServiceMixin} from '@loopback/service-proxy';
 import {Keyring} from '@polkadot/api';
 import {u8aToHex} from '@polkadot/util';
 import {mnemonicGenerate} from '@polkadot/util-crypto';
+import {DefaultCrypto} from './enums';
+import {DateUtils} from './helpers/date-utils';
+import {User} from './interfaces';
+import {People, Post} from './models';
 import {
+  AuthCredentialRepository,
+  AuthenticationRepository,
   CommentRepository,
   ConversationRepository,
-  TransactionHistoryRepository,
+  CryptocurrencyRepository,
   ExperienceRepository,
   FriendRepository,
   LikeRepository,
   PeopleRepository,
+  PersonTipRepository,
   PostRepository,
+  PostTipRepository,
   PublicMetricRepository,
   QueueRepository,
-  SavedExperienceRepository,
+  RefreshTokenRepository,
   TagRepository,
-  CryptocurrencyRepository,
+  TransactionHistoryRepository,
   TransactionRepository,
   UserCredentialRepository,
-  UserRepository,
   UserCryptoRepository,
-  AuthenticationRepository,
-  AuthCredentialRepository,
-  RefreshTokenRepository,
-  PostTipRepository,
-  PersonTipRepository,
+  UserExperienceRepository,
+  UserRepository,
 } from './repositories';
+import cryptocurrency from './seed-data/cryptocurrencies.json';
 import peopleSeed from './seed-data/people.json';
 import postSeed from './seed-data/posts.json';
-import cryptocurrency from './seed-data/cryptocurrencies.json';
 import userSeed from './seed-data/users.json';
-import {DefaultCrypto} from './enums';
-import {People, Post} from './models';
-import {User} from './interfaces';
-import {DateUtils} from './helpers/date-utils';
 
 export {ApplicationConfig};
 
@@ -69,6 +69,8 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
       postRepository,
       postTipRepository,
       publicMetricRepository,
+      experienceRepository,
+      userExperienceRepository,
     } = await this.getRepositories();
 
     const userSeedData = this.prepareUserSeed(userSeed);
@@ -90,7 +92,25 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
           cryptocurrencyId: DefaultCrypto.AUSD,
         },
       ]);
+
+      const newExperience = await experienceRepository.create({
+        name: user.name + ' experience',
+        tags: ['blockchain', 'cryptocurrency', 'technology'],
+        people: newPeople,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString(),
+        description: 'This is about blockchain and cryptocurrency',
+        creatorId: user.id,
+      });
+
+      await userExperienceRepository.create({
+        userId: user.id,
+        experienceId: newExperience.id,
+        hasSelected: true,
+      });
     }
+
+    const dateUtils = new DateUtils();
 
     for (const post of postSeedData) {
       let {tags} = post;
@@ -108,8 +128,6 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
       });
 
       if (!tags) tags = [];
-
-      const {isToday} = new DateUtils();
 
       for (const tag of tags) {
         const foundTag = await tagRepository.findOne({
@@ -138,7 +156,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
         } else {
           await tagRepository.updateById(foundTag.id, {
             updatedAt: new Date().toString(),
-            count: isToday(foundTag.updatedAt) ? 1 : foundTag.count + 1,
+            count: dateUtils.isToday(foundTag.updatedAt) ? 1 : foundTag.count + 1,
           });
         }
       }
@@ -151,7 +169,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     const peopleRepository = await this.getRepository(PeopleRepository);
     const transactionRepository = await this.getRepository(TransactionRepository);
     const userRepository = await this.getRepository(UserRepository);
-    const savedExperienceRepository = await this.getRepository(SavedExperienceRepository);
+    const userExperienceRepository = await this.getRepository(UserExperienceRepository);
     const experienceRepository = await this.getRepository(ExperienceRepository);
     const userCredentialRepository = await this.getRepository(UserCredentialRepository);
     const commentRepository = await this.getRepository(CommentRepository);
@@ -176,7 +194,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     await peopleRepository.deleteAll();
     await transactionRepository.deleteAll();
     await userRepository.deleteAll();
-    await savedExperienceRepository.deleteAll();
+    await userExperienceRepository.deleteAll();
     await experienceRepository.deleteAll();
     await userCredentialRepository.deleteAll();
     await commentRepository.deleteAll();
@@ -201,6 +219,8 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
       publicMetricRepository,
       tagRepository,
       postTipRepository,
+      experienceRepository,
+      userExperienceRepository,
     };
   }
 
