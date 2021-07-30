@@ -6,8 +6,8 @@ import {People, PeopleWithRelations} from './people.model';
 import {PublicMetric} from './public-metric.model';
 import {User} from './user.model';
 import {Transaction} from './transaction.model';
-import {PlatformUser} from '../interfaces';
 import {PostTip} from './post-tip.model';
+import {Asset} from '../interfaces/asset.interface';
 
 @model({
   settings: {
@@ -36,12 +36,6 @@ export class Post extends Entity {
     default: [],
   })
   tags: string[];
-
-  @property({
-    type: 'object',
-    required: false,
-  })
-  platformUser?: PlatformUser;
 
   @property({
     type: 'string',
@@ -85,12 +79,10 @@ export class Post extends Entity {
   link?: string;
 
   @property({
-    type: 'array',
-    itemType: 'string',
+    type: 'object',
     required: false,
-    default: [],
   })
-  assets?: string[];
+  asset?: Asset;
 
   @property({
     type: 'date',
