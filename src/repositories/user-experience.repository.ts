@@ -17,10 +17,11 @@ export class UserExperienceRepository extends DefaultCrudRepository<
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('ExperienceRepository')
-    protected experienceRepositoryGetter: Getter<ExperienceRepository>, @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>,
+    protected experienceRepositoryGetter: Getter<ExperienceRepository>,
+    @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>,
   ) {
     super(UserExperience, dataSource);
-    this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter,);
+    this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
     this.experience = this.createBelongsToAccessorFor('experience', experienceRepositoryGetter);
     this.registerInclusionResolver('experience', this.experience.inclusionResolver);
