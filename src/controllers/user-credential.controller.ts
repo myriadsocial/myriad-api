@@ -24,6 +24,7 @@ import {u8aToHex} from '@polkadot/util';
 import {KeypairType} from '@polkadot/util-crypto/types';
 import dotenv from 'dotenv';
 import {PlatformType} from '../enums';
+import puppeteer from "../helpers/puppeteer";
 import {User, VerifyUser} from '../interfaces';
 import {UserCredential} from '../models';
 import {
@@ -235,7 +236,20 @@ export class UserCredentialController {
     const fbUser = usernameSplit[3];
     const postId = usernameSplit[5];
 
-    const data = await this.facebookService.getActions(fbUser, postId);
+    const browser = await puppeteer();
+
+    const page = await browser.newPage();
+    await page.goto(
+      `https://mbasic.facebook.com/${fbUser}/posts/${postId}`,
+      { waitUntil: 'networkidle0' }
+    );
+    const pageData = await page.evaluate(
+      () =>  document.querySelector('*')?.outerHTML
+    );
+
+    if (pageData == null) throw new HttpErrors.NotFound('Cannot find specified post');
+
+    const data = pageData.toString();
     const foundIndex = data.search(publicKey);
     const getPublicKey = data.substring(foundIndex, foundIndex + 66);
 

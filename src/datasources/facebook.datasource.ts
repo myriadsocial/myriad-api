@@ -15,7 +15,7 @@ const config = {
     {
       template: {
         method: 'GET',
-        url: 'https://facebook.com/{pageId}/posts/{postId}',
+        url: 'https://mbasic.facebook.com/{pageId}/posts/{postId}',
       },
       functions: {
         getActions: ['pageId', 'postId'],
