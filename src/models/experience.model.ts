@@ -1,6 +1,5 @@
-import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {People} from './people.model';
-import {SavedExperience} from './saved-experience.model';
 import {User} from './user.model';
 
 @model({
@@ -67,20 +66,14 @@ export class Experience extends Entity {
   @property({
     type: 'string',
     required: false,
+    jsonSchema: {
+      maxLength: 280,
+    },
   })
   description: string;
 
   @belongsTo(() => User, {name: 'user'})
   creatorId: string;
-
-  @hasMany(() => User, {
-    through: {
-      model: () => SavedExperience,
-      keyFrom: 'experienceId',
-      keyTo: 'userId',
-    },
-  })
-  users: User[];
 
   constructor(data?: Partial<Experience>) {
     super(data);
