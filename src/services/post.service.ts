@@ -1,7 +1,7 @@
 import {repository} from '@loopback/repository';
 import {PeopleRepository, PostRepository, PostTipRepository} from '../repositories';
 import {HttpErrors} from '@loopback/rest';
-import {DetailUrl} from '../interfaces';
+import {DetailUrl, ExtendedPost} from '../interfaces';
 import {Post, PostTip, PublicMetric} from '../models';
 import {service} from '@loopback/core';
 import {SocialMediaService} from './social-media.service';
@@ -47,7 +47,7 @@ export class PostService {
       return foundPost;
     }
 
-    let newPost: Omit<Post, 'id'>;
+    let newPost: ExtendedPost;
     let tags: string[] = postTags;
 
     switch (platform) {
@@ -94,7 +94,7 @@ export class PostService {
     return this.createPost(newPost);
   }
 
-  async createPost(post: Omit<Post, 'id'>): Promise<Post> {
+  async createPost(post: Omit<ExtendedPost, 'id'>): Promise<Post> {
     const {platformUser, platform} = post;
 
     let foundPeople = await this.peopleRepository.findOne({
@@ -110,6 +110,8 @@ export class PostService {
         platform,
       });
     }
+
+    delete post.platformUser;
 
     return this.createPostWithPublicMetric({
       ...post,
