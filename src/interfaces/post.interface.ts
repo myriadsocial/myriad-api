@@ -1,5 +1,5 @@
-import {Post, People} from "../models";
+import {Post, People} from '../models';
 
 export interface ExtendedPost extends Post {
-  platformUser?: Omit<People, 'id'>
+  platformUser?: Omit<People, 'id'>;
 }

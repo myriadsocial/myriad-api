@@ -5,7 +5,7 @@ import {Facebook, Reddit, Twitter} from '../services';
 import {repository} from '@loopback/repository';
 import {PeopleRepository} from '../repositories';
 import {PlatformType} from '../enums';
-import {People, Post} from '../models';
+import {People} from '../models';
 import {Asset} from '../interfaces/asset.interface';
 
 export class SocialMediaService {
@@ -195,7 +195,7 @@ export class SocialMediaService {
         username: user.screen_name,
         platformAccountId: user.id_str,
         profileImageURL: user.profile_image_url_https.replace('normal', '400x400'),
-        platform: PlatformType.TWITTER
+        platform: PlatformType.TWITTER,
       },
     } as ExtendedPost;
   }
@@ -272,7 +272,11 @@ export class SocialMediaService {
     } as ExtendedPost;
   }
 
-  async fetchFacebookPost(username: string, textId: string, publicKey?: string): Promise<ExtendedPost> {
+  async fetchFacebookPost(
+    username: string,
+    textId: string,
+    publicKey?: string,
+  ): Promise<ExtendedPost> {
     let platformAccountId = '';
     let profileImageUrl = '';
 
@@ -357,7 +361,7 @@ export class SocialMediaService {
         username: userName,
         platformAccountId: platformAccountId,
         profileImageURL: profileImageUrl.split('\\').join(''),
-        platform: PlatformType.FACEBOOK
+        platform: PlatformType.FACEBOOK,
       },
     } as unknown as ExtendedPost;
   }
