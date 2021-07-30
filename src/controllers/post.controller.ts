@@ -69,10 +69,21 @@ export class PostController {
                   type: 'string',
                 },
               },
-              assets: {
-                type: 'array',
-                items: {
-                  type: 'string',
+              asset: {
+                type: 'object',
+                properties: {
+                  images: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                    },
+                  },
+                  videos: {
+                    type: 'array',
+                    items: {
+                      type: 'string'
+                    }
+                  }
                 },
               },
               walletAddress: {
@@ -85,11 +96,11 @@ export class PostController {
     })
     _post: Omit<Post, 'id'>,
   ): Promise<Post> {
-    if (_post.assets && _post.assets.length > 0) {
-      _post.hasMedia = true;
+    if (_post.asset) {
+      if (_post.asset.images.length && _post.asset.videos.length > 0) {
+        _post.hasMedia = true;
+      }
     }
-
-    delete _post.platformUser;
 
     _post.createdAt = new Date().toString();
     _post.updatedAt = new Date().toString();

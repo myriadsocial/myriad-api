@@ -1,4 +1,4 @@
-import {ExtendedUser} from '../interfaces';
+import {ExtendedPost, ExtendedUser} from '../interfaces';
 import {HttpErrors} from '@loopback/rest';
 import {inject} from '@loopback/core';
 import {Facebook, Reddit, Twitter} from '../services';
@@ -6,6 +6,7 @@ import {repository} from '@loopback/repository';
 import {PeopleRepository} from '../repositories';
 import {PlatformType} from '../enums';
 import {People, Post} from '../models';
+import {Asset} from '../interfaces/asset.interface';
 
 export class SocialMediaService {
   constructor(
@@ -125,7 +126,7 @@ export class SocialMediaService {
     }
   }
 
-  async fetchTweet(textId: string): Promise<Post> {
+  async fetchTweet(textId: string): Promise<ExtendedPost> {
     const {
       id_str: idStr,
       full_text: fullText,
@@ -139,7 +140,10 @@ export class SocialMediaService {
 
     if (!idStr) throw new HttpErrors.NotFound('Cannot found the specified url!');
 
-    const assets: string[] = [];
+    const asset: Asset = {
+      images: [],
+      videos: [],
+    };
     let hasMedia = true;
 
     /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -155,13 +159,13 @@ export class SocialMediaService {
 
       for (const media of medias) {
         if (media.type === 'photo') {
-          assets.push(media.media_url_https);
+          asset.images.push(media.media_url_https);
         } else {
           const videoInfo = media.video_info.variants;
 
           for (const video of videoInfo) {
             if (video.content_type === 'video/mp4') {
-              assets.push(video.url.split('?tag=12')[0]);
+              asset.videos.push(video.url.split('?tag=12')[0]);
               break;
             }
           }
@@ -183,7 +187,7 @@ export class SocialMediaService {
       text: (text + ' ' + urls.join(' ')).trim(),
       tags: twitterTags,
       platformCreatedAt: new Date(createdAt).toString(),
-      assets: assets,
+      asset: asset,
       link: `https://twitter.com/${user.id_str}/status/${textId}`,
       hasMedia: hasMedia,
       platformUser: {
@@ -191,26 +195,30 @@ export class SocialMediaService {
         username: user.screen_name,
         platformAccountId: user.id_str,
         profileImageURL: user.profile_image_url_https.replace('normal', '400x400'),
+        platform: PlatformType.TWITTER
       },
-    } as Post;
+    } as ExtendedPost;
   }
 
-  async fetchRedditPost(textId: string): Promise<Post> {
+  async fetchRedditPost(textId: string): Promise<ExtendedPost> {
     const [data] = await this.redditService.getActions(textId + '.json');
     const redditPost = data.data.children[0].data;
-    const assets: string[] = [];
+    const asset: Asset = {
+      images: [],
+      videos: [],
+    };
 
     let url = redditPost.url_overridden_by_dest ? redditPost.url_overridden_by_dest : '';
     let hasMedia = false;
 
     if (redditPost.post_hint === 'image') {
-      assets.push(redditPost.url);
+      asset.images.push(redditPost.url);
       hasMedia = true;
       url = '';
     }
 
     if (redditPost.is_video) {
-      assets.push(redditPost.media.reddit_video.fallback_url);
+      asset.videos.push(redditPost.media.reddit_video.fallback_url);
       hasMedia = true;
       url = '';
     }
@@ -218,17 +226,27 @@ export class SocialMediaService {
     if (redditPost.media_metadata) {
       for (const img in redditPost.media_metadata) {
         if (redditPost.media_metadata[img].e === 'Image') {
-          assets.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''));
+          asset.images.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''));
         }
 
         if (redditPost.media_metadata[img].e === 'RedditVideo') {
-          assets.push(
+          asset.videos.push(
             `https://reddit.com/link/${textId}/video/${redditPost.media_metadata[img].id}/player`,
           );
         }
       }
 
       hasMedia = true;
+    }
+
+    if (url) {
+      const imageFormat = /[.]jpg$|[.]jpeg$|[.]png$|[.]gif$|[.]tiff$/;
+      const isImage = url.match(imageFormat);
+
+      if (isImage) {
+        asset.images.push(url);
+        url = '';
+      }
     }
 
     const redditUser = redditPost.author;
@@ -243,17 +261,18 @@ export class SocialMediaService {
       text: (redditPost.selftext + ' ' + url).trim(),
       link: `https://reddit.com/${textId}`,
       hasMedia: hasMedia,
-      assets,
+      asset: asset,
       platformUser: {
         name: user.subreddit.title ? user.subreddit.title : user.name,
         username: user.name,
         platformAccountId: 't2_' + user.id,
         profileImageURL: user.icon_img.split('?')[0],
+        platform: PlatformType.REDDIT,
       },
-    } as Post;
+    } as ExtendedPost;
   }
 
-  async fetchFacebookPost(username: string, textId: string, publicKey?: string): Promise<Post> {
+  async fetchFacebookPost(username: string, textId: string, publicKey?: string): Promise<ExtendedPost> {
     let platformAccountId = '';
     let profileImageUrl = '';
 
@@ -338,8 +357,8 @@ export class SocialMediaService {
         username: userName,
         platformAccountId: platformAccountId,
         profileImageURL: profileImageUrl.split('\\').join(''),
+        platform: PlatformType.FACEBOOK
       },
-      assets: [],
-    } as unknown as Post;
+    } as unknown as ExtendedPost;
   }
 }

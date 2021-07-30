@@ -35,7 +35,10 @@
     "title": "",
     "text": "This is a 5MB storage space, believe it or not.\n\n#technology #Bitcoin #Computing #IBM #storage #blockchain #ArtificialIntelligence",
     "textId": "1385164896896225282",
-    "assets": ["http://pbs.twimg.com/media/EzkXoRxX0AESMZY.jpg"],
+    "asset": {
+      "images": ["http://pbs.twimg.com/media/EzkXoRxX0AESMZY.jpg"],
+      "videos": []
+    },
     "hasMedia": true,
     "link": "https://twitter.com/966725945901101056/status/1385164896896225282",
     "platformCreatedAt": "Thu Apr 22 2021 16:33:41 GMT+0700 (Western Indonesia Time)"
@@ -55,7 +58,10 @@
     "text": "1,000,000 blocks, two blockchain protocols, numerous validators and 51 peers - all on @polkadotnetwork 's Krumme Lancke test net",
     "textId": "1027306774356025345",
     "hasMedia": true,
-    "assets": ["http://pbs.twimg.com/media/DkG5x7cXsAAJOu3.jpg"],
+    "asset": {
+      "images": ["http://pbs.twimg.com/media/DkG5x7cXsAAJOu3.jpg"],
+      "videos": []
+    },
     "link": "https://twitter.com/33962758/status/1027306774356025345",
     "platformCreatedAt": "Thu Aug 09 2018 04:33:16 GMT+0700 (Western Indonesia Time)"
   },
