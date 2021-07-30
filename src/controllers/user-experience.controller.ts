@@ -36,7 +36,7 @@ export class UserExperienceController {
     @param.path.string('id') id: string,
     @param.query.object('filter') filter?: Filter<Experience>,
   ): Promise<Experience[]> {
-    return this.userRepository.savedExperiences(id).find(filter);
+    return this.userRepository.userExperiences(id).find(filter);
   }
 
   @post('/users/{id}/experiences', {
@@ -63,7 +63,7 @@ export class UserExperienceController {
   ): Promise<Experience> {
     experience.createdAt = new Date().toString();
     experience.updatedAt = new Date().toString();
-    const newExperience = await this.userRepository.savedExperiences(id).create(experience);
+    const newExperience = await this.userRepository.userExperiences(id).create(experience);
 
     return newExperience;
   }
@@ -90,7 +90,7 @@ export class UserExperienceController {
     where?: Where<Experience>,
   ): Promise<Count> {
     experience.updatedAt = new Date().toString();
-    return this.userRepository.savedExperiences(id).patch(experience, where);
+    return this.userRepository.userExperiences(id).patch(experience, where);
   }
 
   @del('/users/{id}/experiences', {
@@ -106,6 +106,6 @@ export class UserExperienceController {
     @param.query.object('where', getWhereSchemaFor(Experience))
     where?: Where<Experience>,
   ): Promise<Count> {
-    return this.userRepository.savedExperiences(id).delete(where);
+    return this.userRepository.userExperiences(id).delete(where);
   }
 }

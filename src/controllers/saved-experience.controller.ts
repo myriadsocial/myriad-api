@@ -9,73 +9,73 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {SavedExperience} from '../models';
-import {SavedExperienceRepository} from '../repositories';
+import {UserExperience} from '../models';
+import {UserExperienceRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class SavedExperienceController {
   constructor(
-    @repository(SavedExperienceRepository)
-    protected savedExperienceRepository: SavedExperienceRepository,
+    @repository(UserExperienceRepository)
+    protected userExperienceRepository: UserExperienceRepository,
   ) {}
 
-  @post('/saved-experiences')
+  @post('/user-experiences')
   @response(200, {
-    description: 'SavedExperience model instance',
-    content: {'application/json': {schema: getModelSchemaRef(SavedExperience)}},
+    description: 'UserExperience model instance',
+    content: {'application/json': {schema: getModelSchemaRef(UserExperience)}},
   })
   async create(
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(SavedExperience, {
-            title: 'NewSavedExperience',
+          schema: getModelSchemaRef(UserExperience, {
+            title: 'NewUserExperience',
           }),
         },
       },
     })
-    savedExperience: SavedExperience,
-  ): Promise<SavedExperience> {
-    return this.savedExperienceRepository.create(savedExperience);
+    userExperience: UserExperience,
+  ): Promise<UserExperience> {
+    return this.userExperienceRepository.create(userExperience);
   }
 
-  @get('/saved-experiences')
+  @get('/user-experiences')
   @response(200, {
-    description: 'Array of SavedExperience model instances',
+    description: 'Array of UserExperience model instances',
     content: {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(SavedExperience, {includeRelations: true}),
+          items: getModelSchemaRef(UserExperience, {includeRelations: true}),
         },
       },
     },
   })
   async find(
-    @param.filter(SavedExperience) filter?: Filter<SavedExperience>,
-  ): Promise<SavedExperience[]> {
-    return this.savedExperienceRepository.find(filter);
+    @param.filter(UserExperience) filter?: Filter<UserExperience>,
+  ): Promise<UserExperience[]> {
+    return this.userExperienceRepository.find(filter);
   }
 
-  @get('/saved-experiences/{id}')
+  @get('/user-experiences/{id}')
   @response(200, {
     description: 'SavedExperience model instance',
     content: {
       'application/json': {
-        schema: getModelSchemaRef(SavedExperience, {includeRelations: true}),
+        schema: getModelSchemaRef(UserExperience, {includeRelations: true}),
       },
     },
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(SavedExperience, {exclude: 'where'})
-    filter?: FilterExcludingWhere<SavedExperience>,
-  ): Promise<SavedExperience> {
-    return this.savedExperienceRepository.findById(id, filter);
+    @param.filter(UserExperience, {exclude: 'where'})
+    filter?: FilterExcludingWhere<UserExperience>,
+  ): Promise<UserExperience> {
+    return this.userExperienceRepository.findById(id, filter);
   }
 
-  @patch('/saved-experiences/{id}')
+  @patch('/user-experiences/{id}')
   @response(204, {
     description: 'SavedExperience PATCH success',
   })
@@ -84,20 +84,20 @@ export class SavedExperienceController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(SavedExperience, {partial: true}),
+          schema: getModelSchemaRef(UserExperience, {partial: true}),
         },
       },
     })
-    savedExperience: SavedExperience,
+    userExperience: UserExperience,
   ): Promise<void> {
-    await this.savedExperienceRepository.updateById(id, savedExperience);
+    await this.userExperienceRepository.updateById(id, userExperience);
   }
 
-  @del('/saved-experiences/{id}')
+  @del('/user-experiences/{id}')
   @response(204, {
-    description: 'SavedExperience DELETE success',
+    description: 'UserExperience DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.savedExperienceRepository.deleteById(id);
+    await this.userExperienceRepository.deleteById(id);
   }
 }
