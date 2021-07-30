@@ -8,8 +8,8 @@ import {u8aToHex} from '@polkadot/util';
 import {mnemonicGenerate} from '@polkadot/util-crypto';
 import {DefaultCrypto} from './enums';
 import {DateUtils} from './helpers/date-utils';
-import {User} from './interfaces';
-import {People, Post} from './models';
+import {ExtendedPost, User} from './interfaces';
+import {People} from './models';
 import {
   AuthCredentialRepository,
   AuthenticationRepository,
@@ -79,7 +79,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     const newUsers = await userRepository.createAll(userSeedData);
     const newPeople = await peopleRepository.createAll(peopleSeed);
 
-    const postSeedData = this.preparePostSeed(newPeople, postSeed as Omit<Post, 'id'>[]);
+    const postSeedData = this.preparePostSeed(newPeople, postSeed as Omit<ExtendedPost,'id'>[]);
 
     for (const user of newUsers) {
       await userCryptoRepository.createAll([
@@ -243,7 +243,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     });
   }
 
-  preparePostSeed(people: People[], posts: Omit<Post, 'id'>[]) {
+  preparePostSeed(people: People[], posts: Omit<ExtendedPost, 'id'>[]) {
     for (const person of people) {
       const personAccountId = person.platformAccountId;
 
@@ -251,6 +251,8 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
         const postAccountId = post.platformUser?.platformAccountId;
 
         if (personAccountId === postAccountId) {
+          delete post.platformUser;
+
           post.peopleId = person.id;
           post.createdAt = new Date().toString();
           post.updatedAt = new Date().toString();
