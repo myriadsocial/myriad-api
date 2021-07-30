@@ -82,6 +82,7 @@ prisma
 
 # misc
 *.pem
+tmp/
 
 # IDE
 .idea
