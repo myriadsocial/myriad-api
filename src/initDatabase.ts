@@ -79,7 +79,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     const newUsers = await userRepository.createAll(userSeedData);
     const newPeople = await peopleRepository.createAll(peopleSeed);
 
-    const postSeedData = this.preparePostSeed(newPeople, postSeed as Omit<ExtendedPost,'id'>[]);
+    const postSeedData = this.preparePostSeed(newPeople, postSeed as Omit<ExtendedPost, 'id'>[]);
 
     for (const user of newUsers) {
       await userCryptoRepository.createAll([

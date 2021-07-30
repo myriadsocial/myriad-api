@@ -81,9 +81,9 @@ export class PostController {
                   videos: {
                     type: 'array',
                     items: {
-                      type: 'string'
-                    }
-                  }
+                      type: 'string',
+                    },
+                  },
                 },
               },
               walletAddress: {

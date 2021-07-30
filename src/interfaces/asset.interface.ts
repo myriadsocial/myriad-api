@@ -1,4 +1,4 @@
 export interface Asset {
-  images: string[],
-  videos: string[]
+  images: string[];
+  videos: string[];
 }
