@@ -10,7 +10,7 @@ export * from './people.repository';
 export * from './post.repository';
 export * from './public-metric.repository';
 export * from './queue.repository';
-export * from './saved-experience.repository';
+export * from './user-experience.repository';
 export * from './tag.repository';
 export * from './cryptocurrency.repository';
 export * from './transaction.repository';

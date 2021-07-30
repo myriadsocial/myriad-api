@@ -9,27 +9,27 @@ import {MongoDataSource} from '../datasources';
 import {
   Comment,
   Conversation,
-  TransactionHistory,
+  Cryptocurrency,
   Experience,
   Friend,
   Post,
-  SavedExperience,
-  Cryptocurrency,
+  TransactionHistory,
   User,
   UserCredential,
-  UserRelations,
   UserCrypto,
+  UserExperience,
+  UserRelations,
 } from '../models';
 import {CommentRepository} from './comment.repository';
 import {ConversationRepository} from './conversation.repository';
-import {TransactionHistoryRepository} from './transaction-history.repository';
+import {CryptocurrencyRepository} from './cryptocurrency.repository';
 import {ExperienceRepository} from './experience.repository';
 import {FriendRepository} from './friend.repository';
 import {PostRepository} from './post.repository';
-import {SavedExperienceRepository} from './saved-experience.repository';
-import {CryptocurrencyRepository} from './cryptocurrency.repository';
+import {TransactionHistoryRepository} from './transaction-history.repository';
 import {UserCredentialRepository} from './user-credential.repository';
 import {UserCryptoRepository} from './user-crypto.repository';
+import {UserExperienceRepository} from './user-experience.repository';
 
 export class UserRepository extends DefaultCrudRepository<
   User,
@@ -40,10 +40,10 @@ export class UserRepository extends DefaultCrudRepository<
 
   public readonly comments: HasManyRepositoryFactory<Comment, typeof User.prototype.id>;
 
-  public readonly savedExperiences: HasManyThroughRepositoryFactory<
+  public readonly userExperiences: HasManyThroughRepositoryFactory<
     Experience,
     typeof Experience.prototype.id,
-    SavedExperience,
+    UserExperience,
     typeof User.prototype.id
   >;
 
@@ -81,8 +81,8 @@ export class UserRepository extends DefaultCrudRepository<
     protected experienceRepositoryGetter: Getter<ExperienceRepository>,
     @repository.getter('CommentRepository')
     protected commentRepositoryGetter: Getter<CommentRepository>,
-    @repository.getter('SavedExperienceRepository')
-    protected savedExperienceRepositoryGetter: Getter<SavedExperienceRepository>,
+    @repository.getter('UserExperienceRepository')
+    protected userExperienceRepositoryGetter: Getter<UserExperienceRepository>,
     @repository.getter('UserCredentialRepository')
     protected userCredentialRepositoryGetter: Getter<UserCredentialRepository>,
     @repository.getter('PostRepository')
@@ -133,12 +133,12 @@ export class UserRepository extends DefaultCrudRepository<
       userCredentialRepositoryGetter,
     );
     this.registerInclusionResolver('credentials', this.userCredentials.inclusionResolver);
-    this.savedExperiences = this.createHasManyThroughRepositoryFactoryFor(
-      'savedExperiences',
+    this.userExperiences = this.createHasManyThroughRepositoryFactoryFor(
+      'userExperiences',
       experienceRepositoryGetter,
-      savedExperienceRepositoryGetter,
+      userExperienceRepositoryGetter,
     );
-    this.registerInclusionResolver('savedExperiences', this.savedExperiences.inclusionResolver);
+    this.registerInclusionResolver('userExperiences', this.userExperiences.inclusionResolver);
     this.comments = this.createHasManyRepositoryFactoryFor('comments', commentRepositoryGetter);
     this.registerInclusionResolver('comments', this.comments.inclusionResolver);
     this.experiences = this.createHasManyRepositoryFactoryFor(
