@@ -10,7 +10,7 @@ export * from './people.model';
 export * from './post.model';
 export * from './public-metric.model';
 export * from './queue.model';
-export * from './saved-experience.model';
+export * from './user-experience.model';
 export * from './tag.model';
 export * from './cryptocurrency.model';
 export * from './transaction.model';

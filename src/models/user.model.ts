@@ -5,7 +5,7 @@ import {TransactionHistory} from './transaction-history.model';
 import {Experience} from './experience.model';
 import {Friend} from './friend.model';
 import {Post} from './post.model';
-import {SavedExperience} from './saved-experience.model';
+import {UserExperience} from './user-experience.model';
 import {Cryptocurrency} from './cryptocurrency.model';
 import {UserCredential} from './user-credential.model';
 import {UserCrypto} from './user-crypto.model';
@@ -111,12 +111,12 @@ export class User extends Entity {
 
   @hasMany(() => Experience, {
     through: {
-      model: () => SavedExperience,
+      model: () => UserExperience,
       keyFrom: 'userId',
       keyTo: 'experienceId',
     },
   })
-  savedExperiences: Experience[];
+  userExperiences: Experience[];
 
   @hasMany(() => UserCredential)
   credentials: UserCredential[];
