@@ -15,6 +15,7 @@ import {Keyring} from '@polkadot/api';
 import {u8aToHex} from '@polkadot/util';
 import {KeypairType} from '@polkadot/util-crypto/types';
 import {PlatformType} from '../enums';
+import puppeteer from '../helpers/puppeteer';
 import {Asset, DetailTips, DetailUrl, TipsReceived, URL} from '../interfaces';
 import {People, Post, PublicMetric, User} from '../models';
 import {Wallet} from '../models/wallet.model';
@@ -27,6 +28,7 @@ import {
   UserCredentialRepository,
 } from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
+
 // @authenticate("jwt")
 export class PostController {
   constructor(
@@ -592,7 +594,20 @@ export class PostController {
     let platform_account_id: string = '';
     let profile_image_url: string = '';
 
-    const data = await this.facebookService.getActions(username, textId);
+    const browser = await puppeteer();
+
+    const page = await browser.newPage();
+    await page.goto(
+      `https://mbasic.facebook.com/${username}/posts/${textId}`,
+      { waitUntil: 'networkidle0' }
+    );
+    const pageData = await page.evaluate(
+      () =>  document.querySelector('*')?.outerHTML
+    );
+
+    if (pageData == null) throw new HttpErrors.NotFound('Cannot find specified post');
+
+    const data = pageData.toString();
     const findSocialMedialPostingIndex = data.search('"SocialMediaPosting"');
     const post = data.substring(findSocialMedialPostingIndex);
 
@@ -647,8 +662,6 @@ export class PostController {
       url += getUrl[i];
     }
 
-    const userName = url.replace(/\\/g, '').split('/')[3];
-
     return {
       createdAt: new Date().toString(),
       platform: PlatformType.FACEBOOK,
@@ -657,11 +670,10 @@ export class PostController {
       link: `https://facebook.com/${username}/posts/${textId}`,
       platformUser: {
         name: arrayName.join(''),
-        username: userName,
+        username: username,
         platform_account_id: platform_account_id,
         profile_image_url: profile_image_url.split('\\').join(''),
       },
-      assets: [],
     };
   }
 

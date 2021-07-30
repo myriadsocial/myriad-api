@@ -6,11 +6,16 @@ const config = {
   connector: 'rest',
   baseURL: 'https://mbasic.facebook.com',
   crud: false,
+  options: {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBDV/iPhone11,8;FBMD/iPhone;FBSN/iOS;FBSV/13.3.1;FBSS/2;FBID/phone;FBLC/en_US;FBOP/5;FBCR/]"
+    }
+  },
   operations: [
     {
       template: {
         method: 'GET',
-        url: 'https://facebook.com/{pageId}/posts/{postId}',
+        url: 'https://mbasic.facebook.com/{pageId}/posts/{postId}',
       },
       functions: {
         getActions: ['pageId', 'postId'],
