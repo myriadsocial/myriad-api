@@ -1,22 +1,26 @@
 import {repository} from '@loopback/repository';
 import {Experience} from '../models';
-import {ExperienceRepository, SavedExperienceRepository} from '../repositories';
+import {ExperienceRepository, UserExperienceRepository} from '../repositories';
 
 export class ExperienceService {
   constructor(
-    @repository(SavedExperienceRepository)
-    protected savedExperienceRepository: SavedExperienceRepository,
+    @repository(UserExperienceRepository)
+    protected userExperienceRepository: UserExperienceRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
   ) {}
 
   async getExperience(userId: string): Promise<Experience | null> {
-    const experience = await this.savedExperienceRepository.findOne({
+    const userExperience = await this.userExperienceRepository.findOne({
       where: {userId, hasSelected: true},
     });
 
-    if (!experience) return null;
+    if (!userExperience) return null;
 
-    return this.experienceRepository.findById(experience.experienceId);
+    return this.experienceRepository.findOne({
+      where: {
+        id: userExperience.experienceId,
+      },
+    });
   }
 }
