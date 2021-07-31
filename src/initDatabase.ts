@@ -8,7 +8,7 @@ import {u8aToHex} from '@polkadot/util';
 import {mnemonicGenerate} from '@polkadot/util-crypto';
 import {DefaultCrypto, UpdatedStatusType} from './enums';
 import {DateUtils} from './helpers/date-utils';
-import {ExtendedPost, Person, User} from './interfaces';
+import {ExtendedPost, User} from './interfaces';
 import {People} from './models';
 import {
   AuthCredentialRepository,

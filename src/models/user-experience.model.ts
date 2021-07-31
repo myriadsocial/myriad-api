@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import { UpdatedStatusType } from '../enums';
+import {UpdatedStatusType} from '../enums';
 import {Experience} from './experience.model';
 import {User} from './user.model';
 

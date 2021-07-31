@@ -80,7 +80,7 @@ export class Experience extends Entity {
 
   @property({
     type: 'boolean',
-    default: true
+    default: true,
   })
   origin: boolean; // Flagging, if the experience is original created by creatorId
 

@@ -100,9 +100,7 @@ export class FilterService {
 
     const experience = await this.experienceService.getExperience(userId);
     const experienceTopics: string[] = experience ? noneStatusFiltering(experience.tags) : [];
-    const experiencePersonIds: string[] = experience
-      ? noneStatusFiltering(experience.people)
-      : [];
+    const experiencePersonIds: string[] = experience ? noneStatusFiltering(experience.people) : [];
 
     const friends = [...approvedFriendIds, userId];
     const topics = [...trendingTopics, ...experienceTopics];
