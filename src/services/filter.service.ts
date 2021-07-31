@@ -1,5 +1,6 @@
 import {service} from '@loopback/core';
 import {Where} from '@loopback/repository';
+import {noneStatusFiltering} from '../helpers/filter-utils';
 import {ExperienceService} from './experience.service';
 import {FriendService} from './friend.service';
 import {TagService} from './tag.service';
@@ -19,8 +20,8 @@ export class FilterService {
 
     if (!experience) return null;
 
-    const tags = experience.tags;
-    const personIds = experience.people.map(person => person.id);
+    const tags = noneStatusFiltering(experience.tags);
+    const personIds = noneStatusFiltering(experience.tags);
 
     const joinTags = tags.join('|');
     const regexTag = new RegExp(joinTags, 'i');
@@ -98,9 +99,9 @@ export class FilterService {
     const trendingTopics = await this.tagService.trendingTopics();
 
     const experience = await this.experienceService.getExperience(userId);
-    const experienceTopics: string[] = experience ? experience.tags : [];
+    const experienceTopics: string[] = experience ? noneStatusFiltering(experience.tags) : [];
     const experiencePersonIds: string[] = experience
-      ? experience.people.map(person => person.id)
+      ? noneStatusFiltering(experience.people)
       : [];
 
     const friends = [...approvedFriendIds, userId];
