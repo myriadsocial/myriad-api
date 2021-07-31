@@ -21,28 +21,7 @@ export class ExperienceController {
     protected experienceRepository: ExperienceRepository,
   ) {}
 
-  @post('/experiences')
-  @response(200, {
-    description: 'Experience model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Experience)}},
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Experience, {
-            title: 'NewExperience',
-            exclude: ['id'],
-          }),
-        },
-      },
-    })
-    experience: Omit<Experience, 'id'>,
-  ): Promise<Experience> {
-    experience.createdAt = new Date().toString();
-    experience.updatedAt = new Date().toString();
-    return this.experienceRepository.create(experience);
-  }
+  // TODO: moved post experience to user experiences controllers
 
   @get('/experiences')
   @response(200, {
@@ -77,36 +56,37 @@ export class ExperienceController {
     return this.experienceRepository.findById(id, filter);
   }
 
-  @patch('/experiences/{id}')
-  @response(204, {
-    description: 'Experience PATCH success',
-  })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Experience, {partial: true}),
+  // TODO: moved patch experience to user experience controller
+
+  // TODO: moved delete experience to user experience controllers
+
+  // Search experience
+  @get('/search-experiences')
+  @response(200, {
+    description: 'Array of Experience model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Experience),
         },
       },
-    })
-    experience: Experience,
-  ): Promise<void> {
-    const foundExperience = await this.experienceRepository.findById(id);
-
-    if (foundExperience.creatorId !== experience.creatorId)
-      throw new HttpErrors.UnprocessableEntity('This experience does not belong to you');
-
-    experience.updatedAt = new Date().toString();
-
-    await this.experienceRepository.updateById(id, experience);
-  }
-
-  @del('/experiences/{id}')
-  @response(204, {
-    description: 'Experience DELETE success',
+    },
   })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.experienceRepository.deleteById(id);
+  async searchExperience(
+    @param.query.string('q') q: string,
+    @param.filter(Experience, {exclude: 'where'}) filter?: FilterExcludingWhere<Experience>,
+  ): Promise<Experience[]> {
+    if (!q) return [];
+
+    const pattern = new RegExp('^' + q, 'i');
+    return this.experienceRepository.find({
+      ...filter,
+      where: {
+        name: pattern,
+        origin: true,
+      },
+      fields: ['id', 'name'],
+    } as Filter<Experience>);
   }
 }
