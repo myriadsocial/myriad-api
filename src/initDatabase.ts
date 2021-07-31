@@ -6,9 +6,9 @@ import {ServiceMixin} from '@loopback/service-proxy';
 import {Keyring} from '@polkadot/api';
 import {u8aToHex} from '@polkadot/util';
 import {mnemonicGenerate} from '@polkadot/util-crypto';
-import {DefaultCrypto} from './enums';
+import {DefaultCrypto, UpdatedStatusType} from './enums';
 import {DateUtils} from './helpers/date-utils';
-import {ExtendedPost, User} from './interfaces';
+import {ExtendedPost, Person, User} from './interfaces';
 import {People} from './models';
 import {
   AuthCredentialRepository,
@@ -95,7 +95,20 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
 
       const newExperience = await experienceRepository.create({
         name: user.name + ' experience',
-        tags: ['blockchain', 'cryptocurrency', 'technology'],
+        tags: [
+          {
+            id: 'blockchain',
+            updatedStatus: UpdatedStatusType.NONE,
+          },
+          {
+            id: 'cryptocurrency',
+            updatedStatus: UpdatedStatusType.NONE,
+          },
+          {
+            id: 'technology',
+            updatedStatus: UpdatedStatusType.NONE,
+          },
+        ],
         people: newPeople,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString(),
