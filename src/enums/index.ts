@@ -4,4 +4,4 @@ export * from './localrpc.enum';
 export * from './timelinefilter-type.enum';
 export * from './defaultcrypto-type.enum';
 export * from './platform-type.enum';
-export * from './experience-status-type.enum'
+export * from './experience-status-type.enum';
