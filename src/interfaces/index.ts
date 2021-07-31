@@ -7,3 +7,4 @@ export * from './refresh-grant.interface';
 export * from './new-auth-request.interface';
 export * from './like-dislike-metric.interface';
 export * from './payment-info.interface';
+export * from './experience.interface';

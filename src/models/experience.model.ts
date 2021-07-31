@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {People} from './people.model';
+import {Person, Tag} from '../interfaces';
 import {User} from './user.model';
 
 @model({
@@ -33,17 +33,17 @@ export class Experience extends Entity {
 
   @property({
     type: 'array',
-    itemType: 'string',
+    itemType: 'object',
     required: false,
   })
-  tags: string[];
+  tags: Tag[];
 
   @property({
     type: 'array',
     itemType: 'object',
     required: false,
   })
-  people: People[];
+  people: Person[];
 
   @property({
     type: 'date',
@@ -71,6 +71,18 @@ export class Experience extends Entity {
     },
   })
   description: string;
+
+  @property({
+    type: 'number',
+    default: 0,
+  })
+  cloned: number;
+
+  @property({
+    type: 'boolean',
+    default: true
+  })
+  origin: boolean; // Flagging, if the experience is original created by creatorId
 
   @belongsTo(() => User, {name: 'user'})
   creatorId: string;
