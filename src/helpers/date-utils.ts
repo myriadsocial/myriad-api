@@ -1,13 +1,11 @@
 export class DateUtils {
-  second = 1000;
-  minute = 60 * this.second;
-  hour = 60 * this.minute;
-  day = 24 * this.hour;
-  year = 365 * this.day;
+  public readonly second = 1000;
+  public readonly minute = 60 * this.second;
+  public readonly hour = 60 * this.minute;
+  public readonly day = 24 * this.hour;
+  public readonly year = 365 * this.day;
 
-  constructor() {}
-
-  isToday(date: string): boolean {
+  public isToday(date: string): boolean {
     return new Date().getTime() - new Date(date).getTime() > this.day;
   }
 }
