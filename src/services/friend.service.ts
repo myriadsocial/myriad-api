@@ -1,8 +1,8 @@
-import {repository} from '@loopback/repository';
+import {repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {Friend} from '../models';
-import {UserRepository, FriendRepository} from '../repositories';
 import {FriendStatusType} from '../enums';
+import {Friend} from '../models';
+import {FriendRepository, UserRepository} from '../repositories';
 
 export class FriendService {
   constructor(
@@ -84,11 +84,33 @@ export class FriendService {
 
     const friendIds = friends.map(friend => friend.friendId);
     const requestorIds = friends.map(friend => friend.requestorId);
+
     const ids = [
       ...friendIds.filter(friendId => !requestorIds.includes(friendId)),
       ...requestorIds,
     ].filter(userId => userId !== id);
 
     return ids;
+  }
+
+  async filterByFriends(userId: string): Promise<Where | null> {
+    const approvedFriendIds = await this.getApprovedFriendIds(userId);
+
+    if (!approvedFriendIds.length) return null;
+
+    return {
+      or: [
+        {
+          importBy: {
+            inq: approvedFriendIds,
+          },
+        },
+        {
+          walletAddress: {
+            inq: approvedFriendIds,
+          },
+        },
+      ],
+    };
   }
 }
