@@ -21,7 +21,7 @@ export class FilterService {
     if (!experience) return null;
 
     const tags = noneStatusFiltering(experience.tags);
-    const personIds = noneStatusFiltering(experience.tags);
+    const personIds = noneStatusFiltering(experience.people);
 
     const joinTags = tags.join('|');
     const regexTag = new RegExp(joinTags, 'i');
@@ -99,8 +99,8 @@ export class FilterService {
     const trendingTopics = await this.tagService.trendingTopics();
 
     const experience = await this.experienceService.getExperience(userId);
-    const experienceTopics: string[] = experience ? noneStatusFiltering(experience.tags) : [];
-    const experiencePersonIds: string[] = experience ? noneStatusFiltering(experience.people) : [];
+    const experienceTopics = experience ? noneStatusFiltering(experience.tags) : [];
+    const experiencePersonIds = experience ? noneStatusFiltering(experience.people) : [];
 
     const friends = [...approvedFriendIds, userId];
     const topics = [...trendingTopics, ...experienceTopics];
