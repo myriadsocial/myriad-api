@@ -146,23 +146,23 @@ export class PostController {
     const newTags = platformPost.tags;
     const importer = platformPost.importer;
 
-    const post = await this.postRepository.findOne({
+    const foundPost = await this.postRepository.findOne({
       where: {textId, platform},
     });
 
-    if (post) {
-      const foundImporter = post.importBy.find(userId => userId === importer);
+    if (foundPost) {
+      const foundImporter = foundPost.importBy.find(userId => userId === importer);
 
       if (foundImporter)
         throw new HttpErrors.UnprocessableEntity('You have already import this post');
 
-      post.importBy.push(importer);
+      foundPost.importBy.push(importer);
 
-      this.postRepository.updateById(post.id, {
-        importBy: post.importBy,
+      this.postRepository.updateById(foundPost.id, {
+        importBy: foundPost.importBy,
       }) as Promise<void>;
 
-      return post;
+      return foundPost;
     }
 
     let newPost: ExtendedPost;
@@ -174,7 +174,9 @@ export class PostController {
 
         if (newPost.tags) {
           const postTags = newPost.tags.filter((tag: string) => {
-            return !newTags.map((tag: string) => tag.toLowerCase()).includes(tag.toLowerCase());
+            return !newTags
+              .map((newTag: string) => newTag.toLowerCase())
+              .includes(tag.toLowerCase());
           });
 
           tags = [...tags, ...postTags];
