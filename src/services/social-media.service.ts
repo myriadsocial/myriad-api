@@ -1,12 +1,12 @@
-import {ExtendedPost, ExtendedUser} from '../interfaces';
-import {HttpErrors} from '@loopback/rest';
 import {inject} from '@loopback/core';
-import {Facebook, Reddit, Twitter} from '../services';
 import {repository} from '@loopback/repository';
-import {PeopleRepository} from '../repositories';
+import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {People} from '../models';
+import {ExtendedPost, ExtendedUser} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
+import {People} from '../models';
+import {PeopleRepository} from '../repositories';
+import {Facebook, Reddit, Twitter} from '../services';
 
 export class SocialMediaService {
   constructor(
@@ -37,6 +37,8 @@ export class SocialMediaService {
       .find((tweet: string) => tweet === publicKey);
 
     if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post');
+
+    this.fetchTwitterFollowing(user.id);
 
     return {
       name: user.name,
