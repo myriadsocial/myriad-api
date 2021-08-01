@@ -1,4 +1,4 @@
-import {repository} from '@loopback/repository';
+import {repository, Where} from '@loopback/repository';
 import {OrderFieldType, OrderType} from '../enums';
 import {DateUtils} from '../helpers/date-utils';
 import {Tag} from '../models';
@@ -55,5 +55,30 @@ export class TagService {
     });
 
     return trendingTopic.map(tag => tag.id);
+  }
+
+  async filterByTrending(): Promise<Where | null> {
+    const trendingTopics = await this.trendingTopics();
+
+    if (!trendingTopics.length) return null;
+
+    const joinTopics = trendingTopics.join('|');
+    const regexTopic = new RegExp(joinTopics, 'i');
+
+    return {
+      or: [
+        {
+          tags: {
+            inq: trendingTopics,
+          },
+        },
+        {
+          text: regexTopic,
+        },
+        {
+          title: regexTopic,
+        },
+      ],
+    };
   }
 }
