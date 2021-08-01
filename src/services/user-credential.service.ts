@@ -1,10 +1,8 @@
-import {service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {PeopleRepository, UserCredentialRepository} from '../repositories';
 import {ExtendedUser} from '../interfaces';
-import {SocialMediaService} from './social-media.service';
-import {PlatformType} from '../enums';
+import {UserCredential} from '../models';
+import {PeopleRepository, UserCredentialRepository} from '../repositories';
 
 export class UserCredentialService {
   constructor(
@@ -12,11 +10,9 @@ export class UserCredentialService {
     protected userCredentialRepository: UserCredentialRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
-    @service(SocialMediaService)
-    protected socialMediaService: SocialMediaService,
   ) {}
 
-  async createCredential(user: ExtendedUser) {
+  async createCredential(user: ExtendedUser): Promise<UserCredential> {
     const {name, platformAccountId, username, platform, profileImageURL, publicKey} = user;
 
     // Verify credential
@@ -83,10 +79,6 @@ export class UserCredentialService {
       platform,
       profileImageURL,
     });
-
-    if (platform === PlatformType.TWITTER) {
-      this.socialMediaService.fetchTwitterFollowing(platformAccountId ?? '') as Promise<void>;
-    }
 
     return this.peopleRepository.userCredential(newPeople.id).create({
       userId: publicKey,
