@@ -1,31 +1,30 @@
+import {options} from '@acala-network/api';
+import {service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {UserCredential, UserCrypto} from '../models';
-import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
-import {KeypairType} from '@polkadot/util-crypto/types';
-import {u8aToHex} from '@polkadot/util';
-import {options} from '@acala-network/api';
+import {ApiPromise, WsProvider} from '@polkadot/api';
+import {ApiOptions} from '@polkadot/api/types';
+import {DefaultCryptocurrencyType, RpcType} from '../enums';
+import {PolkadotJs} from '../helpers/polkadotJs-utils';
+import {PaymentInfo} from '../interfaces';
+import {UserCredential, UserCryptocurrency} from '../models';
 import {
   CryptocurrencyRepository,
-  UserCryptoRepository,
-  UserRepository,
   PeopleRepository,
-  TransactionRepository,
   QueueRepository,
+  TransactionRepository,
   UserCredentialRepository,
+  UserCryptocurrencyRepository,
+  UserRepository,
 } from '../repositories';
-import {ApiOptions} from '@polkadot/api/types';
-import {service} from '@loopback/core';
 import {TransactionService} from './transaction.service';
-import {DefaultCrypto, RpcType} from '../enums';
-import {PaymentInfo} from '../interfaces';
 
 export class CryptocurrencyService {
   constructor(
     @repository(CryptocurrencyRepository)
     protected cryptocurrencyRepository: CryptocurrencyRepository,
-    @repository(UserCryptoRepository)
-    protected userCryptoRepository: UserCryptoRepository,
+    @repository(UserCryptocurrencyRepository)
+    protected userCryptocurrencyRepository: UserCryptocurrencyRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(UserCredentialRepository)
@@ -40,11 +39,11 @@ export class CryptocurrencyService {
     protected transactionService: TransactionService,
   ) {}
 
-  async defaultCrypto(userId: string): Promise<void> {
+  async defaultCryptocurrency(userId: string): Promise<void> {
     const cryptocurrencies = [
       {
-        id: 'MYR',
-        name: 'myria',
+        id: DefaultCryptocurrencyType.MYR,
+        name: 'myriad',
         decimal: 12,
         image: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
         addressFormat: 214,
@@ -52,7 +51,7 @@ export class CryptocurrencyService {
         isNative: true,
       },
       {
-        id: 'AUSD',
+        id: DefaultCryptocurrencyType.AUSD,
         name: 'ausd',
         decimal: 12,
         image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
@@ -66,10 +65,10 @@ export class CryptocurrencyService {
       try {
         await this.userRepository.cryptocurrencies(userId).create(cryptocurrency);
       } catch {
-        this.userCryptoRepository.create({
+        this.userCryptocurrencyRepository.create({
           userId: userId,
           cryptocurrencyId: cryptocurrency.id,
-        }) as Promise<UserCrypto>;
+        }) as Promise<UserCryptocurrency>;
       }
     }
   }
@@ -85,25 +84,23 @@ export class CryptocurrencyService {
     }
 
     // Check if user already has the crypto
-    const foundUserCrypto = await this.userCryptoRepository.findOne({
+    const userCryptocurrency = await this.userCryptocurrencyRepository.findOne({
       where: {
         userId: userId,
         cryptocurrencyId: cryptocurrencyId,
       },
     });
 
-    if (foundUserCrypto) {
+    if (userCryptocurrency) {
       throw new HttpErrors.UnprocessableEntity('You already have this token');
     }
   }
 
   async claimTips(credential: UserCredential): Promise<void> {
     const {userId, peopleId} = credential;
-    const keyring = new Keyring({
-      type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-    });
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
-    const from = keyring.addFromUri('//' + peopleId);
+    const from = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + peopleId);
     const to = userId; // Sending address
 
     // Get the total tips, store in people
@@ -150,7 +147,7 @@ export class CryptocurrencyService {
           cryptocurrencyId,
           decimal,
           isNative,
-          fromString: u8aToHex(from.publicKey),
+          fromString: getHexPublicKey(from),
           txFee: 0,
           nonce: 0,
           tipId,
@@ -179,17 +176,18 @@ export class CryptocurrencyService {
       addressFormat: myriadPrefix,
       decimal: myriadDecimal,
       isNative,
-    } = await this.cryptocurrencyRepository.findById(DefaultCrypto.MYR);
-    const api = await this.cryptoApi(myriadRpc, DefaultCrypto.MYR);
-    const keyring = new Keyring({
-      type: process.env.MYRIAD_CRYPTO_TYPE as KeypairType,
-      ss58Format: myriadPrefix,
-    });
+    } = await this.cryptocurrencyRepository.findById(DefaultCryptocurrencyType.MYR);
+
+    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs(myriadRpc);
+    const api = await polkadotApi();
 
     const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
-    const from = keyring.addFromMnemonic(mnemonic);
+
+    const from = getKeyring(process.env.MYRIAD_CRYPTO_TYPE, myriadPrefix).addFromMnemonic(mnemonic);
     const to = userId;
+
     const reward = +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) * 10 ** myriadDecimal;
+
     const {nonce} = await api.query.system.account(from.address);
     const getNonce = await this.getQueueNumber(nonce.toJSON());
 
@@ -197,10 +195,10 @@ export class CryptocurrencyService {
       total: reward,
       to,
       from,
-      cryptocurrencyId: DefaultCrypto.MYR,
+      cryptocurrencyId: DefaultCryptocurrencyType.MYR,
       isNative,
       nonce: getNonce,
-      fromString: u8aToHex(from.publicKey),
+      fromString: getHexPublicKey(from),
       txFee: 0,
       decimal: myriadDecimal,
       txHash: '',
