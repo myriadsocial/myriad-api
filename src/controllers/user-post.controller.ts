@@ -1,10 +1,11 @@
+import {service} from '@loopback/core';
 import {FilterExcludingWhere, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param} from '@loopback/rest';
+import {TimelineType} from '../enums';
+import {noneStatusFiltering} from '../helpers/filter-utils';
 import {Post} from '../models';
 import {PostRepository} from '../repositories';
-import {service} from '@loopback/core';
-import {FilterService} from '../services';
-import {TimelineType} from '../enums';
+import {ExperienceService, FriendService, PostService, TagService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -12,8 +13,14 @@ export class UserPostController {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @service(FilterService)
-    protected filterService: FilterService,
+    @service(ExperienceService)
+    protected experienceService: ExperienceService,
+    @service(TagService)
+    protected tagService: TagService,
+    @service(FriendService)
+    protected friendService: FriendService,
+    @service(PostService)
+    protected postService: PostService,
   ) {}
 
   @get('/users/{id}/timeline', {
@@ -38,20 +45,70 @@ export class UserPostController {
 
     switch (sortBy) {
       case TimelineType.EXPERIENCE:
-        where = await this.filterService.filterByExperience(id);
+        where = await this.experienceService.filterByExperience(id);
         break;
 
       case TimelineType.TRENDING:
-        where = await this.filterService.filterByTrending();
+        where = await this.tagService.filterByTrending();
         break;
 
       case TimelineType.FRIEND:
-        where = await this.filterService.filterByFriends(id);
+        where = await this.friendService.filterByFriends(id);
         break;
 
-      case TimelineType.ALL:
-        where = await this.filterService.showAll(id);
+      case TimelineType.ALL: {
+        const approvedFriendIds = await this.friendService.getApprovedFriendIds(id);
+        const trendingTopics = await this.tagService.trendingTopics();
+
+        const experience = await this.experienceService.getExperience(id);
+        const experienceTopics = experience ? noneStatusFiltering(experience.tags) : [];
+        const experiencePersonIds = experience ? noneStatusFiltering(experience.people) : [];
+
+        const friends = [...approvedFriendIds, id];
+        const topics = [...trendingTopics, ...experienceTopics];
+        const personIds = experiencePersonIds;
+
+        const joinTopics = topics.join('|');
+        const regexTopic = new RegExp(joinTopics, 'i');
+
+        if (!friends.length && !topics.length && !personIds.length) {
+          where = null;
+          break;
+        }
+
+        where = {
+          or: [
+            {
+              tags: {
+                inq: topics,
+              },
+            },
+            {
+              title: regexTopic,
+            },
+            {
+              text: regexTopic,
+            },
+            {
+              peopleId: {
+                inq: personIds,
+              },
+            },
+            {
+              importBy: {
+                inq: friends,
+              },
+            },
+            {
+              walletAddress: {
+                inq: friends,
+              },
+            },
+          ],
+        };
+
         break;
+      }
 
       default:
         return [];
