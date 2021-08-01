@@ -10,10 +10,10 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import dotenv from 'dotenv';
 import {User} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
-import {CryptocurrencyService, NotificationService, FriendService} from '../services';
-import dotenv from 'dotenv';
+import {CryptocurrencyService, FriendService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 dotenv.config();
@@ -75,7 +75,7 @@ export class UserController {
       return foundUser;
     }
 
-    this.cryptocurrencyService.defaultCrypto(user.id) as Promise<void>;
+    this.cryptocurrencyService.defaultCryptocurrency(user.id) as Promise<void>;
 
     user.username = user.name?.toLowerCase().replace(/\s+/g, '').trim();
     user.bio = `Hello, my name is ${user.name}!`;

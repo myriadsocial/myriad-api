@@ -16,7 +16,7 @@ import {
   TransactionHistory,
   User,
   UserCredential,
-  UserCrypto,
+  UserCryptocurrency,
   UserExperience,
   UserRelations,
 } from '../models';
@@ -28,7 +28,7 @@ import {FriendRepository} from './friend.repository';
 import {PostRepository} from './post.repository';
 import {TransactionHistoryRepository} from './transaction-history.repository';
 import {UserCredentialRepository} from './user-credential.repository';
-import {UserCryptoRepository} from './user-crypto.repository';
+import {UserCryptocurrencyRepository} from './user-cryptocurrency.repository';
 import {UserExperienceRepository} from './user-experience.repository';
 
 export class UserRepository extends DefaultCrudRepository<
@@ -71,7 +71,7 @@ export class UserRepository extends DefaultCrudRepository<
   public readonly cryptocurrencies: HasManyThroughRepositoryFactory<
     Cryptocurrency,
     typeof Cryptocurrency.prototype.id,
-    UserCrypto,
+    UserCryptocurrency,
     typeof User.prototype.id
   >;
 
@@ -95,8 +95,8 @@ export class UserRepository extends DefaultCrudRepository<
     protected userRepositoryGetter: Getter<UserRepository>,
     @repository.getter('TransactionHistoryRepository')
     protected transactionHistoryRepositoryGetter: Getter<TransactionHistoryRepository>,
-    @repository.getter('UserCryptoRepository')
-    protected userCryptoRepositoryGetter: Getter<UserCryptoRepository>,
+    @repository.getter('UserCryptocurrencyRepository')
+    protected userCryptocurrencyRepositoryGetter: Getter<UserCryptocurrencyRepository>,
     @repository.getter('CryptocurrencyRepository')
     protected cryptocurrencyRepositoryGetter: Getter<CryptocurrencyRepository>,
   ) {
@@ -104,7 +104,7 @@ export class UserRepository extends DefaultCrudRepository<
     this.cryptocurrencies = this.createHasManyThroughRepositoryFactoryFor(
       'cryptocurrencies',
       cryptocurrencyRepositoryGetter,
-      userCryptoRepositoryGetter,
+      userCryptocurrencyRepositoryGetter,
     );
     this.registerInclusionResolver('cryptocurrencies', this.cryptocurrencies.inclusionResolver);
     this.transactionHistories = this.createHasManyRepositoryFactoryFor(

@@ -3,11 +3,9 @@ import {ApplicationConfig} from '@loopback/core';
 import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {ServiceMixin} from '@loopback/service-proxy';
-import {Keyring} from '@polkadot/api';
-import {u8aToHex} from '@polkadot/util';
-import {mnemonicGenerate} from '@polkadot/util-crypto';
-import {DefaultCrypto, UpdatedStatusType} from './enums';
+import {DefaultCryptocurrencyType, UpdatedStatusType} from './enums';
 import {DateUtils} from './helpers/date-utils';
+import {PolkadotJs} from './helpers/polkadotJs-utils';
 import {ExtendedPost, User} from './interfaces';
 import {People} from './models';
 import {
@@ -30,7 +28,7 @@ import {
   TransactionHistoryRepository,
   TransactionRepository,
   UserCredentialRepository,
-  UserCryptoRepository,
+  UserCryptocurrencyRepository,
   UserExperienceRepository,
   UserRepository,
 } from './repositories';
@@ -63,7 +61,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     const {
       userRepository,
       cryptocurrencyRepository,
-      userCryptoRepository,
+      userCryptocurrencyRepository,
       peopleRepository,
       tagRepository,
       postRepository,
@@ -82,14 +80,14 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     const postSeedData = this.preparePostSeed(newPeople, postSeed as Omit<ExtendedPost, 'id'>[]);
 
     for (const user of newUsers) {
-      await userCryptoRepository.createAll([
+      await userCryptocurrencyRepository.createAll([
         {
           userId: user.id,
-          cryptocurrencyId: DefaultCrypto.MYR,
+          cryptocurrencyId: DefaultCryptocurrencyType.MYR,
         },
         {
           userId: user.id,
-          cryptocurrencyId: DefaultCrypto.AUSD,
+          cryptocurrencyId: DefaultCryptocurrencyType.AUSD,
         },
       ]);
 
@@ -124,19 +122,20 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     }
 
     const dateUtils = new DateUtils();
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
     for (const post of postSeedData) {
       let {tags} = post;
-      const newKey = this.createKeyring().addFromUri('//' + post.peopleId);
+      const newKey = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + post.peopleId);
 
-      post.walletAddress = u8aToHex(newKey.publicKey);
+      post.walletAddress = getHexPublicKey(newKey);
 
       const newPost = await postRepository.create(post);
 
       await publicMetricRepository.create({postId: newPost.id});
       await postTipRepository.create({
         postId: newPost.id,
-        cryptocurrencyId: DefaultCrypto.AUSD,
+        cryptocurrencyId: DefaultCryptocurrencyType.AUSD,
         total: 0,
       });
 
@@ -192,7 +191,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     const friendRepository = await this.getRepository(FriendRepository);
     const cryptocurrencyRepository = await this.getRepository(CryptocurrencyRepository);
     const transactionHistoryRepository = await this.getRepository(TransactionHistoryRepository);
-    const userCryptoRepository = await this.getRepository(UserCryptoRepository);
+    const userCryptocurrencyRepository = await this.getRepository(UserCryptocurrencyRepository);
     const queueRepository = await this.getRepository(QueueRepository);
     const authenticationRepository = await this.getRepository(AuthenticationRepository);
     const authCredentialRepository = await this.getRepository(AuthCredentialRepository);
@@ -214,7 +213,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     await publicMetricRepository.deleteAll();
     await friendRepository.deleteAll();
     await cryptocurrencyRepository.deleteAll();
-    await userCryptoRepository.deleteAll();
+    await userCryptocurrencyRepository.deleteAll();
     await transactionHistoryRepository.deleteAll();
     await queueRepository.deleteAll();
     await authenticationRepository.deleteAll();
@@ -226,7 +225,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     return {
       cryptocurrencyRepository,
       userRepository,
-      userCryptoRepository,
+      userCryptocurrencyRepository,
       peopleRepository,
       postRepository,
       publicMetricRepository,
@@ -238,9 +237,11 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
   }
 
   prepareUserSeed(users: User[]) {
+    const {getKeyring, getHexPublicKey, generateSeed} = new PolkadotJs();
+
     return users.map((user: User) => {
-      const seed = mnemonicGenerate();
-      const pair = this.createKeyring().createFromUri(seed + '', {
+      const seed = generateSeed();
+      const pair = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).createFromUri(seed + '', {
         name: user.name,
       });
       const name = user.name ?? '';
@@ -248,7 +249,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
       return {
         ...user,
         username: name.toLowerCase(),
-        id: u8aToHex(pair.publicKey),
+        id: getHexPublicKey(pair),
         bio: `Hello, my name is ${name}`,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString(),
@@ -274,11 +275,5 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     }
 
     return posts;
-  }
-
-  createKeyring() {
-    return new Keyring({
-      type: 'sr25519',
-    });
   }
 }
