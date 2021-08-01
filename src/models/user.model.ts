@@ -1,14 +1,14 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Comment} from './comment.model';
 import {Conversation} from './conversation.model';
-import {TransactionHistory} from './transaction-history.model';
+import {Cryptocurrency} from './cryptocurrency.model';
 import {Experience} from './experience.model';
 import {Friend} from './friend.model';
 import {Post} from './post.model';
-import {UserExperience} from './user-experience.model';
-import {Cryptocurrency} from './cryptocurrency.model';
+import {TransactionHistory} from './transaction-history.model';
 import {UserCredential} from './user-credential.model';
-import {UserCrypto} from './user-crypto.model';
+import {UserCryptocurrency} from './user-cryptocurrency.model';
+import {UserExperience} from './user-experience.model';
 
 @model({
   settings: {
@@ -141,7 +141,7 @@ export class User extends Entity {
 
   @hasMany(() => Cryptocurrency, {
     through: {
-      model: () => UserCrypto,
+      model: () => UserCryptocurrency,
       keyFrom: 'userId',
       keyTo: 'cryptocurrencyId',
     },

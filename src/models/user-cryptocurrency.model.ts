@@ -4,11 +4,11 @@ import {Entity, model, property} from '@loopback/repository';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'userTokens',
+      collection: 'userCryptocurrencies',
     },
   },
 })
-export class UserCrypto extends Entity {
+export class UserCryptocurrency extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -31,13 +31,13 @@ export class UserCrypto extends Entity {
   })
   cryptocurrencyId: string;
 
-  constructor(data?: Partial<UserCrypto>) {
+  constructor(data?: Partial<UserCryptocurrency>) {
     super(data);
   }
 }
 
-export interface UserCryptoRelations {
+export interface UserCryptocurrencyRelations {
   // describe navigational properties here
 }
 
-export type UserCryptoWithRelations = UserCrypto & UserCryptoRelations;
+export type UserCryptocurrencyWithRelations = UserCryptocurrency & UserCryptocurrencyRelations;
