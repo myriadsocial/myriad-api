@@ -38,7 +38,7 @@ export class SocialMediaService {
 
     if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post');
 
-    this.fetchTwitterFollowing(user.id);
+    this.fetchTwitterFollowing(user.id) as Promise<void>;
 
     return {
       name: user.name,

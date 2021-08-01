@@ -8,7 +8,7 @@ export class PolkadotJs {
   provider: string;
 
   constructor(wssProvider?: string) {
-    this.provider = wssProvider || '';
+    this.provider = wssProvider ?? '';
   }
 
   async polkadotApi(): Promise<ApiPromise> {
