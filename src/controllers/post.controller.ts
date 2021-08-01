@@ -4,13 +4,18 @@ import {
   del,
   get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
   requestBody,
   response,
 } from '@loopback/rest';
+import {PlatformType} from '../enums';
+import {UrlUtils} from '../helpers/url.utils';
+import {ExtendedPost} from '../interfaces';
 import {Post, PublicMetric} from '../models';
+import {PlatformPost} from '../models/platform-post.model';
 import {
   CryptocurrencyRepository,
   ExperienceRepository,
@@ -19,9 +24,7 @@ import {
   TransactionRepository,
   UserCredentialRepository,
 } from '../repositories';
-import {TagService, SocialMediaService, PostService} from '../services';
-import {PlatformType} from '../enums';
-import {PlatformPost} from '../models/platform-post.model';
+import {PostService, SocialMediaService, TagService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -134,34 +137,79 @@ export class PostController {
     })
     platformPost: PlatformPost,
   ): Promise<Post> {
-    // Format twitter https://twitter.com/{userId}/status/{tweetId}
-    // Format reddit https://www.reddit.com/{subreddit_name_prefixed}/comments/{postId}/{title}/
-    // Format facebook https://facebook.com/{userId}/posts/{postId}
-    const splitURL = platformPost.url.split('/');
-    const checkPlatform = splitURL[2].toLowerCase().split('.');
+    const urlUtils = new UrlUtils(platformPost.url);
 
-    let platform: string;
-    let textId: string;
+    const platform = urlUtils.getPlatform();
+    const textId = urlUtils.getTextId();
+    const username = urlUtils.getUsername();
 
-    if (checkPlatform.length > 2) {
-      platform = checkPlatform[1];
-    } else {
-      platform = checkPlatform[0];
-    }
+    const newTags = platformPost.tags;
+    const importer = platformPost.importer;
 
-    if (platform === PlatformType.TWITTER || platform === PlatformType.FACEBOOK) {
-      textId = splitURL[5];
-    } else {
-      textId = splitURL[6];
-    }
-
-    return this.postService.getPostFromSocialMediaPost({
-      platform: platform,
-      textId: textId,
-      username: splitURL[3],
-      postTags: platformPost.tags ? platformPost.tags : [],
-      importer: platformPost.importer,
+    const post = await this.postRepository.findOne({
+      where: {textId, platform},
     });
+
+    if (post) {
+      const foundImporter = post.importBy.find(userId => userId === importer);
+
+      if (foundImporter)
+        throw new HttpErrors.UnprocessableEntity('You have already import this post');
+
+      post.importBy.push(importer);
+
+      this.postRepository.updateById(post.id, {
+        importBy: post.importBy,
+      }) as Promise<void>;
+
+      return post;
+    }
+
+    let newPost: ExtendedPost;
+    let tags: string[] = newTags;
+
+    switch (platform) {
+      case PlatformType.TWITTER: {
+        newPost = await this.socialMediaService.fetchTweet(textId);
+
+        if (newPost.tags) {
+          const postTags = newPost.tags.filter((tag: string) => {
+            return !newTags.map((tag: string) => tag.toLowerCase()).includes(tag.toLowerCase());
+          });
+
+          tags = [...tags, ...postTags];
+        }
+
+        break;
+      }
+
+      case PlatformType.REDDIT: {
+        newPost = await this.socialMediaService.fetchRedditPost(textId);
+
+        break;
+      }
+
+      case PlatformType.FACEBOOK: {
+        if (!username) {
+          throw new HttpErrors.UnprocessableEntity('Username not found!');
+        }
+
+        newPost = await this.socialMediaService.fetchFacebookPost(username, textId);
+
+        break;
+      }
+
+      default:
+        throw new HttpErrors.NotFound('Cannot found the specified url!');
+    }
+
+    newPost.tags = tags;
+    newPost.importBy = [importer];
+    newPost.importerId = importer;
+
+    this.tagService.createTags(newPost.tags) as Promise<void>;
+
+    return this.postService.createPost(newPost);
   }
 
   @get('/posts')
