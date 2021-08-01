@@ -1,3 +1,4 @@
+import {AuthenticationComponent} from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
 import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
 import {CronComponent} from '@loopback/cron';
@@ -9,23 +10,21 @@ import dotenv from 'dotenv';
 import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
 import {FetchContentSocialMediaJob} from './jobs';
+import {JWTAuthenticationComponent} from './jwt-authentication-component';
 import {MySequence} from './sequence';
 import {
-  NotificationService,
-  UserCredentialService,
-  TransactionService,
-  FriendService,
-  SocialMediaService,
-  TagService,
-  PostService,
-  MetricService,
   CryptocurrencyService,
-  FilterService,
   ExperienceService,
   FCMService,
+  FriendService,
+  MetricService,
+  NotificationService,
+  PostService,
+  SocialMediaService,
+  TagService,
+  TransactionService,
+  UserCredentialService,
 } from './services';
-import {AuthenticationComponent} from '@loopback/authentication';
-import {JWTAuthenticationComponent} from './jwt-authentication-component';
 
 dotenv.config();
 
@@ -90,7 +89,6 @@ export class MyriadApiApplication extends BootMixin(
     this.service(TagService);
     this.service(MetricService);
     this.service(ExperienceService);
-    this.service(FilterService);
 
     // 3rd party service
     this.service(FCMService);
