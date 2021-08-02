@@ -12,7 +12,7 @@ import {
 } from '@loopback/rest';
 import dotenv from 'dotenv';
 import {User} from '../models';
-import {FriendRepository, UserRepository} from '../repositories';
+import {FriendRepository, TransactionHistoryRepository, UserRepository} from '../repositories';
 import {CryptocurrencyService, FriendService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
@@ -25,6 +25,8 @@ export class UserController {
     protected userRepository: UserRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
+    @repository(TransactionHistoryRepository)
+    protected transactionHistoryRepository: TransactionHistoryRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
     @service(CryptocurrencyService)
@@ -75,6 +77,7 @@ export class UserController {
       return foundUser;
     }
 
+    this.cryptocurrencyService.defaultAcalaTips(user.id) as Promise<void>;
     this.cryptocurrencyService.defaultCryptocurrency(user.id) as Promise<void>;
 
     user.username = user.name?.toLowerCase().replace(/\s+/g, '').trim();
