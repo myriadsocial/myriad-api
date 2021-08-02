@@ -7,11 +7,12 @@ import {ApiOptions} from '@polkadot/api/types';
 import {DefaultCryptocurrencyType, RpcType} from '../enums';
 import {PolkadotJs} from '../helpers/polkadotJs-utils';
 import {PaymentInfo} from '../interfaces';
-import {UserCredential, UserCryptocurrency} from '../models';
+import {Transaction, TransactionHistory, UserCredential, UserCryptocurrency} from '../models';
 import {
   CryptocurrencyRepository,
   PeopleRepository,
   QueueRepository,
+  TransactionHistoryRepository,
   TransactionRepository,
   UserCredentialRepository,
   UserCryptocurrencyRepository,
@@ -35,6 +36,8 @@ export class CryptocurrencyService {
     protected transactionRepository: TransactionRepository,
     @repository(QueueRepository)
     protected queueRepository: QueueRepository,
+    @repository(TransactionHistoryRepository)
+    protected transactionHistoryRepository: TransactionHistoryRepository,
     @service(TransactionService)
     protected transactionService: TransactionService,
   ) {}
@@ -71,6 +74,75 @@ export class CryptocurrencyService {
         }) as Promise<UserCryptocurrency>;
       }
     }
+  }
+
+  async defaultAcalaTips(userId: string): Promise<void> {
+    try {
+      const rpcAddress = 'wss://acala-mandala.api.onfinality.io/public-ws';
+      const provider = new WsProvider(rpcAddress);
+      const api = await new ApiPromise(options({provider}) as ApiOptions).isReadyOrError;
+      const {getKeyring, getHexPublicKey} = new PolkadotJs();
+
+      const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
+      const from = getKeyring().addFromMnemonic(mnemonic);
+      const to = userId;
+      const acalaDecimal = 12;
+      const value = 10 * 10 ** acalaDecimal;
+
+      const {nonce} = await api.query.system.account(from.address);
+
+      const queue = await this.queueRepository.findOne({
+        where: {
+          id: 'acala',
+        },
+      });
+
+      let priority: number = nonce.toJSON();
+
+      if (!queue) {
+        await this.queueRepository.create({
+          id: 'acala',
+          priority: priority + 1,
+        });
+      } else {
+        if (queue.priority >= nonce.toJSON()) {
+          priority = queue.priority;
+        } else {
+          priority = nonce.toJSON();
+        }
+
+        await this.queueRepository.updateById(queue.id, {priority: priority + 1});
+      }
+
+      const transfer = api.tx.currencies.transfer(
+        to,
+        {Token: DefaultCryptocurrencyType.AUSD},
+        value,
+      );
+      const txHash = await transfer.signAndSend(from, {nonce: priority});
+
+      this.transactionRepository.create({
+        trxHash: txHash.toString(),
+        from: getHexPublicKey(from),
+        to: userId,
+        value: 10,
+        state: 'success',
+        hasSentToUser: true,
+        createdAt: new Date().toString(),
+        cryptocurrencyId: DefaultCryptocurrencyType.AUSD,
+      }) as Promise<Transaction>;
+
+      this.transactionHistoryRepository.create({
+        sentToMe: 10,
+        sentToThem: 0,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString(),
+        userId: userId,
+        cryptocurrencyId: DefaultCryptocurrencyType.AUSD,
+      }) as Promise<TransactionHistory>;
+
+      await api.disconnect();
+    } catch {}
   }
 
   async isUserHasCrypto(userId: string, cryptocurrencyId: string): Promise<void> {
@@ -141,7 +213,7 @@ export class CryptocurrencyService {
         }
 
         const paymentInfo = {
-          total,
+          total: total * 10 ** decimal,
           to,
           from,
           cryptocurrencyId,
@@ -161,6 +233,7 @@ export class CryptocurrencyService {
         const txHash = await this.sendTipsToUser(api, paymentInfo);
 
         paymentInfo.txHash = txHash;
+        paymentInfo.txFee = paymentInfo.txFee / 10 ** decimal;
 
         // Record transaction
         this.transactionService.recordTransaction(paymentInfo) as Promise<void>;
@@ -207,6 +280,7 @@ export class CryptocurrencyService {
     const txHash = await this.sendTipsToUser(api, paymentInfo);
 
     paymentInfo.txHash = txHash;
+    paymentInfo.total = 1;
 
     this.transactionService.recordTransaction(paymentInfo) as Promise<void>;
 
