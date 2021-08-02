@@ -30,7 +30,7 @@ import {
   UserCredentialRepository,
   UserCryptocurrencyRepository,
   UserExperienceRepository,
-  UserRepository
+  UserRepository,
 } from './repositories';
 import cryptocurrency from './seed-data/cryptocurrencies.json';
 import peopleSeed from './seed-data/people.json';

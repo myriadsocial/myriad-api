@@ -8,7 +8,7 @@ import {
   patch,
   post,
   requestBody,
-  response
+  response,
 } from '@loopback/rest';
 import dotenv from 'dotenv';
 import {User} from '../models';

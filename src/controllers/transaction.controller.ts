@@ -7,7 +7,7 @@ import {
   CryptocurrencyRepository,
   PostTipRepository,
   TransactionRepository,
-  UserRepository
+  UserRepository,
 } from '../repositories';
 import {CryptocurrencyService, TransactionService} from '../services';
 // import {authenticate} from '@loopback/authentication';
