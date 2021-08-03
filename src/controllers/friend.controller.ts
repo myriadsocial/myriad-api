@@ -123,6 +123,6 @@ export class FriendController {
     description: 'Friend DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.friendRepository.deleteById(id);
+    await this.friendService.deleteById(id);
   }
 }

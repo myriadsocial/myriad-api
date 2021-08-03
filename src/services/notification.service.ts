@@ -66,6 +66,23 @@ export class NotificationService {
     return true;
   }
 
+  async cancelFriendRequest(from: string, to: string): Promise<void> {
+    const notification = await this.notificationRepository.findOne({
+      where: {
+        type: NotificationType.FRIEND_REQUEST,
+        from: from,
+        to: to,
+        referenceId: to,
+      },
+    });
+
+    if (notification == null) return;
+
+    await this.notificationRepository.deleteById(notification.id);
+
+    return;
+  }
+
   async sendPostComment(from: string, comment: Comment): Promise<boolean> {
     const fromUser = await this.userRepository.findById(from);
     if (fromUser == null) return false;
