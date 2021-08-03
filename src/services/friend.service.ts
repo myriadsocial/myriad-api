@@ -1,8 +1,10 @@
+import {service} from '@loopback/core';
 import {repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {FriendStatusType} from '../enums';
 import {Friend} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
+import {NotificationService} from './notification.service';
 
 export class FriendService {
   constructor(
@@ -10,6 +12,8 @@ export class FriendService {
     protected userRepository: UserRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
+    @service(NotificationService)
+    public notificationService: NotificationService,
   ) {}
 
   async findFriend(friendId: string, requestorId: string): Promise<Friend | null> {
@@ -112,5 +116,14 @@ export class FriendService {
         },
       ],
     };
+  }
+
+  async deleteById(id: string): Promise<void> {
+    const friend = await this.friendRepository.findById(id);
+
+    if (friend == null) return;
+
+    await this.notificationService.cancelFriendRequest(friend.requestorId, friend.friendId);
+    await this.friendRepository.deleteById(id);
   }
 }
