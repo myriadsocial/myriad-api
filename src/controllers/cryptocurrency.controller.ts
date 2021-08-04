@@ -1,3 +1,4 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -10,11 +11,14 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {Cryptocurrency} from '../models';
 import {CryptocurrencyRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class CryptocurrencyController {
   constructor(
     @repository(CryptocurrencyRepository)
@@ -67,8 +71,10 @@ export class CryptocurrencyController {
     },
   })
   async find(
-    @param.filter(Cryptocurrency) filter?: Filter<Cryptocurrency>,
+    @param.query.number('page') page: number,
+    @param.filter(Cryptocurrency, {exclude: ['skip', 'offset']}) filter?: Filter<Cryptocurrency>,
   ): Promise<Cryptocurrency[]> {
+    filter = defaultFilterQuery(page, filter);
     return this.cryptocurrencyRepository.find(filter);
   }
 

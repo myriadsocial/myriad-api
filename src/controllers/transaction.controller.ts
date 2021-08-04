@@ -1,30 +1,22 @@
-import {service} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
 import dotenv from 'dotenv';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {Transaction, TransactionHistory} from '../models';
-import {
-  CryptocurrencyRepository,
-  PostTipRepository,
-  TransactionRepository,
-  UserRepository,
-} from '../repositories';
+import {CryptocurrencyRepository} from '../repositories';
 import {CryptocurrencyService, TransactionService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 dotenv.config();
 
 // @authenticate("jwt")
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class TransactionController {
   constructor(
-    @repository(TransactionRepository)
-    protected transactionRepository: TransactionRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
     @repository(CryptocurrencyRepository)
     protected cryptocurrencyRepository: CryptocurrencyRepository,
-    @repository(PostTipRepository)
-    protected postTipRepository: PostTipRepository,
     @service(CryptocurrencyService)
     protected cryptocurrencyService: CryptocurrencyService,
     @service(TransactionService)
@@ -60,7 +52,7 @@ export class TransactionController {
     await this.cryptocurrencyRepository.findById(transaction.cryptocurrencyId.toUpperCase());
 
     // Validate if user FROM exist
-    await this.userRepository.findById(transaction.from);
+    await this.transactionService.userRepository.findById(transaction.from);
 
     // Validate if post exist
     // And count total tip in person and post
@@ -88,7 +80,7 @@ export class TransactionController {
     // If tip is sent to people, set hasSentToUser to false
     if (isPeopleTipUpdated) {
       transaction.hasSentToUser = false;
-      return this.transactionRepository.create(transaction);
+      return this.transactionService.transactionRepository.create(transaction);
     }
 
     // record transaction of TO
@@ -100,7 +92,7 @@ export class TransactionController {
     } as Omit<TransactionHistory, 'id'>) as Promise<void>;
 
     transaction.hasSentToUser = true;
-    return this.transactionRepository.create(transaction);
+    return this.transactionService.transactionRepository.create(transaction);
   }
 
   @get('/transactions')
@@ -115,8 +107,12 @@ export class TransactionController {
       },
     },
   })
-  async find(@param.filter(Transaction) filter?: Filter<Transaction>): Promise<Transaction[]> {
-    return this.transactionRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Transaction, {exclude: ['skip', 'offset']}) filter?: Filter<Transaction>,
+  ): Promise<Transaction[]> {
+    filter = defaultFilterQuery(page);
+    return this.transactionService.transactionRepository.find(filter);
   }
 
   @get('/transactions/{id}')
@@ -133,7 +129,7 @@ export class TransactionController {
     @param.filter(Transaction, {exclude: 'where'})
     filter?: FilterExcludingWhere<Transaction>,
   ): Promise<Transaction> {
-    return this.transactionRepository.findById(id, filter);
+    return this.transactionService.transactionRepository.findById(id, filter);
   }
 
   @del('/transactions/{id}')
@@ -141,6 +137,6 @@ export class TransactionController {
     description: 'Transaction DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.transactionRepository.deleteById(id);
+    await this.transactionService.transactionRepository.deleteById(id);
   }
 }

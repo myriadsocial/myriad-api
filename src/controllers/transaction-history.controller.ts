@@ -1,10 +1,14 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, patch, requestBody, response} from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {TransactionHistory} from '../models';
 import {TransactionHistoryRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class TransactionHistoryController {
   constructor(
     @repository(TransactionHistoryRepository)
@@ -26,8 +30,11 @@ export class TransactionHistoryController {
     },
   })
   async find(
-    @param.filter(TransactionHistory) filter?: Filter<TransactionHistory>,
+    @param.query.number('page') page: number,
+    @param.filter(TransactionHistory, {exclude: ['skip', 'offset']})
+    filter?: Filter<TransactionHistory>,
   ): Promise<TransactionHistory[]> {
+    filter = defaultFilterQuery(page);
     return this.transactionHistoryRepository.find(filter);
   }
 

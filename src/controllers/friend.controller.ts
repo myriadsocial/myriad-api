@@ -1,5 +1,5 @@
-import {service} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {intercept, service} from '@loopback/core';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
@@ -11,16 +11,16 @@ import {
   response,
 } from '@loopback/rest';
 import {FriendStatusType} from '../enums';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {Friend} from '../models';
-import {FriendRepository} from '../repositories';
 import {FriendService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class FriendController {
   constructor(
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
     @service(FriendService)
@@ -57,7 +57,7 @@ export class FriendController {
 
     friend.createdAt = new Date().toString();
 
-    return this.friendRepository.create(friend);
+    return this.friendService.friendRepository.create(friend);
   }
 
   @get('/friends')
@@ -72,8 +72,12 @@ export class FriendController {
       },
     },
   })
-  async find(@param.filter(Friend) filter?: Filter<Friend>): Promise<Friend[]> {
-    return this.friendRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Friend, {exclude: ['skip', 'offset']}) filter?: Filter<Friend>,
+  ): Promise<Friend[]> {
+    filter = defaultFilterQuery(page, filter);
+    return this.friendService.friendRepository.find(filter);
   }
 
   @get('/friends/{id}')
@@ -90,7 +94,7 @@ export class FriendController {
     @param.filter(Friend, {exclude: 'where'})
     filter?: FilterExcludingWhere<Friend>,
   ): Promise<Friend> {
-    return this.friendRepository.findById(id, filter);
+    return this.friendService.friendRepository.findById(id, filter);
   }
 
   @patch('/friends/{id}')
@@ -115,7 +119,7 @@ export class FriendController {
         // ignored
       }
     }
-    await this.friendRepository.updateById(id, friend);
+    await this.friendService.friendRepository.updateById(id, friend);
   }
 
   @del('/friends/{id}')
@@ -123,6 +127,6 @@ export class FriendController {
     description: 'Friend DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.friendService.deleteById(id);
+    await this.friendService.friendRepository.deleteById(id);
   }
 }

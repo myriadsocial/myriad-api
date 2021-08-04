@@ -1,5 +1,5 @@
-import {service} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {intercept, service} from '@loopback/core';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
@@ -12,34 +12,18 @@ import {
   response,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {UrlUtils} from '../helpers/url.utils';
+import {PaginationInterceptor} from '../interceptors';
 import {ExtendedPost} from '../interfaces';
 import {Post, PublicMetric} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
-import {
-  CryptocurrencyRepository,
-  ExperienceRepository,
-  PeopleRepository,
-  PostRepository,
-  TransactionRepository,
-  UserCredentialRepository,
-} from '../repositories';
 import {PostService, SocialMediaService, TagService} from '../services';
 // @authenticate("jwt")
+
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class PostController {
   constructor(
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
-    @repository(UserCredentialRepository)
-    protected userCredentialRepository: UserCredentialRepository,
-    @repository(TransactionRepository)
-    protected transactionRepository: TransactionRepository,
-    @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
-    @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
-    @repository(CryptocurrencyRepository)
-    protected cryptocurrencyRepository: CryptocurrencyRepository,
     @service(TagService)
     protected tagService: TagService,
     @service(SocialMediaService)
@@ -108,9 +92,9 @@ export class PostController {
     _post.platformCreatedAt = new Date().toString();
     _post.platform = PlatformType.MYRIAD;
 
-    const newPost = await this.postRepository.create(_post);
+    const newPost = await this.postService.postRepository.create(_post);
 
-    this.postRepository.publicMetric(newPost.id).create({}) as Promise<PublicMetric>;
+    this.postService.postRepository.publicMetric(newPost.id).create({}) as Promise<PublicMetric>;
 
     if (_post.tags.length > 0) {
       this.tagService.createTags(_post.tags) as Promise<void>;
@@ -144,7 +128,7 @@ export class PostController {
     const newTags = platformPost.tags;
     const importer = platformPost.importer;
 
-    const foundPost = await this.postRepository.findOne({
+    const foundPost = await this.postService.postRepository.findOne({
       where: {textId, platform},
     });
 
@@ -156,7 +140,7 @@ export class PostController {
 
       foundPost.importBy.push(importer);
 
-      this.postRepository.updateById(foundPost.id, {
+      this.postService.postRepository.updateById(foundPost.id, {
         importBy: foundPost.importBy,
       }) as Promise<void>;
 
@@ -224,8 +208,13 @@ export class PostController {
       },
     },
   })
-  async find(@param.filter(Post) filter?: Filter<Post>): Promise<Post[]> {
-    return this.postRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Post, {exclude: ['skip', 'offset']}) filter?: Filter<Post>,
+  ): Promise<Post[]> {
+    filter = defaultFilterQuery(page, filter);
+
+    return this.postService.postRepository.find(filter);
   }
 
   @get('/posts/{id}')
@@ -241,7 +230,7 @@ export class PostController {
     @param.path.string('id') id: string,
     @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
   ): Promise<Post> {
-    return this.postRepository.findById(id, filter);
+    return this.postService.postRepository.findById(id, filter);
   }
 
   @patch('/posts/{id}')
@@ -260,7 +249,7 @@ export class PostController {
     _post: Post,
   ): Promise<void> {
     _post.updatedAt = new Date().toString();
-    await this.postRepository.updateById(id, _post);
+    await this.postService.postRepository.updateById(id, _post);
   }
 
   @del('/posts/{id}')
@@ -268,6 +257,6 @@ export class PostController {
     description: 'Post DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.postRepository.deleteById(id);
+    await this.postService.postRepository.deleteById(id);
   }
 }

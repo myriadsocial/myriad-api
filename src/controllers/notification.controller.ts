@@ -1,3 +1,4 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -9,11 +10,14 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class NotificationsController {
   constructor(
     @repository(NotificationRepository)
@@ -53,7 +57,11 @@ export class NotificationsController {
       },
     },
   })
-  async find(@param.filter(Notification) filter?: Filter<Notification>): Promise<Notification[]> {
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Notification, {exclude: ['skip', 'offset']}) filter?: Filter<Notification>,
+  ): Promise<Notification[]> {
+    filter = defaultFilterQuery(page, filter);
     return this.notificationRepository.find(filter);
   }
 

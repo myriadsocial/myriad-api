@@ -11,7 +11,7 @@ export class FriendService {
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
+    public friendRepository: FriendRepository,
     @service(NotificationService)
     public notificationService: NotificationService,
   ) {}

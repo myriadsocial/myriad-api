@@ -1,3 +1,4 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -9,11 +10,15 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {People, Post} from '../models';
 import {PeopleRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
+
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class PeopleController {
   constructor(
     @repository(PeopleRepository)
@@ -52,7 +57,11 @@ export class PeopleController {
       },
     },
   })
-  async find(@param.filter(People) filter?: Filter<People>): Promise<People[]> {
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(People, {exclude: ['skip', 'offset']}) filter?: Filter<People>,
+  ): Promise<People[]> {
+    filter = defaultFilterQuery(page, filter);
     return this.peopleRepository.find(filter);
   }
 

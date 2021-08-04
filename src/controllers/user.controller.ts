@@ -1,5 +1,5 @@
-import {service} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {intercept, service} from '@loopback/core';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
@@ -11,24 +11,19 @@ import {
   response,
 } from '@loopback/rest';
 import dotenv from 'dotenv';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
-import {FriendRepository, TransactionHistoryRepository, UserRepository} from '../repositories';
-import {CryptocurrencyService, FriendService, NotificationService} from '../services';
+import {CryptocurrencyService, FriendService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 dotenv.config();
 
 // @authenticate("jwt")
+
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class UserController {
   constructor(
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
-    @repository(TransactionHistoryRepository)
-    protected transactionHistoryRepository: TransactionHistoryRepository,
-    @service(NotificationService)
-    protected notificationService: NotificationService,
     @service(CryptocurrencyService)
     protected cryptocurrencyService: CryptocurrencyService,
     @service(FriendService)
@@ -65,7 +60,7 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    const foundUser = await this.userRepository.findOne({
+    const foundUser = await this.friendService.userRepository.findOne({
       where: {id: user.id},
     });
 
@@ -85,10 +80,10 @@ export class UserController {
     user.createdAt = new Date().toString();
     user.updatedAt = new Date().toString();
 
-    return this.userRepository.create(user);
+    return this.friendService.userRepository.create(user);
   }
 
-  @get('users/{id}/approved-friends')
+  @get('/users/{id}/approved-friends')
   @response(200, {
     description: 'Array of approved friend list',
     content: {
@@ -102,11 +97,14 @@ export class UserController {
   })
   async userFriendList(
     @param.path.string('id') id: string,
-    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
+    @param.path.number('page') page: number,
+    @param.filter(User, {exclude: ['where', 'skip', 'offset']}) filter?: Filter<User>,
   ): Promise<User[]> {
     const friendIds = await this.friendService.getApprovedFriendIds(id);
 
-    return this.userRepository.find({
+    filter = defaultFilterQuery(page, filter);
+
+    return this.friendService.userRepository.find({
       ...filter,
       where: {
         id: {
@@ -128,8 +126,12 @@ export class UserController {
       },
     },
   })
-  async find(@param.filter(User) filter?: Filter<User>): Promise<User[]> {
-    return this.userRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(User, {exclude: ['skip', 'offset']}) filter?: Filter<User>,
+  ): Promise<User[]> {
+    filter = defaultFilterQuery(page, filter);
+    return this.friendService.userRepository.find(filter);
   }
 
   @patch('/users/{id}')
@@ -150,7 +152,7 @@ export class UserController {
     user: User,
   ): Promise<void> {
     user.updatedAt = new Date().toString();
-    await this.userRepository.updateById(id, user);
+    await this.friendService.userRepository.updateById(id, user);
   }
 
   @del('/users/{id}')
@@ -158,7 +160,7 @@ export class UserController {
     description: 'User DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.userRepository.deleteById(id);
+    await this.friendService.userRepository.deleteById(id);
   }
 
   @get('/users/{id}')
@@ -174,6 +176,6 @@ export class UserController {
     @param.path.string('id') id: string,
     @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
   ): Promise<User> {
-    return this.userRepository.findById(id, filter);
+    return this.friendService.userRepository.findById(id, filter);
   }
 }

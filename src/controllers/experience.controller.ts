@@ -1,17 +1,20 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param, response} from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
+
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class ExperienceController {
   constructor(
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
   ) {}
-
-  // TODO: moved post experience to user experiences controllers
 
   @get('/experiences')
   @response(200, {
@@ -25,7 +28,11 @@ export class ExperienceController {
       },
     },
   })
-  async find(@param.filter(Experience) filter?: Filter<Experience>): Promise<Experience[]> {
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Experience, {exclude: ['skip', 'offset']}) filter?: Filter<Experience>,
+  ): Promise<Experience[]> {
+    filter = defaultFilterQuery(page, filter);
     return this.experienceRepository.find(filter);
   }
 
@@ -46,10 +53,6 @@ export class ExperienceController {
     return this.experienceRepository.findById(id, filter);
   }
 
-  // TODO: moved patch experience to user experience controller
-
-  // TODO: moved delete experience to user experience controllers
-
   // Search experience
   @get('/search-experiences')
   @response(200, {
@@ -63,11 +66,15 @@ export class ExperienceController {
       },
     },
   })
-  async searchExperience(
+  async search(
     @param.query.string('q') q: string,
-    @param.filter(Experience, {exclude: 'where'}) filter?: FilterExcludingWhere<Experience>,
+    @param.query.number('page') page: number,
+    @param.filter(Experience, {exclude: ['where', 'skip', 'offset']}) filter?: Filter<Experience>,
   ): Promise<Experience[]> {
     if (!q) return [];
+
+    filter = defaultFilterQuery(page, filter);
+    console.log(filter);
 
     const pattern = new RegExp('^' + q, 'i');
     return this.experienceRepository.find({

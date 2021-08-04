@@ -1,4 +1,4 @@
-import {service} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {Count, CountSchema, Filter, repository, Where} from '@loopback/repository';
 import {
   del,
@@ -10,13 +10,10 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {Comment, Post} from '../models';
-import {
-  CommentRepository,
-  ConversationRepository,
-  PostRepository,
-  PublicMetricRepository,
-} from '../repositories';
+import {PostRepository} from '../repositories';
 import {MetricService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
@@ -25,18 +22,13 @@ export class PostCommentController {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(CommentRepository)
-    protected commentRepository: CommentRepository,
-    @repository(ConversationRepository)
-    protected conversationRepository: ConversationRepository,
-    @repository(PublicMetricRepository)
-    protected publicMetricRepository: PublicMetricRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
     @service(MetricService)
     protected metricService: MetricService,
   ) {}
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/posts/{id}/comments', {
     responses: {
       '200': {
@@ -49,10 +41,12 @@ export class PostCommentController {
       },
     },
   })
-  async find(
+  async findComment(
     @param.path.string('id') id: string,
-    @param.query.object('filter') filter?: Filter<Comment>,
+    @param.path.number('page') page: number,
+    @param.filter(Comment, {exclude: ['skip', 'offset']}) filter?: Filter<Comment>,
   ): Promise<Comment[]> {
+    filter = defaultFilterQuery(page, filter);
     return this.postRepository.comments(id).find(filter);
   }
 

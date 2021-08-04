@@ -1,3 +1,4 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -9,17 +10,18 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {Tag} from '../models';
-import {PostRepository, TagRepository} from '../repositories';
+import {TagRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class TagController {
   constructor(
     @repository(TagRepository)
     protected tagRepository: TagRepository,
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
   ) {}
 
   @post('/tags')
@@ -54,7 +56,11 @@ export class TagController {
       },
     },
   })
-  async find(@param.filter(Tag) filter?: Filter<Tag>): Promise<Tag[]> {
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Tag, {exclude: ['skip', 'offset']}) filter?: Filter<Tag>,
+  ): Promise<Tag[]> {
+    filter = defaultFilterQuery(page, filter);
     return this.tagRepository.find(filter);
   }
 

@@ -1,12 +1,14 @@
+import {intercept} from '@loopback/core';
 import {Filter, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param} from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
+import {PaginationInterceptor} from '../interceptors';
 import {Transaction} from '../models';
-import {PostRepository, TransactionRepository} from '../repositories';
+import {PostRepository} from '../repositories';
 
+@intercept(PaginationInterceptor.BINDING_KEY)
 export class PostTransactionController {
   constructor(
-    @repository(TransactionRepository)
-    protected transactionRepository: TransactionRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
   ) {}
@@ -25,8 +27,10 @@ export class PostTransactionController {
   })
   async getTransaction(
     @param.path.string('id') id: string,
+    @param.query.number('page') page: number,
     @param.query.object('filter') filter?: Filter<Transaction>,
   ): Promise<Transaction[]> {
+    filter = defaultFilterQuery(page, filter);
     return this.postRepository.transactions(id).find(filter);
   }
 }
