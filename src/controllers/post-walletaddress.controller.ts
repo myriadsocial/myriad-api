@@ -26,7 +26,7 @@ export class PostWalletAddress {
       walletAddress: resultPost.walletAddress,
     });
 
-    if (resultPost) {
+    if (resultPost && resultPost.peopleId) {
       const resultUser = await this.userCredentialRepository.findOne({
         where: {
           peopleId: resultPost.peopleId,
