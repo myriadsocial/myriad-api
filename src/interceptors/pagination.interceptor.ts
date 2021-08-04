@@ -12,6 +12,10 @@ import {TimelineType} from '../enums';
 import {noneStatusFiltering} from '../helpers/filter-utils';
 import {pageMetadata} from '../helpers/page-metadata.utils';
 import {
+  CommentRepository,
+  ConversationRepository,
+  CryptocurrencyRepository,
+  NotificationRepository,
   PeopleRepository,
   PostRepository,
   TransactionHistoryRepository,
@@ -39,6 +43,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected peopleRepository: PeopleRepository,
     @repository(TransactionHistoryRepository)
     protected transactionHistoryRepository: TransactionHistoryRepository,
+    @repository(CommentRepository)
+    protected commentRepository: CommentRepository,
+    @repository(NotificationRepository)
+    protected notificationRepository: NotificationRepository,
+    @repository(CryptocurrencyRepository)
+    protected cryptocurrencyRepository: CryptocurrencyRepository,
+    @repository(ConversationRepository)
+    protected conversationRepository: ConversationRepository,
     @service(ExperienceService)
     protected experienceService: ExperienceService,
     @service(TagService)
@@ -106,6 +118,23 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
             case 'TransactionHistoryController':
               countResult = await this.transactionHistoryRepository.count(where);
+              break;
+
+            case 'TagController':
+              countResult = await this.tagService.tagRepository.count(where);
+              break;
+
+            case 'NotificationController':
+              countResult = await this.notificationRepository.count(where);
+              break;
+
+            case 'CryptocurrencyController':
+              countResult = await this.cryptocurrencyRepository.count(where);
+              break;
+
+            case 'ConversatioinController':
+              countResult = await this.conversationRepository.count(where);
+              break;
           }
 
           if (countResult.count === 0) {
@@ -266,6 +295,35 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             name: pattern,
             origin: true,
           } as Where);
+
+          const args = [page, filter];
+
+          return {
+            data: result,
+            meta: pageMetadata(args, countResult.count),
+          };
+        }
+
+        case 'findComment': {
+          const [postId, page, filter] = invocationCtx.args;
+
+          filter.where = {
+            ...filter.where,
+            postId,
+          };
+
+          const countResult = await this.commentRepository.count(filter.where);
+
+          if (!countResult.count) {
+            return {
+              data: [],
+              meta: {
+                totalItemCount: 0,
+                totalPageCount: 0,
+                itemsPerPage: 0,
+              },
+            };
+          }
 
           const args = [page, filter];
 
