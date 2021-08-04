@@ -1,5 +1,6 @@
 export * from './experience.interface';
 export * from './like-dislike-metric.interface';
+export * from './meta-pagination.interface';
 export * from './new-auth-request.interface';
 export * from './payment-info.interface';
 export * from './post.interface';
