@@ -25,7 +25,7 @@ export class CryptocurrencyService {
     @repository(CryptocurrencyRepository)
     protected cryptocurrencyRepository: CryptocurrencyRepository,
     @repository(UserCryptocurrencyRepository)
-    protected userCryptocurrencyRepository: UserCryptocurrencyRepository,
+    public userCryptocurrencyRepository: UserCryptocurrencyRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(UserCredentialRepository)

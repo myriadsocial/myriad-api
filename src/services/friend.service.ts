@@ -9,7 +9,7 @@ import {NotificationService} from './notification.service';
 export class FriendService {
   constructor(
     @repository(UserRepository)
-    protected userRepository: UserRepository,
+    public userRepository: UserRepository,
     @repository(FriendRepository)
     public friendRepository: FriendRepository,
     @service(NotificationService)
@@ -33,7 +33,7 @@ export class FriendService {
       );
     }
 
-    const foundFriend = await this.friendRepository.findOne({
+    const friend = await this.friendRepository.findOne({
       where: {
         or: [
           {
@@ -48,27 +48,24 @@ export class FriendService {
       },
     });
 
-    if (foundFriend && foundFriend.status === FriendStatusType.APPROVED) {
+    if (friend && friend.status === FriendStatusType.APPROVED)
       throw new HttpErrors.UnprocessableEntity('You already friend with this user');
-    }
 
-    if (foundFriend && foundFriend.status === FriendStatusType.PENDING) {
+    if (friend && friend.status === FriendStatusType.PENDING)
       throw new HttpErrors.UnprocessableEntity(
         'Please wait for this user to approved your request',
       );
+
+    if (friend && friend.status === FriendStatusType.REJECTED) {
+      friend.status = FriendStatusType.PENDING;
+      friend.updatedAt = new Date().toString();
+      friend.friendId = friendId;
+      friend.requestorId = requestorId;
+
+      this.friendRepository.updateById(friend.id, friend) as Promise<void>;
     }
 
-    if (foundFriend && foundFriend.status === FriendStatusType.REJECTED) {
-      this.friendRepository.updateById(foundFriend.id, {
-        status: FriendStatusType.PENDING,
-        updatedAt: new Date().toString(),
-      }) as Promise<void>;
-
-      foundFriend.status = FriendStatusType.PENDING;
-      foundFriend.updatedAt = new Date().toString();
-    }
-
-    return foundFriend;
+    return friend;
   }
 
   async getApprovedFriendIds(id: string): Promise<string[]> {

@@ -1,5 +1,5 @@
 import {service} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
@@ -14,7 +14,6 @@ import {
 import dotenv from 'dotenv';
 import {PlatformType} from '../enums';
 import {UserCredential, VerifyUser} from '../models';
-import {UserCredentialRepository} from '../repositories';
 import {CryptocurrencyService, SocialMediaService, UserCredentialService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
@@ -23,8 +22,6 @@ dotenv.config();
 // @authenticate("jwt")
 export class UserCredentialController {
   constructor(
-    @repository(UserCredentialRepository)
-    protected userCredentialRepository: UserCredentialRepository,
     @service(CryptocurrencyService)
     protected cryptocurrencyService: CryptocurrencyService,
     @service(SocialMediaService)
@@ -98,7 +95,7 @@ export class UserCredentialController {
   async find(
     @param.filter(UserCredential) filter?: Filter<UserCredential>,
   ): Promise<UserCredential[]> {
-    return this.userCredentialRepository.find(filter);
+    return this.userCredentialService.userCredentialRepository.find(filter);
   }
 
   @get('/user-credentials/{id}')
@@ -115,7 +112,7 @@ export class UserCredentialController {
     @param.filter(UserCredential, {exclude: 'where'})
     filter?: FilterExcludingWhere<UserCredential>,
   ): Promise<UserCredential> {
-    return this.userCredentialRepository.findById(id, filter);
+    return this.userCredentialService.userCredentialRepository.findById(id, filter);
   }
 
   @patch('/user-credentials/{id}')
@@ -133,7 +130,7 @@ export class UserCredentialController {
     })
     userCredential: UserCredential,
   ): Promise<void> {
-    await this.userCredentialRepository.updateById(id, userCredential);
+    await this.userCredentialService.userCredentialRepository.updateById(id, userCredential);
   }
 
   @del('/user-credentials/{id}')
@@ -141,6 +138,6 @@ export class UserCredentialController {
     description: 'UserCredential DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.userCredentialRepository.deleteById(id);
+    await this.userCredentialService.userCredentialRepository.deleteById(id);
   }
 }

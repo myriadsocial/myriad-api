@@ -6,9 +6,9 @@ import {ExperienceRepository, UserExperienceRepository} from '../repositories';
 export class ExperienceService {
   constructor(
     @repository(UserExperienceRepository)
-    protected userExperienceRepository: UserExperienceRepository,
+    public userExperienceRepository: UserExperienceRepository,
     @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
+    public experienceRepository: ExperienceRepository,
   ) {}
 
   async getExperience(userId: string): Promise<Experience | null> {

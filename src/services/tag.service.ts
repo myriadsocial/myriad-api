@@ -7,7 +7,7 @@ import {TagRepository} from '../repositories';
 export class TagService {
   constructor(
     @repository(TagRepository)
-    protected tagRepository: TagRepository,
+    public tagRepository: TagRepository,
   ) {}
 
   async createTags(tags: string[]): Promise<void> {

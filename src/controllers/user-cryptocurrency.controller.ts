@@ -1,18 +1,13 @@
 import {service} from '@loopback/core';
-import {Count, CountSchema, repository} from '@loopback/repository';
+import {Count, CountSchema} from '@loopback/repository';
 import {del, getModelSchemaRef, post, requestBody} from '@loopback/rest';
 import {UserCryptocurrency} from '../models';
-import {UserCryptocurrencyRepository, UserRepository} from '../repositories';
 import {CryptocurrencyService} from '../services';
 // import { authenticate } from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class UserCryptocurrencyController {
   constructor(
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
-    @repository(UserCryptocurrencyRepository)
-    protected userCryptocurrencyRepository: UserCryptocurrencyRepository,
     @service(CryptocurrencyService)
     protected cryptocurrencyService: CryptocurrencyService,
   ) {}
@@ -42,7 +37,7 @@ export class UserCryptocurrencyController {
       userCryptocurrency.cryptocurrencyId,
     );
 
-    return this.userCryptocurrencyRepository.create(userCryptocurrency);
+    return this.cryptocurrencyService.userCryptocurrencyRepository.create(userCryptocurrency);
   }
 
   @del('/user-cryptocurrencies', {
@@ -65,7 +60,7 @@ export class UserCryptocurrencyController {
     })
     userCryptocurrency: UserCryptocurrency,
   ): Promise<Count> {
-    return this.userCryptocurrencyRepository.deleteAll({
+    return this.cryptocurrencyService.userCryptocurrencyRepository.deleteAll({
       userId: userCryptocurrency.userId,
       cryptocurrencyId: userCryptocurrency.cryptocurrencyId,
     });

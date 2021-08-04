@@ -2,28 +2,28 @@ import {Count, repository} from '@loopback/repository';
 import {PaymentInfo} from '../interfaces';
 import {PostTip, Transaction, TransactionHistory} from '../models';
 import {
-  PostTipRepository,
   PersonTipRepository,
+  PostRepository,
+  PostTipRepository,
   TransactionHistoryRepository,
   TransactionRepository,
   UserRepository,
-  PostRepository,
 } from '../repositories';
 
 export class TransactionService {
   constructor(
     @repository(TransactionHistoryRepository)
-    protected transactionHistoryRepository: TransactionHistoryRepository,
+    public transactionHistoryRepository: TransactionHistoryRepository,
     @repository(UserRepository)
-    protected userRepository: UserRepository,
+    public userRepository: UserRepository,
     @repository(TransactionRepository)
-    protected transactionRepository: TransactionRepository,
+    public transactionRepository: TransactionRepository,
     @repository(PersonTipRepository)
-    protected personTipRepository: PersonTipRepository,
+    public personTipRepository: PersonTipRepository,
     @repository(PostTipRepository)
-    protected postTipRepository: PostTipRepository,
+    public postTipRepository: PostTipRepository,
     @repository(PostRepository)
-    protected postRepository: PostRepository,
+    public postRepository: PostRepository,
   ) {}
 
   async recordTransaction(paymentInfo: PaymentInfo): Promise<void> {

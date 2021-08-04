@@ -10,8 +10,8 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
-import {Dislike, Post, Like} from '../models';
-import {DislikeRepository, PostRepository} from '../repositories';
+import {Dislike, Like, Post} from '../models';
+import {PostRepository} from '../repositories';
 import {MetricService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
@@ -20,8 +20,6 @@ export class PostDislikeController {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(DislikeRepository)
-    protected dislikeRepository: DislikeRepository,
     @service(MetricService)
     protected metricService: MetricService,
   ) {}

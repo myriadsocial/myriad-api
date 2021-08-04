@@ -7,7 +7,7 @@ import {PeopleRepository, UserCredentialRepository} from '../repositories';
 export class UserCredentialService {
   constructor(
     @repository(UserCredentialRepository)
-    protected userCredentialRepository: UserCredentialRepository,
+    public userCredentialRepository: UserCredentialRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
   ) {}

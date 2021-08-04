@@ -9,7 +9,7 @@ import {PeopleRepository, PostRepository, PostTipRepository} from '../repositori
 export class PostService {
   constructor(
     @repository(PostRepository)
-    protected postRepository: PostRepository,
+    public postRepository: PostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
     @repository(PostTipRepository)
