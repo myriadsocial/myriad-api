@@ -2,7 +2,7 @@ import {Getter, inject} from '@loopback/core';
 import {BelongsToAccessor, DefaultCrudRepository, repository} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Currency, Post, Transaction, TransactionRelations, User} from '../models';
-import {CurrencyRepository} from './Currency.repository';
+import {CurrencyRepository} from './currency.repository';
 import {PostRepository} from './post.repository';
 import {UserRepository} from './user.repository';
 

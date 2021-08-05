@@ -7,7 +7,7 @@ import {
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Currency, User, UserCredential, UserCurrency, UserRelations} from '../models';
-import {CurrencyRepository} from './Currency.repository';
+import {CurrencyRepository} from './currency.repository';
 import {UserCredentialRepository} from './user-credential.repository';
 import {UserCurrencyRepository} from './user-currency.repository';
 
