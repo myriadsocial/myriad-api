@@ -26,7 +26,7 @@ export class UserCredential extends Entity {
     type: 'boolean',
     required: true,
   })
-  isVerified: boolean;
+  verified: boolean;
 
   @property({
     type: 'string',
@@ -35,6 +35,21 @@ export class UserCredential extends Entity {
     },
   })
   platform: PlatformType;
+
+  @property({
+    type: 'date',
+  })
+  createdAt?: string;
+
+  @property({
+    type: 'date',
+  })
+  updatedAt?: string;
+
+  @property({
+    type: 'date',
+  })
+  deletedAt?: string;
 
   @belongsTo(() => People)
   peopleId: string;
