@@ -1,5 +1,6 @@
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param, response} from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
@@ -25,8 +26,13 @@ export class ExperienceController {
       },
     },
   })
-  async find(@param.filter(Experience) filter?: Filter<Experience>): Promise<Experience[]> {
-    return this.experienceRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Experience, {exclude: ['skip', 'offset']}) filter?: Filter<Experience>,
+  ): Promise<Experience[]> {
+    const newFilter = defaultFilterQuery(page, filter) as Filter<Experience>;
+
+    return this.experienceRepository.find(newFilter);
   }
 
   @get('/experiences/{id}')
@@ -65,18 +71,17 @@ export class ExperienceController {
   })
   async searchExperience(
     @param.query.string('q') q: string,
-    @param.filter(Experience, {exclude: 'where'}) filter?: FilterExcludingWhere<Experience>,
+    @param.query.number('page') page: number,
+    @param.filter(Experience, {exclude: ['where', 'skip', 'offset']}) filter?: Filter<Experience>,
   ): Promise<Experience[]> {
     if (!q) return [];
 
     const pattern = new RegExp('^' + q, 'i');
-    return this.experienceRepository.find({
-      ...filter,
-      where: {
-        name: pattern,
-        origin: true,
-      },
-      fields: ['id', 'name'],
-    } as Filter<Experience>);
+    const newFilter = defaultFilterQuery(page, filter, {
+      name: pattern,
+      origin: true,
+    }) as Filter<Experience>;
+
+    return this.experienceRepository.find(newFilter);
   }
 }

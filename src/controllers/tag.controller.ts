@@ -9,6 +9,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {Tag} from '../models';
 import {PostRepository, TagRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
@@ -54,8 +55,13 @@ export class TagController {
       },
     },
   })
-  async find(@param.filter(Tag) filter?: Filter<Tag>): Promise<Tag[]> {
-    return this.tagRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Tag, {exclude: ['skip', 'offset']}) filter?: Filter<Tag>,
+  ): Promise<Tag[]> {
+    const newFilter = defaultFilterQuery(page, filter) as Filter<Tag>;
+
+    return this.tagRepository.find(newFilter);
   }
 
   @get('/tags/{id}')

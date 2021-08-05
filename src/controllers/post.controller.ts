@@ -12,6 +12,7 @@ import {
   response,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {UrlUtils} from '../helpers/url.utils';
 import {ExtendedPost} from '../interfaces';
 import {Post, PublicMetric} from '../models';
@@ -224,8 +225,13 @@ export class PostController {
       },
     },
   })
-  async find(@param.filter(Post) filter?: Filter<Post>): Promise<Post[]> {
-    return this.postRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Post, {exclude: ['skip', 'offset']}) filter?: Filter<Post>,
+  ): Promise<Post[]> {
+    const newFilter = defaultFilterQuery(page, filter) as Filter<Post>;
+
+    return this.postRepository.find(newFilter);
   }
 
   @get('/posts/{id}')

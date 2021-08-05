@@ -10,6 +10,7 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {Comment, Post} from '../models';
 import {
   CommentRepository,
@@ -49,11 +50,14 @@ export class PostCommentController {
       },
     },
   })
-  async find(
+  async findComment(
     @param.path.string('id') id: string,
-    @param.query.object('filter') filter?: Filter<Comment>,
+    @param.path.number('page') page: number,
+    @param.filter(Comment, {exclude: ['skip', 'offset']}) filter?: Filter<Comment>,
   ): Promise<Comment[]> {
-    return this.postRepository.comments(id).find(filter);
+    const newFilter = defaultFilterQuery(page, filter) as Filter<Comment>;
+
+    return this.postRepository.comments(id).find(newFilter);
   }
 
   @post('/posts/{id}/comments', {
