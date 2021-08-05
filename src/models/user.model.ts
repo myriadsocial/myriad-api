@@ -1,5 +1,6 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Currency} from './currency.model';
+import {Friend} from './friend.model';
 import {UserCredential} from './user-credential.model';
 import {UserCurrency} from './user-currency.model';
 
@@ -75,6 +76,9 @@ export class User extends Entity {
 
   @hasMany(() => UserCredential)
   userCredentials: UserCredential[];
+
+  @hasMany(() => Friend)
+  friends: Friend[];
 
   @hasMany(() => Currency, {
     through: {
