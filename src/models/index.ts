@@ -18,7 +18,7 @@ export * from './tag.model';
 export * from './transaction-history.model';
 export * from './transaction.model';
 export * from './user-credential.model';
-export * from './user-cryptocurrency.model';
+export * from './user-currency.model';
 export * from './user-experience.model';
 export * from './user.model';
 export * from './verify-user.model';
