@@ -6,3 +6,4 @@ export * from './post.interface';
 export * from './refresh-grant.interface';
 export * from './tokenobject.inteface';
 export * from './user.interface';
+export * from './meta-pagination.interface';
