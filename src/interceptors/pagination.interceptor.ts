@@ -1,4 +1,5 @@
 import {
+  globalInterceptor,
   injectable,
   Interceptor,
   InvocationContext,
@@ -31,9 +32,10 @@ import {ExperienceService, FriendService, TagService} from '../services';
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
  */
-@injectable({tags: {key: PaginationInterceptor.BINDING_KEY}})
+// @injectable({tags: {key: PaginationInterceptor.BINDING_KEY}})
+@globalInterceptor('', {tags: {name: 'pagination'}})
 export class PaginationInterceptor implements Provider<Interceptor> {
-  static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
+  // static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
 
   constructor(
     @repository(PostRepository)
