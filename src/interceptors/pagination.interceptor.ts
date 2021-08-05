@@ -1,6 +1,5 @@
 import {
   globalInterceptor,
-  injectable,
   Interceptor,
   InvocationContext,
   InvocationResult,
