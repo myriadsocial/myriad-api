@@ -4,11 +4,11 @@ import {Entity, model, property} from '@loopback/repository';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'cryptocurrencies',
+      collection: 'Currencies',
     },
   },
 })
-export class Cryptocurrency extends Entity {
+export class Currency extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -39,27 +39,42 @@ export class Cryptocurrency extends Entity {
     type: 'number',
     required: true,
   })
-  addressFormat: number;
+  addressType: number;
 
   @property({
     type: 'string',
     required: true,
   })
-  rpcAddress: string;
+  rpcURL: string;
 
   @property({
     type: 'boolean',
     required: true,
   })
-  isNative: boolean;
+  native: boolean;
 
-  constructor(data?: Partial<Cryptocurrency>) {
+  @property({
+    type: 'date',
+  })
+  createdAt?: string;
+
+  @property({
+    type: 'date',
+  })
+  updatedAt?: string;
+
+  @property({
+    type: 'date',
+  })
+  deletedAt?: string;
+
+  constructor(data?: Partial<Currency>) {
     super(data);
   }
 }
 
-export interface CryptocurrencyRelations {
+export interface CurrencyRelations {
   // describe navigational properties here
 }
 
-export type CryptocurrencyWithRelations = Cryptocurrency & CryptocurrencyRelations;
+export type CurrencyWithRelations = Currency & CurrencyRelations;

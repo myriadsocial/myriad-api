@@ -2,7 +2,7 @@ export * from './auth-credential.repository';
 export * from './authentication.repository';
 export * from './comment.repository';
 export * from './conversation.repository';
-export * from './cryptocurrency.repository';
+export * from './Currency.repository';
 export * from './dislike.repository';
 export * from './experience.repository';
 export * from './friend.repository';
