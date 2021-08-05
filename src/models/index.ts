@@ -3,7 +3,6 @@ export * from './authentication.model';
 export * from './comment.model';
 export * from './conversation.model';
 export * from './currency.model';
-export * from './dislike.model';
 export * from './experience.model';
 export * from './friend.model';
 export * from './like.model';
