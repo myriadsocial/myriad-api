@@ -6,8 +6,9 @@ import {
   repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Currency, User, UserCredential, UserCurrency, UserRelations} from '../models';
+import {Currency, Friend, User, UserCredential, UserCurrency, UserRelations} from '../models';
 import {CurrencyRepository} from './currency.repository';
+import {FriendRepository} from './friend.repository';
 import {UserCredentialRepository} from './user-credential.repository';
 import {UserCurrencyRepository} from './user-currency.repository';
 
@@ -20,6 +21,8 @@ export class UserRepository extends DefaultCrudRepository<
     UserCredential,
     typeof User.prototype.id
   >;
+
+  public readonly friends: HasManyRepositoryFactory<Friend, typeof User.prototype.id>;
 
   public readonly currencies: HasManyThroughRepositoryFactory<
     Currency,
@@ -36,6 +39,8 @@ export class UserRepository extends DefaultCrudRepository<
     protected userCurrencyRepositoryGetter: Getter<UserCurrencyRepository>,
     @repository.getter('CurrencyRepository')
     protected currencyRepositoryGetter: Getter<CurrencyRepository>,
+    @repository.getter('FriendRepository')
+    protected friendRepositoryGetter: Getter<FriendRepository>,
   ) {
     super(User, dataSource);
     this.userCredentials = this.createHasManyRepositoryFactoryFor(
@@ -43,6 +48,8 @@ export class UserRepository extends DefaultCrudRepository<
       userCredentialRepositoryGetter,
     );
     this.registerInclusionResolver('userCredentials', this.userCredentials.inclusionResolver);
+    this.friends = this.createHasManyRepositoryFactoryFor('friends', friendRepositoryGetter);
+    this.registerInclusionResolver('friends', this.friends.inclusionResolver);
     this.currencies = this.createHasManyThroughRepositoryFactoryFor(
       'currencies',
       currencyRepositoryGetter,
