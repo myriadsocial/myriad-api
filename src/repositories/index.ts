@@ -10,7 +10,6 @@ export * from './like.repository';
 export * from './notification.repository';
 export * from './people.repository';
 export * from './person-tip.repository';
-export * from './post-tip.repository';
 export * from './post.repository';
 export * from './public-metric.repository';
 export * from './queue.repository';
