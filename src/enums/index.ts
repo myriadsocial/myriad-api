@@ -5,3 +5,4 @@ export * from './localrpc.enum';
 export * from './notification-type.enum';
 export * from './platform-type.enum';
 export * from './timelinefilter-type.enum';
+export * from './classname-type.enum';
