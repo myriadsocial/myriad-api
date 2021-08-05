@@ -22,10 +22,19 @@ export class Dislike extends Entity {
   id?: string;
 
   @property({
-    type: 'boolean',
-    required: false,
+    type: 'date',
   })
-  status: boolean;
+  createdAt?: string;
+
+  @property({
+    type: 'date',
+  })
+  updatedAt?: string;
+
+  @property({
+    type: 'date',
+  })
+  deletedAt?: string;
 
   @belongsTo(() => User)
   userId: string;
