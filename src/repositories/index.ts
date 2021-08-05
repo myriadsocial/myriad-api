@@ -15,7 +15,6 @@ export * from './public-metric.repository';
 export * from './queue.repository';
 export * from './refresh-token.repository';
 export * from './tag.repository';
-export * from './transaction-history.repository';
 export * from './transaction.repository';
 export * from './user-credential.repository';
 export * from './user-currency.repository';

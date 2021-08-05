@@ -15,7 +15,6 @@ export * from './public-metric.model';
 export * from './queue.model';
 export * from './refresh-token.model';
 export * from './tag.model';
-export * from './transaction-history.model';
 export * from './transaction.model';
 export * from './user-credential.model';
 export * from './user-currency.model';
