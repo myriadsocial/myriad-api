@@ -1,7 +1,7 @@
 import {Getter, inject} from '@loopback/core';
 import {BelongsToAccessor, DefaultCrudRepository, repository} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Like, LikeRelations, Post, User} from '../models';
+import {Like, LikeRelations, User} from '../models';
 import {PostRepository} from './post.repository';
 import {UserRepository} from './user.repository';
 
@@ -10,8 +10,6 @@ export class LikeRepository extends DefaultCrudRepository<
   typeof Like.prototype.id,
   LikeRelations
 > {
-  public readonly post: BelongsToAccessor<Post, typeof Like.prototype.id>;
-
   public readonly user: BelongsToAccessor<User, typeof Like.prototype.id>;
 
   constructor(
@@ -24,7 +22,5 @@ export class LikeRepository extends DefaultCrudRepository<
     super(Like, dataSource);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
-    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter);
-    this.registerInclusionResolver('post', this.post.inclusionResolver);
   }
 }

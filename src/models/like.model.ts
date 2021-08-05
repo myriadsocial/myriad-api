@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {Post} from './post.model';
+import {LikeType} from '../enums';
 import {User} from './user.model';
 
 @model({
@@ -22,6 +22,27 @@ export class Like extends Entity {
   id?: string;
 
   @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      enum: Object.values(LikeType),
+    },
+  })
+  type: LikeType;
+
+  @property({
+    type: 'boolean',
+    required: true,
+  })
+  state: boolean;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  referenceId: string;
+
+  @property({
     type: 'date',
   })
   createdAt?: string;
@@ -35,9 +56,6 @@ export class Like extends Entity {
     type: 'date',
   })
   deletedAt?: string;
-
-  @belongsTo(() => Post)
-  postId: string;
 
   @belongsTo(() => User)
   userId: string;
