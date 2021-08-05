@@ -1,4 +1,5 @@
 import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
+import {PlatformType} from '../enums';
 import {Asset} from '../interfaces/asset.interface';
 import {Comment} from './comment.model';
 import {People, PeopleWithRelations} from './people.model';
@@ -36,9 +37,12 @@ export class Post extends Entity {
   @property({
     type: 'string',
     required: false,
-    default: 'myriad',
+    default: PlatformType.MYRIAD,
+    jsonSchema: {
+      enum: Object.values(PlatformType),
+    },
   })
-  platform?: string;
+  platform?: PlatformType;
 
   @property({
     type: 'string',
