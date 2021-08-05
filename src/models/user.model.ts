@@ -1,5 +1,6 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Currency} from './currency.model';
+import {UserCredential} from './user-credential.model';
 import {UserCurrency} from './user-currency.model';
 
 @model({
@@ -71,6 +72,9 @@ export class User extends Entity {
     type: 'date',
   })
   deletedAt?: string;
+
+  @hasMany(() => UserCredential)
+  userCredentials: UserCredential[];
 
   @hasMany(() => Currency, {
     through: {
