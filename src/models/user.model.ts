@@ -1,4 +1,6 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, hasMany, model, property} from '@loopback/repository';
+import {Currency} from './currency.model';
+import {UserCurrency} from './user-currency.model';
 
 @model({
   settings: {
@@ -69,6 +71,15 @@ export class User extends Entity {
     type: 'date',
   })
   deletedAt?: string;
+
+  @hasMany(() => Currency, {
+    through: {
+      model: () => UserCurrency,
+      keyFrom: 'userId',
+      keyTo: 'currencyId',
+    },
+  })
+  currencies: Currency[];
 
   constructor(data?: Partial<User>) {
     super(data);
