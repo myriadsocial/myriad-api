@@ -1,7 +1,6 @@
 import {Entity, hasMany, hasOne, model, property} from '@loopback/repository';
 import {Post} from './post.model';
 import {UserCredential} from './user-credential.model';
-import {PersonTip} from './person-tip.model';
 
 @model({
   settings: {
@@ -44,22 +43,42 @@ export class People extends Entity {
     type: 'string',
     required: false,
   })
-  platformAccountId: string;
+  originAccountId: string;
 
   @property({
     type: 'string',
     required: false,
   })
-  profileImageURL: string;
+  profilePictureURL: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  createdAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  updatedAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  deletedAt?: string;
+
+  @property({
+    type: 'string',
+  })
+  walletAddress?: string;
 
   @hasOne(() => UserCredential)
   credential: UserCredential;
 
   @hasMany(() => Post)
   posts: Post[];
-
-  @hasMany(() => PersonTip)
-  personTips: PersonTip[];
 
   constructor(data?: Partial<People>) {
     super(data);
