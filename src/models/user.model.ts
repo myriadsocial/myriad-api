@@ -1,14 +1,4 @@
-import {Entity, hasMany, model, property} from '@loopback/repository';
-import {Comment} from './comment.model';
-import {Conversation} from './conversation.model';
-import {Cryptocurrency} from './cryptocurrency.model';
-import {Experience} from './experience.model';
-import {Friend} from './friend.model';
-import {Post} from './post.model';
-import {TransactionHistory} from './transaction-history.model';
-import {UserCredential} from './user-credential.model';
-import {UserCryptocurrency} from './user-cryptocurrency.model';
-import {UserExperience} from './user-experience.model';
+import {Entity, model, property} from '@loopback/repository';
 
 @model({
   settings: {
@@ -42,11 +32,6 @@ export class User extends Entity {
   @property({
     type: 'string',
   })
-  username?: string;
-
-  @property({
-    type: 'string',
-  })
   profilePictureURL?: string;
 
   @property({
@@ -57,22 +42,10 @@ export class User extends Entity {
   bannerImageUrl?: string;
 
   @property({
-    type: 'boolean',
-    default: false,
-  })
-  anonymous?: boolean;
-
-  @property({
     type: 'string',
     required: false,
   })
   bio?: string;
-
-  @property({
-    type: 'boolean',
-    default: false,
-  })
-  skipTour?: boolean;
 
   @property({
     type: 'array',
@@ -81,12 +54,6 @@ export class User extends Entity {
     default: [],
   })
   fcmTokens?: string[];
-
-  @property({
-    type: 'boolean',
-    default: true,
-  })
-  isOnline?: boolean;
 
   @property({
     type: 'date',
@@ -102,51 +69,6 @@ export class User extends Entity {
     type: 'date',
   })
   deletedAt?: string;
-
-  @hasMany(() => Experience, {keyTo: 'creatorId'})
-  experiences: Experience[];
-
-  @hasMany(() => Comment)
-  comments: Comment[];
-
-  @hasMany(() => Experience, {
-    through: {
-      model: () => UserExperience,
-      keyFrom: 'userId',
-      keyTo: 'experienceId',
-    },
-  })
-  userExperiences: Experience[];
-
-  @hasMany(() => UserCredential)
-  credentials: UserCredential[];
-
-  @hasMany(() => Post, {keyTo: 'walletAddress'})
-  posts: Post[];
-
-  @hasMany(() => Conversation)
-  conversations: Conversation[];
-
-  @hasMany(() => User, {
-    through: {
-      model: () => Friend,
-      keyFrom: 'requestorId',
-      keyTo: 'friendId',
-    },
-  })
-  friends: User[];
-
-  @hasMany(() => TransactionHistory)
-  transactionHistories: TransactionHistory[];
-
-  @hasMany(() => Cryptocurrency, {
-    through: {
-      model: () => UserCryptocurrency,
-      keyFrom: 'userId',
-      keyTo: 'cryptocurrencyId',
-    },
-  })
-  cryptocurrencies: Cryptocurrency[];
 
   constructor(data?: Partial<User>) {
     super(data);
