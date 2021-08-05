@@ -11,6 +11,7 @@ import {
   response,
 } from '@loopback/rest';
 import dotenv from 'dotenv';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {User} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {CryptocurrencyService, FriendService, NotificationService} from '../services';
@@ -99,18 +100,17 @@ export class UserController {
   })
   async userFriendList(
     @param.path.string('id') id: string,
-    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
+    @param.path.number('page') page: number,
+    @param.filter(User, {exclude: ['where', 'skip', 'offset']}) filter?: Filter<User>,
   ): Promise<User[]> {
     const friendIds = await this.friendService.getApprovedFriendIds(id);
-
-    return this.userRepository.find({
-      ...filter,
-      where: {
-        id: {
-          inq: friendIds,
-        },
+    const newFilter = defaultFilterQuery(page, filter, {
+      id: {
+        inq: friendIds,
       },
-    });
+    }) as Filter<User>;
+
+    return this.userRepository.find(newFilter);
   }
 
   @get('/users')
@@ -125,8 +125,13 @@ export class UserController {
       },
     },
   })
-  async find(@param.filter(User) filter?: Filter<User>): Promise<User[]> {
-    return this.userRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(User, {exclude: ['skip', 'offset']}) filter?: Filter<User>,
+  ): Promise<User[]> {
+    const newFilter = defaultFilterQuery(page, filter) as Filter<User>;
+
+    return this.userRepository.find(newFilter);
   }
 
   @patch('/users/{id}')

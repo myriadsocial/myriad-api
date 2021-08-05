@@ -9,6 +9,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {People, Post} from '../models';
 import {PeopleRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
@@ -52,8 +53,13 @@ export class PeopleController {
       },
     },
   })
-  async find(@param.filter(People) filter?: Filter<People>): Promise<People[]> {
-    return this.peopleRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(People, {exclude: ['skip', 'offset']}) filter?: Filter<People>,
+  ): Promise<People[]> {
+    const newFilter = defaultFilterQuery(page, filter) as Filter<People>;
+
+    return this.peopleRepository.find(newFilter);
   }
 
   @get('/people/{id}')

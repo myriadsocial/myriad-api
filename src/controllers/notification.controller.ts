@@ -9,6 +9,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
@@ -53,8 +54,13 @@ export class NotificationsController {
       },
     },
   })
-  async find(@param.filter(Notification) filter?: Filter<Notification>): Promise<Notification[]> {
-    return this.notificationRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Notification, {exclude: ['skip', 'offset']}) filter?: Filter<Notification>,
+  ): Promise<Notification[]> {
+    const newFilter = defaultFilterQuery(page, filter) as Filter<Notification>;
+
+    return this.notificationRepository.find(newFilter);
   }
 
   @get('/notifications/{id}')

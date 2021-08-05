@@ -10,6 +10,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {Cryptocurrency} from '../models';
 import {CryptocurrencyRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
@@ -67,9 +68,12 @@ export class CryptocurrencyController {
     },
   })
   async find(
-    @param.filter(Cryptocurrency) filter?: Filter<Cryptocurrency>,
+    @param.query.number('page') page: number,
+    @param.filter(Cryptocurrency, {exclude: ['skip', 'offset']}) filter?: Filter<Cryptocurrency>,
   ): Promise<Cryptocurrency[]> {
-    return this.cryptocurrencyRepository.find(filter);
+    const newFilter = defaultFilterQuery(page, filter) as Filter<Cryptocurrency>;
+
+    return this.cryptocurrencyRepository.find(newFilter);
   }
 
   @get('/cryptocurrencies/{id}')

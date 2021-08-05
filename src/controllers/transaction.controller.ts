@@ -2,6 +2,7 @@ import {service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
 import dotenv from 'dotenv';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {Transaction, TransactionHistory} from '../models';
 import {
   CryptocurrencyRepository,
@@ -115,8 +116,13 @@ export class TransactionController {
       },
     },
   })
-  async find(@param.filter(Transaction) filter?: Filter<Transaction>): Promise<Transaction[]> {
-    return this.transactionRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Transaction, {exclude: ['skip', 'offset']}) filter?: Filter<Transaction>,
+  ): Promise<Transaction[]> {
+    const newFilter = defaultFilterQuery(page, filter) as Filter<Transaction>;
+
+    return this.transactionRepository.find(newFilter);
   }
 
   @get('/transactions/{id}')

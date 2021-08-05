@@ -1,8 +1,8 @@
 import {service} from '@loopback/core';
-import {FilterExcludingWhere, repository} from '@loopback/repository';
+import {Filter, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param} from '@loopback/rest';
 import {TimelineType} from '../enums';
-import {noneStatusFiltering} from '../helpers/filter-utils';
+import {defaultFilterQuery, noneStatusFiltering} from '../helpers/filter-utils';
 import {Post} from '../models';
 import {PostRepository} from '../repositories';
 import {ExperienceService, FriendService, PostService, TagService} from '../services';
@@ -39,7 +39,8 @@ export class UserPostController {
   async userTimeline(
     @param.path.string('id') id: string,
     @param.query.string('sortBy') sortBy: string,
-    @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
+    @param.query.number('page') page: number,
+    @param.filter(Post, {exclude: ['where', 'skip', 'offset']}) filter?: Filter<Post>,
   ): Promise<Post[]> {
     let where = null;
 
@@ -56,7 +57,8 @@ export class UserPostController {
         where = await this.friendService.filterByFriends(id);
         break;
 
-      case TimelineType.ALL: {
+      case TimelineType.ALL:
+      default: {
         const approvedFriendIds = await this.friendService.getApprovedFriendIds(id);
         const trendingTopics = await this.tagService.trendingTopics();
 
@@ -68,13 +70,10 @@ export class UserPostController {
         const topics = [...trendingTopics, ...experienceTopics];
         const personIds = experiencePersonIds;
 
+        if (!friends.length && !topics.length && !personIds.length) break;
+
         const joinTopics = topics.join('|');
         const regexTopic = new RegExp(joinTopics, 'i');
-
-        if (!friends.length && !topics.length && !personIds.length) {
-          where = null;
-          break;
-        }
 
         where = {
           or: [
@@ -106,19 +105,13 @@ export class UserPostController {
             },
           ],
         };
-
-        break;
       }
-
-      default:
-        return [];
     }
 
     if (where === null) return [];
 
-    return this.postRepository.find({
-      ...filter,
-      where,
-    } as FilterExcludingWhere<Post>);
+    const newFilter = defaultFilterQuery(page, filter, where) as Filter<Post>;
+
+    return this.postRepository.find(newFilter);
   }
 }

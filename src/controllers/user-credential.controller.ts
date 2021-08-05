@@ -13,6 +13,7 @@ import {
 } from '@loopback/rest';
 import dotenv from 'dotenv';
 import {PlatformType} from '../enums';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {UserCredential, VerifyUser} from '../models';
 import {UserCredentialRepository} from '../repositories';
 import {CryptocurrencyService, SocialMediaService, UserCredentialService} from '../services';
@@ -96,9 +97,12 @@ export class UserCredentialController {
     },
   })
   async find(
-    @param.filter(UserCredential) filter?: Filter<UserCredential>,
+    @param.query.number('page') page: number,
+    @param.filter(UserCredential, {exclude: ['skip', 'offset']}) filter?: Filter<UserCredential>,
   ): Promise<UserCredential[]> {
-    return this.userCredentialRepository.find(filter);
+    const newFilter = defaultFilterQuery(page, filter) as Filter<UserCredential>;
+
+    return this.userCredentialRepository.find(newFilter);
   }
 
   @get('/user-credentials/{id}')

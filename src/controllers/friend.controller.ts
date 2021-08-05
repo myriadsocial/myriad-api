@@ -11,6 +11,7 @@ import {
   response,
 } from '@loopback/rest';
 import {FriendStatusType} from '../enums';
+import {defaultFilterQuery} from '../helpers/filter-utils';
 import {Friend} from '../models';
 import {FriendRepository} from '../repositories';
 import {FriendService, NotificationService} from '../services';
@@ -72,8 +73,13 @@ export class FriendController {
       },
     },
   })
-  async find(@param.filter(Friend) filter?: Filter<Friend>): Promise<Friend[]> {
-    return this.friendRepository.find(filter);
+  async find(
+    @param.query.number('page') page: number,
+    @param.filter(Friend, {exclude: ['skip', 'offset']}) filter?: Filter<Friend>,
+  ): Promise<Friend[]> {
+    const newFilter = defaultFilterQuery(page, filter) as Filter<Friend>;
+
+    return this.friendRepository.find(newFilter);
   }
 
   @get('/friends/{id}')
