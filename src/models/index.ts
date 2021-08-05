@@ -8,7 +8,6 @@ export * from './friend.model';
 export * from './like.model';
 export * from './notification.model';
 export * from './people.model';
-export * from './person-tip.model';
 export * from './post.model';
 export * from './public-metric.model';
 export * from './queue.model';
