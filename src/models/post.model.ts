@@ -1,11 +1,7 @@
-import {belongsTo, Entity, hasMany, hasOne, model, property} from '@loopback/repository';
+import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
 import {Asset} from '../interfaces/asset.interface';
 import {Comment} from './comment.model';
-import {Dislike} from './dislike.model';
-import {Like} from './like.model';
 import {People, PeopleWithRelations} from './people.model';
-import {PostTip} from './post-tip.model';
-import {PublicMetric} from './public-metric.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
 
@@ -62,21 +58,14 @@ export class Post extends Entity {
     type: 'string',
     required: false,
   })
-  textId?: string;
-
-  @property({
-    type: 'boolean',
-    required: false,
-    default: false,
-  })
-  hasMedia?: boolean;
+  originPostId?: string;
 
   @property({
     type: 'string',
     required: false,
     default: null,
   })
-  link?: string;
+  url?: string;
 
   @property({
     type: 'object',
@@ -88,35 +77,14 @@ export class Post extends Entity {
     type: 'date',
     required: false,
   })
-  platformCreatedAt?: string;
+  originCreatedAt?: string;
 
   @property({
     type: 'array',
     itemType: 'string',
     default: [],
   })
-  importBy: string[];
-
-  @property({
-    type: 'number',
-    required: false,
-    default: 0,
-  })
-  totalComment?: number;
-
-  @property({
-    type: 'number',
-    required: false,
-    default: 0,
-  })
-  totalLiked?: number;
-
-  @property({
-    type: 'number',
-    required: false,
-    default: 0,
-  })
-  totalDisliked?: number;
+  importers: string[];
 
   @property({
     type: 'date',
@@ -136,32 +104,17 @@ export class Post extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User, {name: 'importer'})
-  importerId: string;
-
-  @belongsTo(() => User, {name: 'user'})
-  walletAddress: string;
-
-  @hasMany(() => Comment)
-  comments: Comment[];
+  @belongsTo(() => User)
+  createdBy: string;
 
   @belongsTo(() => People)
   peopleId: string;
 
-  @hasMany(() => Like)
-  likes: Like[];
-
-  @hasOne(() => PublicMetric)
-  metric: PublicMetric;
-
-  @hasMany(() => Dislike)
-  dislikes: Dislike[];
+  @hasMany(() => Comment)
+  comments: Comment[];
 
   @hasMany(() => Transaction)
   transactions: Transaction[];
-
-  @hasMany(() => PostTip)
-  postTips: PostTip[];
 
   constructor(data?: Partial<Post>) {
     super(data);
