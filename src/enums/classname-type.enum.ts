@@ -5,19 +5,19 @@ export enum ControllerType {
   TRANSACTION = 'TransactionController',
   EXPERIENCE = 'ExperienceController',
   PEOPLE = 'PeopleController',
-  TRANSACTIONHISTORY = 'TransactionHistoryController',
   TAG = 'TagController',
   NOTIFICATION = 'NotificationController',
-  CRYPTOCURRENCY = 'CryptocurrencyController',
-  CONVERSATION = 'ConversationController',
+  CURRENCY = 'CurrencyController',
   POSTCOMMENT = 'PostCommentController',
-  USERCRYPTOCURRENCY = 'UserCryptocurrencyController',
+  USERCURRENCY = 'UserCurrencyController',
+  USERSOCIALMEDIA = 'UserSocialMediaController',
 }
 
 export enum MethodType {
   FIND = 'find',
-  USERTIMELINE = 'userTimeLine',
-  USERFRIENDLIST = 'userFriendList',
+  CREATE = 'create',
+  UPDATEBYID = 'updateById',
+  TIMELINE = 'timeline',
   SEARCHEXPERIENCE = 'search',
-  FINDCOMMENT = 'findComment',
+  VERIFY = 'verify',
 }

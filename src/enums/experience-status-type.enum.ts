@@ -1,4 +1,4 @@
-export enum UpdatedStatusType {
+export enum StatusType {
   NEW = 'new',
   DELETED = 'deleted',
   UPDATED = 'updated',

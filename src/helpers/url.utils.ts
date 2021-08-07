@@ -14,7 +14,7 @@ export class UrlUtils {
     return this.detail[0].split('.')[0] as PlatformType;
   }
 
-  getTextId(): string {
+  getOriginPostId(): string {
     return this.detail[3];
   }
 

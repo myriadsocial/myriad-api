@@ -1,11 +1,11 @@
 import {Filter, Where} from '@loopback/repository';
-import {UpdatedStatusType} from '../enums';
+import {StatusType} from '../enums';
 import {Person, Tag} from '../interfaces';
 
 export function noneStatusFiltering(data: Tag[] | Person[]): string[] {
   return data
     .filter(e => {
-      if (e.updatedStatus === UpdatedStatusType.NONE || !e.updatedStatus) return true;
+      if (e.status === StatusType.NONE || !e.status) return true;
       return false;
     })
     .map(e => e.id);
