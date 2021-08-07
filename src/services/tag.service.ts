@@ -1,7 +1,7 @@
 import {repository, Where} from '@loopback/repository';
 import {OrderFieldType, OrderType} from '../enums';
 import {DateUtils} from '../helpers/date-utils';
-import {Tag} from '../models';
+import {Post, Tag} from '../models';
 import {TagRepository} from '../repositories';
 
 export class TagService {
@@ -57,7 +57,7 @@ export class TagService {
     return trendingTopic.map(tag => tag.id);
   }
 
-  async filterByTrending(): Promise<Where | null> {
+  async filterByTrending(): Promise<Where<Post> | null> {
     const trendingTopics = await this.trendingTopics();
 
     if (!trendingTopics.length) return null;
@@ -79,6 +79,6 @@ export class TagService {
           title: regexTopic,
         },
       ],
-    };
+    } as Where<Post>;
   }
 }
