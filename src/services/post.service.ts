@@ -1,19 +1,16 @@
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {DefaultCryptocurrencyType} from '../enums';
 import {PolkadotJs} from '../helpers/polkadotJs-utils';
 import {ExtendedPost} from '../interfaces';
-import {Post, PostTip, PublicMetric} from '../models';
-import {PeopleRepository, PostRepository, PostTipRepository} from '../repositories';
+import {Post} from '../models';
+import {PeopleRepository, PostRepository} from '../repositories';
 
 export class PostService {
   constructor(
     @repository(PostRepository)
-    protected postRepository: PostRepository,
+    public postRepository: PostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
-    @repository(PostTipRepository)
-    protected postTipRepository: PostTipRepository,
   ) {}
 
   async createPost(post: Omit<ExtendedPost, 'id'>): Promise<Post> {
@@ -22,31 +19,28 @@ export class PostService {
 
     let people = await this.peopleRepository.findOne({
       where: {
-        platformAccountId: platformUser?.platformAccountId,
+        originUserId: platformUser?.originUserId,
         platform: platform,
       },
     });
 
     if (!people) {
-      if (platformUser) people = await this.peopleRepository.create(platformUser);
-      throw new HttpErrors.NotFound('Platform user not found!');
+      if (platformUser) {
+        people = await this.peopleRepository.create(platformUser);
+
+        const newKey = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + people.id);
+
+        this.peopleRepository.updateById(people.id, {
+          walletAddress: getHexPublicKey(newKey),
+        }) as Promise<void>;
+      } else {
+        throw new HttpErrors.NotFound('Platform user not found!');
+      }
     }
 
     delete post.platformUser;
     post.peopleId = people.id;
 
-    const newKey = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + post.peopleId);
-
-    post.walletAddress = getHexPublicKey(newKey);
-
-    const createdPost = await this.postRepository.create(post);
-
-    this.postRepository.publicMetric(createdPost.id).create({}) as Promise<PublicMetric>;
-
-    this.postRepository
-      .postTips(createdPost.id)
-      .create({cryptocurrencyId: DefaultCryptocurrencyType.AUSD}) as Promise<PostTip>;
-
-    return createdPost;
+    return this.postRepository.create(post);
   }
 }
