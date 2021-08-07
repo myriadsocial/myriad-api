@@ -7,7 +7,7 @@ import {DefaultCurrencyType, StatusType} from './enums';
 import {DateUtils} from './helpers/date-utils';
 import {PolkadotJs} from './helpers/polkadotJs-utils';
 import {ExtendedPost} from './interfaces';
-import {People, Post, User, UserExperience} from './models';
+import {Currency, People, Post, User, UserExperience} from './models';
 import {
   AuthCredentialRepository,
   AuthenticationRepository,
@@ -28,7 +28,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
 } from './repositories';
-import currency from './seed-data/currencies.json';
+import currencies from './seed-data/currencies.json';
 import peopleSeed from './seed-data/people.json';
 import postSeed from './seed-data/posts.json';
 import userSeed from './seed-data/users.json';
@@ -66,14 +66,16 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     } = await this.getRepositories();
 
     const userSeedData = this.prepareUserSeed(userSeed as User[]);
+    const currencySeedData = this.prepareCurrencySeed(currencies as Currency[]);
     const newUsers = await userRepository.createAll(userSeedData);
     const newPeople = await peopleRepository.createAll(peopleSeed);
 
-    await currencyRepository.createAll(currency);
+    await currencyRepository.createAll(currencySeedData);
     await this.addWalletAddress(newPeople, peopleRepository);
 
     const postSeedData = this.preparePostSeed(
       newPeople,
+      newUsers[0],
       postSeed as unknown as Omit<ExtendedPost, 'id'>[],
     );
 
@@ -163,7 +165,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     });
   }
 
-  preparePostSeed(people: People[], posts: Omit<ExtendedPost, 'id'>[]) {
+  preparePostSeed(people: People[], user: User, posts: Omit<ExtendedPost, 'id'>[]) {
     for (const person of people) {
       const personAccountId = person.originUserId;
 
@@ -174,6 +176,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
           delete post.platformUser;
 
           post.peopleId = person.id;
+          post.createdBy = user.id;
           post.createdAt = new Date().toString();
           post.updatedAt = new Date().toString();
         }
@@ -181,6 +184,15 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     }
 
     return posts;
+  }
+
+  prepareCurrencySeed(currenciesSeed: Currency[]): Currency[] {
+    return currenciesSeed.map(currency => {
+      currency.createdAt = new Date().toString();
+      currency.updatedAt = new Date().toString();
+
+      return currency;
+    });
   }
 
   async createUserCurrency(
