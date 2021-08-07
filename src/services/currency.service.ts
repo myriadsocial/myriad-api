@@ -80,33 +80,67 @@ export class CurrencyService {
       const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
       const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
-      const from = getKeyring().addFromMnemonic(mnemonic);
+      const from = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromMnemonic(mnemonic);
       const to = userId;
 
       const acalaDecimal = 12;
-      const value = 10 * 10 ** acalaDecimal;
+      const value = 1 * 10 ** acalaDecimal;
 
       const {nonce} = await api.query.system.account(from.address);
       const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.AUSD);
 
-      const paymentInfo = {
-        amount: value,
-        to,
-        from,
-        fromString: getHexPublicKey(from),
-        currencyId: DefaultCurrencyType.AUSD,
-        decimal: acalaDecimal,
-        native: false,
-        txFee: 0,
-        nonce: getNonce,
-      };
+      const transfer = api.tx.currencies.transfer(to, {Token: DefaultCurrencyType.AUSD}, value);
+      const txHash = await transfer.signAndSend(from, {nonce: getNonce});
 
-      this.sendTipsToUser(api, paymentInfo) as Promise<void>;
+      this.transactionRepository.create({
+        hash: txHash.toString(),
+        amount: value / 10 ** acalaDecimal,
+        to: to,
+        from: getHexPublicKey(from),
+        currencyId: DefaultCurrencyType.AUSD,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString(),
+      }) as Promise<Transaction>;
 
       await api.disconnect();
     } catch {
       throw new HttpErrors.UnprocessableEntity('Rpc address not connected!');
     }
+  }
+
+  async sendMyriadReward(userId: string): Promise<void> {
+    const {
+      rpcURL: myriadRpc,
+      addressType: myriadPrefix,
+      decimal: myriadDecimal,
+    } = await this.currencyRepository.findById(DefaultCurrencyType.MYR);
+
+    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs(myriadRpc);
+    const api = await polkadotApi();
+
+    const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
+    const from = getKeyring(process.env.MYRIAD_CRYPTO_TYPE, myriadPrefix).addFromMnemonic(mnemonic);
+    const to = userId;
+
+    const rewardAmount = +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) * 10 ** myriadDecimal;
+
+    const {nonce} = await api.query.system.account(from.address);
+    const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.MYR);
+
+    const transfer = api.tx.balances.transfer(to, rewardAmount);
+    const txHash = await transfer.signAndSend(from, {nonce: getNonce});
+
+    this.transactionRepository.create({
+      hash: txHash.toString(),
+      amount: rewardAmount / 10 ** myriadDecimal,
+      to: to,
+      from: getHexPublicKey(from),
+      currencyId: DefaultCurrencyType.MYR,
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString(),
+    }) as Promise<Transaction>;
+
+    await api.disconnect();
   }
 
   async claimTips(userSocialMedia: UserSocialMedia): Promise<void> {
@@ -132,9 +166,9 @@ export class CurrencyService {
       let initRpcURL = null;
       let api = null;
       let balance = {
-        free: 0,
-        frozen: 0,
-        reserved: 0,
+        free: '0',
+        frozen: '0',
+        reserved: '0',
       };
 
       if (!api || initRpcURL !== rpcURL) {
@@ -147,8 +181,8 @@ export class CurrencyService {
 
         balance = {
           free: nativeBalance.data.free.toJSON(),
-          frozen: 0,
-          reserved: 0,
+          frozen: '0',
+          reserved: '0',
         };
       } else {
         const nonNativeBalance = await api.query.tokens.accounts(from.publicKey, {Token: id});
@@ -156,10 +190,12 @@ export class CurrencyService {
         balance = nonNativeBalance.toJSON() as unknown as Balance;
       }
 
-      if (!balance.free) continue;
+      if (!parseInt(balance.free)) continue;
+
+      const amount = parseInt(balance.free);
 
       const paymentInfo = {
-        amount: balance.free,
+        amount: amount,
         to: to,
         from: from,
         fromString: getHexPublicKey(from),
@@ -172,7 +208,7 @@ export class CurrencyService {
 
       const txFee = await this.getTransactionFee(api, paymentInfo);
 
-      if (balance.free - txFee < 0) continue;
+      if (amount - txFee < 0) continue;
 
       paymentInfo.txFee = txFee;
 
@@ -180,43 +216,6 @@ export class CurrencyService {
 
       if (api) await api.disconnect();
     }
-  }
-
-  async sendMyriadReward(userId: string): Promise<void> {
-    const {
-      rpcURL: myriadRpc,
-      addressType: myriadPrefix,
-      decimal: myriadDecimal,
-      native,
-    } = await this.currencyRepository.findById(DefaultCurrencyType.MYR);
-
-    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs(myriadRpc);
-    const api = await polkadotApi();
-
-    const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
-    const from = getKeyring(process.env.MYRIAD_CRYPTO_TYPE, myriadPrefix).addFromMnemonic(mnemonic);
-    const to = userId;
-
-    const reward = +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) * 10 ** myriadDecimal;
-
-    const {nonce} = await api.query.system.account(from.address);
-    const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.MYR);
-
-    const paymentInfo = {
-      to,
-      from,
-      native,
-      txFee: 0,
-      amount: reward,
-      nonce: getNonce,
-      decimal: myriadDecimal,
-      fromString: getHexPublicKey(from),
-      currencyId: DefaultCurrencyType.MYR,
-    };
-
-    this.sendTipsToUser(api, paymentInfo) as Promise<void>;
-
-    await api.disconnect();
   }
 
   async getTransactionFee(blockchainApi: ApiPromise, paymentInfo: PaymentInfo): Promise<number> {
@@ -265,12 +264,15 @@ export class CurrencyService {
     if (native) transfer = blockchainApi.tx.balances.transfer(to, amount - txFee);
     else transfer = blockchainApi.tx.currencies.transfer(to, {Token: currencyId}, amount - txFee);
 
-    if (nonce) txHash = await transfer.signAndSend(from, {nonce});
-    else txHash = await transfer.signAndSend(from);
+    if (nonce) {
+      txHash = await transfer.signAndSend(from, {nonce});
+    } else {
+      txHash = await transfer.signAndSend(from);
+    }
 
     this.transactionRepository.create({
       hash: txHash.toString(),
-      amount: +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) / 10 ** decimal,
+      amount: amount / 10 ** decimal,
       to: to,
       from: fromString,
       currencyId: currencyId,
