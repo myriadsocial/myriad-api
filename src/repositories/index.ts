@@ -12,7 +12,7 @@ export * from './queue.repository';
 export * from './refresh-token.repository';
 export * from './tag.repository';
 export * from './transaction.repository';
-export * from './user-credential.repository';
 export * from './user-currency.repository';
 export * from './user-experience.repository';
+export * from './user-social-media.repository';
 export * from './user.repository';
