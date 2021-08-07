@@ -1,172 +1,27 @@
-import {Count, repository} from '@loopback/repository';
-import {PaymentInfo} from '../interfaces';
-import {PostTip, Transaction, TransactionHistory} from '../models';
-import {
-  PostTipRepository,
-  PersonTipRepository,
-  TransactionHistoryRepository,
-  TransactionRepository,
-  UserRepository,
-  PostRepository,
-} from '../repositories';
+import {repository} from '@loopback/repository';
+import {Transaction} from '../models';
+import {TransactionRepository} from '../repositories';
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 export class TransactionService {
   constructor(
-    @repository(TransactionHistoryRepository)
-    protected transactionHistoryRepository: TransactionHistoryRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
     @repository(TransactionRepository)
     protected transactionRepository: TransactionRepository,
-    @repository(PersonTipRepository)
-    protected personTipRepository: PersonTipRepository,
-    @repository(PostTipRepository)
-    protected postTipRepository: PostTipRepository,
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
   ) {}
 
-  async recordTransaction(paymentInfo: PaymentInfo): Promise<void> {
-    const {tipId, fromString, txHash, to, total, txFee, cryptocurrencyId} = paymentInfo;
+  // ignore
+  async totalTransactionAmount(field: string, id: string, groupBy: string) {
+    const collections = (this.transactionRepository.dataSource.connector as any).collection(
+      Transaction.modelName,
+    );
 
-    if (tipId) {
-      this.personTipRepository.updateById(tipId, {total: 0}) as Promise<void>;
-      this.transactionRepository.updateAll(
-        {
-          hasSentToUser: true,
-        },
-        {
-          to: fromString,
-          hasSentToUser: false,
-        },
-      ) as Promise<Count>;
-    }
-
-    this.transactionRepository.create({
-      trxHash: txHash.toString(),
-      from: fromString,
-      to: to,
-      value: total - txFee,
-      state: 'success',
-      cryptocurrencyId: cryptocurrencyId,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString(),
-      hasSentToUser: true,
-    }) as Promise<Transaction>;
-
-    const newTransactionHistory = {
-      sentToMe: +(total - txFee),
-      sentToThem: 0,
-      userId: to,
-      cryptocurrencyId: cryptocurrencyId,
-    };
-
-    this.recordTransactionHistory(
-      newTransactionHistory as Omit<TransactionHistory, 'id'>,
-    ) as Promise<void>;
-  }
-
-  async recordTransactionHistory(transactionHistory: TransactionHistory): Promise<void> {
-    const {sentToMe, sentToThem, userId, cryptocurrencyId: cryptocurrencyId} = transactionHistory;
-
-    const foundTransactionHistory = await this.transactionHistoryRepository.findOne({
-      where: {
-        userId,
-        cryptocurrencyId,
-      },
-    });
-
-    if (sentToMe) {
-      if (foundTransactionHistory) {
-        foundTransactionHistory.sentToMe = foundTransactionHistory.sentToMe + sentToMe;
-        foundTransactionHistory.updatedAt = new Date().toString();
-
-        this.transactionHistoryRepository.updateById(
-          foundTransactionHistory.id,
-          foundTransactionHistory,
-        ) as Promise<void>;
-
-        return;
-      }
-    } else {
-      if (foundTransactionHistory) {
-        foundTransactionHistory.updatedAt = new Date().toString();
-        foundTransactionHistory.sentToThem = foundTransactionHistory.sentToThem + sentToThem;
-
-        this.transactionHistoryRepository.updateById(
-          foundTransactionHistory.id,
-          foundTransactionHistory,
-        ) as Promise<void>;
-
-        return;
-      }
-    }
-
-    transactionHistory.createdAt = new Date().toString();
-    transactionHistory.updatedAt = new Date().toString();
-
-    this.transactionHistoryRepository.create(transactionHistory) as Promise<TransactionHistory>;
-  }
-
-  async isTotalTipInPersonUpdated(
-    userId: string,
-    postId: string | undefined,
-    cryptocurrencyId: string,
-    value: number,
-  ): Promise<boolean> {
-    if (!postId) return false;
-
-    const foundPost = await this.postRepository.findById(postId);
-    const foundUser = await this.userRepository.findOne({where: {id: userId}});
-
-    if (!foundUser) {
-      const foundPersonTip = await this.personTipRepository.findOne({
-        where: {
-          peopleId: foundPost.peopleId,
-          cryptocurrencyId: cryptocurrencyId,
-        },
-      });
-
-      if (foundPersonTip) {
-        this.personTipRepository.updateById(foundPersonTip.id, {
-          total: foundPersonTip.total + value,
-        }) as Promise<void>;
-      } else {
-        this.personTipRepository.create({
-          total: value,
-          cryptocurrencyId: cryptocurrencyId,
-          peopleId: foundPost.peopleId,
-        }) as Promise<PostTip>;
-      }
-
-      this.totalTipInPost(postId, cryptocurrencyId, value) as Promise<void>;
-
-      return true;
-    }
-
-    this.totalTipInPost(postId, cryptocurrencyId, value) as Promise<void>;
-
-    return false;
-  }
-
-  async totalTipInPost(postId: string, cryptocurrencyId: string, value: number): Promise<void> {
-    const foundPostTips = await this.postTipRepository.findOne({
-      where: {
-        postId,
-        cryptocurrencyId: cryptocurrencyId,
-      },
-    });
-
-    if (foundPostTips) {
-      this.postTipRepository.updateById(foundPostTips.id, {
-        total: foundPostTips.total + value,
-      }) as Promise<void>;
-    } else {
-      this.postTipRepository.create({
-        postId,
-        cryptocurrencyId: cryptocurrencyId,
-        total: value,
-      }) as Promise<PostTip>;
-    }
+    return collections
+      .aggregate([
+        {$match: {[field]: {$in: [id]}}},
+        {$group: {_id: groupBy, amount: {$sum: '$amount'}}},
+      ])
+      .get();
   }
 }
+
+// TODO: removed unused method
