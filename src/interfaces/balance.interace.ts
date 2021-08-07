@@ -1,5 +1,5 @@
 export interface Balance {
-  free: number;
-  frozen: number;
-  reserved: number;
+  free: string;
+  frozen: string;
+  reserved: string;
 }
