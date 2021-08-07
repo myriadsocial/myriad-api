@@ -7,25 +7,14 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {AnyObject, Count, repository, Where} from '@loopback/repository';
+import {repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ControllerType, MethodType, TimelineType} from '../enums';
 import {defaultFilterQuery, noneStatusFiltering} from '../helpers/filter-utils';
 import {pageMetadata} from '../helpers/page-metadata.utils';
 import {Post} from '../models';
-import {
-  CommentRepository,
-  CurrencyRepository,
-  ExperienceRepository,
-  NotificationRepository,
-  PeopleRepository,
-  PostRepository,
-  TagRepository,
-  TransactionRepository,
-  UserRepository,
-  UserSocialMediaRepository,
-} from '../repositories';
-import {ExperienceService, FriendService, TagService} from '../services';
+import {UserRepository} from '../repositories';
+import {ExperienceService, FriendService, MetricService, TagService} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -38,26 +27,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
 
   constructor(
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(TransactionRepository)
-    protected transactionRepository: TransactionRepository,
-    @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
-    @repository(CommentRepository)
-    protected commentRepository: CommentRepository,
-    @repository(NotificationRepository)
-    protected notificationRepository: NotificationRepository,
-    @repository(CurrencyRepository)
-    protected currencyRepository: CurrencyRepository,
-    @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
-    @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
-    @repository(TagRepository)
-    protected tagRepository: TagRepository,
+    @service(MetricService)
+    protected metricService: MetricService,
     @service(ExperienceService)
     protected experienceService: ExperienceService,
     @service(TagService)
@@ -90,9 +63,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       let args = invocationCtx.args;
       const filter = args[0] ? JSON.parse(args[0]) : args[0];
 
-      let countResult = {count: 0};
+      let data = {count: 0};
       let page = 1;
-      let sortBy = TimelineType.ALL;
+      let sortBy = null;
       let userId = '';
       let q = '';
       let where = null;
@@ -116,14 +89,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             delete filter.findBy;
           }
 
-          if (!filter.sortBy) {
-            const user = await this.userRepository.findById(userId);
+          if (methodName === MethodType.TIMELINE) {
+            if (!filter.sortBy) {
+              const user = await this.userRepository.findById(userId);
 
-            if (!user.onTimeline) sortBy = TimelineType.TRENDING;
-            else sortBy = TimelineType.EXPERIENCE;
-          } else {
-            sortBy = filter.sortBy;
-            delete filter.sortBy;
+              if (!user.onTimeline) sortBy = TimelineType.TRENDING;
+              else sortBy = TimelineType.EXPERIENCE;
+            } else {
+              sortBy = filter.sortBy;
+              delete filter.sortBy;
+            }
           }
         }
 
@@ -139,25 +114,28 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
       }
 
+      args = [page];
+
       switch (methodName) {
         case MethodType.FIND: {
           const newFilter = defaultFilterQuery(page, filter);
           invocationCtx.args[0] = newFilter;
 
-          args = [page, newFilter];
-          countResult = await this.countTotal(className, where);
+          args.push(newFilter);
+          data = await this.metricService.countData(className, where);
 
           break;
         }
 
         case MethodType.TIMELINE: {
           if (!where) where = await this.filterTimeline(userId, sortBy);
+          if (!where && sortBy) break;
 
           const newFilter = defaultFilterQuery(page, filter, where);
           invocationCtx.args[0] = newFilter;
 
-          args = [page, newFilter];
-          countResult = await this.countTotal(className, where);
+          args.push(newFilter);
+          data = await this.metricService.countData(className, where);
 
           break;
         }
@@ -173,31 +151,43 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           const newFilter = defaultFilterQuery(page, filter, where);
           invocationCtx.args[0] = newFilter;
 
-          args = [page, newFilter];
-          countResult = await this.countTotal(className, where);
+          args.push(newFilter);
+          data = await this.metricService.countData(className, where);
 
           break;
         }
+
+        case MethodType.FINDFRIENDS: {
+          if (!filter) throw new Error('EmptyFindBy');
+          const ids = await this.friendService.getApprovedFriendIds(userId);
+
+          where = {
+            id: {
+              inq: ids,
+            },
+          };
+
+          const newFilter = defaultFilterQuery(page, filter, where);
+          invocationCtx.args[0] = newFilter;
+
+          args.push(newFilter);
+          data = await this.metricService.countData(className, where);
+
+          break;
+        }
+
+        default:
+          args = [];
       }
 
       const result = await next();
 
-      if (countResult.count === 0) {
-        return {
-          data: [],
-          meta: {
-            totalItemCount: 0,
-            totalPageCount: 0,
-            itemsPerPage: 0,
-          },
-        };
-      } else {
-        return {
-          data: result,
-          meta: pageMetadata(args, countResult.count),
-        };
-      }
+      return {
+        data: result,
+        meta: pageMetadata(args, data.count),
+      };
     } catch (err) {
+      console.log(err.message);
       if (err.message === 'EmptyFindBy')
         throw new HttpErrors.UnprocessableEntity('FindBy cannot be empty');
 
@@ -280,59 +270,5 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     if (!where) return null;
 
     return where;
-  }
-
-  async countTotal(className: ControllerType, where: Where<AnyObject>): Promise<Count> {
-    let countResult: Count;
-
-    switch (className) {
-      case ControllerType.USER:
-        countResult = await this.userRepository.count(where);
-        break;
-
-      case ControllerType.POST:
-      case ControllerType.USERPOST:
-        countResult = await this.postRepository.count(where);
-        break;
-
-      case ControllerType.TRANSACTION:
-        countResult = await this.transactionRepository.count(where);
-        break;
-
-      case ControllerType.EXPERIENCE:
-        countResult = await this.experienceRepository.count(where);
-        break;
-
-      case ControllerType.PEOPLE:
-        countResult = await this.peopleRepository.count(where);
-        break;
-
-      case ControllerType.TAG:
-        countResult = await this.tagRepository.count(where);
-        break;
-
-      case ControllerType.NOTIFICATION:
-        countResult = await this.notificationRepository.count(where);
-        break;
-
-      case ControllerType.CURRENCY:
-        countResult = await this.currencyRepository.count(where);
-        break;
-
-      case ControllerType.POSTCOMMENT:
-        countResult = await this.commentRepository.count(where);
-        break;
-
-      case ControllerType.USERSOCIALMEDIA:
-        countResult = await this.userSocialMediaRepository.count(where);
-        break;
-
-      default:
-        countResult = {
-          count: 0,
-        };
-    }
-
-    return countResult;
   }
 }

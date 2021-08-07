@@ -48,80 +48,85 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
    * @param next - A function to invoke next interceptor or the target method
    */
   async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
-    const methodName = invocationCtx.methodName;
-    const className = invocationCtx.targetClass.name as ControllerType;
+    try {
+      const methodName = invocationCtx.methodName;
+      const className = invocationCtx.targetClass.name as ControllerType;
 
-    switch (methodName) {
-      case MethodType.CREATE: {
-        invocationCtx.args[0].createdAt = new Date().toString();
-        invocationCtx.args[0].updatedAt = new Date().toString();
+      switch (methodName) {
+        case MethodType.CREATE: {
+          invocationCtx.args[0].createdAt = new Date().toString();
+          invocationCtx.args[0].updatedAt = new Date().toString();
 
-        if (className === ControllerType.USER) {
-          const user = await this.userRepository.findOne({
-            where: {
-              id: invocationCtx.args[0].id,
-            },
-          });
+          if (className === ControllerType.USER) {
+            const user = await this.userRepository.findOne({
+              where: {
+                id: invocationCtx.args[0].id,
+              },
+            });
 
-          if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
+            if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
 
-          invocationCtx.args[0].bio = `Hello, my name is ${invocationCtx.args[0].name}!`;
-          break;
-        }
-
-        if (className === ControllerType.TRANSACTION) {
-          invocationCtx.args[0].currencyId = invocationCtx.args[0].currencyId.toUpperCase();
-          await this.currencyRepository.findById(invocationCtx.args[0].currencyId);
-          await this.transactionRepository.findById(invocationCtx.args[0].from);
-          break;
-        }
-
-        if (className === ControllerType.POST) {
-          invocationCtx.args[0].platform = PlatformType.MYRIAD;
-          if (!invocationCtx.args[0].originCreatedAt)
-            invocationCtx.args[0].originCreatedAt = new Date().toString();
-        }
-
-        break;
-      }
-
-      case MethodType.UPDATEBYID:
-        invocationCtx.args[0].updatedAt = new Date().toString;
-        break;
-    }
-
-    // Add pre-invocation logic here
-    const result = await next();
-    // Add post-invocation logic here
-    switch (methodName) {
-      case MethodType.CREATE: {
-        if (className === ControllerType.USER) {
-          this.currencyService.defaultCurrency(result.id) as Promise<void>;
-          this.currencyService.defaultAcalaTips(result.id) as Promise<void>;
-          break;
-        }
-
-        if (className === ControllerType.TRANSACTION) {
-          this.currencyService.sendMyriadReward(result.from) as Promise<void>;
-          break;
-        }
-
-        if (className === ControllerType.POST) {
-          if (result.tags.length > 0) {
-            this.tagService.createTags(result.tags) as Promise<void>;
+            invocationCtx.args[0].bio = `Hello, my name is ${invocationCtx.args[0].name}!`;
+            break;
           }
+
+          if (className === ControllerType.TRANSACTION) {
+            invocationCtx.args[0].currencyId = invocationCtx.args[0].currencyId.toUpperCase();
+            await this.currencyRepository.findById(invocationCtx.args[0].currencyId);
+            await this.userRepository.findById(invocationCtx.args[0].from);
+            break;
+          }
+
+          if (className === ControllerType.POST) {
+            invocationCtx.args[0].platform = PlatformType.MYRIAD;
+            invocationCtx.args[0].originCreatedAt = new Date().toString();
+
+            break;
+          }
+
           break;
         }
 
-        break;
+        case MethodType.UPDATEBYID:
+          invocationCtx.args[1].updatedAt = new Date().toString();
+          break;
       }
 
-      case MethodType.VERIFY: {
-        this.currencyService.claimTips(result) as Promise<void>;
-        break;
+      // Add pre-invocation logic here
+      const result = await next();
+      // Add post-invocation logic here
+      switch (methodName) {
+        case MethodType.CREATE: {
+          if (className === ControllerType.USER) {
+            this.currencyService.defaultCurrency(result.id) as Promise<void>;
+            this.currencyService.defaultAcalaTips(result.id) as Promise<void>;
+            break;
+          }
+
+          if (className === ControllerType.TRANSACTION) {
+            this.currencyService.sendMyriadReward(result.from) as Promise<void>;
+            break;
+          }
+
+          if (className === ControllerType.POST) {
+            if (result.tags.length > 0) {
+              this.tagService.createTags(result.tags) as Promise<void>;
+            }
+            break;
+          }
+
+          break;
+        }
+
+        case MethodType.VERIFY: {
+          this.currencyService.claimTips(result) as Promise<void>;
+          break;
+        }
       }
+
+      return result;
+    } catch (err) {
+      throw new HttpErrors.UnprocessableEntity(err.message);
     }
-
-    return result;
   }
 }
