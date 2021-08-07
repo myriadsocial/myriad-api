@@ -54,6 +54,8 @@ export class UserSocialMediaService {
           userId: publicKey,
           platform: platform as PlatformType,
           verified: true,
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString(),
         });
       }
 
@@ -63,6 +65,7 @@ export class UserSocialMediaService {
         }
 
         peopleSocialMedia.verified = true;
+        peopleSocialMedia.updatedAt = new Date().toString();
         this.userSocialMediaRepository.updateById(
           peopleSocialMedia.id,
           peopleSocialMedia,
