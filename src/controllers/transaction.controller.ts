@@ -1,13 +1,10 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
-import dotenv from 'dotenv';
 import {PaginationInterceptor} from '../interceptors';
 import {CustomFilter, Transaction} from '../models';
 import {TransactionRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
-
-dotenv.config();
 
 // @authenticate("jwt")
 export class TransactionController {
@@ -55,6 +52,7 @@ export class TransactionController {
   ): Promise<Transaction[]> {
     return this.transactionRepository.find(filter as Filter<Transaction>);
   }
+
   @get('/transactions/{id}')
   @response(200, {
     description: 'Transaction model instance',
@@ -71,6 +69,7 @@ export class TransactionController {
   ): Promise<Transaction> {
     return this.transactionRepository.findById(id, filter);
   }
+
   @del('/transactions/{id}')
   @response(204, {
     description: 'Transaction DELETE success',

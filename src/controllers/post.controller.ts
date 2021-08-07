@@ -12,12 +12,14 @@ import {
   response,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {UrlUtils} from '../helpers/url.utils';
 import {PaginationInterceptor} from '../interceptors';
+import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {ExtendedPost} from '../interfaces';
 import {ExtendCustomFilter, Post} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {PostService, SocialMediaService, TagService} from '../services';
+// import {authenticate} from '@loopback/authentication';
+
 // @authenticate("jwt")
 export class PostController {
   constructor(
@@ -40,7 +42,7 @@ export class PostController {
         'application/json': {
           schema: {
             type: 'object',
-            required: ['text', 'walletAddress'],
+            required: ['text', 'createdBy'],
             properties: {
               text: {
                 type: 'string',
@@ -81,12 +83,13 @@ export class PostController {
     return this.postService.postRepository.create(newPost);
   }
 
+  @intercept(ValidatePostImportURL.BINDING_KEY)
   @post('/posts/import')
   @response(200, {
     description: 'Post',
     content: {'application/json': {schema: getModelSchemaRef(Post)}},
   })
-  async importURL(
+  async import(
     @requestBody({
       description: 'Import post',
       content: {
@@ -97,32 +100,10 @@ export class PostController {
     })
     platformPost: PlatformPost,
   ): Promise<Post> {
-    const urlUtils = new UrlUtils(platformPost.url);
-
-    const platform = urlUtils.getPlatform();
-    const originPostId = urlUtils.getOriginPostId();
-    const username = urlUtils.getUsername();
+    const [platform, originPostId, username] = platformPost.url.split(',');
 
     const newTags = platformPost.tags;
     const importer = platformPost.importer;
-
-    const foundPost = await this.postService.postRepository.findOne({
-      where: {originPostId, platform},
-    });
-
-    if (foundPost) {
-      const importers = foundPost.importers.find(userId => userId === importer);
-
-      if (importers) throw new HttpErrors.UnprocessableEntity('You have already import this post');
-
-      foundPost.importers.push(importer);
-
-      this.postService.postRepository.updateById(foundPost.id, {
-        importers: foundPost.importers,
-      }) as Promise<void>;
-
-      return foundPost;
-    }
 
     let newPost: ExtendedPost;
     let tags: string[] = newTags;
@@ -169,8 +150,6 @@ export class PostController {
     newPost.createdBy = importer;
     newPost.createdAt = new Date().toString();
     newPost.updatedAt = new Date().toString();
-
-    this.tagService.createTags(newPost.tags) as Promise<void>;
 
     return this.postService.createPost(newPost);
   }
