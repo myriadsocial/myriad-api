@@ -2,7 +2,7 @@ import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {ExtendedPost, ExtendedUser} from '../interfaces';
+import {ExtendedPeople, ExtendedPost} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
 import {People} from '../models';
 import {PeopleRepository} from '../repositories';
@@ -20,7 +20,7 @@ export class SocialMediaService {
     protected facebookService: Facebook,
   ) {}
 
-  async verifyToTwitter(username: string, publicKey: string): Promise<ExtendedUser> {
+  async verifyToTwitter(username: string, publicKey: string): Promise<ExtendedPeople> {
     const {data: user} = await this.twitterService.getActions(
       `2/users/by/username/${username}?user.fields=profile_image_url`,
     );
@@ -47,10 +47,10 @@ export class SocialMediaService {
       username: user.username,
       profilePictureURL: user.profile_image_url || '',
       publicKey: publicKey,
-    };
+    } as ExtendedPeople;
   }
 
-  async verifyToReddit(username: string, publicKey: string): Promise<ExtendedUser> {
+  async verifyToReddit(username: string, publicKey: string): Promise<ExtendedPeople> {
     // Fetch data user from reddit api
     const {data: redditUser} = await this.redditService.getActions(`user/${username}/about.json`);
 
@@ -76,10 +76,10 @@ export class SocialMediaService {
       username: redditUser.name,
       profilePictureURL: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : '',
       publicKey: publicKey,
-    };
+    } as ExtendedPeople;
   }
 
-  async verifyToFacebook(username: string, publicKey: string): Promise<ExtendedUser> {
+  async verifyToFacebook(username: string, publicKey: string): Promise<ExtendedPeople> {
     const splitUsername = username.split('/');
     const fbUsername = splitUsername[3];
     const fbPostId = splitUsername[5];
@@ -97,7 +97,7 @@ export class SocialMediaService {
       platform: PlatformType.FACEBOOK,
       profilePictureURL,
       publicKey: publicKey,
-    };
+    } as ExtendedPeople;
   }
 
   async fetchTwitterFollowing(platformAccountId: string): Promise<void> {
