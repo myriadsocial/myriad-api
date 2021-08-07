@@ -9,7 +9,7 @@ import {User} from './user.model';
       collection: 'comments',
     },
     jsonSchema: {
-      required: ['postId'],
+      required: ['userId', 'postId'],
     },
   },
 })

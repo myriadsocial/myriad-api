@@ -8,6 +8,9 @@ import {User} from './user.model';
     mongodb: {
       collection: 'likes',
     },
+    jsonSchema: {
+      require: ['userId'],
+    },
   },
 })
 export class Like extends Entity {
@@ -32,7 +35,8 @@ export class Like extends Entity {
 
   @property({
     type: 'boolean',
-    required: true,
+    required: false,
+    default: true,
   })
   state: boolean;
 
