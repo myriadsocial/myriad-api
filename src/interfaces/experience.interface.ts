@@ -1,11 +1,11 @@
-import {UpdatedStatusType} from '../enums';
+import {StatusType} from '../enums';
 import {People} from '../models';
 
 export interface Person extends People {
-  updatedStatus: UpdatedStatusType;
+  status: StatusType;
 }
 
 export interface Tag {
   id: string;
-  updatedStatus: UpdatedStatusType;
+  status: StatusType;
 }
