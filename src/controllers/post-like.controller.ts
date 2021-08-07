@@ -1,53 +1,21 @@
-import {service} from '@loopback/core';
-import {Count, CountSchema, Filter, repository, Where} from '@loopback/repository';
-import {
-  del,
-  get,
-  getModelSchemaRef,
-  getWhereSchemaFor,
-  param,
-  patch,
-  post,
-  requestBody,
-} from '@loopback/rest';
-import {Dislike, Like, Post} from '../models';
-import {LikeRepository, PostRepository} from '../repositories';
-import {MetricService} from '../services';
+import {Count, CountSchema, repository} from '@loopback/repository';
+import {del, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
+import {LikeType} from '../enums';
+import {Like, Post} from '../models';
+import {LikeRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class PostLikeController {
   constructor(
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
     @repository(LikeRepository)
     protected likeRepository: LikeRepository,
-    @service(MetricService) public metricService: MetricService,
   ) {}
-
-  @get('/posts/{id}/likes', {
-    responses: {
-      '200': {
-        description: 'Array of Post has many Like',
-        content: {
-          'application/json': {
-            schema: {type: 'array', items: getModelSchemaRef(Like)},
-          },
-        },
-      },
-    },
-  })
-  async find(
-    @param.path.string('id') id: string,
-    @param.query.object('filter') filter?: Filter<Like>,
-  ): Promise<Like[]> {
-    return this.postRepository.likes(id).find(filter);
-  }
 
   @post('/posts/{id}/likes', {
     responses: {
       '200': {
-        description: 'Post model instance',
+        description: 'Like model instance',
         content: {'application/json': {schema: getModelSchemaRef(Like)}},
       },
     },
@@ -57,63 +25,47 @@ export class PostLikeController {
     @requestBody({
       content: {
         'application/json': {
-          schema: {
-            type: 'object',
-            properties: {
-              userId: {
-                type: 'string',
-              },
-            },
-          },
+          schema: getModelSchemaRef(Like, {
+            title: 'NewLike',
+            exclude: ['referenceId', 'type'],
+          }),
         },
       },
     })
     like: Omit<Like, 'id'>,
-  ): Promise<Like | Dislike> {
-    return this.metricService.likeDislikeSystem(
-      {
+  ): Promise<Like> {
+    const foundLike = await this.likeRepository.findOne({
+      where: {
         userId: like.userId,
-        postId: id,
+        type: LikeType.POST,
+        referenceId: id,
       },
-      true,
-    );
+    });
+
+    if (foundLike) {
+      foundLike.state = !foundLike.state;
+      foundLike.updatedAt = new Date().toString();
+
+      await this.likeRepository.updateById(foundLike.id, foundLike);
+
+      return foundLike;
+    }
+
+    return this.likeRepository.create(like);
   }
 
-  @patch('/posts/{id}/likes', {
+  @del('post/{postId}/likes/{likeId}', {
     responses: {
       '200': {
-        description: 'Post.Like PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
-      },
-    },
-  })
-  async patch(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Like, {partial: true}),
-        },
-      },
-    })
-    like: Partial<Like>,
-    @param.query.object('where', getWhereSchemaFor(Like)) where?: Where<Like>,
-  ): Promise<Count> {
-    return this.postRepository.likes(id).patch(like, where);
-  }
-
-  @del('/posts/{id}/likes', {
-    responses: {
-      '200': {
-        description: 'Post.Like DELETE success count',
+        description: 'Like DELETE success',
         content: {'application/json': {schema: CountSchema}},
       },
     },
   })
   async delete(
-    @param.path.string('id') id: string,
-    @param.query.object('where', getWhereSchemaFor(Like)) where?: Where<Like>,
+    @param.path.string('postId') postId: string,
+    @param.path.string('likeId') likeId: string,
   ): Promise<Count> {
-    return this.postRepository.likes(id).delete(where);
+    return this.likeRepository.deleteAll({type: LikeType.POST, referenceId: postId, id: likeId});
   }
 }

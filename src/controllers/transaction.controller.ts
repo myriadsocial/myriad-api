@@ -1,16 +1,10 @@
-import {service} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
 import dotenv from 'dotenv';
-import {defaultFilterQuery} from '../helpers/filter-utils';
-import {Transaction, TransactionHistory} from '../models';
-import {
-  CryptocurrencyRepository,
-  PostTipRepository,
-  TransactionRepository,
-  UserRepository,
-} from '../repositories';
-import {CryptocurrencyService, TransactionService} from '../services';
+import {PaginationInterceptor} from '../interceptors';
+import {CustomFilter, Transaction} from '../models';
+import {TransactionRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 dotenv.config();
@@ -20,16 +14,6 @@ export class TransactionController {
   constructor(
     @repository(TransactionRepository)
     protected transactionRepository: TransactionRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
-    @repository(CryptocurrencyRepository)
-    protected cryptocurrencyRepository: CryptocurrencyRepository,
-    @repository(PostTipRepository)
-    protected postTipRepository: PostTipRepository,
-    @service(CryptocurrencyService)
-    protected cryptocurrencyService: CryptocurrencyService,
-    @service(TransactionService)
-    protected transactionService: TransactionService,
   ) {}
 
   @post('/transactions')
@@ -50,60 +34,10 @@ export class TransactionController {
     })
     transaction: Omit<Transaction, 'id'>,
   ): Promise<Transaction> {
-    // TODO: Create transaction history
-    // TODO: Send Myriad Reward
-    // TODO: Update person total tip if user does not exist
-    // TODO: Update post total tips
-
-    const {from, to, value, cryptocurrencyId, postId} = transaction;
-
-    // Validate if crypto already exist
-    await this.cryptocurrencyRepository.findById(transaction.cryptocurrencyId.toUpperCase());
-
-    // Validate if user FROM exist
-    await this.userRepository.findById(transaction.from);
-
-    // Validate if post exist
-    // And count total tip in person and post
-    const isPeopleTipUpdated = await this.transactionService.isTotalTipInPersonUpdated(
-      transaction.to,
-      postId,
-      cryptocurrencyId,
-      value,
-    );
-
-    // Reward to FROM for doing transactions
-    this.cryptocurrencyService.sendMyriadReward(transaction.from) as Promise<void>;
-
-    // record transaction history of FROM
-    this.transactionService.recordTransactionHistory({
-      sentToThem: value,
-      sentToMe: 0,
-      userId: from,
-      cryptocurrencyId: cryptocurrencyId,
-    } as Omit<TransactionHistory, 'id'>) as Promise<void>;
-
-    transaction.createdAt = new Date().toString();
-    transaction.updatedAt = new Date().toString();
-
-    // If tip is sent to people, set hasSentToUser to false
-    if (isPeopleTipUpdated) {
-      transaction.hasSentToUser = false;
-      return this.transactionRepository.create(transaction);
-    }
-
-    // record transaction of TO
-    this.transactionService.recordTransactionHistory({
-      sentToThem: 0,
-      sentToMe: value,
-      userId: to,
-      cryptocurrencyId: cryptocurrencyId,
-    } as Omit<TransactionHistory, 'id'>) as Promise<void>;
-
-    transaction.hasSentToUser = true;
     return this.transactionRepository.create(transaction);
   }
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/transactions')
   @response(200, {
     description: 'Array of Transaction model instances',
@@ -117,14 +51,10 @@ export class TransactionController {
     },
   })
   async find(
-    @param.query.number('page') page: number,
-    @param.filter(Transaction, {exclude: ['skip', 'offset']}) filter?: Filter<Transaction>,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
   ): Promise<Transaction[]> {
-    const newFilter = defaultFilterQuery(page, filter) as Filter<Transaction>;
-
-    return this.transactionRepository.find(newFilter);
+    return this.transactionRepository.find(filter as Filter<Transaction>);
   }
-
   @get('/transactions/{id}')
   @response(200, {
     description: 'Transaction model instance',
@@ -141,7 +71,6 @@ export class TransactionController {
   ): Promise<Transaction> {
     return this.transactionRepository.findById(id, filter);
   }
-
   @del('/transactions/{id}')
   @response(204, {
     description: 'Transaction DELETE success',

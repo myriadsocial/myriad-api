@@ -1,4 +1,4 @@
-import {service} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -11,10 +11,9 @@ import {
   response,
 } from '@loopback/rest';
 import dotenv from 'dotenv';
-import {defaultFilterQuery} from '../helpers/filter-utils';
-import {User} from '../models';
-import {FriendRepository, UserRepository} from '../repositories';
-import {CryptocurrencyService, FriendService, NotificationService} from '../services';
+import {PaginationInterceptor} from '../interceptors';
+import {CustomFilter, User} from '../models';
+import {UserRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 dotenv.config();
@@ -24,14 +23,6 @@ export class UserController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
-    @service(NotificationService)
-    protected notificationService: NotificationService,
-    @service(CryptocurrencyService)
-    protected cryptocurrencyService: CryptocurrencyService,
-    @service(FriendService)
-    protected friendService: FriendService,
   ) {}
 
   @post('/users')
@@ -68,51 +59,12 @@ export class UserController {
       where: {id: user.id},
     });
 
-    if (foundUser) {
-      foundUser.isOnline = true;
-
-      this.updateById(foundUser.id, foundUser) as Promise<void>;
-
-      return foundUser;
-    }
-
-    this.cryptocurrencyService.defaultCryptocurrency(user.id) as Promise<void>;
-
-    user.username = user.name?.toLowerCase().replace(/\s+/g, '').trim();
-    user.bio = `Hello, my name is ${user.name}!`;
-    user.createdAt = new Date().toString();
-    user.updatedAt = new Date().toString();
+    if (foundUser) return foundUser;
 
     return this.userRepository.create(user);
   }
 
-  @get('users/{id}/approved-friends')
-  @response(200, {
-    description: 'Array of approved friend list',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(User, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async userFriendList(
-    @param.path.string('id') id: string,
-    @param.path.number('page') page: number,
-    @param.filter(User, {exclude: ['where', 'skip', 'offset']}) filter?: Filter<User>,
-  ): Promise<User[]> {
-    const friendIds = await this.friendService.getApprovedFriendIds(id);
-    const newFilter = defaultFilterQuery(page, filter, {
-      id: {
-        inq: friendIds,
-      },
-    }) as Filter<User>;
-
-    return this.userRepository.find(newFilter);
-  }
-
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/users')
   @response(200, {
     description: 'Array of User model instances',
@@ -126,12 +78,25 @@ export class UserController {
     },
   })
   async find(
-    @param.query.number('page') page: number,
-    @param.filter(User, {exclude: ['skip', 'offset']}) filter?: Filter<User>,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
   ): Promise<User[]> {
-    const newFilter = defaultFilterQuery(page, filter) as Filter<User>;
+    return this.userRepository.find(filter as Filter<User>);
+  }
 
-    return this.userRepository.find(newFilter);
+  @get('/users/{id}')
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: true}),
+      },
+    },
+  })
+  async findById(
+    @param.path.string('id') id: string,
+    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
+  ): Promise<User> {
+    return this.userRepository.findById(id, filter);
   }
 
   @patch('/users/{id}')
@@ -149,9 +114,8 @@ export class UserController {
         },
       },
     })
-    user: User,
+    user: Partial<User>,
   ): Promise<void> {
-    user.updatedAt = new Date().toString();
     await this.userRepository.updateById(id, user);
   }
 
@@ -161,21 +125,5 @@ export class UserController {
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.userRepository.deleteById(id);
-  }
-
-  @get('/users/{id}')
-  @response(200, {
-    description: 'User model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(User, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
-  ): Promise<User> {
-    return this.userRepository.findById(id, filter);
   }
 }

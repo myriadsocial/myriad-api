@@ -1,3 +1,4 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -9,8 +10,8 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {defaultFilterQuery} from '../helpers/filter-utils';
-import {People, Post} from '../models';
+import {PaginationInterceptor} from '../interceptors';
+import {CustomFilter, People, Post} from '../models';
 import {PeopleRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -41,6 +42,7 @@ export class PeopleController {
     return this.peopleRepository.create(people);
   }
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/people')
   @response(200, {
     description: 'Array of People model instances',
@@ -54,12 +56,9 @@ export class PeopleController {
     },
   })
   async find(
-    @param.query.number('page') page: number,
-    @param.filter(People, {exclude: ['skip', 'offset']}) filter?: Filter<People>,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
   ): Promise<People[]> {
-    const newFilter = defaultFilterQuery(page, filter) as Filter<People>;
-
-    return this.peopleRepository.find(newFilter);
+    return this.peopleRepository.find(filter as Filter<People>);
   }
 
   @get('/people/{id}')
