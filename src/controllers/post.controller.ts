@@ -1,5 +1,5 @@
-import {service} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {intercept, service} from '@loopback/core';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
@@ -12,35 +12,15 @@ import {
   response,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {defaultFilterQuery} from '../helpers/filter-utils';
 import {UrlUtils} from '../helpers/url.utils';
+import {PaginationInterceptor} from '../interceptors';
 import {ExtendedPost} from '../interfaces';
-import {Post, PublicMetric} from '../models';
+import {ExtendCustomFilter, Post} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
-import {
-  CryptocurrencyRepository,
-  ExperienceRepository,
-  PeopleRepository,
-  PostRepository,
-  TransactionRepository,
-  UserCredentialRepository,
-} from '../repositories';
 import {PostService, SocialMediaService, TagService} from '../services';
 // @authenticate("jwt")
 export class PostController {
   constructor(
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
-    @repository(UserCredentialRepository)
-    protected userCredentialRepository: UserCredentialRepository,
-    @repository(TransactionRepository)
-    protected transactionRepository: TransactionRepository,
-    @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
-    @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
-    @repository(CryptocurrencyRepository)
-    protected cryptocurrencyRepository: CryptocurrencyRepository,
     @service(TagService)
     protected tagService: TagService,
     @service(SocialMediaService)
@@ -88,7 +68,7 @@ export class PostController {
                   },
                 },
               },
-              walletAddress: {
+              createdBy: {
                 type: 'string',
               },
             },
@@ -96,28 +76,9 @@ export class PostController {
         },
       },
     })
-    _post: Omit<Post, 'id'>,
+    newPost: Omit<Post, 'id'>,
   ): Promise<Post> {
-    if (_post.asset) {
-      if (_post.asset.images.length && _post.asset.videos.length > 0) {
-        _post.hasMedia = true;
-      }
-    }
-
-    _post.createdAt = new Date().toString();
-    _post.updatedAt = new Date().toString();
-    _post.platformCreatedAt = new Date().toString();
-    _post.platform = PlatformType.MYRIAD;
-
-    const newPost = await this.postRepository.create(_post);
-
-    this.postRepository.publicMetric(newPost.id).create({}) as Promise<PublicMetric>;
-
-    if (_post.tags.length > 0) {
-      this.tagService.createTags(_post.tags) as Promise<void>;
-    }
-
-    return newPost;
+    return this.postService.postRepository.create(newPost);
   }
 
   @post('/posts/import')
@@ -139,26 +100,25 @@ export class PostController {
     const urlUtils = new UrlUtils(platformPost.url);
 
     const platform = urlUtils.getPlatform();
-    const textId = urlUtils.getTextId();
+    const originPostId = urlUtils.getOriginPostId();
     const username = urlUtils.getUsername();
 
     const newTags = platformPost.tags;
     const importer = platformPost.importer;
 
-    const foundPost = await this.postRepository.findOne({
-      where: {textId, platform},
+    const foundPost = await this.postService.postRepository.findOne({
+      where: {originPostId, platform},
     });
 
     if (foundPost) {
-      const foundImporter = foundPost.importBy.find(userId => userId === importer);
+      const importers = foundPost.importers.find(userId => userId === importer);
 
-      if (foundImporter)
-        throw new HttpErrors.UnprocessableEntity('You have already import this post');
+      if (importers) throw new HttpErrors.UnprocessableEntity('You have already import this post');
 
-      foundPost.importBy.push(importer);
+      foundPost.importers.push(importer);
 
-      this.postRepository.updateById(foundPost.id, {
-        importBy: foundPost.importBy,
+      this.postService.postRepository.updateById(foundPost.id, {
+        importers: foundPost.importers,
       }) as Promise<void>;
 
       return foundPost;
@@ -169,7 +129,7 @@ export class PostController {
 
     switch (platform) {
       case PlatformType.TWITTER: {
-        newPost = await this.socialMediaService.fetchTweet(textId);
+        newPost = await this.socialMediaService.fetchTweet(originPostId);
 
         if (newPost.tags) {
           const postTags = newPost.tags.filter((tag: string) => {
@@ -185,7 +145,7 @@ export class PostController {
       }
 
       case PlatformType.REDDIT: {
-        newPost = await this.socialMediaService.fetchRedditPost(textId);
+        newPost = await this.socialMediaService.fetchRedditPost(originPostId);
 
         break;
       }
@@ -195,7 +155,7 @@ export class PostController {
           throw new HttpErrors.UnprocessableEntity('Username not found!');
         }
 
-        newPost = await this.socialMediaService.fetchFacebookPost(username, textId);
+        newPost = await this.socialMediaService.fetchFacebookPost(username, originPostId);
 
         break;
       }
@@ -205,33 +165,35 @@ export class PostController {
     }
 
     newPost.tags = tags;
-    newPost.importBy = [importer];
-    newPost.importerId = importer;
+    newPost.importers = [importer];
+    newPost.createdBy = importer;
+    newPost.createdAt = new Date().toString();
+    newPost.updatedAt = new Date().toString();
 
     this.tagService.createTags(newPost.tags) as Promise<void>;
 
     return this.postService.createPost(newPost);
   }
 
-  @get('/posts')
-  @response(200, {
-    description: 'Array of Post model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Post, {includeRelations: true}),
+  @intercept(PaginationInterceptor.BINDING_KEY)
+  @get('/posts', {
+    responses: {
+      '200': {
+        description: 'Array of Post model instances',
+        content: {
+          'application/json': {
+            schema: 'array',
+            items: getModelSchemaRef(Post, {includeRelations: true}),
+          },
         },
       },
     },
   })
-  async find(
-    @param.query.number('page') page: number,
-    @param.filter(Post, {exclude: ['skip', 'offset']}) filter?: Filter<Post>,
+  async timeline(
+    @param.query.object('filter', getModelSchemaRef(ExtendCustomFilter, {exclude: ['q']}))
+    filter: ExtendCustomFilter,
   ): Promise<Post[]> {
-    const newFilter = defaultFilterQuery(page, filter) as Filter<Post>;
-
-    return this.postRepository.find(newFilter);
+    return this.postService.postRepository.find(filter as Filter<Post>);
   }
 
   @get('/posts/{id}')
@@ -247,7 +209,7 @@ export class PostController {
     @param.path.string('id') id: string,
     @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
   ): Promise<Post> {
-    return this.postRepository.findById(id, filter);
+    return this.postService.postRepository.findById(id, filter);
   }
 
   @patch('/posts/{id}')
@@ -263,10 +225,9 @@ export class PostController {
         },
       },
     })
-    _post: Post,
+    updatedPost: Post,
   ): Promise<void> {
-    _post.updatedAt = new Date().toString();
-    await this.postRepository.updateById(id, _post);
+    await this.postService.postRepository.updateById(id, updatedPost);
   }
 
   @del('/posts/{id}')
@@ -274,6 +235,6 @@ export class PostController {
     description: 'Post DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.postRepository.deleteById(id);
+    await this.postService.postRepository.deleteById(id);
   }
 }

@@ -1,5 +1,5 @@
 export * from './classname-type.enum';
-export * from './defaultcryptocurrency-type.enum';
+export * from './default-currency-type.enum';
 export * from './experience-status-type.enum';
 export * from './friendstatus-type.enum';
 export * from './like-type.enum';
