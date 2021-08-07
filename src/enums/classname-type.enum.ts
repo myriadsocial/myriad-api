@@ -8,9 +8,9 @@ export enum ControllerType {
   TAG = 'TagController',
   NOTIFICATION = 'NotificationController',
   CURRENCY = 'CurrencyController',
-  POSTCOMMENT = 'PostCommentController',
   USERCURRENCY = 'UserCurrencyController',
   USERSOCIALMEDIA = 'UserSocialMediaController',
+  FRIEND = 'FriendController',
 }
 
 export enum MethodType {
@@ -18,6 +18,7 @@ export enum MethodType {
   CREATE = 'create',
   UPDATEBYID = 'updateById',
   TIMELINE = 'timeline',
+  FINDFRIENDS = 'findFriends',
   SEARCHEXPERIENCE = 'search',
   VERIFY = 'verify',
 }
