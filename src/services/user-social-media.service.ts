@@ -1,7 +1,8 @@
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
+import {PlatformType} from '../enums';
 import {PolkadotJs} from '../helpers/polkadotJs-utils';
-import {ExtendedUser} from '../interfaces';
+import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
 
@@ -13,14 +14,14 @@ export class UserSocialMediaService {
     protected peopleRepository: PeopleRepository,
   ) {}
 
-  async createSocialMedia(user: ExtendedUser): Promise<UserSocialMedia> {
-    const {name, originUserId, username, platform, profilePictureURL, publicKey} = user;
+  async createSocialMedia(people: ExtendedPeople): Promise<UserSocialMedia> {
+    const {name, originUserId, username, platform, profilePictureURL, publicKey} = people;
 
     // Verify SocialMedia
     const userSocialMedia = await this.userSocialMediaRepository.findOne({
       where: {
         userId: publicKey,
-        platform: platform,
+        platform: platform as PlatformType,
       },
     });
 
@@ -36,27 +37,27 @@ export class UserSocialMediaService {
       }
     }
 
-    const people = await this.peopleRepository.findOne({
+    const foundPeople = await this.peopleRepository.findOne({
       where: {originUserId, platform},
     });
 
-    if (people) {
+    if (foundPeople) {
       const peopleSocialMedia = await this.userSocialMediaRepository.findOne({
         where: {
           peopleId: people.id,
-          platform: platform,
+          platform: platform as PlatformType,
         },
       });
 
       if (!peopleSocialMedia) {
-        return this.peopleRepository.userSocialMedia(people.id).create({
+        return this.peopleRepository.userSocialMedia(foundPeople.id).create({
           userId: publicKey,
-          platform: platform,
+          platform: platform as PlatformType,
           verified: true,
         });
       }
 
-      if (peopleSocialMedia.userId === user.publicKey) {
+      if (peopleSocialMedia.userId === people.publicKey) {
         if (peopleSocialMedia.verified) {
           throw new HttpErrors.UnprocessableEntity('You already verified this social media');
         }
@@ -92,7 +93,7 @@ export class UserSocialMediaService {
 
     return this.peopleRepository.userSocialMedia(newPeople.id).create({
       userId: publicKey,
-      platform: platform,
+      platform: platform as PlatformType,
       verified: true,
     });
   }
