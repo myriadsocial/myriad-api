@@ -18,6 +18,9 @@ export class User extends Entity {
     id: true,
     generated: false,
     required: true,
+    index: {
+      unique: true,
+    },
     jsonSchema: {
       maxLength: 66,
       minLength: 66,
