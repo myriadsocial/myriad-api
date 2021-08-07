@@ -13,17 +13,16 @@ import {FetchContentSocialMediaJob} from './jobs';
 import {JWTAuthenticationComponent} from './jwt-authentication-component';
 import {MySequence} from './sequence';
 import {
-  CryptocurrencyService,
+  CurrencyService,
   ExperienceService,
   FCMService,
   FriendService,
-  MetricService,
   NotificationService,
   PostService,
   SocialMediaService,
   TagService,
   TransactionService,
-  UserCredentialService,
+  UserSocialMediaService,
 } from './services';
 
 dotenv.config();
@@ -81,13 +80,12 @@ export class MyriadApiApplication extends BootMixin(
   bindService() {
     this.service(NotificationService);
     this.service(FriendService);
-    this.service(UserCredentialService);
+    this.service(UserSocialMediaService);
     this.service(TransactionService);
     this.service(SocialMediaService);
-    this.service(CryptocurrencyService);
+    this.service(CurrencyService);
     this.service(PostService);
     this.service(TagService);
-    this.service(MetricService);
     this.service(ExperienceService);
 
     // 3rd party service
