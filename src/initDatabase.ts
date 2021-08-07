@@ -3,36 +3,32 @@ import {ApplicationConfig} from '@loopback/core';
 import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {ServiceMixin} from '@loopback/service-proxy';
-import {DefaultCryptocurrencyType, UpdatedStatusType} from './enums';
+import {DefaultCurrencyType, StatusType} from './enums';
 import {DateUtils} from './helpers/date-utils';
 import {PolkadotJs} from './helpers/polkadotJs-utils';
-import {ExtendedPost, User} from './interfaces';
-import {People} from './models';
+import {ExtendedPost} from './interfaces';
+import {People, Post, User, UserExperience} from './models';
 import {
   AuthCredentialRepository,
   AuthenticationRepository,
   CommentRepository,
-  ConversationRepository,
-  CryptocurrencyRepository,
+  CurrencyRepository,
   ExperienceRepository,
   FriendRepository,
   LikeRepository,
+  NotificationRepository,
   PeopleRepository,
-  PersonTipRepository,
   PostRepository,
-  PostTipRepository,
-  PublicMetricRepository,
   QueueRepository,
   RefreshTokenRepository,
   TagRepository,
-  TransactionHistoryRepository,
   TransactionRepository,
-  UserCredentialRepository,
-  UserCryptocurrencyRepository,
+  UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
+  UserSocialMediaRepository,
 } from './repositories';
-import cryptocurrency from './seed-data/cryptocurrencies.json';
+import currency from './seed-data/currencies.json';
 import peopleSeed from './seed-data/people.json';
 import postSeed from './seed-data/posts.json';
 import userSeed from './seed-data/users.json';
@@ -60,84 +56,208 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
 
     const {
       userRepository,
-      cryptocurrencyRepository,
-      userCryptocurrencyRepository,
+      currencyRepository,
+      userCurrencyRepository,
       peopleRepository,
       tagRepository,
       postRepository,
-      postTipRepository,
-      publicMetricRepository,
       experienceRepository,
       userExperienceRepository,
     } = await this.getRepositories();
 
-    const userSeedData = this.prepareUserSeed(userSeed);
-
-    await cryptocurrencyRepository.createAll(cryptocurrency);
+    const userSeedData = this.prepareUserSeed(userSeed as User[]);
     const newUsers = await userRepository.createAll(userSeedData);
     const newPeople = await peopleRepository.createAll(peopleSeed);
 
-    const postSeedData = this.preparePostSeed(newPeople, postSeed as Omit<ExtendedPost, 'id'>[]);
+    await currencyRepository.createAll(currency);
+    await this.addWalletAddress(newPeople, peopleRepository);
 
-    for (const user of newUsers) {
-      await userCryptocurrencyRepository.createAll([
+    const postSeedData = this.preparePostSeed(
+      newPeople,
+      postSeed as unknown as Omit<ExtendedPost, 'id'>[],
+    );
+
+    const newPosts = await postRepository.createAll(postSeedData);
+
+    await this.createUserCurrency(newUsers, userCurrencyRepository);
+    await this.createTags(newPosts, tagRepository);
+    await this.createExperience(
+      newUsers,
+      newPeople,
+      experienceRepository,
+      userExperienceRepository,
+    );
+
+    const userExperience = await userExperienceRepository.find();
+    await this.defaultUserExperience(newUsers, userExperience, userRepository);
+  }
+
+  async getRepositories() {
+    const authCredentialRepository = await this.getRepository(AuthCredentialRepository);
+    const authenticationRepository = await this.getRepository(AuthenticationRepository);
+    const commentRepository = await this.getRepository(CommentRepository);
+    const currencyRepository = await this.getRepository(CurrencyRepository);
+    const experienceRepository = await this.getRepository(ExperienceRepository);
+    const friendRepository = await this.getRepository(FriendRepository);
+    const likeRepository = await this.getRepository(LikeRepository);
+    const notificationRepository = await this.getRepository(NotificationRepository);
+    const peopleRepository = await this.getRepository(PeopleRepository);
+    const postRepository = await this.getRepository(PostRepository);
+    const queueRepository = await this.getRepository(QueueRepository);
+    const refreshTokenRepository = await this.getRepository(RefreshTokenRepository);
+    const tagRepository = await this.getRepository(TagRepository);
+    const transactionRepository = await this.getRepository(TransactionRepository);
+    const userSocialMediaRepository = await this.getRepository(UserSocialMediaRepository);
+    const userCurrencyRepository = await this.getRepository(UserCurrencyRepository);
+    const userExperienceRepository = await this.getRepository(UserExperienceRepository);
+    const userRepository = await this.getRepository(UserRepository);
+
+    await userCurrencyRepository.deleteAll();
+    await authCredentialRepository.deleteAll();
+    await authenticationRepository.deleteAll();
+    await commentRepository.deleteAll();
+    await currencyRepository.deleteAll();
+    await experienceRepository.deleteAll();
+    await friendRepository.deleteAll();
+    await likeRepository.deleteAll();
+    await notificationRepository.deleteAll();
+    await peopleRepository.deleteAll();
+    await postRepository.deleteAll();
+    await queueRepository.deleteAll();
+    await refreshTokenRepository.deleteAll();
+    await tagRepository.deleteAll();
+    await transactionRepository.deleteAll();
+    await userSocialMediaRepository.deleteAll();
+    await userExperienceRepository.deleteAll();
+    await userRepository.deleteAll();
+
+    return {
+      currencyRepository,
+      userRepository,
+      userCurrencyRepository,
+      peopleRepository,
+      postRepository,
+      tagRepository,
+      experienceRepository,
+      userExperienceRepository,
+    };
+  }
+
+  prepareUserSeed(users: User[]) {
+    const {getKeyring, getHexPublicKey, generateSeed} = new PolkadotJs();
+
+    return users.map((user: User) => {
+      const seed = generateSeed();
+      const pair = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).createFromUri(seed + '', {
+        name: user.name,
+      });
+      const name = user.name ?? '';
+
+      return {
+        ...user,
+        id: getHexPublicKey(pair),
+        bio: `Hello, my name is ${name}`,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString(),
+      };
+    });
+  }
+
+  preparePostSeed(people: People[], posts: Omit<ExtendedPost, 'id'>[]) {
+    for (const person of people) {
+      const personAccountId = person.originUserId;
+
+      for (const post of posts) {
+        const postAccountId = post.platformUser?.originUserId;
+
+        if (personAccountId === postAccountId) {
+          delete post.platformUser;
+
+          post.peopleId = person.id;
+          post.createdAt = new Date().toString();
+          post.updatedAt = new Date().toString();
+        }
+      }
+    }
+
+    return posts;
+  }
+
+  async createUserCurrency(
+    users: User[],
+    userCurrencyRepository: UserCurrencyRepository,
+  ): Promise<void> {
+    for (const user of users) {
+      await userCurrencyRepository.createAll([
         {
           userId: user.id,
-          cryptocurrencyId: DefaultCryptocurrencyType.MYR,
+          currencyId: DefaultCurrencyType.MYR,
         },
         {
           userId: user.id,
-          cryptocurrencyId: DefaultCryptocurrencyType.AUSD,
+          currencyId: DefaultCurrencyType.AUSD,
         },
       ]);
+    }
+  }
 
+  async createExperience(
+    users: User[],
+    people: People[],
+    experienceRepository: ExperienceRepository,
+    userExperienceRepository: UserExperienceRepository,
+  ): Promise<void> {
+    const filterPeople = people
+      .filter(person => {
+        if (person.username === 'gavofyork' || person.username === 'CryptoChief') {
+          return true;
+        }
+
+        return false;
+      })
+      .map(person => {
+        return {
+          ...person,
+          status: StatusType.NONE,
+        };
+      });
+
+    for (const user of users) {
       const newExperience = await experienceRepository.create({
         name: user.name + ' experience',
         tags: [
           {
             id: 'blockchain',
-            updatedStatus: UpdatedStatusType.NONE,
+            status: StatusType.NONE,
           },
           {
             id: 'cryptocurrency',
-            updatedStatus: UpdatedStatusType.NONE,
+            status: StatusType.NONE,
           },
           {
             id: 'technology',
-            updatedStatus: UpdatedStatusType.NONE,
+            status: StatusType.NONE,
           },
         ],
-        people: newPeople,
+        people: filterPeople,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString(),
         description: 'This is about blockchain and cryptocurrency',
-        creatorId: user.id,
+        createdBy: user.id,
       });
 
       await userExperienceRepository.create({
         userId: user.id,
         experienceId: newExperience.id,
-        hasSelected: true,
       });
     }
+  }
 
+  async createTags(posts: Post[], tagRepository: TagRepository): Promise<void> {
     const dateUtils = new DateUtils();
-    const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
-    for (const post of postSeedData) {
+    for (const post of posts) {
       let {tags} = post;
-      const newKey = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + post.peopleId);
-
-      post.walletAddress = getHexPublicKey(newKey);
-
-      const newPost = await postRepository.create(post);
-
-      await publicMetricRepository.create({postId: newPost.id});
-      await postTipRepository.create({
-        postId: newPost.id,
-        cryptocurrencyId: DefaultCryptocurrencyType.AUSD,
-        total: 0,
-      });
 
       if (!tags) tags = [];
 
@@ -175,105 +295,30 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     }
   }
 
-  async getRepositories() {
-    const tagRepository = await this.getRepository(TagRepository);
-    const postRepository = await this.getRepository(PostRepository);
-    const peopleRepository = await this.getRepository(PeopleRepository);
-    const transactionRepository = await this.getRepository(TransactionRepository);
-    const userRepository = await this.getRepository(UserRepository);
-    const userExperienceRepository = await this.getRepository(UserExperienceRepository);
-    const experienceRepository = await this.getRepository(ExperienceRepository);
-    const userCredentialRepository = await this.getRepository(UserCredentialRepository);
-    const commentRepository = await this.getRepository(CommentRepository);
-    const publicMetricRepository = await this.getRepository(PublicMetricRepository);
-    const likeRepository = await this.getRepository(LikeRepository);
-    const conversationRepository = await this.getRepository(ConversationRepository);
-    const friendRepository = await this.getRepository(FriendRepository);
-    const cryptocurrencyRepository = await this.getRepository(CryptocurrencyRepository);
-    const transactionHistoryRepository = await this.getRepository(TransactionHistoryRepository);
-    const userCryptocurrencyRepository = await this.getRepository(UserCryptocurrencyRepository);
-    const queueRepository = await this.getRepository(QueueRepository);
-    const authenticationRepository = await this.getRepository(AuthenticationRepository);
-    const authCredentialRepository = await this.getRepository(AuthCredentialRepository);
-    const refreshTokenRepository = await this.getRepository(RefreshTokenRepository);
-    const postTipRepository = await this.getRepository(PostTipRepository);
-    const personTipRepository = await this.getRepository(PersonTipRepository);
-
-    await likeRepository.deleteAll();
-    await conversationRepository.deleteAll();
-    await tagRepository.deleteAll();
-    await postRepository.deleteAll();
-    await peopleRepository.deleteAll();
-    await transactionRepository.deleteAll();
-    await userRepository.deleteAll();
-    await userExperienceRepository.deleteAll();
-    await experienceRepository.deleteAll();
-    await userCredentialRepository.deleteAll();
-    await commentRepository.deleteAll();
-    await publicMetricRepository.deleteAll();
-    await friendRepository.deleteAll();
-    await cryptocurrencyRepository.deleteAll();
-    await userCryptocurrencyRepository.deleteAll();
-    await transactionHistoryRepository.deleteAll();
-    await queueRepository.deleteAll();
-    await authenticationRepository.deleteAll();
-    await authCredentialRepository.deleteAll();
-    await refreshTokenRepository.deleteAll();
-    await postTipRepository.deleteAll();
-    await personTipRepository.deleteAll();
-
-    return {
-      cryptocurrencyRepository,
-      userRepository,
-      userCryptocurrencyRepository,
-      peopleRepository,
-      postRepository,
-      publicMetricRepository,
-      tagRepository,
-      postTipRepository,
-      experienceRepository,
-      userExperienceRepository,
-    };
-  }
-
-  prepareUserSeed(users: User[]) {
-    const {getKeyring, getHexPublicKey, generateSeed} = new PolkadotJs();
-
-    return users.map((user: User) => {
-      const seed = generateSeed();
-      const pair = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).createFromUri(seed + '', {
-        name: user.name,
-      });
-      const name = user.name ?? '';
-
-      return {
-        ...user,
-        username: name.toLowerCase(),
-        id: getHexPublicKey(pair),
-        bio: `Hello, my name is ${name}`,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString(),
-      };
-    });
-  }
-
-  preparePostSeed(people: People[], posts: Omit<ExtendedPost, 'id'>[]) {
+  async addWalletAddress(people: People[], peopleRepository: PeopleRepository): Promise<void> {
     for (const person of people) {
-      const personAccountId = person.platformAccountId;
+      const {getKeyring, getHexPublicKey} = new PolkadotJs();
+      const newKey = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + person.id);
 
-      for (const post of posts) {
-        const postAccountId = post.platformUser?.platformAccountId;
+      await peopleRepository.updateById(person.id, {
+        walletAddress: getHexPublicKey(newKey),
+      });
+    }
+  }
 
-        if (personAccountId === postAccountId) {
-          delete post.platformUser;
+  async defaultUserExperience(
+    users: User[],
+    userExperiences: UserExperience[],
+    userRepository: UserRepository,
+  ): Promise<void> {
+    for (const user of users) {
+      const userExperience = userExperiences.find(e => e.userId === user.id);
 
-          post.peopleId = person.id;
-          post.createdAt = new Date().toString();
-          post.updatedAt = new Date().toString();
-        }
+      if (userExperience) {
+        await userRepository.updateById(user.id, {
+          onTimeline: userExperience.experienceId,
+        });
       }
     }
-
-    return posts;
   }
 }
