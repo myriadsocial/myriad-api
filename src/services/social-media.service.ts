@@ -42,12 +42,10 @@ export class SocialMediaService {
 
     return {
       name: user.name,
-      platformAccountId: user.id,
+      originUserId: user.id,
       platform: PlatformType.TWITTER,
       username: user.username,
-      profileImageURL: user.profile_image_url
-        ? user.profile_image_url.replace('normal', '400x400')
-        : '',
+      profilePictureURL: user.profile_image_url || '',
       publicKey: publicKey,
     };
   }
@@ -73,10 +71,10 @@ export class SocialMediaService {
 
     return {
       name: redditUser.subreddit.title ? redditUser.subreddit.title : redditUser.name,
-      platformAccountId: 't2_' + redditUser.id,
+      originUserId: 't2_' + redditUser.id,
       platform: PlatformType.REDDIT,
       username: redditUser.name,
-      profileImageURL: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : '',
+      profilePictureURL: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : '',
       publicKey: publicKey,
     };
   }
@@ -90,14 +88,14 @@ export class SocialMediaService {
 
     if (!fbPost.platformUser) throw new Error('Platform user not exist!');
 
-    const {username: userName, name, platformAccountId, profileImageURL} = fbPost.platformUser;
+    const {username: userName, name, originUserId, profilePictureURL} = fbPost.platformUser;
 
     return {
       name,
       username: userName,
-      platformAccountId,
+      originUserId,
       platform: PlatformType.FACEBOOK,
-      profileImageURL,
+      profilePictureURL,
       publicKey: publicKey,
     };
   }
@@ -112,7 +110,7 @@ export class SocialMediaService {
     for (const person of following) {
       const foundPerson = await this.peopleRepository.findOne({
         where: {
-          platformAccountId: person.id,
+          originUserId: person.id,
         },
       });
 
@@ -120,9 +118,9 @@ export class SocialMediaService {
         this.peopleRepository.create({
           name: person.name,
           username: person.username,
-          platformAccountId: person.id,
+          originUserId: person.id,
           platform: PlatformType.TWITTER,
-          profileImageURL: person.profile_image_url.replace('normal', '400x400'),
+          profilePictureURL: person.profile_image_url || '',
         }) as Promise<People>;
       }
     }
@@ -146,7 +144,6 @@ export class SocialMediaService {
       images: [],
       videos: [],
     };
-    let hasMedia = true;
 
     /* eslint-disable  @typescript-eslint/no-explicit-any */
     const twitterTags = entities
@@ -155,8 +152,7 @@ export class SocialMediaService {
         : []
       : [];
 
-    if (!extendedEntities) hasMedia = false;
-    else {
+    if (extendedEntities) {
       const medias = extendedEntities.media;
 
       for (const media of medias) {
@@ -184,19 +180,17 @@ export class SocialMediaService {
 
     return {
       platform: PlatformType.TWITTER,
-      createdAt: new Date().toString(),
-      textId: idStr,
+      originPostId: idStr,
       text: (text + ' ' + urls.join(' ')).trim(),
       tags: twitterTags,
-      platformCreatedAt: new Date(createdAt).toString(),
+      originCreatedAt: new Date(createdAt).toString(),
       asset: asset,
-      link: `https://twitter.com/${user.id_str}/status/${textId}`,
-      hasMedia: hasMedia,
+      url: `https://twitter.com/${user.id_str}/status/${textId}`,
       platformUser: {
         name: user.name,
         username: user.screen_name,
-        platformAccountId: user.id_str,
-        profileImageURL: user.profile_image_url_https.replace('normal', '400x400'),
+        originUserId: user.id_str,
+        profilePictureURL: user.profile_image_url_https || '',
         platform: PlatformType.TWITTER,
       },
     } as ExtendedPost;
@@ -211,17 +205,14 @@ export class SocialMediaService {
     };
 
     let url = redditPost.url_overridden_by_dest ? redditPost.url_overridden_by_dest : '';
-    let hasMedia = false;
 
     if (redditPost.post_hint === 'image') {
       asset.images.push(redditPost.url);
-      hasMedia = true;
       url = '';
     }
 
     if (redditPost.is_video) {
       asset.videos.push(redditPost.media.reddit_video.fallback_url);
-      hasMedia = true;
       url = '';
     }
 
@@ -237,15 +228,13 @@ export class SocialMediaService {
           );
         }
       }
-
-      hasMedia = true;
     }
 
     if (url) {
       const imageFormat = /[.]jpg$|[.]jpeg$|[.]png$|[.]gif$|[.]tiff$/;
-      const isImage = url.match(imageFormat);
+      const image = url.match(imageFormat);
 
-      if (isImage) {
+      if (image) {
         asset.images.push(url);
         url = '';
       }
@@ -256,19 +245,17 @@ export class SocialMediaService {
 
     return {
       platform: PlatformType.REDDIT,
-      createdAt: new Date().toString(),
-      textId: textId,
-      platformCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
+      originPostId: textId,
+      originCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
       title: redditPost.title,
       text: (redditPost.selftext + ' ' + url).trim(),
-      link: `https://reddit.com/${textId}`,
-      hasMedia: hasMedia,
+      url: `https://reddit.com/${textId}`,
       asset: asset,
       platformUser: {
         name: user.subreddit.title ? user.subreddit.title : user.name,
         username: user.name,
-        platformAccountId: 't2_' + user.id,
-        profileImageURL: user.icon_img.split('?')[0],
+        originUserId: 't2_' + user.id,
+        profilePictureURL: user.icon_img.split('?')[0],
         platform: PlatformType.REDDIT,
       },
     } as ExtendedPost;
@@ -354,15 +341,14 @@ export class SocialMediaService {
 
     return {
       platform: PlatformType.FACEBOOK,
-      createdAt: new Date().toString(),
       textId: textId,
-      platformCreatedAt: platformCreatedAt,
-      link: `https://facebook.com/${username}/posts/${textId}`,
+      originCreatedAt: platformCreatedAt,
+      url: `https://facebook.com/${username}/posts/${textId}`,
       platformUser: {
         name: arrayName.join(''),
         username: userName,
-        platformAccountId: platformAccountId,
-        profileImageURL: profileImageUrl.split('\\').join(''),
+        originUserId: platformAccountId,
+        profilePictureURL: profileImageUrl.split('\\').join(''),
         platform: PlatformType.FACEBOOK,
       },
     } as unknown as ExtendedPost;
