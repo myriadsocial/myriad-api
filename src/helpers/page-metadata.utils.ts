@@ -2,6 +2,14 @@ import {MetaPagination} from '../interfaces';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export function pageMetadata(args: any[], total: number): MetaPagination {
+  if (!args.length || !total) {
+    return {
+      totalItemCount: 0,
+      totalPageCount: 0,
+      itemsPerPage: 0,
+    };
+  }
+
   let currentPage = +args[0];
   let currentLimit = args[1] ? +args[1].limit : null;
 

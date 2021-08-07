@@ -25,6 +25,7 @@ export function defaultFilterQuery(pageNumber = 1, filter?: Filter, where?: Wher
   if (where) filter.where = where;
 
   filter.skip = itemsPerPage * (pageNumber - 1);
+  filter.limit = itemsPerPage;
 
   return filter;
 }
