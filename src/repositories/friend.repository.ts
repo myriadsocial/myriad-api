@@ -9,7 +9,7 @@ export class FriendRepository extends DefaultCrudRepository<
   typeof Friend.prototype.id,
   FriendRelations
 > {
-  public readonly friend: BelongsToAccessor<User, typeof Friend.prototype.id>;
+  public readonly requestee: BelongsToAccessor<User, typeof Friend.prototype.id>;
 
   public readonly requestor: BelongsToAccessor<User, typeof Friend.prototype.id>;
 
@@ -21,7 +21,7 @@ export class FriendRepository extends DefaultCrudRepository<
     super(Friend, dataSource);
     this.requestor = this.createBelongsToAccessorFor('requestor', userRepositoryGetter);
     this.registerInclusionResolver('requestor', this.requestor.inclusionResolver);
-    this.friend = this.createBelongsToAccessorFor('friend', userRepositoryGetter);
-    this.registerInclusionResolver('friend', this.friend.inclusionResolver);
+    this.requestee = this.createBelongsToAccessorFor('requestee', userRepositoryGetter);
+    this.registerInclusionResolver('requestee', this.requestee.inclusionResolver);
   }
 }

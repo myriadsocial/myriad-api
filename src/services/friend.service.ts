@@ -16,13 +16,13 @@ export class FriendService {
     public notificationService: NotificationService,
   ) {}
 
-  async findFriend(friendId: string, requestorId: string): Promise<Friend | null> {
-    if (friendId === requestorId) {
+  async findFriend(requesteeId: string, requestorId: string): Promise<Friend | null> {
+    if (requesteeId === requestorId) {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself');
     }
 
     const countFriend = await this.friendRepository.count({
-      friendId: friendId,
+      requesteeId: requesteeId,
       requestorId: requestorId,
       status: FriendStatusType.PENDING,
     });
@@ -37,12 +37,12 @@ export class FriendService {
       where: {
         or: [
           {
-            friendId: friendId,
+            requesteeId: requesteeId,
             requestorId: requestorId,
           },
           {
-            friendId: requestorId,
-            requestorId: friendId,
+            requesteeId: requestorId,
+            requestorId: requesteeId,
           },
         ],
       },
@@ -61,7 +61,7 @@ export class FriendService {
     if (foundFriend && foundFriend.status === FriendStatusType.REJECTED) {
       foundFriend.status = FriendStatusType.PENDING;
       foundFriend.updatedAt = new Date().toString();
-      foundFriend.friendId = friendId;
+      foundFriend.requesteeId = requesteeId;
       foundFriend.requestorId = requestorId;
 
       this.friendRepository.updateById(foundFriend.id, foundFriend) as Promise<void>;
@@ -78,14 +78,14 @@ export class FriendService {
             requestorId: id,
           },
           {
-            friendId: id,
+            requesteeId: id,
           },
         ],
         status: FriendStatusType.APPROVED,
       },
     });
 
-    const friendIds = friends.map(friend => friend.friendId);
+    const friendIds = friends.map(friend => friend.requesteeId);
     const requestorIds = friends.map(friend => friend.requestorId);
 
     const ids = [...friendIds, ...requestorIds].filter(userId => userId !== id);
@@ -119,7 +119,7 @@ export class FriendService {
 
     if (friend == null) return;
 
-    await this.notificationService.cancelFriendRequest(friend.requestorId, friend.friendId);
+    await this.notificationService.cancelFriendRequest(friend.requestorId, friend.requesteeId);
     await this.friendRepository.deleteById(id);
   }
 }

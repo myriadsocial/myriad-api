@@ -43,8 +43,8 @@ export class Friend extends Entity {
   })
   updatedAt?: string;
 
-  @belongsTo(() => User, {name: 'friend'})
-  friendId: string;
+  @belongsTo(() => User, {name: 'requestee'})
+  requesteeId: string;
 
   @belongsTo(() => User, {name: 'requestor'})
   requestorId: string;
