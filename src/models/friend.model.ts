@@ -1,6 +1,6 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {User, UserWithRelations} from './user.model';
 import {FriendStatusType} from '../enums';
+import {User, UserWithRelations} from './user.model';
 
 @model({
   settings: {
@@ -43,10 +43,10 @@ export class Friend extends Entity {
   })
   updatedAt?: string;
 
-  @belongsTo(() => User)
+  @belongsTo(() => User, {name: 'friend'})
   friendId: string;
 
-  @belongsTo(() => User)
+  @belongsTo(() => User, {name: 'requestor'})
   requestorId: string;
 
   constructor(data?: Partial<Friend>) {

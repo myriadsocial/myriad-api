@@ -46,6 +46,33 @@ export class Experience extends Entity {
   people: Person[];
 
   @property({
+    type: 'string',
+    required: false,
+    jsonSchema: {
+      maxLength: 280,
+    },
+  })
+  description: string;
+
+  @property({
+    type: 'number',
+    default: 0,
+  })
+  cloned: number;
+
+  @property({
+    type: 'string',
+    default: null,
+  })
+  clonedFrom?: string | null;
+
+  @property({
+    type: 'boolean',
+    default: true,
+  })
+  origin: boolean;
+
+  @property({
     type: 'date',
     required: false,
   })
@@ -63,29 +90,8 @@ export class Experience extends Entity {
   })
   deletedAt?: string;
 
-  @property({
-    type: 'string',
-    required: false,
-    jsonSchema: {
-      maxLength: 280,
-    },
-  })
-  description: string;
-
-  @property({
-    type: 'number',
-    default: 0,
-  })
-  cloned: number;
-
-  @property({
-    type: 'boolean',
-    default: true,
-  })
-  origin: boolean; // Flagging, if the experience is original created by creatorId
-
   @belongsTo(() => User, {name: 'user'})
-  creatorId: string;
+  createdBy: string;
 
   constructor(data?: Partial<Experience>) {
     super(data);

@@ -23,12 +23,4 @@ export class VerifyUser extends Entity {
     },
   })
   platform: PlatformType;
-
-  constructor(data?: Partial<VerifyUser>) {
-    super(data);
-  }
 }
-
-export interface VerifyUserRelations {}
-
-export type VerifyUserWithRelations = VerifyUser & VerifyUserRelations;

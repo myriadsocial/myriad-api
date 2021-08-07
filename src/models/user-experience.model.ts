@@ -1,6 +1,6 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {UpdatedStatusType} from '../enums';
-import {Experience} from './experience.model';
+import {StatusType} from '../enums';
+import {Experience, ExperienceWithRelations} from './experience.model';
 import {User} from './user.model';
 
 @model({
@@ -26,12 +26,6 @@ export class UserExperience extends Entity {
   id: string;
 
   @property({
-    type: 'boolean',
-    default: false,
-  })
-  hasSelected: boolean;
-
-  @property({
     type: 'string',
     default: null,
   })
@@ -39,12 +33,12 @@ export class UserExperience extends Entity {
 
   @property({
     type: 'string',
-    default: UpdatedStatusType.NONE,
+    default: StatusType.NONE,
     jsonSchema: {
-      enum: Object.values(UpdatedStatusType),
+      enum: Object.values(StatusType),
     },
   })
-  updateStatus?: UpdatedStatusType;
+  status?: StatusType;
 
   @belongsTo(() => Experience)
   experienceId: string;
@@ -59,6 +53,7 @@ export class UserExperience extends Entity {
 
 export interface UserExperienceRelations {
   // describe navigational properties here
+  experience: ExperienceWithRelations;
 }
 
 export type UserExperienceWithRelations = UserExperience & UserExperienceRelations;

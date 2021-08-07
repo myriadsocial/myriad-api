@@ -2,6 +2,7 @@ import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository'
 import {PlatformType} from '../enums';
 import {Asset} from '../interfaces/asset.interface';
 import {Comment} from './comment.model';
+import {Like} from './like.model';
 import {People, PeopleWithRelations} from './people.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
@@ -12,7 +13,6 @@ import {User} from './user.model';
     mongodb: {
       collection: 'posts',
     },
-    hiddenProperties: ['walletAddress', 'totalComment', 'totalLiked', 'totalDisliked'],
   },
 })
 export class Post extends Entity {
@@ -108,7 +108,7 @@ export class Post extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User)
+  @belongsTo(() => User, {name: 'user'})
   createdBy: string;
 
   @belongsTo(() => People)
@@ -116,6 +116,9 @@ export class Post extends Entity {
 
   @hasMany(() => Comment)
   comments: Comment[];
+
+  @hasMany(() => Like)
+  likes: Like[];
 
   @hasMany(() => Transaction)
   transactions: Transaction[];

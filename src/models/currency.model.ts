@@ -4,7 +4,7 @@ import {Entity, model, property} from '@loopback/repository';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'Currencies',
+      collection: 'currencies',
     },
   },
 })

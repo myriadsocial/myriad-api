@@ -1,6 +1,6 @@
 import {Entity, hasMany, hasOne, model, property} from '@loopback/repository';
 import {Post} from './post.model';
-import {UserCredential} from './user-credential.model';
+import {UserSocialMedia} from './user-social-media.model';
 
 @model({
   settings: {
@@ -8,6 +8,7 @@ import {UserCredential} from './user-credential.model';
     mongodb: {
       collection: 'people',
     },
+    hiddenProperties: ['walletAddress'],
   },
 })
 export class People extends Entity {
@@ -43,7 +44,7 @@ export class People extends Entity {
     type: 'string',
     required: false,
   })
-  originAccountId: string;
+  originUserId: string;
 
   @property({
     type: 'string',
@@ -74,8 +75,8 @@ export class People extends Entity {
   })
   walletAddress?: string;
 
-  @hasOne(() => UserCredential)
-  credential: UserCredential;
+  @hasOne(() => UserSocialMedia)
+  userSocialMedia: UserSocialMedia;
 
   @hasMany(() => Post)
   posts: Post[];
