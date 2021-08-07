@@ -1,15 +1,14 @@
 import {KeyringPair} from '@polkadot/keyring/types';
+import {DefaultCurrencyType} from '../enums';
 
 export interface PaymentInfo {
-  total: number;
+  amount: number;
   to: string;
   from: KeyringPair;
-  cryptocurrencyId: string;
-  decimal: number;
-  isNative?: boolean;
-  txFee: number;
-  tipId?: string;
   fromString: string;
+  currencyId: DefaultCurrencyType;
+  decimal: number;
+  native?: boolean;
+  txFee: number;
   nonce: number;
-  txHash: string;
 }
