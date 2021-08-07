@@ -73,6 +73,6 @@ export class TransactionHistoryController {
   async postTransactionHistory(
     @param.path.string('id') id: string,
   ): Promise<PostTransactionHistory> {
-    return this.transactionService.totalTransactionAmount('postId', id, '$postId');
+    return this.transactionService.totalTransactionAmount('postId', id, '$currencyId');
   }
 }
