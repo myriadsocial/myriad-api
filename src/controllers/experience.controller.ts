@@ -1,7 +1,8 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param, response} from '@loopback/rest';
-import {defaultFilterQuery} from '../helpers/filter-utils';
-import {Experience} from '../models';
+import {PaginationInterceptor} from '../interceptors';
+import {CustomFilter, Experience, ExtendCustomFilter} from '../models';
 import {ExperienceRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -12,8 +13,7 @@ export class ExperienceController {
     protected experienceRepository: ExperienceRepository,
   ) {}
 
-  // TODO: moved post experience to user experiences controllers
-
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/experiences')
   @response(200, {
     description: 'Array of Experience model instances',
@@ -27,12 +27,9 @@ export class ExperienceController {
     },
   })
   async find(
-    @param.query.number('page') page: number,
-    @param.filter(Experience, {exclude: ['skip', 'offset']}) filter?: Filter<Experience>,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
   ): Promise<Experience[]> {
-    const newFilter = defaultFilterQuery(page, filter) as Filter<Experience>;
-
-    return this.experienceRepository.find(newFilter);
+    return this.experienceRepository.find(filter as Filter<Experience>);
   }
 
   @get('/experiences/{id}')
@@ -52,11 +49,7 @@ export class ExperienceController {
     return this.experienceRepository.findById(id, filter);
   }
 
-  // TODO: moved patch experience to user experience controller
-
-  // TODO: moved delete experience to user experience controllers
-
-  // Search experience
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/search-experiences')
   @response(200, {
     description: 'Array of Experience model instances',
@@ -69,19 +62,13 @@ export class ExperienceController {
       },
     },
   })
-  async searchExperience(
-    @param.query.string('q') q: string,
-    @param.query.number('page') page: number,
-    @param.filter(Experience, {exclude: ['where', 'skip', 'offset']}) filter?: Filter<Experience>,
+  async search(
+    @param.query.object(
+      'filter',
+      getModelSchemaRef(ExtendCustomFilter, {exclude: ['findBy', 'sortBy', 'where']}),
+    )
+    filter: ExtendCustomFilter,
   ): Promise<Experience[]> {
-    if (!q) return [];
-
-    const pattern = new RegExp('^' + q, 'i');
-    const newFilter = defaultFilterQuery(page, filter, {
-      name: pattern,
-      origin: true,
-    }) as Filter<Experience>;
-
-    return this.experienceRepository.find(newFilter);
+    return this.experienceRepository.find(filter as Filter<Experience>);
   }
 }

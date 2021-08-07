@@ -1,3 +1,4 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -9,9 +10,9 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {defaultFilterQuery} from '../helpers/filter-utils';
-import {Tag} from '../models';
-import {PostRepository, TagRepository} from '../repositories';
+import {PaginationInterceptor} from '../interceptors';
+import {CustomFilter, Tag} from '../models';
+import {TagRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -19,16 +20,14 @@ export class TagController {
   constructor(
     @repository(TagRepository)
     protected tagRepository: TagRepository,
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
   ) {}
 
   @post('/tags')
   @response(200, {
-    description: 'Tag By Platform model instance',
+    description: 'Tag model instance',
     content: {'application/json': {schema: getModelSchemaRef(Tag)}},
   })
-  async createTagByPlatform(
+  async create(
     @requestBody({
       content: {
         'application/json': {
@@ -43,6 +42,7 @@ export class TagController {
     return this.tagRepository.create(tag);
   }
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/tags')
   @response(200, {
     description: 'Array of Tag model instances',
@@ -56,12 +56,9 @@ export class TagController {
     },
   })
   async find(
-    @param.query.number('page') page: number,
-    @param.filter(Tag, {exclude: ['skip', 'offset']}) filter?: Filter<Tag>,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
   ): Promise<Tag[]> {
-    const newFilter = defaultFilterQuery(page, filter) as Filter<Tag>;
-
-    return this.tagRepository.find(newFilter);
+    return this.tagRepository.find(filter as Filter<Tag>);
   }
 
   @get('/tags/{id}')

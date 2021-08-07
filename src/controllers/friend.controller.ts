@@ -1,5 +1,5 @@
-import {service} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {intercept, service} from '@loopback/core';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
@@ -11,17 +11,14 @@ import {
   response,
 } from '@loopback/rest';
 import {FriendStatusType} from '../enums';
-import {defaultFilterQuery} from '../helpers/filter-utils';
-import {Friend} from '../models';
-import {FriendRepository} from '../repositories';
+import {PaginationInterceptor} from '../interceptors';
+import {CustomFilter, Friend} from '../models';
 import {FriendService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class FriendController {
   constructor(
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
     @service(FriendService)
@@ -56,11 +53,10 @@ export class FriendController {
       // ignored
     }
 
-    friend.createdAt = new Date().toString();
-
-    return this.friendRepository.create(friend);
+    return this.friendService.friendRepository.create(friend);
   }
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/friends')
   @response(200, {
     description: 'Array of Friend model instances',
@@ -74,12 +70,9 @@ export class FriendController {
     },
   })
   async find(
-    @param.query.number('page') page: number,
-    @param.filter(Friend, {exclude: ['skip', 'offset']}) filter?: Filter<Friend>,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
   ): Promise<Friend[]> {
-    const newFilter = defaultFilterQuery(page, filter) as Filter<Friend>;
-
-    return this.friendRepository.find(newFilter);
+    return this.friendService.friendRepository.find(filter as Filter<Friend>);
   }
 
   @get('/friends/{id}')
@@ -96,7 +89,7 @@ export class FriendController {
     @param.filter(Friend, {exclude: 'where'})
     filter?: FilterExcludingWhere<Friend>,
   ): Promise<Friend> {
-    return this.friendRepository.findById(id, filter);
+    return this.friendService.friendRepository.findById(id, filter);
   }
 
   @patch('/friends/{id}')
@@ -121,7 +114,7 @@ export class FriendController {
         // ignored
       }
     }
-    await this.friendRepository.updateById(id, friend);
+    await this.friendService.friendRepository.updateById(id, friend);
   }
 
   @del('/friends/{id}')

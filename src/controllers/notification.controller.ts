@@ -1,3 +1,4 @@
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -9,8 +10,8 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {defaultFilterQuery} from '../helpers/filter-utils';
-import {Notification} from '../models';
+import {PaginationInterceptor} from '../interceptors';
+import {CustomFilter, Notification} from '../models';
 import {NotificationRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -42,6 +43,7 @@ export class NotificationsController {
     return this.notificationRepository.create(notification);
   }
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/notifications')
   @response(200, {
     description: 'Array of Notification model instances',
@@ -55,12 +57,9 @@ export class NotificationsController {
     },
   })
   async find(
-    @param.query.number('page') page: number,
-    @param.filter(Notification, {exclude: ['skip', 'offset']}) filter?: Filter<Notification>,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
   ): Promise<Notification[]> {
-    const newFilter = defaultFilterQuery(page, filter) as Filter<Notification>;
-
-    return this.notificationRepository.find(newFilter);
+    return this.notificationRepository.find(filter as Filter<Notification>);
   }
 
   @get('/notifications/{id}')
