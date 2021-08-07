@@ -2,7 +2,7 @@ import {service} from '@loopback/core';
 import {repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {FriendStatusType} from '../enums';
-import {Friend, Post} from '../models';
+import {Post} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {NotificationService} from './notification.service';
 
@@ -16,24 +16,23 @@ export class FriendService {
     public notificationService: NotificationService,
   ) {}
 
-  async findFriend(requesteeId: string, requestorId: string): Promise<Friend | null> {
+  async validateFriendRequest(requesteeId: string, requestorId: string): Promise<void> {
     if (requesteeId === requestorId) {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself');
     }
 
-    const countFriend = await this.friendRepository.count({
-      requesteeId: requesteeId,
+    const pendingFriend = await this.friendRepository.count({
       requestorId: requestorId,
       status: FriendStatusType.PENDING,
     });
 
-    if (countFriend.count > 20) {
+    if (pendingFriend.count > 20) {
       throw new HttpErrors.UnprocessableEntity(
-        'Please approved your pending request, before add new friend!',
+        'Please approve current pending request, before add new friend!',
       );
     }
 
-    const foundFriend = await this.friendRepository.findOne({
+    const friend = await this.friendRepository.findOne({
       where: {
         or: [
           {
@@ -48,26 +47,18 @@ export class FriendService {
       },
     });
 
-    if (foundFriend && foundFriend.status === FriendStatusType.APPROVED) {
-      throw new HttpErrors.UnprocessableEntity('You already friend with this user');
+    if (friend) {
+      switch (friend.status) {
+        case FriendStatusType.APPROVED:
+          throw new HttpErrors.UnprocessableEntity('You already friend with this user');
+
+        case FriendStatusType.PENDING:
+          if (requestorId === friend.requestorId)
+            throw new HttpErrors.UnprocessableEntity("Please wait for your friend's approval!");
+
+          throw new HttpErrors.UnprocessableEntity('Your friend waited for your approval!');
+      }
     }
-
-    if (foundFriend && foundFriend.status === FriendStatusType.PENDING) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Please wait for this user to approved your request',
-      );
-    }
-
-    if (foundFriend && foundFriend.status === FriendStatusType.REJECTED) {
-      foundFriend.status = FriendStatusType.PENDING;
-      foundFriend.updatedAt = new Date().toString();
-      foundFriend.requesteeId = requesteeId;
-      foundFriend.requestorId = requestorId;
-
-      this.friendRepository.updateById(foundFriend.id, foundFriend) as Promise<void>;
-    }
-
-    return foundFriend;
   }
 
   async getApprovedFriendIds(id: string): Promise<string[]> {
@@ -116,8 +107,6 @@ export class FriendService {
 
   async deleteById(id: string): Promise<void> {
     const friend = await this.friendRepository.findById(id);
-
-    if (friend == null) return;
 
     await this.notificationService.cancelFriendRequest(friend.requestorId, friend.requesteeId);
     await this.friendRepository.deleteById(id);
