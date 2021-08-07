@@ -7,11 +7,12 @@ import {User} from './user.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'userCredentials',
+      collection: 'userSocialMedias',
     },
+    hiddenProperties: ['userId', 'peopleId'],
   },
 })
-export class UserCredential extends Entity {
+export class UserSocialMedia extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -57,13 +58,13 @@ export class UserCredential extends Entity {
   @belongsTo(() => User)
   userId: string;
 
-  constructor(data?: Partial<UserCredential>) {
+  constructor(data?: Partial<UserSocialMedia>) {
     super(data);
   }
 }
 
-export interface UserCredentialRelations {
+export interface UserSocialMediaRelations {
   // describe navigational properties here
 }
 
-export type UserCredentialWithRelations = UserCredential & UserCredentialRelations;
+export type UserSocialMediaWithRelations = UserSocialMedia & UserSocialMediaRelations;
