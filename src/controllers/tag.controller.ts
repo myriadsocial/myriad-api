@@ -1,15 +1,6 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {
-  del,
-  get,
-  getModelSchemaRef,
-  param,
-  patch,
-  post,
-  requestBody,
-  response,
-} from '@loopback/rest';
+import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {CustomFilter, Tag} from '../models';
 import {TagRepository} from '../repositories';
@@ -33,6 +24,7 @@ export class TagController {
         'application/json': {
           schema: getModelSchemaRef(Tag, {
             title: 'NewTag',
+            exclude: ['count'],
           }),
         },
       },
@@ -75,24 +67,6 @@ export class TagController {
     @param.filter(Tag, {exclude: 'where'}) filter?: FilterExcludingWhere<Tag>,
   ): Promise<Tag> {
     return this.tagRepository.findById(id, filter);
-  }
-
-  @patch('/tags/{id}')
-  @response(204, {
-    description: 'Tag PATCH success',
-  })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Tag, {partial: true}),
-        },
-      },
-    })
-    tag: Tag,
-  ): Promise<void> {
-    await this.tagRepository.updateById(id, tag);
   }
 
   @del('/tags/{id}')

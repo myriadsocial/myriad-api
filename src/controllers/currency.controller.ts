@@ -1,15 +1,6 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {
-  del,
-  get,
-  getModelSchemaRef,
-  param,
-  patch,
-  post,
-  requestBody,
-  response,
-} from '@loopback/rest';
+import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
 import {PaginationInterceptor, ValidateCurrencyInterceptor} from '../interceptors';
 import {Currency, CustomFilter} from '../models';
 import {CurrencyRepository} from '../repositories';
@@ -79,29 +70,11 @@ export class CurrencyController {
     return this.currencyRepository.findById(id.toUpperCase(), filter);
   }
 
-  @patch('/currencies/{id}')
-  @response(204, {
-    description: 'Currency PATCH success',
-  })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Currency, {partial: true}),
-        },
-      },
-    })
-    currency: Currency,
-  ): Promise<void> {
-    await this.currencyRepository.updateById(id.toUpperCase(), currency);
-  }
-
   @del('/currencies/{id}')
   @response(204, {
     description: 'Currency DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.currencyRepository.deleteById(id);
+    await this.currencyRepository.deleteById(id.toUpperCase());
   }
 }

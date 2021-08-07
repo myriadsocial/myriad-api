@@ -1,8 +1,7 @@
-import {intercept, service} from '@loopback/core';
-import {Filter, repository} from '@loopback/repository';
-import {del, get, getModelSchemaRef, param, patch, post, requestBody} from '@loopback/rest';
-import {PaginationInterceptor} from '../interceptors';
-import {Comment, CustomFilter} from '../models';
+import {service} from '@loopback/core';
+import {repository} from '@loopback/repository';
+import {del, getModelSchemaRef, param, patch, post, requestBody} from '@loopback/rest';
+import {Comment} from '../models';
 import {CommentRepository} from '../repositories';
 import {NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
@@ -15,25 +14,6 @@ export class CommentController {
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
-
-  @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/comments', {
-    responses: {
-      '200': {
-        description: 'Array of Comment model instances',
-        content: {
-          'application/json': {
-            schema: {type: 'array', items: getModelSchemaRef(Comment)},
-          },
-        },
-      },
-    },
-  })
-  async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
-  ): Promise<Comment[]> {
-    return this.commentRepository.find(filter as Filter<Comment>);
-  }
 
   @post('/comments', {
     responses: {
