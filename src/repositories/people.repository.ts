@@ -6,17 +6,17 @@ import {
   repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {People, PeopleRelations, Post, UserCredential} from '../models';
+import {People, PeopleRelations, Post, UserSocialMedia} from '../models';
 import {PostRepository} from './post.repository';
-import {UserCredentialRepository} from './user-credential.repository';
+import {UserSocialMediaRepository} from './user-social-media.repository';
 
 export class PeopleRepository extends DefaultCrudRepository<
   People,
   typeof People.prototype.id,
   PeopleRelations
 > {
-  public readonly userCredential: HasOneRepositoryFactory<
-    UserCredential,
+  public readonly userSocialMedia: HasOneRepositoryFactory<
+    UserSocialMedia,
     typeof People.prototype.id
   >;
 
@@ -24,18 +24,18 @@ export class PeopleRepository extends DefaultCrudRepository<
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
-    @repository.getter('UserCredentialRepository')
-    protected userCredentialRepositoryGetter: Getter<UserCredentialRepository>,
+    @repository.getter('UserSocialMediaRepository')
+    protected userSocialMediaRepositoryGetter: Getter<UserSocialMediaRepository>,
     @repository.getter('PostRepository')
     protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(People, dataSource);
     this.posts = this.createHasManyRepositoryFactoryFor('posts', postRepositoryGetter);
     this.registerInclusionResolver('posts', this.posts.inclusionResolver);
-    this.userCredential = this.createHasOneRepositoryFactoryFor(
-      'credential',
-      userCredentialRepositoryGetter,
+    this.userSocialMedia = this.createHasOneRepositoryFactoryFor(
+      'userSocialMedia',
+      userSocialMediaRepositoryGetter,
     );
-    this.registerInclusionResolver('credential', this.userCredential.inclusionResolver);
+    this.registerInclusionResolver('userSocialMedia', this.userSocialMedia.inclusionResolver);
   }
 }
