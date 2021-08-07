@@ -1,6 +1,8 @@
+import {intercept} from '@loopback/core';
 import {Count, CountSchema, repository} from '@loopback/repository';
 import {del, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
 import {LikeType} from '../enums';
+import {ValidateLikePostInterceptor} from '../interceptors';
 import {Like, Post} from '../models';
 import {LikeRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
@@ -12,6 +14,7 @@ export class PostLikeController {
     protected likeRepository: LikeRepository,
   ) {}
 
+  @intercept(ValidateLikePostInterceptor.BINDING_KEY)
   @post('/posts/{id}/likes', {
     responses: {
       '200': {
@@ -20,37 +23,21 @@ export class PostLikeController {
       },
     },
   })
-  async create(
+  async createLike(
     @param.path.string('id') id: typeof Post.prototype.id,
     @requestBody({
       content: {
         'application/json': {
           schema: getModelSchemaRef(Like, {
             title: 'NewLike',
-            exclude: ['referenceId', 'type'],
+            exclude: ['referenceId', 'type', 'state'],
           }),
         },
       },
     })
     like: Omit<Like, 'id'>,
   ): Promise<Like> {
-    const foundLike = await this.likeRepository.findOne({
-      where: {
-        userId: like.userId,
-        type: LikeType.POST,
-        referenceId: id,
-      },
-    });
-
-    if (foundLike) {
-      foundLike.state = !foundLike.state;
-      foundLike.updatedAt = new Date().toString();
-
-      await this.likeRepository.updateById(foundLike.id, foundLike);
-
-      return foundLike;
-    }
-
+    like.referenceId = id;
     return this.likeRepository.create(like);
   }
 
