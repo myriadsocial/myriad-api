@@ -6,20 +6,16 @@ import {
   getModelSchemaRef,
   HttpErrors,
   param,
-  patch,
   post,
   requestBody,
   response,
 } from '@loopback/rest';
-import dotenv from 'dotenv';
 import {PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {CustomFilter, UserSocialMedia, VerifyUser} from '../models';
 import {UserSocialMediaRepository} from '../repositories';
 import {SocialMediaService, UserSocialMediaService} from '../services';
 // import {authenticate} from '@loopback/authentication';
-
-dotenv.config();
 
 // @authenticate("jwt")
 export class UserSocialMediaController {
@@ -76,8 +72,6 @@ export class UserSocialMediaController {
     }
 
     return this.userSocialMediaService.createSocialMedia(platformUser);
-
-    // this.cryptocurrencyService.claimTips(userSocialMedia) as Promise<void>;
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -114,24 +108,6 @@ export class UserSocialMediaController {
     filter?: FilterExcludingWhere<UserSocialMedia>,
   ): Promise<UserSocialMedia> {
     return this.userSocialMediaRepository.findById(id, filter);
-  }
-
-  @patch('/user-social-medias/{id}')
-  @response(204, {
-    description: 'UserSocialMedia PATCH success',
-  })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(UserSocialMedia, {partial: true}),
-        },
-      },
-    })
-    userSocialMedia: UserSocialMedia,
-  ): Promise<void> {
-    await this.userSocialMediaRepository.updateById(id, userSocialMedia);
   }
 
   @del('/user-social-medias/{id}')
