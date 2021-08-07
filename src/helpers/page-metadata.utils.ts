@@ -8,7 +8,7 @@ export function pageMetadata(args: any[], total: number): MetaPagination {
   if (!currentPage) currentPage = 1;
   if (!currentLimit) currentLimit = 5;
 
-  const itemsPerPage = currentLimit;
+  const itemsPerPage = currentLimit > total ? total : currentLimit;
   const totalItemCount = total;
   const totalPageCount = Math.ceil(totalItemCount / itemsPerPage);
 
@@ -28,6 +28,10 @@ export function pageMetadata(args: any[], total: number): MetaPagination {
     if (currentPage !== meta.totalPageCount) {
       meta.nextPage = meta.currentPage + 1;
     }
+  }
+
+  if (meta.nextPage === meta.currentPage) {
+    meta.itemsPerPage = currentLimit > total ? total : currentLimit;
   }
 
   return meta;
