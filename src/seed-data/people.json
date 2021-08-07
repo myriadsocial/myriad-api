@@ -3,56 +3,56 @@
     "name": "Elon Musk",
     "username": "elonmusk",
     "platform": "twitter",
-    "platformAccountId": "44196397",
-    "profileImageURL": "https://pbs.twimg.com/profile_images/1383184766959120385/MM9DHPWC_400x400.jpg"
+    "originUserId": "44196397",
+    "profilePictureURL": "https://pbs.twimg.com/profile_images/1383184766959120385/MM9DHPWC_400x400.jpg"
   },
   {
     "name": "Gavin Wood",
     "username": "gavofyork",
     "platform": "twitter",
-    "platformAccountId": "33962758",
-    "profileImageURL": "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg"
+    "originUserId": "33962758",
+    "profilePictureURL": "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg"
   },
   {
     "name": "W3F_Bill",
     "username": "W3F_Bill",
     "platform": "reddit",
-    "platformAccountId": "t2_5turjfiq",
-    "profileImageURL": "https://styles.redditmedia.com/t5_2gskf7/styles/profileIcon_snoof1dc48fa-83bd-4ed3-8ef3-56f2469da2ce-headshot.png"
+    "originUserId": "t2_5turjfiq",
+    "profilePictureURL": "https://styles.redditmedia.com/t5_2gskf7/styles/profileIcon_snoof1dc48fa-83bd-4ed3-8ef3-56f2469da2ce-headshot.png"
   },
   {
     "name": "CryptoChief",
     "username": "CryptoChief",
     "platform": "reddit",
-    "platformAccountId": "t2_e0t5q",
-    "profileImageURL": "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png"
+    "originUserId": "t2_e0t5q",
+    "profilePictureURL": "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png"
   },
   {
     "name": "Bill Gates",
     "username": "BillGates",
     "platform": "facebook",
-    "platformAccountId": "216311481960",
-    "profileImageURL": "https://scontent.fcgk28-1.fna.fbcdn.net/v/t1.6435-9/204173448_10158058210816961_332280879240637422_n.jpg?_nc_cat=1&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=heMsDPZZNOEAX9yi3H1&_nc_ht=scontent.fcgk28-1.fna&oh=3e8853ad3000808813a31b3f9226564c&oe=60E445DB"
+    "originUserId": "216311481960",
+    "profilePictureURL": "https://scontent.fcgk28-1.fna.fbcdn.net/v/t1.6435-9/204173448_10158058210816961_332280879240637422_n.jpg?_nc_cat=1&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=heMsDPZZNOEAX9yi3H1&_nc_ht=scontent.fcgk28-1.fna&oh=3e8853ad3000808813a31b3f9226564c&oe=60E445DB"
   },
   {
     "name": "Vitalik Buterin",
     "username": "vitalikbuterineth",
     "platform": "facebook",
-    "platformAccountId": "112773940147738",
-    "profileImageURL": "https://scontent.fcgk28-1.fna.fbcdn.net/v/t1.6435-9/132495414_400670321358097_47798745312266205_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=iBuCNCHxcdgAX-LMciC&_nc_ht=scontent.fcgk28-1.fna&oh=a54043e8dd8bdf1012854ca98728e8d6&oe=60E40AF5"
+    "originUserId": "112773940147738",
+    "profilePictureURL": "https://scontent.fcgk28-1.fna.fbcdn.net/v/t1.6435-9/132495414_400670321358097_47798745312266205_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=iBuCNCHxcdgAX-LMciC&_nc_ht=scontent.fcgk28-1.fna&oh=a54043e8dd8bdf1012854ca98728e8d6&oe=60E40AF5"
   },
   {
     "name": "QR3",
     "username": "Kur3Qr3",
     "platform": "twitter",
-    "platformAccountId": "966725945901101056",
-    "profileImageURL": "ttps://pbs.twimg.com/profile_images/968098454236000257/wPHTajY2_400x400.jpg"
+    "originUserId": "966725945901101056",
+    "profilePictureURL": "ttps://pbs.twimg.com/profile_images/968098454236000257/wPHTajY2_400x400.jpg"
   },
   {
     "name": "reverse_my_repo",
     "username": "reverse_my_repo",
     "platform": "reddit",
-    "platformAccountId": "t2_6wmczacm",
-    "profileImageURL": "https://www.redditstatic.com/avatars/avatar_default_07_A5A4A4.png"
+    "originUserId": "t2_6wmczacm",
+    "profilePictureURL": "https://www.redditstatic.com/avatars/avatar_default_07_A5A4A4.png"
   }
 ]
