@@ -12,6 +12,7 @@ import {
 } from '@loopback/rest';
 import {FriendStatusType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
+import {ValidateFriendRequestInterceptor} from '../interceptors/validate-friend-request.interceptor';
 import {CustomFilter, Friend} from '../models';
 import {FriendService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
@@ -25,12 +26,13 @@ export class FriendController {
     protected friendService: FriendService,
   ) {}
 
+  @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
   @post('/friends')
   @response(200, {
     description: 'Friend model instance',
     content: {'application/json': {schema: getModelSchemaRef(Friend)}},
   })
-  async create(
+  async add(
     @requestBody({
       content: {
         'application/json': {
@@ -43,10 +45,6 @@ export class FriendController {
     })
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
-    const foundFriend = await this.friendService.findFriend(friend.requesteeId, friend.requestorId);
-
-    if (foundFriend) return foundFriend;
-
     try {
       await this.notificationService.sendFriendRequest(friend.requestorId, friend.requesteeId);
     } catch (error) {
@@ -114,6 +112,7 @@ export class FriendController {
         // ignored
       }
     }
+
     await this.friendService.friendRepository.updateById(id, friend);
   }
 
