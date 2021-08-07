@@ -2,16 +2,16 @@ import {service} from '@loopback/core';
 import {repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {FriendStatusType} from '../enums';
-import {Friend} from '../models';
+import {Friend, Post} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {NotificationService} from './notification.service';
 
 export class FriendService {
   constructor(
+    @repository(FriendRepository)
+    public friendRepository: FriendRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
     @service(NotificationService)
     public notificationService: NotificationService,
   ) {}
@@ -59,13 +59,12 @@ export class FriendService {
     }
 
     if (foundFriend && foundFriend.status === FriendStatusType.REJECTED) {
-      this.friendRepository.updateById(foundFriend.id, {
-        status: FriendStatusType.PENDING,
-        updatedAt: new Date().toString(),
-      }) as Promise<void>;
-
       foundFriend.status = FriendStatusType.PENDING;
       foundFriend.updatedAt = new Date().toString();
+      foundFriend.friendId = friendId;
+      foundFriend.requestorId = requestorId;
+
+      this.friendRepository.updateById(foundFriend.id, foundFriend) as Promise<void>;
     }
 
     return foundFriend;
@@ -89,15 +88,12 @@ export class FriendService {
     const friendIds = friends.map(friend => friend.friendId);
     const requestorIds = friends.map(friend => friend.requestorId);
 
-    const ids = [
-      ...friendIds.filter(friendId => !requestorIds.includes(friendId)),
-      ...requestorIds,
-    ].filter(userId => userId !== id);
+    const ids = [...friendIds, ...requestorIds].filter(userId => userId !== id);
 
     return ids;
   }
 
-  async filterByFriends(userId: string): Promise<Where | null> {
+  async filterByFriends(userId: string): Promise<Where<Post> | null> {
     const approvedFriendIds = await this.getApprovedFriendIds(userId);
 
     if (!approvedFriendIds.length) return null;
@@ -105,17 +101,17 @@ export class FriendService {
     return {
       or: [
         {
-          importBy: {
+          importer: {
             inq: approvedFriendIds,
           },
         },
         {
-          walletAddress: {
+          createdBy: {
             inq: approvedFriendIds,
           },
         },
       ],
-    };
+    } as Where<Post>;
   }
 
   async deleteById(id: string): Promise<void> {

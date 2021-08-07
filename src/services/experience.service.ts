@@ -1,7 +1,7 @@
 import {repository, Where} from '@loopback/repository';
 import {noneStatusFiltering} from '../helpers/filter-utils';
-import {Experience} from '../models';
-import {ExperienceRepository, UserExperienceRepository} from '../repositories';
+import {Experience, Post} from '../models';
+import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../repositories';
 
 export class ExperienceService {
   constructor(
@@ -9,23 +9,31 @@ export class ExperienceService {
     protected userExperienceRepository: UserExperienceRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
   ) {}
 
   async getExperience(userId: string): Promise<Experience | null> {
-    const userExperience = await this.userExperienceRepository.findOne({
-      where: {userId, hasSelected: true},
-    });
-
-    if (!userExperience) return null;
-
-    return this.experienceRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: {
-        id: userExperience.experienceId,
+        id: userId,
       },
+      include: ['experiences'],
     });
+
+    if (!user) return null;
+    if (!user.experiences) return null;
+
+    const experience = user.experiences.find(
+      experience => experience.id === user.onTimeline?.toString(),
+    );
+
+    if (!experience) return null;
+
+    return experience;
   }
 
-  async filterByExperience(userId: string): Promise<Where | null> {
+  async filterByExperience(userId: string): Promise<Where<Post> | null> {
     const experience = await this.getExperience(userId);
 
     if (!experience) return null;
@@ -55,6 +63,6 @@ export class ExperienceService {
           title: regexTag,
         },
       ],
-    };
+    } as Where<Post>;
   }
 }
