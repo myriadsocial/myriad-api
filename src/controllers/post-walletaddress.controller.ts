@@ -1,14 +1,14 @@
 import {repository} from '@loopback/repository';
-import {get, getModelSchemaRef, param, response} from '@loopback/rest';
-import {Post, Wallet} from '../models';
-import {PostRepository, UserCredentialRepository} from '../repositories';
+import {get, getModelSchemaRef, HttpErrors, param, response} from '@loopback/rest';
+import {Wallet} from '../models';
+import {PeopleRepository, PostRepository} from '../repositories';
 
 export class PostWalletAddress {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(UserCredentialRepository)
-    protected userCredentialRepository: UserCredentialRepository,
+    @repository(PeopleRepository)
+    protected peopleRepository: PeopleRepository,
   ) {}
 
   @get('/posts/{id}/walletaddress')
@@ -21,23 +21,19 @@ export class PostWalletAddress {
     },
   })
   async getWalletAddress(@param.path.string('id') id: string): Promise<Wallet> {
-    const resultPost: Post = await this.postRepository.findById(id);
-    const wallet = new Wallet({
-      walletAddress: resultPost.walletAddress,
+    const post = await this.postRepository.findById(id);
+    const people = await this.peopleRepository.findById(post.peopleId, {
+      include: ['userSocialMedia'],
     });
 
-    if (resultPost) {
-      const resultUser = await this.userCredentialRepository.findOne({
-        where: {
-          peopleId: resultPost.peopleId,
-        },
-      });
+    const wallet = new Wallet();
 
-      if (resultUser) {
-        if (resultUser.isVerified) {
-          wallet.walletAddress = resultUser.userId;
-        }
-      }
+    if (people.userSocialMedia) {
+      wallet.walletAddress = people.userSocialMedia.userId;
+    } else {
+      if (!people.walletAddress) throw new HttpErrors.NotFound('Walletaddress Not Found!');
+
+      wallet.walletAddress = people.walletAddress;
     }
 
     return wallet;
