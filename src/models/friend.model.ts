@@ -8,6 +8,9 @@ import {User, UserWithRelations} from './user.model';
     mongodb: {
       collection: 'friends',
     },
+    jsonSchema: {
+      require: ['requesteeId', 'requestorId'],
+    },
   },
 })
 export class Friend extends Entity {

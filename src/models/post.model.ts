@@ -13,6 +13,9 @@ import {User} from './user.model';
     mongodb: {
       collection: 'posts',
     },
+    jsonSchema: {
+      require: ['text', 'createdBy'],
+    },
   },
 })
 export class Post extends Entity {
@@ -54,7 +57,6 @@ export class Post extends Entity {
   @property({
     type: 'string',
     required: false,
-    default: null,
   })
   text?: string;
 
@@ -74,6 +76,10 @@ export class Post extends Entity {
   @property({
     type: 'object',
     required: false,
+    default: {
+      videos: [],
+      images: [],
+    },
   })
   asset?: Asset;
 
@@ -117,7 +123,7 @@ export class Post extends Entity {
   @hasMany(() => Comment)
   comments: Comment[];
 
-  @hasMany(() => Like)
+  @hasMany(() => Like, {keyTo: 'referenceId'})
   likes: Like[];
 
   @hasMany(() => Transaction)
