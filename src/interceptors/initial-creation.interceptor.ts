@@ -8,8 +8,9 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
 import {ControllerType, MethodType, PlatformType} from '../enums';
-import {CurrencyRepository, TransactionRepository} from '../repositories';
+import {CurrencyRepository, TransactionRepository, UserRepository} from '../repositories';
 import {CurrencyService, TagService} from '../services';
 
 /**
@@ -19,6 +20,8 @@ import {CurrencyService, TagService} from '../services';
 @globalInterceptor('', {tags: {name: 'InitialCreation'}})
 export class InitialCreationInterceptor implements Provider<Interceptor> {
   constructor(
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @repository(TransactionRepository)
     protected transactionRepository: TransactionRepository,
     @repository(CurrencyRepository)
@@ -54,6 +57,14 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         invocationCtx.args[0].updatedAt = new Date().toString();
 
         if (className === ControllerType.USER) {
+          const user = await this.userRepository.findOne({
+            where: {
+              id: invocationCtx.args[0].id,
+            },
+          });
+
+          if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
+
           invocationCtx.args[0].bio = `Hello, my name is ${invocationCtx.args[0].name}!`;
           break;
         }
