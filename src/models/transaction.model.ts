@@ -19,6 +19,9 @@ export class Transaction extends Entity {
     mongodb: {
       dataType: 'ObjectId',
     },
+    jsonSchema: {
+      required: ['to', 'from', 'currencyId'],
+    },
   })
   id?: string;
 

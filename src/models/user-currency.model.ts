@@ -1,10 +1,14 @@
-import {Entity, model, property} from '@loopback/repository';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {Currency} from './currency.model';
 
 @model({
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
       collection: 'userCurrencies',
+    },
+    jsonSchema: {
+      require: ['userId', 'currencyId'],
     },
   },
 })
@@ -43,10 +47,7 @@ export class UserCurrency extends Entity {
   })
   userId: string;
 
-  @property({
-    type: 'string',
-    required: true,
-  })
+  @belongsTo(() => Currency)
   currencyId: string;
 
   constructor(data?: Partial<UserCurrency>) {
@@ -56,6 +57,7 @@ export class UserCurrency extends Entity {
 
 export interface UserCurrencyRelations {
   // describe navigational properties here
+  currency: Currency;
 }
 
 export type UserCurrencyWithRelations = UserCurrency & UserCurrencyRelations;

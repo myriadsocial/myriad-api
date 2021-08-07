@@ -1,8 +1,9 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Currency} from './currency.model';
+import {Experience} from './experience.model';
 import {Friend} from './friend.model';
-import {UserCredential} from './user-credential.model';
 import {UserCurrency} from './user-currency.model';
+import {UserExperience} from './user-experience.model';
 
 @model({
   settings: {
@@ -60,6 +61,12 @@ export class User extends Entity {
   fcmTokens?: string[];
 
   @property({
+    type: 'string',
+    required: false,
+  })
+  onTimeline?: string;
+
+  @property({
     type: 'date',
   })
   createdAt?: string;
@@ -74,11 +81,17 @@ export class User extends Entity {
   })
   deletedAt?: string;
 
-  @hasMany(() => UserCredential)
-  userCredentials: UserCredential[];
-
-  @hasMany(() => Friend)
+  @hasMany(() => Friend, {keyTo: 'friendId'})
   friends: Friend[];
+
+  @hasMany(() => Experience, {
+    through: {
+      model: () => UserExperience,
+      keyFrom: 'userId',
+      keyTo: 'experienceId',
+    },
+  })
+  experiences: Experience[];
 
   @hasMany(() => Currency, {
     through: {

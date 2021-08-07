@@ -12,9 +12,3 @@ export class Wallet extends Model {
     super(data);
   }
 }
-
-export interface WalletRelations {
-  // describe navigational properties here
-}
-
-export type WalletWithRelations = Wallet & WalletRelations;

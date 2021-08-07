@@ -8,6 +8,9 @@ import {User} from './user.model';
     mongodb: {
       collection: 'comments',
     },
+    jsonSchema: {
+      required: ['postId'],
+    },
   },
 })
 export class Comment extends Entity {
