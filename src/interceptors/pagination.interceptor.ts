@@ -1,5 +1,5 @@
 import {
-  globalInterceptor,
+  injectable,
   Interceptor,
   InvocationContext,
   InvocationResult,
@@ -8,22 +8,22 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, Count, repository, Where} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
 import {ControllerType, MethodType, TimelineType} from '../enums';
-import {noneStatusFiltering} from '../helpers/filter-utils';
+import {defaultFilterQuery, noneStatusFiltering} from '../helpers/filter-utils';
 import {pageMetadata} from '../helpers/page-metadata.utils';
-import {Experience, Post, User} from '../models';
+import {Post} from '../models';
 import {
   CommentRepository,
-  ConversationRepository,
-  CryptocurrencyRepository,
+  CurrencyRepository,
   ExperienceRepository,
   NotificationRepository,
   PeopleRepository,
   PostRepository,
   TagRepository,
-  TransactionHistoryRepository,
   TransactionRepository,
   UserRepository,
+  UserSocialMediaRepository,
 } from '../repositories';
 import {ExperienceService, FriendService, TagService} from '../services';
 
@@ -32,9 +32,10 @@ import {ExperienceService, FriendService, TagService} from '../services';
  * `boot`
  */
 // @injectable({tags: {key: PaginationInterceptor.BINDING_KEY}})
-@globalInterceptor('', {tags: {name: 'pagination'}})
+
+@injectable({tags: {key: PaginationInterceptor.BINDING_KEY}})
 export class PaginationInterceptor implements Provider<Interceptor> {
-  // static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
+  static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
 
   constructor(
     @repository(PostRepository)
@@ -45,18 +46,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected transactionRepository: TransactionRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
-    @repository(TransactionHistoryRepository)
-    protected transactionHistoryRepository: TransactionHistoryRepository,
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
     @repository(NotificationRepository)
     protected notificationRepository: NotificationRepository,
-    @repository(CryptocurrencyRepository)
-    protected cryptocurrencyRepository: CryptocurrencyRepository,
-    @repository(ConversationRepository)
-    protected conversationRepository: ConversationRepository,
+    @repository(CurrencyRepository)
+    protected currencyRepository: CurrencyRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
+    @repository(UserSocialMediaRepository)
+    protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(TagRepository)
     protected tagRepository: TagRepository,
     @service(ExperienceService)
@@ -82,105 +81,136 @@ export class PaginationInterceptor implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
+
   async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
-    const result = await next();
-    const methodName = invocationCtx.methodName;
-    const className = invocationCtx.targetClass.name as ControllerType;
+    try {
+      const methodName = invocationCtx.methodName as MethodType;
+      const className = invocationCtx.targetClass.name as ControllerType;
 
-    let args = invocationCtx.args;
-    let countResult = {count: 0};
+      let args = invocationCtx.args;
+      const filter = args[0] ? JSON.parse(args[0]) : args[0];
 
-    switch (methodName) {
-      case MethodType.FIND: {
-        let where: Where<AnyObject> = {};
+      let countResult = {count: 0};
+      let page = 1;
+      let sortBy = TimelineType.ALL;
+      let userId = '';
+      let q = '';
+      let where = null;
 
-        if (args[0]) {
-          if (args[0].where) {
-            where = args[0].where;
+      if (filter) {
+        if (filter.where) {
+          where = filter.where;
+
+          if (filter.sortBy || filter.findBy) {
+            throw new Error('ErrorWhere');
           }
         }
 
-        countResult = await this.countTotal(className, where);
-        break;
+        // If sortBy and findBy exist
+        // Filter for user timeline
+        if (filter.sortBy || filter.findBy) {
+          if (!filter.findBy) {
+            throw new Error('EmptyFindBy');
+          } else {
+            userId = filter.findBy;
+            delete filter.findBy;
+          }
+
+          if (!filter.sortBy) {
+            const user = await this.userRepository.findById(userId);
+
+            if (!user.onTimeline) sortBy = TimelineType.TRENDING;
+            else sortBy = TimelineType.EXPERIENCE;
+          } else {
+            sortBy = filter.sortBy;
+            delete filter.sortBy;
+          }
+        }
+
+        if (filter.page) {
+          page = filter.page;
+          delete filter.page;
+        }
+
+        // Filter for search experience
+        if (filter.q) {
+          q = filter.q;
+          delete filter.q;
+        }
       }
 
-      case MethodType.USERTIMELINE: {
-        const [userId, sortBy, page, filter] = args;
-        const where = await this.filterTimeline(userId, sortBy);
+      switch (methodName) {
+        case MethodType.FIND: {
+          const newFilter = defaultFilterQuery(page, filter);
+          invocationCtx.args[0] = newFilter;
 
-        if (!where) break;
+          args = [page, newFilter];
+          countResult = await this.countTotal(className, where);
 
-        args = [page, filter];
-        countResult = await this.countTotal(className, where);
+          break;
+        }
 
-        break;
+        case MethodType.TIMELINE: {
+          if (!where) where = await this.filterTimeline(userId, sortBy);
+
+          const newFilter = defaultFilterQuery(page, filter, where);
+          invocationCtx.args[0] = newFilter;
+
+          args = [page, newFilter];
+          countResult = await this.countTotal(className, where);
+
+          break;
+        }
+
+        case MethodType.SEARCHEXPERIENCE: {
+          if (!q) break;
+
+          where = {
+            name: new RegExp('^' + q, 'i'),
+            origin: true,
+          };
+
+          const newFilter = defaultFilterQuery(page, filter, where);
+          invocationCtx.args[0] = newFilter;
+
+          args = [page, newFilter];
+          countResult = await this.countTotal(className, where);
+
+          break;
+        }
       }
 
-      case MethodType.USERFRIENDLIST: {
-        const [userId, page, filter] = args;
-        const friendIds = await this.friendService.getApprovedFriendIds(userId);
+      const result = await next();
 
-        if (!friendIds.length) break;
-
-        const where = {
-          id: {
-            inq: friendIds,
+      if (countResult.count === 0) {
+        return {
+          data: [],
+          meta: {
+            totalItemCount: 0,
+            totalPageCount: 0,
+            itemsPerPage: 0,
           },
-        } as Where<User>;
-
-        args = [page, filter];
-        countResult = await this.countTotal(className, where);
-        break;
+        };
+      } else {
+        return {
+          data: result,
+          meta: pageMetadata(args, countResult.count),
+        };
       }
+    } catch (err) {
+      if (err.message === 'EmptyFindBy')
+        throw new HttpErrors.UnprocessableEntity('FindBy cannot be empty');
 
-      case MethodType.SEARCHEXPERIENCE: {
-        const [q, page, filter] = args;
+      if (err.message === 'ErrorWhere')
+        throw new HttpErrors.UnprocessableEntity('Where and (FindBy and SortBy) can not use both');
 
-        if (!q) break;
-
-        const pattern = new RegExp('^' + q, 'i');
-        const where = {
-          name: pattern,
-          origin: true,
-        } as Where<Experience>;
-
-        args = [page, filter];
-        countResult = await this.countTotal(className, where);
-        break;
-      }
-
-      case MethodType.FINDCOMMENT: {
-        const [postId, page, filter] = args;
-
-        const where = {
-          ...filter.where,
-          postId,
-        } as Where<Comment>;
-
-        args = [page, filter];
-        countResult = await this.countTotal(className, where);
-        break;
-      }
-    }
-
-    if (countResult.count === 0) {
-      return {
-        data: [],
-        meta: {
-          totalItemCount: 0,
-          totalPageCount: 0,
-          itemsPerPage: 0,
-        },
-      };
-    } else {
-      return {
-        data: result,
-        meta: pageMetadata(args, countResult.count),
-      };
+      throw new HttpErrors.UnprocessableEntity('Wrong filter format!');
     }
   }
 
   async filterTimeline(userId: string, sortBy: TimelineType): Promise<Where<Post> | null> {
+    if (!userId) return null;
+
     let where = null;
 
     switch (sortBy) {
@@ -233,12 +263,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               },
             },
             {
-              importBy: {
+              importers: {
                 inq: friends,
               },
             },
             {
-              walletAddress: {
+              createdBy: {
                 inq: friends,
               },
             },
@@ -246,6 +276,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         } as Where<Post>;
       }
     }
+
+    if (!where) return null;
 
     return where;
   }
@@ -275,10 +307,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         countResult = await this.peopleRepository.count(where);
         break;
 
-      case ControllerType.TRANSACTIONHISTORY:
-        countResult = await this.transactionHistoryRepository.count(where);
-        break;
-
       case ControllerType.TAG:
         countResult = await this.tagRepository.count(where);
         break;
@@ -287,16 +315,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         countResult = await this.notificationRepository.count(where);
         break;
 
-      case ControllerType.CRYPTOCURRENCY:
-        countResult = await this.cryptocurrencyRepository.count(where);
-        break;
-
-      case ControllerType.CONVERSATION:
-        countResult = await this.conversationRepository.count(where);
+      case ControllerType.CURRENCY:
+        countResult = await this.currencyRepository.count(where);
         break;
 
       case ControllerType.POSTCOMMENT:
         countResult = await this.commentRepository.count(where);
+        break;
+
+      case ControllerType.USERSOCIALMEDIA:
+        countResult = await this.userSocialMediaRepository.count(where);
         break;
 
       default:
