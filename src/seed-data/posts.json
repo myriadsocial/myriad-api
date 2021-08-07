@@ -3,24 +3,23 @@
     "platformUser": {
       "name": "Elon Musk",
       "username": "elonmusk",
-      "platformAccountId": "44196397",
-      "profileImageURL": "https://pbs.twimg.com/profile_images/1383184766959120385/MM9DHPWC_400x400.jpg"
+      "originUserId": "44196397",
+      "profilePictureURL": "https://pbs.twimg.com/profile_images/1383184766959120385/MM9DHPWC_400x400.jpg"
     },
     "tags": [],
     "platform": "twitter",
     "title": "",
     "text": "Tesla Solar + Powerwall battery enables consumers to be their own utility",
-    "textId": "1385108424761872387",
-    "hasMedia": true,
-    "link": "https://twitter.com/44196397/status/1385108424761872387",
-    "platformCreatedAt": "Thu Apr 22 2021 12:49:17 GMT+0700 (Western Indonesia Time)"
+    "originPostId": "1385108424761872387",
+    "url": "https://twitter.com/44196397/status/1385108424761872387",
+    "originCreatedAt": "Thu Apr 22 2021 12:49:17 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
       "name": "QR3🔶",
       "username": "Kur3Qr3",
-      "platformAccountId": "966725945901101056",
-      "profileImageURL": "https://pbs.twimg.com/profile_images/968098454236000257/wPHTajY2_400x400.jpg"
+      "originUserId": "966725945901101056",
+      "profilePictureURL": "https://pbs.twimg.com/profile_images/968098454236000257/wPHTajY2_400x400.jpg"
     },
     "tags": [
       "technology",
@@ -34,21 +33,20 @@
     "platform": "twitter",
     "title": "",
     "text": "This is a 5MB storage space, believe it or not.\n\n#technology #Bitcoin #Computing #IBM #storage #blockchain #ArtificialIntelligence",
-    "textId": "1385164896896225282",
+    "originPostId": "1385164896896225282",
     "asset": {
       "images": ["http://pbs.twimg.com/media/EzkXoRxX0AESMZY.jpg"],
       "videos": []
     },
-    "hasMedia": true,
-    "link": "https://twitter.com/966725945901101056/status/1385164896896225282",
-    "platformCreatedAt": "Thu Apr 22 2021 16:33:41 GMT+0700 (Western Indonesia Time)"
+    "url": "https://twitter.com/966725945901101056/status/1385164896896225282",
+    "originCreatedAt": "Thu Apr 22 2021 16:33:41 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
       "name": "Gavin Wood",
       "username": "gavofyork",
-      "platformAccountId": "33962758",
-      "profileImageURL": "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg"
+      "originUserId": "33962758",
+      "profilePictureURL": "https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg"
     },
     "tags": [
       "blockchain"
@@ -56,21 +54,20 @@
     "platform": "twitter",
     "title": "",
     "text": "1,000,000 blocks, two blockchain protocols, numerous validators and 51 peers - all on @polkadotnetwork 's Krumme Lancke test net",
-    "textId": "1027306774356025345",
-    "hasMedia": true,
+    "originPostId": "1027306774356025345",
     "asset": {
       "images": ["http://pbs.twimg.com/media/DkG5x7cXsAAJOu3.jpg"],
       "videos": []
     },
-    "link": "https://twitter.com/33962758/status/1027306774356025345",
-    "platformCreatedAt": "Thu Aug 09 2018 04:33:16 GMT+0700 (Western Indonesia Time)"
+    "url": "https://twitter.com/33962758/status/1027306774356025345",
+    "originCreatedAt": "Thu Aug 09 2018 04:33:16 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
       "name": "reverse_my_repo",
       "username": "reverse_my_repo",
-      "platformAccountId": "t2_6wmczacm",
-      "profileImageURL": "https://www.redditstatic.com/avatars/avatar_default_07_A5A4A4.png"
+      "originUserId": "t2_6wmczacm",
+      "profilePictureURL": "https://www.redditstatic.com/avatars/avatar_default_07_A5A4A4.png"
     },
     "tags": [
       "cryptocurrency"
@@ -78,17 +75,16 @@
     "platform": "reddit",
     "title": "Boomer stock streamer denounces cryptocurrency and wishes failure among investors",
     "text": "https://clips.twitch.tv/BoxyPoisedHamburgerTBTacoLeft-x3IcZa1hw9Vr3AYt",
-    "textId": "ms508t",
-    "hasMedia": true,
-    "link": "https://reddit.com/ms508t",
-    "platformCreatedAt": "Fri Apr 16 2021 22:01:59 GMT+0700 (Western Indonesia Time)"
+    "originPostId": "ms508t",
+    "url": "https://reddit.com/ms508t",
+    "originCreatedAt": "Fri Apr 16 2021 22:01:59 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
       "name": "CryptoChief",
       "username": "CryptoChief",
-      "platformAccountId": "t2_e0t5q",
-      "profileImageURL": "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png"
+      "originUserId": "t2_e0t5q",
+      "profilePictureURL": "https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png"
     },
     "tags": [
       "blockchain"
@@ -96,41 +92,38 @@
     "platform": "reddit",
     "title": "Cloudflare dumps Google's reCAPTCHA, moves to hCaptcha as free ride ends (and something about privacy) - hCaptcha works with a bidding system that uses the Ethereum blockchain for payments",
     "text": "https://www.theregister.co.uk/2020/04/09/cloudflare_dumps_recaptcha/",
-    "textId": "fy9zev",
-    "hasMedia": false,
-    "link": "https://reddit.com/fy9zev",
-    "platformCreatedAt": "Wed Apr 28 2021 09:17:56 GMT+0700 (Western Indonesia Time)"
+    "originPostId": "fy9zev",
+    "url": "https://reddit.com/fy9zev",
+    "originCreatedAt": "Wed Apr 28 2021 09:17:56 GMT+0700 (Western Indonesia Time)"
   },
   {
     "platformUser": {
       "name": "Vitalik Buterin",
       "username": "vitalikbuterineth",
-      "platformAccountId": "112773940147738",
-      "profileImageURL": "https://scontent.fcgk10-1.fna.fbcdn.net/v/t1.6435-9/132495414_400670321358097_47798745312266205_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=hDbVK_S8DZIAX_oLiUq&tn=htOs9kT7Ov4c12Lr&_nc_ht=scontent.fcgk10-1.fna&oh=e5581710d7d40585f0f2050bb0a0bcbb&oe=60EFE875"
+      "originUserId": "112773940147738",
+      "profilePictureURL": "https://scontent.fcgk10-1.fna.fbcdn.net/v/t1.6435-9/132495414_400670321358097_47798745312266205_n.jpg?_nc_cat=108&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=hDbVK_S8DZIAX_oLiUq&tn=htOs9kT7Ov4c12Lr&_nc_ht=scontent.fcgk10-1.fna&oh=e5581710d7d40585f0f2050bb0a0bcbb&oe=60EFE875"
     },
     "tags": [],
     "platform": "facebook",
     "title": "",
     "text": "",
-    "textId": "463517661740029",
-    "hasMedia": false,
-    "link": "https://www.facebook.com/112773940147738/posts/463517661740029",
-    "platformCreatedAt": "2021-04-05T15:29:19-0700"
+    "originPostId": "463517661740029",
+    "url": "https://www.facebook.com/112773940147738/posts/463517661740029",
+    "originCreatedAt": "2021-04-05T15:29:19-0700"
   },
   {
     "platformUser": {
       "name": "Bill Gates",
       "username": "BillGates",
-      "platformAccountId": "216311481960",
-      "profileImageURL": "https://scontent.fcgk10-1.fna.fbcdn.net/v/t1.6435-9/204173448_10158058210816961_332280879240637422_n.jpg?_nc_cat=1&_nc_rgb565=1&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=N9-suj8Rj5kAX8L4wyE&tn=htOs9kT7Ov4c12Lr&_nc_ht=scontent.fcgk10-1.fna&oh=3b85ddef611c267f0f19704b9a64e873&oe=60F0235B"
+      "originUserId": "216311481960",
+      "profilePictureURL": "https://scontent.fcgk10-1.fna.fbcdn.net/v/t1.6435-9/204173448_10158058210816961_332280879240637422_n.jpg?_nc_cat=1&_nc_rgb565=1&ccb=1-3&_nc_sid=09cbfe&_nc_ohc=N9-suj8Rj5kAX8L4wyE&tn=htOs9kT7Ov4c12Lr&_nc_ht=scontent.fcgk10-1.fna&oh=3b85ddef611c267f0f19704b9a64e873&oe=60F0235B"
     },
     "tags": [],
     "platform": "facebook",
     "title": "",
     "text": "",
-    "textId": "10157789183586961",
-    "hasMedia": false,
-    "link": "https://www.facebook.com/216311481960/posts/10157789183586961",
-    "platformCreatedAt": "2021-02-16T05:06:39-0800"
+    "originPostId": "10157789183586961",
+    "url": "https://www.facebook.com/216311481960/posts/10157789183586961",
+    "originCreatedAt": "2021-02-16T05:06:39-0800"
   }
 ]
