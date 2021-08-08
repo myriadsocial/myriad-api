@@ -9,9 +9,14 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ControllerType, MethodType, PlatformType} from '../enums';
-import {CurrencyRepository, TransactionRepository, UserRepository} from '../repositories';
-import {CurrencyService, TagService} from '../services';
+import {ControllerType, LikeType, MethodType, PlatformType} from '../enums';
+import {
+  CurrencyRepository,
+  PostRepository,
+  TransactionRepository,
+  UserRepository,
+} from '../repositories';
+import {CurrencyService, MetricService, TagService} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -24,8 +29,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected userRepository: UserRepository,
     @repository(TransactionRepository)
     protected transactionRepository: TransactionRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
+    @service(MetricService)
+    protected metricService: MetricService,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
     @service(TagService)
@@ -112,6 +121,14 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
             if (result.tags.length > 0) {
               this.tagService.createTags(result.tags) as Promise<void>;
             }
+            break;
+          }
+
+          if (className === ControllerType.COMMENT) {
+            const metric = await this.metricService.publicMetric(LikeType.POST, result.postId);
+            this.postRepository.updateById(invocationCtx.args[0].postId, {
+              metric: metric,
+            });
             break;
           }
 
