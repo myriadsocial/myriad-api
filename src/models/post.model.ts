@@ -1,5 +1,6 @@
 import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
 import {PlatformType} from '../enums';
+import {Metric} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
 import {Comment} from './comment.model';
 import {Like} from './like.model';
@@ -95,6 +96,16 @@ export class Post extends Entity {
     default: [],
   })
   importers: string[];
+
+  @property({
+    type: 'object',
+    default: {
+      likes: 0,
+      dislikes: 0,
+      comments: 0,
+    },
+  })
+  metric: Metric;
 
   @property({
     type: 'date',
