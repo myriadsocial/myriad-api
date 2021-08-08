@@ -74,7 +74,7 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
 
       this.postRepository.updateById(referenceId, {
         metric: metric,
-      });
+      }) as Promise<void>;
     }
 
     return result;

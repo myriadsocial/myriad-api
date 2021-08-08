@@ -128,7 +128,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
             const metric = await this.metricService.publicMetric(LikeType.POST, result.postId);
             this.postRepository.updateById(invocationCtx.args[0].postId, {
               metric: metric,
-            });
+            }) as Promise<void>;
             break;
           }
 
