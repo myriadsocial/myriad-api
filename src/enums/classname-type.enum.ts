@@ -11,6 +11,7 @@ export enum ControllerType {
   USERCURRENCY = 'UserCurrencyController',
   USERSOCIALMEDIA = 'UserSocialMediaController',
   FRIEND = 'FriendController',
+  COMMENT = 'CommentController',
 }
 
 export enum MethodType {
