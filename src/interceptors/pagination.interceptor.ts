@@ -14,7 +14,13 @@ import {defaultFilterQuery, noneStatusFiltering} from '../helpers/filter-utils';
 import {pageMetadata} from '../helpers/page-metadata.utils';
 import {Post} from '../models';
 import {UserRepository} from '../repositories';
-import {ExperienceService, FriendService, MetricService, TagService} from '../services';
+import {
+  ExperienceService,
+  FriendService,
+  MetricService,
+  NotificationService,
+  TagService,
+} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -37,6 +43,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected tagService: TagService,
     @service(FriendService)
     protected friendService: FriendService,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   /**
@@ -181,6 +189,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       const result = await next();
+
+      if (className === ControllerType.NOTIFICATION && methodName === MethodType.FIND) {
+        const filter = invocationCtx.args[0];
+        const toUser = filter.where ? (filter.where.to ? filter.where.to : null) : null;
+
+        if (toUser) {
+          this.notificationService.readNotification(toUser);
+        }
+      }
 
       return {
         data: result,
