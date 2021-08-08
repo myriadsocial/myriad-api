@@ -30,11 +30,11 @@ export class Notification extends Entity {
   })
   type: NotificationType;
 
-  @belongsTo(() => User, {name: 'fromUserId'})
-  from: string;
-
-  @belongsTo(() => User, {name: 'toUserId'})
-  to: string;
+  @property({
+    type: 'boolean',
+    default: false,
+  })
+  read: boolean;
 
   @property({
     type: 'string',
@@ -65,6 +65,12 @@ export class Notification extends Entity {
     required: false,
   })
   deletedAt?: string;
+
+  @belongsTo(() => User, {name: 'fromUserId'})
+  from: string;
+
+  @belongsTo(() => User, {name: 'toUserId'})
+  to: string;
 
   constructor(data?: Partial<Notification>) {
     super(data);
