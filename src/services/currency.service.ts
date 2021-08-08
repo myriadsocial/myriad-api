@@ -92,6 +92,9 @@ export class CurrencyService {
       const transfer = api.tx.currencies.transfer(to, {Token: DefaultCurrencyType.AUSD}, value);
       const txHash = await transfer.signAndSend(from, {nonce: getNonce});
 
+      const myriad = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
+      if (!myriad) await this.userRepository.create({id: getHexPublicKey(from), name: 'Myriad'});
+
       this.transactionRepository.create({
         hash: txHash.toString(),
         amount: value / 10 ** acalaDecimal,
@@ -129,6 +132,9 @@ export class CurrencyService {
 
     const transfer = api.tx.balances.transfer(to, rewardAmount);
     const txHash = await transfer.signAndSend(from, {nonce: getNonce});
+
+    const myriad = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
+    if (!myriad) await this.userRepository.create({id: getHexPublicKey(from), name: 'Myriad'});
 
     this.transactionRepository.create({
       hash: txHash.toString(),
