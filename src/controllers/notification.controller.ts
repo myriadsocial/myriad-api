@@ -1,15 +1,6 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {
-  del,
-  get,
-  getModelSchemaRef,
-  param,
-  patch,
-  post,
-  requestBody,
-  response,
-} from '@loopback/rest';
+import {del, get, getModelSchemaRef, param, patch, requestBody, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {CustomFilter, Notification} from '../models';
 import {NotificationRepository} from '../repositories';
@@ -21,27 +12,6 @@ export class NotificationsController {
     @repository(NotificationRepository)
     protected notificationRepository: NotificationRepository,
   ) {}
-
-  @post('/notifications')
-  @response(200, {
-    description: 'Notification model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Notification)}},
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Notification, {
-            title: 'NewNotification',
-            exclude: ['id'],
-          }),
-        },
-      },
-    })
-    notification: Omit<Notification, 'id'>,
-  ): Promise<Notification> {
-    return this.notificationRepository.create(notification);
-  }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/notifications')
