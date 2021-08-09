@@ -88,7 +88,7 @@ export class UserSocialMediaService {
     });
 
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
-    const newKey = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + newPeople.id);
+    const newKey = getKeyring().addFromUri('//' + newPeople.id);
 
     this.peopleRepository.updateById(newPeople.id, {
       walletAddress: getHexPublicKey(newKey),
