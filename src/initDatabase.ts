@@ -203,7 +203,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
       await userCurrencyRepository.createAll([
         {
           userId: user.id,
-          currencyId: DefaultCurrencyType.MYR,
+          currencyId: DefaultCurrencyType.MYRIA,
         },
         {
           userId: user.id,

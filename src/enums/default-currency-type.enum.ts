@@ -1,4 +1,4 @@
 export enum DefaultCurrencyType {
   AUSD = 'AUSD',
-  MYR = 'MYRIA',
+  MYRIA = 'MYRIA',
 }

@@ -42,7 +42,7 @@ export class CurrencyService {
   async defaultCurrency(userId: string): Promise<void> {
     const currencies = [
       {
-        id: DefaultCurrencyType.MYR,
+        id: DefaultCurrencyType.MYRIA,
         name: 'myriad',
         decimal: 12,
         image: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
@@ -113,7 +113,7 @@ export class CurrencyService {
 
   async sendMyriadReward(userId: string): Promise<void> {
     const {rpcURL: myriadRpc, decimal: myriadDecimal} = await this.currencyRepository.findById(
-      DefaultCurrencyType.MYR,
+      DefaultCurrencyType.MYRIA,
     );
 
     const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
@@ -126,7 +126,7 @@ export class CurrencyService {
     const rewardAmount = +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) * 10 ** myriadDecimal;
 
     const {nonce} = await api.query.system.account(from.address);
-    const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.MYR);
+    const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.MYRIA);
 
     const transfer = api.tx.balances.transfer(to, rewardAmount);
     const txHash = await transfer.signAndSend(from, {nonce: getNonce});
@@ -139,7 +139,7 @@ export class CurrencyService {
       amount: rewardAmount / 10 ** myriadDecimal,
       to: to,
       from: getHexPublicKey(from),
-      currencyId: DefaultCurrencyType.MYR,
+      currencyId: DefaultCurrencyType.MYRIA,
       createdAt: new Date().toString(),
       updatedAt: new Date().toString(),
     }) as Promise<Transaction>;
@@ -158,7 +158,7 @@ export class CurrencyService {
       where: {
         userId: userId,
         currencyId: {
-          nlike: DefaultCurrencyType.MYR,
+          nlike: DefaultCurrencyType.MYRIA,
         },
       },
       include: ['currency'],
