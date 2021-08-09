@@ -10,6 +10,7 @@ export enum ControllerType {
   CURRENCY = 'CurrencyController',
   USERCURRENCY = 'UserCurrencyController',
   USERSOCIALMEDIA = 'UserSocialMediaController',
+  USEREXPERIENCE = 'UserExperienceController',
   FRIEND = 'FriendController',
   COMMENT = 'CommentController',
 }
@@ -22,4 +23,7 @@ export enum MethodType {
   FINDFRIENDS = 'findFriends',
   SEARCHEXPERIENCE = 'search',
   VERIFY = 'verify',
+  CLONE = 'clone',
+  MODIFY = 'modify',
+  CREATENEW = 'createNew',
 }
