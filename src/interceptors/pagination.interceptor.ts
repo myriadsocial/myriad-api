@@ -194,9 +194,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const filter = invocationCtx.args[0];
         const toUser = filter.where ? (filter.where.to ? filter.where.to : null) : null;
 
-        if (toUser) {
-          this.notificationService.readNotification(toUser);
-        }
+        this.notificationService.readNotification(toUser);
       }
 
       return {
