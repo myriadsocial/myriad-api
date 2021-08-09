@@ -12,6 +12,7 @@ import {
   PostRepository,
   TagRepository,
   TransactionRepository,
+  UserExperienceRepository,
   UserRepository,
   UserSocialMediaRepository,
 } from '../repositories';
@@ -42,6 +43,8 @@ export class MetricService {
     protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(TagRepository)
     protected tagRepository: TagRepository,
+    @repository(UserExperienceRepository)
+    protected userExperienceRepository: UserExperienceRepository,
   ) {}
 
   async publicMetric(type: LikeType, referenceId: string): Promise<Metric> {
@@ -111,6 +114,10 @@ export class MetricService {
 
       case ControllerType.FRIEND:
         result = await this.friendRepository.count(where);
+        break;
+
+      case ControllerType.USEREXPERIENCE:
+        result = await this.userExperienceRepository.count(where);
         break;
 
       default:
