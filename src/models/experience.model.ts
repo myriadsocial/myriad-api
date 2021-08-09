@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {Person, Tag} from '../interfaces';
+import {ExtendedPeople, Tag} from '../interfaces';
 import {User} from './user.model';
 
 @model({
@@ -43,7 +43,7 @@ export class Experience extends Entity {
     itemType: 'object',
     required: false,
   })
-  people: Person[];
+  people: ExtendedPeople[];
 
   @property({
     type: 'string',
