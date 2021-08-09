@@ -150,7 +150,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
 
     return users.map((user: User) => {
       const seed = generateSeed();
-      const pair = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).createFromUri(seed + '', {
+      const pair = getKeyring().createFromUri(seed + '', {
         name: user.name,
       });
       const name = user.name ?? '';
@@ -310,7 +310,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
   async addWalletAddress(people: People[], peopleRepository: PeopleRepository): Promise<void> {
     for (const person of people) {
       const {getKeyring, getHexPublicKey} = new PolkadotJs();
-      const newKey = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + person.id);
+      const newKey = getKeyring().addFromUri('//' + person.id);
 
       await peopleRepository.updateById(person.id, {
         walletAddress: getHexPublicKey(newKey),

@@ -28,7 +28,7 @@ export class PostService {
       if (platformUser) {
         people = await this.peopleRepository.create(platformUser);
 
-        const newKey = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + people.id);
+        const newKey = getKeyring().addFromUri('//' + people.id);
 
         this.peopleRepository.updateById(people.id, {
           walletAddress: getHexPublicKey(newKey),
