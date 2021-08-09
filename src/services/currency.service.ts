@@ -80,7 +80,7 @@ export class CurrencyService {
       const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
       const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
-      const from = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromMnemonic(mnemonic);
+      const from = getKeyring().addFromMnemonic(mnemonic);
       const to = userId;
 
       const acalaDecimal = 12;
@@ -112,17 +112,15 @@ export class CurrencyService {
   }
 
   async sendMyriadReward(userId: string): Promise<void> {
-    const {
-      rpcURL: myriadRpc,
-      addressType: myriadPrefix,
-      decimal: myriadDecimal,
-    } = await this.currencyRepository.findById(DefaultCurrencyType.MYR);
+    const {rpcURL: myriadRpc, decimal: myriadDecimal} = await this.currencyRepository.findById(
+      DefaultCurrencyType.MYR,
+    );
 
-    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs(myriadRpc);
-    const api = await polkadotApi();
+    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
+    const api = await polkadotApi(myriadRpc);
 
     const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
-    const from = getKeyring(process.env.MYRIAD_CRYPTO_TYPE, myriadPrefix).addFromMnemonic(mnemonic);
+    const from = getKeyring().addFromMnemonic(mnemonic);
     const to = userId;
 
     const rewardAmount = +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) * 10 ** myriadDecimal;
@@ -153,7 +151,7 @@ export class CurrencyService {
     const {userId, peopleId} = userSocialMedia;
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
-    const from = getKeyring(process.env.MYRIAD_CRYPTO_TYPE).addFromUri('//' + peopleId);
+    const from = getKeyring().addFromUri('//' + peopleId);
     const to = userId;
 
     const userCurrencies = await this.userCurrencyRepository.find({
@@ -166,61 +164,85 @@ export class CurrencyService {
       include: ['currency'],
     });
 
+    let api = null;
+    let initRpcURL = null;
+
     for (const userCurrency of userCurrencies) {
       const {id, decimal, rpcURL, native} = userCurrency.currency;
 
-      let initRpcURL = null;
-      let api = null;
-      let balance = {
-        free: '0',
-        frozen: '0',
-        reserved: '0',
-      };
+      let balance = 0;
 
-      if (!api || initRpcURL !== rpcURL) {
-        initRpcURL = rpcURL;
-        api = await this.blockchainApi(initRpcURL, id);
-      }
+      try {
+        if (!api || !initRpcURL) {
+          const provider = new WsProvider(rpcURL);
 
-      if (native) {
-        const nativeBalance = await api.query.system.account(from.publicKey);
+          api = await new ApiPromise(
+            options({
+              provider,
+            }) as ApiOptions,
+          ).isReadyOrError;
 
-        balance = {
-          free: nativeBalance.data.free.toJSON(),
-          frozen: '0',
-          reserved: '0',
+          initRpcURL = rpcURL;
+        }
+
+        if (api && initRpcURL !== rpcURL) {
+          await api.disconnect();
+
+          const provider = new WsProvider(rpcURL);
+          api = await new ApiPromise(
+            options({
+              provider,
+            }) as ApiOptions,
+          ).isReadyOrError;
+
+          initRpcURL = rpcURL;
+        }
+
+        if (native) {
+          const nativeBalance = await api.query.system.account(from.publicKey);
+
+          balance = nativeBalance.data.free.toJSON();
+        } else {
+          const nonNativeBalance = await api.query.tokens.accounts(from.publicKey, {Token: id});
+          const result = nonNativeBalance.toJSON() as unknown as Balance;
+
+          balance = result.free;
+        }
+
+        if (!balance) continue;
+
+        const paymentInfo = {
+          amount: balance,
+          to: to,
+          from: from,
+          currencyId: id as DefaultCurrencyType,
+          decimal: decimal,
+          native: native,
         };
-      } else {
-        const nonNativeBalance = await api.query.tokens.accounts(from.publicKey, {Token: id});
 
-        balance = nonNativeBalance.toJSON() as unknown as Balance;
+        const txFee = await this.getTransactionFee(api, paymentInfo);
+
+        if (balance - txFee < 0) continue;
+
+        let transfer = null;
+
+        if (native) transfer = api.tx.balances.transfer(to, balance - txFee);
+        else transfer = api.tx.currencies.transfer(to, {Token: id}, balance - txFee);
+
+        const txHash = await transfer.signAndSend(from);
+
+        this.transactionRepository.create({
+          hash: txHash.toString(),
+          amount: balance / 10 ** decimal,
+          to: to,
+          from: getHexPublicKey(from),
+          currencyId: id,
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString(),
+        }) as Promise<Transaction>;
+      } catch (err) {
+        // ignore
       }
-
-      if (!parseInt(balance.free)) continue;
-
-      const amount = parseInt(balance.free);
-
-      const paymentInfo = {
-        amount: amount,
-        to: to,
-        from: from,
-        fromString: getHexPublicKey(from),
-        currencyId: id as DefaultCurrencyType,
-        decimal: decimal,
-        native: native,
-        txFee: 0,
-        nonce: 0,
-      };
-
-      const txFee = await this.getTransactionFee(api, paymentInfo);
-
-      if (amount - txFee < 0) continue;
-
-      paymentInfo.txFee = txFee;
-
-      this.sendTipsToUser(api, paymentInfo) as Promise<void>;
-
-      if (api) await api.disconnect();
     }
   }
 
@@ -259,47 +281,6 @@ export class CurrencyService {
     }
 
     return txFee;
-  }
-
-  async sendTipsToUser(blockchainApi: ApiPromise, paymentInfo: PaymentInfo): Promise<void> {
-    const {amount, to, from, currencyId, native, txFee, nonce, fromString, decimal} = paymentInfo;
-
-    let txHash = null;
-    let transfer = null;
-
-    if (native) transfer = blockchainApi.tx.balances.transfer(to, amount - txFee);
-    else transfer = blockchainApi.tx.currencies.transfer(to, {Token: currencyId}, amount - txFee);
-
-    if (nonce) {
-      txHash = await transfer.signAndSend(from, {nonce});
-    } else {
-      txHash = await transfer.signAndSend(from);
-    }
-
-    this.transactionRepository.create({
-      hash: txHash.toString(),
-      amount: amount / 10 ** decimal,
-      to: to,
-      from: fromString,
-      currencyId: currencyId,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString(),
-    }) as Promise<Transaction>;
-  }
-
-  async blockchainApi(rpcURL: string, currencyId: string): Promise<ApiPromise> {
-    let api = null;
-    const provider = new WsProvider(rpcURL);
-    if (currencyId === 'ACA' || currencyId === 'AUSD' || currencyId === 'DOT') {
-      api = await new ApiPromise(
-        options({
-          provider,
-        }) as ApiOptions,
-      ).isReadyOrError;
-    } else {
-      api = await new ApiPromise({provider}).isReadyOrError;
-    }
-    return api;
   }
 
   async getQueueNumber(nonce: number, type: DefaultCurrencyType): Promise<number> {
