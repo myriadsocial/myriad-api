@@ -1,8 +1,8 @@
 import {Filter, Where} from '@loopback/repository';
 import {StatusType} from '../enums';
-import {Person, Tag} from '../interfaces';
+import {ExtendedPeople, Tag} from '../interfaces';
 
-export function noneStatusFiltering(data: Tag[] | Person[]): string[] {
+export function noneStatusFiltering(data: Tag[] | ExtendedPeople[]): string[] {
   return data
     .filter(e => {
       if (e.status === StatusType.NONE || !e.status) return true;
@@ -28,4 +28,39 @@ export function defaultFilterQuery(pageNumber = 1, filter?: Filter, where?: Wher
   filter.limit = itemsPerPage;
 
   return filter;
+}
+
+export function updatedFiltering(data1: any[], data2: any[]) {
+  return data1.filter(item1 => {
+    const found = data2.find(item2 => item1.id === item2.id);
+
+    if (!found) return true;
+    return false;
+  });
+}
+
+export function setStatus(data: any[], status: StatusType) {
+  return data.map(item => {
+    item.status = status;
+    return item;
+  });
+}
+
+export function approvedUpdate(data: any[], isApproved: boolean) {
+  return data
+    .filter(item => {
+      if (isApproved) {
+        if (item.status === StatusType.NEW) return true;
+        if (item.status === StatusType.DELETED) return false;
+      } else {
+        if (item.status === StatusType.NEW) return false;
+        if (item.status === StatusType.DELETED) return true;
+      }
+
+      return true;
+    })
+    .map(item => {
+      item.status = StatusType.NONE;
+      return item;
+    });
 }
