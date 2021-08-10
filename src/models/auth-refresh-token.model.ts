@@ -5,7 +5,7 @@ import {Authentication} from '.';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'refreshTokens',
+      collection: 'authRefreshTokens',
     },
   },
 })
