@@ -1,8 +1,8 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Model, model, property} from '@loopback/repository';
 import {PlatformType} from '../enums';
 
 @model()
-export class VerifyUser extends Entity {
+export class VerifyUser extends Model {
   @property({
     type: 'string',
     required: true,
