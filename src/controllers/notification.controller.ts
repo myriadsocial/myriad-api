@@ -1,5 +1,12 @@
 import {intercept} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {
+  Count,
+  CountSchema,
+  Filter,
+  FilterExcludingWhere,
+  repository,
+  Where,
+} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, patch, requestBody, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {CustomFilter, Notification} from '../models';
@@ -7,7 +14,7 @@ import {NotificationRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
-export class NotificationsController {
+export class NotificationController {
   constructor(
     @repository(NotificationRepository)
     protected notificationRepository: NotificationRepository,
@@ -47,6 +54,18 @@ export class NotificationsController {
     filter?: FilterExcludingWhere<Notification>,
   ): Promise<Notification> {
     return this.notificationRepository.findById(id, filter);
+  }
+
+  @get('/notifications/count', {
+    responses: {
+      '200': {
+        description: 'Notifications model count',
+        content: {'application/json': {schema: CountSchema}},
+      },
+    },
+  })
+  async count(@param.where(Notification) where?: Where<Notification>): Promise<Count> {
+    return this.notificationRepository.count(where);
   }
 
   @patch('/notifications/{id}')
