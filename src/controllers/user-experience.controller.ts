@@ -90,16 +90,17 @@ export class UserExperienceController {
   }
 
   // Select experience
-  @patch('/select-user-experience/{id}', {
+  @patch('/user/{userId}/select-experience/{experienceId}', {
     responses: {
       '200': {
-        desription: 'Select Experience',
+        desription: 'Select User Experience',
       },
     },
   })
-  async select(@param.path.string('id') id: string): Promise<void> {
-    const {userId, experienceId} = await this.userExperienceRepository.findById(id);
-
+  async select(
+    @param.path.string('userId') userId: string,
+    @param.path.string('experienceId') experienceId: string,
+  ): Promise<void> {
     return this.userRepository.updateById(userId, {onTimeline: experienceId});
   }
 
