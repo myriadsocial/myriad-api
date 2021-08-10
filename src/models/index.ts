@@ -16,6 +16,6 @@ export * from './transaction.model';
 export * from './user-currency.model';
 export * from './user-experience.model';
 export * from './user-social-media.model';
+export * from './user-verification.model';
 export * from './user.model';
-export * from './verify-user.model';
 export * from './wallet.model';
