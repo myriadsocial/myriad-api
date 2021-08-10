@@ -3,6 +3,10 @@ import {ApplicationConfig} from '@loopback/core';
 import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {ServiceMixin} from '@loopback/service-proxy';
+import currencies from './data-seed/currencies.json';
+import peopleSeed from './data-seed/people.json';
+import postSeed from './data-seed/posts.json';
+import userSeed from './data-seed/users.json';
 import {DefaultCurrencyType, RpcType, StatusType} from './enums';
 import {DateUtils} from './helpers/date-utils';
 import {PolkadotJs} from './helpers/polkadotJs-utils';
@@ -26,16 +30,14 @@ import {
   UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
-  UserSocialMediaRepository,
+  UserSocialMediaRepository
 } from './repositories';
-import currencies from './seed-data/currencies.json';
-import peopleSeed from './seed-data/people.json';
-import postSeed from './seed-data/posts.json';
-import userSeed from './seed-data/users.json';
 
 export {ApplicationConfig};
 
-export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApplication))) {
+export class InitDatabase extends BootMixin(
+  ServiceMixin(RepositoryMixin(RestApplication))
+) {
   constructor(options: ApplicationConfig = {}) {
     super(options);
 
