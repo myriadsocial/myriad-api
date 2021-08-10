@@ -5,7 +5,7 @@ import {
   InvocationResult,
   Provider,
   service,
-  ValueOrPromise
+  ValueOrPromise,
 } from '@loopback/core';
 import {repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
@@ -17,7 +17,7 @@ import {
   FriendService,
   MetricService,
   NotificationService,
-  TagService
+  TagService,
 } from '../services';
 import {defaultFilterQuery, noneStatusFiltering} from '../utils/filter-utils';
 import {pageMetadata} from '../utils/page-metadata.utils';

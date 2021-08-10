@@ -13,7 +13,7 @@ import {
   TransactionRepository,
   UserCurrencyRepository,
   UserRepository,
-  UserSocialMediaRepository
+  UserSocialMediaRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {TransactionService} from './transaction.service';
