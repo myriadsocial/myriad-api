@@ -12,7 +12,7 @@ import {
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
-import {CustomFilter, UserSocialMedia, VerifyUser} from '../models';
+import {CustomFilter, UserSocialMedia, UserVerification} from '../models';
 import {UserSocialMediaRepository} from '../repositories';
 import {SocialMediaService, UserSocialMediaService} from '../services';
 // import {authenticate} from '@loopback/authentication';
@@ -41,29 +41,29 @@ export class UserSocialMediaController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(VerifyUser),
+          schema: getModelSchemaRef(UserVerification),
         },
       },
     })
-    verifyUser: VerifyUser,
+    userVerification: UserVerification,
   ): Promise<UserSocialMedia> {
-    const {publickey, platform, username} = verifyUser;
+    const {publicKey, platform, username} = userVerification;
 
     let platformUser = null;
 
     switch (platform) {
       case PlatformType.TWITTER:
-        platformUser = await this.socialMediaService.verifyToTwitter(username, publickey);
+        platformUser = await this.socialMediaService.verifyToTwitter(username, publicKey);
 
         break;
 
       case PlatformType.REDDIT:
-        platformUser = await this.socialMediaService.verifyToReddit(username, publickey);
+        platformUser = await this.socialMediaService.verifyToReddit(username, publicKey);
 
         break;
 
       case PlatformType.FACEBOOK:
-        platformUser = await this.socialMediaService.verifyToFacebook(username, publickey);
+        platformUser = await this.socialMediaService.verifyToFacebook(username, publicKey);
 
         break;
 
