@@ -40,6 +40,24 @@ export class UserExperience extends Entity {
   })
   status?: StatusType;
 
+  @property({
+    type: 'date',
+    default: false,
+  })
+  createdAt: string;
+
+  @property({
+    type: 'date',
+    default: false,
+  })
+  updatedAt: string;
+
+  @property({
+    type: 'date',
+    default: false,
+  })
+  deletedAt: string;
+
   @belongsTo(() => Experience)
   experienceId: string;
 
