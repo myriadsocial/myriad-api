@@ -5,10 +5,10 @@ import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
-import dotenv from 'dotenv';
 import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
+import {firebase} from './configs';
 import currencySeed from './data-seed/currencies.json';
 import peopleSeed from './data-seed/people.json';
 import postSeed from './data-seed/posts.json';
@@ -45,8 +45,6 @@ import {
   TransactionService,
   UserSocialMediaService,
 } from './services';
-
-dotenv.config();
 
 export {ApplicationConfig};
 
@@ -110,18 +108,14 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   firebaseInit() {
-    if (
-      !process.env.FIREBASE_PROJECT_ID ||
-      !process.env.FIREBASE_CLIENT_EMAIL ||
-      !process.env.FIREBASE_PRIVATE_KEY
-    ) {
+    if (!firebase.projectId || !firebase.clientEmail || !firebase.privateKey) {
       firebaseAdmin.initializeApp();
     } else {
       firebaseAdmin.initializeApp({
         credential: firebaseAdmin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID ?? '',
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL ?? '',
-          privateKey: (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
+          projectId: firebase.projectId,
+          clientEmail: firebase.clientEmail,
+          privateKey: firebase.privateKey,
         }),
       });
     }

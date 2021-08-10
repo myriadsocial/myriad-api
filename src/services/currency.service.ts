@@ -3,7 +3,8 @@ import {service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {ApiPromise, WsProvider} from '@polkadot/api';
 import {ApiOptions} from '@polkadot/api/types';
-import {DefaultCurrencyType, RpcType} from '../enums';
+import {myriad} from '../configs';
+import {DefaultCurrencyType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
 import {UserCurrency, UserSocialMedia} from '../models';
 import {
@@ -46,7 +47,7 @@ export class CurrencyService {
         decimal: 12,
         image: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
         addressType: 42,
-        rpcURL: process.env.MYRIAD_WS_RPC ?? RpcType.LOCALRPC,
+        rpcURL: myriad.rpcURL,
         native: true,
       },
       {
@@ -78,7 +79,7 @@ export class CurrencyService {
       const api = await new ApiPromise(options({provider}) as ApiOptions).isReadyOrError;
       const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
-      const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
+      const mnemonic = myriad.mnemonic;
       const from = getKeyring().addFromMnemonic(mnemonic);
       const to = userId;
 
@@ -91,8 +92,9 @@ export class CurrencyService {
       const transfer = api.tx.currencies.transfer(to, {Token: DefaultCurrencyType.AUSD}, value);
       const txHash = await transfer.signAndSend(from, {nonce: getNonce});
 
-      const myriad = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
-      if (!myriad) await this.userRepository.create({id: getHexPublicKey(from), name: 'Myriad'});
+      const myriadUser = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
+      if (!myriadUser)
+        await this.userRepository.create({id: getHexPublicKey(from), name: 'Myriad'});
 
       await this.transactionRepository.create({
         hash: txHash.toString(),
@@ -119,11 +121,11 @@ export class CurrencyService {
       const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
       const api = await polkadotApi(myriadRpc);
 
-      const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
+      const mnemonic = myriad.mnemonic;
       const from = getKeyring().addFromMnemonic(mnemonic);
       const to = userId;
 
-      const rewardAmount = +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) * 10 ** myriadDecimal;
+      const rewardAmount = myriad.rewardAmount * 10 ** myriadDecimal;
 
       const {nonce} = await api.query.system.account(from.address);
       const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.MYRIA);
@@ -131,8 +133,9 @@ export class CurrencyService {
       const transfer = api.tx.balances.transfer(to, rewardAmount);
       const txHash = await transfer.signAndSend(from, {nonce: getNonce});
 
-      const myriad = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
-      if (!myriad) await this.userRepository.create({id: getHexPublicKey(from), name: 'Myriad'});
+      const myriadUser = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
+      if (!myriadUser)
+        await this.userRepository.create({id: getHexPublicKey(from), name: 'Myriad'});
 
       await this.transactionRepository.create({
         hash: txHash.toString(),

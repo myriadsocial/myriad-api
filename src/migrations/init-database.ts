@@ -1,5 +1,6 @@
 import {repository} from '@loopback/repository';
-import {DefaultCurrencyType, RpcType, StatusType} from '../enums';
+import {myriad} from '../configs';
+import {DefaultCurrencyType, StatusType} from '../enums';
 import {ExtendedPost} from '../interfaces';
 import {Currency, People, Post, User, UserCurrency} from '../models';
 import {
@@ -96,7 +97,7 @@ export class InitDatabase {
         decimal: 12,
         image: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
         addressType: 42,
-        rpcURL: process.env.MYRIAD_WS_RPC ?? RpcType.LOCALRPC,
+        rpcURL: myriad.rpcURL,
         native: true,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString(),

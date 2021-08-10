@@ -1,17 +1,17 @@
 import {TokenService, UserService} from '@loopback/authentication';
 import {BindingKey} from '@loopback/core';
+import dotenv from 'dotenv';
+import {refresh, token} from './configs';
+import {RefreshTokenService} from './interfaces';
 import {Authentication} from './models';
 import {Credentials} from './repositories/authentication.repository';
 import {PasswordHasher} from './services/authentication/hash.password.service';
-import {RefreshTokenService} from './interfaces';
-
-import dotenv from 'dotenv';
 
 dotenv.config();
 
 export namespace TokenServiceConstants {
-  export const TOKEN_SECRET_VALUE = process.env.TOKEN_SECRET_KEY ?? '';
-  export const TOKEN_EXPIRES_IN_VALUE = process.env.TOKEN_EXPIRES_IN ?? '36000';
+  export const TOKEN_SECRET_VALUE = token.secretKey;
+  export const TOKEN_EXPIRES_IN_VALUE = token.expiresIn;
 }
 
 export namespace TokenServiceBindings {
@@ -31,11 +31,11 @@ export namespace RefreshTokenConstants {
   /**
    * The default secret used when generating refresh token.
    */
-  export const REFRESH_SECRET_VALUE = process.env.REFRESH_TOKEN_SECRET_KEY ?? 'r3fr35htok3n';
+  export const REFRESH_SECRET_VALUE = refresh.secretKey;
   /**
    * The default expiration time for refresh token.
    */
-  export const REFRESH_EXPIRES_IN_VALUE = process.env.REFRESH_TOKEN_EXPIRES_IN ?? '216000';
+  export const REFRESH_EXPIRES_IN_VALUE = refresh.expiresIn;
   /**
    * The default issuer used when generating refresh token.
    */
