@@ -1,8 +1,8 @@
 import {repository, Where} from '@loopback/repository';
 import {OrderFieldType, OrderType} from '../enums';
-import {DateUtils} from '../helpers/date-utils';
 import {Post, Tag} from '../models';
 import {TagRepository} from '../repositories';
+import {DateUtils} from '../utils/date-utils';
 
 export class TagService {
   constructor(

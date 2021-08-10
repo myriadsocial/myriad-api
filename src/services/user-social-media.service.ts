@@ -1,10 +1,10 @@
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {PolkadotJs} from '../helpers/polkadotJs-utils';
 import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
 
 export class UserSocialMediaService {
   constructor(

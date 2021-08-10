@@ -5,12 +5,12 @@ import {
   InvocationResult,
   Provider,
   service,
-  ValueOrPromise,
+  ValueOrPromise
 } from '@loopback/core';
 import {HttpErrors} from '@loopback/rest';
-import {UrlUtils} from '../helpers/url.utils';
 import {PostRepository} from '../repositories';
 import {TagService} from '../services';
+import {UrlUtils} from '../utils/url.utils';
 
 /**
  * This class will be bound to the application as an `Interceptor` during

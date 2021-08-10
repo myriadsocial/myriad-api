@@ -5,13 +5,11 @@ import {
   InvocationResult,
   Provider,
   service,
-  ValueOrPromise,
+  ValueOrPromise
 } from '@loopback/core';
 import {repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ControllerType, MethodType, TimelineType} from '../enums';
-import {defaultFilterQuery, noneStatusFiltering} from '../helpers/filter-utils';
-import {pageMetadata} from '../helpers/page-metadata.utils';
 import {Post} from '../models';
 import {UserRepository} from '../repositories';
 import {
@@ -19,8 +17,10 @@ import {
   FriendService,
   MetricService,
   NotificationService,
-  TagService,
+  TagService
 } from '../services';
+import {defaultFilterQuery, noneStatusFiltering} from '../utils/filter-utils';
+import {pageMetadata} from '../utils/page-metadata.utils';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
