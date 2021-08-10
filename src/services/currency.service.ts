@@ -1,13 +1,12 @@
 import {options} from '@acala-network/api';
 import {service} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {HttpErrors} from '@loopback/rest';
 import {ApiPromise, WsProvider} from '@polkadot/api';
 import {ApiOptions} from '@polkadot/api/types';
 import {DefaultCurrencyType, RpcType} from '../enums';
 import {PolkadotJs} from '../helpers/polkadotJs-utils';
 import {Balance, PaymentInfo} from '../interfaces';
-import {Transaction, UserCurrency, UserSocialMedia} from '../models';
+import {UserCurrency, UserSocialMedia} from '../models';
 import {
   CurrencyRepository,
   PeopleRepository,
@@ -46,7 +45,7 @@ export class CurrencyService {
         name: 'myriad',
         decimal: 12,
         image: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
-        addressType: 214,
+        addressType: 42,
         rpcURL: process.env.MYRIAD_WS_RPC ?? RpcType.LOCALRPC,
         native: true,
       },
@@ -95,7 +94,7 @@ export class CurrencyService {
       const myriad = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
       if (!myriad) await this.userRepository.create({id: getHexPublicKey(from), name: 'Myriad'});
 
-      this.transactionRepository.create({
+      await this.transactionRepository.create({
         hash: txHash.toString(),
         amount: value / 10 ** acalaDecimal,
         to: to,
@@ -103,48 +102,52 @@ export class CurrencyService {
         currencyId: DefaultCurrencyType.AUSD,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString(),
-      }) as Promise<Transaction>;
+      });
 
       await api.disconnect();
     } catch {
-      throw new HttpErrors.UnprocessableEntity('Rpc address not connected!');
+      // ignore
     }
   }
 
   async sendMyriadReward(userId: string): Promise<void> {
-    const {rpcURL: myriadRpc, decimal: myriadDecimal} = await this.currencyRepository.findById(
-      DefaultCurrencyType.MYRIA,
-    );
+    try {
+      const {rpcURL: myriadRpc, decimal: myriadDecimal} = await this.currencyRepository.findById(
+        DefaultCurrencyType.MYRIA,
+      );
 
-    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
-    const api = await polkadotApi(myriadRpc);
+      const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
+      const api = await polkadotApi(myriadRpc);
 
-    const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
-    const from = getKeyring().addFromMnemonic(mnemonic);
-    const to = userId;
+      const mnemonic = process.env.MYRIAD_FAUCET_MNEMONIC ?? '';
+      const from = getKeyring().addFromMnemonic(mnemonic);
+      const to = userId;
 
-    const rewardAmount = +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) * 10 ** myriadDecimal;
+      const rewardAmount = +(process.env.MYRIAD_REWARD_AMOUNT ?? 0) * 10 ** myriadDecimal;
 
-    const {nonce} = await api.query.system.account(from.address);
-    const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.MYRIA);
+      const {nonce} = await api.query.system.account(from.address);
+      const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.MYRIA);
 
-    const transfer = api.tx.balances.transfer(to, rewardAmount);
-    const txHash = await transfer.signAndSend(from, {nonce: getNonce});
+      const transfer = api.tx.balances.transfer(to, rewardAmount);
+      const txHash = await transfer.signAndSend(from, {nonce: getNonce});
 
-    const myriad = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
-    if (!myriad) await this.userRepository.create({id: getHexPublicKey(from), name: 'Myriad'});
+      const myriad = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
+      if (!myriad) await this.userRepository.create({id: getHexPublicKey(from), name: 'Myriad'});
 
-    this.transactionRepository.create({
-      hash: txHash.toString(),
-      amount: rewardAmount / 10 ** myriadDecimal,
-      to: to,
-      from: getHexPublicKey(from),
-      currencyId: DefaultCurrencyType.MYRIA,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString(),
-    }) as Promise<Transaction>;
+      await this.transactionRepository.create({
+        hash: txHash.toString(),
+        amount: rewardAmount / 10 ** myriadDecimal,
+        to: to,
+        from: getHexPublicKey(from),
+        currencyId: DefaultCurrencyType.MYRIA,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString(),
+      });
 
-    await api.disconnect();
+      await api.disconnect();
+    } catch {
+      // ignore
+    }
   }
 
   async claimTips(userSocialMedia: UserSocialMedia): Promise<void> {
@@ -231,7 +234,7 @@ export class CurrencyService {
 
         const txHash = await transfer.signAndSend(from);
 
-        this.transactionRepository.create({
+        await this.transactionRepository.create({
           hash: txHash.toString(),
           amount: balance / 10 ** decimal,
           to: to,
@@ -239,7 +242,7 @@ export class CurrencyService {
           currencyId: id,
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
-        }) as Promise<Transaction>;
+        });
       } catch (err) {
         // ignore
       }
@@ -250,34 +253,38 @@ export class CurrencyService {
     const {amount, to, from, currencyId, decimal, native} = paymentInfo;
     let txFee = 0;
 
-    if (native) {
-      const {weight, partialFee} = await blockchainApi.tx.balances
-        .transfer(to, Number(amount))
-        .paymentInfo(from);
+    try {
+      if (native) {
+        const {weight, partialFee} = await blockchainApi.tx.balances
+          .transfer(to, Number(amount))
+          .paymentInfo(from);
 
-      txFee = Math.floor(+weight.toString() + +partialFee.toString());
-    } else {
-      const cryptoAcaPoolString = (
-        await blockchainApi.query.dex.liquidityPool([{Token: 'ACA'}, {Token: currencyId}])
-      ).toString();
+        txFee = Math.floor(+weight.toString() + +partialFee.toString());
+      } else {
+        const cryptoAcaPoolString = (
+          await blockchainApi.query.dex.liquidityPool([{Token: 'ACA'}, {Token: currencyId}])
+        ).toString();
 
-      const cryptoAcaPool = cryptoAcaPoolString
-        .substring(1, cryptoAcaPoolString.length - 1)
-        .replace(/"/g, '')
-        .split(',');
+        const cryptoAcaPool = cryptoAcaPoolString
+          .substring(1, cryptoAcaPoolString.length - 1)
+          .replace(/"/g, '')
+          .split(',');
 
-      const crypto = parseInt(cryptoAcaPool[1]) / 10 ** decimal;
-      const aca = parseInt(cryptoAcaPool[0]) / 10 ** 13;
-      const cryptoPerAca = crypto / aca;
+        const crypto = parseInt(cryptoAcaPool[1]) / 10 ** decimal;
+        const aca = parseInt(cryptoAcaPool[0]) / 10 ** 13;
+        const cryptoPerAca = crypto / aca;
 
-      // Get transaction fee
-      const {weight, partialFee} = await blockchainApi.tx.currencies
-        .transfer(to, {Token: currencyId}, Number(amount))
-        .paymentInfo(from);
+        // Get transaction fee
+        const {weight, partialFee} = await blockchainApi.tx.currencies
+          .transfer(to, {Token: currencyId}, Number(amount))
+          .paymentInfo(from);
 
-      const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13;
+        const txFeeInAca = (+weight.toString() + +partialFee.toString()) / 10 ** 13;
 
-      txFee = Math.floor(txFeeInAca * cryptoPerAca * 10 ** decimal);
+        txFee = Math.floor(txFeeInAca * cryptoPerAca * 10 ** decimal);
+      }
+    } catch (err) {
+      // ignore
     }
 
     return txFee;
