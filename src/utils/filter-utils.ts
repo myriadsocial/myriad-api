@@ -2,6 +2,8 @@ import {Filter, Where} from '@loopback/repository';
 import {StatusType} from '../enums';
 import {ExperiencePeople, ExperienceTag} from '../interfaces';
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 export function noneStatusFiltering(data: ExperienceTag[] | ExperiencePeople[]): string[] {
   return data
     .filter(e => {
