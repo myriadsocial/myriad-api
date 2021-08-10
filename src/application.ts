@@ -1,7 +1,6 @@
 import {AuthenticationComponent} from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
-import {CronComponent} from '@loopback/cron';
+import {ApplicationConfig} from '@loopback/core';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
@@ -9,8 +8,7 @@ import {ServiceMixin} from '@loopback/service-proxy';
 import dotenv from 'dotenv';
 import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
-import {FetchContentSocialMediaJob} from './jobs';
-import {JWTAuthenticationComponent} from './jwt-authentication-component';
+import {JWTAuthenticationComponent} from './components';
 import {MySequence} from './sequence';
 import {
   CurrencyService,
@@ -22,7 +20,7 @@ import {
   SocialMediaService,
   TagService,
   TransactionService,
-  UserSocialMediaService,
+  UserSocialMediaService
 } from './services';
 
 dotenv.config();
@@ -52,9 +50,6 @@ export class MyriadApiApplication extends BootMixin(
     // Bind services
     this.bindService();
 
-    // Bind job
-    this.bindJob();
-
     // Firebase initialization
     this.firebaseInit();
 
@@ -71,7 +66,6 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   bindComponent() {
-    this.component(CronComponent); // Add cron component
     this.component(RestExplorerComponent);
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent); // Mount jwt component
@@ -90,10 +84,6 @@ export class MyriadApiApplication extends BootMixin(
 
     // 3rd party service
     this.service(FCMService);
-  }
-
-  bindJob() {
-    this.add(createBindingFromClass(FetchContentSocialMediaJob));
   }
 
   firebaseInit() {
