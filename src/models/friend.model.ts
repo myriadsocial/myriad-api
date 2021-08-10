@@ -46,6 +46,12 @@ export class Friend extends Entity {
   })
   updatedAt?: string;
 
+  @property({
+    type: 'date',
+    required: false,
+  })
+  deletedAt?: string;
+
   @belongsTo(() => User, {name: 'requestee'})
   requesteeId: string;
 
