@@ -1,8 +1,8 @@
 import {Filter, Where} from '@loopback/repository';
 import {StatusType} from '../enums';
-import {ExtendedPeople, Tag} from '../interfaces';
+import {ExperiencePeople, ExperienceTag} from '../interfaces';
 
-export function noneStatusFiltering(data: Tag[] | ExtendedPeople[]): string[] {
+export function noneStatusFiltering(data: ExperienceTag[] | ExperiencePeople[]): string[] {
   return data
     .filter(e => {
       if (e.status === StatusType.NONE || !e.status) return true;

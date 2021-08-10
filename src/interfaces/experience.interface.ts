@@ -1,11 +1,11 @@
 import {StatusType} from '../enums';
 import {People} from '../models';
 
-export interface ExtendedPeople extends People {
+export interface ExperiencePeople extends People {
   status?: StatusType;
 }
 
-export interface Tag {
+export interface ExperienceTag {
   id: string;
   status?: StatusType;
 }
