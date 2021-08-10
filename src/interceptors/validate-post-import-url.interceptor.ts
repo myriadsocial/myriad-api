@@ -43,40 +43,35 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
    * @param next - A function to invoke next interceptor or the target method
    */
   async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
-    try {
-      const urlUtils = new UrlUtils(invocationCtx.args[0].url);
-      const platform = urlUtils.getPlatform();
-      const originPostId = urlUtils.getOriginPostId();
-      const username = urlUtils.getUsername();
+    const urlUtils = new UrlUtils(invocationCtx.args[0].url);
+    const platform = urlUtils.getPlatform();
+    const originPostId = urlUtils.getOriginPostId();
+    const username = urlUtils.getUsername();
 
-      const post = await this.postRepository.findOne({
-        where: {originPostId, platform},
-      });
+    const post = await this.postRepository.findOne({
+      where: {originPostId, platform},
+    });
 
-      if (post) {
-        const importers = post.importers.find(userId => userId === invocationCtx.args[0].importer);
+    if (post) {
+      const importers = post.importers.find(userId => userId === invocationCtx.args[0].importer);
 
-        if (importers) throw new Error('PostImported');
+      if (importers) throw new HttpErrors.UnprocessableEntity('You have already import this post');
 
-        post.importers.push(invocationCtx.args[0].importer);
+      post.importers.push(invocationCtx.args[0].importer);
 
-        this.postRepository.updateById(post.id, {
-          importers: post.importers,
-        }) as Promise<void>;
+      this.postRepository.updateById(post.id, {
+        importers: post.importers,
+      }) as Promise<void>;
 
-        return post;
-      }
-
-      invocationCtx.args[0].url = [platform, originPostId, username].join(',');
-      // Add pre-invocation logic here
-      const result = await next();
-
-      this.tagService.createTags(result.tags) as Promise<void>;
-      // Add post-invocation logic here
-      return result;
-    } catch (err) {
-      // Add error handling logic here
-      throw new HttpErrors.UnprocessableEntity('You have already import this post');
+      return post;
     }
+
+    invocationCtx.args[0].url = [platform, originPostId, username].join(',');
+    // Add pre-invocation logic here
+    const result = await next();
+
+    this.tagService.createTags(result.tags) as Promise<void>;
+    // Add post-invocation logic here
+    return result;
   }
 }

@@ -206,7 +206,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         meta: pageMetadata(args, data.count),
       };
     } catch (err) {
-      console.log(err.message);
       if (err.message === 'EmptyFindBy')
         throw new HttpErrors.UnprocessableEntity('FindBy cannot be empty');
 
