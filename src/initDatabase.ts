@@ -3,7 +3,7 @@ import {ApplicationConfig} from '@loopback/core';
 import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {ServiceMixin} from '@loopback/service-proxy';
-import {DefaultCurrencyType, StatusType} from './enums';
+import {DefaultCurrencyType, RpcType, StatusType} from './enums';
 import {DateUtils} from './helpers/date-utils';
 import {PolkadotJs} from './helpers/polkadotJs-utils';
 import {ExtendedPost} from './interfaces';
@@ -64,6 +64,16 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
       experienceRepository,
       userExperienceRepository,
     } = await this.getRepositories();
+
+    currencies.push({
+      id: DefaultCurrencyType.MYRIA,
+      name: 'myriad',
+      decimal: 12,
+      image: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
+      addressType: 42,
+      rpcURL: process.env.MYRIAD_WS_RPC ?? RpcType.LOCALRPC,
+      native: true,
+    });
 
     const userSeedData = this.prepareUserSeed(userSeed as User[]);
     const currencySeedData = this.prepareCurrencySeed(currencies as Currency[]);
