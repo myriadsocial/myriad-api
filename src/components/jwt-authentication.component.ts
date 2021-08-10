@@ -5,7 +5,7 @@ import {
   Component,
   CoreBindings,
   createBindingFromClass,
-  inject,
+  inject
 } from '@loopback/core';
 import {
   AuthServiceBindings,
@@ -13,18 +13,18 @@ import {
   RefreshTokenConstants,
   RefreshTokenServiceBindings,
   TokenServiceBindings,
-  TokenServiceConstants,
-} from './keys';
+  TokenServiceConstants
+} from '../keys';
 import {
   AuthCredentialRepository,
   AuthenticationRepository,
-  AuthRefreshTokenRepository,
-} from './repositories';
-import {MyAuthService, RefreshtokenService} from './services';
-import {BcryptHasher} from './services/authentication/hash.password.service';
-import {JWTAuthenticationStrategy} from './services/authentication/jwt.auth.strategy';
-import {JWTService} from './services/authentication/jwt.service';
-import {SecuritySpecEnhancer} from './services/authentication/security.spec.enhancer';
+  AuthRefreshTokenRepository
+} from '../repositories';
+import {MyAuthService, RefreshtokenService} from '../services';
+import {BcryptHasher} from '../services/authentication/hash.password.service';
+import {JWTAuthenticationStrategy} from '../services/authentication/jwt.auth.strategy';
+import {JWTService} from '../services/authentication/jwt.service';
+import {SecuritySpecEnhancer} from '../services/authentication/security.spec.enhancer';
 
 export class JWTAuthenticationComponent implements Component {
   bindings: Binding[] = [

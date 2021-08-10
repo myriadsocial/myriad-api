@@ -37,7 +37,7 @@ export class Authentication extends Entity {
   @property({
     type: 'string',
   })
-  verificationToken?: string;
+  tokenVerification?: string;
 
   @hasOne(() => AuthCredential)
   credential: AuthCredential;
