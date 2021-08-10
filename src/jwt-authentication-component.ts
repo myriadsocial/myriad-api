@@ -8,23 +8,23 @@ import {
   inject,
 } from '@loopback/core';
 import {
+  AuthServiceBindings,
+  PasswordHasherBindings,
   RefreshTokenConstants,
   RefreshTokenServiceBindings,
   TokenServiceBindings,
   TokenServiceConstants,
-  AuthServiceBindings,
-  PasswordHasherBindings,
 } from './keys';
 import {
-  RefreshTokenRepository,
   AuthCredentialRepository,
   AuthenticationRepository,
+  AuthRefreshTokenRepository,
 } from './repositories';
 import {MyAuthService, RefreshtokenService} from './services';
+import {BcryptHasher} from './services/authentication/hash.password.service';
 import {JWTAuthenticationStrategy} from './services/authentication/jwt.auth.strategy';
 import {JWTService} from './services/authentication/jwt.service';
 import {SecuritySpecEnhancer} from './services/authentication/security.spec.enhancer';
-import {BcryptHasher} from './services/authentication/hash.password.service';
 
 export class JWTAuthenticationComponent implements Component {
   bindings: Binding[] = [
@@ -54,7 +54,9 @@ export class JWTAuthenticationComponent implements Component {
       RefreshTokenConstants.REFRESH_ISSUER_VALUE,
     ),
     //refresh token repository binding
-    Binding.bind(RefreshTokenServiceBindings.REFRESH_REPOSITORY).toClass(RefreshTokenRepository),
+    Binding.bind(RefreshTokenServiceBindings.REFRESH_REPOSITORY).toClass(
+      AuthRefreshTokenRepository,
+    ),
     // HasherBinding
     Binding.bind(PasswordHasherBindings.PASSWORD_HASHER).toClass(BcryptHasher),
     Binding.bind(PasswordHasherBindings.ROUNDS).to(10),

@@ -11,6 +11,7 @@ import {Currency, People, Post, User, UserExperience} from './models';
 import {
   AuthCredentialRepository,
   AuthenticationRepository,
+  AuthRefreshTokenRepository,
   CommentRepository,
   CurrencyRepository,
   ExperienceRepository,
@@ -20,7 +21,6 @@ import {
   PeopleRepository,
   PostRepository,
   QueueRepository,
-  RefreshTokenRepository,
   TagRepository,
   TransactionRepository,
   UserCurrencyRepository,
@@ -106,7 +106,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     const peopleRepository = await this.getRepository(PeopleRepository);
     const postRepository = await this.getRepository(PostRepository);
     const queueRepository = await this.getRepository(QueueRepository);
-    const refreshTokenRepository = await this.getRepository(RefreshTokenRepository);
+    const authRefreshTokenRepository = await this.getRepository(AuthRefreshTokenRepository);
     const tagRepository = await this.getRepository(TagRepository);
     const transactionRepository = await this.getRepository(TransactionRepository);
     const userSocialMediaRepository = await this.getRepository(UserSocialMediaRepository);
@@ -126,7 +126,7 @@ export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApp
     await peopleRepository.deleteAll();
     await postRepository.deleteAll();
     await queueRepository.deleteAll();
-    await refreshTokenRepository.deleteAll();
+    await authRefreshTokenRepository.deleteAll();
     await tagRepository.deleteAll();
     await transactionRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();

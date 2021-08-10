@@ -9,7 +9,7 @@ import {Authentication} from '.';
     },
   },
 })
-export class RefreshToken extends Entity {
+export class AuthRefreshToken extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -29,13 +29,13 @@ export class RefreshToken extends Entity {
   })
   refreshToken: string;
 
-  constructor(data?: Partial<RefreshToken>) {
+  constructor(data?: Partial<AuthRefreshToken>) {
     super(data);
   }
 }
 
-export interface RefreshTokenRelations {
+export interface AuthRefreshTokenRelations {
   // describe navigational properties here
 }
 
-export type RefereshTokenWithRelations = RefreshToken & RefreshTokenRelations;
+export type AuthRefereshTokenWithRelations = AuthRefreshToken & AuthRefreshTokenRelations;
