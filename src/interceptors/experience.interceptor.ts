@@ -63,6 +63,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Experience must not exceed 10 experiences');
         else count = user.count;
 
+        if (userId === experience.createdBy)
+          throw new HttpErrors.UnprocessableEntity('Experience already belong to you!');
+
+        experience.cloned = experience.cloned + 1;
         experience.origin = false;
         experience.clonedFrom = experience.id;
         experience.createdAt = new Date().toString();
