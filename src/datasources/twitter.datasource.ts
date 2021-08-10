@@ -1,8 +1,6 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import {twitterBearerToken} from '../configs';
 
 const config = {
   name: 'twitter',
@@ -11,7 +9,7 @@ const config = {
   crud: false,
   options: {
     headers: {
-      Authorization: `Bearer ${process.env.TWITTER_BEARER_TOKEN}`,
+      Authorization: twitterBearerToken,
     },
   },
   operations: [

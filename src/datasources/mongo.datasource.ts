@@ -1,5 +1,6 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {AnyObject, juggler} from '@loopback/repository';
+import {mongo} from '../configs';
 
 const config = {
   name: 'mongo',
@@ -13,21 +14,21 @@ const config = {
 };
 
 function updateConfig(dsConfig: AnyObject) {
-  if (process.env.MONGO_HOST) {
-    dsConfig.host = process.env.MONGO_HOST;
+  if (mongo.host) {
+    dsConfig.host = mongo.host;
   }
-  const envPort = parseInt(process.env.MONGO_PORT ?? '');
+  const envPort = mongo.port;
   if (Number.isInteger(envPort)) {
     dsConfig.port = envPort;
   }
-  if (process.env.MONGO_USER) {
-    dsConfig.user = process.env.MONGO_USER;
+  if (mongo.user) {
+    dsConfig.user = mongo.user;
   }
-  if (process.env.MONGO_PASSWORD) {
-    dsConfig.password = process.env.MONGO_PASSWORD;
+  if (mongo.password) {
+    dsConfig.password = mongo.password;
   }
-  if (process.env.MONGO_DATABASE) {
-    dsConfig.database = process.env.MONGO_DATABASE;
+  if (mongo.database) {
+    dsConfig.database = mongo.database;
   }
   return dsConfig;
 }
