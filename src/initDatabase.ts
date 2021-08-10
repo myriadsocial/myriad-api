@@ -28,16 +28,14 @@ import {
   UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
-  UserSocialMediaRepository
+  UserSocialMediaRepository,
 } from './repositories';
 import {DateUtils} from './utils/date-utils';
 import {PolkadotJs} from './utils/polkadotJs-utils';
 
 export {ApplicationConfig};
 
-export class InitDatabase extends BootMixin(
-  ServiceMixin(RepositoryMixin(RestApplication))
-) {
+export class InitDatabase extends BootMixin(ServiceMixin(RepositoryMixin(RestApplication))) {
   constructor(options: ApplicationConfig = {}) {
     super(options);
 

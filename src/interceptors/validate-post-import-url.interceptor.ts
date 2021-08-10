@@ -5,7 +5,7 @@ import {
   InvocationResult,
   Provider,
   service,
-  ValueOrPromise
+  ValueOrPromise,
 } from '@loopback/core';
 import {HttpErrors} from '@loopback/rest';
 import {PostRepository} from '../repositories';

@@ -20,7 +20,7 @@ import {
   SocialMediaService,
   TagService,
   TransactionService,
-  UserSocialMediaService
+  UserSocialMediaService,
 } from './services';
 
 dotenv.config();
