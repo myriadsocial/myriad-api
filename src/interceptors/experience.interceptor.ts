@@ -10,9 +10,9 @@ import {Count, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import * as _ from 'lodash';
 import {MethodType, StatusType} from '../enums';
-import {setStatus} from '../helpers/filter-utils';
 import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../repositories';
 import {ExperienceService} from '../services';
+import {setStatus} from '../utils/filter-utils';
 
 /**
  * This class will be bound to the application as an `Interceptor` during

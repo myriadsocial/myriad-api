@@ -2,10 +2,10 @@ import {intercept} from '@loopback/core';
 import {Count, CountSchema, Filter, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, patch, post, requestBody} from '@loopback/rest';
 import {StatusType} from '../enums';
-import {approvedUpdate} from '../helpers/filter-utils';
 import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
 import {CustomFilter, Experience, UserExperience} from '../models';
 import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../repositories';
+import {approvedUpdate} from '../utils/filter-utils';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
