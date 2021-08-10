@@ -1,7 +1,7 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Model, model, property} from '@loopback/repository';
 
 @model()
-export class PlatformPost extends Entity {
+export class PlatformPost extends Model {
   @property({
     type: 'string',
     required: true,
