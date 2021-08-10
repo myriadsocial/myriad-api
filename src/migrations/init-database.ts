@@ -114,7 +114,7 @@ export class InitDatabase {
       newPeople.map(person => {
         const newKey = getKeyring().addFromUri('//' + person.id);
         const walletAddress = getHexPublicKey(newKey);
-        this.peopleRepository.updateById(person.id, {
+        return this.peopleRepository.updateById(person.id, {
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
           walletAddress: walletAddress,
