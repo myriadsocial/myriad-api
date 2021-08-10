@@ -8,8 +8,6 @@ import peopleSeed from './data-seed/people.json';
 import postSeed from './data-seed/posts.json';
 import userSeed from './data-seed/users.json';
 import {DefaultCurrencyType, RpcType, StatusType} from './enums';
-import {DateUtils} from './helpers/date-utils';
-import {PolkadotJs} from './helpers/polkadotJs-utils';
 import {ExtendedPost} from './interfaces';
 import {Currency, People, Post, User, UserExperience} from './models';
 import {
@@ -32,6 +30,8 @@ import {
   UserRepository,
   UserSocialMediaRepository
 } from './repositories';
+import {DateUtils} from './utils/date-utils';
+import {PolkadotJs} from './utils/polkadotJs-utils';
 
 export {ApplicationConfig};
 

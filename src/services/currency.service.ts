@@ -4,7 +4,6 @@ import {repository} from '@loopback/repository';
 import {ApiPromise, WsProvider} from '@polkadot/api';
 import {ApiOptions} from '@polkadot/api/types';
 import {DefaultCurrencyType, RpcType} from '../enums';
-import {PolkadotJs} from '../helpers/polkadotJs-utils';
 import {Balance, PaymentInfo} from '../interfaces';
 import {UserCurrency, UserSocialMedia} from '../models';
 import {
@@ -14,8 +13,9 @@ import {
   TransactionRepository,
   UserCurrencyRepository,
   UserRepository,
-  UserSocialMediaRepository,
+  UserSocialMediaRepository
 } from '../repositories';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {TransactionService} from './transaction.service';
 
 export class CurrencyService {

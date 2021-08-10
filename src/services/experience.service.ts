@@ -1,7 +1,7 @@
 import {repository, Where} from '@loopback/repository';
-import {noneStatusFiltering} from '../helpers/filter-utils';
 import {Experience, Post} from '../models';
 import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../repositories';
+import {noneStatusFiltering} from '../utils/filter-utils';
 
 export class ExperienceService {
   constructor(

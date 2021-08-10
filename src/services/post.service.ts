@@ -1,9 +1,9 @@
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {PolkadotJs} from '../helpers/polkadotJs-utils';
 import {ExtendedPost} from '../interfaces';
 import {Post} from '../models';
 import {PeopleRepository, PostRepository} from '../repositories';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
 
 export class PostService {
   constructor(
