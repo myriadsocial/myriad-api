@@ -1,4 +1,5 @@
 export * from './auth-credential.model';
+export * from './auth-refresh-token.model';
 export * from './authentication.model';
 export * from './comment.model';
 export * from './currency.model';
@@ -10,7 +11,6 @@ export * from './notification.model';
 export * from './people.model';
 export * from './post.model';
 export * from './queue.model';
-export * from './refresh-token.model';
 export * from './tag.model';
 export * from './transaction.model';
 export * from './user-currency.model';

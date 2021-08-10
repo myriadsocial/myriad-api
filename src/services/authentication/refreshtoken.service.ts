@@ -1,16 +1,15 @@
 import {TokenService} from '@loopback/authentication';
-import {BindingScope, inject, injectable, generateUniqueId} from '@loopback/core';
+import {BindingScope, generateUniqueId, inject, injectable} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
-import {promisify} from 'util';
-import {RefreshTokenServiceBindings, TokenServiceBindings, AuthServiceBindings} from '../../keys';
-import {RefreshToken, RefreshTokenRelations} from '../../models';
-import {RefreshTokenRepository} from '../../repositories';
-import {TokenObject} from '../../interfaces';
-import {MyAuthService} from './authentication.service';
-
 import dotenv from 'dotenv';
+import {promisify} from 'util';
+import {TokenObject} from '../../interfaces';
+import {AuthServiceBindings, RefreshTokenServiceBindings, TokenServiceBindings} from '../../keys';
+import {AuthRefreshToken, AuthRefreshTokenRelations} from '../../models';
+import {AuthRefreshTokenRepository} from '../../repositories';
+import {MyAuthService} from './authentication.service';
 
 dotenv.config();
 
@@ -27,8 +26,8 @@ export class RefreshtokenService {
     private refreshExpiresIn: string,
     @inject(RefreshTokenServiceBindings.REFRESH_ISSUER)
     private refreshIssure: string,
-    @repository(RefreshTokenRepository)
-    public refreshTokenRepository: RefreshTokenRepository,
+    @repository(AuthRefreshTokenRepository)
+    public authRefreshTokenRepository: AuthRefreshTokenRepository,
     @inject(AuthServiceBindings.AUTH_SERVICE) public authService: MyAuthService,
     @inject(TokenServiceBindings.TOKEN_SERVICE) public jwtService: TokenService,
   ) {}
@@ -50,7 +49,7 @@ export class RefreshtokenService {
       expiresIn: `${this.refreshExpiresIn} seconds`,
       refreshToken: refreshToken,
     };
-    await this.refreshTokenRepository.create({
+    await this.authRefreshTokenRepository.create({
       authenticationId: authProfile[securityId],
       refreshToken: result.refreshToken,
     });
@@ -87,7 +86,9 @@ export class RefreshtokenService {
    */
   async revokeToken(refreshToken: string) {
     try {
-      await this.refreshTokenRepository.delete(new RefreshToken({refreshToken: refreshToken}));
+      await this.authRefreshTokenRepository.delete(
+        new AuthRefreshToken({refreshToken: refreshToken}),
+      );
     } catch (e) {
       // ignore
     }
@@ -97,10 +98,10 @@ export class RefreshtokenService {
    * Verify the validity of a refresh token, and make sure it exists in backend.
    * @param refreshToken
    */
-  async verifyToken(refreshToken: string): Promise<RefreshToken & RefreshTokenRelations> {
+  async verifyToken(refreshToken: string): Promise<AuthRefreshToken & AuthRefreshTokenRelations> {
     try {
       await verifyAsync(refreshToken, this.refreshSecret);
-      const authRefreshData = await this.refreshTokenRepository.findOne({
+      const authRefreshData = await this.authRefreshTokenRepository.findOne({
         where: {refreshToken: refreshToken},
       });
 
