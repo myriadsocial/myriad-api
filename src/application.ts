@@ -9,15 +9,9 @@ import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
 import {config} from './configs';
-import currencySeed from './data-seed/currencies.json';
-import peopleSeed from './data-seed/people.json';
-import postSeed from './data-seed/posts.json';
-import userSeed from './data-seed/users.json';
 import {OptionType} from './enums';
-import {ExtendedPost} from './interfaces';
 import {AlterDatabase} from './migrations';
 import {InitDatabase} from './migrations/init-database';
-import {Currency, People, User} from './models';
 import {
   CurrencyRepository,
   ExperienceRepository,
@@ -132,10 +126,10 @@ export class MyriadApiApplication extends BootMixin(
       case OptionType.DROP: {
         const init = await this.setInitDatabase();
 
-        await init.createUsers(userSeed as User[]);
-        await init.createCurrencies(currencySeed as Currency[]);
-        await init.createPeople(peopleSeed as People[]);
-        await init.createPost(postSeed as ExtendedPost[]);
+        await init.createUsers();
+        await init.createCurrencies();
+        await init.createPeople();
+        await init.createPost();
 
         break;
       }
