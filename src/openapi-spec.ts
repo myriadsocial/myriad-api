@@ -1,19 +1,19 @@
 import {ApplicationConfig} from '@loopback/core';
 import {MyriadApiApplication} from './application';
-import {application} from './configs';
+import {config} from './configs';
 
 /**
  * Export the OpenAPI spec from the application
  */
 async function exportOpenApiSpec(): Promise<void> {
-  const config: ApplicationConfig = {
+  const myriadConfig: ApplicationConfig = {
     rest: {
-      port: application.port,
-      host: application.host,
+      port: config.APPLICATION_PORT,
+      host: config.APPLICATION_HOST,
     },
   };
   const outFile = process.argv[2] ?? '';
-  const app = new MyriadApiApplication(config);
+  const app = new MyriadApiApplication(myriadConfig);
   await app.boot();
   await app.exportOpenApiSpec(outFile);
 }

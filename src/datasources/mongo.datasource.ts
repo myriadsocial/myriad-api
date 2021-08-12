@@ -1,8 +1,8 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {AnyObject, juggler} from '@loopback/repository';
-import {mongo} from '../configs';
+import {config} from '../configs';
 
-const config = {
+const mongoConfig = {
   name: 'mongo',
   connector: 'mongodb',
   url: '',
@@ -14,21 +14,21 @@ const config = {
 };
 
 function updateConfig(dsConfig: AnyObject) {
-  if (mongo.host) {
-    dsConfig.host = mongo.host;
+  if (config.MONGO_HOST) {
+    dsConfig.host = config.MONGO_HOST;
   }
-  const envPort = mongo.port;
+  const envPort = config.MONGO_PORT;
   if (Number.isInteger(envPort)) {
     dsConfig.port = envPort;
   }
-  if (mongo.user) {
-    dsConfig.user = mongo.user;
+  if (config.MONGO_USER) {
+    dsConfig.user = config.MONGO_USER;
   }
-  if (mongo.password) {
-    dsConfig.password = mongo.password;
+  if (config.MONGO_PASSWORD) {
+    dsConfig.password = config.MONGO_PASSWORD;
   }
-  if (mongo.database) {
-    dsConfig.database = mongo.database;
+  if (config.MONGO_DATABASE) {
+    dsConfig.database = config.MONGO_DATABASE;
   }
   return dsConfig;
 }
@@ -39,12 +39,12 @@ function updateConfig(dsConfig: AnyObject) {
 // Learn more at https://loopback.io/doc/en/lb4/Life-cycle.html
 @lifeCycleObserver('datasource')
 export class MongoDataSource extends juggler.DataSource implements LifeCycleObserver {
-  static readonly dataSourceName = config.name;
-  static readonly defaultConfig = config;
+  static readonly dataSourceName = mongoConfig.name;
+  static readonly defaultConfig = mongoConfig;
 
   constructor(
     @inject('datasources.config.mongo', {optional: true})
-    dsConfig: AnyObject = config,
+    dsConfig: AnyObject = mongoConfig,
   ) {
     super(updateConfig(dsConfig));
   }

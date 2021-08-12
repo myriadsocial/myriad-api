@@ -8,7 +8,7 @@ import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
-import {firebase} from './configs';
+import {config} from './configs';
 import currencySeed from './data-seed/currencies.json';
 import peopleSeed from './data-seed/people.json';
 import postSeed from './data-seed/posts.json';
@@ -108,14 +108,18 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   firebaseInit() {
-    if (!firebase.projectId || !firebase.clientEmail || !firebase.privateKey) {
+    if (
+      !config.FIREBASE_PROJECT_ID ||
+      !config.FIREBASE_CLIENT_EMAIL ||
+      !config.FIREBASE_PRIVATE_KEY
+    ) {
       firebaseAdmin.initializeApp();
     } else {
       firebaseAdmin.initializeApp({
         credential: firebaseAdmin.credential.cert({
-          projectId: firebase.projectId,
-          clientEmail: firebase.clientEmail,
-          privateKey: firebase.privateKey,
+          projectId: config.FIREBASE_PROJECT_ID,
+          clientEmail: config.FIREBASE_CLIENT_EMAIL,
+          privateKey: config.FIREBASE_PRIVATE_KEY,
         }),
       });
     }

@@ -3,7 +3,7 @@ import {service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {ApiPromise, WsProvider} from '@polkadot/api';
 import {ApiOptions} from '@polkadot/api/types';
-import {myriad} from '../configs';
+import {config} from '../configs';
 import {DefaultCurrencyType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
 import {UserCurrency, UserSocialMedia} from '../models';
@@ -47,7 +47,7 @@ export class CurrencyService {
         decimal: 12,
         image: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
         addressType: 42,
-        rpcURL: myriad.rpcURL,
+        rpcURL: config.MYRIAD_WS_RPC,
         native: true,
       },
       {
@@ -79,7 +79,7 @@ export class CurrencyService {
       const api = await new ApiPromise(options({provider}) as ApiOptions).isReadyOrError;
       const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
-      const mnemonic = myriad.mnemonic;
+      const mnemonic = config.MYRIAD_MNEMONIC;
       const from = getKeyring().addFromMnemonic(mnemonic);
       const to = userId;
 
@@ -121,11 +121,11 @@ export class CurrencyService {
       const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
       const api = await polkadotApi(myriadRpc);
 
-      const mnemonic = myriad.mnemonic;
+      const mnemonic = config.MYRIAD_MNEMONIC;
       const from = getKeyring().addFromMnemonic(mnemonic);
       const to = userId;
 
-      const rewardAmount = myriad.rewardAmount * 10 ** myriadDecimal;
+      const rewardAmount = config.MYRIAD_REWARD_AMOUNT * 10 ** myriadDecimal;
 
       const {nonce} = await api.query.system.account(from.address);
       const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.MYRIA);
