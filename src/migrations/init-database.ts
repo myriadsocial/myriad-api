@@ -1,8 +1,12 @@
 import {repository} from '@loopback/repository';
 import {config} from '../configs';
+import currencies from '../data-seed/currencies.json';
+import people from '../data-seed/people.json';
+import posts from '../data-seed/posts.json';
+import users from '../data-seed/users.json';
 import {DefaultCurrencyType, StatusType} from '../enums';
 import {ExtendedPost} from '../interfaces';
-import {Currency, People, Post, User, UserCurrency} from '../models';
+import {User, UserCurrency} from '../models';
 import {
   CurrencyRepository,
   ExperienceRepository,
@@ -36,11 +40,11 @@ export class InitDatabase {
     protected userExperienceRepository: UserExperienceRepository,
   ) {}
 
-  async createUsers(users: User[]): Promise<void> {
+  async createUsers(): Promise<void> {
     const {getKeyring, getHexPublicKey, generateSeed} = new PolkadotJs();
 
     const newUsers = await Promise.all(
-      users.map(user => {
+      users.map((user: any) => {
         const seed = generateSeed();
         const pair = getKeyring().createFromUri(seed + '', {
           name: user.name,
@@ -85,12 +89,13 @@ export class InitDatabase {
     await Promise.all(newUserCurrencies);
   }
 
-  async createCurrencies(currencies: Currency[]): Promise<void> {
-    currencies[0].createdAt = new Date().toString();
-    currencies[0].updatedAt = new Date().toString();
-
+  async createCurrencies(): Promise<void> {
     const newCurrencies = [
-      ...currencies,
+      {
+        ...currencies[0],
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString(),
+      },
       {
         id: DefaultCurrencyType.MYRIA,
         name: 'myriad',
@@ -107,7 +112,7 @@ export class InitDatabase {
     await this.currencyRepository.createAll(newCurrencies);
   }
 
-  async createPeople(people: People[]): Promise<void> {
+  async createPeople(): Promise<void> {
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
     const newPeople = await this.peopleRepository.createAll(people);
 
@@ -124,7 +129,7 @@ export class InitDatabase {
     );
   }
 
-  async createPost(posts: ExtendedPost[]): Promise<void> {
+  async createPost(): Promise<void> {
     await Promise.all(
       posts.map(async post => {
         const people = await this.peopleRepository.findOne({
@@ -134,23 +139,26 @@ export class InitDatabase {
         });
 
         if (people) {
-          post.peopleId = people.id;
-          post.createdAt = new Date().toString();
-          post.updatedAt = new Date().toString();
+          const newPost = {
+            ...post,
+            peopleId: people.id,
+            createdAt: new Date().toString(),
+            updatedAt: new Date().toString(),
+          } as ExtendedPost;
 
-          delete post.platformUser;
+          delete newPost.platformUser;
 
-          return this.postRepository.create(post);
+          return this.postRepository.create(newPost);
         }
 
         return null;
       }),
     );
 
-    await this.createTags(posts);
+    await this.createTags(posts as ExtendedPost[]);
   }
 
-  async createTags(posts: Post[]): Promise<void> {
+  async createTags(posts: ExtendedPost[]): Promise<void> {
     const dateUtils = new DateUtils();
 
     for (const post of posts) {
