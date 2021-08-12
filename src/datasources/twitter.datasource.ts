@@ -1,15 +1,15 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
-import {twitterBearerToken} from '../configs';
+import {config} from '../configs';
 
-const config = {
+const twitterConfig = {
   name: 'twitter',
   connector: 'rest',
   baseURL: 'https://api.twitter.com/',
   crud: false,
   options: {
     headers: {
-      Authorization: twitterBearerToken,
+      Authorization: config.TWITTER_BEARER_TOKEN,
     },
   },
   operations: [
@@ -32,11 +32,11 @@ const config = {
 @lifeCycleObserver('datasource')
 export class TwitterDataSource extends juggler.DataSource implements LifeCycleObserver {
   static dataSourceName = 'twitter';
-  static readonly defaultConfig = config;
+  static readonly defaultConfig = twitterConfig;
 
   constructor(
     @inject('datasources.config.twitter', {optional: true})
-    dsConfig: object = config,
+    dsConfig: object = twitterConfig,
   ) {
     super(dsConfig);
   }
