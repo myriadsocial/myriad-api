@@ -14,6 +14,7 @@ import {
   UserCurrency,
   UserExperience,
   UserRelations,
+  UserSocialMedia,
 } from '../models';
 import {CurrencyRepository} from './currency.repository';
 import {ExperienceRepository} from './experience.repository';
@@ -28,6 +29,11 @@ export class UserRepository extends DefaultCrudRepository<
   UserRelations
 > {
   public readonly friends: HasManyRepositoryFactory<Friend, typeof User.prototype.id>;
+
+  public readonly userSocialMedias: HasManyRepositoryFactory<
+    UserSocialMedia,
+    typeof User.prototype.id
+  >;
 
   public readonly experiences: HasManyThroughRepositoryFactory<
     Experience,
@@ -61,6 +67,11 @@ export class UserRepository extends DefaultCrudRepository<
     super(User, dataSource);
     this.friends = this.createHasManyRepositoryFactoryFor('friends', friendRepositoryGetter);
     this.registerInclusionResolver('friends', this.friends.inclusionResolver);
+    this.userSocialMedias = this.createHasManyRepositoryFactoryFor(
+      'userSocialMedias',
+      userSocialMediaRepositoryGetter,
+    );
+    this.registerInclusionResolver('userSocialMedias', this.userSocialMedias.inclusionResolver);
     this.experiences = this.createHasManyThroughRepositoryFactoryFor(
       'experiences',
       experienceRepositoryGetter,

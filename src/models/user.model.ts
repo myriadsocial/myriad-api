@@ -4,6 +4,7 @@ import {Experience} from './experience.model';
 import {Friend} from './friend.model';
 import {UserCurrency} from './user-currency.model';
 import {UserExperience} from './user-experience.model';
+import {UserSocialMedia} from './user-social-media.model';
 
 @model({
   settings: {
@@ -80,6 +81,9 @@ export class User extends Entity {
     type: 'date',
   })
   deletedAt?: string;
+
+  @hasMany(() => UserSocialMedia, {keyTo: 'userId'})
+  userSocialMedias: UserSocialMedia[];
 
   @hasMany(() => Friend, {keyTo: 'requesteeId'})
   friends: Friend[];
