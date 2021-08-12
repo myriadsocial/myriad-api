@@ -23,6 +23,8 @@ import {
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+/* eslint-disable  @typescript-eslint/naming-convention */
 export class AlterDatabase {
   constructor(
     @repository(UserRepository)
