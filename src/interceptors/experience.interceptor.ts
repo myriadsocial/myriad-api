@@ -171,7 +171,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
 
       case MethodType.UPDATEBYID: {
-        this.experienceService.updateOtherExperience(invocationCtx.args[0], invocationCtx.args[1]);
+        this.experienceService.updateOtherExperience(
+          invocationCtx.args[0],
+          invocationCtx.args[1],
+        ) as Promise<void>;
       }
     }
 
