@@ -13,18 +13,24 @@ import currencySeed from './data-seed/currencies.json';
 import peopleSeed from './data-seed/people.json';
 import postSeed from './data-seed/posts.json';
 import userSeed from './data-seed/users.json';
+import {OptionType} from './enums';
 import {ExtendedPost} from './interfaces';
+import {AlterDatabase} from './migrations';
 import {InitDatabase} from './migrations/init-database';
 import {Currency, People, User} from './models';
 import {
   CurrencyRepository,
   ExperienceRepository,
+  FriendRepository,
+  NotificationRepository,
   PeopleRepository,
   PostRepository,
   TagRepository,
+  TransactionRepository,
   UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
+  UserSocialMediaRepository,
 } from './repositories';
 import {MySequence} from './sequence';
 import {
@@ -124,15 +130,37 @@ export class MyriadApiApplication extends BootMixin(
   async migrateSchema(options?: SchemaMigrationOptions) {
     await super.migrateSchema(options);
 
-    const init = await this.setInitDatabase();
+    switch (options?.existingSchema) {
+      case OptionType.DROP: {
+        const init = await this.setInitDatabase();
 
-    await init.createUsers(userSeed as User[]);
-    await init.createCurrencies(currencySeed as Currency[]);
-    await init.createPeople(peopleSeed as People[]);
-    await init.createPost(postSeed as ExtendedPost[]);
+        await init.createUsers(userSeed as User[]);
+        await init.createCurrencies(currencySeed as Currency[]);
+        await init.createPeople(peopleSeed as People[]);
+        await init.createPost(postSeed as ExtendedPost[]);
+
+        break;
+      }
+
+      case OptionType.ALTER: {
+        const alter = await this.setAlterDatabase();
+
+        await alter.updateUsers();
+        await alter.updatePosts();
+        await alter.updateTransactions();
+        await alter.updateFriends();
+        await alter.updatePeople();
+        await alter.updateNotifications();
+        await alter.updateCurrencies();
+        await alter.updateUserCurrency();
+        await alter.updateUserSocialMedia();
+
+        break;
+      }
+    }
   }
 
-  async setInitDatabase(): Promise<InitDatabase> {
+  async getRepositories() {
     const currencyRepository = await this.getRepository(CurrencyRepository);
     const experienceRepository = await this.getRepository(ExperienceRepository);
     const peopleRepository = await this.getRepository(PeopleRepository);
@@ -141,8 +169,12 @@ export class MyriadApiApplication extends BootMixin(
     const userCurrencyRepository = await this.getRepository(UserCurrencyRepository);
     const userExperienceRepository = await this.getRepository(UserExperienceRepository);
     const userRepository = await this.getRepository(UserRepository);
+    const transactionRepository = await this.getRepository(TransactionRepository);
+    const friendRepository = await this.getRepository(FriendRepository);
+    const notificationRepository = await this.getRepository(NotificationRepository);
+    const userSocialMediaRepository = await this.getRepository(UserSocialMediaRepository);
 
-    return new InitDatabase(
+    return {
       userRepository,
       currencyRepository,
       peopleRepository,
@@ -151,6 +183,41 @@ export class MyriadApiApplication extends BootMixin(
       tagRepository,
       experienceRepository,
       userExperienceRepository,
+      transactionRepository,
+      friendRepository,
+      notificationRepository,
+      userSocialMediaRepository,
+    };
+  }
+
+  async setInitDatabase() {
+    const repositories = await this.getRepositories();
+
+    return new InitDatabase(
+      repositories.userRepository,
+      repositories.currencyRepository,
+      repositories.peopleRepository,
+      repositories.postRepository,
+      repositories.userCurrencyRepository,
+      repositories.tagRepository,
+      repositories.experienceRepository,
+      repositories.userExperienceRepository,
+    );
+  }
+
+  async setAlterDatabase() {
+    const repositories = await this.getRepositories();
+
+    return new AlterDatabase(
+      repositories.userRepository,
+      repositories.postRepository,
+      repositories.transactionRepository,
+      repositories.peopleRepository,
+      repositories.friendRepository,
+      repositories.notificationRepository,
+      repositories.currencyRepository,
+      repositories.userCurrencyRepository,
+      repositories.userSocialMediaRepository,
     );
   }
 }
