@@ -57,7 +57,7 @@ export class ExperienceController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(Experience),
+          items: getModelSchemaRef(Experience, {includeRelations: true}),
         },
       },
     },

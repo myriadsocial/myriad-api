@@ -26,7 +26,10 @@ export class UserExperienceController {
         description: 'Array of UserExperience model instances',
         content: {
           'application/json': {
-            schema: {type: 'array', items: getModelSchemaRef(UserExperience)},
+            schema: {
+              type: 'array',
+              items: getModelSchemaRef(UserExperience, {includeRelations: true}),
+            },
           },
         },
       },

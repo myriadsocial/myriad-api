@@ -66,7 +66,7 @@ export class UserController {
       'application/json': {
         schema: {
           type: 'array',
-          items: getModelSchemaRef(User),
+          items: getModelSchemaRef(User, {includeRelations: true}),
         },
       },
     },
@@ -84,7 +84,7 @@ export class UserController {
     content: {
       'application/json': {
         type: 'array',
-        items: getModelSchemaRef(User),
+        items: getModelSchemaRef(User, {includeRelations: true}),
       },
     },
   })
