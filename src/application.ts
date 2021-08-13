@@ -6,12 +6,15 @@ import {RestApplication} from '@loopback/rest';
 import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
+import {MigrationBindings} from 'loopback4-migration';
 import path from 'path';
-import {JWTAuthenticationComponent} from './components';
+import {JWTAuthenticationComponent, MigrationComponent} from './components';
 import {config} from './configs';
+import {MongoDataSource} from './datasources';
 import {OptionType} from './enums';
-import {AlterDatabase} from './migrations';
+import {AlterDatabase, UpdateUsers} from './migrations';
 import {InitDatabase} from './migrations/init-database';
+import {User} from './models';
 import {
   CurrencyRepository,
   ExperienceRepository,
@@ -68,9 +71,21 @@ export class MyriadApiApplication extends BootMixin(
     // Firebase initialization
     this.firebaseInit();
 
+    this.bind(MigrationBindings.CONFIG).to({
+      appVersion: '0.1.1',
+      dataSourceName: MongoDataSource.dataSourceName,
+      modelName: User.modelName,
+      migrationScripts: [UpdateUsers],
+    });
+
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
     this.bootOptions = {
+      migrations: {
+        dirs: ['migrations'],
+        extensions: ['.migration.js'],
+        nested: true,
+      },
       controllers: {
         // Customize ControllerBooter Conventions here
         dirs: ['controllers'],
@@ -80,10 +95,44 @@ export class MyriadApiApplication extends BootMixin(
     };
   }
 
+  async migrateSchema(options?: SchemaMigrationOptions) {
+    await super.migrateSchema(options);
+
+    switch (options?.existingSchema) {
+      case OptionType.DROP: {
+        const init = await this.setInitDatabase();
+
+        await init.createUsers();
+        await init.createCurrencies();
+        await init.createPeople();
+        await init.createPost();
+
+        break;
+      }
+
+      case OptionType.ALTER: {
+        const alter = await this.setAlterDatabase();
+
+        // await alter.updateUsers();
+        // await alter.updatePosts();
+        // await alter.updateTransactions();
+        // await alter.updateFriends();
+        // await alter.updatePeople();
+        // await alter.updateNotifications();
+        // await alter.updateCurrencies();
+        // await alter.updateUserCurrency();
+        // await alter.updateUserSocialMedia();
+
+        break;
+      }
+    }
+  }
+
   bindComponent() {
     this.component(RestExplorerComponent);
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
+    this.component(MigrationComponent);
   }
 
   bindService() {
@@ -116,39 +165,6 @@ export class MyriadApiApplication extends BootMixin(
           privateKey: config.FIREBASE_PRIVATE_KEY,
         }),
       });
-    }
-  }
-
-  async migrateSchema(options?: SchemaMigrationOptions) {
-    await super.migrateSchema(options);
-
-    switch (options?.existingSchema) {
-      case OptionType.DROP: {
-        const init = await this.setInitDatabase();
-
-        await init.createUsers();
-        await init.createCurrencies();
-        await init.createPeople();
-        await init.createPost();
-
-        break;
-      }
-
-      case OptionType.ALTER: {
-        const alter = await this.setAlterDatabase();
-
-        await alter.updateUsers();
-        await alter.updatePosts();
-        await alter.updateTransactions();
-        await alter.updateFriends();
-        await alter.updatePeople();
-        await alter.updateNotifications();
-        await alter.updateCurrencies();
-        await alter.updateUserCurrency();
-        await alter.updateUserSocialMedia();
-
-        break;
-      }
     }
   }
 
