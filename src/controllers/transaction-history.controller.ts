@@ -19,11 +19,33 @@ export class TransactionHistoryController {
           items: {
             type: 'object',
             properties: {
-              _id: {
-                type: 'string',
+              sent: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    currencyId: {
+                      type: 'string',
+                    },
+                    amount: {
+                      type: 'number',
+                    },
+                  },
+                },
               },
-              amount: {
-                type: 'number',
+              received: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    currencyId: {
+                      type: 'string',
+                    },
+                    amount: {
+                      type: 'number',
+                    },
+                  },
+                },
               },
             },
           },
@@ -57,13 +79,16 @@ export class TransactionHistoryController {
     content: {
       'application/json': {
         schema: {
-          type: 'object',
-          properties: {
-            _id: {
-              type: 'string',
-            },
-            amount: {
-              type: 'number',
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              currencyId: {
+                type: 'string',
+              },
+              amount: {
+                type: 'number',
+              },
             },
           },
         },
