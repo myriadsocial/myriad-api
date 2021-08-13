@@ -19,6 +19,7 @@ export class TransactionService {
       .aggregate([
         {$match: {[field]: {$in: [id]}}},
         {$group: {_id: groupBy, amount: {$sum: '$amount'}}},
+        {$project: {_id: 0, currencyId: '$_id', amount: '$amount'}},
       ])
       .get();
   }
