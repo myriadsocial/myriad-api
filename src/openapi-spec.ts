@@ -1,6 +1,6 @@
 import {ApplicationConfig} from '@loopback/core';
 import {MyriadApiApplication} from './application';
-import {config} from './configs';
+import {config} from './config';
 
 /**
  * Export the OpenAPI spec from the application

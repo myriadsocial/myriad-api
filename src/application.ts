@@ -9,7 +9,7 @@ import * as firebaseAdmin from 'firebase-admin';
 import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
-import {config} from './configs';
+import {config} from './config';
 import {MongoDataSource} from './datasources';
 import {MySequence} from './sequence';
 import {

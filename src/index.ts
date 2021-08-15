@@ -1,5 +1,5 @@
 import {ApplicationConfig, MyriadApiApplication} from './application';
-import {config} from './configs';
+import {config} from './config';
 
 export * from './application';
 

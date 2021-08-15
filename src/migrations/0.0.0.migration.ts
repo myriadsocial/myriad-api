@@ -1,6 +1,6 @@
 import {repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
-import {config} from '../configs';
+import {config} from '../config';
 import {DefaultCurrencyType, StatusType} from '../enums';
 import {ExtendedPost} from '../interfaces';
 import {Currency, People, Post, User, UserCurrency} from '../models';
