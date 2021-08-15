@@ -6,14 +6,14 @@ import {config} from './config';
  * Export the OpenAPI spec from the application
  */
 async function exportOpenApiSpec(): Promise<void> {
-  const myriadConfig: ApplicationConfig = {
+  const appConfig: ApplicationConfig = {
     rest: {
-      port: config.APPLICATION_PORT,
       host: config.APPLICATION_HOST,
+      port: config.APPLICATION_PORT,
     },
   };
   const outFile = process.argv[2] ?? '';
-  const app = new MyriadApiApplication(myriadConfig);
+  const app = new MyriadApiApplication(appConfig);
   await app.boot();
   await app.exportOpenApiSpec(outFile);
 }
