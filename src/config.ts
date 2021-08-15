@@ -1,4 +1,3 @@
-import {RpcType} from './enums';
 require('dotenv').config();
 
 export const config = {
@@ -16,7 +15,7 @@ export const config = {
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ?? '',
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ?? '',
   FIREBASE_PRIVATE_KEY: (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n') ?? '',
-  MYRIAD_WS_RPC: process.env.MYRIAD_WS_RPC ?? RpcType.LOCALRPC,
+  MYRIAD_WS_RPC: process.env.MYRIAD_WS_RPC ?? 'ws://127.0.0.1:9944',
   MYRIAD_MNEMONIC: process.env.MYRIAD_FAUCET_MNEMONIC ?? '',
   MYRIAD_REWARD_AMOUNT: +(process.env.MYRIAD_REWARD_AMOUNT ?? 0),
   TWITTER_BEARER_TOKEN: 'Bearer ' + process.env.TWITTER_BEARER_TOKEN ?? '',
