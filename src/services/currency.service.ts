@@ -3,7 +3,7 @@ import {service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {ApiPromise, WsProvider} from '@polkadot/api';
 import {ApiOptions} from '@polkadot/api/types';
-import {config} from '../configs';
+import {config} from '../config';
 import {DefaultCurrencyType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
 import {UserCurrency, UserSocialMedia} from '../models';

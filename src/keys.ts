@@ -1,7 +1,7 @@
 import {TokenService, UserService} from '@loopback/authentication';
 import {BindingKey} from '@loopback/core';
 import dotenv from 'dotenv';
-import {config} from './configs';
+import {config} from './config';
 import {RefreshTokenService} from './interfaces';
 import {Authentication} from './models';
 import {Credentials} from './repositories/authentication.repository';

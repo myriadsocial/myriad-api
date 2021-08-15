@@ -1,4 +1,4 @@
-import {RpcType} from '../enums';
+import {RpcType} from './enums';
 require('dotenv').config();
 
 export const config = {

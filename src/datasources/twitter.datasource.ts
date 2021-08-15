@@ -1,6 +1,6 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
-import {config} from '../configs';
+import {config} from '../config';
 
 const twitterConfig = {
   name: 'twitter',
