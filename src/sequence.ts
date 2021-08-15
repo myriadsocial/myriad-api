@@ -13,7 +13,7 @@ import {
 } from '@loopback/rest';
 const SequenceActions = RestBindings.SequenceActions;
 
-export class MySequence implements SequenceHandler {
+export class MyriadSequence implements SequenceHandler {
   /**
    * Optional invoker for registered middleware in a chain.
    * To be injected via SequenceActions.INVOKE_MIDDLEWARE.
