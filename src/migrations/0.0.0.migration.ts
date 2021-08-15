@@ -1,4 +1,5 @@
 import {repository} from '@loopback/repository';
+import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {config} from '../configs';
 import {DefaultCurrencyType, StatusType} from '../enums';
 import {ExtendedPost} from '../interfaces';
@@ -16,7 +17,10 @@ import {
 import {DateUtils} from '../utils/date-utils';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 
-export class InitDatabase {
+@migrationScript()
+export class MigrationScript000 implements MigrationScript {
+  version = '0.0.0';
+
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
@@ -35,6 +39,16 @@ export class InitDatabase {
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
   ) {}
+
+  async up(): Promise<void> {
+    await this.createUsers([]);
+    await this.createUserCurrencies([]);
+    await this.createCurrencies([]);
+    await this.createPeople([]);
+    await this.createPost([]);
+    await this.createTags([]);
+    await this.createExperience([]);
+  }
 
   async createUsers(users: User[]): Promise<void> {
     const {getKeyring, getHexPublicKey, generateSeed} = new PolkadotJs();
