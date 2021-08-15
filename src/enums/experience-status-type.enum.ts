@@ -1,6 +1,6 @@
 export enum StatusType {
-  NEW = 'new',
-  DELETED = 'deleted',
-  UPDATED = 'updated',
   NONE = 'none',
+  NEW = 'new',
+  UPDATED = 'updated',
+  DELETED = 'deleted',
 }
