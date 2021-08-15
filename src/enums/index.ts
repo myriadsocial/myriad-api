@@ -3,7 +3,6 @@ export * from './default-currency-type.enum';
 export * from './experience-status-type.enum';
 export * from './friendstatus-type.enum';
 export * from './like-type.enum';
-export * from './migration-type.enum';
 export * from './notification-type.enum';
 export * from './platform-type.enum';
 export * from './timelinefilter-type.enum';
