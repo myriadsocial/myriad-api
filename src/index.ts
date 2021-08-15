@@ -15,10 +15,10 @@ export async function main(options: ApplicationConfig = {}) {
 
 if (require.main === module) {
   // Run the application
-  const myriadConfig = {
+  const appConfig = {
     rest: {
-      port: config.APPLICATION_PORT,
       host: config.APPLICATION_HOST,
+      port: config.APPLICATION_PORT,
       // The `gracePeriodForClose` provides a graceful close for http/https
       // servers with keep-alive clients. The default value is `Infinity`
       // (don't force-close). If you want to immediately destroy all sockets
@@ -31,7 +31,7 @@ if (require.main === module) {
       },
     },
   };
-  main(myriadConfig).catch(err => {
+  main(appConfig).catch(err => {
     console.error('Cannot start the application.', err);
     process.exit(1);
   });
