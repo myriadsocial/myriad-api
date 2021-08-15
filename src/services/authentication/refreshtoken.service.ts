@@ -3,15 +3,12 @@ import {BindingScope, generateUniqueId, inject, injectable} from '@loopback/core
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
-import dotenv from 'dotenv';
 import {promisify} from 'util';
 import {TokenObject} from '../../interfaces';
 import {AuthServiceBindings, RefreshTokenServiceBindings, TokenServiceBindings} from '../../keys';
 import {AuthRefreshToken, AuthRefreshTokenRelations} from '../../models';
 import {AuthRefreshTokenRepository} from '../../repositories';
 import {MyAuthService} from './authentication.service';
-
-dotenv.config();
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
