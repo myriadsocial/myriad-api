@@ -11,7 +11,7 @@ import path from 'path';
 import {JWTAuthenticationComponent} from './components';
 import {config} from './config';
 import {MongoDataSource} from './datasources';
-import {MySequence} from './sequence';
+import {MyriadSequence} from './sequence';
 import {
   CurrencyService,
   ExperienceService,
@@ -34,7 +34,7 @@ export class MyriadApiApplication extends BootMixin(
     super(options);
 
     // Set up the custom sequence
-    this.sequence(MySequence);
+    this.sequence(MyriadSequence);
 
     // Set up default home page
     this.static('/', path.join(__dirname, '../public'));
