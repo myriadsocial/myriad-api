@@ -1,11 +1,11 @@
 [
-    {
-      "id": "AUSD",
-      "name": "ausd",
-      "decimal": 12,
-      "image": "https://apps.acala.network/static/media/AUSD.439bc3f2.png",
-      "addressType": 42,
-      "native": false,
-      "rpcURL": "wss://acala-mandala.api.onfinality.io/public-ws"
-    }
+  {
+    "id": "AUSD",
+    "name": "ausd",
+    "decimal": 12,
+    "image": "https://apps.acala.network/static/media/AUSD.439bc3f2.png",
+    "addressType": 42,
+    "native": false,
+    "rpcURL": "wss://acala-mandala.api.onfinality.io/public-ws"
+  }
 ]

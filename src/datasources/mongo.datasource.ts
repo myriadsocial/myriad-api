@@ -11,6 +11,7 @@ const mongoConfig = {
   user: 'root',
   password: 'root',
   database: 'myriad',
+  allowExtendedOperators: true,
 };
 
 function updateConfig(dsConfig: AnyObject) {
