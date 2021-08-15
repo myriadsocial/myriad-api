@@ -1,37 +1,16 @@
 import {AuthenticationComponent} from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
 import {ApplicationConfig} from '@loopback/core';
-import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
+import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
+import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
 import {config} from './configs';
-import currencySeed from './data-seed/currencies.json';
-import peopleSeed from './data-seed/people.json';
-import postSeed from './data-seed/posts.json';
-import userSeed from './data-seed/users.json';
-import {OptionType} from './enums';
-import {ExtendedPost} from './interfaces';
-import {AlterDatabase} from './migrations';
-import {InitDatabase} from './migrations/init-database';
-import {Currency, People, User} from './models';
-import {
-  CurrencyRepository,
-  ExperienceRepository,
-  FriendRepository,
-  NotificationRepository,
-  PeopleRepository,
-  PostRepository,
-  TagRepository,
-  TransactionRepository,
-  UserCurrencyRepository,
-  UserExperienceRepository,
-  UserRepository,
-  UserSocialMediaRepository,
-} from './repositories';
+import {MongoDataSource} from './datasources';
 import {MySequence} from './sequence';
 import {
   CurrencyService,
@@ -87,6 +66,11 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   bindComponent() {
+    this.component(MigrationComponent);
+    this.bind(MigrationBindings.CONFIG).to({
+      dataSourceName: MongoDataSource.dataSourceName,
+      modelName: 'db_migrations',
+    });
     this.component(RestExplorerComponent);
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
@@ -123,99 +107,5 @@ export class MyriadApiApplication extends BootMixin(
         }),
       });
     }
-  }
-
-  async migrateSchema(options?: SchemaMigrationOptions) {
-    await super.migrateSchema(options);
-
-    switch (options?.existingSchema) {
-      case OptionType.DROP: {
-        const init = await this.setInitDatabase();
-
-        await init.createUsers(userSeed as User[]);
-        await init.createCurrencies(currencySeed as Currency[]);
-        await init.createPeople(peopleSeed as People[]);
-        await init.createPost(postSeed as ExtendedPost[]);
-
-        break;
-      }
-
-      case OptionType.ALTER: {
-        const alter = await this.setAlterDatabase();
-
-        await alter.updateUsers();
-        await alter.updatePosts();
-        await alter.updateTransactions();
-        await alter.updateFriends();
-        await alter.updatePeople();
-        await alter.updateNotifications();
-        await alter.updateCurrencies();
-        await alter.updateUserCurrency();
-        await alter.updateUserSocialMedia();
-
-        break;
-      }
-    }
-  }
-
-  async getRepositories() {
-    const currencyRepository = await this.getRepository(CurrencyRepository);
-    const experienceRepository = await this.getRepository(ExperienceRepository);
-    const peopleRepository = await this.getRepository(PeopleRepository);
-    const postRepository = await this.getRepository(PostRepository);
-    const tagRepository = await this.getRepository(TagRepository);
-    const userCurrencyRepository = await this.getRepository(UserCurrencyRepository);
-    const userExperienceRepository = await this.getRepository(UserExperienceRepository);
-    const userRepository = await this.getRepository(UserRepository);
-    const transactionRepository = await this.getRepository(TransactionRepository);
-    const friendRepository = await this.getRepository(FriendRepository);
-    const notificationRepository = await this.getRepository(NotificationRepository);
-    const userSocialMediaRepository = await this.getRepository(UserSocialMediaRepository);
-
-    return {
-      userRepository,
-      currencyRepository,
-      peopleRepository,
-      postRepository,
-      userCurrencyRepository,
-      tagRepository,
-      experienceRepository,
-      userExperienceRepository,
-      transactionRepository,
-      friendRepository,
-      notificationRepository,
-      userSocialMediaRepository,
-    };
-  }
-
-  async setInitDatabase() {
-    const repositories = await this.getRepositories();
-
-    return new InitDatabase(
-      repositories.userRepository,
-      repositories.currencyRepository,
-      repositories.peopleRepository,
-      repositories.postRepository,
-      repositories.userCurrencyRepository,
-      repositories.tagRepository,
-      repositories.experienceRepository,
-      repositories.userExperienceRepository,
-    );
-  }
-
-  async setAlterDatabase() {
-    const repositories = await this.getRepositories();
-
-    return new AlterDatabase(
-      repositories.userRepository,
-      repositories.postRepository,
-      repositories.transactionRepository,
-      repositories.peopleRepository,
-      repositories.friendRepository,
-      repositories.notificationRepository,
-      repositories.currencyRepository,
-      repositories.userCurrencyRepository,
-      repositories.userSocialMediaRepository,
-    );
   }
 }
