@@ -1,13 +1,10 @@
 import {TokenService, UserService} from '@loopback/authentication';
 import {BindingKey} from '@loopback/core';
-import dotenv from 'dotenv';
 import {config} from './config';
 import {RefreshTokenService} from './interfaces';
 import {Authentication} from './models';
 import {Credentials} from './repositories/authentication.repository';
 import {PasswordHasher} from './services/authentication/hash.password.service';
-
-dotenv.config();
 
 export namespace TokenServiceConstants {
   export const TOKEN_SECRET_VALUE = config.TOKEN_SECRET_KEY;

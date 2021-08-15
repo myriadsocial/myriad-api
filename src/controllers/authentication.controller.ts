@@ -1,26 +1,21 @@
 import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors, post, requestBody} from '@loopback/rest';
+import {UserProfile} from '@loopback/security';
+import * as _ from 'lodash';
+import {NewAuthRequest, RefreshGrant, TokenObject} from '../interfaces';
 import {
-  PasswordHasherBindings,
-  TokenServiceBindings,
   AuthServiceBindings,
+  PasswordHasherBindings,
   RefreshTokenServiceBindings,
+  TokenServiceBindings,
 } from '../keys';
 import {Authentication} from '../models';
-import {Credentials, AuthenticationRepository} from '../repositories';
+import {AuthenticationRepository, Credentials} from '../repositories';
 import {RefreshtokenService, validateCredentials} from '../services';
+import {MyAuthService} from '../services/authentication/authentication.service';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {JWTService} from '../services/authentication/jwt.service';
-import {MyAuthService} from '../services/authentication/authentication.service';
-import {NewAuthRequest, RefreshGrant, TokenObject} from '../interfaces';
-import {UserProfile} from '@loopback/security';
-
-import * as _ from 'lodash';
-
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 export class AuthenticationController {
   constructor(
