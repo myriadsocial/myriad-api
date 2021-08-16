@@ -18,6 +18,8 @@ import {
 import {DateUtils} from '../utils/date-utils';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+/* eslint-disable  @typescript-eslint/naming-convention */
 @migrationScript()
 export class MigrationScript000 implements MigrationScript {
   version = '0.0.0';
