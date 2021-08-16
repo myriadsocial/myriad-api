@@ -1,17 +1,18 @@
 import {repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {config} from '../config';
-import {DefaultCurrencyType, StatusType} from '../enums';
+import currenciesSeed from '../data-seed/currencies.json';
+import peopleSeed from '../data-seed/people.json';
+import postsSeed from '../data-seed/posts.json';
+import usersSeed from '../data-seed/users.json';
+import {DefaultCurrencyType} from '../enums';
 import {ExtendedPost} from '../interfaces';
-import {Currency, People, Post, User, UserCurrency} from '../models';
+import {Currency, People, Post, User} from '../models';
 import {
   CurrencyRepository,
-  ExperienceRepository,
   PeopleRepository,
   PostRepository,
   TagRepository,
-  UserCurrencyRepository,
-  UserExperienceRepository,
   UserRepository,
 } from '../repositories';
 import {DateUtils} from '../utils/date-utils';
@@ -22,81 +23,44 @@ export class MigrationScript000 implements MigrationScript {
   version = '0.0.0';
 
   constructor(
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(TagRepository)
     protected tagRepository: TagRepository,
-    @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
-    @repository(UserExperienceRepository)
-    protected userExperienceRepository: UserExperienceRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
   ) {}
 
   async up(): Promise<void> {
-    await this.createUsers([]);
-    await this.createUserCurrencies([]);
-    await this.createCurrencies([]);
-    await this.createPeople([]);
-    await this.createPost([]);
-    await this.createTags([]);
-    await this.createExperience([]);
+    await this.createUsers(usersSeed as User[]);
+    await this.createCurrencies(currenciesSeed as Currency[]);
+    await this.createPeople(peopleSeed as People[]);
+    await this.createPost(postsSeed as ExtendedPost[]);
   }
 
   async createUsers(users: User[]): Promise<void> {
-    const {getKeyring, getHexPublicKey, generateSeed} = new PolkadotJs();
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
-    const newUsers = await Promise.all(
-      users.map(user => {
-        const seed = generateSeed();
-        const pair = getKeyring().createFromUri(seed + '', {
-          name: user.name,
-        });
+    await this.userRepository.deleteAll({
+      or: [{name: 'Myriad'}, {name: 'myriad'}],
+    });
+
+    await Promise.all(
+      users.map(async user => {
+        const mnemonic = config.MYRIAD_MNEMONIC;
+        const pair = getKeyring().addFromMnemonic(mnemonic);
 
         user.id = getHexPublicKey(pair);
-        user.bio = `Hello, my name is ${user.name}`;
         user.createdAt = new Date().toString();
         user.updatedAt = new Date().toString();
 
         return this.userRepository.create(user);
       }),
     );
-
-    await this.createUserCurrencies(newUsers);
-    await this.createExperience(newUsers);
-  }
-
-  async createUserCurrencies(users: User[]): Promise<void> {
-    const newUserCurrencies: Promise<UserCurrency>[] = [];
-
-    users.forEach(user => {
-      newUserCurrencies.push(
-        this.userCurrencyRepository.create({
-          userId: user.id,
-          currencyId: DefaultCurrencyType.MYRIA,
-          createdAt: new Date().toString(),
-          updatedAt: new Date().toString(),
-        } as UserCurrency),
-      );
-
-      newUserCurrencies.push(
-        this.userCurrencyRepository.create({
-          userId: user.id,
-          currencyId: DefaultCurrencyType.AUSD,
-          createdAt: new Date().toString(),
-          updatedAt: new Date().toString(),
-        } as UserCurrency),
-      );
-    });
-
-    await Promise.all(newUserCurrencies);
   }
 
   async createCurrencies(currencies: Currency[]): Promise<void> {
@@ -118,50 +82,98 @@ export class MigrationScript000 implements MigrationScript {
       },
     ];
 
-    await this.currencyRepository.createAll(newCurrencies);
+    try {
+      await this.currencyRepository.createAll(newCurrencies);
+    } catch {
+      // ignore
+    }
   }
 
   async createPeople(people: People[]): Promise<void> {
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
-    const newPeople = await this.peopleRepository.createAll(people);
 
-    await Promise.all(
-      newPeople.map(person => {
-        const newKey = getKeyring().addFromUri('//' + person.id);
-        const walletAddress = getHexPublicKey(newKey);
-        return this.peopleRepository.updateById(person.id, {
-          createdAt: new Date().toString(),
-          updatedAt: new Date().toString(),
-          walletAddress: walletAddress,
-        });
-      }),
-    );
+    const filterPeople = (
+      await Promise.all(
+        people.map(async person => {
+          const collection = (this.peopleRepository.dataSource.connector as any).collection(
+            People.modelName,
+          );
+
+          const foundPeople = await collection
+            .aggregate([
+              {
+                $match: {
+                  platform_account_id: person.originUserId,
+                },
+              },
+            ])
+            .get();
+
+          if (foundPeople.length > 0) {
+            return null;
+          }
+
+          return person;
+        }),
+      )
+    ).filter(person => person !== null);
+
+    if (filterPeople.length > 0) {
+      const newPeople = await this.peopleRepository.createAll(filterPeople as People[]);
+
+      await Promise.all(
+        newPeople.map(person => {
+          const newKey = getKeyring().addFromUri('//' + person.id);
+          const walletAddress = getHexPublicKey(newKey);
+          return this.peopleRepository.updateById(person.id, {
+            createdAt: new Date().toString(),
+            updatedAt: new Date().toString(),
+            walletAddress: walletAddress,
+          });
+        }),
+      );
+    }
   }
 
   async createPost(posts: ExtendedPost[]): Promise<void> {
-    await Promise.all(
-      posts.map(async post => {
-        const people = await this.peopleRepository.findOne({
-          where: {
-            originUserId: post.platformUser ? post.platformUser.originUserId : '',
-          },
-        });
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
+    const newPosts = (
+      await Promise.all(
+        posts.map(async post => {
+          const postCollection = (this.postRepository.dataSource.connector as any).collection(
+            Post.modelName,
+          );
 
-        if (people) {
-          post.peopleId = people.id;
-          post.createdAt = new Date().toString();
-          post.updatedAt = new Date().toString();
+          const foundPost = await postCollection.aggregate([{$match: {textId: post.originPostId}}]);
 
-          delete post.platformUser;
+          if (foundPost.length > 0) return null;
 
-          return this.postRepository.create(post);
-        }
+          const people = await this.peopleRepository.findOne({
+            where: {
+              originUserId: post.platformUser ? post.platformUser.originUserId : '',
+            },
+          });
 
-        return null;
-      }),
-    );
+          if (people) {
+            const mnemonic = config.MYRIAD_MNEMONIC;
+            const pair = getKeyring().addFromMnemonic(mnemonic);
 
-    await this.createTags(posts);
+            post.peopleId = people.id;
+            post.createdAt = new Date().toString();
+            post.updatedAt = new Date().toString();
+            post.createdBy = getHexPublicKey(pair);
+
+            delete post.platformUser;
+
+            return this.postRepository.create(post);
+          }
+
+          return null;
+        }),
+      )
+    ).filter(post => post !== null);
+
+    await this.createTags(newPosts as Post[]);
   }
 
   async createTags(posts: Post[]): Promise<void> {
@@ -203,58 +215,6 @@ export class MigrationScript000 implements MigrationScript {
           });
         }
       }
-    }
-  }
-
-  async createExperience(users: User[]): Promise<void> {
-    const people = await this.peopleRepository.find();
-    const filterPeople = people
-      .filter(person => {
-        if (person.username === 'gavofyork' || person.username === 'CryptoChief') {
-          return true;
-        }
-
-        return false;
-      })
-      .map(person => {
-        return {
-          ...person,
-          status: StatusType.NONE,
-        };
-      });
-
-    for (const user of users) {
-      const newExperience = await this.experienceRepository.create({
-        name: user.name + ' experience',
-        tags: [
-          {
-            id: 'blockchain',
-            status: StatusType.NONE,
-          },
-          {
-            id: 'cryptocurrency',
-            status: StatusType.NONE,
-          },
-          {
-            id: 'technology',
-            status: StatusType.NONE,
-          },
-        ],
-        people: filterPeople,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString(),
-        description: 'This is about blockchain and cryptocurrency',
-        createdBy: user.id,
-      });
-
-      await this.userExperienceRepository.create({
-        userId: user.id,
-        experienceId: newExperience.id,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString(),
-      });
-
-      await this.userRepository.updateById(user.id, {onTimeline: newExperience.id});
     }
   }
 }
