@@ -1,7 +1,8 @@
-import {service} from '@loopback/core';
-import {repository} from '@loopback/repository';
-import {del, getModelSchemaRef, param, patch, post, requestBody} from '@loopback/rest';
-import {Comment} from '../models';
+import {intercept, service} from '@loopback/core';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {del, get, getModelSchemaRef, param, patch, post, requestBody} from '@loopback/rest';
+import {PaginationInterceptor} from '../interceptors';
+import {Comment, CustomFilter} from '../models';
 import {CommentRepository} from '../repositories';
 import {NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
@@ -14,6 +15,47 @@ export class CommentController {
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
+
+  @intercept(PaginationInterceptor.BINDING_KEY)
+  @get('/comments', {
+    responses: {
+      '200': {
+        description: 'Array of Comment model instances',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'array',
+              items: getModelSchemaRef(Comment, {includeRelations: true}),
+            },
+          },
+        },
+      },
+    },
+  })
+  async find(
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+  ): Promise<Comment[]> {
+    return this.commentRepository.find(filter as Filter<Comment>);
+  }
+
+  @get('/comments/{id}', {
+    responses: {
+      '200': {
+        description: 'Comment model instances',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(Comment, {includeRelations: true}),
+          },
+        },
+      },
+    },
+  })
+  async findById(
+    @param.path.string('id') id: string,
+    @param.filter(Comment, {exclude: 'where'}) filter?: FilterExcludingWhere<Comment>,
+  ): Promise<Comment> {
+    return this.commentRepository.findById(id, filter);
+  }
 
   @post('/comments', {
     responses: {
