@@ -18,6 +18,7 @@ export enum ControllerType {
 export enum MethodType {
   FIND = 'find',
   CREATE = 'create',
+  CREATELIKE = 'createLike',
   UPDATEBYID = 'updateById',
   TIMELINE = 'timeline',
   FINDFRIENDS = 'findFriends',
@@ -26,4 +27,5 @@ export enum MethodType {
   CLONE = 'clone',
   MODIFY = 'modify',
   CREATENEW = 'createNew',
+  DELETEBYID = 'deleteById',
 }
