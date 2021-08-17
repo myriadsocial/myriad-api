@@ -28,16 +28,28 @@ export class LikeController {
         'application/json': {
           schema: getModelSchemaRef(Like, {
             title: 'NewLike',
-            exclude: ['state'],
           }),
         },
       },
     })
     like: Omit<Like, 'id'>,
   ): Promise<Like> {
-    return this.likeRepository.create(like);
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
+    const collection = (this.likeRepository.dataSource.connector as any).collection(Like.modelName);
+    const query = {
+      userId: like.userId,
+      type: like.type,
+      referenceId: like.referenceId,
+    };
+    const update = {
+      $set: like,
+    };
+    const options = {upsert: true, returnOriginal: false};
+
+    return collection.findOneAndUpdate(query, update, options);
   }
 
+  @intercept(ValidateLikeInterceptor.BINDING_KEY)
   @del('/likes/{id}', {
     responses: {
       '200': {
@@ -45,7 +57,7 @@ export class LikeController {
       },
     },
   })
-  async delete(@param.path.string('id') id: string): Promise<void> {
+  async deleteById(@param.path.string('id') id: string): Promise<void> {
     return this.likeRepository.deleteById(id);
   }
 }
