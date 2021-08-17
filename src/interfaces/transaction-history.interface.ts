@@ -6,6 +6,6 @@ export interface UserTransactionHistory {
 export interface PostTransactionHistory extends TransactionDetail {}
 
 export interface TransactionDetail {
-  _id: string;
+  currencyId: string;
   amount: number;
 }
