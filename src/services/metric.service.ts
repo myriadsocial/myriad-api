@@ -120,6 +120,10 @@ export class MetricService {
         result = await this.userExperienceRepository.count(where);
         break;
 
+      case ControllerType.COMMENT:
+        result = await this.commentRepository.count(where);
+        break;
+
       default:
         result = {
           count: 0,
