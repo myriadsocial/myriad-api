@@ -24,5 +24,3 @@ export class TransactionService {
       .get();
   }
 }
-
-// TODO: removed unused method
