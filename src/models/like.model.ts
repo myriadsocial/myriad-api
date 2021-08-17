@@ -35,8 +35,7 @@ export class Like extends Entity {
 
   @property({
     type: 'boolean',
-    required: false,
-    default: true,
+    required: true,
   })
   state: boolean;
 
