@@ -8,7 +8,7 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {LikeType} from '../enums';
+import {LikeType, MethodType} from '../enums';
 import {LikeRepository, PostRepository} from '../repositories';
 import {MetricService} from '../services';
 
@@ -45,36 +45,43 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
    * @param next - A function to invoke next interceptor or the target method
    */
   async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
-    const {referenceId, type, userId} = invocationCtx.args[0];
-    const like = await this.likeRepository.findOne({
-      where: {
-        userId,
-        type,
-        referenceId,
-      },
-    });
+    let referenceId = '';
+    let type: LikeType = LikeType.POST;
 
-    if (like) {
-      like.state = !like.state;
-      like.updatedAt = new Date().toString();
+    const methodName = invocationCtx.methodName;
 
-      await this.likeRepository.updateById(like.id, like);
+    if (methodName === MethodType.CREATELIKE) {
+      ({referenceId, type} = invocationCtx.args[0]);
 
-      return like;
+      invocationCtx.args[0].createdAt = new Date().toString();
+      invocationCtx.args[0].updatedAt = new Date().toString();
     }
 
-    invocationCtx.args[0].createdAt = new Date().toString();
-    invocationCtx.args[0].updatedAt = new Date().toString();
+    if (methodName === MethodType.DELETEBYID) {
+      const like = await this.likeRepository.findById(invocationCtx.args[0]);
+
+      ({referenceId, type} = like);
+    }
 
     // Add pre-invocation logic here
     const result = await next();
     // Add post-invocation logic here
-    if (result.type === LikeType.POST) {
-      const metric = await this.metricService.publicMetric(result.type, result.referenceId);
+    if (type === LikeType.POST) {
+      const metric = await this.metricService.publicMetric(type, referenceId);
 
       this.postRepository.updateById(referenceId, {
         metric: metric,
       }) as Promise<void>;
+    }
+
+    if (methodName === MethodType.CREATELIKE) {
+      const id = result.value._id;
+      delete result.value._id;
+
+      return {
+        id,
+        ...result.value,
+      };
     }
 
     return result;
