@@ -66,14 +66,17 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   bindComponent() {
-    this.component(MigrationComponent);
-    this.bind(MigrationBindings.CONFIG).to({
-      dataSourceName: MongoDataSource.dataSourceName,
-      modelName: 'db_migrations',
-    });
     this.component(RestExplorerComponent);
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
+
+    if (!this.options.test) {
+      this.component(MigrationComponent);
+      this.bind(MigrationBindings.CONFIG).to({
+        dataSourceName: MongoDataSource.dataSourceName,
+        modelName: 'db_migrations',
+      });
+    }
   }
 
   bindService() {

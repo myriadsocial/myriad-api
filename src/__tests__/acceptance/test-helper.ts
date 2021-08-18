@@ -12,6 +12,7 @@ export async function setupApplication(): Promise<AppWithClient> {
 
   const app = new MyriadApiApplication({
     rest: restConfig,
+    test: true,
   });
 
   await app.boot();
