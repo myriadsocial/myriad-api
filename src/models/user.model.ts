@@ -21,6 +21,7 @@ export class User extends Entity {
     jsonSchema: {
       maxLength: 66,
       minLength: 66,
+      pattern: '^0x',
     },
   })
   id: string;
