@@ -38,18 +38,19 @@ export class UserController {
     @requestBody({
       content: {
         'application/json': {
-          schema: {
-            type: 'object',
-            required: ['id', 'name'],
-            properties: {
-              id: {
-                type: 'string',
-              },
-              name: {
-                type: 'string',
-              },
-            },
-          },
+          schema: getModelSchemaRef(User, {
+            title: 'NewUser',
+            exclude: [
+              'profilePictureURL',
+              'bannerImageUrl',
+              'bio',
+              'fcmTokens',
+              'onTimeline',
+              'createdAt',
+              'updatedAt',
+              'deletedAt',
+            ],
+          }),
         },
       },
     })
