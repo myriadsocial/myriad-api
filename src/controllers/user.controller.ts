@@ -1,4 +1,4 @@
-import {intercept, service} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -11,9 +11,8 @@ import {
   response,
 } from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
-import {CustomFilter, ExtendCustomFilter, User} from '../models';
+import {CustomFilter, User} from '../models';
 import {UserRepository} from '../repositories';
-import {FriendService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -21,8 +20,6 @@ export class UserController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @service(FriendService)
-    protected friendService: FriendService,
   ) {}
 
   @post('/users')
@@ -38,18 +35,19 @@ export class UserController {
     @requestBody({
       content: {
         'application/json': {
-          schema: {
-            type: 'object',
-            required: ['id', 'name'],
-            properties: {
-              id: {
-                type: 'string',
-              },
-              name: {
-                type: 'string',
-              },
-            },
-          },
+          schema: getModelSchemaRef(User, {
+            title: 'NewUser',
+            exclude: [
+              'profilePictureURL',
+              'bannerImageUrl',
+              'bio',
+              'fcmTokens',
+              'onTimeline',
+              'createdAt',
+              'updatedAt',
+              'deletedAt',
+            ],
+          }),
         },
       },
     })
@@ -72,25 +70,7 @@ export class UserController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
-  ): Promise<User[]> {
-    return this.userRepository.find(filter as Filter<User>);
-  }
-
-  @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/user-friends')
-  @response(200, {
-    description: 'Array of User Friends model instances',
-    content: {
-      'application/json': {
-        type: 'array',
-        items: getModelSchemaRef(User, {includeRelations: true}),
-      },
-    },
-  })
-  async findFriends(
-    @param.query.object('filter', getModelSchemaRef(ExtendCustomFilter, {exclude: ['q', 'sortBy']}))
-    filter: ExtendCustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<User[]> {
     return this.userRepository.find(filter as Filter<User>);
   }
