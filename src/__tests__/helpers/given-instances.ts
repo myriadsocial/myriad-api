@@ -1,5 +1,10 @@
-import {Comment, People, User} from '../../models';
-import {CommentRepository, PeopleRepository, UserRepository} from '../../repositories';
+import {Comment, People, Post, User} from '../../models';
+import {
+  CommentRepository,
+  PeopleRepository,
+  PostRepository,
+  UserRepository,
+} from '../../repositories';
 
 export function givenUser(user?: Partial<User>) {
   const data = Object.assign(
@@ -77,4 +82,37 @@ export async function givenCommentInstance(
   comment?: Partial<Comment>,
 ) {
   return commentRepository.create(givenComment(comment));
+}
+
+export async function givenMutlipleCommentInstances(
+  commentRepository: CommentRepository,
+  comment?: Partial<Comment>,
+) {
+  return Promise.all([
+    givenCommentInstance(commentRepository, comment),
+    givenCommentInstance(commentRepository, {
+      text: 'Hello',
+      ...comment,
+    }),
+  ]);
+}
+
+export function givenPost(post?: Partial<Post>) {
+  const data = Object.assign(
+    {
+      tags: [],
+      platform: 'twitter',
+      title: '',
+      text: 'Tesla Solar + Powerwall battery enables consumers to be their own utility',
+      originPostId: '1385108424761872387',
+      url: 'https://twitter.com/44196397/status/1385108424761872387',
+      originCreatedAt: 'Thu Apr 22 2021 12:49:17 GMT+0700 (Western Indonesia Time)',
+    },
+    post,
+  );
+  return new Post(data);
+}
+
+export async function givenPostInstance(postRepository: PostRepository, post?: Partial<Post>) {
+  return postRepository.create(givenPost(post));
 }
