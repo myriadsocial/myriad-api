@@ -133,7 +133,7 @@ describe('UserApplication', function () {
     });
 
     it('returns 404 when updating a user that does not exist', () => {
-      return client.patch('/todos/99999').send(givenUser()).expect(404);
+      return client.patch('/users/99999').send(givenUser()).expect(404);
     });
 
     it('deletes the user', async () => {
