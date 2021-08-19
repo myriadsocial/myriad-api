@@ -1,6 +1,6 @@
 import {Client} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
-import {setupApplication} from './test-helper';
+import {setupApplication} from '../helpers';
 
 describe('HomePage', () => {
   let app: MyriadApiApplication;
