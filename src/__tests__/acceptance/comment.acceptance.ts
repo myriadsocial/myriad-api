@@ -10,7 +10,6 @@ import {
   givenMutlipleCommentInstances,
   givenPostInstance,
   givenPostRepository,
-  givenUser,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
@@ -45,7 +44,9 @@ describe('CommentApplication', function () {
 
   beforeEach(async () => {
     user = await givenUserInstance(userRepository);
-    post = await givenPostInstance(postRepository);
+    post = await givenPostInstance(postRepository, {
+      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+    });
   });
 
   it('creates a comment', async function () {
@@ -58,15 +59,13 @@ describe('CommentApplication', function () {
   });
 
   it('returns 422 when creates a comment with no userId', async () => {
-    await givenCommentInstance(commentRepository);
-    const comment = givenUser();
+    const comment = givenComment({postId: post.id});
 
     await client.post('/comments').send(comment).expect(422);
   });
 
   it('rejects requests to create a comment with no postId', async () => {
-    await givenCommentInstance(commentRepository);
-    const comment = givenUser();
+    const comment = givenComment({userId: user.id});
 
     await client.post('/comments').send(comment).expect(422);
   });
