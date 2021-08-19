@@ -95,11 +95,9 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   firebaseInit() {
-    let name = undefined;
-
-    if (this.options.test) {
-      name = 'myriad' + Math.floor(Math.random() * 10000000000000 + 1);
-    }
+    let name = this.options.test
+      ? 'myriad' + Math.floor(Math.random() * 10000000000000 + 1)
+      : 'myriad';
 
     if (
       !config.FIREBASE_PROJECT_ID ||
