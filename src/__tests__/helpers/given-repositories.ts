@@ -4,6 +4,7 @@ import {
   CurrencyRepository,
   FriendRepository,
   PeopleRepository,
+  PostRepository,
   UserRepository,
 } from '../../repositories';
 
@@ -25,4 +26,8 @@ export async function givenPeopleRepository(app: MyriadApiApplication) {
 
 export async function givenCommentRepository(app: MyriadApiApplication) {
   return app.getRepository(CommentRepository);
+}
+
+export async function givenPostRepository(app: MyriadApiApplication) {
+  return app.getRepository(PostRepository);
 }
