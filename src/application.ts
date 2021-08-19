@@ -95,27 +95,22 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   firebaseInit() {
-    const name = this.options.test
-      ? 'myriad' + Math.floor(Math.random() * 10000000000000 + 1)
-      : 'myriad';
-
-    if (
-      !config.FIREBASE_PROJECT_ID ||
-      !config.FIREBASE_CLIENT_EMAIL ||
-      !config.FIREBASE_PRIVATE_KEY
-    ) {
-      firebaseAdmin.initializeApp({}, name);
-    } else {
-      firebaseAdmin.initializeApp(
-        {
+    if (!this.options.test) {
+      if (
+        !config.FIREBASE_PROJECT_ID ||
+        !config.FIREBASE_CLIENT_EMAIL ||
+        !config.FIREBASE_PRIVATE_KEY
+      ) {
+        firebaseAdmin.initializeApp();
+      } else {
+        firebaseAdmin.initializeApp({
           credential: firebaseAdmin.credential.cert({
             projectId: config.FIREBASE_PROJECT_ID,
             clientEmail: config.FIREBASE_CLIENT_EMAIL,
             privateKey: config.FIREBASE_PRIVATE_KEY,
           }),
-        },
-        name,
-      );
+        });
+      }
     }
   }
 }
