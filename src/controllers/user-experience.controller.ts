@@ -36,7 +36,7 @@ export class UserExperienceController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<UserExperience[]> {
     return this.userExperienceRepository.find(filter as Filter<UserExperience>);
   }

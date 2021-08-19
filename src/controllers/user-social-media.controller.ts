@@ -88,7 +88,7 @@ export class UserSocialMediaController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<UserSocialMedia[]> {
     return this.userSocialMediaRepository.find(filter as Filter<UserSocialMedia>);
   }

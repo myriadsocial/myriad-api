@@ -48,7 +48,7 @@ export class TagController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<Tag[]> {
     return this.tagRepository.find(filter as Filter<Tag>);
   }
