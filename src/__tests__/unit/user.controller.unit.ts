@@ -8,12 +8,10 @@ import {
 import {UserController} from '../../controllers/user.controller';
 import {CustomFilter, User} from '../../models';
 import {UserRepository} from '../../repositories';
-import {FriendService} from '../../services';
 import {givenUser} from '../helpers';
 
 describe('UserController', () => {
   let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
-  let friendService: FriendService;
   let controller: UserController;
   let aUser: User;
   let aUserWithId: User;
@@ -87,7 +85,6 @@ describe('UserController', () => {
 
   function resetRepositories() {
     userRepository = createStubInstance(UserRepository);
-    friendService = createStubInstance(FriendService);
     aUser = givenUser();
     aUserWithId = givenUser({
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
@@ -104,6 +101,6 @@ describe('UserController', () => {
       name: 'irman',
     });
 
-    controller = new UserController(userRepository, friendService);
+    controller = new UserController(userRepository);
   }
 });
