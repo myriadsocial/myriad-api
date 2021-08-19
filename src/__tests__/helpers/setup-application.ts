@@ -1,5 +1,5 @@
 import {Client, createRestAppClient, givenHttpServerConfig} from '@loopback/testlab';
-import {MyriadApiApplication} from '../..';
+import {MyriadApiApplication} from '../../application';
 
 export async function setupApplication(): Promise<AppWithClient> {
   const restConfig = givenHttpServerConfig({
@@ -16,6 +16,12 @@ export async function setupApplication(): Promise<AppWithClient> {
   });
 
   await app.boot();
+
+  app.bind('datasources.config.mongo').to({
+    name: 'mongo',
+    connector: 'memory',
+  });
+
   await app.start();
 
   const client = createRestAppClient(app);
