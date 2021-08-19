@@ -60,7 +60,7 @@ describe('FriendController', () => {
       sinon.assert.called(find);
     });
 
-    it('users the provided filter', async () => {
+    it('uses the provided filter', async () => {
       const find = friendRepository.stubs.find;
       const filter = toJSON({where: {status: FriendStatusType.PENDING}});
 
