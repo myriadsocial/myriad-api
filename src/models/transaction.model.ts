@@ -19,9 +19,6 @@ export class Transaction extends Entity {
     mongodb: {
       dataType: 'ObjectId',
     },
-    jsonSchema: {
-      required: ['to', 'from', 'currencyId'],
-    },
   })
   id?: string;
 
@@ -55,16 +52,38 @@ export class Transaction extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User, {name: 'fromUser'})
+  @belongsTo(
+    () => User,
+    {name: 'fromUser'},
+    {
+      jsonSchema: {
+        maxLength: 66,
+        minLength: 66,
+        pattern: '^0x',
+      },
+      required: true,
+    },
+  )
   from: string;
 
-  @belongsTo(() => User, {name: 'toUser'})
+  @belongsTo(
+    () => User,
+    {name: 'toUser'},
+    {
+      jsonSchema: {
+        maxLength: 66,
+        minLength: 66,
+        pattern: '^0x',
+      },
+      required: true,
+    },
+  )
   to: string;
 
   @belongsTo(() => Post)
   postId?: string;
 
-  @belongsTo(() => Currency)
+  @belongsTo(() => Currency, {}, {required: true})
   currencyId: string;
 
   constructor(data?: Partial<Transaction>) {

@@ -8,9 +8,6 @@ import {User, UserWithRelations} from './user.model';
     mongodb: {
       collection: 'friends',
     },
-    jsonSchema: {
-      require: ['requesteeId', 'requestorId'],
-    },
   },
 })
 export class Friend extends Entity {
@@ -52,10 +49,32 @@ export class Friend extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User, {name: 'requestee'})
+  @belongsTo(
+    () => User,
+    {name: 'requestee'},
+    {
+      jsonSchema: {
+        maxLength: 66,
+        minLength: 66,
+        pattern: '^0x',
+      },
+      required: true,
+    },
+  )
   requesteeId: string;
 
-  @belongsTo(() => User, {name: 'requestor'})
+  @belongsTo(
+    () => User,
+    {name: 'requestor'},
+    {
+      jsonSchema: {
+        maxLength: 66,
+        minLength: 66,
+        pattern: '^0x',
+      },
+      required: true,
+    },
+  )
   requestorId: string;
 
   constructor(data?: Partial<Friend>) {
@@ -65,8 +84,8 @@ export class Friend extends Entity {
 
 export interface FriendRelations {
   // describe navigational properties here
-  friend: UserWithRelations;
-  requestor: UserWithRelations;
+  requestee?: UserWithRelations;
+  requestor?: UserWithRelations;
 }
 
 export type FriendWithRelations = Friend & FriendRelations;

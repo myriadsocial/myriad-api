@@ -66,10 +66,32 @@ export class Notification extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User, {name: 'fromUserId'})
+  @belongsTo(
+    () => User,
+    {name: 'fromUserId'},
+    {
+      jsonSchema: {
+        maxLength: 66,
+        minLength: 66,
+        pattern: '^0x',
+      },
+      required: true,
+    },
+  )
   from: string;
 
-  @belongsTo(() => User, {name: 'toUserId'})
+  @belongsTo(
+    () => User,
+    {name: 'toUserId'},
+    {
+      jsonSchema: {
+        maxLength: 66,
+        minLength: 66,
+        pattern: '^0x',
+      },
+      required: true,
+    },
+  )
   to: string;
 
   constructor(data?: Partial<Notification>) {

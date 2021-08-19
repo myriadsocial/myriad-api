@@ -7,9 +7,6 @@ import {Currency} from './currency.model';
     mongodb: {
       collection: 'userCurrencies',
     },
-    jsonSchema: {
-      require: ['userId', 'currencyId'],
-    },
   },
 })
 export class UserCurrency extends Entity {
@@ -44,10 +41,15 @@ export class UserCurrency extends Entity {
   @property({
     type: 'string',
     required: true,
+    jsonSchema: {
+      maxLength: 66,
+      minLength: 66,
+      pattern: '^0x',
+    },
   })
   userId: string;
 
-  @belongsTo(() => Currency)
+  @belongsTo(() => Currency, {}, {required: true})
   currencyId: string;
 
   constructor(data?: Partial<UserCurrency>) {

@@ -90,7 +90,18 @@ export class Experience extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User, {name: 'user'})
+  @belongsTo(
+    () => User,
+    {name: 'user'},
+    {
+      jsonSchema: {
+        maxLength: 66,
+        minLength: 66,
+        pattern: '^0x',
+      },
+      required: true,
+    },
+  )
   createdBy: string;
 
   constructor(data?: Partial<Experience>) {

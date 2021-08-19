@@ -51,7 +51,18 @@ export class Comment extends Entity {
   @belongsTo(() => Post)
   postId: string;
 
-  @belongsTo(() => User)
+  @belongsTo(
+    () => User,
+    {},
+    {
+      jsonSchema: {
+        maxLength: 66,
+        minLength: 66,
+        pattern: '^0x',
+      },
+      required: true,
+    },
+  )
   userId: string;
 
   constructor(data?: Partial<Comment>) {
