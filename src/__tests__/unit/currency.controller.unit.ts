@@ -54,7 +54,7 @@ describe('CurrencyController', () => {
       sinon.assert.called(find);
     });
 
-    it('currencies the provided filter', async () => {
+    it('uses the provided filter', async () => {
       const find = currencyRepository.stubs.find;
       const filter = toJSON({where: {id: 'ACA'}});
 

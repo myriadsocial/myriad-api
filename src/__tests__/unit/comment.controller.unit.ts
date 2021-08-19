@@ -11,7 +11,7 @@ import {CommentRepository} from '../../repositories';
 import {NotificationService} from '../../services';
 import {givenComment} from '../helpers';
 
-describe('UserController', () => {
+describe('CommentController', () => {
   let commentRepository: StubbedInstanceWithSinonAccessor<CommentRepository>;
   let notificationService: StubbedInstanceWithSinonAccessor<NotificationService>;
   let controller: CommentController;
@@ -57,7 +57,7 @@ describe('UserController', () => {
       sinon.assert.called(find);
     });
 
-    it('users the provided filter', async () => {
+    it('uses the provided filter', async () => {
       const find = commentRepository.stubs.find;
       const filter = toJSON({where: {id: '1'}});
 

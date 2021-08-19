@@ -43,7 +43,7 @@ describe('PeopleController', () => {
       sinon.assert.called(find);
     });
 
-    it('users the provided filter', async () => {
+    it('uses the provided filter', async () => {
       const find = peopleRepository.stubs.find;
       const filter = toJSON({where: {username: 'elonmusk'}});
 

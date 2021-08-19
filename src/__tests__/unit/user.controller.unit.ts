@@ -55,7 +55,7 @@ describe('UserController', () => {
       sinon.assert.called(find);
     });
 
-    it('users the provided filter', async () => {
+    it('uses the provided filter', async () => {
       const find = userRepository.stubs.find;
       const filter = toJSON({where: {name: 'hakim'}});
 
