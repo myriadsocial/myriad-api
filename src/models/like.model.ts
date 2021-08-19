@@ -60,7 +60,18 @@ export class Like extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User)
+  @belongsTo(
+    () => User,
+    {},
+    {
+      required: true,
+      jsonSchema: {
+        maxLength: 66,
+        minLength: 66,
+        pattern: '^0x',
+      },
+    },
+  )
   userId: string;
 
   constructor(data?: Partial<Like>) {
