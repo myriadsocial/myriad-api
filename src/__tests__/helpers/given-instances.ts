@@ -1,6 +1,7 @@
-import {Comment, People, Post, User} from '../../models';
+import {Comment, Currency, People, Post, User} from '../../models';
 import {
   CommentRepository,
+  CurrencyRepository,
   PeopleRepository,
   PostRepository,
   UserRepository,
@@ -115,4 +116,42 @@ export function givenPost(post?: Partial<Post>) {
 
 export async function givenPostInstance(postRepository: PostRepository, post?: Partial<Post>) {
   return postRepository.create(givenPost(post));
+}
+
+export function givenCurrency(currency?: Partial<Currency>) {
+  const data = Object.assign(
+    {
+      id: 'AUSD',
+      name: 'ausd',
+      decimal: 12,
+      image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
+      addressType: 42,
+      native: false,
+      rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
+    },
+    currency,
+  );
+  return new Currency(data);
+}
+
+export async function givenCurrencyInstance(
+  currencyRepository: CurrencyRepository,
+  currency?: Partial<Currency>,
+) {
+  return currencyRepository.create(givenCurrency(currency));
+}
+
+export async function givenMutlipleCurrencyInstances(currencyRepository: CurrencyRepository) {
+  return Promise.all([
+    givenCurrencyInstance(currencyRepository),
+    givenCurrencyInstance(currencyRepository, {
+      id: 'ACA',
+      name: 'acala',
+      decimal: 13,
+      image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
+      addressType: 42,
+      native: true,
+      rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
+    }),
+  ]);
 }
