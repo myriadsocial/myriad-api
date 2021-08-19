@@ -11,7 +11,7 @@ import {
   response,
 } from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
-import {CustomFilter, ExtendCustomFilter, User} from '../models';
+import {CustomFilter, User} from '../models';
 import {UserRepository} from '../repositories';
 import {FriendService} from '../services';
 // import {authenticate} from '@loopback/authentication';
@@ -73,25 +73,7 @@ export class UserController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
-  ): Promise<User[]> {
-    return this.userRepository.find(filter as Filter<User>);
-  }
-
-  @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/user-friends')
-  @response(200, {
-    description: 'Array of User Friends model instances',
-    content: {
-      'application/json': {
-        type: 'array',
-        items: getModelSchemaRef(User, {includeRelations: true}),
-      },
-    },
-  })
-  async findFriends(
-    @param.query.object('filter', getModelSchemaRef(ExtendCustomFilter, {exclude: ['q', 'sortBy']}))
-    filter: ExtendCustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<User[]> {
     return this.userRepository.find(filter as Filter<User>);
   }

@@ -1,7 +1,7 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {DefaultCurrencyType, FriendStatusType} from '../../enums';
+import {DefaultCurrencyType} from '../../enums';
 import {User} from '../../models';
 import {CurrencyRepository, FriendRepository, UserRepository} from '../../repositories';
 import {
@@ -123,38 +123,6 @@ describe('UserApplication', function () {
 
     it('returns 404 when getting a user that does not exist', () => {
       return client.get('/users/99999').expect(404);
-    });
-
-    it('gets user friends', async () => {
-      const user = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-        name: 'irman',
-      });
-
-      await friendRepository.create({
-        requestorId: persistedUser.id,
-        requesteeId: user.id,
-        status: FriendStatusType.APPROVED,
-      });
-
-      const filter = 'filter=' + JSON.stringify({findBy: persistedUser.id});
-
-      await client
-        .get('/user-friends')
-        .query(filter)
-        .expect(200, {
-          data: [toJSON(user)],
-          meta: {
-            currentPage: 1,
-            itemsPerPage: 1,
-            totalItemCount: 1,
-            totalPageCount: 1,
-          },
-        });
-    });
-
-    it('returns 422 when getting a user friend without ID', () => {
-      return client.get('/user-friends').expect(422);
     });
 
     it('updates the user by ID ', async () => {

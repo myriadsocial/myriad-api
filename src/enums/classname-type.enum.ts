@@ -21,7 +21,6 @@ export enum MethodType {
   CREATELIKE = 'createLike',
   UPDATEBYID = 'updateById',
   TIMELINE = 'timeline',
-  FINDFRIENDS = 'findFriends',
   SEARCHEXPERIENCE = 'search',
   VERIFY = 'verify',
   CLONE = 'clone',

@@ -165,25 +165,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           break;
         }
 
-        case MethodType.FINDFRIENDS: {
-          if (!filter) throw new Error('EmptyFindBy');
-          const ids = await this.friendService.getApprovedFriendIds(userId);
-
-          where = {
-            id: {
-              inq: ids,
-            },
-          };
-
-          const newFilter = defaultFilterQuery(page, filter, where);
-          invocationCtx.args[0] = newFilter;
-
-          args.push(newFilter);
-          data = await this.metricService.countData(className, where);
-
-          break;
-        }
-
         default:
           args = [];
       }
