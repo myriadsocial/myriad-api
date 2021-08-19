@@ -95,6 +95,7 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   firebaseInit() {
+    if (this.options.test) return;
     if (
       !config.FIREBASE_PROJECT_ID ||
       !config.FIREBASE_CLIENT_EMAIL ||
