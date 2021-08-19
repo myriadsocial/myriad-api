@@ -66,14 +66,17 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   bindComponent() {
-    this.component(MigrationComponent);
-    this.bind(MigrationBindings.CONFIG).to({
-      dataSourceName: MongoDataSource.dataSourceName,
-      modelName: 'db_migrations',
-    });
     this.component(RestExplorerComponent);
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
+
+    if (!this.options.test) {
+      this.component(MigrationComponent);
+      this.bind(MigrationBindings.CONFIG).to({
+        dataSourceName: MongoDataSource.dataSourceName,
+        modelName: 'db_migrations',
+      });
+    }
   }
 
   bindService() {
@@ -92,6 +95,12 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   firebaseInit() {
+    let name = undefined;
+
+    if (this.options.test) {
+      name = 'myriad' + Math.floor(Math.random() * 10000000000000 + 1);
+    }
+
     if (
       !config.FIREBASE_PROJECT_ID ||
       !config.FIREBASE_CLIENT_EMAIL ||
@@ -99,13 +108,16 @@ export class MyriadApiApplication extends BootMixin(
     ) {
       firebaseAdmin.initializeApp();
     } else {
-      firebaseAdmin.initializeApp({
-        credential: firebaseAdmin.credential.cert({
-          projectId: config.FIREBASE_PROJECT_ID,
-          clientEmail: config.FIREBASE_CLIENT_EMAIL,
-          privateKey: config.FIREBASE_PRIVATE_KEY,
-        }),
-      });
+      firebaseAdmin.initializeApp(
+        {
+          credential: firebaseAdmin.credential.cert({
+            projectId: config.FIREBASE_PROJECT_ID,
+            clientEmail: config.FIREBASE_CLIENT_EMAIL,
+            privateKey: config.FIREBASE_PRIVATE_KEY,
+          }),
+        },
+        name,
+      );
     }
   }
 }
