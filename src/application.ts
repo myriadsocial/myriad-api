@@ -104,7 +104,7 @@ export class MyriadApiApplication extends BootMixin(
       !config.FIREBASE_CLIENT_EMAIL ||
       !config.FIREBASE_PRIVATE_KEY
     ) {
-      firebaseAdmin.initializeApp();
+      firebaseAdmin.initializeApp({}, name);
     } else {
       firebaseAdmin.initializeApp(
         {
