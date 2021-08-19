@@ -1,4 +1,4 @@
-import {intercept, service} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -13,7 +13,6 @@ import {
 import {PaginationInterceptor} from '../interceptors';
 import {CustomFilter, User} from '../models';
 import {UserRepository} from '../repositories';
-import {FriendService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -21,8 +20,6 @@ export class UserController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @service(FriendService)
-    protected friendService: FriendService,
   ) {}
 
   @post('/users')
