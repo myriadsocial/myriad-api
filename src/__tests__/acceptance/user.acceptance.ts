@@ -3,10 +3,9 @@ import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
 import {User} from '../../models';
-import {CurrencyRepository, FriendRepository, UserRepository} from '../../repositories';
+import {CurrencyRepository, UserRepository} from '../../repositories';
 import {
   givenCurrencyRepository,
-  givenFriendRepository,
   givenMutlipleUserInstances,
   givenUser,
   givenUserInstance,
@@ -107,11 +106,9 @@ describe('UserApplication', function () {
 
   context('when dealing with a single persisted user', () => {
     let persistedUser: User;
-    let friendRepository: FriendRepository;
 
     beforeEach(async () => {
       persistedUser = await givenUserInstance(userRepository);
-      friendRepository = await givenFriendRepository(app);
     });
 
     it('gets a user by ID', async () => {
