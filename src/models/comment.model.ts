@@ -8,9 +8,6 @@ import {User} from './user.model';
     mongodb: {
       collection: 'comments',
     },
-    jsonSchema: {
-      required: ['userId', 'postId'],
-    },
   },
 })
 export class Comment extends Entity {
@@ -48,7 +45,7 @@ export class Comment extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => Post)
+  @belongsTo(() => Post, {}, {required: true})
   postId: string;
 
   @belongsTo(
