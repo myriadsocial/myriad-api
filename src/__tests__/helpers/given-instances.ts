@@ -1,5 +1,5 @@
 import {People, User} from '../../models';
-import {UserRepository} from '../../repositories';
+import {PeopleRepository, UserRepository} from '../../repositories';
 
 export function givenUser(user?: Partial<User>) {
   const data = Object.assign(
@@ -29,7 +29,6 @@ export async function givenMutlipleUserInstances(userRepository: UserRepository)
 export function givenPeople(people?: Partial<People>) {
   const data = Object.assign(
     {
-      id: '1',
       name: 'Elon Musk',
       username: 'elonmusk',
       platform: 'twitter',
@@ -40,4 +39,25 @@ export function givenPeople(people?: Partial<People>) {
     people,
   );
   return new People(data);
+}
+
+export async function givenPeopleInstance(
+  peopleRepository: PeopleRepository,
+  people?: Partial<People>,
+) {
+  return peopleRepository.create(givenPeople(people));
+}
+
+export async function givenMutliplePeopleInstances(peopleRepository: PeopleRepository) {
+  return Promise.all([
+    givenPeopleInstance(peopleRepository),
+    givenPeopleInstance(peopleRepository, {
+      name: 'Gavin Wood',
+      username: 'gavofyork',
+      platform: 'twitter',
+      originUserId: '33962758',
+      profilePictureURL:
+        'https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg',
+    }),
+  ]);
 }
