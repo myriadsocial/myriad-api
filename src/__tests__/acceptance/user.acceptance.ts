@@ -35,7 +35,7 @@ describe('UserApplication', function () {
     await userRepository.deleteAll();
   });
 
-  it('creates a user with a default currency MYRIA and ACALA', async function () {
+  it('creates a user with a default currency MYRIA and AUSD', async function () {
     this.timeout(10000);
     const user = givenUser();
     const response = await client.post('/users').send(user).expect(200);
