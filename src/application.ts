@@ -95,7 +95,7 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   firebaseInit() {
-    let name = this.options.test
+    const name = this.options.test
       ? 'myriad' + Math.floor(Math.random() * 10000000000000 + 1)
       : 'myriad';
 
