@@ -27,7 +27,7 @@ export class PeopleController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<People[]> {
     return this.peopleRepository.find(filter as Filter<People>);
   }
