@@ -33,7 +33,7 @@ export class CommentController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<Comment[]> {
     return this.commentRepository.find(filter as Filter<Comment>);
   }

@@ -1,5 +1,5 @@
-import {People, User} from '../../models';
-import {PeopleRepository, UserRepository} from '../../repositories';
+import {Comment, People, User} from '../../models';
+import {CommentRepository, PeopleRepository, UserRepository} from '../../repositories';
 
 export function givenUser(user?: Partial<User>) {
   const data = Object.assign(
@@ -60,4 +60,21 @@ export async function givenMutliplePeopleInstances(peopleRepository: PeopleRepos
         'https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg',
     }),
   ]);
+}
+
+export function givenComment(comment?: Partial<Comment>) {
+  const data = Object.assign(
+    {
+      text: 'Hello world',
+    },
+    comment,
+  );
+  return new Comment(data);
+}
+
+export async function givenCommentInstance(
+  commentRepository: CommentRepository,
+  comment?: Partial<Comment>,
+) {
+  return commentRepository.create(givenComment(comment));
 }
