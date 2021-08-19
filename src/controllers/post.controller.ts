@@ -170,7 +170,7 @@ export class PostController {
   })
   async timeline(
     @param.query.object('filter', getModelSchemaRef(ExtendCustomFilter, {exclude: ['q']}))
-    filter: ExtendCustomFilter,
+    filter?: ExtendCustomFilter,
   ): Promise<Post[]> {
     return this.postService.postRepository.find(filter as Filter<Post>);
   }

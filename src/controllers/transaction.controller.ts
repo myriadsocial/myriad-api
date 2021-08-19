@@ -48,7 +48,7 @@ export class TransactionController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<Transaction[]> {
     return this.transactionRepository.find(filter as Filter<Transaction>);
   }

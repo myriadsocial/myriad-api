@@ -68,7 +68,7 @@ export class FriendController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<Friend[]> {
     return this.friendService.friendRepository.find(filter as Filter<Friend>);
   }

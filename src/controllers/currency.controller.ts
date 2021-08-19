@@ -48,7 +48,7 @@ export class CurrencyController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<Currency[]> {
     return this.currencyRepository.find(filter as Filter<Currency>);
   }
