@@ -13,7 +13,7 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('LikeApplication', function () {
-  this.timeout(10000);
+  this.timeout(5000);
   let app: MyriadApiApplication;
   let client: Client;
   let likeRepository: LikeRepository;
@@ -101,7 +101,7 @@ describe('LikeApplication', function () {
     const like = givenLike({referenceId: post.id});
     const response = await client.post('/likes').send(like);
 
-    this.timeout(10000);
+    sleep(500);
     const resultPost = await postRepository.findById(response.body.referenceId);
     post.metric.likes = post.metric.likes + 1;
     expect(resultPost).to.containDeep(post);
@@ -125,9 +125,17 @@ describe('LikeApplication', function () {
     await client.del(`/likes/${like.id}`).send().expect(204);
     await expect(likeRepository.findById(like.id)).to.be.rejectedWith(EntityNotFoundError);
 
-    this.timeout(10000);
+    sleep(500);
     const resultPost = await postRepository.findById(like.referenceId);
     post.metric.likes = post.metric.likes - 1;
     expect(resultPost.metric.likes).to.equal(post.metric.likes);
   });
 });
+
+function sleep(milliseconds: number) {
+  const date = Date.now();
+  let currentDate = null;
+  do {
+    currentDate = Date.now();
+  } while (currentDate - date < milliseconds);
+}
