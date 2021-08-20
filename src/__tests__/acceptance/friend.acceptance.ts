@@ -8,7 +8,7 @@ import {
   givenFriend,
   givenFriendInstance,
   givenFriendRepository,
-  givenMutlipleFriendInstances,
+  givenMultipleFriendInstances,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
@@ -200,7 +200,7 @@ describe('FriendApplication', function () {
     let persistedFriends: Friend[];
 
     beforeEach(async () => {
-      persistedFriends = await givenMutlipleFriendInstances(friendRepository);
+      persistedFriends = await givenMultipleFriendInstances(friendRepository);
     });
 
     it('finds all friends', async () => {

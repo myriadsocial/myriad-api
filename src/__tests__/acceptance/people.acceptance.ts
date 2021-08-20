@@ -4,7 +4,7 @@ import {MyriadApiApplication} from '../../application';
 import {People} from '../../models';
 import {PeopleRepository} from '../../repositories';
 import {
-  givenMutliplePeopleInstances,
+  givenMultiplePeopleInstances,
   givenPeopleInstance,
   givenPeopleRepository,
   setupApplication,
@@ -63,7 +63,7 @@ describe('PeopleApplication', function () {
     let persistedPeople: People[];
 
     beforeEach(async () => {
-      persistedPeople = await givenMutliplePeopleInstances(peopleRepository);
+      persistedPeople = await givenMultiplePeopleInstances(peopleRepository);
     });
 
     it('finds all users', async () => {
