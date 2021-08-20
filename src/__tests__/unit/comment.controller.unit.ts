@@ -49,7 +49,7 @@ describe('CommentController', () => {
       sinon.assert.called(find);
     });
 
-    it('returns empty list if no users exist', async () => {
+    it('returns empty list if no comments exist', async () => {
       const find = commentRepository.stubs.find;
       const expected: Comment[] = [];
       find.resolves(expected);
