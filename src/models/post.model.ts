@@ -158,7 +158,7 @@ export class Post extends Entity {
 
 export interface PostRelations {
   // describe navigational properties here
-  people: PeopleWithRelations;
+  people?: PeopleWithRelations;
 }
 
 export type PostWithRelations = Post & PostRelations;
