@@ -17,8 +17,9 @@ export class PlatformPost extends Model {
   @property({
     type: 'array',
     itemType: 'string',
+    required: false,
   })
-  tags: string[];
+  tags?: string[];
 
   constructor(data?: Partial<PlatformPost>) {
     super(data);
