@@ -12,6 +12,7 @@ import {
   User,
   UserCurrency,
   UserSocialMedia,
+  UserVerification,
 } from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
@@ -388,4 +389,16 @@ export function givenPlatformPost(platformPost?: Partial<PlatformPost>) {
     platformPost,
   );
   return new PlatformPost(data);
+}
+
+export function givenUserVerification(userVerification?: Partial<UserVerification>) {
+  const data = Object.assign(
+    {
+      publicKey: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+      platform: PlatformType.REDDIT,
+      username: 'NetworkMyriad',
+    },
+    userVerification,
+  );
+  return new UserVerification(data);
 }
