@@ -17,14 +17,12 @@ import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.in
 import {ExtendedPost} from '../interfaces';
 import {ExtendCustomFilter, Post} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
-import {PostService, SocialMediaService, TagService} from '../services';
+import {PostService, SocialMediaService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class PostController {
   constructor(
-    @service(TagService)
-    protected tagService: TagService,
     @service(SocialMediaService)
     protected socialMediaService: SocialMediaService,
     @service(PostService)
