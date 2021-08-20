@@ -3,11 +3,21 @@ import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
 import {User} from '../../models';
-import {CurrencyRepository, UserRepository} from '../../repositories';
 import {
+  CurrencyRepository,
+  FriendRepository,
+  UserCurrencyRepository,
+  UserRepository,
+} from '../../repositories';
+import {
+  givenCurrencyInstance,
   givenCurrencyRepository,
+  givenFriendInstance,
+  givenFriendRepository,
   givenMultipleUserInstances,
   givenUser,
+  givenUserCurrencyInstance,
+  givenUserCurrencyRepository,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
@@ -18,7 +28,9 @@ describe('UserApplication', function () {
   let app: MyriadApiApplication;
   let client: Client;
   let userRepository: UserRepository;
+  let userCurrencyRepository: UserCurrencyRepository;
   let currencyRepository: CurrencyRepository;
+  let friendRepository: FriendRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -28,11 +40,16 @@ describe('UserApplication', function () {
 
   before(async () => {
     userRepository = await givenUserRepository(app);
+    userCurrencyRepository = await givenUserCurrencyRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
+    friendRepository = await givenFriendRepository(app);
   });
 
   beforeEach(async () => {
     await userRepository.deleteAll();
+    await currencyRepository.deleteAll();
+    await userCurrencyRepository.deleteAll();
+    await friendRepository.deleteAll();
   });
 
   it('creates a user with a default currency MYRIA and AUSD', async function () {
@@ -197,6 +214,34 @@ describe('UserApplication', function () {
         .get('/users')
         .query({filter: {where: {name: 'hakim'}}})
         .expect(422);
+    });
+  });
+
+  it('includes friends and currencies in query result', async () => {
+    const user = await givenUserInstance(userRepository);
+    const currency = await givenCurrencyInstance(currencyRepository);
+    const friend = await givenFriendInstance(friendRepository, {
+      requesteeId: user.id,
+      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+    });
+    await givenUserCurrencyInstance(userCurrencyRepository, {
+      userId: user.id,
+      currencyId: currency.id,
+    });
+
+    const filter =
+      'filter=' +
+      JSON.stringify({
+        include: ['friends', 'currencies'],
+      });
+
+    const response = await client.get('/users').query(filter);
+
+    expect(response.body.data).to.have.length(1);
+    expect(response.body.data[0]).to.deepEqual({
+      ...toJSON(user),
+      friends: [toJSON(friend)],
+      currencies: [toJSON(currency)],
     });
   });
 });
