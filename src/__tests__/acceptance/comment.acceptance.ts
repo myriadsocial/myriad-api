@@ -58,6 +58,16 @@ describe('CommentApplication', function () {
     expect(result).to.containDeep(comment);
   });
 
+  it('adds by 1 post metric comments', async () => {
+    const comment = givenComment({userId: user.id, postId: post.id});
+
+    await client.post('/comments').send(comment).expect(200);
+    const resultPost = await postRepository.findById(post.id);
+    post.metric.comments = post.metric.comments + 1;
+
+    expect(resultPost).to.containDeep(post);
+  });
+
   it('returns 422 when creates a comment with no userId', async () => {
     const comment = givenComment({postId: post.id});
 
