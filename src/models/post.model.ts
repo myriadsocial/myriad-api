@@ -14,9 +14,6 @@ import {User} from './user.model';
     mongodb: {
       collection: 'posts',
     },
-    jsonSchema: {
-      require: ['text', 'createdBy'],
-    },
   },
 })
 export class Post extends Entity {
