@@ -1,13 +1,31 @@
-import {FriendStatusType, LikeType} from '../../enums';
-import {Comment, Currency, Friend, Like, People, Post, User} from '../../models';
+import {FriendStatusType, LikeType, NotificationType, PlatformType} from '../../enums';
+import {
+  Comment,
+  Currency,
+  Friend,
+  Like,
+  Notification,
+  People,
+  Post,
+  Tag,
+  Transaction,
+  User,
+  UserCurrency,
+  UserSocialMedia,
+} from '../../models';
 import {
   CommentRepository,
   CurrencyRepository,
   FriendRepository,
   LikeRepository,
+  NotificationRepository,
   PeopleRepository,
   PostRepository,
+  TagRepository,
+  TransactionRepository,
+  UserCurrencyRepository,
   UserRepository,
+  UserSocialMediaRepository,
 } from '../../repositories';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -118,6 +136,19 @@ export function givenPost(post?: Partial<Post>) {
   return new Post(data);
 }
 
+export function givenMyriadPost(post?: Partial<Post>) {
+  const data = Object.assign(
+    {
+      tags: ['hello', 'world'],
+      text: 'hello world',
+      platform: PlatformType.MYRIAD,
+      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+    },
+    post,
+  );
+  return new Post(data);
+}
+
 export async function givenPostInstance(
   postRepository: PostRepository,
   post?: Partial<Post>,
@@ -214,4 +245,100 @@ export function givenLike(like?: Partial<Like>) {
 
 export async function givenLikeInstance(likeRepository: LikeRepository, like?: Partial<Like>) {
   return likeRepository.create(givenLike(like));
+}
+
+export function givenNotification(notification?: Partial<Notification>) {
+  const data = Object.assign(
+    {
+      type: NotificationType.FRIEND_REQUEST,
+      read: false,
+      message: 'sent you friend request',
+      referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+    },
+    notification,
+  );
+  return new Notification(data);
+}
+
+export async function givenNotificationInstance(
+  notificationRepository: NotificationRepository,
+  notification?: Partial<Notification>,
+) {
+  return notificationRepository.create(givenNotification(notification));
+}
+
+export function givenTag(tag?: Partial<Tag>) {
+  const data = Object.assign(
+    {
+      id: 'hello',
+      count: 1,
+    },
+    tag,
+  );
+  return new Tag(data);
+}
+
+export async function givenTagInstance(tagRepository: TagRepository, tag?: Partial<Tag>) {
+  return tagRepository.create(givenTag(tag));
+}
+
+export function givenTransaction(transaction?: Partial<Transaction>) {
+  const data = Object.assign(
+    {
+      hash: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866',
+      amount: 1,
+      from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
+      currencyId: 'AUSD',
+    },
+    transaction,
+  );
+  return new Transaction(data);
+}
+
+export async function givenTransactionInstance(
+  transactionRepository: TransactionRepository,
+  transaction?: Partial<Transaction>,
+) {
+  return transactionRepository.create(givenTransaction(transaction));
+}
+
+export function givenUserCurrency(userCurrency?: Partial<UserCurrency>) {
+  const data = Object.assign(
+    {
+      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      currencyId: 'AUSD',
+    },
+    userCurrency,
+  );
+  return new UserCurrency(data);
+}
+
+export async function givenUserCurrencyInstance(
+  userCurrencyRepository: UserCurrencyRepository,
+  userCurrency?: Partial<UserCurrency>,
+) {
+  return userCurrencyRepository.create(givenUserCurrency(userCurrency));
+}
+
+export function givenUserSocialMedia(userSocialMedia?: Partial<UserSocialMedia>) {
+  const data = Object.assign(
+    {
+      verified: true,
+      platform: PlatformType.TWITTER,
+      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      peopleId: '1',
+    },
+    userSocialMedia,
+  );
+  return new UserSocialMedia(data);
+}
+
+export async function givenUserSocialMediaInstance(
+  userSocialMediaRepository: UserSocialMediaRepository,
+  userSocialMedia?: Partial<UserSocialMedia>,
+) {
+  return userSocialMediaRepository.create(givenUserSocialMedia(userSocialMedia));
 }
