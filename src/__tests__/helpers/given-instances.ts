@@ -13,6 +13,7 @@ import {
   UserCurrency,
   UserSocialMedia,
 } from '../../models';
+import {PlatformPost} from '../../models/platform-post.model';
 import {
   CommentRepository,
   CurrencyRepository,
@@ -375,4 +376,16 @@ export async function givenUserSocialMediaInstance(
   userSocialMedia?: Partial<UserSocialMedia>,
 ) {
   return userSocialMediaRepository.create(givenUserSocialMedia(userSocialMedia));
+}
+
+export function givenPlatformPost(platformPost?: Partial<PlatformPost>) {
+  const data = Object.assign(
+    {
+      url: 'https://www.reddit.com/r/ProgrammerHumor/comments/p7qrle/when_your_boss_has_no_clue_what_you_do/',
+      importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
+      tags: [],
+    },
+    platformPost,
+  );
+  return new PlatformPost(data);
 }
