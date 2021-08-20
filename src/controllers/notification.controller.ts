@@ -34,7 +34,7 @@ export class NotificationController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter: CustomFilter,
+    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
   ): Promise<Notification[]> {
     return this.notificationRepository.find(filter as Filter<Notification>);
   }
