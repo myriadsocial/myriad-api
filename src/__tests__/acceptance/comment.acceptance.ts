@@ -7,7 +7,7 @@ import {
   givenComment,
   givenCommentInstance,
   givenCommentRepository,
-  givenMutlipleCommentInstances,
+  givenMultipleCommentInstances,
   givenPostInstance,
   givenPostRepository,
   givenUserInstance,
@@ -122,7 +122,7 @@ describe('CommentApplication', function () {
     let persistedComments: Comment[];
 
     beforeEach(async () => {
-      persistedComments = await givenMutlipleCommentInstances(commentRepository, {
+      persistedComments = await givenMultipleCommentInstances(commentRepository, {
         userId: user.id,
         postId: post.id,
       });

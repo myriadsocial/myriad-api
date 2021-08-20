@@ -7,7 +7,7 @@ import {
   givenCurrency,
   givenCurrencyInstance,
   givenCurrencyRepository,
-  givenMutlipleCurrencyInstances,
+  givenMultipleCurrencyInstances,
   setupApplication,
 } from '../helpers';
 
@@ -107,7 +107,7 @@ describe('CurrencyApplication', () => {
     let persistedCurrencies: Currency[];
 
     beforeEach(async () => {
-      persistedCurrencies = await givenMutlipleCurrencyInstances(currencyRepository);
+      persistedCurrencies = await givenMultipleCurrencyInstances(currencyRepository);
     });
 
     it('finds all currencies', async () => {
