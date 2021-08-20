@@ -4,9 +4,14 @@ import {
   CurrencyRepository,
   FriendRepository,
   LikeRepository,
+  NotificationRepository,
   PeopleRepository,
   PostRepository,
+  TagRepository,
+  TransactionRepository,
+  UserCurrencyRepository,
   UserRepository,
+  UserSocialMediaRepository,
 } from '../../repositories';
 
 export async function givenUserRepository(app: MyriadApiApplication) {
@@ -35,4 +40,24 @@ export async function givenPostRepository(app: MyriadApiApplication) {
 
 export async function givenLikeRepository(app: MyriadApiApplication) {
   return app.getRepository(LikeRepository);
+}
+
+export async function givenNotificationRepository(app: MyriadApiApplication) {
+  return app.getRepository(NotificationRepository);
+}
+
+export async function givenUserSocialMediaRepository(app: MyriadApiApplication) {
+  return app.getRepository(UserSocialMediaRepository);
+}
+
+export async function givenTagRepository(app: MyriadApiApplication) {
+  return app.getRepository(TagRepository);
+}
+
+export async function givenTransactionRepository(app: MyriadApiApplication) {
+  return app.getRepository(TransactionRepository);
+}
+
+export async function givenUserCurrencyRepository(app: MyriadApiApplication) {
+  return app.getRepository(UserCurrencyRepository);
 }
