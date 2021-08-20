@@ -260,21 +260,6 @@ describe('PostApplication', function () {
       peopleId = response.body.peopleId;
     });
 
-    it('creates a post from twitter', async function () {
-      const platformPost = givenPlatformPost({
-        url: 'https://twitter.com/FiersaBesari/status/1428143939182157826',
-      });
-      const response = await client.post('/posts/import').send(platformPost).expect(200);
-      delete response.body.originCreatedAt;
-      delete response.body.createdAt;
-      delete response.body.updatedAt;
-      const result = await postRepository.findById(response.body.id);
-      delete result.originCreatedAt;
-      delete result.createdAt;
-      delete result.updatedAt;
-      expect(result).to.containDeep(response.body);
-    });
-
     it('creates people when creates a post from social media', async () => {
       const response = await client.get(`/people/${peopleId}`);
       const result = await peopleRepository.findById(peopleId);
@@ -283,11 +268,9 @@ describe('PostApplication', function () {
 
     it('adds another importer for existing posts', async function () {
       const platformPost = givenPlatformPost({
-        url: 'https://twitter.com/FiersaBesari/status/1428143939182157826',
         importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d95e',
       });
       const platformPostWithOtherImporter = givenPlatformPost({
-        url: 'https://twitter.com/FiersaBesari/status/1428143939182157826',
         importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
       });
 
@@ -309,7 +292,6 @@ describe('PostApplication', function () {
 
     it('rejects request to create a post from social media if importer alreay imported', async () => {
       const platformPost: Partial<PlatformPost> = givenPlatformPost({
-        url: 'https://twitter.com/FiersaBesari/status/1428143939182157826',
         importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
       });
       await client.post('/posts/import').send(platformPost).expect(200);
