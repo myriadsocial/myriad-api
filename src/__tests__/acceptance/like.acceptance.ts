@@ -77,13 +77,43 @@ describe('LikeApplication', function () {
     expect(result).to.containDeep(like);
   });
 
-  it('deletes the like', async () => {
+  it('adds by 1 post metric likes', async function () {
+    const postResponse = (
+      await givenPostInstance(
+        postRepository,
+        {
+          metric: {
+            comments: 0,
+            likes: 0,
+            dislikes: 0,
+          },
+        },
+        true,
+      )
+    ).ops[0];
+    const id = postResponse._id.toString();
+    delete postResponse._id;
+    const post = {
+      id,
+      ...postResponse,
+    };
+
+    const like = givenLike({referenceId: post.id});
+    const response = await client.post('/likes').send(like);
+
+    this.timeout(10000);
+    const resultPost = await postRepository.findById(response.body.referenceId);
+    post.metric.likes = post.metric.likes + 1;
+    expect(resultPost).to.containDeep(post);
+  });
+
+  it('deletes the like and post metric likes reduces by 1', async function () {
     const postResponse = await givenPostInstance(
       postRepository,
       {
         metric: {
           comments: 0,
-          likes: 0,
+          likes: 1,
           dislikes: 0,
         },
       },
@@ -94,5 +124,10 @@ describe('LikeApplication', function () {
 
     await client.del(`/likes/${like.id}`).send().expect(204);
     await expect(likeRepository.findById(like.id)).to.be.rejectedWith(EntityNotFoundError);
+
+    this.timeout(10000);
+    const resultPost = await postRepository.findById(like.referenceId);
+    post.metric.likes = post.metric.likes - 1;
+    expect(resultPost.metric.likes).to.equal(post.metric.likes);
   });
 });
