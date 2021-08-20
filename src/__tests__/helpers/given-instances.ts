@@ -76,7 +76,7 @@ export async function givenPeopleInstance(
   return peopleRepository.create(givenPeople(people));
 }
 
-export async function givenMutliplePeopleInstances(peopleRepository: PeopleRepository) {
+export async function givenMultiplePeopleInstances(peopleRepository: PeopleRepository) {
   return Promise.all([
     givenPeopleInstance(peopleRepository),
     givenPeopleInstance(peopleRepository, {
@@ -107,7 +107,7 @@ export async function givenCommentInstance(
   return commentRepository.create(givenComment(comment));
 }
 
-export async function givenMutlipleCommentInstances(
+export async function givenMultipleCommentInstances(
   commentRepository: CommentRepository,
   comment?: Partial<Comment>,
 ) {
@@ -130,6 +130,7 @@ export function givenPost(post?: Partial<Post>) {
       originPostId: '1385108424761872387',
       url: 'https://twitter.com/44196397/status/1385108424761872387',
       originCreatedAt: 'Thu Apr 22 2021 12:49:17 GMT+0700 (Western Indonesia Time)',
+      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
     },
     post,
   );
@@ -147,6 +148,13 @@ export function givenMyriadPost(post?: Partial<Post>) {
     post,
   );
   return new Post(data);
+}
+
+export async function givenMyriadPostInstance(
+  postRepository: PostRepository,
+  post?: Partial<Post>,
+) {
+  return postRepository.create(givenMyriadPost(post));
 }
 
 export async function givenPostInstance(
@@ -185,7 +193,7 @@ export async function givenCurrencyInstance(
   return currencyRepository.create(givenCurrency(currency));
 }
 
-export async function givenMutlipleCurrencyInstances(currencyRepository: CurrencyRepository) {
+export async function givenMultipleCurrencyInstances(currencyRepository: CurrencyRepository) {
   return Promise.all([
     givenCurrencyInstance(currencyRepository),
     givenCurrencyInstance(currencyRepository, {
@@ -217,7 +225,7 @@ export async function givenFriendInstance(
   return friendRepository.create(givenFriend(friend));
 }
 
-export async function givenMutlipleFriendInstances(friendRepository: FriendRepository) {
+export async function givenMultipleFriendInstances(friendRepository: FriendRepository) {
   return Promise.all([
     givenFriendInstance(friendRepository, {
       requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
@@ -269,6 +277,22 @@ export async function givenNotificationInstance(
   return notificationRepository.create(givenNotification(notification));
 }
 
+export async function givenMultipleNotificationInstances(
+  notificationRepository: NotificationRepository,
+) {
+  return Promise.all([
+    givenNotificationInstance(notificationRepository),
+    givenNotificationInstance(notificationRepository, {
+      type: NotificationType.FRIEND_REQUEST,
+      read: false,
+      message: 'sent you friend request',
+      referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
+      from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866',
+      to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
+    }),
+  ]);
+}
+
 export function givenTag(tag?: Partial<Tag>) {
   const data = Object.assign(
     {
@@ -282,6 +306,16 @@ export function givenTag(tag?: Partial<Tag>) {
 
 export async function givenTagInstance(tagRepository: TagRepository, tag?: Partial<Tag>) {
   return tagRepository.create(givenTag(tag));
+}
+
+export async function givenMultipleTagInstances(tagRepository: TagRepository) {
+  return Promise.all([
+    givenTagInstance(tagRepository),
+    givenTagInstance(tagRepository, {
+      id: 'blockchain',
+      count: 1,
+    }),
+  ]);
 }
 
 export function givenTransaction(transaction?: Partial<Transaction>) {
