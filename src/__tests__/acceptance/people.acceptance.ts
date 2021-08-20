@@ -2,11 +2,15 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {People} from '../../models';
-import {PeopleRepository} from '../../repositories';
+import {PeopleRepository, PostRepository, UserSocialMediaRepository} from '../../repositories';
 import {
   givenMultiplePeopleInstances,
   givenPeopleInstance,
   givenPeopleRepository,
+  givenPostInstance,
+  givenPostRepository,
+  givenUserSocialMediaInstance,
+  givenUserSocialMediaRepository,
   setupApplication,
 } from '../helpers';
 
@@ -14,6 +18,8 @@ describe('PeopleApplication', function () {
   let app: MyriadApiApplication;
   let client: Client;
   let peopleRepository: PeopleRepository;
+  let postRepository: PostRepository;
+  let userSocialMediaRepository: UserSocialMediaRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -23,6 +29,13 @@ describe('PeopleApplication', function () {
 
   before(async () => {
     peopleRepository = await givenPeopleRepository(app);
+    postRepository = await givenPostRepository(app);
+    userSocialMediaRepository = await givenUserSocialMediaRepository(app);
+  });
+
+  after(async () => {
+    await postRepository.deleteAll();
+    await userSocialMediaRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -113,6 +126,24 @@ describe('PeopleApplication', function () {
         .get('/people')
         .query({filter: {where: {name: 'hakim'}}})
         .expect(422);
+    });
+  });
+
+  it('includes userSocialMedia and post in query result', async () => {
+    const people = await givenPeopleInstance(peopleRepository);
+    const userSocialMedia = await givenUserSocialMediaInstance(userSocialMediaRepository, {
+      peopleId: people.id,
+    });
+    const post = await givenPostInstance(postRepository, {peopleId: people.id});
+    const filter = JSON.stringify({include: ['posts', 'userSocialMedia']});
+
+    const response = await client.get('/people').query({filter: filter});
+
+    expect(response.body.data).to.have.length(1);
+    expect(response.body.data[0]).to.deepEqual({
+      ...toJSON(people),
+      posts: [toJSON(post)],
+      userSocialMedia: toJSON(userSocialMedia),
     });
   });
 });
