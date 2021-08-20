@@ -100,7 +100,7 @@ export class PostController {
   ): Promise<Post> {
     const [platform, originPostId, username] = platformPost.url.split(',');
 
-    const newTags = platformPost.tags;
+    const newTags = platformPost.tags ? platformPost.tags : [];
     const importer = platformPost.importer;
 
     let newPost: ExtendedPost;
