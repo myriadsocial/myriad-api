@@ -73,7 +73,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       let data = {count: 0};
       let page = 1;
-      let sortBy = null;
+      let timelineType = null;
       let userId = '';
       let q = '';
       let where = null;
@@ -82,14 +82,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         if (filter.where) {
           where = filter.where;
 
-          if (filter.sortBy || filter.findBy) {
+          if (filter.timelineType || filter.findBy) {
             throw new Error('ErrorWhere');
           }
         }
 
-        // If sortBy and findBy exist
+        // If timelineType and findBy exist
         // Filter for user timeline
-        if (filter.sortBy || filter.findBy) {
+        if (filter.timelineType || filter.findBy) {
           if (!filter.findBy) {
             throw new Error('EmptyFindBy');
           } else {
@@ -98,14 +98,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           if (methodName === MethodType.TIMELINE) {
-            if (!filter.sortBy) {
+            if (!filter.timelineType) {
               const user = await this.userRepository.findById(userId);
 
-              if (!user.onTimeline) sortBy = TimelineType.TRENDING;
-              else sortBy = TimelineType.EXPERIENCE;
+              if (!user.onTimeline) timelineType = TimelineType.TRENDING;
+              else timelineType = TimelineType.EXPERIENCE;
             } else {
-              sortBy = filter.sortBy;
-              delete filter.sortBy;
+              timelineType = filter.timelineType;
+              delete filter.timelineType;
             }
           }
         }
@@ -136,8 +136,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         case MethodType.TIMELINE: {
-          if (!where) where = await this.filterTimeline(userId, sortBy);
-          if (!where && sortBy) break;
+          if (!where) where = await this.filterTimeline(userId, timelineType);
+          if (!where && timelineType) break;
 
           const newFilter = defaultFilterQuery(page, filter, where);
           invocationCtx.args[0] = newFilter;
@@ -179,7 +179,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             : null
           : null;
 
-        this.notificationService.readNotification(toUser) as Promise<void>;
+        await this.notificationService.readNotification(toUser);
       }
 
       return {
@@ -197,12 +197,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
   }
 
-  async filterTimeline(userId: string, sortBy: TimelineType): Promise<Where<Post> | null> {
+  async filterTimeline(userId: string, timelineType: TimelineType): Promise<Where<Post> | null> {
     if (!userId) return null;
 
     let where = null;
 
-    switch (sortBy) {
+    switch (timelineType) {
       case TimelineType.EXPERIENCE:
         where = await this.experienceService.filterByExperience(userId);
         break;

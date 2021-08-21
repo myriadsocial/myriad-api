@@ -65,7 +65,7 @@ export class ExperienceController {
   async search(
     @param.query.object(
       'filter',
-      getModelSchemaRef(ExtendCustomFilter, {exclude: ['findBy', 'sortBy', 'where']}),
+      getModelSchemaRef(ExtendCustomFilter, {exclude: ['findBy', 'timelineType', 'where']}),
     )
     filter: ExtendCustomFilter,
   ): Promise<Experience[]> {

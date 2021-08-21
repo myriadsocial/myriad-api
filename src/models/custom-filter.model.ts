@@ -58,5 +58,5 @@ export class ExtendCustomFilter extends CustomFilter {
       enum: Object.values(TimelineType),
     },
   })
-  sortBy?: TimelineType;
+  timelineType?: TimelineType;
 }
