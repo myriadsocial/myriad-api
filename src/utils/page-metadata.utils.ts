@@ -1,8 +1,11 @@
 import {MetaPagination} from '../interfaces';
 
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-export function pageMetadata(args: any[], total: number): MetaPagination {
-  if (!args.length || !total) {
+export function pageMetadata(
+  pageIndex: number,
+  pageSize: number,
+  totalData: number,
+): MetaPagination {
+  if (!totalData) {
     return {
       totalItemCount: 0,
       totalPageCount: 0,
@@ -10,14 +13,8 @@ export function pageMetadata(args: any[], total: number): MetaPagination {
     };
   }
 
-  let currentPage = +args[0];
-  let currentLimit = args[1] ? +args[1].limit : null;
-
-  if (!currentPage) currentPage = 1;
-  if (!currentLimit) currentLimit = 5;
-
-  const itemsPerPage = currentLimit > total ? total : currentLimit;
-  const totalItemCount = total;
+  const totalItemCount = totalData;
+  const itemsPerPage = pageSize > totalData ? totalData : pageSize;
   const totalPageCount = Math.ceil(totalItemCount / itemsPerPage);
 
   const meta: MetaPagination = {
@@ -26,20 +23,20 @@ export function pageMetadata(args: any[], total: number): MetaPagination {
     itemsPerPage,
   };
 
-  if (currentPage <= meta.totalPageCount) {
-    meta.currentPage = currentPage;
+  if (pageIndex <= meta.totalPageCount) {
+    meta.currentPage = pageIndex;
 
-    if (currentPage !== 1) {
-      meta.previousPage = currentPage - 1;
+    if (pageIndex !== 1) {
+      meta.previousPage = pageIndex - 1;
     }
 
-    if (currentPage !== meta.totalPageCount) {
+    if (pageIndex !== meta.totalPageCount) {
       meta.nextPage = meta.currentPage + 1;
     }
   }
 
   if (meta.nextPage === meta.currentPage) {
-    meta.itemsPerPage = currentLimit > total ? total : currentLimit;
+    meta.itemsPerPage = pageSize > totalData ? totalData : pageSize;
   }
 
   return meta;
