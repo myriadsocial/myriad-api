@@ -59,7 +59,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
    */
   async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
     const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
-    const {pageNumber, pageLimit, userId, timelineType, q} = query;
+    const {pageNumber, pageLimit, userId, timelineType} = query;
     const filter = invocationCtx.args[0] ?? {where: {}};
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
