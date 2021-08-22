@@ -9,7 +9,7 @@ import {
 } from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, patch, requestBody, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
-import {CustomFilter, Notification} from '../models';
+import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -34,9 +34,10 @@ export class NotificationController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
+    @param.filter(Notification, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Notification>,
   ): Promise<Notification[]> {
-    return this.notificationRepository.find(filter as Filter<Notification>);
+    return this.notificationRepository.find(filter);
   }
 
   @get('/notifications/{id}')

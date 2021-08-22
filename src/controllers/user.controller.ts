@@ -11,7 +11,7 @@ import {
   response,
 } from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
-import {CustomFilter, User} from '../models';
+import {User} from '../models';
 import {UserRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -70,9 +70,9 @@ export class UserController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
+    @param.filter(User, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<User>,
   ): Promise<User[]> {
-    return this.userRepository.find(filter as Filter<User>);
+    return this.userRepository.find(filter);
   }
 
   @get('/users/{id}')

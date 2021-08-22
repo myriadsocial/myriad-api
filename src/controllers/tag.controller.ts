@@ -2,7 +2,7 @@ import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
-import {CustomFilter, Tag} from '../models';
+import {Tag} from '../models';
 import {TagRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -48,9 +48,9 @@ export class TagController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
+    @param.filter(Tag, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Tag>,
   ): Promise<Tag[]> {
-    return this.tagRepository.find(filter as Filter<Tag>);
+    return this.tagRepository.find(filter);
   }
 
   @get('/tags/{id}')

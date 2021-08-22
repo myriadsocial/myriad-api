@@ -2,7 +2,7 @@ import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
-import {CustomFilter, Transaction} from '../models';
+import {Transaction} from '../models';
 import {TransactionRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -48,9 +48,10 @@ export class TransactionController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
+    @param.filter(Transaction, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Transaction>,
   ): Promise<Transaction[]> {
-    return this.transactionRepository.find(filter as Filter<Transaction>);
+    return this.transactionRepository.find(filter);
   }
 
   @get('/transactions/{id}')

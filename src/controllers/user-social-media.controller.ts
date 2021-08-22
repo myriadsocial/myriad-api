@@ -12,7 +12,7 @@ import {
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
-import {CustomFilter, UserSocialMedia, UserVerification} from '../models';
+import {UserSocialMedia, UserVerification} from '../models';
 import {UserSocialMediaRepository} from '../repositories';
 import {SocialMediaService, UserSocialMediaService} from '../services';
 // import {authenticate} from '@loopback/authentication';
@@ -88,9 +88,10 @@ export class UserSocialMediaController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
+    @param.filter(UserSocialMedia, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<UserSocialMedia>,
   ): Promise<UserSocialMedia[]> {
-    return this.userSocialMediaRepository.find(filter as Filter<UserSocialMedia>);
+    return this.userSocialMediaRepository.find(filter);
   }
 
   @get('/user-social-medias/{id}')

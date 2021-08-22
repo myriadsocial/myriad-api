@@ -15,7 +15,7 @@ import {PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {ExtendedPost} from '../interfaces';
-import {ExtendCustomFilter, Post} from '../models';
+import {Post} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {PostService, SocialMediaService} from '../services';
 // import {authenticate} from '@loopback/authentication';
@@ -166,11 +166,10 @@ export class PostController {
       },
     },
   })
-  async timeline(
-    @param.query.object('filter', getModelSchemaRef(ExtendCustomFilter, {exclude: ['q']}))
-    filter?: ExtendCustomFilter,
+  async getTimeline(
+    @param.filter(Post, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Post>,
   ): Promise<Post[]> {
-    return this.postService.postRepository.find(filter as Filter<Post>);
+    return this.postService.postRepository.find(filter);
   }
 
   @get('/posts/{id}')
