@@ -72,64 +72,47 @@ export class MetricService {
   }
 
   async countData(controller: ControllerType, where: Where<AnyObject>): Promise<Count> {
-    let result: Count;
-
     switch (controller) {
       case ControllerType.USER:
-        result = await this.userRepository.count(where);
-        break;
+        return this.userRepository.count(where);
 
       case ControllerType.POST:
-      case ControllerType.USERPOST:
-        result = await this.postRepository.count(where);
-        break;
+        return this.postRepository.count(where);
 
       case ControllerType.TRANSACTION:
-        result = await this.transactionRepository.count(where);
-        break;
+        return this.transactionRepository.count(where);
 
       case ControllerType.EXPERIENCE:
-        result = await this.experienceRepository.count(where);
-        break;
+        return this.experienceRepository.count(where);
 
       case ControllerType.PEOPLE:
-        result = await this.peopleRepository.count(where);
-        break;
+        return this.peopleRepository.count(where);
 
       case ControllerType.TAG:
-        result = await this.tagRepository.count(where);
-        break;
+        return this.tagRepository.count(where);
 
       case ControllerType.NOTIFICATION:
-        result = await this.notificationRepository.count(where);
-        break;
+        return this.notificationRepository.count(where);
 
       case ControllerType.CURRENCY:
-        result = await this.currencyRepository.count(where);
-        break;
+        return this.currencyRepository.count(where);
 
       case ControllerType.USERSOCIALMEDIA:
-        result = await this.userSocialMediaRepository.count(where);
-        break;
+        return this.userSocialMediaRepository.count(where);
 
       case ControllerType.FRIEND:
-        result = await this.friendRepository.count(where);
-        break;
+        return this.friendRepository.count(where);
 
       case ControllerType.USEREXPERIENCE:
-        result = await this.userExperienceRepository.count(where);
-        break;
+        return this.userExperienceRepository.count(where);
 
       case ControllerType.COMMENT:
-        result = await this.commentRepository.count(where);
-        break;
+        return this.commentRepository.count(where);
 
       default:
-        result = {
+        return {
           count: 0,
         };
     }
-
-    return result;
   }
 }
