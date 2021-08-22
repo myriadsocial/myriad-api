@@ -1,9 +1,7 @@
-import {Filter, Where} from '@loopback/repository';
 import {StatusType} from '../enums';
 import {ExperiencePeople, ExperienceTag} from '../interfaces';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
-
 export function noneStatusFiltering(data: ExperienceTag[] | ExperiencePeople[]): string[] {
   return data
     .filter(e => {
@@ -11,25 +9,6 @@ export function noneStatusFiltering(data: ExperienceTag[] | ExperiencePeople[]):
       return false;
     })
     .map(e => e.id);
-}
-
-export function defaultFilterQuery(pageNumber = 1, filter?: Filter, where?: Where): Filter {
-  let itemsPerPage = 5;
-
-  if (!filter) {
-    return {
-      limit: itemsPerPage,
-      skip: (pageNumber - 1) * itemsPerPage,
-    };
-  }
-
-  if (filter.limit) itemsPerPage = filter.limit;
-  if (where) filter.where = where;
-
-  filter.skip = itemsPerPage * (pageNumber - 1);
-  filter.limit = itemsPerPage;
-
-  return filter;
 }
 
 export function updatedFiltering(data1: any[], data2: any[]) {
