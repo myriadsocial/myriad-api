@@ -32,10 +32,10 @@ export class ExperienceService {
     return experience;
   }
 
-  async filterByExperience(userId: string): Promise<Where<Post> | null> {
+  async experienceTimeline(userId: string): Promise<Where<Post> | undefined> {
     const experience = await this.getExperience(userId);
 
-    if (!experience) return null;
+    if (!experience) return;
 
     const tags = noneStatusFiltering(experience.tags);
     const personIds = noneStatusFiltering(experience.people);

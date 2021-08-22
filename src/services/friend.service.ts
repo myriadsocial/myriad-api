@@ -84,10 +84,10 @@ export class FriendService {
     return ids;
   }
 
-  async filterByFriends(userId: string): Promise<Where<Post> | null> {
+  async friendsTimeline(userId: string): Promise<Where<Post> | undefined> {
     const approvedFriendIds = await this.getApprovedFriendIds(userId);
 
-    if (!approvedFriendIds.length) return null;
+    if (!approvedFriendIds.length) return;
 
     return {
       or: [

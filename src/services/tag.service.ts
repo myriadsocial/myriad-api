@@ -57,10 +57,10 @@ export class TagService {
     return trendingTopic.map(tag => tag.id);
   }
 
-  async filterByTrending(): Promise<Where<Post> | null> {
+  async trendingTimeline(): Promise<Where<Post> | undefined> {
     const trendingTopics = await this.trendingTopics();
 
-    if (!trendingTopics.length) return null;
+    if (!trendingTopics.length) return;
 
     const joinTopics = trendingTopics.join('|');
     const regexTopic = new RegExp(joinTopics, 'i');
