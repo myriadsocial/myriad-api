@@ -13,7 +13,7 @@ import {
 import {FriendStatusType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {ValidateFriendRequestInterceptor} from '../interceptors/validate-friend-request.interceptor';
-import {CustomFilter, Friend} from '../models';
+import {Friend} from '../models';
 import {FriendService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
@@ -68,9 +68,9 @@ export class FriendController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
+    @param.filter(Friend, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Friend>,
   ): Promise<Friend[]> {
-    return this.friendService.friendRepository.find(filter as Filter<Friend>);
+    return this.friendService.friendRepository.find(filter);
   }
 
   @get('/friends/{id}')

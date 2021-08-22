@@ -2,7 +2,7 @@ import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, patch, post, requestBody} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
-import {Comment, CustomFilter} from '../models';
+import {Comment} from '../models';
 import {CommentRepository} from '../repositories';
 import {NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
@@ -33,9 +33,9 @@ export class CommentController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
+    @param.filter(Comment, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Comment>,
   ): Promise<Comment[]> {
-    return this.commentRepository.find(filter as Filter<Comment>);
+    return this.commentRepository.find(filter);
   }
 
   @get('/comments/{id}', {

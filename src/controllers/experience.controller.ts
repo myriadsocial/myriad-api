@@ -2,7 +2,7 @@ import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param, patch, requestBody, response} from '@loopback/rest';
 import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
-import {CustomFilter, Experience, ExtendCustomFilter} from '../models';
+import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -27,9 +27,10 @@ export class ExperienceController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
+    @param.filter(Experience, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Experience>,
   ): Promise<Experience[]> {
-    return this.experienceRepository.find(filter as Filter<Experience>);
+    return this.experienceRepository.find(filter);
   }
 
   @get('/experiences/{id}')
@@ -47,29 +48,6 @@ export class ExperienceController {
     filter?: FilterExcludingWhere<Experience>,
   ): Promise<Experience> {
     return this.experienceRepository.findById(id, filter);
-  }
-
-  @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/search-experiences')
-  @response(200, {
-    description: 'Array of Experience model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Experience, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async search(
-    @param.query.object(
-      'filter',
-      getModelSchemaRef(ExtendCustomFilter, {exclude: ['findBy', 'timelineType', 'where']}),
-    )
-    filter: ExtendCustomFilter,
-  ): Promise<Experience[]> {
-    return this.experienceRepository.find(filter as Filter<Experience>);
   }
 
   // Modify from other experience

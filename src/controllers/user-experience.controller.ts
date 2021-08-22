@@ -3,7 +3,7 @@ import {Count, CountSchema, Filter, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, patch, post, requestBody} from '@loopback/rest';
 import {StatusType} from '../enums';
 import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
-import {CustomFilter, Experience, UserExperience} from '../models';
+import {Experience, UserExperience} from '../models';
 import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../repositories';
 import {approvedUpdate} from '../utils/filter-utils';
 // import {authenticate} from '@loopback/authentication';
@@ -36,9 +36,10 @@ export class UserExperienceController {
     },
   })
   async find(
-    @param.query.object('filter', getModelSchemaRef(CustomFilter)) filter?: CustomFilter,
+    @param.filter(UserExperience, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<UserExperience>,
   ): Promise<UserExperience[]> {
-    return this.userExperienceRepository.find(filter as Filter<UserExperience>);
+    return this.userExperienceRepository.find(filter);
   }
 
   @intercept(ExperienceInterceptor.BINDING_KEY)
