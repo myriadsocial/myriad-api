@@ -7,7 +7,7 @@ import {
 } from '@loopback/testlab';
 import {UserSocialMediaController} from '../../controllers';
 import {PlatformType} from '../../enums';
-import {CustomFilter, UserSocialMedia} from '../../models';
+import {UserSocialMedia} from '../../models';
 import {UserSocialMediaRepository} from '../../repositories';
 import {SocialMediaService, UserSocialMediaService} from '../../services';
 import {givenUserSocialMedia} from '../helpers';
@@ -54,7 +54,6 @@ describe('UserSocialMediaController', () => {
       const filter = toJSON({where: {name: 'hakim'}});
 
       find.resolves(aListOfUserSocialMedias);
-      await controller.find(filter as CustomFilter);
       sinon.assert.calledWith(find, filter);
     });
   });

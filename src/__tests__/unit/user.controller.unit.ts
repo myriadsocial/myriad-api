@@ -6,7 +6,7 @@ import {
   toJSON,
 } from '@loopback/testlab';
 import {UserController} from '../../controllers/user.controller';
-import {CustomFilter, User} from '../../models';
+import {User} from '../../models';
 import {UserRepository} from '../../repositories';
 import {givenUser} from '../helpers';
 
@@ -60,7 +60,7 @@ describe('UserController', () => {
       const filter = toJSON({where: {name: 'hakim'}});
 
       find.resolves(aListOfUsers);
-      await controller.find(filter as CustomFilter);
+      await controller.find(filter);
       sinon.assert.calledWith(find, filter);
     });
   });

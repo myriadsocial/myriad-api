@@ -7,7 +7,7 @@ import {
 } from '@loopback/testlab';
 import {FriendController} from '../../controllers';
 import {FriendStatusType} from '../../enums';
-import {CustomFilter, Friend} from '../../models';
+import {Friend} from '../../models';
 import {FriendRepository, UserRepository} from '../../repositories';
 import {FriendService, NotificationService} from '../../services';
 import {givenFriend} from '../helpers';
@@ -65,7 +65,7 @@ describe('FriendController', () => {
       const filter = toJSON({where: {status: FriendStatusType.PENDING}});
 
       find.resolves(aListOfFriends);
-      await controller.find(filter as CustomFilter);
+      await controller.find(filter);
       sinon.assert.calledWith(find, filter);
     });
   });

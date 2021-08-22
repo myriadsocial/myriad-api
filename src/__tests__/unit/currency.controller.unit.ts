@@ -6,7 +6,7 @@ import {
   toJSON,
 } from '@loopback/testlab';
 import {CurrencyController} from '../../controllers';
-import {Currency, CustomFilter} from '../../models';
+import {Currency} from '../../models';
 import {CurrencyRepository} from '../../repositories';
 import {givenCurrency} from '../helpers';
 
@@ -59,7 +59,7 @@ describe('CurrencyController', () => {
       const filter = toJSON({where: {id: 'ACA'}});
 
       find.resolves(aListOfCurrencies);
-      await controller.find(filter as CustomFilter);
+      await controller.find(filter);
       sinon.assert.calledWith(find, filter);
     });
   });

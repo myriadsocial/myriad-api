@@ -6,7 +6,7 @@ import {
   toJSON,
 } from '@loopback/testlab';
 import {CommentController} from '../../controllers';
-import {Comment, CustomFilter} from '../../models';
+import {Comment} from '../../models';
 import {CommentRepository} from '../../repositories';
 import {NotificationService} from '../../services';
 import {givenComment} from '../helpers';
@@ -62,7 +62,7 @@ describe('CommentController', () => {
       const filter = toJSON({where: {id: '1'}});
 
       find.resolves(aListOfComments);
-      await controller.find(filter as CustomFilter);
+      await controller.find(filter);
       sinon.assert.calledWith(find, filter);
     });
   });

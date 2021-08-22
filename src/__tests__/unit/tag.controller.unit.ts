@@ -6,7 +6,7 @@ import {
   toJSON,
 } from '@loopback/testlab';
 import {TagController} from '../../controllers';
-import {CustomFilter, Tag} from '../../models';
+import {Tag} from '../../models';
 import {TagRepository} from '../../repositories';
 import {givenTag} from '../helpers';
 
@@ -59,7 +59,7 @@ describe('TagController', () => {
       const filter = toJSON({where: {id: 'hello'}});
 
       find.resolves(aListOfTags);
-      await controller.find(filter as CustomFilter);
+      await controller.find(filter);
       sinon.assert.calledWith(find, filter);
     });
   });

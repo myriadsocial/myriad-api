@@ -6,7 +6,7 @@ import {
   toJSON,
 } from '@loopback/testlab';
 import {TransactionController} from '../../controllers';
-import {CustomFilter, Transaction} from '../../models';
+import {Transaction} from '../../models';
 import {TransactionRepository} from '../../repositories';
 import {givenTransaction} from '../helpers';
 
@@ -61,7 +61,7 @@ describe('TransactionController', () => {
       });
 
       find.resolves(aListOfTransactions);
-      await controller.find(filter as CustomFilter);
+      await controller.find(filter);
       sinon.assert.calledWith(find, filter);
     });
   });
