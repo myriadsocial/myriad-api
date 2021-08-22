@@ -1,7 +1,6 @@
 export enum ControllerType {
   USER = 'UserController',
   POST = 'PostController',
-  USERPOST = 'UserPostController',
   TRANSACTION = 'TransactionController',
   EXPERIENCE = 'ExperienceController',
   PEOPLE = 'PeopleController',
@@ -20,8 +19,7 @@ export enum MethodType {
   CREATE = 'create',
   CREATELIKE = 'createLike',
   UPDATEBYID = 'updateById',
-  TIMELINE = 'timeline',
-  SEARCHEXPERIENCE = 'search',
+  TIMELINE = 'getTimeline',
   VERIFY = 'verify',
   CLONE = 'clone',
   MODIFY = 'modify',
