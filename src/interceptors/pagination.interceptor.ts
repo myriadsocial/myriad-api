@@ -7,11 +7,10 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {repository, Where} from '@loopback/repository';
-import {HttpErrors} from '@loopback/rest';
+import {Where} from '@loopback/repository';
+import {HttpErrors, RestBindings} from '@loopback/rest';
 import {ControllerType, MethodType, TimelineType} from '../enums';
 import {Post} from '../models';
-import {UserRepository} from '../repositories';
 import {
   ExperienceService,
   FriendService,
@@ -19,22 +18,18 @@ import {
   NotificationService,
   TagService,
 } from '../services';
-import {defaultFilterQuery, noneStatusFiltering} from '../utils/filter-utils';
+import {noneStatusFiltering} from '../utils/filter-utils';
 import {pageMetadata} from '../utils/page-metadata.utils';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
  */
-// @injectable({tags: {key: PaginationInterceptor.BINDING_KEY}})
-
 @injectable({tags: {key: PaginationInterceptor.BINDING_KEY}})
 export class PaginationInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
 
   constructor(
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(ExperienceService)
@@ -62,161 +57,76 @@ export class PaginationInterceptor implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
-
   async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
-    try {
-      const methodName = invocationCtx.methodName as MethodType;
-      const className = invocationCtx.targetClass.name as ControllerType;
+    const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
+    const {pageNumber, pageLimit, userId, timelineType, q} = query;
+    const filter = invocationCtx.args[0] ?? {where: {}};
+    const methodName = invocationCtx.methodName as MethodType;
+    const className = invocationCtx.targetClass.name as ControllerType;
 
-      let args = invocationCtx.args;
-      const filter = args[0] ? JSON.parse(args[0]) : args[0];
+    if (methodName === MethodType.TIMELINE) {
+      if (Object.keys(filter.where).length > 0 && (userId || timelineType))
+        throw new HttpErrors.UnprocessableEntity(
+          'Where filter and (userId and timelineType) can not be used at the same time!',
+        );
 
-      let data = {count: 0};
-      let page = 1;
-      let timelineType = null;
-      let userId = '';
-      let q = '';
-      let where = null;
+      if (userId || timelineType) {
+        if (!timelineType) throw new HttpErrors.UnprocessableEntity('Timeline type must be filled');
 
-      if (filter) {
-        if (filter.where) {
-          where = filter.where;
+        const where = await this.getTimeline(userId as string, timelineType as TimelineType);
 
-          if (filter.timelineType || filter.findBy) {
-            throw new Error('ErrorWhere');
-          }
-        }
-
-        // If timelineType and findBy exist
-        // Filter for user timeline
-        if (filter.timelineType || filter.findBy) {
-          if (!filter.findBy) {
-            throw new Error('EmptyFindBy');
-          } else {
-            userId = filter.findBy;
-            delete filter.findBy;
-          }
-
-          if (methodName === MethodType.TIMELINE) {
-            if (!filter.timelineType) {
-              const user = await this.userRepository.findById(userId);
-
-              if (!user.onTimeline) timelineType = TimelineType.TRENDING;
-              else timelineType = TimelineType.EXPERIENCE;
-            } else {
-              timelineType = filter.timelineType;
-              delete filter.timelineType;
-            }
-          }
-        }
-
-        if (filter.page) {
-          page = filter.page;
-          delete filter.page;
-        }
-
-        // Filter for search experience
-        if (filter.q) {
-          q = filter.q;
-          delete filter.q;
-        }
-      }
-
-      args = [page];
-
-      switch (methodName) {
-        case MethodType.FIND: {
-          const newFilter = defaultFilterQuery(page, filter);
-          invocationCtx.args[0] = newFilter;
-
-          args.push(newFilter);
-          data = await this.metricService.countData(className, where);
-
-          break;
-        }
-
-        case MethodType.TIMELINE: {
-          if (!where) where = await this.filterTimeline(userId, timelineType);
-          if (!where && timelineType) break;
-
-          const newFilter = defaultFilterQuery(page, filter, where);
-          invocationCtx.args[0] = newFilter;
-
-          args.push(newFilter);
-          data = await this.metricService.countData(className, where);
-
-          break;
-        }
-
-        case MethodType.SEARCHEXPERIENCE: {
-          if (!q) break;
-
-          where = {
-            name: new RegExp('^' + q, 'i'),
-            origin: true,
+        if (where) filter.where = where;
+        else
+          return {
+            data: [],
+            meta: pageMetadata(NaN, NaN, 0),
           };
-
-          const newFilter = defaultFilterQuery(page, filter, where);
-          invocationCtx.args[0] = newFilter;
-
-          args.push(newFilter);
-          data = await this.metricService.countData(className, where);
-
-          break;
-        }
-
-        default:
-          args = [];
       }
-
-      const result = await next();
-
-      if (className === ControllerType.NOTIFICATION && methodName === MethodType.FIND) {
-        const notificationFilter = invocationCtx.args[0];
-        const toUser = notificationFilter.where
-          ? notificationFilter.where.to
-            ? notificationFilter.where.to
-            : null
-          : null;
-
-        await this.notificationService.readNotification(toUser);
-      }
-
-      return {
-        data: result,
-        meta: pageMetadata(args, data.count),
-      };
-    } catch (err) {
-      if (err.message === 'EmptyFindBy')
-        throw new HttpErrors.UnprocessableEntity('FindBy cannot be empty');
-
-      if (err.message === 'ErrorWhere')
-        throw new HttpErrors.UnprocessableEntity('Where and (FindBy and SortBy) can not use both');
-
-      throw new HttpErrors.UnprocessableEntity('Wrong filter format!');
     }
+
+    let pageIndex = 1;
+    let pageSize = 5;
+
+    if (!isNaN(Number(pageNumber)) || Number(pageNumber) > 0) pageIndex = Number(pageNumber);
+    if (!isNaN(Number(pageLimit)) || Number(pageLimit) > 0) pageSize = Number(pageLimit);
+
+    invocationCtx.args[0] = Object.assign(filter, {
+      limit: pageSize,
+      offset: (pageIndex - 1) * pageSize,
+    });
+
+    const result = await next();
+    const {count} = await this.metricService.countData(className, filter.where);
+
+    if (className === ControllerType.NOTIFICATION && methodName === MethodType.FIND) {
+      const notificationFilter = invocationCtx.args[0];
+      const toUser = notificationFilter.where
+        ? notificationFilter.where.to
+          ? notificationFilter.where.to
+          : null
+        : null;
+
+      await this.notificationService.readNotification(toUser);
+    }
+
+    return {
+      data: result,
+      meta: pageMetadata(pageIndex, pageSize, count),
+    };
   }
 
-  async filterTimeline(userId: string, timelineType: TimelineType): Promise<Where<Post> | null> {
-    if (!userId) return null;
-
-    let where = null;
-
+  async getTimeline(userId: string, timelineType: TimelineType): Promise<Where<Post> | undefined> {
     switch (timelineType) {
       case TimelineType.EXPERIENCE:
-        where = await this.experienceService.filterByExperience(userId);
-        break;
+        return this.experienceService.experienceTimeline(userId);
 
       case TimelineType.TRENDING:
-        where = await this.tagService.filterByTrending();
-        break;
+        return this.tagService.trendingTimeline();
 
       case TimelineType.FRIEND:
-        where = await this.friendService.filterByFriends(userId);
-        break;
+        return this.friendService.friendsTimeline(userId);
 
-      case TimelineType.ALL:
-      default: {
+      case TimelineType.ALL: {
         const approvedFriendIds = await this.friendService.getApprovedFriendIds(userId);
         const trendingTopics = await this.tagService.trendingTopics();
 
@@ -228,12 +138,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const topics = [...trendingTopics, ...experienceTopics];
         const personIds = experiencePersonIds;
 
-        if (!friends.length && !topics.length && !personIds.length) break;
+        if (!friends.length && !topics.length && !personIds.length) return;
 
         const joinTopics = topics.join('|');
         const regexTopic = new RegExp(joinTopics, 'i');
 
-        where = {
+        return {
           or: [
             {
               tags: {
@@ -265,9 +175,5 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         } as Where<Post>;
       }
     }
-
-    if (!where) return null;
-
-    return where;
   }
 }
