@@ -7,7 +7,7 @@ import {
 } from '@loopback/testlab';
 import {NotificationController} from '../../controllers';
 import {NotificationType} from '../../enums';
-import {CustomFilter, Notification} from '../../models';
+import {Notification} from '../../models';
 import {NotificationRepository} from '../../repositories';
 import {givenNotification} from '../helpers';
 
@@ -54,7 +54,7 @@ describe('NotificationController', () => {
       });
 
       find.resolves(aListOfNotifications);
-      await controller.find(filter as CustomFilter);
+      await controller.find(filter);
       sinon.assert.calledWith(find, filter);
     });
   });

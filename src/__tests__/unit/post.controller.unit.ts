@@ -7,7 +7,7 @@ import {
 } from '@loopback/testlab';
 import {PostController} from '../../controllers';
 import {PlatformType} from '../../enums';
-import {CustomFilter, Post} from '../../models';
+import {Post} from '../../models';
 import {PeopleRepository, PostRepository} from '../../repositories';
 import {PostService, SocialMediaService} from '../../services';
 import {givenMyriadPost} from '../helpers';
@@ -48,7 +48,7 @@ describe('PostController', () => {
     it('returns multiple posts if they exist', async () => {
       const find = postRepository.stubs.find;
       find.resolves(aListOfPosts);
-      expect(await controller.timeline()).to.eql(aListOfPosts);
+      expect(await controller.getTimeline()).to.eql(aListOfPosts);
       sinon.assert.called(find);
     });
 
@@ -56,7 +56,7 @@ describe('PostController', () => {
       const find = postRepository.stubs.find;
       const expected: Post[] = [];
       find.resolves(expected);
-      expect(await controller.timeline()).to.eql(expected);
+      expect(await controller.getTimeline()).to.eql(expected);
       sinon.assert.called(find);
     });
 
@@ -65,7 +65,7 @@ describe('PostController', () => {
       const filter = toJSON({where: {text: 'hello world'}});
 
       find.resolves(aListOfPosts);
-      await controller.timeline(filter as CustomFilter);
+      await controller.getTimeline(filter);
       sinon.assert.calledWith(find, filter);
     });
   });
