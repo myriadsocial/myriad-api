@@ -196,7 +196,7 @@ describe('FriendApplication', function () {
     });
   });
 
-  context('when dealing with multiple persisted users', () => {
+  context('when dealing with multiple persisted friends', () => {
     let persistedFriends: Friend[];
 
     beforeEach(async () => {
@@ -235,15 +235,8 @@ describe('FriendApplication', function () {
         requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61867',
       });
 
-      const response = await client.get('/friends').query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/friends').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
-    });
-
-    it('returns 422 when getting friends with a wrong filter format', async () => {
-      await client
-        .get('/friends')
-        .query({filter: {where: {status: FriendStatusType.APPROVED}}})
-        .expect(422);
     });
   });
 

@@ -112,15 +112,8 @@ describe('TagApplication', function () {
         count: 1,
       });
 
-      const response = await client.get('/tags').query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/tags').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
-    });
-
-    it('returns 422 when getting tags with a wrong filter format', async () => {
-      await client
-        .get('/tags')
-        .query({filter: {where: {id: 'blockchain'}}})
-        .expect(422);
     });
   });
 });

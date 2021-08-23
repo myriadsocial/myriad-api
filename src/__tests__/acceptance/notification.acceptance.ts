@@ -168,21 +168,8 @@ describe('NotificationApplication', function () {
         to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       });
 
-      const response = await client
-        .get('/notifications')
-        .query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/notifications').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
-    });
-
-    it('returns 422 when getting notifications with a wrong filter format', async () => {
-      await client
-        .get('/notifications')
-        .query({
-          filter: {
-            where: {from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861'},
-          },
-        })
-        .expect(422);
     });
 
     it('includes fromUserId and toUserId in query result', async () => {

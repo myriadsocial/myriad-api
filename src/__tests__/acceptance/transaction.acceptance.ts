@@ -109,7 +109,7 @@ describe('TransactionApplication', function () {
     });
   });
 
-  context('when dealing with multiple persisted users', () => {
+  context('when dealing with multiple persisted transactions', () => {
     let persistedTransactions: Transaction[];
     let otherUser: User;
 
@@ -118,6 +118,10 @@ describe('TransactionApplication', function () {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
         name: 'irman',
       });
+    });
+
+    beforeEach(async () => {
+      await transactionRepository.deleteAll();
     });
 
     beforeEach(async () => {
@@ -140,7 +144,13 @@ describe('TransactionApplication', function () {
 
       const response = await client
         .get('/transactions')
-        .query('filter=' + JSON.stringify({where: {from: user.id}, limit: 1}))
+        .query(
+          JSON.stringify({
+            filter: {
+              where: {from: user.id, to: otherUser.id},
+            },
+          }) + '&pageLimit=1',
+        )
         .expect(200);
 
       expect(response.body.data).to.containDeep([toJSON(transactionInProgress)]);
@@ -149,48 +159,39 @@ describe('TransactionApplication', function () {
     it('exploded filter conditions work', async () => {
       await givenTransactionInstance(transactionRepository);
 
-      const response = await client
-        .get('/transactions')
-        .query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/transactions').query('pageLimit=2');
 
       expect(response.body.data).to.have.length(2);
     });
+  });
 
-    it('returns 422 when getting users with a wrong filter format', async () => {
-      await client
-        .get('/transactions')
-        .query({filter: {where: {from: user.id}}})
-        .expect(422);
+  it('includes fromUser, toUser, post, and currency in query result', async () => {
+    const otherUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61851',
+      name: 'irman',
+    });
+    const transaction = await givenTransactionInstance(transactionRepository, {
+      from: user.id,
+      to: otherUser.id,
     });
 
-    it('includes fromUser, toUser, and currency in query result', async () => {
-      const transaction = await givenTransactionInstance(transactionRepository, {
-        from: user.id,
-        to: otherUser.id,
-      });
+    const response = await client
+      .get('/transactions')
+      .query(
+        JSON.stringify({
+          filter: {
+            include: ['fromUser', 'toUser', 'currency'],
+          },
+        }) + '&pageLimit=1',
+      )
+      .expect(200);
 
-      const response = await client
-        .get('/transactions')
-        .query(
-          'filter=' +
-            JSON.stringify({
-              include: ['fromUser', 'toUser', 'currency'],
-              where: {
-                from: user.id,
-                to: otherUser.id,
-              },
-              limit: 1,
-            }),
-        )
-        .expect(200);
-
-      expect(response.body.data).to.have.length(1);
-      expect(response.body.data[0]).to.deepEqual({
-        ...toJSON(transaction),
-        fromUser: toJSON(user),
-        toUser: toJSON(otherUser),
-        currency: toJSON(currency),
-      });
+    expect(response.body.data).to.have.length(1);
+    expect(response.body.data[0]).to.deepEqual({
+      ...toJSON(transaction),
+      fromUser: toJSON(user),
+      toUser: toJSON(otherUser),
+      currency: toJSON(currency),
     });
   });
 });
