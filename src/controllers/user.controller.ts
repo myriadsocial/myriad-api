@@ -53,7 +53,7 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    return this.userRepository.create(user);
+    return this.userRepository.create(new User(user));
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)

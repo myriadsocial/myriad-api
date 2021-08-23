@@ -9,7 +9,7 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ControllerType, LikeType, MethodType, PlatformType} from '../enums';
+import {ControllerType, LikeType, MethodType} from '../enums';
 import {
   CurrencyRepository,
   PostRepository,
@@ -62,9 +62,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
     switch (methodName) {
       case MethodType.CREATE: {
-        invocationCtx.args[0].createdAt = new Date().toString();
-        invocationCtx.args[0].updatedAt = new Date().toString();
-
         if (className === ControllerType.USER) {
           const user = await this.userRepository.findOne({
             where: {
@@ -73,22 +70,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           });
 
           if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
-
-          invocationCtx.args[0].bio = `Hello, my name is ${invocationCtx.args[0].name}!`;
           break;
         }
 
         if (className === ControllerType.TRANSACTION) {
-          invocationCtx.args[0].currencyId = invocationCtx.args[0].currencyId.toUpperCase();
-          await this.currencyRepository.findById(invocationCtx.args[0].currencyId);
+          await this.currencyRepository.findById(invocationCtx.args[0].currencyId.toUpperCase());
           await this.userRepository.findById(invocationCtx.args[0].from);
-          break;
-        }
-
-        if (className === ControllerType.POST) {
-          invocationCtx.args[0].platform = PlatformType.MYRIAD;
-          invocationCtx.args[0].originCreatedAt = new Date().toString();
-
           break;
         }
 
@@ -125,7 +112,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
         if (className === ControllerType.COMMENT) {
           const metric = await this.metricService.publicMetric(LikeType.POST, result.postId);
-          this.postRepository.updateById(invocationCtx.args[0].postId, {
+          this.postRepository.updateById(result.postId, {
             metric: metric,
           }) as Promise<void>;
           break;

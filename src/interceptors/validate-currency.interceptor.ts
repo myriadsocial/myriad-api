@@ -46,17 +46,15 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
 
     switch (className) {
       case ControllerType.USERCURRENCY: {
-        invocationCtx.args[0].currencyId = invocationCtx.args[0].currencyId.toUpperCase();
-
         const {userId, currencyId} = invocationCtx.args[0];
 
-        await this.currencyRepository.findById(currencyId);
+        await this.currencyRepository.findById(currencyId.toUpperCase());
 
         // Check if user already has the crypto
         const userCurrency = await this.userCurrencyRepository.findOne({
           where: {
             userId,
-            currencyId,
+            currencyId: currencyId.toUpperCase(),
           },
         });
 
