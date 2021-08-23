@@ -42,21 +42,23 @@ export class UserExperience extends Entity {
 
   @property({
     type: 'date',
-    default: false,
+    required: false,
+    default: () => new Date(),
   })
-  createdAt: string;
+  createdAt?: string;
 
   @property({
     type: 'date',
-    default: false,
+    required: false,
+    default: () => new Date(),
   })
-  updatedAt: string;
+  updatedAt?: string;
 
   @property({
     type: 'date',
-    default: false,
+    required: false,
   })
-  deletedAt: string;
+  deletedAt?: string;
 
   @belongsTo(() => Experience)
   experienceId: string;

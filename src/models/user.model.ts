@@ -69,16 +69,21 @@ export class User extends Entity {
 
   @property({
     type: 'date',
+    required: false,
+    default: () => new Date(),
   })
   createdAt?: string;
 
   @property({
     type: 'date',
+    required: false,
+    default: () => new Date(),
   })
   updatedAt?: string;
 
   @property({
     type: 'date',
+    required: false,
   })
   deletedAt?: string;
 
@@ -105,6 +110,7 @@ export class User extends Entity {
 
   constructor(data?: Partial<User>) {
     super(data);
+    this.bio = `Hello, my name is ${this.name}!`;
   }
 }
 

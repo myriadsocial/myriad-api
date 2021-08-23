@@ -52,12 +52,14 @@ export class Transaction extends Entity {
   @property({
     type: 'date',
     required: false,
+    default: () => new Date(),
   })
   createdAt?: string;
 
   @property({
     type: 'date',
     required: false,
+    default: () => new Date(),
   })
   updatedAt?: string;
 
@@ -100,6 +102,7 @@ export class Transaction extends Entity {
 
   constructor(data?: Partial<Transaction>) {
     super(data);
+    this.currencyId = this.currencyId.toUpperCase();
   }
 }
 

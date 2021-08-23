@@ -7,6 +7,7 @@ export * from './experience.model';
 export * from './friend.model';
 export * from './like.model';
 export * from './migrate.model';
+export * from './myriad-post.model';
 export * from './notification.model';
 export * from './people.model';
 export * from './post.model';
