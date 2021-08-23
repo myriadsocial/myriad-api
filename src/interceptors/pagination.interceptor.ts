@@ -65,13 +65,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const className = invocationCtx.targetClass.name as ControllerType;
 
     if (methodName === MethodType.TIMELINE) {
-      if (filter.where && Object.keys(filter.where).length > 0 && (userId || timelineType))
+      if (filter.where && Object.keys(filter.where).length > 0 && timelineType)
         throw new HttpErrors.UnprocessableEntity(
-          'Where filter and (userId and timelineType) can not be used at the same time!',
+          'Where filter and timelineType can not be used at the same time!',
         );
 
-      if (userId || timelineType) {
-        if (!timelineType) throw new HttpErrors.UnprocessableEntity('Timeline type must be filled');
+      if (timelineType) {
+        if (!userId) throw new HttpErrors.UnprocessableEntity('UserId must be filled');
 
         const where = await this.getTimeline(userId as string, timelineType as TimelineType);
 
