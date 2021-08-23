@@ -21,7 +21,6 @@ describe('TransactionApplication', function () {
   let userRepository: UserRepository;
   let currencyRepository: CurrencyRepository;
   let transactionRepository: TransactionRepository;
-  let user: User;
   let currency: Currency;
 
   before(async () => {
@@ -37,7 +36,6 @@ describe('TransactionApplication', function () {
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository);
     currency = await givenCurrencyInstance(currencyRepository);
   });
 
@@ -48,9 +46,11 @@ describe('TransactionApplication', function () {
 
   beforeEach(async () => {
     await transactionRepository.deleteAll();
+    await userRepository.deleteAll();
   });
 
   it('creates a transaction', async function () {
+    const user = await givenUserInstance(userRepository);
     const transaction = givenTransaction({from: user.id, currencyId: currency.id});
     const response = await client.post('/transactions').send(transaction).expect(200);
     expect(response.body).to.containDeep(transaction);
@@ -68,6 +68,7 @@ describe('TransactionApplication', function () {
   });
 
   it('returns 422 when create transactions but "currency" not exist', async () => {
+    const user = await givenUserInstance(userRepository);
     const transaction = givenTransaction({
       from: user.id,
       currencyId: DefaultCurrencyType.MYRIA,
@@ -112,16 +113,14 @@ describe('TransactionApplication', function () {
   context('when dealing with multiple persisted transactions', () => {
     let persistedTransactions: Transaction[];
     let otherUser: User;
+    let user: User;
 
     before(async () => {
+      user = await givenUserInstance(userRepository);
       otherUser = await givenUserInstance(userRepository, {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
         name: 'irman',
       });
-    });
-
-    beforeEach(async () => {
-      await transactionRepository.deleteAll();
     });
 
     beforeEach(async () => {
@@ -138,8 +137,8 @@ describe('TransactionApplication', function () {
 
     it('queries transactions with a filter', async () => {
       const transactionInProgress = await givenTransactionInstance(transactionRepository, {
-        from: user.id,
-        to: otherUser.id,
+        from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
+        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
       });
 
       const response = await client
@@ -147,9 +146,12 @@ describe('TransactionApplication', function () {
         .query(
           JSON.stringify({
             filter: {
-              where: {from: user.id, to: otherUser.id},
+              where: {
+                from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
+                to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
+              },
             },
-          }) + '&pageLimit=1',
+          }),
         )
         .expect(200);
 
@@ -165,7 +167,11 @@ describe('TransactionApplication', function () {
     });
   });
 
-  it('includes fromUser, toUser, post, and currency in query result', async () => {
+  it('includes fromUser, toUser, and currency in query result', async () => {
+    const user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618aa',
+      name: 'irman',
+    });
     const otherUser = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61851',
       name: 'irman',
@@ -177,13 +183,11 @@ describe('TransactionApplication', function () {
 
     const response = await client
       .get('/transactions')
-      .query(
-        JSON.stringify({
-          filter: {
-            include: ['fromUser', 'toUser', 'currency'],
-          },
-        }) + '&pageLimit=1',
-      )
+      .query({
+        filter: {
+          include: ['fromUser', 'toUser', 'currency'],
+        },
+      })
       .expect(200);
 
     expect(response.body.data).to.have.length(1);
