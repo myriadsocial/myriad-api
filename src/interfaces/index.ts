@@ -9,4 +9,4 @@ export * from './payment-info.interface';
 export * from './post.interface';
 export * from './refresh-grant.interface';
 export * from './tokenobject.inteface';
-export * from './transaction-history.interface';
+export * from './transaction-summary.interface';
