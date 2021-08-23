@@ -1,6 +1,6 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {TransactionType} from '../enums/content-type.enum';
 import {Currency} from './currency.model';
-import {Post} from './post.model';
 import {User} from './user.model';
 
 @model({
@@ -33,6 +33,21 @@ export class Transaction extends Entity {
     required: true,
   })
   amount: number;
+
+  @property({
+    type: 'string',
+    required: false,
+    jsonSchema: {
+      enum: Object.values(TransactionType),
+    },
+  })
+  type: TransactionType;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  referenceId?: string;
 
   @property({
     type: 'date',
@@ -79,9 +94,6 @@ export class Transaction extends Entity {
     },
   )
   to: string;
-
-  @belongsTo(() => Post)
-  postId?: string;
 
   @belongsTo(() => Currency, {}, {required: true})
   currencyId: string;
