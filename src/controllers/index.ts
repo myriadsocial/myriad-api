@@ -15,3 +15,4 @@ export * from './transaction.controller';
 export * from './user-currency.controller';
 export * from './user-experience.controller';
 export * from './user-social-media.controller';
+export * from './user.controller';
