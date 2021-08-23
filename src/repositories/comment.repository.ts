@@ -1,8 +1,14 @@
 import {Getter, inject} from '@loopback/core';
-import {BelongsToAccessor, DefaultCrudRepository, repository} from '@loopback/repository';
+import {
+  BelongsToAccessor,
+  DefaultCrudRepository,
+  HasManyRepositoryFactory,
+  repository,
+} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Comment, CommentRelations, Post, User} from '../models';
+import {Comment, CommentRelations, Post, Transaction, User} from '../models';
 import {PostRepository} from './post.repository';
+import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
 
 export class CommentRepository extends DefaultCrudRepository<
@@ -14,17 +20,26 @@ export class CommentRepository extends DefaultCrudRepository<
 
   public readonly user: BelongsToAccessor<User, typeof Comment.prototype.id>;
 
+  public readonly transactions: HasManyRepositoryFactory<Transaction, typeof Comment.prototype.id>;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('PostRepository')
     protected postRepositoryGetter: Getter<PostRepository>,
     @repository.getter('UserRepository')
     protected userRepositoryGetter: Getter<UserRepository>,
+    @repository.getter('TransactionRepository')
+    protected transactionRepositoryGetter: Getter<TransactionRepository>,
   ) {
     super(Comment, dataSource);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
     this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter);
     this.registerInclusionResolver('post', this.post.inclusionResolver);
+    this.transactions = this.createHasManyRepositoryFactoryFor(
+      'transactions',
+      transactionRepositoryGetter,
+    );
+    this.registerInclusionResolver('transactions', this.transactions.inclusionResolver);
   }
 }
