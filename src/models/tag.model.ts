@@ -31,12 +31,14 @@ export class Tag extends Entity {
   @property({
     type: 'date',
     required: false,
+    default: () => new Date(),
   })
-  createdAt: string;
+  createdAt?: string;
 
   @property({
     type: 'date',
     required: false,
+    default: () => new Date(),
   })
   updatedAt: string;
 

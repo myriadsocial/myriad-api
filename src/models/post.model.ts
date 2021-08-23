@@ -38,7 +38,6 @@ export class Post extends Entity {
   @property({
     type: 'string',
     required: false,
-    default: PlatformType.MYRIAD,
     jsonSchema: {
       enum: Object.values(PlatformType),
     },
@@ -48,7 +47,6 @@ export class Post extends Entity {
   @property({
     type: 'string',
     required: false,
-    default: null,
   })
   title?: string;
 
@@ -67,7 +65,6 @@ export class Post extends Entity {
   @property({
     type: 'string',
     required: false,
-    default: null,
   })
   url?: string;
 
@@ -84,6 +81,7 @@ export class Post extends Entity {
   @property({
     type: 'date',
     required: false,
+    default: () => new Date(),
   })
   originCreatedAt?: string;
 
@@ -107,12 +105,14 @@ export class Post extends Entity {
   @property({
     type: 'date',
     required: false,
+    default: () => new Date(),
   })
   createdAt?: string;
 
   @property({
     type: 'date',
     required: false,
+    default: () => new Date(),
   })
   updatedAt?: string;
 

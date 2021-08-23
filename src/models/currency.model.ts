@@ -55,21 +55,27 @@ export class Currency extends Entity {
 
   @property({
     type: 'date',
+    required: false,
+    default: () => new Date(),
   })
   createdAt?: string;
 
   @property({
     type: 'date',
+    required: false,
+    default: () => new Date(),
   })
   updatedAt?: string;
 
   @property({
     type: 'date',
+    required: false,
   })
   deletedAt?: string;
 
   constructor(data?: Partial<Currency>) {
     super(data);
+    this.id = this.id.toUpperCase();
   }
 }
 
