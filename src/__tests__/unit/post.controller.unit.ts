@@ -7,7 +7,7 @@ import {
 } from '@loopback/testlab';
 import {PostController} from '../../controllers';
 import {PlatformType} from '../../enums';
-import {Post} from '../../models';
+import {MyriadPost, Post} from '../../models';
 import {PeopleRepository, PostRepository} from '../../repositories';
 import {PostService, SocialMediaService} from '../../services';
 import {givenMyriadPost} from '../helpers';
@@ -29,7 +29,7 @@ describe('PostController', () => {
     it('creates a Post', async () => {
       const create = postRepository.stubs.create;
       create.resolves(aPostWithId);
-      const result = await controller.create(aPost);
+      const result = await controller.create(aPost as MyriadPost);
       expect(result).to.eql(aPostWithId);
       sinon.assert.calledWith(create, aPost);
     });

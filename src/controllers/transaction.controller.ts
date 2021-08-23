@@ -31,7 +31,7 @@ export class TransactionController {
     })
     transaction: Omit<Transaction, 'id'>,
   ): Promise<Transaction> {
-    return this.transactionRepository.create(transaction);
+    return this.transactionRepository.create(new Transaction(transaction));
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
