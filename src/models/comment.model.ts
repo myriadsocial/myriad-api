@@ -1,5 +1,6 @@
-import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
 import {Post} from './post.model';
+import {Transaction} from './transaction.model';
 import {User} from './user.model';
 
 @model({
@@ -44,6 +45,9 @@ export class Comment extends Entity {
     required: false,
   })
   deletedAt?: string;
+
+  @hasMany(() => Transaction, {keyTo: 'referenceId'})
+  transactions: Transaction[];
 
   @belongsTo(() => Post, {}, {required: true})
   postId: string;
