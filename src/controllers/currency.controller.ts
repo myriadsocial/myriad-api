@@ -31,7 +31,7 @@ export class CurrencyController {
     })
     currency: Currency,
   ): Promise<Currency> {
-    return this.currencyRepository.create(currency);
+    return this.currencyRepository.create(new Currency(currency));
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
