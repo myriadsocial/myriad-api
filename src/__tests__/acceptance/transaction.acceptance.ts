@@ -2,18 +2,11 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
-import {Currency, Post, Transaction, User} from '../../models';
-import {
-  CurrencyRepository,
-  PostRepository,
-  TransactionRepository,
-  UserRepository,
-} from '../../repositories';
+import {Currency, Transaction, User} from '../../models';
+import {CurrencyRepository, TransactionRepository, UserRepository} from '../../repositories';
 import {
   givenCurrencyInstance,
   givenCurrencyRepository,
-  givenPostInstance,
-  givenPostRepository,
   givenTransaction,
   givenTransactionInstance,
   givenTransactionRepository,
@@ -25,13 +18,11 @@ import {
 describe('TransactionApplication', function () {
   let app: MyriadApiApplication;
   let client: Client;
-  let postRepository: PostRepository;
   let userRepository: UserRepository;
   let currencyRepository: CurrencyRepository;
   let transactionRepository: TransactionRepository;
   let user: User;
   let currency: Currency;
-  let post: Post;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -43,19 +34,16 @@ describe('TransactionApplication', function () {
     userRepository = await givenUserRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     transactionRepository = await givenTransactionRepository(app);
-    postRepository = await givenPostRepository(app);
   });
 
   before(async () => {
     user = await givenUserInstance(userRepository);
     currency = await givenCurrencyInstance(currencyRepository);
-    post = await givenPostInstance(postRepository);
   });
 
   after(async () => {
     await userRepository.deleteAll();
     await currencyRepository.deleteAll();
-    await postRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -175,11 +163,10 @@ describe('TransactionApplication', function () {
         .expect(422);
     });
 
-    it('includes fromUser, toUser, post, and currency in query result', async () => {
+    it('includes fromUser, toUser, and currency in query result', async () => {
       const transaction = await givenTransactionInstance(transactionRepository, {
         from: user.id,
         to: otherUser.id,
-        postId: post.id,
       });
 
       const response = await client
@@ -187,11 +174,10 @@ describe('TransactionApplication', function () {
         .query(
           'filter=' +
             JSON.stringify({
-              include: ['fromUser', 'toUser', 'post', 'currency'],
+              include: ['fromUser', 'toUser', 'currency'],
               where: {
                 from: user.id,
                 to: otherUser.id,
-                postId: post.id,
               },
               limit: 1,
             }),
@@ -203,7 +189,6 @@ describe('TransactionApplication', function () {
         ...toJSON(transaction),
         fromUser: toJSON(user),
         toUser: toJSON(otherUser),
-        post: toJSON(post),
         currency: toJSON(currency),
       });
     });
