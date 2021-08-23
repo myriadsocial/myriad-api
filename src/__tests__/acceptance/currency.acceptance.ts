@@ -153,17 +153,8 @@ describe('CurrencyApplication', () => {
         rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
       });
 
-      const response = await client
-        .get('/currencies')
-        .query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/currencies').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
-    });
-
-    it('returns 422 when getting currencies with a wrong filter format', async () => {
-      await client
-        .get('/currencies')
-        .query({filter: {where: {name: 'acala'}}})
-        .expect(422);
     });
   });
 });

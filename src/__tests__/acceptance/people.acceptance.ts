@@ -117,15 +117,8 @@ describe('PeopleApplication', function () {
         profilePictureURL: 'https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png',
       });
 
-      const response = await client.get('/people').query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/people').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
-    });
-
-    it('returns 422 when getting people with a wrong filter format', async () => {
-      await client
-        .get('/people')
-        .query({filter: {where: {name: 'hakim'}}})
-        .expect(422);
     });
   });
 

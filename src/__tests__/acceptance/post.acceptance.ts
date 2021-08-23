@@ -36,7 +36,7 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('PostApplication', function () {
-  this.timeout(10000);
+  this.timeout(15000);
   let app: MyriadApiApplication;
   let client: Client;
   let postRepository: PostRepository;
@@ -198,15 +198,8 @@ describe('PostApplication', function () {
         createdBy: user.id,
       });
 
-      const response = await client.get('/posts').query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/posts').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
-    });
-
-    it('returns 422 when getting posts with a wrong filter format', async () => {
-      await client
-        .get('/posts')
-        .query({filter: {where: {text: 'hakim'}}})
-        .expect(422);
     });
   });
 
@@ -223,13 +216,11 @@ describe('PostApplication', function () {
       postId: post.id,
     });
 
-    const filter =
-      'filter=' +
-      JSON.stringify({
+    const response = await client.get('/posts').query({
+      filter: {
         include: ['user', 'people', 'comments', 'likes', 'transactions'],
-      });
-
-    const response = await client.get('/posts').query(filter);
+      },
+    });
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({

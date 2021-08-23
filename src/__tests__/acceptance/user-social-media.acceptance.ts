@@ -42,7 +42,7 @@ describe('UserSocialMediaApplication', function () {
   });
 
   context('when claiming social medias', function () {
-    this.timeout(6000);
+    this.timeout(10000);
 
     beforeEach(async () => {
       await userSocialMediaRepository.deleteAll();
@@ -186,17 +186,8 @@ describe('UserSocialMediaApplication', function () {
         peopleId: '4',
       });
 
-      const response = await client
-        .get('/user-social-medias')
-        .query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/user-social-medias').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
-    });
-
-    it('returns 422 when getting user social medias with a wrong filter format', async () => {
-      await client
-        .get('/user-social-medias')
-        .query({filter: {where: {peopleId: '4'}}})
-        .expect(422);
     });
   });
 

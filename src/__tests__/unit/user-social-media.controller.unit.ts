@@ -54,6 +54,7 @@ describe('UserSocialMediaController', () => {
       const filter = toJSON({where: {name: 'hakim'}});
 
       find.resolves(aListOfUserSocialMedias);
+      await controller.find(filter);
       sinon.assert.calledWith(find, filter);
     });
   });

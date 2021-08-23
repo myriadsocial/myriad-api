@@ -139,7 +139,7 @@ describe('CommentApplication', function () {
     });
   });
 
-  context('when dealing with multiple persisted users', () => {
+  context('when dealing with multiple persisted comments', () => {
     let persistedComments: Comment[];
 
     beforeEach(async () => {
@@ -182,15 +182,8 @@ describe('CommentApplication', function () {
         postId: post.id,
       });
 
-      const response = await client.get('/comments').query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/comments').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
-    });
-
-    it('returns 422 when getting users with a wrong filter format', async () => {
-      await client
-        .get('/comments')
-        .query({filter: {where: {text: 'wow'}}})
-        .expect(422);
     });
   });
 

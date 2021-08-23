@@ -205,15 +205,8 @@ describe('UserApplication', function () {
         name: 'imam',
       });
 
-      const response = await client.get('/users').query('filter=' + JSON.stringify({limit: 2}));
+      const response = await client.get('/users').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
-    });
-
-    it('returns 422 when getting users with a wrong filter format', async () => {
-      await client
-        .get('/users')
-        .query({filter: {where: {name: 'hakim'}}})
-        .expect(422);
     });
   });
 
