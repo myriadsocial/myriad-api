@@ -145,7 +145,7 @@ export class Post extends Entity {
   @hasMany(() => Like, {keyTo: 'referenceId'})
   likes: Like[];
 
-  @hasMany(() => Transaction)
+  @hasMany(() => Transaction, {keyTo: 'referenceId'})
   transactions: Transaction[];
 
   constructor(data?: Partial<Post>) {
