@@ -1,8 +1,14 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
+import {TransactionType} from '../../enums';
 import {Comment, Post, User} from '../../models';
-import {CommentRepository, PostRepository, UserRepository} from '../../repositories';
+import {
+  CommentRepository,
+  PostRepository,
+  TransactionRepository,
+  UserRepository,
+} from '../../repositories';
 import {
   givenComment,
   givenCommentInstance,
@@ -10,6 +16,8 @@ import {
   givenMultipleCommentInstances,
   givenPostInstance,
   givenPostRepository,
+  givenTransactionInstance,
+  givenTransactionRepository,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
@@ -21,6 +29,7 @@ describe('CommentApplication', function () {
   let userRepository: UserRepository;
   let commentRepository: CommentRepository;
   let postRepository: PostRepository;
+  let transactionRepository: TransactionRepository;
   let user: User;
   let post: Post;
 
@@ -34,12 +43,14 @@ describe('CommentApplication', function () {
     userRepository = await givenUserRepository(app);
     commentRepository = await givenCommentRepository(app);
     postRepository = await givenPostRepository(app);
+    transactionRepository = await givenTransactionRepository(app);
   });
 
   beforeEach(async () => {
     await commentRepository.deleteAll();
     await userRepository.deleteAll();
     await postRepository.deleteAll();
+    await transactionRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -183,12 +194,20 @@ describe('CommentApplication', function () {
     });
   });
 
-  it('includes user and post in query result', async () => {
+  it('includes user, transaction, and post in query result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: post.id,
     });
-    const filter = 'filter=' + JSON.stringify({include: ['user', 'post']});
+    const transaction = await givenTransactionInstance(transactionRepository, {
+      referenceId: comment.id,
+      type: TransactionType.COMMENT,
+    });
+    const filter =
+      'filter=' +
+      JSON.stringify({
+        include: ['user', 'post', 'transactions'],
+      });
 
     const response = await client.get('/comments').query(filter);
 
@@ -197,6 +216,7 @@ describe('CommentApplication', function () {
       ...toJSON(comment),
       user: toJSON(user),
       post: toJSON(post),
+      transactions: [toJSON(transaction)],
     });
   });
 });

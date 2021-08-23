@@ -1,6 +1,7 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
+import {TransactionType} from '../../enums';
 import {Post, User} from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
@@ -212,7 +213,10 @@ describe('PostApplication', function () {
   it('includes user, people, comments, likes, and transactions in query result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
     const post = await givenPostInstance(postRepository, {peopleId: people.id, createdBy: user.id});
-    const transaction = await givenTransactionInstance(transactionRepository, {postId: post.id});
+    const transaction = await givenTransactionInstance(transactionRepository, {
+      referenceId: post.id,
+      type: TransactionType.POST,
+    });
     const like = await givenLikeInstance(likeRepository, {referenceId: post.id});
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
