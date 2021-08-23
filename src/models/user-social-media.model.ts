@@ -39,16 +39,21 @@ export class UserSocialMedia extends Entity {
 
   @property({
     type: 'date',
+    required: false,
+    default: () => new Date(),
   })
   createdAt?: string;
 
   @property({
     type: 'date',
+    required: false,
+    default: () => new Date(),
   })
   updatedAt?: string;
 
   @property({
     type: 'date',
+    required: false,
   })
   deletedAt?: string;
 
