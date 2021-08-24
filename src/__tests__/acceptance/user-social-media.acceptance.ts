@@ -145,15 +145,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('finds all user social medias', async () => {
       const response = await client.get('/user-social-medias').send().expect(200);
-      expect(response.body.data).to.containDeep(
-        persistedUserSocialMedias.map(e => {
-          return {
-            id: e.id,
-            verified: e.verified,
-            platform: e.platform,
-          };
-        }),
-      );
+      expect(response.body.data).to.containDeep(toJSON(persistedUserSocialMedias));
     });
 
     it('queries users with a filter', async () => {

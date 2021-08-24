@@ -55,7 +55,7 @@ describe('UserApplication', function () {
   it('creates a user with a default currency MYRIA and AUSD', async function () {
     this.timeout(10000);
     const user = givenUser();
-    const response = await client.post('/users').send(user).expect(200);
+    const response = await client.post('/users').send(user);
     expect(response.body).to.containDeep(user);
     const result = await userRepository.findById(response.body.id);
     expect(result).to.containDeep(user);
@@ -174,7 +174,7 @@ describe('UserApplication', function () {
 
     it('finds all users', async () => {
       const response = await client.get('/users').send().expect(200);
-      expect(response.body.data).to.containDeep(persistedUsers);
+      expect(toJSON(response.body.data)).to.containDeep(toJSON(persistedUsers));
     });
 
     it('queries users with a filter', async () => {
