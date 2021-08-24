@@ -132,7 +132,7 @@ describe('TransactionApplication', function () {
 
     it('finds all transactions', async () => {
       const response = await client.get('/transactions').send().expect(200);
-      expect(response.body.data).to.containDeep(persistedTransactions);
+      expect(response.body.data).to.containDeep(toJSON(persistedTransactions));
     });
 
     it('queries transactions with a filter', async () => {

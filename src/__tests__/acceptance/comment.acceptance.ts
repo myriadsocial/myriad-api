@@ -146,12 +146,14 @@ describe('CommentApplication', function () {
       persistedComments = await givenMultipleCommentInstances(commentRepository, {
         userId: user.id,
         postId: post.id,
+        createdAt: new Date().toString(),
+        updatedAt: new Date().toString(),
       });
     });
 
     it('finds all comments', async () => {
       const response = await client.get('/comments').send().expect(200);
-      expect(response.body.data).to.containDeep(persistedComments);
+      expect(response.body.data).to.containDeep(toJSON(persistedComments));
     });
 
     it('queries comments with a filter', async () => {

@@ -81,7 +81,7 @@ describe('PeopleApplication', function () {
 
     it('finds all users', async () => {
       const response = await client.get('/people').send().expect(200);
-      expect(response.body.data).to.containDeep(persistedPeople);
+      expect(response.body.data).to.containDeep(toJSON(persistedPeople));
     });
 
     it('queries people with a filter', async () => {

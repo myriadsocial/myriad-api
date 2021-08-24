@@ -83,7 +83,7 @@ describe('TagApplication', function () {
 
     it('finds all tags', async () => {
       const response = await client.get('/tags').send().expect(200);
-      expect(response.body.data).to.containDeep(persistedTags);
+      expect(response.body.data).to.containDeep(toJSON(persistedTags));
     });
 
     it('queries tags with a filter', async () => {

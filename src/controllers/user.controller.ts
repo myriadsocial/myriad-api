@@ -40,7 +40,6 @@ export class UserController {
             exclude: [
               'profilePictureURL',
               'bannerImageUrl',
-              'bio',
               'fcmTokens',
               'onTimeline',
               'createdAt',
