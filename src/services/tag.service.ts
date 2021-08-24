@@ -33,8 +33,6 @@ export class TagService {
         this.tagRepository.create({
           id: tag,
           count: 1,
-          createdAt: new Date().toString(),
-          updatedAt: new Date().toString(),
         }) as Promise<Tag>;
       } else {
         this.tagRepository.updateById(foundTag.id, {
