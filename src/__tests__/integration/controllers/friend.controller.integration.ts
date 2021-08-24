@@ -1,31 +1,60 @@
-import {expect} from '@loopback/testlab';
+import {expect, toJSON} from '@loopback/testlab';
 import {FriendController} from '../../../controllers';
-import {FriendRepository, UserRepository} from '../../../repositories';
-import {FriendService, NotificationService} from '../../../services';
+import {FriendStatusType, NotificationType} from '../../../enums';
+import {Friend} from '../../../models';
+import {
+  FriendRepository,
+  NotificationRepository,
+  PostRepository,
+  UserRepository,
+  UserSocialMediaRepository,
+} from '../../../repositories';
+import {FCMService, FriendService, NotificationService} from '../../../services';
 import {
   givenEmptyDatabase,
+  givenFriend,
   givenFriendInstance,
   givenRepositories,
   givenUserInstance,
+  testdb,
 } from '../../helpers';
 
 describe('FriendControllerIntegration', () => {
   let userRepository: UserRepository;
   let friendRepository: FriendRepository;
+  let postRepository: PostRepository;
   let controller: FriendController;
+  let notificationRepository: NotificationRepository;
   let notificationService: NotificationService;
+  let userSocialMediaRepository: UserSocialMediaRepository;
   let friendService: FriendService;
+  let fcmService: FCMService;
 
   before(async () => {
-    ({userRepository, friendRepository} = await givenRepositories());
+    ({
+      userRepository,
+      friendRepository,
+      postRepository,
+      notificationRepository,
+      userSocialMediaRepository,
+    } = await givenRepositories(testdb));
   });
 
   before(async () => {
+    notificationService = new NotificationService(
+      userRepository,
+      postRepository,
+      notificationRepository,
+      userSocialMediaRepository,
+      fcmService,
+    );
     friendService = new FriendService(friendRepository, userRepository, notificationService);
     controller = new FriendController(notificationService, friendService);
   });
 
-  beforeEach(givenEmptyDatabase);
+  beforeEach(async () => {
+    await givenEmptyDatabase(testdb);
+  });
 
   it('includes Requestee in find method result', async () => {
     const user = await givenUserInstance(userRepository, {
@@ -97,14 +126,12 @@ describe('FriendControllerIntegration', () => {
       requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    if (friend.id) {
-      const response = await controller.findById(friend.id, {include: ['requestee']});
+    const response = await controller.findById(friend.id ?? '', {include: ['requestee']});
 
-      expect(response).to.containDeep({
-        ...friend,
-        requestee: user,
-      });
-    }
+    expect(response).to.containDeep({
+      ...friend,
+      requestee: user,
+    });
   });
 
   it('includes Requestor in findById method result', async () => {
@@ -116,14 +143,12 @@ describe('FriendControllerIntegration', () => {
       requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    if (friend.id) {
-      const response = await controller.findById(friend.id, {include: ['requestor']});
+    const response = await controller.findById(friend.id ?? '', {include: ['requestor']});
 
-      expect(response).to.containDeep({
-        ...friend,
-        requestor: user,
-      });
-    }
+    expect(response).to.containDeep({
+      ...friend,
+      requestor: user,
+    });
   });
 
   it('includes both Requestor and Requestee in findById method result', async () => {
@@ -138,14 +163,94 @@ describe('FriendControllerIntegration', () => {
       requesteeId: otherUser.id,
     });
 
-    if (friend.id) {
-      const response = await controller.findById(friend.id, {include: ['requestor', 'requestee']});
+    const response = await controller.findById(friend.id ?? '', {
+      include: ['requestor', 'requestee'],
+    });
 
-      expect(response).to.containDeep({
-        ...friend,
-        requestor: user,
-        requestee: otherUser,
-      });
-    }
+    expect(response).to.containDeep({
+      ...friend,
+      requestor: user,
+      requestee: otherUser,
+    });
+  });
+
+  it('creates notification when sending a pending friend request', async () => {
+    const user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+    });
+    const otherUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+    });
+
+    const friendInstance = givenFriend({
+      requestorId: user.id,
+      requesteeId: otherUser.id,
+    });
+
+    const friend = await controller.add(friendInstance);
+
+    const notifications = await notificationRepository.find({
+      where: {
+        from: friend.requestorId,
+        to: friend.requesteeId,
+        referenceId: friend.requesteeId,
+      },
+    });
+
+    delete notifications[0].id;
+    delete notifications[0].createdAt;
+    delete notifications[0].updatedAt;
+
+    expect({
+      type: NotificationType.FRIEND_REQUEST,
+      from: friend.requestorId,
+      read: false,
+      to: friend.requesteeId,
+      referenceId: friend.requesteeId,
+      message: 'sent you friend request',
+    }).to.containDeep(toJSON(notifications[0]));
+  });
+
+  it('creates notification when approving a pending friend request', async () => {
+    const user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+    });
+    const otherUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+    });
+
+    const friend = await givenFriendInstance(friendRepository, {
+      requestorId: user.id,
+      requesteeId: otherUser.id,
+    });
+    console.log('hello');
+
+    await controller.updateById(friend.id ?? '', {
+      status: FriendStatusType.APPROVED,
+      requestorId: user.id,
+      requesteeId: otherUser.id,
+    } as Omit<Friend, 'id'>);
+
+    console.log('world');
+    const notifications = await notificationRepository.find({
+      where: {
+        from: friend.requesteeId,
+        to: friend.requestorId,
+        referenceId: friend.requestorId,
+      },
+    });
+
+    delete notifications[0].id;
+    delete notifications[0].createdAt;
+    delete notifications[0].updatedAt;
+
+    expect({
+      type: NotificationType.FRIEND_ACCEPT,
+      from: friend.requesteeId,
+      read: false,
+      to: friend.requestorId,
+      referenceId: friend.requestorId,
+      message: 'accept your friend request',
+    }).to.containEql(toJSON(notifications[0]));
   });
 });
