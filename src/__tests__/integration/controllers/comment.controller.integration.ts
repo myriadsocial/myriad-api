@@ -1,21 +1,28 @@
-import {expect} from '@loopback/testlab';
+import {expect, toJSON} from '@loopback/testlab';
 import {CommentController} from '../../../controllers';
-import {TransactionType} from '../../../enums';
+import {NotificationType, PlatformType, TransactionType} from '../../../enums';
 import {
   CommentRepository,
   NotificationRepository,
+  PeopleRepository,
   PostRepository,
   TransactionRepository,
   UserRepository,
+  UserSocialMediaRepository,
 } from '../../../repositories';
 import {FCMService, NotificationService} from '../../../services';
 import {
+  givenComment,
   givenCommentInstance,
   givenEmptyDatabase,
+  givenMyriadPostInstance,
+  givenPeopleInstance,
   givenPostInstance,
   givenRepositories,
   givenTransactionInstance,
   givenUserInstance,
+  givenUserSocialMediaInstance,
+  testdb,
 } from '../../helpers';
 
 describe('CommentControllerIntegration', () => {
@@ -25,6 +32,8 @@ describe('CommentControllerIntegration', () => {
   let transactionRepository: TransactionRepository;
   let controller: CommentController;
   let notificationRepository: NotificationRepository;
+  let userSocialMediaRepository: UserSocialMediaRepository;
+  let peopleRepository: PeopleRepository;
   let notificationService: NotificationService;
   let fcmService: FCMService;
 
@@ -35,7 +44,9 @@ describe('CommentControllerIntegration', () => {
       postRepository,
       notificationRepository,
       transactionRepository,
-    } = await givenRepositories());
+      userSocialMediaRepository,
+      peopleRepository,
+    } = await givenRepositories(testdb));
   });
 
   before(async () => {
@@ -43,12 +54,15 @@ describe('CommentControllerIntegration', () => {
       userRepository,
       postRepository,
       notificationRepository,
+      userSocialMediaRepository,
       fcmService,
     );
     controller = new CommentController(commentRepository, notificationService);
   });
 
-  beforeEach(givenEmptyDatabase);
+  beforeEach(async () => {
+    await givenEmptyDatabase(testdb);
+  });
 
   it('includes Transactions in find method result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
@@ -141,14 +155,12 @@ describe('CommentControllerIntegration', () => {
       type: TransactionType.COMMENT,
     });
 
-    if (comment.id) {
-      const response = await controller.findById(comment.id, {include: ['transactions']});
+    const response = await controller.findById(comment.id ?? '', {include: ['transactions']});
 
-      expect(response).to.containDeep({
-        ...comment,
-        transactions: [transaction],
-      });
-    }
+    expect(response).to.containDeep({
+      ...comment,
+      transactions: [transaction],
+    });
   });
 
   it('includes Post in findById method result', async () => {
@@ -158,14 +170,12 @@ describe('CommentControllerIntegration', () => {
       postId: post.id,
     });
 
-    if (comment.id) {
-      const response = await controller.findById(comment.id, {include: ['post']});
+    const response = await controller.findById(comment.id ?? '', {include: ['post']});
 
-      expect(response).to.containDeep({
-        ...comment,
-        post: post,
-      });
-    }
+    expect(response).to.containDeep({
+      ...comment,
+      post: post,
+    });
   });
 
   it('includes User in findById method result', async () => {
@@ -177,14 +187,12 @@ describe('CommentControllerIntegration', () => {
       postId: '1',
     });
 
-    if (comment.id) {
-      const response = await controller.findById(comment.id, {include: ['user']});
+    const response = await controller.findById(comment.id ?? '', {include: ['user']});
 
-      expect(response).to.containDeep({
-        ...comment,
-        user: user,
-      });
-    }
+    expect(response).to.containDeep({
+      ...comment,
+      user: user,
+    });
   });
 
   it('includes Transaction, Post, and User in findById method result', async () => {
@@ -201,17 +209,98 @@ describe('CommentControllerIntegration', () => {
       type: TransactionType.COMMENT,
     });
 
-    if (comment.id) {
-      const response = await controller.findById(comment.id, {
-        include: ['user', 'transactions', 'post'],
-      });
+    const response = await controller.findById(comment.id ?? '', {
+      include: ['user', 'transactions', 'post'],
+    });
 
-      expect(response).to.containDeep({
-        ...comment,
-        user: user,
-        post: post,
-        transactions: [transaction],
-      });
-    }
+    expect(response).to.containDeep({
+      ...comment,
+      user: user,
+      post: post,
+      transactions: [transaction],
+    });
+  });
+
+  it('creates a notification when a user comment on a myriad post', async () => {
+    const otherUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccckcfb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+    });
+    const post = await givenMyriadPostInstance(postRepository, {
+      createdBy: otherUser.id,
+      platform: PlatformType.MYRIAD,
+    });
+    const user = await givenUserInstance(userRepository);
+    const commentInstance = givenComment({
+      postId: post.id,
+      userId: user.id,
+      text: 'hello world',
+    });
+
+    const newComment = await controller.create(commentInstance);
+
+    const notifications = await notificationRepository.find({
+      where: {
+        from: newComment.userId,
+        to: post.createdBy,
+        referenceId: newComment.id,
+      },
+    });
+
+    delete notifications[0].id;
+    delete notifications[0].createdAt;
+    delete notifications[0].updatedAt;
+
+    expect({
+      type: NotificationType.POST_COMMENT,
+      from: newComment.userId,
+      read: false,
+      to: post.createdBy,
+      referenceId: newComment.id,
+      message: 'commented: ' + newComment.text,
+    }).to.containDeep(toJSON(notifications[0]));
+  });
+
+  it('creates a notification when a user comment on a post from other social media and the post belong to user', async () => {
+    const otherUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccckcfb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+    });
+    const people = await givenPeopleInstance(peopleRepository);
+    await givenUserSocialMediaInstance(userSocialMediaRepository, {
+      userId: otherUser.id,
+      peopleId: people.id,
+    });
+    const post = await givenPostInstance(postRepository, {
+      createdBy: otherUser.id,
+      peopleId: people.id,
+    });
+    const user = await givenUserInstance(userRepository);
+    const commentInstance = givenComment({
+      postId: post.id,
+      userId: user.id,
+      text: 'hello world',
+    });
+
+    const newComment = await controller.create(commentInstance);
+
+    const notifications = await notificationRepository.find({
+      where: {
+        from: newComment.userId,
+        to: otherUser.id,
+        referenceId: newComment.id,
+      },
+    });
+
+    delete notifications[0].id;
+    delete notifications[0].createdAt;
+    delete notifications[0].updatedAt;
+
+    expect({
+      type: NotificationType.POST_COMMENT,
+      from: newComment.userId,
+      read: false,
+      to: otherUser.id,
+      referenceId: newComment.id,
+      message: 'commented: ' + newComment.text,
+    }).to.containDeep(toJSON(notifications[0]));
   });
 });
