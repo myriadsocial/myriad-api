@@ -1,5 +1,5 @@
 import {intercept, service} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
@@ -13,15 +13,12 @@ import {
 import {PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {UserSocialMedia, UserVerification} from '../models';
-import {UserSocialMediaRepository} from '../repositories';
 import {SocialMediaService, UserSocialMediaService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class UserSocialMediaController {
   constructor(
-    @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
     @service(SocialMediaService)
     protected socialMediaService: SocialMediaService,
     @service(UserSocialMediaService)
@@ -91,7 +88,7 @@ export class UserSocialMediaController {
     @param.filter(UserSocialMedia, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<UserSocialMedia>,
   ): Promise<UserSocialMedia[]> {
-    return this.userSocialMediaRepository.find(filter);
+    return this.userSocialMediaService.userSocialMediaRepository.find(filter);
   }
 
   @get('/user-social-medias/{id}')
@@ -108,7 +105,7 @@ export class UserSocialMediaController {
     @param.filter(UserSocialMedia, {exclude: 'where'})
     filter?: FilterExcludingWhere<UserSocialMedia>,
   ): Promise<UserSocialMedia> {
-    return this.userSocialMediaRepository.findById(id, filter);
+    return this.userSocialMediaService.userSocialMediaRepository.findById(id, filter);
   }
 
   @del('/user-social-medias/{id}')
@@ -116,6 +113,6 @@ export class UserSocialMediaController {
     description: 'UserSocialMedia DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.userSocialMediaRepository.deleteById(id);
+    await this.userSocialMediaService.userSocialMediaRepository.deleteById(id);
   }
 }
