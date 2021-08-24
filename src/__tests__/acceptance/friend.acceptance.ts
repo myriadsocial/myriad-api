@@ -172,6 +172,8 @@ describe('FriendApplication', function () {
     it('updates the friend by ID ', async () => {
       const updatedFriend = givenFriend({
         status: FriendStatusType.APPROVED,
+        requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61aq3',
+        requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61cv5',
       });
 
       await client.patch(`/friends/${persistedFriend.id}`).send(updatedFriend).expect(204);
@@ -181,7 +183,15 @@ describe('FriendApplication', function () {
     });
 
     it('returns 404 when updating a friend that does not exist', () => {
-      return client.patch('/friends/99999').send(givenFriend()).expect(404);
+      return client
+        .patch('/friends/99999')
+        .send(
+          givenFriend({
+            requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61aq3',
+            requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61cv5',
+          }),
+        )
+        .expect(404);
     });
 
     it('deletes the friend', async () => {
