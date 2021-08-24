@@ -112,8 +112,6 @@ export class PostController {
     newPost.tags = tags;
     newPost.importers = [importer];
     newPost.createdBy = importer;
-    newPost.createdAt = new Date().toString();
-    newPost.updatedAt = new Date().toString();
 
     return this.postService.createPost(newPost);
   }
