@@ -8,7 +8,7 @@ import {
 import {UserSocialMediaController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {UserSocialMedia} from '../../models';
-import {UserSocialMediaRepository} from '../../repositories';
+import {PeopleRepository, UserSocialMediaRepository} from '../../repositories';
 import {SocialMediaService, UserSocialMediaService} from '../../services';
 import {givenUserSocialMedia} from '../helpers';
 
@@ -16,6 +16,7 @@ describe('UserSocialMediaController', () => {
   let userSocialMediaRepository: StubbedInstanceWithSinonAccessor<UserSocialMediaRepository>;
   let socialMediaService: SocialMediaService;
   let userSocialMediaService: UserSocialMediaService;
+  let peopleRepository: PeopleRepository;
   let controller: UserSocialMediaController;
   let aUserSocialMediaWithId: UserSocialMedia;
   let aListOfUserSocialMedias: UserSocialMedia[];
@@ -83,10 +84,10 @@ describe('UserSocialMediaController', () => {
       }),
     ] as UserSocialMedia[];
 
-    controller = new UserSocialMediaController(
+    userSocialMediaService = new UserSocialMediaService(
       userSocialMediaRepository,
-      socialMediaService,
-      userSocialMediaService,
+      peopleRepository,
     );
+    controller = new UserSocialMediaController(socialMediaService, userSocialMediaService);
   }
 });
