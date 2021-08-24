@@ -9,7 +9,7 @@ import {PolkadotJs} from '../utils/polkadotJs-utils';
 export class UserSocialMediaService {
   constructor(
     @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
+    public userSocialMediaRepository: UserSocialMediaRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
   ) {}
