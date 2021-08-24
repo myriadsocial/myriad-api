@@ -5,7 +5,6 @@ import {Transaction} from '../models';
 import {CurrencyRepository, TransactionRepository} from '../repositories';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
-/* eslint-disable  @typescript-eslint/naming-convention */
 @migrationScript()
 export class MigrationScript011 implements MigrationScript {
   version = '0.1.1';
@@ -42,7 +41,9 @@ export class MigrationScript011 implements MigrationScript {
     await Promise.all(
       transactions.map((transaction: any) => {
         if (transaction.referenceId) {
-          this.transactionRepository.updateById(transaction._id, {type: TransactionType.POST});
+          this.transactionRepository.updateById(transaction._id, {
+            type: TransactionType.POST,
+          }) as Promise<void>;
         }
 
         return null;
