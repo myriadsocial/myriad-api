@@ -9,7 +9,6 @@ import {User} from './user.model';
     mongodb: {
       collection: 'userSocialMedias',
     },
-    hiddenProperties: ['userId', 'peopleId'],
   },
 })
 export class UserSocialMedia extends Entity {
