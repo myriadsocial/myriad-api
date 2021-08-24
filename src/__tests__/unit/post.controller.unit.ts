@@ -29,9 +29,10 @@ describe('PostController', () => {
     it('creates a Post', async () => {
       const create = postRepository.stubs.create;
       create.resolves(aPostWithId);
+      delete aPost.platform;
       const result = await controller.create(aPost as MyriadPost);
       expect(result).to.eql(aPostWithId);
-      sinon.assert.calledWith(create, aPost);
+      sinon.assert.calledWith(create, new MyriadPost(aPost));
     });
   });
 
