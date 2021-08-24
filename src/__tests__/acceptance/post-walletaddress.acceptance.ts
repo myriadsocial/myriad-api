@@ -1,5 +1,6 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
+import {PlatformType} from '../../enums';
 import {People, Post, UserSocialMedia} from '../../models';
 import {PeopleRepository, PostRepository, UserSocialMediaRepository} from '../../repositories';
 import {
@@ -40,7 +41,7 @@ describe('PostWalletAddressApplication', function () {
     post = await givenPostInstance(postRepository);
     people = await givenPeopleInstance(peopleRepository);
     userSocialMedia = await givenUserSocialMediaInstance(userSocialMediaRepository, {peopleId: ''});
-    myriadPost = await givenMyriadPostInstance(postRepository);
+    myriadPost = await givenMyriadPostInstance(postRepository, {platform: PlatformType.MYRIAD});
   });
 
   it('gets a post wallet address from people', async () => {
