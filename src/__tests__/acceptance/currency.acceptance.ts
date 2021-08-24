@@ -112,7 +112,7 @@ describe('CurrencyApplication', () => {
 
     it('finds all currencies', async () => {
       const response = await client.get('/currencies').send().expect(200);
-      expect(response.body.data).to.containDeep(persistedCurrencies);
+      expect(response.body.data).to.containDeep(toJSON(persistedCurrencies));
     });
 
     it('queries currencies with a filter', async () => {

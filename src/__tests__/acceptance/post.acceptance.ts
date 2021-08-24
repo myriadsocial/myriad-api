@@ -2,7 +2,7 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {TransactionType} from '../../enums';
-import {Post, User} from '../../models';
+import {MyriadPost, Post, User} from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
   CommentRepository,
@@ -82,8 +82,12 @@ describe('PostApplication', function () {
   });
 
   it('creates a post', async function () {
-    const myriadPost = givenMyriadPost({createdBy: user.id});
-    const response = await client.post('/posts').send(myriadPost).expect(200);
+    const myriadPost: Partial<Post> = givenMyriadPost({createdBy: user.id});
+    delete myriadPost.platform;
+    const response = await client
+      .post('/posts')
+      .send(myriadPost as MyriadPost)
+      .expect(200);
     expect(response.body).to.containDeep(myriadPost);
     const result = await postRepository.findById(response.body.id);
     expect(result).to.containDeep(myriadPost);
@@ -169,7 +173,7 @@ describe('PostApplication', function () {
 
     it('finds all posts', async () => {
       const response = await client.get('/posts').send().expect(200);
-      expect(response.body.data).to.containDeep(persistedPosts);
+      expect(response.body.data).to.containDeep(toJSON(persistedPosts));
     });
 
     it('queries posts with a filter', async () => {
@@ -243,14 +247,14 @@ describe('PostApplication', function () {
     it('creates a post from reddit', async function () {
       const platformPost = givenPlatformPost();
       const response = await client.post('/posts/import').send(platformPost).expect(200);
-      delete response.body.originCreatedAt;
-      delete response.body.createdAt;
-      delete response.body.updatedAt;
-      const result = await postRepository.findById(response.body.id);
-      delete result.originCreatedAt;
-      delete result.createdAt;
-      delete result.updatedAt;
-      expect(result).to.containDeep(response.body);
+      const result = await postRepository.findById(response.body.id, {include: ['people']});
+      const people = await peopleRepository.findById(result.peopleId);
+      expect(toJSON(result)).to.containDeep(
+        toJSON({
+          ...response.body,
+          people: people,
+        }),
+      );
 
       peopleId = response.body.peopleId;
     });
@@ -258,7 +262,7 @@ describe('PostApplication', function () {
     it('creates people when creates a post from social media', async () => {
       const response = await client.get(`/people/${peopleId}`);
       const result = await peopleRepository.findById(peopleId);
-      expect(result).to.containDeep(response.body);
+      expect(toJSON(result)).to.containDeep(toJSON(response.body));
     });
 
     it('adds another importer for existing posts', async function () {
@@ -274,15 +278,9 @@ describe('PostApplication', function () {
         .post('/posts/import')
         .send(platformPostWithOtherImporter)
         .expect(200);
-      delete otherResponse.body.originCreatedAt;
-      delete otherResponse.body.createdAt;
-      delete otherResponse.body.updatedAt;
       expect(response.body.id).to.equal(otherResponse.body.id);
       const result = await postRepository.findById(otherResponse.body.id);
-      delete result.originCreatedAt;
-      delete result.createdAt;
-      delete result.updatedAt;
-      expect(result).to.containDeep(otherResponse.body);
+      expect(toJSON(result)).to.containDeep(toJSON(otherResponse.body));
     });
 
     it('rejects request to create a post from social media if importer alreay imported', async () => {

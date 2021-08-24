@@ -126,7 +126,7 @@ describe('NotificationApplication', function () {
 
     it('finds all notifications', async () => {
       const response = await client.get('/notifications').send().expect(200);
-      expect(response.body.data).to.containDeep(persistedNotifications);
+      expect(response.body.data).to.containDeep(toJSON(persistedNotifications));
     });
 
     it('queries notifications with a filter', async () => {

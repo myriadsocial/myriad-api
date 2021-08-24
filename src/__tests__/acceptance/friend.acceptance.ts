@@ -205,7 +205,7 @@ describe('FriendApplication', function () {
 
     it('finds all friends', async () => {
       const response = await client.get('/friends').send().expect(200);
-      expect(response.body.data).to.containDeep(persistedFriends);
+      expect(response.body.data).to.containDeep(toJSON(persistedFriends));
     });
 
     it('queries friends with a filter', async () => {
