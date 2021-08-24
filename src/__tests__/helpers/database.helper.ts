@@ -13,9 +13,9 @@ import {
   UserRepository,
   UserSocialMediaRepository,
 } from '../../repositories';
-import {testdb} from './testdb.datascource';
 
-export async function givenRepositories() {
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+export async function givenRepositories(testdb: any) {
   const userRepository: UserRepository = new UserRepository(
     testdb,
     async () => userSocialMediaRepository,
@@ -99,7 +99,7 @@ export async function givenRepositories() {
   };
 }
 
-export async function givenEmptyDatabase() {
+export async function givenEmptyDatabase(testdb: any) {
   const {
     userRepository,
     userCurrencyRepository,
@@ -111,7 +111,7 @@ export async function givenEmptyDatabase() {
     postRepository,
     userSocialMediaRepository,
     peopleRepository,
-  } = await givenRepositories();
+  } = await givenRepositories(testdb);
 
   await peopleRepository.deleteAll();
   await userRepository.deleteAll();
