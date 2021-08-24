@@ -7,6 +7,7 @@ import {
   givenPostInstance,
   givenRepositories,
   givenUserSocialMediaInstance,
+  testdb,
 } from '../../helpers';
 
 describe('PeopleControllerIntegration', () => {
@@ -16,14 +17,18 @@ describe('PeopleControllerIntegration', () => {
   let controller: PeopleController;
 
   before(async () => {
-    ({peopleRepository, userSocialMediaRepository, postRepository} = await givenRepositories());
+    ({peopleRepository, userSocialMediaRepository, postRepository} = await givenRepositories(
+      testdb,
+    ));
   });
 
   before(async () => {
     controller = new PeopleController(peopleRepository);
   });
 
-  beforeEach(givenEmptyDatabase);
+  beforeEach(async () => {
+    await givenEmptyDatabase(testdb);
+  });
 
   it('includes post in find method result', async () => {
     const people = await givenPeopleInstance(peopleRepository);

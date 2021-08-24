@@ -13,6 +13,7 @@ import {
   givenRepositories,
   givenUserCurrencyInstance,
   givenUserInstance,
+  testdb,
 } from '../../helpers';
 
 describe('UserControllerIntegration', () => {
@@ -24,14 +25,16 @@ describe('UserControllerIntegration', () => {
 
   before(async () => {
     ({userRepository, userCurrencyRepository, currencyRepository, friendRepository} =
-      await givenRepositories());
+      await givenRepositories(testdb));
   });
 
   before(async () => {
     controller = new UserController(userRepository);
   });
 
-  beforeEach(givenEmptyDatabase);
+  beforeEach(async () => {
+    await givenEmptyDatabase(testdb);
+  });
 
   it('includes Currencies in find method result', async () => {
     const currency = await givenCurrencyInstance(currencyRepository);

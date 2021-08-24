@@ -6,6 +6,7 @@ import {
   givenRepositories,
   givenTransactionInstance,
   givenUserInstance,
+  testdb,
 } from '../../helpers';
 
 describe('TransactionControllerIntegration', () => {
@@ -14,14 +15,16 @@ describe('TransactionControllerIntegration', () => {
   let controller: TransactionController;
 
   before(async () => {
-    ({transactionRepository, userRepository} = await givenRepositories());
+    ({transactionRepository, userRepository} = await givenRepositories(testdb));
   });
 
   before(async () => {
     controller = new TransactionController(transactionRepository);
   });
 
-  beforeEach(givenEmptyDatabase);
+  beforeEach(async () => {
+    await givenEmptyDatabase(testdb);
+  });
 
   it('includes fromUser in find method result', async () => {
     const user = await givenUserInstance(userRepository, {
@@ -93,14 +96,12 @@ describe('TransactionControllerIntegration', () => {
       to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    if (transaction.id) {
-      const response = await controller.findById(transaction.id, {include: ['fromUser']});
+    const response = await controller.findById(transaction.id ?? '', {include: ['fromUser']});
 
-      expect(response).to.containDeep({
-        ...transaction,
-        fromUser: user,
-      });
-    }
+    expect(response).to.containDeep({
+      ...transaction,
+      fromUser: user,
+    });
   });
 
   it('includes toUser in findById method result', async () => {
@@ -112,14 +113,12 @@ describe('TransactionControllerIntegration', () => {
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    if (transaction.id) {
-      const response = await controller.findById(transaction.id, {include: ['toUser']});
+    const response = await controller.findById(transaction.id ?? '', {include: ['toUser']});
 
-      expect(response).to.containDeep({
-        ...transaction,
-        toUser: user,
-      });
-    }
+    expect(response).to.containDeep({
+      ...transaction,
+      toUser: user,
+    });
   });
 
   it('includes both fromUser and toUser in findById method result', async () => {
@@ -134,16 +133,14 @@ describe('TransactionControllerIntegration', () => {
       to: otherUser.id,
     });
 
-    if (transaction.id) {
-      const response = await controller.findById(transaction.id, {
-        include: ['fromUser', 'toUser'],
-      });
+    const response = await controller.findById(transaction.id ?? '', {
+      include: ['fromUser', 'toUser'],
+    });
 
-      expect(response).to.containDeep({
-        ...transaction,
-        fromUser: user,
-        toUser: otherUser,
-      });
-    }
+    expect(response).to.containDeep({
+      ...transaction,
+      fromUser: user,
+      toUser: otherUser,
+    });
   });
 });

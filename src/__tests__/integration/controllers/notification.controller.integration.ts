@@ -6,6 +6,7 @@ import {
   givenNotificationInstance,
   givenRepositories,
   givenUserInstance,
+  testdb,
 } from '../../helpers';
 
 describe('NotificationControllerIntegration', () => {
@@ -14,14 +15,16 @@ describe('NotificationControllerIntegration', () => {
   let controller: NotificationController;
 
   before(async () => {
-    ({userRepository, notificationRepository} = await givenRepositories());
+    ({userRepository, notificationRepository} = await givenRepositories(testdb));
   });
 
   before(async () => {
     controller = new NotificationController(notificationRepository);
   });
 
-  beforeEach(givenEmptyDatabase);
+  beforeEach(async () => {
+    await givenEmptyDatabase(testdb);
+  });
 
   it('includes fromUserId in find method result', async () => {
     const user = await givenUserInstance(userRepository, {
@@ -93,14 +96,12 @@ describe('NotificationControllerIntegration', () => {
       to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    if (notification.id) {
-      const response = await controller.findById(notification.id, {include: ['fromUserId']});
+    const response = await controller.findById(notification.id ?? '', {include: ['fromUserId']});
 
-      expect(response).to.containDeep({
-        ...notification,
-        fromUserId: user,
-      });
-    }
+    expect(response).to.containDeep({
+      ...notification,
+      fromUserId: user,
+    });
   });
 
   it('includes toUserId in findById method result', async () => {
@@ -112,14 +113,12 @@ describe('NotificationControllerIntegration', () => {
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    if (notification.id) {
-      const response = await controller.findById(notification.id, {include: ['toUserId']});
+    const response = await controller.findById(notification.id ?? '', {include: ['toUserId']});
 
-      expect(response).to.containDeep({
-        ...notification,
-        toUserId: user,
-      });
-    }
+    expect(response).to.containDeep({
+      ...notification,
+      toUserId: user,
+    });
   });
 
   it('includes both fromUserId and toUserId in findById method result', async () => {
@@ -134,16 +133,14 @@ describe('NotificationControllerIntegration', () => {
       to: otherUser.id,
     });
 
-    if (notification.id) {
-      const response = await controller.findById(notification.id, {
-        include: ['fromUserId', 'toUserId'],
-      });
+    const response = await controller.findById(notification.id ?? '', {
+      include: ['fromUserId', 'toUserId'],
+    });
 
-      expect(response).to.containDeep({
-        ...notification,
-        fromUserId: user,
-        toUserId: otherUser,
-      });
-    }
+    expect(response).to.containDeep({
+      ...notification,
+      fromUserId: user,
+      toUserId: otherUser,
+    });
   });
 });
