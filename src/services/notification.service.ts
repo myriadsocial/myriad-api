@@ -1,8 +1,13 @@
 import {BindingScope, injectable, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {NotificationType} from '../enums';
+import {NotificationType, PlatformType} from '../enums';
 import {Comment, Notification} from '../models';
-import {NotificationRepository, PostRepository, UserRepository} from '../repositories';
+import {
+  NotificationRepository,
+  PostRepository,
+  UserRepository,
+  UserSocialMediaRepository,
+} from '../repositories';
 import {FCMService} from './fcm.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -14,6 +19,8 @@ export class NotificationService {
     public postRepository: PostRepository,
     @repository(NotificationRepository)
     public notificationRepository: NotificationRepository,
+    @repository(UserSocialMediaRepository)
+    public userSocialMediaRepository: UserSocialMediaRepository,
     @service(FCMService)
     public fcmService: FCMService,
   ) {}
@@ -84,7 +91,20 @@ export class NotificationService {
   async sendPostComment(from: string, comment: Comment): Promise<boolean> {
     const fromUser = await this.userRepository.findById(from);
     if (fromUser == null) return false;
-    const toUser = await this.postRepository.user(comment.postId);
+    const post = await this.postRepository.findById(comment.postId);
+
+    let toUser = null;
+    if (post.platform === PlatformType.MYRIAD) {
+      toUser = await this.userRepository.findById(post.createdBy);
+    } else {
+      const userSocialMedia = await this.userSocialMediaRepository.findOne({
+        where: {peopleId: post.peopleId},
+      });
+
+      if (!userSocialMedia) return false;
+      toUser = await this.userRepository.findById(userSocialMedia.userId);
+    }
+
     if (toUser == null) return false;
 
     const notification = new Notification();
