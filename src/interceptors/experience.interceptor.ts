@@ -69,8 +69,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         experience.cloned = experience.cloned + 1;
         experience.origin = false;
         experience.clonedFrom = experience.id;
-        experience.createdAt = new Date().toString();
-        experience.updatedAt = new Date().toString();
 
         const newExperience = await this.experienceRepository.create(_.omit(experience, 'id'));
 
