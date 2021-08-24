@@ -14,7 +14,7 @@ import {
   TransactionRepository,
   UserCurrencyRepository,
   UserRepository,
-  UserSocialMediaRepository,
+  UserSocialMediaRepository
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {TransactionService} from './transaction.service';
@@ -103,8 +103,6 @@ export class CurrencyService {
         to: to,
         from: getHexPublicKey(from),
         currencyId: DefaultCurrencyType.AUSD,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString(),
       });
 
       await api.disconnect();
@@ -144,8 +142,6 @@ export class CurrencyService {
         to: to,
         from: getHexPublicKey(from),
         currencyId: DefaultCurrencyType.MYRIA,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString(),
       });
 
       await api.disconnect();
@@ -245,8 +241,6 @@ export class CurrencyService {
           to: to,
           from: getHexPublicKey(from),
           currencyId: id,
-          createdAt: new Date().toString(),
-          updatedAt: new Date().toString(),
         });
       } catch (err) {
         // ignore

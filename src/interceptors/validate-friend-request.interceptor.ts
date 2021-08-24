@@ -42,8 +42,6 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
 
     await this.friendService.validateFriendRequest(requesteeId, requestorId);
 
-    invocationCtx.args[0].createdAt = new Date().toString();
-    invocationCtx.args[0].updatedAt = new Date().toString();
     // Add pre-invocation logic here
     const result = await next();
     // Add post-invocation logic here

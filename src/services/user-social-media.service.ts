@@ -31,8 +31,6 @@ export class UserSocialMediaService {
         originUserId,
         platform,
         profilePictureURL,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString(),
       });
 
       const {getKeyring, getHexPublicKey} = new PolkadotJs();
@@ -46,8 +44,6 @@ export class UserSocialMediaService {
         userId: publicKey,
         platform: platform as PlatformType,
         verified: true,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString(),
       });
     }
 
@@ -94,8 +90,6 @@ export class UserSocialMediaService {
       userId: publicKey,
       platform: platform as PlatformType,
       verified: true,
-      createdAt: new Date().toString(),
-      updatedAt: new Date().toString(),
     });
   }
 }

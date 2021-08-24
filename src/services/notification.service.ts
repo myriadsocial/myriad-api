@@ -30,7 +30,6 @@ export class NotificationService {
     notification.to = toUser.id;
     notification.referenceId = toUser.id;
     notification.message = 'sent you friend request';
-    notification.createdAt = new Date().toString();
 
     const createdNotification = await this.notificationRepository.create(notification);
     if (createdNotification == null) return false;
@@ -54,7 +53,6 @@ export class NotificationService {
     notification.to = toUser.id;
     notification.referenceId = toUser.id;
     notification.message = 'accept your friend request';
-    notification.createdAt = new Date().toString();
 
     const createdNotification = await this.notificationRepository.create(notification);
     if (createdNotification == null) return false;
@@ -95,7 +93,6 @@ export class NotificationService {
     notification.to = toUser.id;
     notification.referenceId = comment.id;
     notification.message = 'commented: ' + comment.text;
-    notification.createdAt = new Date().toString();
 
     const createdNotification = await this.notificationRepository.create(notification);
     if (createdNotification == null) return false;
