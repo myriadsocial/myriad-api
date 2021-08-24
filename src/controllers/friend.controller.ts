@@ -99,11 +99,11 @@ export class FriendController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Friend, {partial: true}),
+          schema: getModelSchemaRef(Friend, {exclude: ['id']}),
         },
       },
     })
-    friend: Friend,
+    friend: Omit<Friend, 'id'>,
   ): Promise<void> {
     if (friend.status === FriendStatusType.APPROVED) {
       try {
