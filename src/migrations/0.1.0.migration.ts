@@ -1,7 +1,7 @@
 import {repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {config} from '../config';
-import {DefaultCurrencyType, LikeType, PlatformType} from '../enums';
+import {DefaultCurrencyType, LikeType, PlatformType, TransactionType} from '../enums';
 import {
   Conversation,
   DetailTransaction,
@@ -146,6 +146,11 @@ export class MigrationScript010 implements MigrationScript {
     } catch {
       // ignore
     }
+
+    await this.currencyRepository.updateById(DefaultCurrencyType.MYRIA, {
+      decimal: 18,
+      addressType: 42,
+    });
   }
 
   async doMigratePosts(): Promise<void> {
@@ -325,6 +330,7 @@ export class MigrationScript010 implements MigrationScript {
           trxHash: 'hash',
           value: 'amount',
           tokenId: 'currencyId',
+          postId: 'referenceId',
         },
       },
     );
@@ -336,6 +342,22 @@ export class MigrationScript010 implements MigrationScript {
           amount: 1,
         },
       },
+    );
+
+    const transactions = await collection
+      .aggregate([{$match: {referenceId: {$exists: true}}}])
+      .get();
+
+    await Promise.all(
+      transactions.map((transaction: any) => {
+        if (transaction.referenceId) {
+          this.transactionRepository.updateById(transaction._id, {
+            type: TransactionType.POST,
+          }) as Promise<void>;
+        }
+
+        return null;
+      }),
     );
   }
 
