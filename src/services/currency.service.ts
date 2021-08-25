@@ -18,6 +18,7 @@ import {
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {TransactionService} from './transaction.service';
+const BN = require('bn.js');
 
 export class CurrencyService {
   constructor(
@@ -130,7 +131,7 @@ export class CurrencyService {
       const {nonce} = await api.query.system.account(from.address);
       const getNonce = await this.getQueueNumber(nonce.toJSON(), DefaultCurrencyType.MYRIA);
 
-      const transfer = api.tx.balances.transfer(to, rewardAmount);
+      const transfer = api.tx.balances.transfer(to, new BN(rewardAmount.toString()));
       const txHash = await transfer.signAndSend(from, {nonce: getNonce});
 
       const myriadUser = await this.userRepository.findOne({where: {id: getHexPublicKey(from)}});
@@ -148,8 +149,9 @@ export class CurrencyService {
       });
 
       await api.disconnect();
-    } catch {
+    } catch (error) {
       // ignore
+      console.log(error);
     }
   }
 
