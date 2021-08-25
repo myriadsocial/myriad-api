@@ -157,6 +157,7 @@ export class MigrationScript010 implements MigrationScript {
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
     const collection = (this.postRepository.dataSource.connector as any).collection(Post.modelName);
 
+    // Renamed and removed field
     await collection.updateMany(
       {},
       {
@@ -186,54 +187,46 @@ export class MigrationScript010 implements MigrationScript {
       },
     );
 
+    // rename walletAddress to createdBy for myriad post
+    await collection.updateMany(
+      {platform: PlatformType.MYRIAD},
+      {
+        $rename: {
+          walletAddress: 'createdBy',
+        },
+      },
+    );
+
+    // set createdBy if platform is not myriad
     const posts = await collection
-      .aggregate([{$match: {$expr: {$lte: [{$size: '$importers'}, 1]}}}])
+      .aggregate([{$match: {platform: {$ne: PlatformType.MYRIAD}}}])
       .get();
 
     await Promise.all(
       posts.map(async (post: any) => {
-        if (post.platform === PlatformType.MYRIAD) {
-          return collection.updateMany(
-            {},
-            {
-              $rename: {
-                walletAddress: 'createdBy',
-              },
-            },
-          );
+        if (post.importers.length > 0) {
+          return this.postRepository.updateById(post._id, <any>{
+            createdBy: post.importers[0],
+          });
         } else {
-          await collection.updateMany(
-            {},
-            {
-              $unset: {
-                walletAddress: '',
-              },
-            },
-          );
+          const mnemonic = config.MYRIAD_MNEMONIC;
+          const pair = getKeyring().addFromMnemonic(mnemonic);
 
-          if (post.importers.length > 0) {
-            return this.postRepository.updateById(post._id, <any>{
-              createdBy: post.importers[0],
-            });
-          } else {
-            const mnemonic = config.MYRIAD_MNEMONIC;
-            const pair = getKeyring().addFromMnemonic(mnemonic);
-
-            return this.postRepository.updateById(post._id, <any>{
-              createdBy: getHexPublicKey(pair),
-            });
-          }
+          return this.postRepository.updateById(post._id, <any>{
+            createdBy: getHexPublicKey(pair),
+          });
         }
       }),
     );
 
-    const postAssets = await collection.aggregate([{$match: {assets: {$exists: true}}}]).get();
+    // update asset
+    const postAssets = await collection.aggregate().get();
 
     await Promise.all(
       postAssets.map(async (post: any) => {
-        if (post.assets.length === 0) {
-          return collection.updateMany(
-            {},
+        if (!post.assets || post.assets.length === 0) {
+          return collection.updateOne(
+            {_id: post._id},
             {
               $unset: {
                 assets: '',
@@ -247,28 +240,15 @@ export class MigrationScript010 implements MigrationScript {
             },
           );
         } else {
-          const images: string[] = [];
-          const videos: string[] = [];
-
           const imageFormat =
             /[.]jpg$|[.]jpeg$|[.]png$|[.]gif$|[.]tiff$|^https:\/\/preview.redd.it\//;
           const videoFormat = /[.]mp4$|[.]mp4?source=fallback$/;
 
-          post.assets.forEach((asset: string) => {
-            const image = asset.match(imageFormat);
-            const video = asset.match(videoFormat);
+          const images = post.assets.filter((asset: string) => asset.match(imageFormat));
+          const videos = post.assets.filter((asset: string) => asset.match(videoFormat));
 
-            if (image) {
-              images.push(asset);
-            }
-
-            if (video) {
-              videos.push(asset);
-            }
-          });
-
-          return collection.updateMany(
-            {},
+          return collection.updateOne(
+            {_id: post._id},
             {
               $unset: {
                 assets: '',
