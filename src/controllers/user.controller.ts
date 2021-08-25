@@ -52,7 +52,9 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    return this.userRepository.create(new User(user));
+    const newUser = new User(user);
+    newUser.bio = `Hello, my name is ${newUser.name}!`;
+    return this.userRepository.create(newUser);
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)

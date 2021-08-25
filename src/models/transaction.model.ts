@@ -102,7 +102,12 @@ export class Transaction extends Entity {
 
   constructor(data?: Partial<Transaction>) {
     super(data);
-    this.currencyId = this.currencyId.toUpperCase();
+    this.currencyId = this.currencyToUpperCase();
+  }
+
+  currencyToUpperCase() {
+    if (this.currencyId) return this.currencyId.toUpperCase();
+    return '';
   }
 }
 

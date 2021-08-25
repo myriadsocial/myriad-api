@@ -110,7 +110,6 @@ export class User extends Entity {
 
   constructor(data?: Partial<User>) {
     super(data);
-    this.bio = `Hello, my name is ${this.name}!`;
   }
 }
 
