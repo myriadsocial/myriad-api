@@ -295,7 +295,7 @@ describe('PostControllerIntegration', () => {
   /* eslint-disable  @typescript-eslint/no-invalid-this */
   /* eslint-disable  @typescript-eslint/no-explicit-any */
   it('imports a Post from reddit social media', async function () {
-    this.timeout(10000);
+    this.timeout(15000);
     const redditPost: any = await socialMediaService.fetchRedditPost('p7qrle');
     redditPost.originCreatedAt = new Date(redditPost.originCreatedAt);
     const platformPost = givenPlatformPost();
