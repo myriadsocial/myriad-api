@@ -85,7 +85,9 @@ describe('UserController', () => {
 
   function resetRepositories() {
     userRepository = createStubInstance(UserRepository);
-    aUser = givenUser();
+    aUser = givenUser({
+      bio: 'Hello, my name is Abdul Hakim!',
+    });
     aUserWithId = givenUser({
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
     });
@@ -94,11 +96,13 @@ describe('UserController', () => {
       givenUser({
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
         name: 'husni',
+        bio: 'Hello, my name is husni!',
       }),
     ] as User[];
     aChangedUser = givenUser({
       id: aUserWithId.id,
       name: 'irman',
+      bio: 'Hello, my name is irman!',
     });
 
     controller = new UserController(userRepository);
