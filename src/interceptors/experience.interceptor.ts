@@ -4,6 +4,7 @@ import {
   InvocationContext,
   InvocationResult,
   Provider,
+  service,
   ValueOrPromise,
 } from '@loopback/core';
 import {Count, repository} from '@loopback/repository';
@@ -29,7 +30,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     protected userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(ExperienceService)
+    @service(ExperienceService)
     protected experienceService: ExperienceService,
   ) {}
 
