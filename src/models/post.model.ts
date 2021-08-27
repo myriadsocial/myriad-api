@@ -3,6 +3,7 @@ import {PlatformType} from '../enums';
 import {Metric} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
 import {Comment} from './comment.model';
+import {EmbeddedURL} from './embedded-url.model';
 import {Like} from './like.model';
 import {People, PeopleWithRelations} from './people.model';
 import {Transaction} from './transaction.model';
@@ -101,6 +102,12 @@ export class Post extends Entity {
     },
   })
   metric: Metric;
+
+  @property({
+    type: 'object',
+    require: false,
+  })
+  embeddedURL?: EmbeddedURL;
 
   @property({
     type: 'date',
