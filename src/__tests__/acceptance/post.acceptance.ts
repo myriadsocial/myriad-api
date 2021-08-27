@@ -2,7 +2,7 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {TransactionType} from '../../enums';
-import {MyriadPost, Post, User} from '../../models';
+import {Post, User} from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
   CommentRepository,
@@ -84,10 +84,7 @@ describe('PostApplication', function () {
   it('creates a post', async function () {
     const myriadPost: Partial<Post> = givenMyriadPost({createdBy: user.id});
     delete myriadPost.platform;
-    const response = await client
-      .post('/posts')
-      .send(myriadPost as MyriadPost)
-      .expect(200);
+    const response = await client.post('/posts').send(myriadPost).expect(200);
     expect(response.body).to.containDeep(myriadPost);
     const result = await postRepository.findById(response.body.id);
     expect(result).to.containDeep(myriadPost);
