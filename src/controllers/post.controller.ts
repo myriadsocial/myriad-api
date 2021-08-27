@@ -18,7 +18,10 @@ import {ExtendedPost} from '../interfaces';
 import {MyriadPost, Post} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {PostService, SocialMediaService} from '../services';
+import {UrlUtils} from '../utils/url.utils';
 // import {authenticate} from '@loopback/authentication';
+
+const {getOpenGraph} = new UrlUtils();
 
 // @authenticate("jwt")
 export class PostController {
@@ -44,7 +47,37 @@ export class PostController {
     })
     newPost: MyriadPost,
   ): Promise<Post> {
-    return this.postService.postRepository.create(new MyriadPost(newPost));
+    let url = '';
+    let embeddedURL = null;
+
+    const found = newPost.text.match(/https:\/\/|http:\/\/|www./g);
+    if (found) {
+      const index: number = newPost.text.indexOf(found[0]);
+
+      for (let i = index; i < newPost.text.length; i++) {
+        const letter = newPost.text[i];
+
+        if (letter === ' ') break;
+        url += letter;
+      }
+    }
+
+    if (url) {
+      try {
+        embeddedURL = await getOpenGraph(url);
+      } catch {
+        // ignore
+      }
+    }
+
+    const myriadPost = new MyriadPost(newPost);
+    const post = new Post(myriadPost);
+
+    if (embeddedURL) {
+      post.embeddedURL = embeddedURL;
+    }
+
+    return this.postService.postRepository.create(post);
   }
 
   @intercept(ValidatePostImportURL.BINDING_KEY)

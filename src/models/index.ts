@@ -3,6 +3,7 @@ export * from './auth-refresh-token.model';
 export * from './authentication.model';
 export * from './comment.model';
 export * from './currency.model';
+export * from './embedded-url.model';
 export * from './experience.model';
 export * from './friend.model';
 export * from './like.model';
