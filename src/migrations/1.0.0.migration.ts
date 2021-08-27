@@ -43,8 +43,8 @@ import {PolkadotJs} from '../utils/polkadotJs-utils';
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /* eslint-disable  @typescript-eslint/naming-convention */
 @migrationScript()
-export class MigrationScript010 implements MigrationScript {
-  version = '0.1.0';
+export class MigrationScript100 implements MigrationScript {
+  version = '1.0.0';
 
   constructor(
     @repository(UserRepository)
