@@ -53,9 +53,9 @@ export class Post extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  text: string;
+  text?: string;
 
   @property({
     type: 'string',
