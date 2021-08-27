@@ -7,6 +7,9 @@ import {Asset} from '../interfaces/asset.interface';
 import {People} from '../models';
 import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
+import {UrlUtils} from '../utils/url.utils';
+
+const {getOpenGraph} = new UrlUtils();
 
 export class SocialMediaService {
   constructor(
@@ -173,6 +176,16 @@ export class SocialMediaService {
 
     const urls = entities.urls.map((url: any) => url.expanded_url);
 
+    let embedded = null;
+
+    if (urls.length > 0) {
+      try {
+        embedded = await getOpenGraph(urls[0]);
+      } catch {
+        // ignore
+      }
+    }
+
     const findUrlInFullText = fullText.search('https://t.co/');
     const text = fullText
       .substring(0, findUrlInFullText !== -1 ? findUrlInFullText : fullText.length)
@@ -185,6 +198,7 @@ export class SocialMediaService {
       tags: twitterTags,
       originCreatedAt: new Date(createdAt).toString(),
       asset: asset,
+      embeddedURL: embedded,
       url: `https://twitter.com/${user.id_str}/status/${textId}`,
       platformUser: {
         name: user.name,
@@ -204,7 +218,21 @@ export class SocialMediaService {
       videos: [],
     };
 
-    let url = redditPost.url_overridden_by_dest ? redditPost.url_overridden_by_dest : '';
+    let url = redditPost.url_overridden_by_dest ?? '';
+
+    const found = redditPost.selftext.match(/https:\/\/|http:\/\/|www./g);
+    if (found) {
+      const index: number = (redditPost.selftext as string).indexOf('](' + found[0]);
+
+      url = '';
+
+      for (let i = index + 2; i < redditPost.selftext.length; i++) {
+        const letter = redditPost.selftext[i];
+
+        if (letter === ')') break;
+        url += letter;
+      }
+    }
 
     if (redditPost.post_hint === 'image') {
       asset.images.push(redditPost.url);
@@ -230,6 +258,8 @@ export class SocialMediaService {
       }
     }
 
+    let embedded = null;
+
     if (url) {
       const imageFormat = /[.]jpg$|[.]jpeg$|[.]png$|[.]gif$|[.]tiff$/;
       const image = url.match(imageFormat);
@@ -237,6 +267,12 @@ export class SocialMediaService {
       if (image) {
         asset.images.push(url);
         url = '';
+      } else {
+        try {
+          embedded = await getOpenGraph(url);
+        } catch {
+          // ignore
+        }
       }
     }
 
@@ -251,6 +287,7 @@ export class SocialMediaService {
       text: (redditPost.selftext + ' ' + url).trim(),
       url: `https://reddit.com/${textId}`,
       asset: asset,
+      embeddedURL: embedded,
       platformUser: {
         name: user.subreddit.title ? user.subreddit.title : user.name,
         username: user.name,
