@@ -36,7 +36,7 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('PostApplication', function () {
-  this.timeout(15000);
+  this.timeout(20000);
   let app: MyriadApiApplication;
   let client: Client;
   let postRepository: PostRepository;

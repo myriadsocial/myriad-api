@@ -49,6 +49,7 @@ export class PostController {
   ): Promise<Post> {
     let url = '';
     let embeddedURL = null;
+    newPost.text = newPost.text ?? '';
 
     const found = newPost.text.match(/https:\/\/|http:\/\/|www./g);
     if (found) {
