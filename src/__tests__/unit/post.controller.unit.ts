@@ -7,12 +7,12 @@ import {
 } from '@loopback/testlab';
 import {PostController} from '../../controllers';
 import {PlatformType} from '../../enums';
-import {MyriadPost, Post} from '../../models';
+import {Post} from '../../models';
 import {PeopleRepository, PostRepository} from '../../repositories';
 import {PostService, SocialMediaService} from '../../services';
 import {givenMyriadPost} from '../helpers';
 
-describe('PostController', () => {
+describe('PostControllers', () => {
   let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
   let peopleRepository: PeopleRepository;
   let postService: PostService;
@@ -29,10 +29,10 @@ describe('PostController', () => {
     it('creates a Post', async () => {
       const create = postRepository.stubs.create;
       create.resolves(aPostWithId);
-      delete aPost.platform;
-      const result = await controller.create(aPost as MyriadPost);
+      const result = await controller.create(aPost);
       expect(result).to.eql(aPostWithId);
-      sinon.assert.calledWith(create, new MyriadPost(aPost));
+      console.log(create);
+      sinon.assert.calledWith(create, aPost);
     });
   });
 
