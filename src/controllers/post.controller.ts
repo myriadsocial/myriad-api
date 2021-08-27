@@ -15,7 +15,7 @@ import {PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {ExtendedPost} from '../interfaces';
-import {MyriadPost, Post} from '../models';
+import {Post} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {PostService, SocialMediaService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
@@ -41,11 +41,11 @@ export class PostController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(MyriadPost),
+          schema: getModelSchemaRef(Post),
         },
       },
     })
-    newPost: MyriadPost,
+    newPost: Post,
   ): Promise<Post> {
     let url = '';
     let embeddedURL = null;
@@ -70,14 +70,11 @@ export class PostController {
       }
     }
 
-    const myriadPost = new MyriadPost(newPost);
-    const post = new Post(myriadPost);
-
     if (embeddedURL) {
-      post.embeddedURL = embeddedURL;
+      newPost.embeddedURL = embeddedURL;
     }
 
-    return this.postService.postRepository.create(post);
+    return this.postService.postRepository.create(newPost);
   }
 
   @intercept(ValidatePostImportURL.BINDING_KEY)
