@@ -2,7 +2,7 @@ import ogs from 'open-graph-scraper';
 import {PlatformType} from '../enums';
 import {EmbeddedURL, Media} from '../models';
 
-/* eslint-disable  @typescript-eslint/no-invalid-any */
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 export class UrlUtils {
   detail: string[];
 
