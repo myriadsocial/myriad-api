@@ -47,9 +47,10 @@ export class PostController {
     })
     newPost: Post,
   ): Promise<Post> {
+    if (!newPost.text) throw new HttpErrors.UnprocessableEntity('Text field cannot be empty!');
+
     let url = '';
     let embeddedURL = null;
-    newPost.text = newPost.text ?? '';
 
     const found = newPost.text.match(/https:\/\/|http:\/\/|www./g);
     if (found) {
@@ -61,6 +62,8 @@ export class PostController {
         if (letter === ' ') break;
         url += letter;
       }
+
+      newPost.text = newPost.text.substring(0, index);
     }
 
     if (url) {

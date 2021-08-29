@@ -194,7 +194,7 @@ export class SocialMediaService {
     return {
       platform: PlatformType.TWITTER,
       originPostId: idStr,
-      text: (text + ' ' + urls.join(' ')).trim(),
+      text: text.trim(),
       tags: twitterTags,
       originCreatedAt: new Date(createdAt).toString(),
       asset: asset,
@@ -219,19 +219,22 @@ export class SocialMediaService {
     };
 
     let url = redditPost.url_overridden_by_dest ?? '';
+    let text = redditPost.selftext;
 
-    const found = redditPost.selftext.match(/https:\/\/|http:\/\/|www./g);
+    const found = text.match(/https:\/\/|http:\/\/|www./g);
     if (found) {
-      const index: number = (redditPost.selftext as string).indexOf('](' + found[0]);
+      const index: number = (text as string).indexOf('](' + found[0]);
 
       url = '';
 
-      for (let i = index + 2; i < redditPost.selftext.length; i++) {
-        const letter = redditPost.selftext[i];
+      for (let i = index + 2; i < text.length; i++) {
+        const letter = text[i];
 
         if (letter === ')') break;
         url += letter;
       }
+
+      text = text.substring(0, text.indexOf('[' + found[0]));
     }
 
     if (redditPost.post_hint === 'image') {
@@ -284,7 +287,7 @@ export class SocialMediaService {
       originPostId: textId,
       originCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
       title: redditPost.title,
-      text: (redditPost.selftext + ' ' + url).trim(),
+      text: text.trim(),
       url: `https://reddit.com/${textId}`,
       asset: asset,
       embeddedURL: embedded,
