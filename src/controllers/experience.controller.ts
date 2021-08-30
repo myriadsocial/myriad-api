@@ -52,7 +52,7 @@ export class ExperienceController {
 
   // Modify from other experience
   @intercept(ExperienceInterceptor.BINDING_KEY)
-  @patch('/modify-experiences/{experienceId}', {
+  @patch('/modify-experiences/{id}', {
     responses: {
       '200': {
         description: 'modify an Experience',
@@ -65,7 +65,7 @@ export class ExperienceController {
     },
   })
   async modify(
-    @param.path.string('experienceId') experienceId: string,
+    @param.path.string('id') id: string,
     @requestBody({
       content: {
         'application/json': {
@@ -79,7 +79,7 @@ export class ExperienceController {
     })
     experience: Partial<Experience>,
   ): Promise<void> {
-    return this.experienceRepository.updateById(experienceId, experience);
+    return this.experienceRepository.updateById(id, experience);
   }
 
   @intercept(ExperienceInterceptor.BINDING_KEY)
