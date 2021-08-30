@@ -1,9 +1,9 @@
 import {intercept} from '@loopback/core';
 import {Count, CountSchema, repository} from '@loopback/repository';
-import {del, getModelSchemaRef, post, requestBody} from '@loopback/rest';
+import {del, getModelSchemaRef, param, patch, post, requestBody, response} from '@loopback/rest';
 import {ValidateCurrencyInterceptor} from '../interceptors';
 import {UserCurrency} from '../models';
-import {UserCurrencyRepository} from '../repositories';
+import {UserCurrencyRepository, UserRepository} from '../repositories';
 // import { authenticate } from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -11,6 +11,8 @@ export class UserCurrencyController {
   constructor(
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
   ) {}
 
   @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
@@ -61,5 +63,16 @@ export class UserCurrencyController {
       userId: userCurrency.userId,
       currencyId: userCurrency.currencyId.toUpperCase(),
     });
+  }
+
+  @patch('/users/{userId}/select-currency/{currencyId}')
+  @response(204, {
+    description: 'User PATCH default Currency success',
+  })
+  async selectCurrency(
+    @param.path.string('userId') userId: string,
+    @param.path.string('currencyId') currencyId: string,
+  ): Promise<void> {
+    return this.userRepository.updateById(userId, {defaultCurrency: currencyId});
   }
 }
