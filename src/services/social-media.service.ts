@@ -130,6 +130,16 @@ export class SocialMediaService {
   }
 
   async fetchTweet(textId: string): Promise<ExtendedPost> {
+    let data = null;
+
+    try {
+      data = await this.twitterService.getActions(
+        `1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`,
+      );
+    } catch {
+      throw new HttpErrors.UnprocessableEntity('Tweet not found');
+    }
+
     const {
       id_str: idStr,
       full_text: fullText,
@@ -137,11 +147,7 @@ export class SocialMediaService {
       user,
       entities,
       extended_entities: extendedEntities,
-    } = await this.twitterService.getActions(
-      `1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`,
-    );
-
-    if (!idStr) throw new HttpErrors.NotFound('Cannot found the specified url!');
+    } = data;
 
     const asset: Asset = {
       images: [],
@@ -211,7 +217,14 @@ export class SocialMediaService {
   }
 
   async fetchRedditPost(textId: string): Promise<ExtendedPost> {
-    const [data] = await this.redditService.getActions(textId + '.json');
+    let data = null;
+
+    try {
+      [data] = await this.redditService.getActions(textId + '.json');
+    } catch {
+      throw new HttpErrors.UnprocessableEntity('Post not found');
+    }
+
     const redditPost = data.data.children[0].data;
     const asset: Asset = {
       images: [],
@@ -280,7 +293,14 @@ export class SocialMediaService {
     }
 
     const redditUser = redditPost.author;
-    const {data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json');
+
+    let user = null;
+
+    try {
+      ({data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json'));
+    } catch {
+      throw new HttpErrors.UnprocessableEntity('User not found');
+    }
 
     return {
       platform: PlatformType.REDDIT,
