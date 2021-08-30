@@ -1,12 +1,14 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
-import {CurrencyRepository, UserCurrencyRepository} from '../../repositories';
+import {CurrencyRepository, UserCurrencyRepository, UserRepository} from '../../repositories';
 import {
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenUserCurrency,
   givenUserCurrencyRepository,
+  givenUserInstance,
+  givenUserRepository,
   setupApplication,
 } from '../helpers';
 
@@ -15,6 +17,7 @@ describe('UserCurrencyApplication', function () {
   let client: Client;
   let userCurrencyRepository: UserCurrencyRepository;
   let currencyRepository: CurrencyRepository;
+  let userRepository: UserRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -25,6 +28,7 @@ describe('UserCurrencyApplication', function () {
   before(async () => {
     userCurrencyRepository = await givenUserCurrencyRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
+    userRepository = await givenUserRepository(app);
   });
 
   before(async () => {
@@ -34,6 +38,7 @@ describe('UserCurrencyApplication', function () {
   after(async () => {
     await userCurrencyRepository.deleteAll();
     await currencyRepository.deleteAll();
+    await userRepository.deleteAll();
   });
 
   it('creates a user currency', async function () {
@@ -42,6 +47,13 @@ describe('UserCurrencyApplication', function () {
     expect(response.body).to.containDeep(userCurrency);
     const result = await userCurrencyRepository.findById(response.body.id);
     expect(result).to.containDeep(userCurrency);
+  });
+
+  it('updates a user default currency', async () => {
+    const user = await givenUserInstance(userRepository);
+    await client.patch(`/users/${user.id}/select-currency/${DefaultCurrencyType.MYRIA}`);
+    const result = await userRepository.findById(user.id);
+    expect(result.defaultCurrency).to.equal(DefaultCurrencyType.MYRIA);
   });
 
   it('returns 404 when creates user currency but the currency not exist', async () => {
