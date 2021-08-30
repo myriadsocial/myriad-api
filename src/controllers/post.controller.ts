@@ -107,40 +107,28 @@ export class PostController {
     let tags: string[] = newTags;
 
     switch (platform) {
-      case PlatformType.TWITTER: {
+      case PlatformType.TWITTER:
         newPost = await this.socialMediaService.fetchTweet(originPostId);
-
-        if (newPost.tags) {
-          const postTags = newPost.tags.filter((tag: string) => {
-            return !newTags
-              .map((newTag: string) => newTag.toLowerCase())
-              .includes(tag.toLowerCase());
-          });
-
-          tags = [...tags, ...postTags];
-        }
-
         break;
-      }
 
-      case PlatformType.REDDIT: {
+      case PlatformType.REDDIT:
         newPost = await this.socialMediaService.fetchRedditPost(originPostId);
-
         break;
-      }
 
-      case PlatformType.FACEBOOK: {
-        if (!username) {
-          throw new HttpErrors.UnprocessableEntity('Username not found!');
-        }
-
+      case PlatformType.FACEBOOK:
         newPost = await this.socialMediaService.fetchFacebookPost(username, originPostId);
-
         break;
-      }
 
       default:
-        throw new HttpErrors.NotFound('Cannot found the specified url!');
+        throw new HttpErrors.NotFound('Cannot find the platform!');
+    }
+
+    if (newPost.tags) {
+      const postTags = newPost.tags.filter((tag: string) => {
+        return !newTags.map((newTag: string) => newTag.toLowerCase()).includes(tag.toLowerCase());
+      });
+
+      tags = [...tags, ...postTags];
     }
 
     newPost.tags = tags;
