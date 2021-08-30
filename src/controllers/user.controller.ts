@@ -4,6 +4,7 @@ import {
   del,
   get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
@@ -11,7 +12,7 @@ import {
   response,
 } from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
-import {User} from '../models';
+import {User, UsernameInfo} from '../models';
 import {UserRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
@@ -53,6 +54,13 @@ export class UserController {
     user: User,
   ): Promise<User> {
     const newUser = new User(user);
+    newUser.usernameInfo = new UsernameInfo({
+      username:
+        newUser.name.replace(/\s+/g, '').toLowerCase() +
+        '.' +
+        Math.random().toString(36).substr(2, 9),
+      count: 0,
+    });
     newUser.bio = `Hello, my name is ${newUser.name}!`;
     return this.userRepository.create(newUser);
   }
@@ -109,6 +117,22 @@ export class UserController {
     })
     user: Partial<User>,
   ): Promise<void> {
+    if (user.usernameInfo) {
+      if (!user.usernameInfo.username)
+        throw new HttpErrors.UnprocessableEntity('username cannot be empty!');
+
+      const aUser = await this.userRepository.findById(id);
+      const newUsernameInfo = new UsernameInfo(user.usernameInfo);
+
+      if (aUser.usernameInfo && aUser.usernameInfo.count >= 1) {
+        throw new HttpErrors.UnprocessableEntity('You can only change username once');
+      }
+
+      newUsernameInfo.count = 1;
+
+      user.usernameInfo = newUsernameInfo;
+    }
+
     await this.userRepository.updateById(id, user);
   }
 
