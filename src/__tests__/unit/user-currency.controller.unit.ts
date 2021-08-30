@@ -6,11 +6,12 @@ import {
 } from '@loopback/testlab';
 import {UserCurrencyController} from '../../controllers';
 import {UserCurrency} from '../../models';
-import {UserCurrencyRepository} from '../../repositories';
+import {UserCurrencyRepository, UserRepository} from '../../repositories';
 import {givenUserCurrency} from '../helpers';
 
 describe('UserCurrencyController', () => {
   let userCurrencyRepository: StubbedInstanceWithSinonAccessor<UserCurrencyRepository>;
+  let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
   let controller: UserCurrencyController;
   let aUserCurrency: UserCurrency;
   let aUserCurrencyWithId: UserCurrency;
@@ -43,11 +44,12 @@ describe('UserCurrencyController', () => {
 
   function resetRepositories() {
     userCurrencyRepository = createStubInstance(UserCurrencyRepository);
+    userRepository = createStubInstance(UserRepository);
     aUserCurrency = givenUserCurrency();
     aUserCurrencyWithId = givenUserCurrency({
       id: '1',
     });
 
-    controller = new UserCurrencyController(userCurrencyRepository);
+    controller = new UserCurrencyController(userCurrencyRepository, userRepository);
   }
 });
