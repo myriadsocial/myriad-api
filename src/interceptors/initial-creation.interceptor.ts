@@ -10,6 +10,7 @@ import {
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ControllerType, LikeType, MethodType} from '../enums';
+import {UsernameInfo} from '../models';
 import {
   CurrencyRepository,
   PostRepository,
@@ -63,13 +64,25 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     switch (methodName) {
       case MethodType.CREATE: {
         if (className === ControllerType.USER) {
+          const newUser = invocationCtx.args[0];
           const user = await this.userRepository.findOne({
             where: {
-              id: invocationCtx.args[0].id,
+              id: newUser.id,
             },
           });
 
           if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
+
+          newUser.usernameInfo = new UsernameInfo({
+            username:
+              newUser.name.replace(/\s+/g, '').toLowerCase() +
+              '.' +
+              Math.random().toString(36).substr(2, 9),
+            count: 0,
+          });
+          newUser.bio = `Hello, my name is ${newUser.name}!`;
+
+          invocationCtx.args[0] = newUser;
           break;
         }
 
