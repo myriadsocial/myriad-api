@@ -1,4 +1,5 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
+import {DefaultCurrencyType} from '../enums';
 import {ActivityLog} from './activity-log.model';
 import {Currency} from './currency.model';
 import {Experience} from './experience.model';
@@ -76,6 +77,13 @@ export class User extends Entity {
     required: false,
   })
   onTimeline?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+    default: DefaultCurrencyType.AUSD,
+  })
+  defaultCurrency?: string;
 
   @property({
     type: 'date',
