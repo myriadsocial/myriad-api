@@ -53,16 +53,7 @@ export class UserController {
     })
     user: User,
   ): Promise<User> {
-    const newUser = new User(user);
-    newUser.usernameInfo = new UsernameInfo({
-      username:
-        newUser.name.replace(/\s+/g, '').toLowerCase() +
-        '.' +
-        Math.random().toString(36).substr(2, 9),
-      count: 0,
-    });
-    newUser.bio = `Hello, my name is ${newUser.name}!`;
-    return this.userRepository.create(newUser);
+    return this.userRepository.create(user);
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
