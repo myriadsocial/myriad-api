@@ -115,7 +115,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         newExperience.origin = true;
         newExperience.clonedFrom = null;
         newExperience.cloned = 0;
-        newExperience.updatedAt = new Date().toString();
 
         invocationCtx.args[1] = newExperience;
 
