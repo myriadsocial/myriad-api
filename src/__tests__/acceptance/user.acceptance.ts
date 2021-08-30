@@ -2,7 +2,7 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
-import {User} from '../../models';
+import {User, UsernameInfo} from '../../models';
 import {
   CurrencyRepository,
   FriendRepository,
@@ -125,7 +125,12 @@ describe('UserApplication', function () {
     let persistedUser: User;
 
     beforeEach(async () => {
-      persistedUser = await givenUserInstance(userRepository);
+      persistedUser = await givenUserInstance(userRepository, {
+        usernameInfo: new UsernameInfo({
+          username: 'abdul',
+          count: 0,
+        }),
+      });
     });
 
     it('gets a user by ID', async () => {
@@ -144,9 +149,30 @@ describe('UserApplication', function () {
         name: 'Abdul Hakim',
         bio: 'Hello, my name is Abdul Hakim',
       });
-      await client.patch(`/users/${updatedUser.id}`).send(updatedUser).expect(204);
-      const result = await userRepository.findById(updatedUser.id);
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(204);
+      const result = await userRepository.findById(persistedUser.id);
       expect(result).to.containEql(updatedUser);
+    });
+
+    it('updates the user username by ID', async () => {
+      const updatedUser = givenUser({
+        usernameInfo: new UsernameInfo({
+          username: 'abdulhakim01',
+        }),
+      });
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(204);
+      const result = await userRepository.findById(persistedUser.id);
+      expect(result.usernameInfo).to.containEql(updatedUser.usernameInfo);
+    });
+
+    it('return 424 when updating a user username more than once', async () => {
+      const updatedUser = givenUser({
+        usernameInfo: new UsernameInfo({
+          username: 'abdulhakim01',
+        }),
+      });
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(204);
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(422);
     });
 
     it('returns 404 when updating a user that does not exist', () => {
