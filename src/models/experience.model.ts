@@ -55,6 +55,12 @@ export class Experience extends Entity {
   description: string;
 
   @property({
+    type: 'string',
+    required: false,
+  })
+  experienceImageURL?: string;
+
+  @property({
     type: 'number',
     default: 0,
   })
