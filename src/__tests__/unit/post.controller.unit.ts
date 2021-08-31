@@ -31,7 +31,6 @@ describe('PostControllers', () => {
       create.resolves(aPostWithId);
       const result = await controller.create(aPost);
       expect(result).to.eql(aPostWithId);
-      console.log(create);
       sinon.assert.calledWith(create, aPost);
     });
   });

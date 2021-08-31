@@ -18,7 +18,7 @@ export class Activity extends Entity {
       dataType: 'ObjectId',
     },
   })
-  id: string;
+  id?: string;
 
   @property({
     type: 'string',
