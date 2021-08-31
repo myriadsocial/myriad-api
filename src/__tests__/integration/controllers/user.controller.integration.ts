@@ -1,6 +1,7 @@
 import {expect} from '@loopback/testlab';
 import {UserController} from '../../../controllers';
 import {
+  ActivityRepository,
   CurrencyRepository,
   FriendRepository,
   UserCurrencyRepository,
@@ -19,6 +20,7 @@ import {
 describe('UserControllerIntegration', () => {
   let userRepository: UserRepository;
   let userCurrencyRepository: UserCurrencyRepository;
+  let activityRepository: ActivityRepository;
   let currencyRepository: CurrencyRepository;
   let friendRepository: FriendRepository;
   let controller: UserController;
@@ -29,7 +31,7 @@ describe('UserControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new UserController(userRepository);
+    controller = new UserController(userRepository, activityRepository);
   });
 
   beforeEach(async () => {
