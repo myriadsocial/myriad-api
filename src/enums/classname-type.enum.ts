@@ -12,6 +12,7 @@ export enum ControllerType {
   USEREXPERIENCE = 'UserExperienceController',
   FRIEND = 'FriendController',
   COMMENT = 'CommentController',
+  ACTIVITY = 'ActivityController',
 }
 
 export enum MethodType {
