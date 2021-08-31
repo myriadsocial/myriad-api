@@ -1,4 +1,4 @@
-export enum LogType {
+export enum ActivityLogType {
   USERNAME = 'username',
   PROFILE = 'profile',
 }

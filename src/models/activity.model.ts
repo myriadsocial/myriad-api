@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {LogType} from '../enums';
+import {ActivityLogType} from '../enums';
 import {User} from './user.model';
 
 @model({
@@ -24,10 +24,10 @@ export class Activity extends Entity {
     type: 'string',
     required: true,
     jsonSchema: {
-      enum: Object.values(LogType),
+      enum: Object.values(ActivityLogType),
     },
   })
-  type: LogType;
+  type: ActivityLogType;
 
   @property({
     type: 'string',
