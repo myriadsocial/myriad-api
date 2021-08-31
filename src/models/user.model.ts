@@ -1,29 +1,9 @@
-import {Entity, hasMany, Model, model, property} from '@loopback/repository';
+import {Entity, hasMany, model, property} from '@loopback/repository';
 import {Currency} from './currency.model';
 import {Experience} from './experience.model';
 import {Friend} from './friend.model';
 import {UserCurrency} from './user-currency.model';
 import {UserExperience} from './user-experience.model';
-
-@model()
-export class UsernameInfo extends Model {
-  @property({
-    type: 'string',
-    required: true,
-  })
-  username: string;
-
-  @property({
-    type: 'number',
-    default: 0,
-    required: false,
-  })
-  count: number;
-
-  constructor(data?: Partial<UsernameInfo>) {
-    super(data);
-  }
-}
 
 @model({
   settings: {
@@ -56,9 +36,10 @@ export class User extends Entity {
   name: string;
 
   @property({
-    type: 'object',
+    type: 'string',
+    default: false,
   })
-  usernameInfo?: UsernameInfo;
+  username?: string;
 
   @property({
     type: 'string',
