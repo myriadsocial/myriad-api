@@ -12,7 +12,7 @@ import {givenUser} from '../helpers';
 
 describe('UserController', () => {
   let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
-  let activityRepository: ActivityRepository;
+  let activityRepository: StubbedInstanceWithSinonAccessor<ActivityRepository>;
   let controller: UserController;
   let aUser: User;
   let aUserWithId: User;
@@ -86,6 +86,7 @@ describe('UserController', () => {
 
   function resetRepositories() {
     userRepository = createStubInstance(UserRepository);
+    activityRepository = createStubInstance(ActivityRepository);
     aUser = givenUser({
       bio: 'Hello, my name is Abdul Hakim!',
     });

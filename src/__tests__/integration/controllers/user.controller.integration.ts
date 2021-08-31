@@ -197,8 +197,9 @@ describe('UserControllerIntegration', () => {
       },
     });
 
+    delete activities[0].id;
+
     expect({
-      id: '1',
       type: ActivityLogType.USERNAME,
       userId: user.id,
       message: 'You updated your username',
