@@ -1,3 +1,4 @@
+export * from './activity.model';
 export * from './auth-credential.model';
 export * from './auth-refresh-token.model';
 export * from './authentication.model';
