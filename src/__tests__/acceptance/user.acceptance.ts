@@ -125,7 +125,7 @@ describe('UserApplication', function () {
     let persistedUser: User;
 
     beforeEach(async () => {
-      persistedUser = await givenUserInstance(userRepository);
+      persistedUser = await givenUserInstance(userRepository, {username: 'qwerty123'});
     });
 
     it('gets a user by ID', async () => {
@@ -140,17 +140,35 @@ describe('UserApplication', function () {
     });
 
     it('updates the user by ID ', async () => {
-      const updatedUser = givenUser({
+      const updatedUser: Partial<User> = givenUser({
         name: 'Abdul Hakim',
         bio: 'Hello, my name is Abdul Hakim',
       });
+
+      delete updatedUser.id;
+
       await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(204);
       const result = await userRepository.findById(persistedUser.id);
       expect(result).to.containEql(updatedUser);
     });
 
+    it('returns 422 when updating a user username more than once', async () => {
+      const updatedUser: Partial<User> = givenUser({
+        username: 'abdulhakim',
+      });
+
+      delete updatedUser.id;
+
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(204);
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(422);
+    });
+
     it('returns 404 when updating a user that does not exist', () => {
-      return client.patch('/users/99999').send(givenUser()).expect(404);
+      const updatedUser: Partial<User> = givenUser();
+
+      delete updatedUser.id;
+
+      return client.patch('/users/99999').send(updatedUser).expect(404);
     });
 
     it('deletes the user', async () => {
