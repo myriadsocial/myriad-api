@@ -112,7 +112,7 @@ export class MetricService {
       case ControllerType.COMMENT:
         return this.commentRepository.count(where);
 
-      case ControllerType.ACTIVITY:
+      case ControllerType.ACTIVITYLOGS:
         return this.activityRepository.count(where);
 
       default:

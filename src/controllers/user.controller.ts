@@ -11,7 +11,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {LogType} from '../enums';
+import {ActivityLogType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
 import {ActivityRepository, UserRepository} from '../repositories';
@@ -113,14 +113,17 @@ export class UserController {
     user: Partial<User>,
   ): Promise<void> {
     if (user.username) {
-      const {count} = await this.activityRepository.count({userId: id, type: LogType.USERNAME});
+      const {count} = await this.activityRepository.count({
+        userId: id,
+        type: ActivityLogType.USERNAME,
+      });
 
       if (count >= 1)
         throw new HttpErrors.UnprocessableEntity('You can only updated username once');
 
       await this.activityRepository.create({
         userId: id,
-        type: LogType.USERNAME,
+        type: ActivityLogType.USERNAME,
         message: 'You updated your username',
       });
     }
@@ -128,7 +131,7 @@ export class UserController {
     await this.userRepository.updateById(id, user);
     await this.activityRepository.create({
       userId: id,
-      type: LogType.PROFILE,
+      type: ActivityLogType.PROFILE,
       message: 'You updated your profile',
     });
   }
