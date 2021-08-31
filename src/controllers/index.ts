@@ -1,3 +1,4 @@
+export * from './activity.controller';
 export * from './authentication.controller';
 export * from './comment.controller';
 export * from './currency.controller';
