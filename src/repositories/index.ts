@@ -1,3 +1,4 @@
+export * from './activity.repository';
 export * from './auth-credential.repository';
 export * from './auth-refresh-token.repository';
 export * from './authentication.repository';
