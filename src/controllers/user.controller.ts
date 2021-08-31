@@ -4,15 +4,17 @@ import {
   del,
   get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
   requestBody,
   response,
 } from '@loopback/rest';
+import {LogType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
-import {UserRepository} from '../repositories';
+import {ActivityRepository, UserRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -20,6 +22,8 @@ export class UserController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(ActivityRepository)
+    protected activityRepository: ActivityRepository,
   ) {}
 
   @post('/users')
@@ -101,13 +105,32 @@ export class UserController {
         'application/json': {
           schema: getModelSchemaRef(User, {
             partial: true,
+            exclude: ['id'],
           }),
         },
       },
     })
     user: Partial<User>,
   ): Promise<void> {
+    if (user.username) {
+      const {count} = await this.activityRepository.count({userId: id, type: LogType.USERNAME});
+
+      if (count >= 1)
+        throw new HttpErrors.UnprocessableEntity('You can only updated username once');
+
+      await this.activityRepository.create({
+        userId: id,
+        type: LogType.USERNAME,
+        message: 'You updated your username',
+      });
+    }
+
     await this.userRepository.updateById(id, user);
+    await this.activityRepository.create({
+      userId: id,
+      type: LogType.PROFILE,
+      message: 'You updated your profile',
+    });
   }
 
   @del('/users/{id}')
