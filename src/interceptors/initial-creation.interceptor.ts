@@ -10,7 +10,6 @@ import {
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ControllerType, LikeType, MethodType} from '../enums';
-import {UsernameInfo} from '../models';
 import {
   CurrencyRepository,
   PostRepository,
@@ -73,14 +72,11 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
           if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
 
-          newUser.usernameInfo = new UsernameInfo({
-            username:
-              newUser.name.replace(/\s+/g, '').toLowerCase() +
-              '.' +
-              Math.random().toString(36).substr(2, 9),
-            count: 0,
-          });
           newUser.bio = `Hello, my name is ${newUser.name}!`;
+          newUser.username =
+            newUser.name.replace(/\s+/g, '').toLowerCase() +
+            '.' +
+            Math.random().toString(36).substr(2, 9);
 
           invocationCtx.args[0] = newUser;
           break;
