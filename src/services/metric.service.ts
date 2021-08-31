@@ -2,6 +2,7 @@ import {AnyObject, Count, repository, Where} from '@loopback/repository';
 import {ControllerType, LikeType} from '../enums';
 import {Metric} from '../interfaces';
 import {
+  ActivityRepository,
   CommentRepository,
   CurrencyRepository,
   ExperienceRepository,
@@ -45,6 +46,8 @@ export class MetricService {
     protected tagRepository: TagRepository,
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
+    @repository(ActivityRepository)
+    protected activityRepository: ActivityRepository,
   ) {}
 
   async publicMetric(type: LikeType, referenceId: string): Promise<Metric> {
@@ -108,6 +111,9 @@ export class MetricService {
 
       case ControllerType.COMMENT:
         return this.commentRepository.count(where);
+
+      case ControllerType.ACTIVITY:
+        return this.activityRepository.count(where);
 
       default:
         return {
