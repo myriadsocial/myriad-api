@@ -223,7 +223,6 @@ describe('FriendControllerIntegration', () => {
       requestorId: user.id,
       requesteeId: otherUser.id,
     });
-    console.log('hello');
 
     await controller.updateById(friend.id ?? '', {
       status: FriendStatusType.APPROVED,
@@ -231,7 +230,6 @@ describe('FriendControllerIntegration', () => {
       requesteeId: otherUser.id,
     } as Omit<Friend, 'id'>);
 
-    console.log('world');
     const notifications = await notificationRepository.find({
       where: {
         from: friend.requesteeId,
