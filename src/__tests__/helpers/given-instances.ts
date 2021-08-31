@@ -1,5 +1,12 @@
-import {FriendStatusType, LikeType, NotificationType, PlatformType} from '../../enums';
 import {
+  ActivityLogType,
+  FriendStatusType,
+  LikeType,
+  NotificationType,
+  PlatformType,
+} from '../../enums';
+import {
+  Activity,
   Comment,
   Currency,
   Friend,
@@ -16,6 +23,7 @@ import {
 } from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
+  ActivityRepository,
   CommentRepository,
   CurrencyRepository,
   FriendRepository,
@@ -400,4 +408,34 @@ export function givenUserVerification(userVerification?: Partial<UserVerificatio
     userVerification,
   );
   return new UserVerification(data);
+}
+
+export function givenActivity(activity?: Partial<Activity>) {
+  const data = Object.assign(
+    {
+      type: ActivityLogType.USERNAME,
+      message: 'You updated your username',
+      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+    },
+    activity,
+  );
+  return new Activity(data);
+}
+
+export function givenActivityInstance(
+  activityRepository: ActivityRepository,
+  activity?: Partial<Activity>,
+) {
+  return activityRepository.create(givenActivity(activity));
+}
+
+export async function givenMultipleActivityInstances(activityRepository: ActivityRepository) {
+  return Promise.all([
+    givenActivityInstance(activityRepository),
+    givenActivityInstance(activityRepository, {
+      type: ActivityLogType.PROFILE,
+      message: 'You updated your profile',
+      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+    }),
+  ]);
 }
