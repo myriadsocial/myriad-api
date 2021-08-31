@@ -12,7 +12,6 @@ import {
   setupApplication,
 } from '../helpers';
 
-/* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('ActivityApplication', function () {
   let app: MyriadApiApplication;
   let client: Client;
