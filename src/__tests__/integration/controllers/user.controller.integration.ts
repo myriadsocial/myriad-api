@@ -1,5 +1,6 @@
-import {expect} from '@loopback/testlab';
+import {expect, toJSON} from '@loopback/testlab';
 import {UserController} from '../../../controllers';
+import {ActivityLogType} from '../../../enums';
 import {
   ActivityRepository,
   CurrencyRepository,
@@ -26,8 +27,13 @@ describe('UserControllerIntegration', () => {
   let controller: UserController;
 
   before(async () => {
-    ({userRepository, userCurrencyRepository, currencyRepository, friendRepository} =
-      await givenRepositories(testdb));
+    ({
+      userRepository,
+      userCurrencyRepository,
+      currencyRepository,
+      friendRepository,
+      activityRepository,
+    } = await givenRepositories(testdb));
   });
 
   before(async () => {
@@ -172,5 +178,30 @@ describe('UserControllerIntegration', () => {
       currencies: [currency],
       friends: [friend],
     });
+  });
+
+  it('creates activity logs when user updating username', async () => {
+    const user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      username: 'abdulhakim01',
+    });
+
+    await controller.updateById(user.id, {
+      username: 'abdulhakim10',
+    });
+
+    const activities = await activityRepository.find({
+      where: {
+        type: ActivityLogType.USERNAME,
+        userId: user.id,
+      },
+    });
+
+    expect({
+      id: '1',
+      type: ActivityLogType.USERNAME,
+      userId: user.id,
+      message: 'You updated your username',
+    }).to.containEql(toJSON(activities[0]));
   });
 });
