@@ -18,7 +18,6 @@ import {
   NotificationService,
   TagService,
 } from '../services';
-import {noneStatusFiltering} from '../utils/filter-utils';
 import {pageMetadata} from '../utils/page-metadata.utils';
 
 /**
@@ -131,8 +130,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const trendingTopics = await this.tagService.trendingTopics();
 
         const experience = await this.experienceService.getExperience(userId);
-        const experienceTopics = experience ? noneStatusFiltering(experience.tags) : [];
-        const experiencePersonIds = experience ? noneStatusFiltering(experience.people) : [];
+        const experienceTopics = experience ? experience.tags : [];
+        const experiencePersonIds = experience ? experience.people.map(e => e.id) : [];
 
         const friends = [...approvedFriendIds, userId];
         const topics = [...trendingTopics, ...experienceTopics];
