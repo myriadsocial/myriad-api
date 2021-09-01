@@ -1,5 +1,4 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {StatusType} from '../enums';
 import {Experience, ExperienceWithRelations} from './experience.model';
 import {User} from './user.model';
 
@@ -9,9 +8,6 @@ import {User} from './user.model';
     mongodb: {
       collection: 'userExperiences',
     },
-  },
-  jsonSchema: {
-    required: ['userId', 'experienceId'],
   },
 })
 export class UserExperience extends Entity {
@@ -26,19 +22,10 @@ export class UserExperience extends Entity {
   id: string;
 
   @property({
-    type: 'string',
-    default: null,
+    type: 'boolean',
+    default: false,
   })
-  clonedFrom?: string | null;
-
-  @property({
-    type: 'string',
-    default: StatusType.NONE,
-    jsonSchema: {
-      enum: Object.values(StatusType),
-    },
-  })
-  status?: StatusType;
+  cloned?: boolean;
 
   @property({
     type: 'date',
@@ -60,7 +47,7 @@ export class UserExperience extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => Experience)
+  @belongsTo(() => Experience, {}, {required: true})
   experienceId: string;
 
   @belongsTo(
