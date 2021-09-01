@@ -4,12 +4,15 @@ import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
 import {User} from '../../models';
 import {
+  ActivityLogRepository,
   CurrencyRepository,
   FriendRepository,
   UserCurrencyRepository,
   UserRepository,
 } from '../../repositories';
 import {
+  givenActivityLogInstance,
+  givenActivityLogRepository,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenFriendInstance,
@@ -31,6 +34,7 @@ describe('UserApplication', function () {
   let userCurrencyRepository: UserCurrencyRepository;
   let currencyRepository: CurrencyRepository;
   let friendRepository: FriendRepository;
+  let activityLogRepository: ActivityLogRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -43,6 +47,7 @@ describe('UserApplication', function () {
     userCurrencyRepository = await givenUserCurrencyRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     friendRepository = await givenFriendRepository(app);
+    activityLogRepository = await givenActivityLogRepository(app);
   });
 
   beforeEach(async () => {
@@ -50,6 +55,7 @@ describe('UserApplication', function () {
     await currencyRepository.deleteAll();
     await userCurrencyRepository.deleteAll();
     await friendRepository.deleteAll();
+    await activityLogRepository.deleteAll();
   });
 
   it('creates a user with a default currency MYRIA and AUSD', async function () {
@@ -228,9 +234,10 @@ describe('UserApplication', function () {
     });
   });
 
-  it('includes friends and currencies in query result', async () => {
+  it('includes friends, activityLogs, and currencies in query result', async () => {
     const user = await givenUserInstance(userRepository);
     const currency = await givenCurrencyInstance(currencyRepository);
+    const activityLog = await givenActivityLogInstance(activityLogRepository, {userId: user.id});
     const friend = await givenFriendInstance(friendRepository, {
       requesteeId: user.id,
       requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
@@ -243,7 +250,7 @@ describe('UserApplication', function () {
     const filter =
       'filter=' +
       JSON.stringify({
-        include: ['friends', 'currencies'],
+        include: ['friends', 'currencies', 'activityLogs'],
       });
 
     const response = await client.get('/users').query(filter);
@@ -253,6 +260,7 @@ describe('UserApplication', function () {
       ...toJSON(user),
       friends: [toJSON(friend)],
       currencies: [toJSON(currency)],
+      activityLogs: [toJSON(activityLog)],
     });
   });
 });
