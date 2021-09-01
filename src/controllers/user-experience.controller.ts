@@ -1,11 +1,18 @@
 import {intercept} from '@loopback/core';
-import {Count, CountSchema, Filter, repository} from '@loopback/repository';
-import {del, get, getModelSchemaRef, param, patch, post, requestBody} from '@loopback/rest';
-import {StatusType} from '../enums';
+import {Filter, repository} from '@loopback/repository';
+import {
+  del,
+  get,
+  getModelSchemaRef,
+  HttpErrors,
+  param,
+  patch,
+  post,
+  requestBody,
+} from '@loopback/rest';
 import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
 import {Experience, UserExperience} from '../models';
 import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../repositories';
-import {approvedUpdate} from '../utils/filter-utils';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -43,33 +50,54 @@ export class UserExperienceController {
   }
 
   @intercept(ExperienceInterceptor.BINDING_KEY)
-  @post('/clone-user-experiences', {
+  @post('/users/{userId}/clone-experiences/{experienceId}', {
     responses: {
       '200': {
         description: 'clone an Experience model instance',
-        content: {'application/json': {schema: getModelSchemaRef(Experience)}},
+        content: {'application/json': {schema: getModelSchemaRef(UserExperience)}},
       },
     },
   })
   async clone(
+    @param.path.string('userId') userId: string,
+    @param.path.string('experienceId') experienceId: string,
+  ): Promise<UserExperience> {
+    return this.userExperienceRepository.create(
+      Object.assign({}, {userId, experienceId, cloned: true}),
+    );
+  }
+
+  @intercept(ExperienceInterceptor.BINDING_KEY)
+  @post('/users/{userId}/modify-experiences/{experienceId}', {
+    responses: {
+      '200': {
+        description: 'modify an Experience model instance',
+        content: {'application/json': {schema: getModelSchemaRef(UserExperience)}},
+      },
+    },
+  })
+  async modify(
+    @param.path.string('userId') userId: string,
+    @param.path.string('experienceId') experienceId: string,
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(UserExperience, {
-            title: 'NewCloneExperienceInUser',
-            exclude: ['id', 'clonedFrom'],
+          schema: getModelSchemaRef(Experience, {
+            title: 'NewExperienceInUser',
+            optional: ['createdBy'],
           }),
         },
       },
     })
-    userExperience: Omit<UserExperience, 'id'>,
-  ): Promise<UserExperience> {
-    return this.userExperienceRepository.create(userExperience);
+    experience: Omit<Experience, 'id'>,
+  ): Promise<Experience> {
+    await this.userExperienceRepository.deleteAll({userId, experienceId, cloned: true});
+    return this.userRepository.experiences(userId).create(experience);
   }
 
   // Create new experience
   @intercept(ExperienceInterceptor.BINDING_KEY)
-  @post('/user-experiences', {
+  @post('/users/{id}/new-experiences', {
     responses: {
       '200': {
         description: 'create an Experience model instance',
@@ -77,20 +105,23 @@ export class UserExperienceController {
       },
     },
   })
-  async createNew(
+  async create(
+    @param.path.string('id') id: string,
     @requestBody({
       content: {
         'application/json': {
           schema: getModelSchemaRef(Experience, {
             title: 'NewExperienceInUser',
-            exclude: ['id', 'cloned', 'origin', 'clonedFrom'],
+            optional: ['createdBy'],
           }),
         },
       },
     })
     experience: Omit<Experience, 'id'>,
   ): Promise<Experience> {
-    return this.userRepository.experiences(experience.createdBy).create(experience);
+    experience.createdBy = id;
+
+    return this.userRepository.experiences(id).create(experience);
   }
 
   // Select experience
@@ -108,53 +139,46 @@ export class UserExperienceController {
     return this.userRepository.updateById(userId, {onTimeline: experienceId});
   }
 
-  // Approve or reject other user experience
-  @patch('/update-user-experience', {
+  @patch('/users/{userId}/experiences/{experienceId}', {
     responses: {
       '204': {
-        description: 'Patch other User Experience',
+        description: 'User.Experience PATCH success',
       },
     },
   })
-  async update(
-    @param.query.boolean('updated') updated: boolean,
+  async updateById(
+    @param.path.string('userId') userId: string,
+    @param.path.string('experienceId') experienceId: string,
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(UserExperience, {
-            title: 'UserExperience',
-            exclude: ['id', 'clonedFrom', 'status'],
-          }),
+          schema: getModelSchemaRef(Experience, {partial: true}),
         },
       },
     })
-    userExperience: Omit<UserExperience, 'id'>,
-  ): Promise<Count> {
-    const {userId, experienceId} = userExperience;
-    const experience = await this.experienceRepository.findById(experienceId);
+    experience: Partial<Experience>,
+  ): Promise<void> {
+    const userExperience = await this.userExperienceRepository.findOne({
+      where: {
+        userId,
+        experienceId,
+      },
+      include: ['experience'],
+    });
 
-    if (updated) {
-      experience.tags = approvedUpdate(experience.tags, true);
-      experience.people = approvedUpdate(experience.people, true);
-      experience.updatedAt = new Date().toString();
-    } else {
-      experience.tags = approvedUpdate(experience.tags, false);
-      experience.people = approvedUpdate(experience.people, false);
-    }
+    if (userExperience?.cloned)
+      throw new HttpErrors.UnprocessableEntity('You cannot update clone experience');
 
-    this.experienceRepository.updateById(experience.id, experience) as Promise<void>;
+    if (userExperience?.experience.createdBy !== userId)
+      throw new HttpErrors.UnprocessableEntity('You cannot update other user experience');
 
-    return this.userExperienceRepository.updateAll(
-      {status: updated ? StatusType.UPDATED : StatusType.NONE},
-      {userId, experienceId},
-    );
+    return this.experienceRepository.updateById(userId, experience);
   }
 
   @del('/user-experiences/{id}', {
     responses: {
       '200': {
         description: 'User.Experience DELETE success count',
-        content: {'application/json': {schema: CountSchema}},
       },
     },
   })
