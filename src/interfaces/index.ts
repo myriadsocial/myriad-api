@@ -1,5 +1,4 @@
 export * from './balance.interace';
-export * from './experience.interface';
 export * from './extended-people.interface';
 export * from './like-dislike-metric.interface';
 export * from './meta-pagination.interface';
