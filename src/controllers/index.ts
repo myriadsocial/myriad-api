@@ -1,4 +1,4 @@
-export * from './activity.controller';
+export * from './activity-log.controller';
 export * from './authentication.controller';
 export * from './comment.controller';
 export * from './currency.controller';

@@ -9,7 +9,7 @@ import {User} from './user.model';
     },
   },
 })
-export class Activity extends Entity {
+export class ActivityLog extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -49,13 +49,13 @@ export class Activity extends Entity {
   )
   userId: string;
 
-  constructor(data?: Partial<Activity>) {
+  constructor(data?: Partial<ActivityLog>) {
     super(data);
   }
 }
 
-export interface ActivityRelations {
+export interface ActivityLogRelations {
   // describe navigational properties here
 }
 
-export type ActivityWithRelations = Activity & ActivityRelations;
+export type ActivityLogWithRelations = ActivityLog & ActivityLogRelations;

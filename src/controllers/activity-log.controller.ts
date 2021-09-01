@@ -2,17 +2,17 @@ import {intercept} from '@loopback/core';
 import {Filter, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
-import {Activity} from '../models';
-import {ActivityRepository} from '../repositories';
+import {ActivityLog} from '../models';
+import {ActivityLogRepository} from '../repositories';
 
-export class ActivityController {
+export class ActivityLogController {
   constructor(
-    @repository(ActivityRepository)
-    protected activityRepository: ActivityRepository,
+    @repository(ActivityLogRepository)
+    protected activityLogRepository: ActivityLogRepository,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/activities', {
+  @get('/activity-logs', {
     responses: {
       '200': {
         description: 'Array of Activity model instances',
@@ -20,7 +20,7 @@ export class ActivityController {
           'application/json': {
             schema: {
               type: 'array',
-              items: getModelSchemaRef(Activity, {includeRelations: true}),
+              items: getModelSchemaRef(ActivityLog, {includeRelations: true}),
             },
           },
         },
@@ -28,8 +28,8 @@ export class ActivityController {
     },
   })
   async find(
-    @param.filter(Activity, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Activity>,
-  ): Promise<Activity[]> {
-    return this.activityRepository.find(filter);
+    @param.filter(ActivityLog, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<ActivityLog>,
+  ): Promise<ActivityLog[]> {
+    return this.activityLogRepository.find(filter);
   }
 }

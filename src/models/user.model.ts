@@ -1,4 +1,5 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
+import {ActivityLog} from './activity-log.model';
 import {Currency} from './currency.model';
 import {Experience} from './experience.model';
 import {Friend} from './friend.model';
@@ -116,6 +117,9 @@ export class User extends Entity {
     },
   })
   currencies: Currency[];
+
+  @hasMany(() => ActivityLog)
+  activityLogs: ActivityLog[];
 
   constructor(data?: Partial<User>) {
     super(data);

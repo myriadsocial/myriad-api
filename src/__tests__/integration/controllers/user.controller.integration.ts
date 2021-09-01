@@ -2,7 +2,7 @@ import {expect, toJSON} from '@loopback/testlab';
 import {UserController} from '../../../controllers';
 import {ActivityLogType} from '../../../enums';
 import {
-  ActivityRepository,
+  ActivityLogRepository,
   CurrencyRepository,
   FriendRepository,
   UserCurrencyRepository,
@@ -21,7 +21,7 @@ import {
 describe('UserControllerIntegration', () => {
   let userRepository: UserRepository;
   let userCurrencyRepository: UserCurrencyRepository;
-  let activityRepository: ActivityRepository;
+  let activityLogRepository: ActivityLogRepository;
   let currencyRepository: CurrencyRepository;
   let friendRepository: FriendRepository;
   let controller: UserController;
@@ -32,12 +32,12 @@ describe('UserControllerIntegration', () => {
       userCurrencyRepository,
       currencyRepository,
       friendRepository,
-      activityRepository,
+      activityLogRepository,
     } = await givenRepositories(testdb));
   });
 
   before(async () => {
-    controller = new UserController(userRepository, activityRepository);
+    controller = new UserController(userRepository, activityLogRepository);
   });
 
   beforeEach(async () => {
@@ -190,19 +190,19 @@ describe('UserControllerIntegration', () => {
       username: 'abdulhakim10',
     });
 
-    const activities = await activityRepository.find({
+    const activityLogs = await activityLogRepository.find({
       where: {
         type: ActivityLogType.USERNAME,
         userId: user.id,
       },
     });
 
-    delete activities[0].id;
+    delete activityLogs[0].id;
 
     expect({
       type: ActivityLogType.USERNAME,
       userId: user.id,
       message: 'You updated your username',
-    }).to.containEql(toJSON(activities[0]));
+    }).to.containEql(toJSON(activityLogs[0]));
   });
 });

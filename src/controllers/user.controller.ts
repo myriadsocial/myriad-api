@@ -14,7 +14,7 @@ import {
 import {ActivityLogType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
-import {ActivityRepository, UserRepository} from '../repositories';
+import {ActivityLogRepository, UserRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -22,8 +22,8 @@ export class UserController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(ActivityRepository)
-    protected activityRepository: ActivityRepository,
+    @repository(ActivityLogRepository)
+    protected activityLogRepository: ActivityLogRepository,
   ) {}
 
   @post('/users')
@@ -113,7 +113,7 @@ export class UserController {
     user: Partial<User>,
   ): Promise<void> {
     if (user.username) {
-      const {count} = await this.activityRepository.count({
+      const {count} = await this.activityLogRepository.count({
         userId: id,
         type: ActivityLogType.USERNAME,
       });
@@ -121,7 +121,7 @@ export class UserController {
       if (count >= 1)
         throw new HttpErrors.UnprocessableEntity('You can only updated username once');
 
-      await this.activityRepository.create({
+      await this.activityLogRepository.create({
         userId: id,
         type: ActivityLogType.USERNAME,
         message: 'You updated your username',
@@ -129,7 +129,7 @@ export class UserController {
     }
 
     await this.userRepository.updateById(id, user);
-    await this.activityRepository.create({
+    await this.activityLogRepository.create({
       userId: id,
       type: ActivityLogType.PROFILE,
       message: 'You updated your profile',

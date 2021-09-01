@@ -1,22 +1,22 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ActivityLogType} from '../../enums';
-import {Activity} from '../../models';
-import {ActivityRepository, UserRepository} from '../../repositories';
+import {ActivityLog} from '../../models';
+import {ActivityLogRepository, UserRepository} from '../../repositories';
 import {
-  givenActivityInstance,
-  givenActivityRepository,
-  givenMultipleActivityInstances,
+  givenActivityLogInstance,
+  givenActivityLogRepository,
+  givenMultipleActivityLogInstances,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
 } from '../helpers';
 
-describe('ActivityApplication', function () {
+describe('ActivityLogApplication', function () {
   let app: MyriadApiApplication;
   let client: Client;
   let userRepository: UserRepository;
-  let activityRepository: ActivityRepository;
+  let activityLogRepository: ActivityLogRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -26,35 +26,35 @@ describe('ActivityApplication', function () {
 
   before(async () => {
     userRepository = await givenUserRepository(app);
-    activityRepository = await givenActivityRepository(app);
+    activityLogRepository = await givenActivityLogRepository(app);
   });
 
   beforeEach(async () => {
     await userRepository.deleteAll();
-    await activityRepository.deleteAll();
+    await activityLogRepository.deleteAll();
   });
 
-  context('when dealing with multiple persisted activities', () => {
-    let persistedActivities: Activity[];
+  context('when dealing with multiple persisted activityLogs', () => {
+    let persistedActivityLogs: ActivityLog[];
 
     beforeEach(async () => {
-      persistedActivities = await givenMultipleActivityInstances(activityRepository);
+      persistedActivityLogs = await givenMultipleActivityLogInstances(activityLogRepository);
     });
 
-    it('finds all activities', async () => {
-      const response = await client.get('/activities').send().expect(200);
-      expect(toJSON(response.body.data)).to.containDeep(toJSON(persistedActivities));
+    it('finds all activitiyLogs', async () => {
+      const response = await client.get('/activity-logs').send().expect(200);
+      expect(toJSON(response.body.data)).to.containDeep(toJSON(persistedActivityLogs));
     });
 
-    it('queries activities with a filter', async () => {
-      const activityInProgress = await givenActivityInstance(activityRepository, {
+    it('queries activityLogs with a filter', async () => {
+      const activityLogInProgress = await givenActivityLogInstance(activityLogRepository, {
         type: ActivityLogType.PROFILE,
         message: 'You updated your profile',
         userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c',
       });
 
       await client
-        .get('/activities')
+        .get('/activity-logs')
         .query(
           'filter=' +
             JSON.stringify({
@@ -62,7 +62,7 @@ describe('ActivityApplication', function () {
             }),
         )
         .expect(200, {
-          data: [toJSON(activityInProgress)],
+          data: [toJSON(activityLogInProgress)],
           meta: {
             currentPage: 1,
             itemsPerPage: 1,
@@ -73,13 +73,13 @@ describe('ActivityApplication', function () {
     });
 
     it('exploded filter conditions work', async () => {
-      await givenActivityInstance(activityRepository, {
+      await givenActivityLogInstance(activityLogRepository, {
         type: ActivityLogType.PROFILE,
         message: 'You updated your profile',
         userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618cc',
       });
 
-      const response = await client.get('/activities').query('pageLimit=2');
+      const response = await client.get('/activity-logs').query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });
@@ -89,7 +89,7 @@ describe('ActivityApplication', function () {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618dc',
     });
 
-    const activity = await givenActivityInstance(activityRepository, {
+    const activityLog = await givenActivityLogInstance(activityLogRepository, {
       type: ActivityLogType.PROFILE,
       message: 'You updated your profile',
       userId: user.id,
@@ -101,11 +101,11 @@ describe('ActivityApplication', function () {
         include: ['user'],
       });
 
-    const response = await client.get('/activities').query(filter);
+    const response = await client.get('/activity-logs').query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
-      ...toJSON(activity),
+      ...toJSON(activityLog),
       user: toJSON(user),
     });
   });

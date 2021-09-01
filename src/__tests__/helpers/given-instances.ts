@@ -6,7 +6,7 @@ import {
   PlatformType,
 } from '../../enums';
 import {
-  Activity,
+  ActivityLog,
   Comment,
   Currency,
   Friend,
@@ -23,7 +23,7 @@ import {
 } from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
-  ActivityRepository,
+  ActivityLogRepository,
   CommentRepository,
   CurrencyRepository,
   FriendRepository,
@@ -410,29 +410,31 @@ export function givenUserVerification(userVerification?: Partial<UserVerificatio
   return new UserVerification(data);
 }
 
-export function givenActivity(activity?: Partial<Activity>) {
+export function givenActivityLog(activityLog?: Partial<ActivityLog>) {
   const data = Object.assign(
     {
       type: ActivityLogType.USERNAME,
       message: 'You updated your username',
       userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
     },
-    activity,
+    activityLog,
   );
-  return new Activity(data);
+  return new ActivityLog(data);
 }
 
-export function givenActivityInstance(
-  activityRepository: ActivityRepository,
-  activity?: Partial<Activity>,
+export function givenActivityLogInstance(
+  activityLogRepository: ActivityLogRepository,
+  activityLog?: Partial<ActivityLog>,
 ) {
-  return activityRepository.create(givenActivity(activity));
+  return activityLogRepository.create(givenActivityLog(activityLog));
 }
 
-export async function givenMultipleActivityInstances(activityRepository: ActivityRepository) {
+export async function givenMultipleActivityLogInstances(
+  activityLogRepository: ActivityLogRepository,
+) {
   return Promise.all([
-    givenActivityInstance(activityRepository),
-    givenActivityInstance(activityRepository, {
+    givenActivityLogInstance(activityLogRepository),
+    givenActivityLogInstance(activityLogRepository, {
       type: ActivityLogType.PROFILE,
       message: 'You updated your profile',
       userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',

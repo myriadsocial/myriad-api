@@ -7,6 +7,7 @@ import {
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {
+  ActivityLog,
   Currency,
   Experience,
   Friend,
@@ -15,6 +16,7 @@ import {
   UserExperience,
   UserRelations,
 } from '../models';
+import {ActivityLogRepository} from './activity-log.repository';
 import {CurrencyRepository} from './currency.repository';
 import {ExperienceRepository} from './experience.repository';
 import {FriendRepository} from './friend.repository';
@@ -28,6 +30,8 @@ export class UserRepository extends DefaultCrudRepository<
   UserRelations
 > {
   public readonly friends: HasManyRepositoryFactory<Friend, typeof User.prototype.id>;
+
+  public readonly activityLogs: HasManyRepositoryFactory<ActivityLog, typeof User.prototype.id>;
 
   public readonly experiences: HasManyThroughRepositoryFactory<
     Experience,
@@ -57,10 +61,17 @@ export class UserRepository extends DefaultCrudRepository<
     protected experienceRepositoryGetter: Getter<ExperienceRepository>,
     @repository.getter('UserExperienceRepository')
     protected userExperienceRepositoryGetter: Getter<UserExperienceRepository>,
+    @repository.getter('ActivityLogRepository')
+    protected activityLogRepositoryGetter: Getter<ActivityLogRepository>,
   ) {
     super(User, dataSource);
     this.friends = this.createHasManyRepositoryFactoryFor('friends', friendRepositoryGetter);
     this.registerInclusionResolver('friends', this.friends.inclusionResolver);
+    this.activityLogs = this.createHasManyRepositoryFactoryFor(
+      'activityLogs',
+      activityLogRepositoryGetter,
+    );
+    this.registerInclusionResolver('activityLogs', this.activityLogs.inclusionResolver);
     this.experiences = this.createHasManyThroughRepositoryFactoryFor(
       'experiences',
       experienceRepositoryGetter,
