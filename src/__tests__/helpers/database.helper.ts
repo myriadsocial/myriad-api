@@ -25,6 +25,7 @@ export async function givenRepositories(testdb: any) {
     async () => friendRepository,
     async () => experienceRepository,
     async () => userExperienceRepository,
+    async () => activityLogRepository,
   );
   const userExperienceRepository: UserExperienceRepository = new UserExperienceRepository(
     testdb,
