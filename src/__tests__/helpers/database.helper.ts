@@ -1,5 +1,5 @@
 import {
-  ActivityRepository,
+  ActivityLogRepository,
   CommentRepository,
   CurrencyRepository,
   ExperienceRepository,
@@ -82,7 +82,7 @@ export async function givenRepositories(testdb: any) {
     testdb,
     async () => userRepository,
   );
-  const activityRepository: ActivityRepository = new ActivityRepository(
+  const activityLogRepository: ActivityLogRepository = new ActivityLogRepository(
     testdb,
     async () => userRepository,
   );
@@ -101,7 +101,7 @@ export async function givenRepositories(testdb: any) {
     transactionRepository,
     likeRepository,
     notificationRepository,
-    activityRepository,
+    activityLogRepository,
   };
 }
 
@@ -117,7 +117,7 @@ export async function givenEmptyDatabase(testdb: any) {
     postRepository,
     userSocialMediaRepository,
     peopleRepository,
-    activityRepository,
+    activityLogRepository,
   } = await givenRepositories(testdb);
 
   await peopleRepository.deleteAll();
@@ -130,5 +130,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await commentRepository.deleteAll();
   await postRepository.deleteAll();
   await userSocialMediaRepository.deleteAll();
-  await activityRepository.deleteAll();
+  await activityLogRepository.deleteAll();
 }

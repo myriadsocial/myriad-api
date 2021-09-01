@@ -1,6 +1,6 @@
 import {MyriadApiApplication} from '../../application';
 import {
-  ActivityRepository,
+  ActivityLogRepository,
   CommentRepository,
   CurrencyRepository,
   FriendRepository,
@@ -63,6 +63,6 @@ export async function givenUserCurrencyRepository(app: MyriadApiApplication) {
   return app.getRepository(UserCurrencyRepository);
 }
 
-export async function givenActivityRepository(app: MyriadApiApplication) {
-  return app.getRepository(ActivityRepository);
+export async function givenActivityLogRepository(app: MyriadApiApplication) {
+  return app.getRepository(ActivityLogRepository);
 }

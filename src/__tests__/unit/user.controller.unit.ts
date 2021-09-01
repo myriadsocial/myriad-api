@@ -7,12 +7,12 @@ import {
 } from '@loopback/testlab';
 import {UserController} from '../../controllers/user.controller';
 import {User} from '../../models';
-import {ActivityRepository, UserRepository} from '../../repositories';
+import {ActivityLogRepository, UserRepository} from '../../repositories';
 import {givenUser} from '../helpers';
 
 describe('UserController', () => {
   let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
-  let activityRepository: StubbedInstanceWithSinonAccessor<ActivityRepository>;
+  let activityLogRepository: StubbedInstanceWithSinonAccessor<ActivityLogRepository>;
   let controller: UserController;
   let aUser: User;
   let aUserWithId: User;
@@ -86,7 +86,7 @@ describe('UserController', () => {
 
   function resetRepositories() {
     userRepository = createStubInstance(UserRepository);
-    activityRepository = createStubInstance(ActivityRepository);
+    activityLogRepository = createStubInstance(ActivityLogRepository);
     aUser = givenUser({
       bio: 'Hello, my name is Abdul Hakim!',
     });
@@ -107,6 +107,6 @@ describe('UserController', () => {
       bio: 'Hello, my name is irman!',
     });
 
-    controller = new UserController(userRepository, activityRepository);
+    controller = new UserController(userRepository, activityLogRepository);
   }
 });

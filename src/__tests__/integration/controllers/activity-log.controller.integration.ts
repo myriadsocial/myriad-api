@@ -1,25 +1,25 @@
 import {expect} from '@loopback/testlab';
-import {ActivityController} from '../../../controllers';
-import {ActivityRepository, UserRepository} from '../../../repositories';
+import {ActivityLogController} from '../../../controllers';
+import {ActivityLogRepository, UserRepository} from '../../../repositories';
 import {
-  givenActivityInstance,
+  givenActivityLogInstance,
   givenEmptyDatabase,
   givenRepositories,
   givenUserInstance,
   testdb,
 } from '../../helpers';
 
-describe('ActivityControllerIntegration', () => {
+describe('ActivityLogControllerIntegration', () => {
   let userRepository: UserRepository;
-  let activityRepository: ActivityRepository;
-  let controller: ActivityController;
+  let activityLogRepository: ActivityLogRepository;
+  let controller: ActivityLogController;
 
   before(async () => {
-    ({userRepository, activityRepository} = await givenRepositories(testdb));
+    ({userRepository, activityLogRepository} = await givenRepositories(testdb));
   });
 
   before(async () => {
-    controller = new ActivityController(activityRepository);
+    controller = new ActivityLogController(activityLogRepository);
   });
 
   beforeEach(async () => {
@@ -31,7 +31,7 @@ describe('ActivityControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
 
-    const activity = await givenActivityInstance(activityRepository, {
+    const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,
     });
 
@@ -39,7 +39,7 @@ describe('ActivityControllerIntegration', () => {
 
     expect(response).to.containDeep([
       {
-        ...activity,
+        ...activityLog,
         user: user,
       },
     ]);
