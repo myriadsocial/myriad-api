@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {ExperiencePeople, ExperienceTag} from '../interfaces';
+import {People} from './people.model';
 import {User} from './user.model';
 
 @model({
@@ -33,17 +33,17 @@ export class Experience extends Entity {
 
   @property({
     type: 'array',
-    itemType: 'object',
-    required: false,
+    itemType: 'string',
+    required: true,
   })
-  tags: ExperienceTag[];
+  tags: string[];
 
   @property({
     type: 'array',
     itemType: 'object',
-    required: false,
+    required: true,
   })
-  people: ExperiencePeople[];
+  people: People[];
 
   @property({
     type: 'string',
@@ -57,6 +57,7 @@ export class Experience extends Entity {
   @property({
     type: 'string',
     required: false,
+    default: '',
   })
   experienceImageURL?: string;
 
@@ -64,19 +65,7 @@ export class Experience extends Entity {
     type: 'number',
     default: 0,
   })
-  cloned: number;
-
-  @property({
-    type: 'string',
-    default: null,
-  })
-  clonedFrom?: string | null;
-
-  @property({
-    type: 'boolean',
-    default: true,
-  })
-  origin: boolean;
+  clonedCount: number;
 
   @property({
     type: 'date',
