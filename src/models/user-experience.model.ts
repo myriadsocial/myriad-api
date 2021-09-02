@@ -71,7 +71,7 @@ export class UserExperience extends Entity {
 
 export interface UserExperienceRelations {
   // describe navigational properties here
-  experience: ExperienceWithRelations;
+  experience?: ExperienceWithRelations;
 }
 
 export type UserExperienceWithRelations = UserExperience & UserExperienceRelations;
