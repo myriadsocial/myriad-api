@@ -518,3 +518,16 @@ export function givenUserExperienceInstance(
 ) {
   return userExperienceRepository.create(givenUserExperience(userExperience));
 }
+
+export async function givenMultipleUserExperienceInstances(
+  userExperienceRepository: UserExperienceRepository,
+) {
+  return Promise.all([
+    givenUserExperienceInstance(userExperienceRepository),
+    givenUserExperienceInstance(userExperienceRepository, {
+      cloned: true,
+      experienceId: '2',
+      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+    }),
+  ]);
+}
