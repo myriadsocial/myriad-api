@@ -51,6 +51,9 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     switch (methodName) {
       case 'create':
         numberOfUserExperience = await this.validateNumberOfUserExperience(userId);
+        invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
+          createdBy: userId,
+        });
         break;
 
       case 'clone':
@@ -58,7 +61,12 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         break;
 
       case 'modify':
-        invocationCtx.args[2] = Object.assign(invocationCtx.args[2], {createdBy: userId});
+        invocationCtx.args[2] = Object.assign(invocationCtx.args[2], {
+          createdBy: userId,
+          clonedCount: 0,
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString(),
+        });
         break;
     }
 
@@ -81,6 +89,14 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       await this.experienceRepository.updateById(experienceId, {
         clonedCount: currentNumberOfUserExperience,
       });
+    }
+
+    if (methodName === 'modify') {
+      const user = await this.userRepository.findById(userId);
+
+      if (user.onTimeline === experienceId) {
+        await this.userRepository.updateById(userId, {onTimeline: result.id});
+      }
     }
 
     return result;
