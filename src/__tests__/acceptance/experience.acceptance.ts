@@ -1,12 +1,11 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {Experience} from '../../models';
-import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../../repositories';
+import {ExperienceRepository, UserRepository} from '../../repositories';
 import {
   givenExperienceInstance,
   givenExperienceRepository,
   givenMultipleExperienceInstances,
-  givenUserExperienceRepository,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
@@ -17,7 +16,6 @@ describe('ExperienceApplication', function () {
   let client: Client;
   let experienceRepository: ExperienceRepository;
   let userRepository: UserRepository;
-  let userExperienceRepository: UserExperienceRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -28,13 +26,11 @@ describe('ExperienceApplication', function () {
   before(async () => {
     userRepository = await givenUserRepository(app);
     experienceRepository = await givenExperienceRepository(app);
-    userExperienceRepository = await givenUserExperienceRepository(app);
   });
 
   beforeEach(async () => {
     await userRepository.deleteAll();
     await experienceRepository.deleteAll();
-    await userExperienceRepository.deleteAll();
   });
 
   context('when dealing with a single persisted experience', () => {
