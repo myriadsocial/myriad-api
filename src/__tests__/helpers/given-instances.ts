@@ -28,6 +28,7 @@ import {
   ActivityLogRepository,
   CommentRepository,
   CurrencyRepository,
+  ExperienceRepository,
   FriendRepository,
   LikeRepository,
   NotificationRepository,
@@ -36,6 +37,7 @@ import {
   TagRepository,
   TransactionRepository,
   UserCurrencyRepository,
+  UserExperienceRepository,
   UserRepository,
   UserSocialMediaRepository,
 } from '../../repositories';
@@ -468,6 +470,13 @@ export function givenExperience(experience?: Partial<Experience>) {
   return new Experience(data);
 }
 
+export function givenExperienceInstance(
+  experienceRepository: ExperienceRepository,
+  experience?: Partial<Experience>,
+) {
+  return experienceRepository.create(givenExperience(experience));
+}
+
 export function givenUserExperience(userExperience?: Partial<UserExperience>) {
   const data = Object.assign(
     {
@@ -478,4 +487,11 @@ export function givenUserExperience(userExperience?: Partial<UserExperience>) {
     userExperience,
   );
   return new UserExperience(data);
+}
+
+export function givenUserExperienceInstance(
+  userExperienceRepository: UserExperienceRepository,
+  userExperience?: Partial<UserExperience>,
+) {
+  return userExperienceRepository.create(givenUserExperience(userExperience));
 }
