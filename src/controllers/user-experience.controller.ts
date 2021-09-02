@@ -123,7 +123,7 @@ export class UserExperienceController {
   }
 
   // Select experience
-  @patch('/user/{userId}/select-experience/{experienceId}', {
+  @patch('/users/{userId}/select-experiencesd/{experienceId}', {
     responses: {
       '200': {
         desription: 'Select User Experience',
@@ -144,7 +144,7 @@ export class UserExperienceController {
       },
     },
   })
-  async updateById(
+  async updateExperience(
     @param.path.string('userId') userId: string,
     @param.path.string('experienceId') experienceId: string,
     @requestBody({
@@ -164,13 +164,15 @@ export class UserExperienceController {
       include: ['experience'],
     });
 
-    if (userExperience?.cloned)
+    if (!userExperience) throw new HttpErrors.UnprocessableEntity('Experience not found');
+
+    if (userExperience.cloned)
       throw new HttpErrors.UnprocessableEntity('You cannot update clone experience');
 
-    if (userExperience?.experience.createdBy !== userId)
+    if (userExperience.experience.createdBy !== userId)
       throw new HttpErrors.UnprocessableEntity('You cannot update other user experience');
 
-    return this.experienceRepository.updateById(userId, experience);
+    return this.experienceRepository.updateById(experienceId, experience);
   }
 
   @del('/user-experiences/{id}', {
