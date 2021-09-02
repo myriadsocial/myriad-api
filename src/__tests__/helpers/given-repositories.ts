@@ -3,6 +3,7 @@ import {
   ActivityLogRepository,
   CommentRepository,
   CurrencyRepository,
+  ExperienceRepository,
   FriendRepository,
   LikeRepository,
   NotificationRepository,
@@ -11,6 +12,7 @@ import {
   TagRepository,
   TransactionRepository,
   UserCurrencyRepository,
+  UserExperienceRepository,
   UserRepository,
   UserSocialMediaRepository,
 } from '../../repositories';
@@ -65,4 +67,12 @@ export async function givenUserCurrencyRepository(app: MyriadApiApplication) {
 
 export async function givenActivityLogRepository(app: MyriadApiApplication) {
   return app.getRepository(ActivityLogRepository);
+}
+
+export async function givenExperienceRepository(app: MyriadApiApplication) {
+  return app.getRepository(ExperienceRepository);
+}
+
+export async function givenUserExperienceRepository(app: MyriadApiApplication) {
+  return app.getRepository(UserExperienceRepository);
 }
