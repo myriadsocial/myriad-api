@@ -123,7 +123,7 @@ export class PostController {
         throw new HttpErrors.NotFound('Cannot find the platform!');
     }
 
-    if (newPost.tags) {
+    if (newPost.tags.length > 0) {
       const postTags = newPost.tags.filter((tag: string) => {
         return !newTags.map((newTag: string) => newTag.toLowerCase()).includes(tag.toLowerCase());
       });
