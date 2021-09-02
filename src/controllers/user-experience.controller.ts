@@ -119,8 +119,6 @@ export class UserExperienceController {
     })
     experience: Omit<Experience, 'id'>,
   ): Promise<Experience> {
-    experience.createdBy = id;
-
     return this.userRepository.experiences(id).create(experience);
   }
 
