@@ -477,6 +477,29 @@ export function givenExperienceInstance(
   return experienceRepository.create(givenExperience(experience));
 }
 
+export async function givenMultipleExperienceInstances(experienceRepository: ExperienceRepository) {
+  return Promise.all([
+    givenExperienceInstance(experienceRepository),
+    givenExperienceInstance(experienceRepository, {
+      name: 'cryptocurrency',
+      tags: ['cryptocurrency'],
+      people: [
+        new People({
+          id: '60efac8c565ab8004ed28ba7',
+          name: 'Gavin Wood',
+          username: 'gavofyork',
+          platform: 'twitter',
+          originUserId: '33962758',
+          profilePictureURL:
+            'https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg',
+        }),
+      ],
+      description: 'best projects in cryptoverse',
+      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+    }),
+  ]);
+}
+
 export function givenUserExperience(userExperience?: Partial<UserExperience>) {
   const data = Object.assign(
     {
