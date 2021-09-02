@@ -5,7 +5,7 @@ import {User} from './user.model';
 @model({
   settings: {
     mongodb: {
-      collection: 'activities',
+      collection: 'activityLogs',
     },
   },
 })
