@@ -1,5 +1,5 @@
 import {intercept} from '@loopback/core';
-import {Filter, repository} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -9,6 +9,7 @@ import {
   patch,
   post,
   requestBody,
+  response,
 } from '@loopback/rest';
 import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
 import {Experience, UserExperience} from '../models';
@@ -49,6 +50,22 @@ export class UserExperienceController {
     return this.userExperienceRepository.find(filter);
   }
 
+  @get('/user-experiences/{id}')
+  @response(200, {
+    description: 'UserExperience model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(UserExperience, {includeRelations: true}),
+      },
+    },
+  })
+  async findById(
+    @param.path.string('id') id: string,
+    @param.filter(UserExperience, {exclude: 'where'}) filter?: FilterExcludingWhere<UserExperience>,
+  ): Promise<UserExperience> {
+    return this.userExperienceRepository.findById(id, filter);
+  }
+
   @intercept(ExperienceInterceptor.BINDING_KEY)
   @post('/users/{userId}/clone-experiences/{experienceId}', {
     responses: {
@@ -63,7 +80,7 @@ export class UserExperienceController {
     @param.path.string('experienceId') experienceId: string,
   ): Promise<UserExperience> {
     return this.userExperienceRepository.create(
-      Object.assign({}, {userId, experienceId, cloned: true}),
+      Object.assign(new UserExperience(), {userId, experienceId, cloned: true}),
     );
   }
 
@@ -169,7 +186,7 @@ export class UserExperienceController {
     if (userExperience.cloned)
       throw new HttpErrors.UnprocessableEntity('You cannot update clone experience');
 
-    if (userExperience.experience.createdBy !== userId)
+    if (userExperience.experience && userExperience.experience.createdBy !== userId)
       throw new HttpErrors.UnprocessableEntity('You cannot update other user experience');
 
     return this.experienceRepository.updateById(experienceId, experience);
