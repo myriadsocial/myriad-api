@@ -9,6 +9,7 @@ import {
   ActivityLog,
   Comment,
   Currency,
+  Experience,
   Friend,
   Like,
   Notification,
@@ -18,6 +19,7 @@ import {
   Transaction,
   User,
   UserCurrency,
+  UserExperience,
   UserSocialMedia,
   UserVerification,
 } from '../../models';
@@ -440,4 +442,40 @@ export async function givenMultipleActivityLogInstances(
       userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
     }),
   ]);
+}
+
+export function givenExperience(experience?: Partial<Experience>) {
+  const data = Object.assign(
+    {
+      name: 'to the moon crypto',
+      tags: ['blockchain', 'bitcoin'],
+      people: [
+        {
+          id: '60efac8c565ab8004ed28ba7',
+          name: 'Gavin Wood',
+          username: 'gavofyork',
+          platform: 'twitter',
+          originUserId: '33962758',
+          profilePictureURL:
+            'https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg',
+        },
+      ],
+      description: 'best projects in cryptoverse',
+      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+    },
+    experience,
+  );
+  return new Experience(data);
+}
+
+export function givenUserExperience(userExperience?: Partial<UserExperience>) {
+  const data = Object.assign(
+    {
+      cloned: false,
+      experienceId: '1',
+      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+    },
+    userExperience,
+  );
+  return new UserExperience(data);
 }
