@@ -9,8 +9,9 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ControllerType, LikeType, MethodType} from '../enums';
+import {CommentType, ControllerType, LikeType, MethodType} from '../enums';
 import {
+  CommentRepository,
   CurrencyRepository,
   PostRepository,
   TransactionRepository,
@@ -33,6 +34,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected postRepository: PostRepository,
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
+    @repository(CommentRepository)
+    protected commentRepository: CommentRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -88,6 +91,23 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           break;
         }
 
+        if (className === ControllerType.COMMENT) {
+          invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+            type: CommentType.POST,
+            referenceId: invocationCtx.args[0].postId,
+          });
+          break;
+        }
+
+        if (className === ControllerType.COMMENTCOMMENT) {
+          await this.validateComment(invocationCtx.args[0]);
+          invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
+            type: CommentType.COMMENT,
+            referenceId: invocationCtx.args[0],
+          });
+          break;
+        }
+
         break;
       }
 
@@ -137,5 +157,26 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     }
 
     return result;
+  }
+
+  async validateComment(referenceId: string): Promise<void> {
+    const lastComment = await this.commentRepository.findOne({
+      where: {
+        id: referenceId,
+        type: CommentType.COMMENT,
+      },
+    });
+
+    if (!lastComment) return;
+
+    const comment = await this.commentRepository.findOne({
+      where: {
+        id: lastComment.referenceId,
+        type: CommentType.COMMENT,
+      },
+    });
+
+    if (!comment) return;
+    throw new HttpErrors.UnprocessableEntity('Cannot added comment anymore');
   }
 }
