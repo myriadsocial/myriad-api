@@ -1,7 +1,7 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {PostController} from '../../../controllers';
 import {RedditDataSource} from '../../../datasources';
-import {LikeType, TransactionType} from '../../../enums';
+import {CommentType, LikeType, TransactionType} from '../../../enums';
 import {
   CommentRepository,
   LikeRepository,
@@ -106,6 +106,8 @@ describe('PostControllerIntegration', () => {
   it('includes Comment in find method result', async () => {
     const post = await givenPostInstance(postRepository);
     const comment = await givenCommentInstance(commentRepository, {
+      type: CommentType.POST,
+      referenceId: post.id,
       userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
     });
@@ -169,6 +171,8 @@ describe('PostControllerIntegration', () => {
       type: LikeType.POST,
     });
     const comment = await givenCommentInstance(commentRepository, {
+      type: CommentType.POST,
+      referenceId: post.id,
       userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
     });
@@ -217,6 +221,8 @@ describe('PostControllerIntegration', () => {
   it('includes Comment in findById method result', async () => {
     const post = await givenPostInstance(postRepository);
     const comment = await givenCommentInstance(commentRepository, {
+      type: CommentType.POST,
+      referenceId: post.id,
       userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
     });
@@ -274,6 +280,8 @@ describe('PostControllerIntegration', () => {
       type: LikeType.POST,
     });
     const comment = await givenCommentInstance(commentRepository, {
+      type: CommentType.POST,
+      referenceId: post.id,
       userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
     });

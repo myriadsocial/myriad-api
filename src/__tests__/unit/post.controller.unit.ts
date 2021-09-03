@@ -12,7 +12,7 @@ import {PeopleRepository, PostRepository} from '../../repositories';
 import {PostService, SocialMediaService} from '../../services';
 import {givenMyriadPost} from '../helpers';
 
-describe('PostControllers', () => {
+describe('PostController', () => {
   let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
   let peopleRepository: PeopleRepository;
   let postService: PostService;
