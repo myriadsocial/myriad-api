@@ -1,7 +1,7 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {TransactionType} from '../../enums';
+import {CommentType, TransactionType} from '../../enums';
 import {Post, User} from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
@@ -213,6 +213,8 @@ describe('PostApplication', function () {
     });
     const like = await givenLikeInstance(likeRepository, {referenceId: post.id});
     const comment = await givenCommentInstance(commentRepository, {
+      type: CommentType.POST,
+      referenceId: post.id,
       userId: user.id,
       postId: post.id,
     });
