@@ -38,7 +38,9 @@ export class CommentCommentController {
     responses: {
       '200': {
         description: 'create a Comment model instance',
-        content: {'application/json': {schema: getModelSchemaRef(Comment)}},
+        content: {
+          'application/json': {schema: getModelSchemaRef(Comment)},
+        },
       },
     },
   })
@@ -49,7 +51,7 @@ export class CommentCommentController {
         'application/json': {
           schema: getModelSchemaRef(Comment, {
             title: 'NewCommentInComment',
-            exclude: ['id'],
+            exclude: ['id', 'type', 'referenceId'],
           }),
         },
       },
