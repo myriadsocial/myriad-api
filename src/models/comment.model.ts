@@ -1,4 +1,5 @@
 import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
+import {CommentType} from '../enums';
 import {CommentLink} from './comment-link.model';
 import {Post} from './post.model';
 import {Transaction} from './transaction.model';
@@ -30,6 +31,19 @@ export class Comment extends Entity {
   text: string;
 
   @property({
+    type: 'string',
+    jsonSchema: {
+      enum: Object.values(CommentType),
+    },
+  })
+  type?: CommentType;
+
+  @property({
+    type: 'string',
+  })
+  referenceId?: string;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
@@ -48,9 +62,6 @@ export class Comment extends Entity {
     required: false,
   })
   deletedAt?: string;
-
-  @hasMany(() => Transaction, {keyTo: 'referenceId'})
-  transactions: Transaction[];
 
   @belongsTo(() => Post, {}, {required: true})
   postId: string;
@@ -77,6 +88,9 @@ export class Comment extends Entity {
     },
   })
   comments: Comment[];
+
+  @hasMany(() => Transaction, {keyTo: 'referenceId'})
+  transactions: Transaction[];
 
   constructor(data?: Partial<Comment>) {
     super(data);
