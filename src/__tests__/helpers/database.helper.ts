@@ -1,5 +1,6 @@
 import {
   ActivityLogRepository,
+  CommentLinkRepository,
   CommentRepository,
   CurrencyRepository,
   ExperienceRepository,
@@ -68,6 +69,7 @@ export async function givenRepositories(testdb: any) {
     async () => postRepository,
     async () => userRepository,
     async () => transactionRepository,
+    async () => commentLinkRepository,
   );
   const transactionRepository: TransactionRepository = new TransactionRepository(
     testdb,
@@ -87,6 +89,7 @@ export async function givenRepositories(testdb: any) {
     testdb,
     async () => userRepository,
   );
+  const commentLinkRepository: CommentLinkRepository = new CommentLinkRepository(testdb);
 
   return {
     userRepository,
