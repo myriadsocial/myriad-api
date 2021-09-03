@@ -1,4 +1,5 @@
 import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
+import {CommentLink} from './comment-link.model';
 import {Post} from './post.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
@@ -67,6 +68,15 @@ export class Comment extends Entity {
     },
   )
   userId: string;
+
+  @hasMany(() => Comment, {
+    through: {
+      model: () => CommentLink,
+      keyFrom: 'fromCommentId',
+      keyTo: 'toCommentId',
+    },
+  })
+  comments: Comment[];
 
   constructor(data?: Partial<Comment>) {
     super(data);
