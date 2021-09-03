@@ -1,4 +1,4 @@
-import {service} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {Count, CountSchema, Filter, repository, Where} from '@loopback/repository';
 import {
   del,
@@ -10,6 +10,7 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
+import {PaginationInterceptor} from '../interceptors';
 import {Comment} from '../models';
 import {PostRepository} from '../repositories';
 import {NotificationService} from '../services';
@@ -22,6 +23,7 @@ export class PostCommentController {
     protected notificationService: NotificationService,
   ) {}
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/posts/{id}/comments', {
     responses: {
       '200': {

@@ -1,3 +1,4 @@
+import {intercept, service} from '@loopback/core';
 import {Count, CountSchema, Filter, repository, Where} from '@loopback/repository';
 import {
   del,
@@ -9,12 +10,20 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
+import {PaginationInterceptor} from '../interceptors';
 import {Comment} from '../models';
 import {CommentRepository} from '../repositories';
+import {NotificationService} from '../services';
 
 export class CommentCommentController {
-  constructor(@repository(CommentRepository) protected commentRepository: CommentRepository) {}
+  constructor(
+    @repository(CommentRepository)
+    protected commentRepository: CommentRepository,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
+  ) {}
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/comments/{id}/comments', {
     responses: {
       '200': {
@@ -29,7 +38,7 @@ export class CommentCommentController {
   })
   async find(
     @param.path.string('id') id: string,
-    @param.query.object('filter') filter?: Filter<Comment>,
+    @param.filter(Comment, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Comment>,
   ): Promise<Comment[]> {
     return this.commentRepository.comments(id).find(filter);
   }
@@ -58,7 +67,15 @@ export class CommentCommentController {
     })
     comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    return this.commentRepository.comments(id).create(comment);
+    const newComment = await this.commentRepository.comments(id).create(comment);
+
+    try {
+      await this.notificationService.sendPostComment(comment.userId, newComment);
+    } catch (error) {
+      // ignored
+    }
+
+    return newComment;
   }
 
   @patch('/comments/{id}/comments', {
