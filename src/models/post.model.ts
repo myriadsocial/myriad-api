@@ -146,7 +146,7 @@ export class Post extends Entity {
   @belongsTo(() => People)
   peopleId: string;
 
-  @hasMany(() => Comment)
+  @hasMany(() => Comment, {keyTo: 'referenceId'})
   comments: Comment[];
 
   @hasMany(() => Like, {keyTo: 'referenceId'})
