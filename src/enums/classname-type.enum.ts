@@ -13,6 +13,7 @@ export enum ControllerType {
   FRIEND = 'FriendController',
   COMMENT = 'CommentController',
   ACTIVITYLOG = 'ActivityLogController',
+  COMMENTCOMMENT = 'CommentCommentController',
 }
 
 export enum MethodType {
