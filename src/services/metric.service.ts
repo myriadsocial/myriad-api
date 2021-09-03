@@ -109,6 +109,8 @@ export class MetricService {
       case ControllerType.USEREXPERIENCE:
         return this.userExperienceRepository.count(where);
 
+      case ControllerType.POSTCOMMENT:
+      case ControllerType.COMMENTCOMMENT:
       case ControllerType.COMMENT:
         return this.commentRepository.count(where);
 
