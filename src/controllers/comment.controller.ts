@@ -71,7 +71,7 @@ export class CommentController {
         'application/json': {
           schema: getModelSchemaRef(Comment, {
             title: 'NewCommentInPost',
-            exclude: ['id'],
+            exclude: ['id', 'referenceId', 'type'],
           }),
         },
       },
