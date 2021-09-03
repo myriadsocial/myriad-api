@@ -9,7 +9,7 @@ import {
 } from '@loopback/core';
 import {Where} from '@loopback/repository';
 import {HttpErrors, RestBindings} from '@loopback/rest';
-import {ControllerType, MethodType, TimelineType} from '../enums';
+import {CommentType, ControllerType, MethodType, TimelineType} from '../enums';
 import {Post} from '../models';
 import {
   ExperienceService,
@@ -59,9 +59,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
     const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
     const {pageNumber, pageLimit, userId, timelineType} = query;
-    const filter = invocationCtx.args[0] ?? {where: {}};
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
+
+    let filter = null;
+
+    if (ControllerType.POSTCOMMENT || ControllerType.COMMENTCOMMENT) {
+      filter = invocationCtx.args[1] ?? {where: {}};
+    } else {
+      filter = invocationCtx.args[0] ?? {where: {}};
+    }
 
     if (methodName === MethodType.TIMELINE) {
       if (filter.where && Object.keys(filter.where).length > 0 && timelineType)
@@ -89,10 +96,25 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     if (!isNaN(Number(pageNumber)) || Number(pageNumber) > 0) pageIndex = Number(pageNumber);
     if (!isNaN(Number(pageLimit)) || Number(pageLimit) > 0) pageSize = Number(pageLimit);
 
-    invocationCtx.args[0] = Object.assign(filter, {
-      limit: pageSize,
-      offset: (pageIndex - 1) * pageSize,
-    });
+    if (className === ControllerType.POSTCOMMENT || className === ControllerType.COMMENTCOMMENT) {
+      invocationCtx.args[1] = Object.assign(filter, {
+        limit: pageSize,
+        offset: (pageIndex - 1) * pageSize,
+      });
+
+      const type =
+        className === ControllerType.POSTCOMMENT ? CommentType.POST : CommentType.COMMENT;
+
+      filter.where = Object.assign(filter.where, {
+        referenceId: invocationCtx.args[0],
+        type: type,
+      });
+    } else {
+      invocationCtx.args[0] = Object.assign(filter, {
+        limit: pageSize,
+        offset: (pageIndex - 1) * pageSize,
+      });
+    }
 
     const result = await next();
     const {count} = await this.metricService.countData(className, filter.where);
