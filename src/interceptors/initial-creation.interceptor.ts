@@ -63,100 +63,107 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName;
     const className = invocationCtx.targetClass.name as ControllerType;
 
-    switch (methodName) {
-      case MethodType.CREATE: {
-        if (className === ControllerType.USER) {
-          const newUser = invocationCtx.args[0];
-          const user = await this.userRepository.findOne({
-            where: {
-              id: newUser.id,
-            },
-          });
-
-          if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
-
-          newUser.bio = `Hello, my name is ${newUser.name}!`;
-          newUser.username =
-            newUser.name.replace(/\s+/g, '').toLowerCase() +
-            '.' +
-            Math.random().toString(36).substr(2, 9);
-
-          invocationCtx.args[0] = newUser;
-          break;
-        }
-
-        if (className === ControllerType.TRANSACTION) {
-          await this.currencyRepository.findById(invocationCtx.args[0].currencyId.toUpperCase());
-          await this.userRepository.findById(invocationCtx.args[0].from);
-          break;
-        }
-
-        if (className === ControllerType.COMMENT) {
-          invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
-            type: CommentType.POST,
-            referenceId: invocationCtx.args[0].postId,
-          });
-          break;
-        }
-
-        if (className === ControllerType.COMMENTCOMMENT) {
-          await this.validateComment(invocationCtx.args[0]);
-          invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
-            type: CommentType.COMMENT,
-            referenceId: invocationCtx.args[0],
-          });
-          break;
-        }
-
-        break;
-      }
-
-      case MethodType.UPDATEBYID:
-        invocationCtx.args[1].updatedAt = new Date().toString();
-        break;
+    if (methodName === MethodType.CREATE) {
+      await this.beforeCreation(className, invocationCtx);
     }
 
-    // Add pre-invocation logic here
+    if (methodName === MethodType.UPDATEBYID) {
+      invocationCtx.args[1].updatedAt = new Date().toString();
+      return next();
+    }
+
     const result = await next();
-    // Add post-invocation logic here
-    switch (methodName) {
-      case MethodType.CREATE: {
-        if (className === ControllerType.USER) {
-          this.currencyService.defaultCurrency(result.id) as Promise<void>;
-          this.currencyService.defaultAcalaTips(result.id) as Promise<void>;
-          break;
-        }
 
-        if (className === ControllerType.TRANSACTION) {
-          this.currencyService.sendMyriadReward(result.from) as Promise<void>;
-          break;
-        }
+    if (methodName === MethodType.CREATE) {
+      this.afterCreation(className, result);
+    }
 
-        if (className === ControllerType.POST) {
-          if (result.tags.length > 0) {
-            this.tagService.createTags(result.tags) as Promise<void>;
-          }
-          break;
-        }
-
-        if (className === ControllerType.COMMENT) {
-          const metric = await this.metricService.publicMetric(LikeType.POST, result.postId);
-          this.postRepository.updateById(result.postId, {
-            metric: metric,
-          }) as Promise<void>;
-          break;
-        }
-
-        break;
-      }
-
-      case MethodType.VERIFY: {
-        this.currencyService.claimTips(result) as Promise<void>;
-        break;
-      }
+    if (methodName === MethodType.VERIFY) {
+      this.currencyService.claimTips(result) as Promise<void>;
     }
 
     return result;
+  }
+
+  async beforeCreation(className: ControllerType, invocationCtx: InvocationContext): Promise<void> {
+    switch (className) {
+      case ControllerType.USER: {
+        const newUser = invocationCtx.args[0];
+        const user = await this.userRepository.findOne({
+          where: {
+            id: newUser.id,
+          },
+        });
+
+        if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
+
+        newUser.bio = `Hello, my name is ${newUser.name}!`;
+        newUser.username =
+          newUser.name.replace(/\s+/g, '').toLowerCase() +
+          '.' +
+          Math.random().toString(36).substr(2, 9);
+
+        invocationCtx.args[0] = newUser;
+        return;
+      }
+
+      case ControllerType.TRANSACTION: {
+        await this.currencyRepository.findById(invocationCtx.args[0].currencyId.toUpperCase());
+        await this.userRepository.findById(invocationCtx.args[0].from);
+        return;
+      }
+
+      case ControllerType.POSTCOMMENT: {
+        invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
+          type: CommentType.POST,
+          referenceId: invocationCtx.args[0],
+        });
+        return;
+      }
+
+      case ControllerType.COMMENTCOMMENT: {
+        await this.validateComment(invocationCtx.args[0]);
+        invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
+          type: CommentType.COMMENT,
+          referenceId: invocationCtx.args[0],
+        });
+        return;
+      }
+
+      default:
+        return;
+    }
+  }
+
+  async afterCreation(className: ControllerType, result: any): Promise<void> {
+    switch (className) {
+      case ControllerType.USER: {
+        await this.currencyService.defaultCurrency(result.id);
+        await this.currencyService.defaultAcalaTips(result.id);
+        return;
+      }
+
+      case ControllerType.TRANSACTION: {
+        await this.currencyService.sendMyriadReward(result.from);
+        return;
+      }
+
+      case ControllerType.POST: {
+        if (result.tags.length === 0) return;
+        await this.tagService.createTags(result.tags);
+        return;
+      }
+
+      case ControllerType.POSTCOMMENT:
+      case ControllerType.COMMENTCOMMENT:
+      case ControllerType.COMMENT: {
+        const metric = await this.metricService.publicMetric(LikeType.POST, result.postId);
+        await this.postRepository.updateById(result.postId, {
+          metric: metric,
+        });
+        return;
+      }
+    }
   }
 
   async validateComment(referenceId: string): Promise<void> {
