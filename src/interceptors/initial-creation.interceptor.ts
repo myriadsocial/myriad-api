@@ -75,7 +75,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     const result = await next();
 
     if (methodName === MethodType.CREATE) {
-      this.afterCreation(className, result);
+      this.afterCreation(className, result) as Promise<void>;
     }
 
     if (methodName === MethodType.VERIFY) {
@@ -135,6 +135,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     }
   }
 
+  /* eslint-disable  @typescript-eslint/no-explicit-any */
   async afterCreation(className: ControllerType, result: any): Promise<void> {
     switch (className) {
       case ControllerType.USER: {
