@@ -100,14 +100,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       const type =
         className === ControllerType.POSTCOMMENT ? CommentType.POST : CommentType.COMMENT;
 
-      filter.where = Object.assign(filter.where, {
-        referenceId: invocationCtx.args[0],
-        type: type,
-      });
-
       invocationCtx.args[1] = Object.assign(filter, {
         limit: pageSize,
         offset: (pageIndex - 1) * pageSize,
+      });
+
+      filter.where = Object.assign(filter.where ?? {}, {
+        referenceId: invocationCtx.args[0],
+        type: type,
       });
     } else {
       invocationCtx.args[0] = Object.assign(filter, {
