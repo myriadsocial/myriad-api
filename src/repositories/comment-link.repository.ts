@@ -8,9 +8,7 @@ export class CommentLinkRepository extends DefaultCrudRepository<
   typeof CommentLink.prototype.id,
   CommentLinkRelations
 > {
-  constructor(
-    @inject('datasources.mongo') dataSource: MongoDataSource,
-  ) {
+  constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
     super(CommentLink, dataSource);
   }
 }
