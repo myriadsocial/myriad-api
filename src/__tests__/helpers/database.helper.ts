@@ -66,7 +66,6 @@ export async function givenRepositories(testdb: any) {
   );
   const commentRepository: CommentRepository = new CommentRepository(
     testdb,
-    async () => postRepository,
     async () => userRepository,
     async () => transactionRepository,
     async () => commentLinkRepository,
