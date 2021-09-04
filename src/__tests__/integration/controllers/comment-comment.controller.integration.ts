@@ -101,36 +101,6 @@ describe('CommentCommentControllerIntegration', () => {
     ]);
   });
 
-  it('includes Post in find method result', async () => {
-    const post = await givenPostInstance(postRepository);
-    const fromComment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-      postId: post.id,
-      referenceId: post.id,
-      type: CommentType.POST,
-    });
-    const toComment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-      postId: post.id,
-      referenceId: fromComment.id,
-      type: CommentType.COMMENT,
-    });
-
-    await commentLinkRepository.create({
-      fromCommentId: fromComment.id,
-      toCommentId: toComment.id,
-    });
-
-    const response = await controller.find(fromComment.id ?? '', {include: ['post']});
-
-    expect(response).to.containDeep([
-      {
-        ...toComment,
-        post: post,
-      },
-    ]);
-  });
-
   it('includes User in find method result', async () => {
     const post = await givenPostInstance(postRepository);
     const user = await givenUserInstance(userRepository, {
@@ -164,7 +134,7 @@ describe('CommentCommentControllerIntegration', () => {
     ]);
   });
 
-  it('includes Transaction, Post, and User in find method result', async () => {
+  it('includes both Transaction and User in find method result', async () => {
     const post = await givenPostInstance(postRepository);
     const user = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
@@ -193,14 +163,13 @@ describe('CommentCommentControllerIntegration', () => {
     });
 
     const response = await controller.find(fromComment.id ?? '', {
-      include: ['user', 'transactions', 'post'],
+      include: ['user', 'transactions'],
     });
 
     expect(response).to.containDeep([
       {
         ...toComment,
         user: user,
-        post: post,
         transactions: [transaction],
       },
     ]);
