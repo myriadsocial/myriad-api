@@ -79,7 +79,7 @@ export class CommentController {
       content: {
         'application/json': {
           schema: getModelSchemaRef(Comment, {
-            title: 'NewCommentInPost',
+            title: 'NewComment',
             exclude: ['id'],
           }),
         },
