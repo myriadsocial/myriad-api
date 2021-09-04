@@ -11,7 +11,7 @@ import {PostRepository} from '../../repositories';
 import {NotificationService} from '../../services';
 import {givenComment, givenPost} from '../helpers';
 
-describe('PostCommentControllers', () => {
+describe('PostCommentController', () => {
   let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
   let constrainedCommentRepository: StubbedInstanceWithSinonAccessor<HasManyRepository<Comment>>;
   let notificationService: NotificationService;
