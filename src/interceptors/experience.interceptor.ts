@@ -8,11 +8,8 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {
-  ExperienceRepository,
-  UserExperienceRepository,
-  UserRepository,
-} from '../repositories';
+import {MethodType} from '../enums';
+import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../repositories';
 /**
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
@@ -45,10 +42,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
-  async intercept(
-    invocationCtx: InvocationContext,
-    next: () => ValueOrPromise<InvocationResult>,
-  ) {
+  async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
     const methodName = invocationCtx.methodName;
     const userId = invocationCtx.args[0];
     const experienceId = invocationCtx.args[1];
@@ -56,23 +50,18 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     let numberOfUserExperience = 0;
 
     switch (methodName) {
-      case 'create':
-        numberOfUserExperience = await this.validateNumberOfUserExperience(
-          userId,
-        );
+      case MethodType.CREATE:
+        numberOfUserExperience = await this.validateNumberOfUserExperience(userId);
         invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
           createdBy: userId,
         });
         break;
 
-      case 'clone':
-        numberOfUserExperience = await this.validateCloneExperience(
-          userId,
-          experienceId,
-        );
+      case MethodType.CLONE:
+        numberOfUserExperience = await this.validateCloneExperience(userId, experienceId);
         break;
 
-      case 'modify':
+      case MethodType.MODIFY:
         invocationCtx.args[2] = Object.assign(invocationCtx.args[2], {
           createdBy: userId,
           clonedCount: 0,
@@ -87,27 +76,26 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     // Add post-invocation logic here
 
     if (
-      (methodName === 'create' || methodName === 'clone') &&
+      (methodName === MethodType.CREATE || methodName === MethodType.CLONE) &&
       numberOfUserExperience === 0
     ) {
       await this.userRepository.updateById(userId, {
-        onTimeline: methodName === 'create' ? result.id : result.experienceId,
+        onTimeline: methodName === MethodType.CREATE ? result.id : result.experienceId,
       });
     }
 
-    if (methodName === 'clone' || methodName === 'modify') {
-      const {count: currentNumberOfUserExperience} =
-        await this.userExperienceRepository.count({
-          experienceId,
-          cloned: true,
-        });
+    if (methodName === MethodType.CLONE || methodName === MethodType.MODIFY) {
+      const {count: currentNumberOfUserExperience} = await this.userExperienceRepository.count({
+        experienceId,
+        cloned: true,
+      });
 
       await this.experienceRepository.updateById(experienceId, {
         clonedCount: currentNumberOfUserExperience,
       });
     }
 
-    if (methodName === 'modify') {
+    if (methodName === MethodType.MODIFY) {
       const user = await this.userRepository.findById(userId);
 
       if (user.onTimeline === experienceId) {
@@ -118,27 +106,19 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     return result;
   }
 
-  async validateCloneExperience(
-    userId: string,
-    experienceId: string,
-  ): Promise<number> {
+  async validateCloneExperience(userId: string, experienceId: string): Promise<number> {
     // Check if experience not belong to user
     const experience = await this.experienceRepository.findById(experienceId);
 
     if (userId === experience.createdBy)
-      throw new HttpErrors.UnprocessableEntity(
-        'Experience already belong to you!',
-      );
+      throw new HttpErrors.UnprocessableEntity('Experience already belong to you!');
 
     // Check if user has been cloned this experience
     const cloned = await this.userExperienceRepository.findOne({
       where: {userId, experienceId, cloned: true},
     });
 
-    if (cloned)
-      throw new HttpErrors.UnprocessableEntity(
-        'You already cloned this experience!',
-      );
+    if (cloned) throw new HttpErrors.UnprocessableEntity('You already cloned this experience!');
 
     return this.validateNumberOfUserExperience(userId);
   }
@@ -148,9 +128,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     const {count} = await this.userExperienceRepository.count({userId});
 
     if (count >= 10)
-      throw new HttpErrors.UnprocessableEntity(
-        'Experience must not exceed 10 experiences',
-      );
+      throw new HttpErrors.UnprocessableEntity('Experience must not exceed 10 experiences');
 
     return count;
   }
