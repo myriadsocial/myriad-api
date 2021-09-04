@@ -1,5 +1,6 @@
 import {
   ActivityLogType,
+  CommentType,
   FriendStatusType,
   LikeType,
   NotificationType,
@@ -108,6 +109,8 @@ export function givenComment(comment?: Partial<Comment>) {
   const data = Object.assign(
     {
       text: 'Hello world',
+      referenceId: '1',
+      type: CommentType.POST,
     },
     comment,
   );
