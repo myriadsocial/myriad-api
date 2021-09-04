@@ -103,6 +103,7 @@ export async function givenRepositories(testdb: any) {
     likeRepository,
     notificationRepository,
     activityLogRepository,
+    commentLinkRepository,
   };
 }
 
@@ -119,6 +120,7 @@ export async function givenEmptyDatabase(testdb: any) {
     userSocialMediaRepository,
     peopleRepository,
     activityLogRepository,
+    commentLinkRepository,
   } = await givenRepositories(testdb);
 
   await peopleRepository.deleteAll();
@@ -132,4 +134,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await postRepository.deleteAll();
   await userSocialMediaRepository.deleteAll();
   await activityLogRepository.deleteAll();
+  await commentLinkRepository.deleteAll();
 }
