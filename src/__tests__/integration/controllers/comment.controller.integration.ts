@@ -1,6 +1,6 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {CommentController} from '../../../controllers';
-import {NotificationType, PlatformType, TransactionType} from '../../../enums';
+import {CommentType, NotificationType, PlatformType, TransactionType} from '../../../enums';
 import {
   CommentRepository,
   NotificationRepository,
@@ -89,6 +89,8 @@ describe('CommentControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
+      referenceId: post.id,
+      type: CommentType.POST,
     });
     const response = await controller.find({include: ['post']});
 
@@ -127,6 +129,8 @@ describe('CommentControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: post.id,
+      referenceId: post.id,
+      type: CommentType.POST,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
@@ -168,6 +172,8 @@ describe('CommentControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
+      referenceId: post.id,
+      type: CommentType.POST,
     });
 
     const response = await controller.findById(comment.id ?? '', {include: ['post']});
@@ -203,6 +209,8 @@ describe('CommentControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: post.id,
+      referenceId: post.id,
+      type: CommentType.POST,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
@@ -234,6 +242,8 @@ describe('CommentControllerIntegration', () => {
       postId: post.id,
       userId: user.id,
       text: 'hello world',
+      referenceId: post.id,
+      type: CommentType.POST,
     });
 
     const newComment = await controller.create(commentInstance);
@@ -278,6 +288,8 @@ describe('CommentControllerIntegration', () => {
       postId: post.id,
       userId: user.id,
       text: 'hello world',
+      referenceId: post.id,
+      type: CommentType.POST,
     });
 
     const newComment = await controller.create(commentInstance);

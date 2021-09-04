@@ -1,7 +1,7 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {TransactionType} from '../../enums';
+import {CommentType, TransactionType} from '../../enums';
 import {Comment, Post, User} from '../../models';
 import {
   CommentRepository,
@@ -61,7 +61,12 @@ describe('CommentApplication', function () {
   });
 
   it('creates a comment', async function () {
-    const comment = givenComment({userId: user.id, postId: post.id});
+    const comment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: post.id,
+      type: CommentType.POST,
+    });
 
     const response = await client.post('/comments').send(comment).expect(200);
     expect(response.body).to.containDeep(comment);
@@ -70,7 +75,12 @@ describe('CommentApplication', function () {
   });
 
   it('adds by 1 post metric comments', async () => {
-    const comment = givenComment({userId: user.id, postId: post.id});
+    const comment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: post.id,
+      type: CommentType.POST,
+    });
 
     await client.post('/comments').send(comment).expect(200);
     const resultPost = await postRepository.findById(post.id);
@@ -80,13 +90,22 @@ describe('CommentApplication', function () {
   });
 
   it('returns 422 when creates a comment with no userId', async () => {
-    const comment = givenComment({postId: post.id});
+    const comment = givenComment({postId: post.id, referenceId: post.id, type: CommentType.POST});
+
+    await client.post('/comments').send(comment).expect(422);
+  });
+
+  it('returns 422 when created a comment with no referenceId and no type', async () => {
+    const comment = givenComment({
+      userId: user.id,
+      postId: post.id,
+    });
 
     await client.post('/comments').send(comment).expect(422);
   });
 
   it('rejects requests to create a comment with no postId', async () => {
-    const comment = givenComment({userId: user.id});
+    const comment = givenComment({userId: user.id, referenceId: post.id, type: CommentType.POST});
 
     await client.post('/comments').send(comment).expect(422);
   });
@@ -98,6 +117,8 @@ describe('CommentApplication', function () {
       persistedComment = await givenCommentInstance(commentRepository, {
         userId: user.id,
         postId: post.id,
+        referenceId: post.id,
+        type: CommentType.POST,
       });
     });
 
@@ -146,6 +167,8 @@ describe('CommentApplication', function () {
       persistedComments = await givenMultipleCommentInstances(commentRepository, {
         userId: user.id,
         postId: post.id,
+        referenceId: post.id,
+        type: CommentType.POST,
         createdAt: new Date().toString(),
         updatedAt: new Date().toString(),
       });
@@ -161,11 +184,21 @@ describe('CommentApplication', function () {
         text: 'wow',
         userId: user.id,
         postId: post.id,
+        referenceId: post.id,
+        type: CommentType.POST,
       });
+
+      const filter = {
+        filter: {
+          where: {
+            text: 'wow',
+          },
+        },
+      };
 
       await client
         .get('/comments')
-        .query('filter=' + JSON.stringify({where: {text: 'wow'}}))
+        .query(filter)
         .expect(200, {
           data: [toJSON(commentInProgress)],
           meta: {
@@ -182,6 +215,8 @@ describe('CommentApplication', function () {
         text: 'hello again',
         userId: user.id,
         postId: post.id,
+        referenceId: post.id,
+        type: CommentType.POST,
       });
 
       const response = await client.get('/comments').query('pageLimit=2');
@@ -193,6 +228,8 @@ describe('CommentApplication', function () {
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: post.id,
+      referenceId: post.id,
+      type: CommentType.POST,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
