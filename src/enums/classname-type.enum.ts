@@ -20,6 +20,7 @@ export enum MethodType {
   CREATE = 'create',
   CREATELIKE = 'createLike',
   UPDATEBYID = 'updateById',
+  UPDATEEXPERIENCE = 'updateExperience',
   TIMELINE = 'getTimeline',
   VERIFY = 'verify',
   CLONE = 'clone',
