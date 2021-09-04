@@ -7,9 +7,8 @@ import {
   repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Comment, CommentLink, CommentRelations, Post, Transaction, User} from '../models';
+import {Comment, CommentLink, CommentRelations, Transaction, User} from '../models';
 import {CommentLinkRepository} from './comment-link.repository';
-import {PostRepository} from './post.repository';
 import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
 
@@ -18,8 +17,6 @@ export class CommentRepository extends DefaultCrudRepository<
   typeof Comment.prototype.id,
   CommentRelations
 > {
-  public readonly post: BelongsToAccessor<Post, typeof Comment.prototype.id>;
-
   public readonly user: BelongsToAccessor<User, typeof Comment.prototype.id>;
 
   public readonly transactions: HasManyRepositoryFactory<Transaction, typeof Comment.prototype.id>;
@@ -33,8 +30,6 @@ export class CommentRepository extends DefaultCrudRepository<
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
-    @repository.getter('PostRepository')
-    protected postRepositoryGetter: Getter<PostRepository>,
     @repository.getter('UserRepository')
     protected userRepositoryGetter: Getter<UserRepository>,
     @repository.getter('TransactionRepository')
@@ -51,8 +46,6 @@ export class CommentRepository extends DefaultCrudRepository<
     this.registerInclusionResolver('comments', this.comments.inclusionResolver);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
-    this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter);
-    this.registerInclusionResolver('post', this.post.inclusionResolver);
     this.transactions = this.createHasManyRepositoryFactoryFor(
       'transactions',
       transactionRepositoryGetter,

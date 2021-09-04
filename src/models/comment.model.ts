@@ -1,7 +1,6 @@
 import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
 import {CommentType} from '../enums';
 import {CommentLink} from './comment-link.model';
-import {Post} from './post.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
 
@@ -44,6 +43,12 @@ export class Comment extends Entity {
   referenceId?: string;
 
   @property({
+    type: 'string',
+    required: true,
+  })
+  postId: string;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
@@ -62,9 +67,6 @@ export class Comment extends Entity {
     required: false,
   })
   deletedAt?: string;
-
-  @belongsTo(() => Post, {}, {required: true})
-  postId: string;
 
   @belongsTo(
     () => User,
