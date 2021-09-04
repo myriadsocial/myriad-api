@@ -64,7 +64,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     let filter = null;
 
-    if (ControllerType.POSTCOMMENT || ControllerType.COMMENTCOMMENT) {
+    if (className === ControllerType.POSTCOMMENT || className === ControllerType.COMMENTCOMMENT) {
       filter = invocationCtx.args[1] ?? {where: {}};
     } else {
       filter = invocationCtx.args[0] ?? {where: {}};
@@ -97,17 +97,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     if (!isNaN(Number(pageLimit)) || Number(pageLimit) > 0) pageSize = Number(pageLimit);
 
     if (className === ControllerType.POSTCOMMENT || className === ControllerType.COMMENTCOMMENT) {
-      invocationCtx.args[1] = Object.assign(filter, {
-        limit: pageSize,
-        offset: (pageIndex - 1) * pageSize,
-      });
-
       const type =
         className === ControllerType.POSTCOMMENT ? CommentType.POST : CommentType.COMMENT;
 
       filter.where = Object.assign(filter.where, {
         referenceId: invocationCtx.args[0],
         type: type,
+      });
+
+      invocationCtx.args[1] = Object.assign(filter, {
+        limit: pageSize,
+        offset: (pageIndex - 1) * pageSize,
       });
     } else {
       invocationCtx.args[0] = Object.assign(filter, {
