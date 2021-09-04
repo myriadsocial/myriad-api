@@ -1,6 +1,15 @@
 import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {del, get, getModelSchemaRef, param, patch, post, requestBody} from '@loopback/rest';
+import {
+  del,
+  get,
+  getModelSchemaRef,
+  HttpErrors,
+  param,
+  patch,
+  post,
+  requestBody,
+} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {Comment} from '../models';
 import {CommentRepository} from '../repositories';
@@ -71,13 +80,16 @@ export class CommentController {
         'application/json': {
           schema: getModelSchemaRef(Comment, {
             title: 'NewCommentInPost',
-            exclude: ['id', 'referenceId', 'type'],
+            exclude: ['id'],
           }),
         },
       },
     })
     comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
+    if (!comment.type || !comment.referenceId)
+      throw new HttpErrors.UnprocessableEntity('Type/ReferenceId cannot be empty');
+
     const newComment = await this.commentRepository.create(comment);
 
     try {
