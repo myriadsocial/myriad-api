@@ -155,7 +155,7 @@ export class UserExperienceController {
   }
 
   // Select experience
-  @patch('/users/{userId}/select-experiencesd/{experienceId}', {
+  @patch('/users/{userId}/select-experiences/{experienceId}', {
     responses: {
       '200': {
         desription: 'Select User Experience',
@@ -166,7 +166,10 @@ export class UserExperienceController {
     @param.path.string('userId') userId: string,
     @param.path.string('experienceId') experienceId: string,
   ): Promise<void> {
-    return this.userRepository.updateById(userId, {onTimeline: experienceId});
+    return this.userRepository.updateById(userId, {
+      onTimeline: experienceId,
+      updatedAt: new Date().toString(),
+    });
   }
 
   @patch('/users/{userId}/experiences/{experienceId}', {
