@@ -101,6 +101,9 @@ describe('CommentApplication', function () {
       postId: post.id,
     });
 
+    delete comment.referenceId;
+    delete comment.type;
+
     await client.post('/comments').send(comment).expect(422);
   });
 
@@ -169,8 +172,6 @@ describe('CommentApplication', function () {
         postId: post.id,
         referenceId: post.id,
         type: CommentType.POST,
-        createdAt: new Date().toString(),
-        updatedAt: new Date().toString(),
       });
     });
 
@@ -224,7 +225,7 @@ describe('CommentApplication', function () {
     });
   });
 
-  it('includes user, transaction, and post in query result', async () => {
+  it('includes both user and transaction in query result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: post.id,
@@ -238,7 +239,7 @@ describe('CommentApplication', function () {
     const filter =
       'filter=' +
       JSON.stringify({
-        include: ['user', 'post', 'transactions'],
+        include: ['user', 'transactions'],
       });
 
     const response = await client.get('/comments').query(filter);
@@ -247,7 +248,6 @@ describe('CommentApplication', function () {
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(comment),
       user: toJSON(user),
-      post: toJSON(post),
       transactions: [toJSON(transaction)],
     });
   });
