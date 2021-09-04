@@ -88,6 +88,11 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       return next();
     }
 
+    if (methodName === MethodType.UPDATEEXPERIENCE) {
+      invocationCtx.args[2].updatedAt = new Date().toString();
+      return next();
+    }
+
     const result = await next();
 
     if (methodName === MethodType.CREATE) {
