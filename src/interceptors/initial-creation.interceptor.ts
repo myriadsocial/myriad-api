@@ -113,18 +113,13 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         return;
       }
 
-      case ControllerType.POSTCOMMENT: {
-        invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
-          type: CommentType.POST,
-          referenceId: invocationCtx.args[0],
-        });
-        return;
-      }
-
+      case ControllerType.POSTCOMMENT:
       case ControllerType.COMMENTCOMMENT: {
-        await this.validateComment(invocationCtx.args[0]);
+        if (className === ControllerType.COMMENTCOMMENT)
+          await this.validateComment(invocationCtx.args[0]);
+
         invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
-          type: CommentType.COMMENT,
+          type: className === ControllerType.POSTCOMMENT ? CommentType.POST : CommentType.COMMENT,
           referenceId: invocationCtx.args[0],
         });
         return;
