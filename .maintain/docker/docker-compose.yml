@@ -1,16 +1,12 @@
 version: '3'
 
 services:
-  api:
+  web:
     container_name: myriad-api
     image: myriadsocial/myriad-api
     build:
       context: ../../
-      dockerfile: Dockerfile
-    volumes:
-      - ../../:/home/myriad/app
-      - /home/myriad/app/node_modules
-      - /home/myriad/app/dist
+      dockerfile: .maintain/docker/Dockerfile
     env_file:
       - ../../.env
     environment:
@@ -20,9 +16,9 @@ services:
       - 3001:3000
     networks:
       myriad:
-        ipv4_address: 172.27.1.4
+        ipv4_address: 172.27.1.3
         aliases:
-          - api
+          - myriad-api
 
 networks:
   myriad:
