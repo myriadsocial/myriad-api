@@ -33,18 +33,68 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: MYRIAD_WS_RPC
+              value: {{ .Values.config.rpcWSURL }}
+            - name: MYRIAD_FAUCET_MNEMONIC
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myriad-api.baseSecretName" . }}
+                  key: faucetMnemonic
+            - name: MYRIAD_REWARD_AMOUNT
+              value: {{ .Values.config.rewardAmount }}
+            - name: MONGO_HOST
+              value: {{ .Values.config.mongo.host }}
+            - name: MONGO_PORT
+              value: {{ .Values.config.mongo.port }}
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myriad-api.mongoSecretName" . }}
+                  key: user
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myriad-api.mongoSecretName" . }}
+                  key: password
+            - name: MONGO_DATABASE
+              value: {{ .Values.config.mongo.database }}
+            - name: FIREBASE_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myriad-api.firebaseSecretName" . }}
+                  key: projectId
+            - name: FIREBASE_CLIENT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myriad-api.firebaseSecretName" . }}
+                  key: clientEmail
+            - name: FIREBASE_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myriad-api.firebaseSecretName" . }}
+                  key: privateKey
+            - name: TWITTER_BEARER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myriad-api.twitterSecretName" . }}
+                  key: bearerToken
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 3000
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /
               port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
           readinessProbe:
             httpGet:
               path: /
               port: http
+            initialDelaySeconds: 25
+            periodSeconds: 30
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

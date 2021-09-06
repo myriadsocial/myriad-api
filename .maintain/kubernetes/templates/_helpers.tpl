@@ -60,3 +60,31 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create base secret name.
+*/}}
+{{- define "myriad-api.baseSecretName" -}}
+{{- printf "%s-%s" .Chart.Name "secret" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create the name of mongo secret.
+*/}}
+{{- define "myriad-api.mongoSecretName" -}}
+{{- printf "%s-%s" (include "myriad-api.baseSecretName" .) "mongo" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create the name of firebase secret.
+*/}}
+{{- define "myriad-api.firebaseSecretName" -}}
+{{- printf "%s-%s" (include "myriad-api.baseSecretName" .) "firebase" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Create the name of twitter secret.
+*/}}
+{{- define "myriad-api.twitterSecretName" -}}
+{{- printf "%s-%s" (include "myriad-api.baseSecretName" .) "twitter" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
