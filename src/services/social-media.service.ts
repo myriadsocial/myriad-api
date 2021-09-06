@@ -34,6 +34,8 @@ export class SocialMediaService {
       `2/users/${user.id}/tweets?max_results=5`,
     );
 
+    if (!tweets) throw new HttpErrors.NotFound('Tweet not found/protected by user');
+
     // Verify that the publicKey is existing in user twitter
     const foundTwitterPublicKey = tweets[0].text
       .split(' ')
@@ -137,7 +139,7 @@ export class SocialMediaService {
         `1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`,
       );
     } catch {
-      throw new HttpErrors.UnprocessableEntity('Tweet not found');
+      throw new HttpErrors.UnprocessableEntity('Tweet not found/protected by user');
     }
 
     const {
