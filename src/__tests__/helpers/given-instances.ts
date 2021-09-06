@@ -579,3 +579,22 @@ export async function givenMultipleUserExperienceInstances(
     }),
   ]);
 }
+
+export async function givenCommentInstanceOfPost(
+  postRepository: PostRepository,
+  id: typeof Post.prototype.id,
+  comment?: Partial<Comment>,
+) {
+  const data: Partial<Comment> = givenComment(comment);
+  delete data.referenceId;
+  return postRepository.comments(id).create(data);
+}
+
+export async function givenCommentInstanceOfComment(
+  commentRepository: CommentRepository,
+  id: typeof Comment.prototype.id,
+  comment?: Partial<Comment>,
+) {
+  const data: Partial<Comment> = givenComment(comment);
+  return commentRepository.comments(id).create(data);
+}
