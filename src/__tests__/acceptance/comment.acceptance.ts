@@ -1,25 +1,33 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {CommentType, TransactionType} from '../../enums';
-import {Comment, Post, User} from '../../models';
+import {CommentType, NotificationType, TransactionType} from '../../enums';
+import {Comment, Notification, People, Post, User} from '../../models';
 import {
   CommentRepository,
+  NotificationRepository,
+  PeopleRepository,
   PostRepository,
   TransactionRepository,
   UserRepository,
+  UserSocialMediaRepository,
 } from '../../repositories';
 import {
   givenComment,
   givenCommentInstance,
   givenCommentRepository,
   givenMultipleCommentInstances,
+  givenNotificationRepository,
+  givenPeopleInstance,
+  givenPeopleRepository,
   givenPostInstance,
   givenPostRepository,
   givenTransactionInstance,
   givenTransactionRepository,
   givenUserInstance,
   givenUserRepository,
+  givenUserSocialMediaInstance,
+  givenUserSocialMediaRepository,
   setupApplication,
 } from '../helpers';
 
@@ -30,8 +38,13 @@ describe('CommentApplication', function () {
   let commentRepository: CommentRepository;
   let postRepository: PostRepository;
   let transactionRepository: TransactionRepository;
+  let notificationRepository: NotificationRepository;
+  let peopleRepository: PeopleRepository;
+  let userSocialMediaRepository: UserSocialMediaRepository;
   let user: User;
   let post: Post;
+  let people: People;
+  let otherUser: User;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -44,6 +57,9 @@ describe('CommentApplication', function () {
     commentRepository = await givenCommentRepository(app);
     postRepository = await givenPostRepository(app);
     transactionRepository = await givenTransactionRepository(app);
+    notificationRepository = await givenNotificationRepository(app);
+    peopleRepository = await givenPeopleRepository(app);
+    userSocialMediaRepository = await givenUserSocialMediaRepository(app);
   });
 
   beforeEach(async () => {
@@ -51,16 +67,28 @@ describe('CommentApplication', function () {
     await userRepository.deleteAll();
     await postRepository.deleteAll();
     await transactionRepository.deleteAll();
+    await notificationRepository.deleteAll();
+    await peopleRepository.deleteAll();
+    await userSocialMediaRepository.deleteAll();
   });
 
   beforeEach(async () => {
     user = await givenUserInstance(userRepository);
+    otherUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+    });
+    people = await givenPeopleInstance(peopleRepository);
     post = await givenPostInstance(postRepository, {
-      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+      createdBy: otherUser.id,
+      peopleId: people.id,
+    });
+    await givenUserSocialMediaInstance(userSocialMediaRepository, {
+      userId: otherUser.id,
+      peopleId: people.id,
     });
   });
 
-  it('creates a comment', async function () {
+  it('creates a comment', async () => {
     const comment = givenComment({
       userId: user.id,
       postId: post.id,
@@ -72,6 +100,33 @@ describe('CommentApplication', function () {
     expect(response.body).to.containDeep(comment);
     const result = await commentRepository.findById(response.body.id);
     expect(result).to.containDeep(comment);
+  });
+
+  it('creates a notification when creating a comment', async () => {
+    const comment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: post.id,
+      type: CommentType.POST,
+    });
+
+    const response = await client.post('/comments').send(comment).expect(200);
+    const notification = await notificationRepository.findOne({
+      where: {referenceId: response.body.id},
+    });
+    const expected = new Notification({
+      id: notification?.id,
+      type: NotificationType.POST_COMMENT,
+      from: user.id,
+      to: otherUser.id,
+      read: false,
+      referenceId: response.body.id,
+      message: 'commented: ' + comment.text,
+      createdAt: notification?.createdAt,
+      updatedAt: notification?.updatedAt,
+      deletedAt: undefined,
+    });
+    expect(expected).to.containDeep(notification);
   });
 
   it('adds by 1 post metric comments', async () => {
