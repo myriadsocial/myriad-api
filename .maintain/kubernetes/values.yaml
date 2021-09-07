@@ -24,9 +24,7 @@ config:
     password: ''
     database: myriad
   firebase:
-    projectId: ''
-    clientEmail: ''
-    privateKey: ''
+    saJson: ''
   twitter:
     bearerToken: ''
 
