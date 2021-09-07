@@ -42,11 +42,11 @@ spec:
                   name: {{ include "myriad-api.baseSecretName" . }}
                   key: faucetMnemonic
             - name: MYRIAD_REWARD_AMOUNT
-              value: {{ .Values.config.rewardAmount }}
+              value: {{ .Values.config.rewardAmount | quote }}
             - name: MONGO_HOST
               value: {{ .Values.config.mongo.host }}
             - name: MONGO_PORT
-              value: {{ .Values.config.mongo.port }}
+              value: {{ .Values.config.mongo.port | quote }}
             - name: MONGO_USER
               valueFrom:
                 secretKeyRef:
@@ -85,16 +85,16 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
               port: http
             initialDelaySeconds: 15
             periodSeconds: 20
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 25
-            periodSeconds: 30
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
