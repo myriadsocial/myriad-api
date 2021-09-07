@@ -69,6 +69,13 @@ Create base secret name.
 {{- end }}
 
 {{/*
+Create the name of tls secret.
+*/}}
+{{- define "myriad-api.tlsSecretName" -}}
+{{- printf "%s-%s" (include "myriad-api.baseSecretName" .) "tls" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create the name of mongo secret.
 */}}
 {{- define "myriad-api.mongoSecretName" -}}
