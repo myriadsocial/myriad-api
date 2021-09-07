@@ -1,3 +1,4 @@
+.maintain/kubernetes
 dist/
 node_modules/
 .eslintrc.js
