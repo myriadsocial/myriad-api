@@ -5,7 +5,11 @@ import * as firebaseAdmin from 'firebase-admin';
 export class FCMService {
   constructor() {}
 
-  async sendNotification(fcmTokens?: string[], title?: string, body?: string): Promise<void> {
+  async sendNotification(
+    fcmTokens?: string[],
+    title?: string,
+    body?: string,
+  ): Promise<void> {
     if (fcmTokens == null || fcmTokens.length <= 0) return;
 
     const message = {

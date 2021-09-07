@@ -44,34 +44,55 @@ describe('TransactionSummaryApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    transactionSentInstance1 = await givenTransactionInstance(transactionRepository, {
-      to: user.id,
-      referenceId: '1',
-      type: TransactionType.POST,
-    });
-    transactionReceivedInstance1 = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
-    });
-    transactionSentInstance2 = await givenTransactionInstance(transactionRepository, {
-      to: user.id,
-      referenceId: '1',
-      type: TransactionType.POST,
-    });
-    transactionReceivedInstance2 = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
-    });
-    transactionSentInstance3 = await givenTransactionInstance(transactionRepository, {
-      to: user.id,
-      referenceId: '2',
-      type: TransactionType.COMMENT,
-    });
-    transactionReceivedInstance3 = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
-    });
+    transactionSentInstance1 = await givenTransactionInstance(
+      transactionRepository,
+      {
+        to: user.id,
+        referenceId: '1',
+        type: TransactionType.POST,
+      },
+    );
+    transactionReceivedInstance1 = await givenTransactionInstance(
+      transactionRepository,
+      {
+        from: user.id,
+      },
+    );
+    transactionSentInstance2 = await givenTransactionInstance(
+      transactionRepository,
+      {
+        to: user.id,
+        referenceId: '1',
+        type: TransactionType.POST,
+      },
+    );
+    transactionReceivedInstance2 = await givenTransactionInstance(
+      transactionRepository,
+      {
+        from: user.id,
+      },
+    );
+    transactionSentInstance3 = await givenTransactionInstance(
+      transactionRepository,
+      {
+        to: user.id,
+        referenceId: '2',
+        type: TransactionType.COMMENT,
+      },
+    );
+    transactionReceivedInstance3 = await givenTransactionInstance(
+      transactionRepository,
+      {
+        from: user.id,
+      },
+    );
   });
 
   it('gets a user transaction summary', async function () {
-    const response = await client.get(`/users/${user.id}/transaction-summary`).send().expect(200);
+    const response = await client
+      .get(`/users/${user.id}/transaction-summary`)
+      .send()
+      .expect(200);
 
     expect(response.body).to.deepEqual({
       sent: [
@@ -96,18 +117,25 @@ describe('TransactionSummaryApplication', function () {
   });
 
   it('gets a post transaction summary', async function () {
-    const response = await client.get(`/posts/1/transaction-summary`).send().expect(200);
+    const response = await client
+      .get(`/posts/1/transaction-summary`)
+      .send()
+      .expect(200);
 
     expect(response.body).to.containDeep([
       {
         currencyId: DefaultCurrencyType.AUSD,
-        amount: transactionSentInstance1.amount + transactionSentInstance2.amount,
+        amount:
+          transactionSentInstance1.amount + transactionSentInstance2.amount,
       },
     ]);
   });
 
   it('gets a comment transaction summary', async function () {
-    const response = await client.get(`/comments/2/transaction-summary`).send().expect(200);
+    const response = await client
+      .get(`/comments/2/transaction-summary`)
+      .send()
+      .expect(200);
 
     expect(response.body).to.containDeep([
       {

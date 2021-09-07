@@ -22,7 +22,9 @@ describe('PeopleController', () => {
     it('returns a people if it exists', async () => {
       const findById = peopleRepository.stubs.findById;
       findById.resolves(aPeopleWithId);
-      expect(await controller.findById(aPeopleWithId.id as string)).to.eql(aPeopleWithId);
+      expect(await controller.findById(aPeopleWithId.id as string)).to.eql(
+        aPeopleWithId,
+      );
       sinon.assert.calledWith(findById, aPeopleWithId.id);
     });
   });

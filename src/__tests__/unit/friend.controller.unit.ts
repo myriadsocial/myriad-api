@@ -39,7 +39,9 @@ describe('FriendController', () => {
     it('returns a friend if it exists', async () => {
       const findById = friendRepository.stubs.findById;
       findById.resolves(aFriendWithId);
-      expect(await controller.findById(aFriendWithId.id as string)).to.eql(aFriendWithId);
+      expect(await controller.findById(aFriendWithId.id as string)).to.eql(
+        aFriendWithId,
+      );
       sinon.assert.calledWith(findById, aFriendWithId.id);
     });
   });
@@ -96,7 +98,11 @@ describe('FriendController', () => {
       status: FriendStatusType.APPROVED,
     });
 
-    friendService = new FriendService(friendRepository, userRepository, notificationService);
+    friendService = new FriendService(
+      friendRepository,
+      userRepository,
+      notificationService,
+    );
     controller = new FriendController(notificationService, friendService);
   }
 });

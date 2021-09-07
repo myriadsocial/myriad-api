@@ -9,7 +9,11 @@ import {
   UserRepository,
   UserSocialMediaRepository,
 } from '../../../repositories';
-import {FCMService, FriendService, NotificationService} from '../../../services';
+import {
+  FCMService,
+  FriendService,
+  NotificationService,
+} from '../../../services';
 import {
   givenEmptyDatabase,
   givenFriend,
@@ -48,7 +52,11 @@ describe('FriendControllerIntegration', () => {
       userSocialMediaRepository,
       fcmService,
     );
-    friendService = new FriendService(friendRepository, userRepository, notificationService);
+    friendService = new FriendService(
+      friendRepository,
+      userRepository,
+      notificationService,
+    );
     controller = new FriendController(notificationService, friendService);
   });
 
@@ -63,7 +71,8 @@ describe('FriendControllerIntegration', () => {
 
     const friend = await givenFriendInstance(friendRepository, {
       requesteeId: user.id,
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
     const response = await controller.find({include: ['requestee']});
@@ -82,7 +91,8 @@ describe('FriendControllerIntegration', () => {
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
     const response = await controller.find({include: ['requestor']});
 
@@ -105,7 +115,9 @@ describe('FriendControllerIntegration', () => {
       requestorId: user.id,
       requesteeId: otherUser.id,
     });
-    const response = await controller.find({include: ['requestor', 'requestee']});
+    const response = await controller.find({
+      include: ['requestor', 'requestee'],
+    });
 
     expect(response).to.containDeep([
       {
@@ -123,10 +135,13 @@ describe('FriendControllerIntegration', () => {
 
     const friend = await givenFriendInstance(friendRepository, {
       requesteeId: user.id,
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    const response = await controller.findById(friend.id ?? '', {include: ['requestee']});
+    const response = await controller.findById(friend.id ?? '', {
+      include: ['requestee'],
+    });
 
     expect(response).to.containDeep({
       ...friend,
@@ -140,10 +155,13 @@ describe('FriendControllerIntegration', () => {
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    const response = await controller.findById(friend.id ?? '', {include: ['requestor']});
+    const response = await controller.findById(friend.id ?? '', {
+      include: ['requestor'],
+    });
 
     expect(response).to.containDeep({
       ...friend,

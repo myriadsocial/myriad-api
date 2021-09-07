@@ -50,17 +50,26 @@ export class UserSocialMediaController {
 
     switch (platform) {
       case PlatformType.TWITTER:
-        platformUser = await this.socialMediaService.verifyToTwitter(username, publicKey);
+        platformUser = await this.socialMediaService.verifyToTwitter(
+          username,
+          publicKey,
+        );
 
         break;
 
       case PlatformType.REDDIT:
-        platformUser = await this.socialMediaService.verifyToReddit(username, publicKey);
+        platformUser = await this.socialMediaService.verifyToReddit(
+          username,
+          publicKey,
+        );
 
         break;
 
       case PlatformType.FACEBOOK:
-        platformUser = await this.socialMediaService.verifyToFacebook(username, publicKey);
+        platformUser = await this.socialMediaService.verifyToFacebook(
+          username,
+          publicKey,
+        );
 
         break;
 
@@ -105,7 +114,10 @@ export class UserSocialMediaController {
     @param.filter(UserSocialMedia, {exclude: 'where'})
     filter?: FilterExcludingWhere<UserSocialMedia>,
   ): Promise<UserSocialMedia> {
-    return this.userSocialMediaService.userSocialMediaRepository.findById(id, filter);
+    return this.userSocialMediaService.userSocialMediaRepository.findById(
+      id,
+      filter,
+    );
   }
 
   @del('/user-social-medias/{id}')

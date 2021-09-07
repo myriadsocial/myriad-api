@@ -29,9 +29,15 @@ export class UserRepository extends DefaultCrudRepository<
   typeof User.prototype.id,
   UserRelations
 > {
-  public readonly friends: HasManyRepositoryFactory<Friend, typeof User.prototype.id>;
+  public readonly friends: HasManyRepositoryFactory<
+    Friend,
+    typeof User.prototype.id
+  >;
 
-  public readonly activityLogs: HasManyRepositoryFactory<ActivityLog, typeof User.prototype.id>;
+  public readonly activityLogs: HasManyRepositoryFactory<
+    ActivityLog,
+    typeof User.prototype.id
+  >;
 
   public readonly experiences: HasManyThroughRepositoryFactory<
     Experience,
@@ -65,24 +71,36 @@ export class UserRepository extends DefaultCrudRepository<
     protected activityLogRepositoryGetter: Getter<ActivityLogRepository>,
   ) {
     super(User, dataSource);
-    this.friends = this.createHasManyRepositoryFactoryFor('friends', friendRepositoryGetter);
+    this.friends = this.createHasManyRepositoryFactoryFor(
+      'friends',
+      friendRepositoryGetter,
+    );
     this.registerInclusionResolver('friends', this.friends.inclusionResolver);
     this.activityLogs = this.createHasManyRepositoryFactoryFor(
       'activityLogs',
       activityLogRepositoryGetter,
     );
-    this.registerInclusionResolver('activityLogs', this.activityLogs.inclusionResolver);
+    this.registerInclusionResolver(
+      'activityLogs',
+      this.activityLogs.inclusionResolver,
+    );
     this.experiences = this.createHasManyThroughRepositoryFactoryFor(
       'experiences',
       experienceRepositoryGetter,
       userExperienceRepositoryGetter,
     );
-    this.registerInclusionResolver('experiences', this.experiences.inclusionResolver);
+    this.registerInclusionResolver(
+      'experiences',
+      this.experiences.inclusionResolver,
+    );
     this.currencies = this.createHasManyThroughRepositoryFactoryFor(
       'currencies',
       currencyRepositoryGetter,
       userCurrencyRepositoryGetter,
     );
-    this.registerInclusionResolver('currencies', this.currencies.inclusionResolver);
+    this.registerInclusionResolver(
+      'currencies',
+      this.currencies.inclusionResolver,
+    );
   }
 }

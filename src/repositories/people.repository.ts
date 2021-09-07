@@ -20,7 +20,10 @@ export class PeopleRepository extends DefaultCrudRepository<
     typeof People.prototype.id
   >;
 
-  public readonly posts: HasManyRepositoryFactory<Post, typeof People.prototype.id>;
+  public readonly posts: HasManyRepositoryFactory<
+    Post,
+    typeof People.prototype.id
+  >;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
@@ -30,12 +33,18 @@ export class PeopleRepository extends DefaultCrudRepository<
     protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(People, dataSource);
-    this.posts = this.createHasManyRepositoryFactoryFor('posts', postRepositoryGetter);
+    this.posts = this.createHasManyRepositoryFactoryFor(
+      'posts',
+      postRepositoryGetter,
+    );
     this.registerInclusionResolver('posts', this.posts.inclusionResolver);
     this.userSocialMedia = this.createHasOneRepositoryFactoryFor(
       'userSocialMedia',
       userSocialMediaRepositoryGetter,
     );
-    this.registerInclusionResolver('userSocialMedia', this.userSocialMedia.inclusionResolver);
+    this.registerInclusionResolver(
+      'userSocialMedia',
+      this.userSocialMedia.inclusionResolver,
+    );
   }
 }

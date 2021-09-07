@@ -3,7 +3,11 @@ import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
 import {Currency, Transaction, User} from '../../models';
-import {CurrencyRepository, TransactionRepository, UserRepository} from '../../repositories';
+import {
+  CurrencyRepository,
+  TransactionRepository,
+  UserRepository,
+} from '../../repositories';
 import {
   givenCurrencyInstance,
   givenCurrencyRepository,
@@ -51,8 +55,14 @@ describe('TransactionApplication', function () {
 
   it('creates a transaction', async function () {
     const user = await givenUserInstance(userRepository);
-    const transaction = givenTransaction({from: user.id, currencyId: currency.id});
-    const response = await client.post('/transactions').send(transaction).expect(200);
+    const transaction = givenTransaction({
+      from: user.id,
+      currencyId: currency.id,
+    });
+    const response = await client
+      .post('/transactions')
+      .send(transaction)
+      .expect(200);
     expect(response.body).to.containDeep(transaction);
     const result = await transactionRepository.findById(response.body.id);
     expect(result).to.containDeep(transaction);
@@ -81,7 +91,9 @@ describe('TransactionApplication', function () {
     let persistedTransaction: Transaction;
 
     beforeEach(async () => {
-      persistedTransaction = await givenTransactionInstance(transactionRepository);
+      persistedTransaction = await givenTransactionInstance(
+        transactionRepository,
+      );
     });
 
     it('gets a transaction by ID', async () => {
@@ -99,10 +111,13 @@ describe('TransactionApplication', function () {
     });
 
     it('deletes the transaction', async () => {
-      await client.del(`/transactions/${persistedTransaction.id}`).send().expect(204);
-      await expect(transactionRepository.findById(persistedTransaction.id)).to.be.rejectedWith(
-        EntityNotFoundError,
-      );
+      await client
+        .del(`/transactions/${persistedTransaction.id}`)
+        .send()
+        .expect(204);
+      await expect(
+        transactionRepository.findById(persistedTransaction.id),
+      ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a transaction that does not exist', async () => {
@@ -126,7 +141,9 @@ describe('TransactionApplication', function () {
     beforeEach(async () => {
       persistedTransactions = [
         await givenTransactionInstance(transactionRepository, {from: user.id}),
-        await givenTransactionInstance(transactionRepository, {from: otherUser.id}),
+        await givenTransactionInstance(transactionRepository, {
+          from: otherUser.id,
+        }),
       ];
     });
 
@@ -136,10 +153,13 @@ describe('TransactionApplication', function () {
     });
 
     it('queries transactions with a filter', async () => {
-      const transactionInProgress = await givenTransactionInstance(transactionRepository, {
-        from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
-        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
-      });
+      const transactionInProgress = await givenTransactionInstance(
+        transactionRepository,
+        {
+          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
+          to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
+        },
+      );
 
       const response = await client
         .get('/transactions')
@@ -155,7 +175,9 @@ describe('TransactionApplication', function () {
         )
         .expect(200);
 
-      expect(response.body.data).to.containDeep([toJSON(transactionInProgress)]);
+      expect(response.body.data).to.containDeep([
+        toJSON(transactionInProgress),
+      ]);
     });
 
     it('exploded filter conditions work', async () => {

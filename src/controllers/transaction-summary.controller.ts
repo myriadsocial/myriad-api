@@ -62,7 +62,11 @@ export class TransactionSummaryController {
   ): Promise<UserTransactionSummary> {
     const totalAmount = await Promise.all(
       ['from', 'to'].map(e => {
-        return this.transactionService.totalTransactionAmount(e, id, '$currencyId');
+        return this.transactionService.totalTransactionAmount(
+          e,
+          id,
+          '$currencyId',
+        );
       }),
     );
 
@@ -97,7 +101,11 @@ export class TransactionSummaryController {
   async postTransactionSummary(
     @param.path.string('id') id: string,
   ): Promise<PostTransactionSummary> {
-    return this.transactionService.totalTransactionAmount('referenceId', id, '$currencyId');
+    return this.transactionService.totalTransactionAmount(
+      'referenceId',
+      id,
+      '$currencyId',
+    );
   }
 
   @get('/comments/{id}/transaction-summary')
@@ -125,6 +133,10 @@ export class TransactionSummaryController {
   async commentTransactionSummary(
     @param.path.string('id') id: string,
   ): Promise<CommentTransactionSummary> {
-    return this.transactionService.totalTransactionAmount('referenceId', id, '$currencyId');
+    return this.transactionService.totalTransactionAmount(
+      'referenceId',
+      id,
+      '$currencyId',
+    );
   }
 }

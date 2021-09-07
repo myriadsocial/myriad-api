@@ -41,7 +41,10 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
-  async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
+  async intercept(
+    invocationCtx: InvocationContext,
+    next: () => ValueOrPromise<InvocationResult>,
+  ) {
     const className = invocationCtx.targetClass.name as ControllerType;
 
     switch (className) {
@@ -59,7 +62,9 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
         });
 
         if (userCurrency) {
-          throw new HttpErrors.UnprocessableEntity('You already have this token');
+          throw new HttpErrors.UnprocessableEntity(
+            'You already have this token',
+          );
         }
 
         break;
@@ -72,7 +77,8 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
           where: {id: invocationCtx.args[0].id},
         });
 
-        if (currency) throw new HttpErrors.UnprocessableEntity('Currency already exists!');
+        if (currency)
+          throw new HttpErrors.UnprocessableEntity('Currency already exists!');
 
         break;
       }

@@ -59,7 +59,10 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
-  async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
+  async intercept(
+    invocationCtx: InvocationContext,
+    next: () => ValueOrPromise<InvocationResult>,
+  ) {
     const methodName = invocationCtx.methodName;
     const className = invocationCtx.targetClass.name as ControllerType;
 
@@ -85,7 +88,10 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     return result;
   }
 
-  async beforeCreation(className: ControllerType, invocationCtx: InvocationContext): Promise<void> {
+  async beforeCreation(
+    className: ControllerType,
+    invocationCtx: InvocationContext,
+  ): Promise<void> {
     switch (className) {
       case ControllerType.USER: {
         const newUser = invocationCtx.args[0];
@@ -95,7 +101,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           },
         });
 
-        if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
+        if (user)
+          throw new HttpErrors.UnprocessableEntity('User already exist!');
 
         newUser.bio = `Hello, my name is ${newUser.name}!`;
         newUser.username =
@@ -108,7 +115,9 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.TRANSACTION: {
-        await this.currencyRepository.findById(invocationCtx.args[0].currencyId.toUpperCase());
+        await this.currencyRepository.findById(
+          invocationCtx.args[0].currencyId.toUpperCase(),
+        );
         await this.userRepository.findById(invocationCtx.args[0].from);
         return;
       }
@@ -119,7 +128,10 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           await this.validateComment(invocationCtx.args[0]);
 
         invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
-          type: className === ControllerType.POSTCOMMENT ? CommentType.POST : CommentType.COMMENT,
+          type:
+            className === ControllerType.POSTCOMMENT
+              ? CommentType.POST
+              : CommentType.COMMENT,
           referenceId: invocationCtx.args[0],
         });
         return;
@@ -153,7 +165,10 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       case ControllerType.POSTCOMMENT:
       case ControllerType.COMMENTCOMMENT:
       case ControllerType.COMMENT: {
-        const metric = await this.metricService.publicMetric(LikeType.POST, result.postId);
+        const metric = await this.metricService.publicMetric(
+          LikeType.POST,
+          result.postId,
+        );
         await this.postRepository.updateById(result.postId, {
           metric: metric,
         });

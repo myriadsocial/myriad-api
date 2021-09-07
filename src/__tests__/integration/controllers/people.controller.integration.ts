@@ -1,6 +1,10 @@
 import {expect} from '@loopback/testlab';
 import {PeopleController} from '../../../controllers';
-import {PeopleRepository, PostRepository, UserSocialMediaRepository} from '../../../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  UserSocialMediaRepository,
+} from '../../../repositories';
 import {
   givenEmptyDatabase,
   givenPeopleInstance,
@@ -17,9 +21,8 @@ describe('PeopleControllerIntegration', () => {
   let controller: PeopleController;
 
   before(async () => {
-    ({peopleRepository, userSocialMediaRepository, postRepository} = await givenRepositories(
-      testdb,
-    ));
+    ({peopleRepository, userSocialMediaRepository, postRepository} =
+      await givenRepositories(testdb));
   });
 
   before(async () => {
@@ -46,9 +49,12 @@ describe('PeopleControllerIntegration', () => {
 
   it('includes userSocialMedia in find method result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
-    const userSocialMedia = await givenUserSocialMediaInstance(userSocialMediaRepository, {
-      peopleId: people.id,
-    });
+    const userSocialMedia = await givenUserSocialMediaInstance(
+      userSocialMediaRepository,
+      {
+        peopleId: people.id,
+      },
+    );
     const response = await controller.find({include: ['userSocialMedia']});
 
     expect(response).to.containDeep([
@@ -62,11 +68,16 @@ describe('PeopleControllerIntegration', () => {
   it('includes both posts and userSocialMedia in find method result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
     const post = await givenPostInstance(postRepository, {peopleId: people.id});
-    const userSocialMedia = await givenUserSocialMediaInstance(userSocialMediaRepository, {
-      peopleId: people.id,
-    });
+    const userSocialMedia = await givenUserSocialMediaInstance(
+      userSocialMediaRepository,
+      {
+        peopleId: people.id,
+      },
+    );
 
-    const response = await controller.find({include: ['posts', 'userSocialMedia']});
+    const response = await controller.find({
+      include: ['posts', 'userSocialMedia'],
+    });
 
     expect(response).to.containDeep([
       {
@@ -91,10 +102,15 @@ describe('PeopleControllerIntegration', () => {
 
   it('includes userSocialMedia in findById method result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
-    const userSocialMedia = await givenUserSocialMediaInstance(userSocialMediaRepository, {
-      peopleId: people.id,
+    const userSocialMedia = await givenUserSocialMediaInstance(
+      userSocialMediaRepository,
+      {
+        peopleId: people.id,
+      },
+    );
+    const response = await controller.findById(people.id, {
+      include: ['userSocialMedia'],
     });
-    const response = await controller.findById(people.id, {include: ['userSocialMedia']});
 
     expect(response).to.containDeep({
       ...people,
@@ -105,11 +121,16 @@ describe('PeopleControllerIntegration', () => {
   it('includes both posts and userSocialMedia in findById method result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
     const post = await givenPostInstance(postRepository, {peopleId: people.id});
-    const userSocialMedia = await givenUserSocialMediaInstance(userSocialMediaRepository, {
-      peopleId: people.id,
-    });
+    const userSocialMedia = await givenUserSocialMediaInstance(
+      userSocialMediaRepository,
+      {
+        peopleId: people.id,
+      },
+    );
 
-    const response = await controller.findById(people.id, {include: ['posts', 'userSocialMedia']});
+    const response = await controller.findById(people.id, {
+      include: ['posts', 'userSocialMedia'],
+    });
 
     expect(response).to.containDeep({
       ...people,

@@ -28,7 +28,8 @@ export class ActivityLogController {
     },
   })
   async find(
-    @param.filter(ActivityLog, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<ActivityLog>,
+    @param.filter(ActivityLog, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<ActivityLog>,
   ): Promise<ActivityLog[]> {
     return this.activityLogRepository.find(filter);
   }

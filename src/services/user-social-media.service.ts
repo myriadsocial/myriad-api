@@ -15,7 +15,14 @@ export class UserSocialMediaService {
   ) {}
 
   async createSocialMedia(people: ExtendedPeople): Promise<UserSocialMedia> {
-    const {name, originUserId, username, platform, profilePictureURL, publicKey} = people;
+    const {
+      name,
+      originUserId,
+      username,
+      platform,
+      profilePictureURL,
+      publicKey,
+    } = people;
 
     const foundPeople = await this.peopleRepository.findOne({
       where: {
@@ -56,11 +63,15 @@ export class UserSocialMediaService {
 
     if (userSocialMedia) {
       if (userSocialMedia.userId !== publicKey) {
-        throw new HttpErrors.UnprocessableEntity(`Another user already claim this ${platform}!`);
+        throw new HttpErrors.UnprocessableEntity(
+          `Another user already claim this ${platform}!`,
+        );
       }
 
       if (userSocialMedia.verified) {
-        throw new HttpErrors.UnprocessableEntity('You already verified this social media');
+        throw new HttpErrors.UnprocessableEntity(
+          'You already verified this social media',
+        );
       }
 
       userSocialMedia.verified = true;

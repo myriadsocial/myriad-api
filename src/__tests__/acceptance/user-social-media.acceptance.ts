@@ -3,7 +3,11 @@ import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType} from '../../enums';
 import {UserSocialMedia, UserVerification} from '../../models';
-import {PeopleRepository, UserRepository, UserSocialMediaRepository} from '../../repositories';
+import {
+  PeopleRepository,
+  UserRepository,
+  UserSocialMediaRepository,
+} from '../../repositories';
 import {
   givenPeopleInstance,
   givenPeopleRepository,
@@ -67,10 +71,14 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('rejects user to verify non existing social media', async () => {
-      const userVerification: Partial<UserVerification> = givenUserVerification();
+      const userVerification: Partial<UserVerification> =
+        givenUserVerification();
       delete userVerification.platform;
 
-      await client.post('/user-social-medias/verify').send(userVerification).expect(422);
+      await client
+        .post('/user-social-medias/verify')
+        .send(userVerification)
+        .expect(422);
     });
 
     it('rejects user to verify non existing social media username', async () => {
@@ -78,22 +86,35 @@ describe('UserSocialMediaApplication', function () {
         username: 'kemrenwebrge',
       });
 
-      await client.post('/user-social-medias/verify').send(userVerification).expect(404);
+      await client
+        .post('/user-social-medias/verify')
+        .send(userVerification)
+        .expect(404);
     });
 
     it('rejects user to verify social media that is not belong to user', async () => {
       const userVerification = givenUserVerification({
-        publicKey: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
+        publicKey:
+          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
       });
 
-      await client.post('/user-social-medias/verify').send(userVerification).expect(404);
+      await client
+        .post('/user-social-medias/verify')
+        .send(userVerification)
+        .expect(404);
     });
 
     it('rejects user to verify social media that already been claimed', async () => {
       const userVerification = givenUserVerification();
 
-      await client.post('/user-social-medias/verify').send(userVerification).expect(200);
-      await client.post('/user-social-medias/verify').send(userVerification).expect(422);
+      await client
+        .post('/user-social-medias/verify')
+        .send(userVerification)
+        .expect(200);
+      await client
+        .post('/user-social-medias/verify')
+        .send(userVerification)
+        .expect(422);
     });
   });
 
@@ -101,7 +122,9 @@ describe('UserSocialMediaApplication', function () {
     let persistedUserSocialMedia: UserSocialMedia;
 
     beforeEach(async () => {
-      persistedUserSocialMedia = await givenUserSocialMediaInstance(userSocialMediaRepository);
+      persistedUserSocialMedia = await givenUserSocialMediaInstance(
+        userSocialMediaRepository,
+      );
     });
 
     it('gets a user social media by ID', async () => {
@@ -119,10 +142,13 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('deletes the user social media', async () => {
-      await client.del(`/user-social-medias/${persistedUserSocialMedia.id}`).send().expect(204);
-      await expect(userRepository.findById(persistedUserSocialMedia.id)).to.be.rejectedWith(
-        EntityNotFoundError,
-      );
+      await client
+        .del(`/user-social-medias/${persistedUserSocialMedia.id}`)
+        .send()
+        .expect(204);
+      await expect(
+        userRepository.findById(persistedUserSocialMedia.id),
+      ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a user social media that does not exist', async () => {
@@ -144,8 +170,13 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('finds all user social medias', async () => {
-      const response = await client.get('/user-social-medias').send().expect(200);
-      expect(response.body.data).to.containDeep(toJSON(persistedUserSocialMedias));
+      const response = await client
+        .get('/user-social-medias')
+        .send()
+        .expect(200);
+      expect(response.body.data).to.containDeep(
+        toJSON(persistedUserSocialMedias),
+      );
     });
 
     it('queries users with a filter', async () => {
@@ -173,12 +204,15 @@ describe('UserSocialMediaApplication', function () {
 
     it('exploded filter conditions work', async () => {
       await givenUserSocialMediaInstance(userSocialMediaRepository, {
-        userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+        userId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
         platform: PlatformType.REDDIT,
         peopleId: '4',
       });
 
-      const response = await client.get('/user-social-medias').query('pageLimit=2');
+      const response = await client
+        .get('/user-social-medias')
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });
@@ -188,10 +222,13 @@ describe('UserSocialMediaApplication', function () {
     const user = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185g',
     });
-    const userSocialMedia = await givenUserSocialMediaInstance(userSocialMediaRepository, {
-      userId: user.id,
-      peopleId: people.id,
-    });
+    const userSocialMedia = await givenUserSocialMediaInstance(
+      userSocialMediaRepository,
+      {
+        userId: user.id,
+        peopleId: people.id,
+      },
+    );
 
     const filter =
       'filter=' +

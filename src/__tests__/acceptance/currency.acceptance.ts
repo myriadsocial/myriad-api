@@ -31,7 +31,10 @@ describe('CurrencyApplication', () => {
 
   it('creates a currency', async function () {
     const currency = givenCurrency();
-    const response = await client.post('/currencies').send(currency).expect(200);
+    const response = await client
+      .post('/currencies')
+      .send(currency)
+      .expect(200);
     expect(response.body).to.containDeep(currency);
     const result = await currencyRepository.findById(response.body.id);
     expect(result).to.containDeep(currency);
@@ -92,10 +95,13 @@ describe('CurrencyApplication', () => {
     });
 
     it('deletes the currency', async () => {
-      await client.del(`/currencies/${persistedCurrency.id}`).send().expect(204);
-      await expect(currencyRepository.findById(persistedCurrency.id)).to.be.rejectedWith(
-        EntityNotFoundError,
-      );
+      await client
+        .del(`/currencies/${persistedCurrency.id}`)
+        .send()
+        .expect(204);
+      await expect(
+        currencyRepository.findById(persistedCurrency.id),
+      ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a currency that does not exist', async () => {
@@ -107,7 +113,9 @@ describe('CurrencyApplication', () => {
     let persistedCurrencies: Currency[];
 
     beforeEach(async () => {
-      persistedCurrencies = await givenMultipleCurrencyInstances(currencyRepository);
+      persistedCurrencies = await givenMultipleCurrencyInstances(
+        currencyRepository,
+      );
     });
 
     it('finds all currencies', async () => {
@@ -116,15 +124,18 @@ describe('CurrencyApplication', () => {
     });
 
     it('queries currencies with a filter', async () => {
-      const currencyInProgress = await givenCurrencyInstance(currencyRepository, {
-        id: 'DOT',
-        name: 'polkadot',
-        decimal: 10,
-        image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
-        addressType: 42,
-        native: false,
-        rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
-      });
+      const currencyInProgress = await givenCurrencyInstance(
+        currencyRepository,
+        {
+          id: 'DOT',
+          name: 'polkadot',
+          decimal: 10,
+          image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
+          addressType: 42,
+          native: false,
+          rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
+        },
+      );
 
       const filter = 'filter=' + JSON.stringify({where: {name: 'polkadot'}});
 

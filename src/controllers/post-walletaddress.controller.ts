@@ -1,5 +1,11 @@
 import {repository} from '@loopback/repository';
-import {get, getModelSchemaRef, HttpErrors, param, response} from '@loopback/rest';
+import {
+  get,
+  getModelSchemaRef,
+  HttpErrors,
+  param,
+  response,
+} from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {Wallet} from '../models';
 import {PeopleRepository, PostRepository} from '../repositories';
@@ -43,7 +49,8 @@ export class PostWalletAddress {
     if (people.userSocialMedia) {
       wallet.walletAddress = people.userSocialMedia.userId;
     } else {
-      if (!people.walletAddress) throw new HttpErrors.NotFound('Walletaddress Not Found!');
+      if (!people.walletAddress)
+        throw new HttpErrors.NotFound('Walletaddress Not Found!');
 
       wallet.walletAddress = people.walletAddress;
     }

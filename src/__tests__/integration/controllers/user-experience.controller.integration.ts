@@ -21,9 +21,8 @@ describe('UserExperienceControllerIntegration', () => {
   let controller: UserExperienceController;
 
   before(async () => {
-    ({userRepository, experienceRepository, userExperienceRepository} = await givenRepositories(
-      testdb,
-    ));
+    ({userRepository, experienceRepository, userExperienceRepository} =
+      await givenRepositories(testdb));
   });
 
   before(async () => {
@@ -43,9 +42,12 @@ describe('UserExperienceControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
 
-    const userExperience = await givenUserExperienceInstance(userExperienceRepository, {
-      userId: user.id,
-    });
+    const userExperience = await givenUserExperienceInstance(
+      userExperienceRepository,
+      {
+        userId: user.id,
+      },
+    );
 
     const response = await controller.find({include: ['user']});
 
@@ -62,11 +64,16 @@ describe('UserExperienceControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
 
-    const experience = await givenExperienceInstance(experienceRepository, {createdBy: user.id});
-
-    const userExperience = await givenUserExperienceInstance(userExperienceRepository, {
-      experienceId: experience.id,
+    const experience = await givenExperienceInstance(experienceRepository, {
+      createdBy: user.id,
     });
+
+    const userExperience = await givenUserExperienceInstance(
+      userExperienceRepository,
+      {
+        experienceId: experience.id,
+      },
+    );
 
     const response = await controller.find({include: ['experience']});
 
@@ -87,10 +94,13 @@ describe('UserExperienceControllerIntegration', () => {
       createdBy: user.id,
     });
 
-    const userExperience = await givenUserExperienceInstance(userExperienceRepository, {
-      userId: user.id,
-      experienceId: experience.id,
-    });
+    const userExperience = await givenUserExperienceInstance(
+      userExperienceRepository,
+      {
+        userId: user.id,
+        experienceId: experience.id,
+      },
+    );
 
     const response = await controller.find({include: ['user', 'experience']});
 
@@ -108,9 +118,12 @@ describe('UserExperienceControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
 
-    const userExperience = await givenUserExperienceInstance(userExperienceRepository, {
-      userId: user.id,
-    });
+    const userExperience = await givenUserExperienceInstance(
+      userExperienceRepository,
+      {
+        userId: user.id,
+      },
+    );
 
     const response = await controller.findById(userExperience.id, {
       include: ['user'],
@@ -131,9 +144,12 @@ describe('UserExperienceControllerIntegration', () => {
       createdBy: user.id,
     });
 
-    const userExperience = await givenUserExperienceInstance(userExperienceRepository, {
-      experienceId: experience.id,
-    });
+    const userExperience = await givenUserExperienceInstance(
+      userExperienceRepository,
+      {
+        experienceId: experience.id,
+      },
+    );
 
     const response = await controller.findById(userExperience.id, {
       include: ['experience'],
@@ -154,10 +170,13 @@ describe('UserExperienceControllerIntegration', () => {
       createdBy: user.id,
     });
 
-    const userExperience = await givenUserExperienceInstance(userExperienceRepository, {
-      userId: user.id,
-      experienceId: experience.id,
-    });
+    const userExperience = await givenUserExperienceInstance(
+      userExperienceRepository,
+      {
+        userId: user.id,
+        experienceId: experience.id,
+      },
+    );
 
     const response = await controller.findById(userExperience.id, {
       include: ['user', 'experience'],

@@ -46,7 +46,10 @@ export class FriendController {
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
     try {
-      await this.notificationService.sendFriendRequest(friend.requestorId, friend.requesteeId);
+      await this.notificationService.sendFriendRequest(
+        friend.requestorId,
+        friend.requesteeId,
+      );
     } catch (error) {
       // ignored
     }
@@ -68,7 +71,8 @@ export class FriendController {
     },
   })
   async find(
-    @param.filter(Friend, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Friend>,
+    @param.filter(Friend, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Friend>,
   ): Promise<Friend[]> {
     return this.friendService.friendRepository.find(filter);
   }
@@ -107,7 +111,10 @@ export class FriendController {
   ): Promise<void> {
     if (friend.status === FriendStatusType.APPROVED) {
       try {
-        await this.notificationService.sendFriendAccept(friend.requesteeId, friend.requestorId);
+        await this.notificationService.sendFriendAccept(
+          friend.requesteeId,
+          friend.requestorId,
+        );
       } catch (error) {
         // ignored
       }

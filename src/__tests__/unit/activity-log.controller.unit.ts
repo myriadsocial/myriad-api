@@ -56,7 +56,8 @@ describe('ActivityLogController', () => {
         id: '2',
         type: ActivityLogType.PROFILE,
         message: 'You updated your profile',
-        userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+        userId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
       }),
     ] as ActivityLog[];
 

@@ -73,7 +73,8 @@ export class UserController {
     },
   })
   async find(
-    @param.filter(User, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<User>,
+    @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<User>,
   ): Promise<User[]> {
     return this.userRepository.find(filter);
   }
@@ -119,7 +120,9 @@ export class UserController {
       });
 
       if (count >= 1)
-        throw new HttpErrors.UnprocessableEntity('You can only updated username once');
+        throw new HttpErrors.UnprocessableEntity(
+          'You can only updated username once',
+        );
 
       await this.activityLogRepository.create({
         userId: id,

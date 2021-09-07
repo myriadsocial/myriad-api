@@ -24,9 +24,9 @@ describe('NotificationController', () => {
     it('returns a notification if it exists', async () => {
       const findById = notificationRepository.stubs.findById;
       findById.resolves(aNotificationWithId);
-      expect(await controller.findById(aNotificationWithId.id as string)).to.eql(
-        aNotificationWithId,
-      );
+      expect(
+        await controller.findById(aNotificationWithId.id as string),
+      ).to.eql(aNotificationWithId);
       sinon.assert.calledWith(findById, aNotificationWithId.id);
     });
   });
@@ -50,7 +50,9 @@ describe('NotificationController', () => {
     it('uses the provided filter', async () => {
       const find = notificationRepository.stubs.find;
       const filter = toJSON({
-        where: {from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866'},
+        where: {
+          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866',
+        },
       });
 
       find.resolves(aListOfNotifications);
@@ -63,8 +65,15 @@ describe('NotificationController', () => {
     it('successfully updates existing items', async () => {
       const updateById = notificationRepository.stubs.updateById;
       updateById.resolves();
-      await controller.updateById(aNotificationWithId.id as string, aChangedNotification);
-      sinon.assert.calledWith(updateById, aNotificationWithId.id, aChangedNotification);
+      await controller.updateById(
+        aNotificationWithId.id as string,
+        aChangedNotification,
+      );
+      sinon.assert.calledWith(
+        updateById,
+        aNotificationWithId.id,
+        aChangedNotification,
+      );
     });
   });
 
@@ -89,7 +98,8 @@ describe('NotificationController', () => {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
         message: 'sent you friend request',
-        referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
+        referenceId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
         from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866',
         to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
       }),

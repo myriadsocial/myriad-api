@@ -74,7 +74,10 @@ export class MetricService {
     };
   }
 
-  async countData(controller: ControllerType, where: Where<AnyObject>): Promise<Count> {
+  async countData(
+    controller: ControllerType,
+    where: Where<AnyObject>,
+  ): Promise<Count> {
     switch (controller) {
       case ControllerType.USER:
         return this.userRepository.count(where);

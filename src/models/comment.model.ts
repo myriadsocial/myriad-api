@@ -1,4 +1,10 @@
-import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
+import {
+  belongsTo,
+  Entity,
+  hasMany,
+  model,
+  property,
+} from '@loopback/repository';
 import {CommentType} from '../enums';
 import {CommentLink} from './comment-link.model';
 import {Transaction} from './transaction.model';

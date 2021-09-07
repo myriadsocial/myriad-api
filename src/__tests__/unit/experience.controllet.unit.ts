@@ -22,7 +22,9 @@ describe('ExperienceController', () => {
     it('returns a experience if it exists', async () => {
       const findById = experienceRepository.stubs.findById;
       findById.resolves(aExperienceWithId);
-      expect(await controller.findById(aExperienceWithId.id as string)).to.eql(aExperienceWithId);
+      expect(await controller.findById(aExperienceWithId.id as string)).to.eql(
+        aExperienceWithId,
+      );
       sinon.assert.calledWith(findById, aExperienceWithId.id);
     });
   });
@@ -75,7 +77,8 @@ describe('ExperienceController', () => {
           }),
         ],
         description: 'cryptoverse',
-        createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6182e',
+        createdBy:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6182e',
       }),
     ] as Experience[];
 

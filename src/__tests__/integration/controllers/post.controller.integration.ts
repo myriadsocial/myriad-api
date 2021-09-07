@@ -108,7 +108,8 @@ describe('PostControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       type: CommentType.POST,
       referenceId: post.id,
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
     });
 
@@ -161,7 +162,10 @@ describe('PostControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
     const people = await givenPeopleInstance(peopleRepository);
-    const post = await givenPostInstance(postRepository, {peopleId: people.id, createdBy: user.id});
+    const post = await givenPostInstance(postRepository, {
+      peopleId: people.id,
+      createdBy: user.id,
+    });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
       type: TransactionType.POST,
@@ -173,7 +177,8 @@ describe('PostControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       type: CommentType.POST,
       referenceId: post.id,
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
     });
 
@@ -223,11 +228,14 @@ describe('PostControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       type: CommentType.POST,
       referenceId: post.id,
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
     });
 
-    const response = await controller.findById(post.id, {include: ['comments']});
+    const response = await controller.findById(post.id, {
+      include: ['comments'],
+    });
 
     expect(response).to.containDeep({
       ...post,
@@ -257,7 +265,9 @@ describe('PostControllerIntegration', () => {
       type: TransactionType.POST,
     });
 
-    const response = await controller.findById(post.id, {include: ['transactions']});
+    const response = await controller.findById(post.id, {
+      include: ['transactions'],
+    });
 
     expect(response).to.containDeep({
       ...post,
@@ -270,7 +280,10 @@ describe('PostControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
     const people = await givenPeopleInstance(peopleRepository);
-    const post = await givenPostInstance(postRepository, {peopleId: people.id, createdBy: user.id});
+    const post = await givenPostInstance(postRepository, {
+      peopleId: people.id,
+      createdBy: user.id,
+    });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
       type: TransactionType.POST,
@@ -282,7 +295,8 @@ describe('PostControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       type: CommentType.POST,
       referenceId: post.id,
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
     });
 
@@ -316,7 +330,9 @@ describe('PostControllerIntegration', () => {
 
     const response: any = await controller.import(platformPost);
 
-    expect(toJSON(response.people)).to.containEql(toJSON(redditPost.platformUser));
+    expect(toJSON(response.people)).to.containEql(
+      toJSON(redditPost.platformUser),
+    );
 
     delete response.people;
     delete redditPost.platformUser;

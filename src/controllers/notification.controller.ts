@@ -7,7 +7,15 @@ import {
   repository,
   Where,
 } from '@loopback/repository';
-import {del, get, getModelSchemaRef, param, patch, requestBody, response} from '@loopback/rest';
+import {
+  del,
+  get,
+  getModelSchemaRef,
+  param,
+  patch,
+  requestBody,
+  response,
+} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
@@ -65,7 +73,9 @@ export class NotificationController {
       },
     },
   })
-  async count(@param.where(Notification) where?: Where<Notification>): Promise<Count> {
+  async count(
+    @param.where(Notification) where?: Where<Notification>,
+  ): Promise<Count> {
     return this.notificationRepository.count(where);
   }
 

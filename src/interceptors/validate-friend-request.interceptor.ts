@@ -37,7 +37,10 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
-  async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
+  async intercept(
+    invocationCtx: InvocationContext,
+    next: () => ValueOrPromise<InvocationResult>,
+  ) {
     const {requesteeId, requestorId} = invocationCtx.args[0];
 
     await this.friendService.validateFriendRequest(requesteeId, requestorId);

@@ -97,8 +97,12 @@ describe('PostApplication', function () {
         }),
       },
     });
-    expect(tagResult[0].id).to.equal(result.tags.find(tag => tag === tagResult[0].id));
-    expect(tagResult[1].id).to.equal(result.tags.find(tag => tag === tagResult[1].id));
+    expect(tagResult[0].id).to.equal(
+      result.tags.find(tag => tag === tagResult[0].id),
+    );
+    expect(tagResult[1].id).to.equal(
+      result.tags.find(tag => tag === tagResult[1].id),
+    );
   });
 
   it('rejects requests to create a post with no text', async () => {
@@ -119,11 +123,16 @@ describe('PostApplication', function () {
     let persistedPost: Post;
 
     beforeEach(async () => {
-      persistedPost = await givenMyriadPostInstance(postRepository, {createdBy: user.id});
+      persistedPost = await givenMyriadPostInstance(postRepository, {
+        createdBy: user.id,
+      });
     });
 
     it('gets a post by ID', async () => {
-      const result = await client.get(`/posts/${persistedPost.id}`).send().expect(200);
+      const result = await client
+        .get(`/posts/${persistedPost.id}`)
+        .send()
+        .expect(200);
       const expected = toJSON(persistedPost);
 
       expect(result.body).to.deepEqual(expected);
@@ -137,7 +146,10 @@ describe('PostApplication', function () {
       const updatedPost = givenMyriadPost({
         text: 'Hello world',
       });
-      await client.patch(`/posts/${persistedPost.id}`).send(updatedPost).expect(204);
+      await client
+        .patch(`/posts/${persistedPost.id}`)
+        .send(updatedPost)
+        .expect(204);
       const result = await postRepository.findById(persistedPost.id);
       expect(result).to.containEql(updatedPost);
     });
@@ -148,9 +160,9 @@ describe('PostApplication', function () {
 
     it('deletes the post', async () => {
       await client.del(`/posts/${persistedPost.id}`).send().expect(204);
-      await expect(postRepository.findById(persistedPost.id)).to.be.rejectedWith(
-        EntityNotFoundError,
-      );
+      await expect(
+        postRepository.findById(persistedPost.id),
+      ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a post that does not exist', async () => {
@@ -164,7 +176,10 @@ describe('PostApplication', function () {
     beforeEach(async () => {
       persistedPosts = [
         await givenMyriadPostInstance(postRepository, {createdBy: user.id}),
-        await givenMyriadPostInstance(postRepository, {text: 'hello', createdBy: user.id}),
+        await givenMyriadPostInstance(postRepository, {
+          text: 'hello',
+          createdBy: user.id,
+        }),
       ];
     });
 
@@ -206,12 +221,17 @@ describe('PostApplication', function () {
 
   it('includes user, people, comments, likes, and transactions in query result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
-    const post = await givenPostInstance(postRepository, {peopleId: people.id, createdBy: user.id});
+    const post = await givenPostInstance(postRepository, {
+      peopleId: people.id,
+      createdBy: user.id,
+    });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
       type: TransactionType.POST,
     });
-    const like = await givenLikeInstance(likeRepository, {referenceId: post.id});
+    const like = await givenLikeInstance(likeRepository, {
+      referenceId: post.id,
+    });
     const comment = await givenCommentInstance(commentRepository, {
       type: CommentType.POST,
       referenceId: post.id,
@@ -245,8 +265,13 @@ describe('PostApplication', function () {
 
     it('creates a post from reddit', async function () {
       const platformPost = givenPlatformPost();
-      const response = await client.post('/posts/import').send(platformPost).expect(200);
-      const result = await postRepository.findById(response.body.id, {include: ['people']});
+      const response = await client
+        .post('/posts/import')
+        .send(platformPost)
+        .expect(200);
+      const result = await postRepository.findById(response.body.id, {
+        include: ['people'],
+      });
       const people = await peopleRepository.findById(result.peopleId);
       expect(toJSON(result)).to.containDeep(
         toJSON({
@@ -266,13 +291,18 @@ describe('PostApplication', function () {
 
     it('adds another importer for existing posts', async function () {
       const platformPost = givenPlatformPost({
-        importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d95e',
+        importer:
+          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d95e',
       });
       const platformPostWithOtherImporter = givenPlatformPost({
-        importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
+        importer:
+          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
       });
 
-      const response = await client.post('/posts/import').send(platformPost).expect(200);
+      const response = await client
+        .post('/posts/import')
+        .send(platformPost)
+        .expect(200);
       const otherResponse = await client
         .post('/posts/import')
         .send(platformPostWithOtherImporter)
@@ -284,7 +314,8 @@ describe('PostApplication', function () {
 
     it('rejects request to create a post from social media if importer alreay imported', async () => {
       const platformPost: Partial<PlatformPost> = givenPlatformPost({
-        importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
+        importer:
+          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
       });
       await client.post('/posts/import').send(platformPost).expect(200);
       await client.post('/posts/import').send(platformPost).expect(422);

@@ -42,7 +42,10 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
-  async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
+  async intercept(
+    invocationCtx: InvocationContext,
+    next: () => ValueOrPromise<InvocationResult>,
+  ) {
     const urlUtils = new UrlUtils(invocationCtx.args[0].url);
     const platform = urlUtils.getPlatform();
     const originPostId = urlUtils.getOriginPostId();
@@ -53,9 +56,14 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     });
 
     if (post) {
-      const importers = post.importers.find(userId => userId === invocationCtx.args[0].importer);
+      const importers = post.importers.find(
+        userId => userId === invocationCtx.args[0].importer,
+      );
 
-      if (importers) throw new HttpErrors.UnprocessableEntity('You have already import this post');
+      if (importers)
+        throw new HttpErrors.UnprocessableEntity(
+          'You have already import this post',
+        );
 
       post.importers.push(invocationCtx.args[0].importer);
 

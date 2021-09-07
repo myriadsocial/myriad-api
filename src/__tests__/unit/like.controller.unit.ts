@@ -1,4 +1,8 @@
-import {createStubInstance, sinon, StubbedInstanceWithSinonAccessor} from '@loopback/testlab';
+import {
+  createStubInstance,
+  sinon,
+  StubbedInstanceWithSinonAccessor,
+} from '@loopback/testlab';
 import {LikeController} from '../../controllers';
 import {Like} from '../../models';
 import {LikeRepository} from '../../repositories';

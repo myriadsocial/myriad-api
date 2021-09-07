@@ -40,4 +40,5 @@ export interface AuthCredentialRelations {
   // describe navigational properties here
 }
 
-export type AuthCredentialWithRelations = AuthCredential & AuthCredentialRelations;
+export type AuthCredentialWithRelations = AuthCredential &
+  AuthCredentialRelations;

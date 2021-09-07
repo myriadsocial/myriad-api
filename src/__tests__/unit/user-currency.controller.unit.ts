@@ -50,6 +50,9 @@ describe('UserCurrencyController', () => {
       id: '1',
     });
 
-    controller = new UserCurrencyController(userCurrencyRepository, userRepository);
+    controller = new UserCurrencyController(
+      userCurrencyRepository,
+      userRepository,
+    );
   }
 });

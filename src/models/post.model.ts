@@ -1,4 +1,10 @@
-import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
+import {
+  belongsTo,
+  Entity,
+  hasMany,
+  model,
+  property,
+} from '@loopback/repository';
 import {PlatformType} from '../enums';
 import {Metric} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';

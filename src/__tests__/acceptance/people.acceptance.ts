@@ -2,7 +2,11 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {People} from '../../models';
-import {PeopleRepository, PostRepository, UserSocialMediaRepository} from '../../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  UserSocialMediaRepository,
+} from '../../repositories';
 import {
   givenMultiplePeopleInstances,
   givenPeopleInstance,
@@ -50,7 +54,10 @@ describe('PeopleApplication', function () {
     });
 
     it('gets a people by ID', async () => {
-      const result = await client.get(`/people/${persistedPeople.id}`).send().expect(200);
+      const result = await client
+        .get(`/people/${persistedPeople.id}`)
+        .send()
+        .expect(200);
       const expected = toJSON(persistedPeople);
 
       expect(result.body).to.deepEqual(expected);
@@ -62,9 +69,9 @@ describe('PeopleApplication', function () {
 
     it('deletes the people', async () => {
       await client.del(`/people/${persistedPeople.id}`).send().expect(204);
-      await expect(peopleRepository.findById(persistedPeople.id)).to.be.rejectedWith(
-        EntityNotFoundError,
-      );
+      await expect(
+        peopleRepository.findById(persistedPeople.id),
+      ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a people that does not exist', async () => {
@@ -114,7 +121,8 @@ describe('PeopleApplication', function () {
         username: 'CryptoChief',
         platform: 'reddit',
         originUserId: 't2_e0t5q',
-        profilePictureURL: 'https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png',
+        profilePictureURL:
+          'https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png',
       });
 
       const response = await client.get('/people').query('pageLimit=2');
@@ -124,9 +132,12 @@ describe('PeopleApplication', function () {
 
   it('includes userSocialMedia and post in query result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
-    const userSocialMedia = await givenUserSocialMediaInstance(userSocialMediaRepository, {
-      peopleId: people.id,
-    });
+    const userSocialMedia = await givenUserSocialMediaInstance(
+      userSocialMediaRepository,
+      {
+        peopleId: people.id,
+      },
+    );
     const post = await givenPostInstance(postRepository, {peopleId: people.id});
     const filter = JSON.stringify({include: ['posts', 'userSocialMedia']});
 

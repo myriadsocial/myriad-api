@@ -27,9 +27,9 @@ describe('UserSocialMediaController', () => {
     it('returns a user social media if it exists', async () => {
       const findById = userSocialMediaRepository.stubs.findById;
       findById.resolves(aUserSocialMediaWithId);
-      expect(await controller.findById(aUserSocialMediaWithId.id as string)).to.eql(
-        aUserSocialMediaWithId,
-      );
+      expect(
+        await controller.findById(aUserSocialMediaWithId.id as string),
+      ).to.eql(aUserSocialMediaWithId);
       sinon.assert.calledWith(findById, aUserSocialMediaWithId.id);
     });
   });
@@ -79,7 +79,8 @@ describe('UserSocialMediaController', () => {
       givenUserSocialMedia({
         verified: true,
         platform: PlatformType.FACEBOOK,
-        userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+        userId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
         peopleId: '2',
       }),
     ] as UserSocialMedia[];
@@ -88,6 +89,9 @@ describe('UserSocialMediaController', () => {
       userSocialMediaRepository,
       peopleRepository,
     );
-    controller = new UserSocialMediaController(socialMediaService, userSocialMediaService);
+    controller = new UserSocialMediaController(
+      socialMediaService,
+      userSocialMediaService,
+    );
   }
 });

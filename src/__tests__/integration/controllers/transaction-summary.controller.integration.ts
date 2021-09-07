@@ -58,16 +58,22 @@ describe('TransactionSummaryControllerIntegration', function () {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618mm',
     });
     const currency = await givenCurrencyInstance(currencyRepository);
-    const transactionSent = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
-      to: otherUser.id,
-      currencyId: currency.id,
-    });
-    const transactionReceived = await givenTransactionInstance(transactionRepository, {
-      from: otherUser.id,
-      to: user.id,
-      currencyId: currency.id,
-    });
+    const transactionSent = await givenTransactionInstance(
+      transactionRepository,
+      {
+        from: user.id,
+        to: otherUser.id,
+        currencyId: currency.id,
+      },
+    );
+    const transactionReceived = await givenTransactionInstance(
+      transactionRepository,
+      {
+        from: otherUser.id,
+        to: user.id,
+        currencyId: currency.id,
+      },
+    );
 
     const response = await controller.userTransactionSummary(user.id);
 
@@ -100,7 +106,9 @@ describe('TransactionSummaryControllerIntegration', function () {
       type: TransactionType.POST,
     });
 
-    const response = await controller.postTransactionSummary(post.id.toString());
+    const response = await controller.postTransactionSummary(
+      post.id.toString(),
+    );
 
     expect(response).to.containDeep([
       {
