@@ -1,9 +1,13 @@
 import {AuthenticationComponent} from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
 import {ApplicationConfig} from '@loopback/core';
+import {HealthComponent} from '@loopback/health';
 import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
-import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
+import {
+  RestExplorerBindings,
+  RestExplorerComponent,
+} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
 import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
@@ -70,6 +74,7 @@ export class MyriadApiApplication extends BootMixin(
     this.component(RestExplorerComponent);
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
+    this.component(HealthComponent);
 
     if (!this.options.test) {
       this.component(MigrationComponent);
