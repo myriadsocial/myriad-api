@@ -93,7 +93,7 @@ spec:
           secret:
             secretName: {{ include "myriad-api.firebaseSecretName" . }}
             items:
-              - key: saJson
+              - key: serviceAccount
                 path: sa_credentials.json
       {{- with .Values.nodeSelector }}
       nodeSelector:
