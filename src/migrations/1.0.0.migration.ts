@@ -106,13 +106,25 @@ export class MigrationScript100 implements MigrationScript {
   async doMigrateUsers(): Promise<void> {
     await this.userRepository.updateAll(<any>{
       $unset: {
-        username: '',
         is_online: '',
         skip_tour: '',
         anonymous: '',
         seed_example: '',
       },
     });
+
+    const users = await this.userRepository.find();
+
+    await Promise.all(
+      users.map(user => {
+        const username =
+          user.name.replace(/\s+/g, '').toLowerCase() +
+          '.' +
+          Math.random().toString(36).substr(2, 9);
+
+        return this.userRepository.updateById(user.id, {username});
+      }),
+    );
   }
 
   async doMigrateCurrencies(): Promise<void> {

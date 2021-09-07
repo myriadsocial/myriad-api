@@ -59,6 +59,7 @@ export class MigrationScript000 implements MigrationScript {
         user.id = getHexPublicKey(pair);
         user.createdAt = new Date().toString();
         user.updatedAt = new Date().toString();
+        user.username = 'myriad';
 
         return this.userRepository.create(user);
       }),
