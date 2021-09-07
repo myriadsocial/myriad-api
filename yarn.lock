@@ -268,6 +268,11 @@
     "@babel/helper-validator-identifier" "^7.14.9"
     to-fast-properties "^2.0.0"
 
+"@cloudnative/health@^2.1.2":
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/@cloudnative/health/-/health-2.1.2.tgz#337a4d23ac6872ec439e21aec2499785d7a27fd4"
+  integrity sha512-mEQdbj9dM4KMClS358MCzbqXUmj+Vw5snjDb5bXdaf1sZvVu7+3UqR4HaG4RoNkNUwe1yjfIuengdyWp9quF1A==
+
 "@eslint/eslintrc@^0.4.3":
   version "0.4.3"
   resolved "https://registry.yarnpkg.com/@eslint/eslintrc/-/eslintrc-0.4.3.tgz#9e42981ef035beb3dd49add17acb96e8ff6f394c"
@@ -595,6 +600,14 @@
   resolved "https://registry.yarnpkg.com/@loopback/filter/-/filter-1.5.2.tgz#2f5b94e38a1e409e3a305b909089ed8e617007a7"
   integrity sha512-p88/OqIgqxxFD2pZJqz5oCVqjERyWkFuLM8NBgmda7IGz+dQHmQebTsex1ywi9lrDX4KIV0lqRa9aYce13tA3g==
   dependencies:
+    tslib "^2.3.0"
+
+"@loopback/health@^0.8.2":
+  version "0.8.2"
+  resolved "https://registry.yarnpkg.com/@loopback/health/-/health-0.8.2.tgz#8871ec1bfa293227bcb602bd7665ab5a7ec444f6"
+  integrity sha512-/lCmGw54zMO2as2yFDswf9RmXRnFn+pZXohUrlTyOb/ZOB/W8XCpD2/jzT1yivpTJQvxlI/fZ5JBZmCVvTz/GA==
+  dependencies:
+    "@cloudnative/health" "^2.1.2"
     tslib "^2.3.0"
 
 "@loopback/http-server@^2.5.1", "@loopback/http-server@^2.5.2":
