@@ -6,7 +6,7 @@ metadata:
 spec:
   secretName: {{ include "myriad-api.tlsSecretName" . }}
   issuerRef:
-    name: letsencrypt
+    name: letsencrypt-api
     kind: Issuer
   dnsNames:
     - {{ .Values.ingress.host -}}
