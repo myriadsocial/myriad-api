@@ -74,4 +74,5 @@ export interface UserExperienceRelations {
   experience?: ExperienceWithRelations;
 }
 
-export type UserExperienceWithRelations = UserExperience & UserExperienceRelations;
+export type UserExperienceWithRelations = UserExperience &
+  UserExperienceRelations;

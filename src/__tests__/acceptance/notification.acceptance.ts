@@ -40,7 +40,9 @@ describe('NotificationApplication', function () {
     let persistedNotification: Notification;
 
     beforeEach(async () => {
-      persistedNotification = await givenNotificationInstance(notificationRepository);
+      persistedNotification = await givenNotificationInstance(
+        notificationRepository,
+      );
     });
 
     it('gets a notification by ID', async () => {
@@ -58,7 +60,8 @@ describe('NotificationApplication', function () {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
         message: 'sent you friend request',
-        referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+        referenceId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
         from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61862',
         to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
       });
@@ -70,7 +73,8 @@ describe('NotificationApplication', function () {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
         message: 'sent you friend request',
-        referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
+        referenceId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
         from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
         to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
       });
@@ -78,7 +82,9 @@ describe('NotificationApplication', function () {
       await client
         .get('/notifications/count')
         .query({
-          where: {from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869'},
+          where: {
+            from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
+          },
         })
         .expect(200, {
           count: 1,
@@ -97,19 +103,27 @@ describe('NotificationApplication', function () {
         .patch(`/notifications/${persistedNotification.id}`)
         .send(updatedNotification)
         .expect(204);
-      const result = await notificationRepository.findById(persistedNotification.id);
+      const result = await notificationRepository.findById(
+        persistedNotification.id,
+      );
       expect(result).to.containEql(updatedNotification);
     });
 
     it('returns 404 when updating a user that does not exist', () => {
-      return client.patch('/notifications/99999').send(givenNotification()).expect(404);
+      return client
+        .patch('/notifications/99999')
+        .send(givenNotification())
+        .expect(404);
     });
 
     it('deletes the user', async () => {
-      await client.del(`/notifications/${persistedNotification.id}`).send().expect(204);
-      await expect(notificationRepository.findById(persistedNotification.id)).to.be.rejectedWith(
-        EntityNotFoundError,
-      );
+      await client
+        .del(`/notifications/${persistedNotification.id}`)
+        .send()
+        .expect(204);
+      await expect(
+        notificationRepository.findById(persistedNotification.id),
+      ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a user that does not exist', async () => {
@@ -121,7 +135,9 @@ describe('NotificationApplication', function () {
     let persistedNotifications: Notification[];
 
     beforeEach(async () => {
-      persistedNotifications = await givenMultipleNotificationInstances(notificationRepository);
+      persistedNotifications = await givenMultipleNotificationInstances(
+        notificationRepository,
+      );
     });
 
     it('finds all notifications', async () => {
@@ -130,21 +146,27 @@ describe('NotificationApplication', function () {
     });
 
     it('queries notifications with a filter', async () => {
-      const notificationInProgress = await givenNotificationInstance(notificationRepository, {
-        type: NotificationType.FRIEND_REQUEST,
-        read: false,
-        message: 'sent you friend request',
-        referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
-        from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
-        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
-      });
+      const notificationInProgress = await givenNotificationInstance(
+        notificationRepository,
+        {
+          type: NotificationType.FRIEND_REQUEST,
+          read: false,
+          message: 'sent you friend request',
+          referenceId:
+            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
+          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
+          to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
+        },
+      );
 
       await client
         .get('/notifications')
         .query(
           'filter=' +
             JSON.stringify({
-              where: {from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869'},
+              where: {
+                from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
+              },
             }),
         )
         .expect(200, {
@@ -163,7 +185,8 @@ describe('NotificationApplication', function () {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
         message: 'sent you friend request',
-        referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+        referenceId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
         from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
         to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       });
@@ -181,14 +204,18 @@ describe('NotificationApplication', function () {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
         name: 'muchtar',
       });
-      const notification = await givenNotificationInstance(notificationRepository, {
-        type: NotificationType.FRIEND_REQUEST,
-        read: false,
-        message: 'sent you friend request',
-        referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
-        from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61802',
-        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
-      });
+      const notification = await givenNotificationInstance(
+        notificationRepository,
+        {
+          type: NotificationType.FRIEND_REQUEST,
+          read: false,
+          message: 'sent you friend request',
+          referenceId:
+            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
+          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61802',
+          to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
+        },
+      );
 
       const filter =
         'filter=' +

@@ -39,7 +39,9 @@ describe('PostController', () => {
     it('returns a post if it exists', async () => {
       const findById = postRepository.stubs.findById;
       findById.resolves(aPostWithId);
-      expect(await controller.findById(aPostWithId.id as string)).to.eql(aPostWithId);
+      expect(await controller.findById(aPostWithId.id as string)).to.eql(
+        aPostWithId,
+      );
       sinon.assert.calledWith(findById, aPostWithId.id);
     });
   });
@@ -101,7 +103,8 @@ describe('PostController', () => {
         text: 'wow',
         platform: PlatformType.MYRIAD,
         tags: ['wow'],
-        createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+        createdBy:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       }),
     ] as Post[];
     aChangedPost = givenMyriadPost({

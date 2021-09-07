@@ -38,8 +38,10 @@ describe('FriendApplication', function () {
 
   it('creates a pending friend request', async function () {
     const friend = givenFriend({
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
     });
 
     const response = await client.post('/friends').send(friend).expect(200);
@@ -50,38 +52,54 @@ describe('FriendApplication', function () {
 
   it('returns 422 when creates a pending friend request with no requesteeId/no requestorId', async () => {
     const friendWithNoRequesteeId = givenFriend({
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
     });
 
     await client.post('/friends').send(friendWithNoRequesteeId).expect(422);
 
     const friendWithNoRequestorId = givenFriend({
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
     });
 
     await client.post('/friends').send(friendWithNoRequestorId).expect(422);
   });
 
   it('rejects requests to create a pending friend request with requesteeId/requestorId length less/more than 66', async () => {
-    const friendWithRequestorAndRequesteeLengthLessThan66: Partial<Friend> = givenFriend({
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-    });
+    const friendWithRequestorAndRequesteeLengthLessThan66: Partial<Friend> =
+      givenFriend({
+        requesteeId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+        requestorId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+      });
 
-    await client.post('/friends').send(friendWithRequestorAndRequesteeLengthLessThan66).expect(422);
+    await client
+      .post('/friends')
+      .send(friendWithRequestorAndRequesteeLengthLessThan66)
+      .expect(422);
 
-    const friendWithRequestorAndRequesteeLengthMoreThan66: Partial<Friend> = givenFriend({
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618612',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618532',
-    });
+    const friendWithRequestorAndRequesteeLengthMoreThan66: Partial<Friend> =
+      givenFriend({
+        requesteeId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618612',
+        requestorId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618532',
+      });
 
-    await client.post('/friends').send(friendWithRequestorAndRequesteeLengthMoreThan66).expect(422);
+    await client
+      .post('/friends')
+      .send(friendWithRequestorAndRequesteeLengthMoreThan66)
+      .expect(422);
   });
 
   it('rejects requests to create a pending friend request with requesteeId equal requestorId', async () => {
     const friend: Partial<Friend> = givenFriend({
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
     });
 
     await client.post('/friends').send(friend).expect(422);
@@ -89,12 +107,16 @@ describe('FriendApplication', function () {
 
   it('rejects requests to create a double pending friend request', async () => {
     const friend = givenFriend({
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
     });
     await givenFriendInstance(friendRepository, {
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
     });
 
     await client.post('/friends').send(friend).expect(422);
@@ -102,13 +124,17 @@ describe('FriendApplication', function () {
 
   it('rejects requests to create a pending friend request when already friend', async () => {
     const friend = givenFriend({
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
     });
     await givenFriendInstance(friendRepository, {
       status: FriendStatusType.APPROVED,
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
     });
 
     await client.post('/friends').send(friend).expect(422);
@@ -116,8 +142,10 @@ describe('FriendApplication', function () {
 
   it('rejects requests to create a pending friend request when requesteeId and requestorId not in hex', async () => {
     const friend = givenFriend({
-      requesteeId: '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-      requestorId: '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requesteeId:
+        '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+      requestorId:
+        '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
     });
 
     await client.post('/friends').send(friend).expect(422);
@@ -127,8 +155,10 @@ describe('FriendApplication', function () {
     const multiplePendingRequest = [];
 
     for (let i = 11; i < 31; i++) {
-      const requesteeId = '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee60' + i;
-      const requestorId = '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61' + i;
+      const requesteeId =
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee60' + i;
+      const requestorId =
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61' + i;
 
       multiplePendingRequest.push(
         givenFriendInstance(friendRepository, {
@@ -141,8 +171,10 @@ describe('FriendApplication', function () {
     await Promise.all(multiplePendingRequest);
 
     const friend = givenFriend({
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
     });
 
     await client.post('/friends').send(friend).expect(422);
@@ -153,13 +185,18 @@ describe('FriendApplication', function () {
 
     beforeEach(async () => {
       persistedFriend = await givenFriendInstance(friendRepository, {
-        requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-        requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+        requesteeId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+        requestorId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
       });
     });
 
     it('gets a friends by ID', async () => {
-      const result = await client.get(`/friends/${persistedFriend.id}`).send().expect(200);
+      const result = await client
+        .get(`/friends/${persistedFriend.id}`)
+        .send()
+        .expect(200);
       const expected = toJSON(persistedFriend);
 
       expect(result.body).to.deepEqual(expected);
@@ -172,11 +209,16 @@ describe('FriendApplication', function () {
     it('updates the friend by ID ', async () => {
       const updatedFriend = givenFriend({
         status: FriendStatusType.APPROVED,
-        requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61aq3',
-        requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61cv5',
+        requesteeId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61aq3',
+        requestorId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61cv5',
       });
 
-      await client.patch(`/friends/${persistedFriend.id}`).send(updatedFriend).expect(204);
+      await client
+        .patch(`/friends/${persistedFriend.id}`)
+        .send(updatedFriend)
+        .expect(204);
 
       const result = await friendRepository.findById(persistedFriend.id);
       expect(result).to.containEql(updatedFriend);
@@ -187,8 +229,10 @@ describe('FriendApplication', function () {
         .patch('/friends/99999')
         .send(
           givenFriend({
-            requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61aq3',
-            requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61cv5',
+            requesteeId:
+              '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61aq3',
+            requestorId:
+              '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61cv5',
           }),
         )
         .expect(404);
@@ -196,9 +240,9 @@ describe('FriendApplication', function () {
 
     it('deletes the friend', async () => {
       await client.del(`/friends/${persistedFriend.id}`).send().expect(204);
-      await expect(friendRepository.findById(persistedFriend.id)).to.be.rejectedWith(
-        EntityNotFoundError,
-      );
+      await expect(
+        friendRepository.findById(persistedFriend.id),
+      ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a friend that does not exist', async () => {
@@ -221,13 +265,18 @@ describe('FriendApplication', function () {
     it('queries friends with a filter', async () => {
       const friendInProgress = await givenFriendInstance(friendRepository, {
         status: FriendStatusType.APPROVED,
-        requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
-        requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
+        requesteeId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+        requestorId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
       });
 
       await client
         .get('/friends')
-        .query('filter=' + JSON.stringify({where: {status: FriendStatusType.APPROVED}}))
+        .query(
+          'filter=' +
+            JSON.stringify({where: {status: FriendStatusType.APPROVED}}),
+        )
         .expect(200, {
           data: [toJSON(friendInProgress)],
           meta: {
@@ -241,8 +290,10 @@ describe('FriendApplication', function () {
 
     it('exploded filter conditions work', async () => {
       await givenFriendInstance(friendRepository, {
-        requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866',
-        requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61867',
+        requesteeId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866',
+        requestorId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61867',
       });
 
       const response = await client.get('/friends').query('pageLimit=2');
@@ -263,7 +314,8 @@ describe('FriendApplication', function () {
       requesteeId: requestee.id,
       requestorId: requestor.id,
     });
-    const filter = 'filter=' + JSON.stringify({include: ['requestor', 'requestee']});
+    const filter =
+      'filter=' + JSON.stringify({include: ['requestor', 'requestee']});
 
     const response = await client.get('/friends').query(filter);
 

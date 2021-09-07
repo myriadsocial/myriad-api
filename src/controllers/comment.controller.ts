@@ -42,7 +42,8 @@ export class CommentController {
     },
   })
   async find(
-    @param.filter(Comment, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Comment>,
+    @param.filter(Comment, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Comment>,
   ): Promise<Comment[]> {
     return this.commentRepository.find(filter);
   }
@@ -61,7 +62,8 @@ export class CommentController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Comment, {exclude: 'where'}) filter?: FilterExcludingWhere<Comment>,
+    @param.filter(Comment, {exclude: 'where'})
+    filter?: FilterExcludingWhere<Comment>,
   ): Promise<Comment> {
     return this.commentRepository.findById(id, filter);
   }
@@ -88,12 +90,17 @@ export class CommentController {
     comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
     if (!comment.type || !comment.referenceId)
-      throw new HttpErrors.UnprocessableEntity('Type/ReferenceId cannot be empty');
+      throw new HttpErrors.UnprocessableEntity(
+        'Type/ReferenceId cannot be empty',
+      );
 
     const newComment = await this.commentRepository.create(comment);
 
     try {
-      await this.notificationService.sendPostComment(comment.userId, newComment);
+      await this.notificationService.sendPostComment(
+        comment.userId,
+        newComment,
+      );
     } catch (error) {
       // ignored
     }

@@ -13,7 +13,11 @@ import {
 } from '@loopback/rest';
 import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
 import {Experience, UserExperience} from '../models';
-import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../repositories';
+import {
+  ExperienceRepository,
+  UserExperienceRepository,
+  UserRepository,
+} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -36,7 +40,9 @@ export class UserExperienceController {
           'application/json': {
             schema: {
               type: 'array',
-              items: getModelSchemaRef(UserExperience, {includeRelations: true}),
+              items: getModelSchemaRef(UserExperience, {
+                includeRelations: true,
+              }),
             },
           },
         },
@@ -61,7 +67,8 @@ export class UserExperienceController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(UserExperience, {exclude: 'where'}) filter?: FilterExcludingWhere<UserExperience>,
+    @param.filter(UserExperience, {exclude: 'where'})
+    filter?: FilterExcludingWhere<UserExperience>,
   ): Promise<UserExperience> {
     return this.userExperienceRepository.findById(id, filter);
   }
@@ -71,7 +78,9 @@ export class UserExperienceController {
     responses: {
       '200': {
         description: 'clone an Experience model instance',
-        content: {'application/json': {schema: getModelSchemaRef(UserExperience)}},
+        content: {
+          'application/json': {schema: getModelSchemaRef(UserExperience)},
+        },
       },
     },
   })
@@ -89,7 +98,9 @@ export class UserExperienceController {
     responses: {
       '200': {
         description: 'modify an Experience model instance',
-        content: {'application/json': {schema: getModelSchemaRef(UserExperience)}},
+        content: {
+          'application/json': {schema: getModelSchemaRef(UserExperience)},
+        },
       },
     },
   })
@@ -108,7 +119,11 @@ export class UserExperienceController {
     })
     experience: Omit<Experience, 'id'>,
   ): Promise<Experience> {
-    await this.userExperienceRepository.deleteAll({userId, experienceId, cloned: true});
+    await this.userExperienceRepository.deleteAll({
+      userId,
+      experienceId,
+      cloned: true,
+    });
     return this.userRepository.experiences(userId).create(experience);
   }
 
@@ -181,13 +196,21 @@ export class UserExperienceController {
       include: ['experience'],
     });
 
-    if (!userExperience) throw new HttpErrors.UnprocessableEntity('Experience not found');
+    if (!userExperience)
+      throw new HttpErrors.UnprocessableEntity('Experience not found');
 
     if (userExperience.cloned)
-      throw new HttpErrors.UnprocessableEntity('You cannot update clone experience');
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot update clone experience',
+      );
 
-    if (userExperience.experience && userExperience.experience.createdBy !== userId)
-      throw new HttpErrors.UnprocessableEntity('You cannot update other user experience');
+    if (
+      userExperience.experience &&
+      userExperience.experience.createdBy !== userId
+    )
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot update other user experience',
+      );
 
     return this.experienceRepository.updateById(experienceId, experience);
   }

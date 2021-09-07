@@ -1,5 +1,11 @@
 import {intercept, service} from '@loopback/core';
-import {Count, CountSchema, Filter, repository, Where} from '@loopback/repository';
+import {
+  Count,
+  CountSchema,
+  Filter,
+  repository,
+  Where,
+} from '@loopback/repository';
 import {
   del,
   get,
@@ -41,7 +47,8 @@ export class PostCommentController {
   })
   async find(
     @param.path.string('id') id: string,
-    @param.filter(Comment, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Comment>,
+    @param.filter(Comment, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Comment>,
   ): Promise<Comment[]> {
     return this.postRepository.comments(id).find(filter);
   }
@@ -71,7 +78,10 @@ export class PostCommentController {
     const newComment = await this.postRepository.comments(id).create(comment);
 
     try {
-      await this.notificationService.sendPostComment(comment.userId, newComment);
+      await this.notificationService.sendPostComment(
+        comment.userId,
+        newComment,
+      );
     } catch (error) {
       // ignored
     }
@@ -97,7 +107,8 @@ export class PostCommentController {
       },
     })
     comment: Partial<Comment>,
-    @param.query.object('where', getWhereSchemaFor(Comment)) where?: Where<Comment>,
+    @param.query.object('where', getWhereSchemaFor(Comment))
+    where?: Where<Comment>,
   ): Promise<Count> {
     return this.postRepository.comments(id).patch(comment, where);
   }
@@ -112,7 +123,8 @@ export class PostCommentController {
   })
   async delete(
     @param.path.string('id') id: string,
-    @param.query.object('where', getWhereSchemaFor(Comment)) where?: Where<Comment>,
+    @param.query.object('where', getWhereSchemaFor(Comment))
+    where?: Where<Comment>,
   ): Promise<Count> {
     return this.postRepository.comments(id).delete(where);
   }

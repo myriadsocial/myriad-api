@@ -38,4 +38,5 @@ export interface AuthRefreshTokenRelations {
   // describe navigational properties here
 }
 
-export type AuthRefereshTokenWithRelations = AuthRefreshToken & AuthRefreshTokenRelations;
+export type AuthRefereshTokenWithRelations = AuthRefreshToken &
+  AuthRefreshTokenRelations;

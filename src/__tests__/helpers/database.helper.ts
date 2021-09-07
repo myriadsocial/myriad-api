@@ -28,16 +28,18 @@ export async function givenRepositories(testdb: any) {
     async () => userExperienceRepository,
     async () => activityLogRepository,
   );
-  const userExperienceRepository: UserExperienceRepository = new UserExperienceRepository(
-    testdb,
-    async () => experienceRepository,
-    async () => userRepository,
-  );
-  const userSocialMediaRepository: UserSocialMediaRepository = new UserSocialMediaRepository(
-    testdb,
-    async () => userRepository,
-    async () => peopleRepository,
-  );
+  const userExperienceRepository: UserExperienceRepository =
+    new UserExperienceRepository(
+      testdb,
+      async () => experienceRepository,
+      async () => userRepository,
+    );
+  const userSocialMediaRepository: UserSocialMediaRepository =
+    new UserSocialMediaRepository(
+      testdb,
+      async () => userRepository,
+      async () => peopleRepository,
+    );
   const peopleRepository: PeopleRepository = new PeopleRepository(
     testdb,
     async () => userSocialMediaRepository,
@@ -51,10 +53,8 @@ export async function givenRepositories(testdb: any) {
     async () => transactionRepository,
     async () => likeRepository,
   );
-  const userCurrencyRepository: UserCurrencyRepository = new UserCurrencyRepository(
-    testdb,
-    async () => currencyRepository,
-  );
+  const userCurrencyRepository: UserCurrencyRepository =
+    new UserCurrencyRepository(testdb, async () => currencyRepository);
   const currencyRepository: CurrencyRepository = new CurrencyRepository(testdb);
   const friendRepository: FriendRepository = new FriendRepository(
     testdb,
@@ -70,25 +70,23 @@ export async function givenRepositories(testdb: any) {
     async () => transactionRepository,
     async () => commentLinkRepository,
   );
-  const transactionRepository: TransactionRepository = new TransactionRepository(
-    testdb,
-    async () => userRepository,
-    async () => currencyRepository,
-  );
+  const transactionRepository: TransactionRepository =
+    new TransactionRepository(
+      testdb,
+      async () => userRepository,
+      async () => currencyRepository,
+    );
   const likeRepository: LikeRepository = new LikeRepository(
     testdb,
     async () => postRepository,
     async () => userRepository,
   );
-  const notificationRepository: NotificationRepository = new NotificationRepository(
-    testdb,
-    async () => userRepository,
-  );
-  const activityLogRepository: ActivityLogRepository = new ActivityLogRepository(
-    testdb,
-    async () => userRepository,
-  );
-  const commentLinkRepository: CommentLinkRepository = new CommentLinkRepository(testdb);
+  const notificationRepository: NotificationRepository =
+    new NotificationRepository(testdb, async () => userRepository);
+  const activityLogRepository: ActivityLogRepository =
+    new ActivityLogRepository(testdb, async () => userRepository);
+  const commentLinkRepository: CommentLinkRepository =
+    new CommentLinkRepository(testdb);
 
   return {
     userRepository,

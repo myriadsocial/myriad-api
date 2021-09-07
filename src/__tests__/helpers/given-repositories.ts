@@ -49,7 +49,9 @@ export async function givenNotificationRepository(app: MyriadApiApplication) {
   return app.getRepository(NotificationRepository);
 }
 
-export async function givenUserSocialMediaRepository(app: MyriadApiApplication) {
+export async function givenUserSocialMediaRepository(
+  app: MyriadApiApplication,
+) {
   return app.getRepository(UserSocialMediaRepository);
 }
 

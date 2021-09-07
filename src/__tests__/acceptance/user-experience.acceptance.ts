@@ -2,7 +2,11 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {UserExperience} from '../../models';
-import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../../repositories';
+import {
+  ExperienceRepository,
+  UserExperienceRepository,
+  UserRepository,
+} from '../../repositories';
 import {
   givenExperience,
   givenExperienceInstance,
@@ -45,7 +49,9 @@ describe('UserExperienceApplication', function () {
     let persistedUserExperience: UserExperience;
 
     beforeEach(async () => {
-      persistedUserExperience = await givenUserExperienceInstance(userExperienceRepository);
+      persistedUserExperience = await givenUserExperienceInstance(
+        userExperienceRepository,
+      );
     });
 
     it('gets a userExperience by ID', async () => {
@@ -74,15 +80,21 @@ describe('UserExperienceApplication', function () {
 
     it('finds all userExperiences', async () => {
       const response = await client.get('/user-experiences').send().expect(200);
-      expect(toJSON(response.body.data)).to.containDeep(toJSON(persistedUserExperiences));
+      expect(toJSON(response.body.data)).to.containDeep(
+        toJSON(persistedUserExperiences),
+      );
     });
 
     it('queries users with a filter', async () => {
-      const userExperience = await givenUserExperienceInstance(userExperienceRepository, {
-        cloned: true,
-        experienceId: '3',
-        userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6184z',
-      });
+      const userExperience = await givenUserExperienceInstance(
+        userExperienceRepository,
+        {
+          cloned: true,
+          experienceId: '3',
+          userId:
+            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6184z',
+        },
+      );
 
       await client
         .get('/user-experiences')
@@ -90,7 +102,8 @@ describe('UserExperienceApplication', function () {
           'filter=' +
             JSON.stringify({
               where: {
-                userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6184z',
+                userId:
+                  '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6184z',
               },
             }),
         )
@@ -106,9 +119,13 @@ describe('UserExperienceApplication', function () {
     });
 
     it('exploded filter conditions work', async () => {
-      await givenUserExperienceInstance(userExperienceRepository, {experienceId: '5'});
+      await givenUserExperienceInstance(userExperienceRepository, {
+        experienceId: '5',
+      });
 
-      const response = await client.get('/user-experiences').query('pageLimit=2');
+      const response = await client
+        .get('/user-experiences')
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });
@@ -158,9 +175,14 @@ describe('UserExperienceApplication', function () {
 
     it('rejects clone other user experience when experience already belong to user', async () => {
       const user = await givenUserInstance(userRepository);
-      const experience = await givenExperienceInstance(experienceRepository, {createdBy: user.id});
+      const experience = await givenExperienceInstance(experienceRepository, {
+        createdBy: user.id,
+      });
 
-      await client.post(`/users/${user.id}/clone-experiences/${experience.id}`).send().expect(422);
+      await client
+        .post(`/users/${user.id}/clone-experiences/${experience.id}`)
+        .send()
+        .expect(422);
     });
 
     it('rejects clone other user experience when experience has been cloned', async () => {
@@ -173,7 +195,10 @@ describe('UserExperienceApplication', function () {
         cloned: true,
       });
 
-      await client.post(`/users/${user.id}/clone-experiences/${experience.id}`).send().expect(422);
+      await client
+        .post(`/users/${user.id}/clone-experiences/${experience.id}`)
+        .send()
+        .expect(422);
     });
 
     it('rejects clone other user experience when user has experience more than 10', async () => {
@@ -189,7 +214,10 @@ describe('UserExperienceApplication', function () {
 
       const experience = await givenExperienceInstance(experienceRepository);
 
-      await client.post(`/users/${user.id}/clone-experiences/${experience.id}`).send().expect(422);
+      await client
+        .post(`/users/${user.id}/clone-experiences/${experience.id}`)
+        .send()
+        .expect(422);
     });
   });
 
@@ -255,7 +283,10 @@ describe('UserExperienceApplication', function () {
 
       const experience = givenExperience();
 
-      await client.post(`/users/${user.id}/new-experiences`).send(experience).expect(422);
+      await client
+        .post(`/users/${user.id}/new-experiences`)
+        .send(experience)
+        .expect(422);
     });
   });
 
@@ -269,16 +300,22 @@ describe('UserExperienceApplication', function () {
     it('modifies from other user experience', async () => {
       const otherUser = await givenUserInstance(userRepository);
       const prepareExperience = givenExperience({createdBy: otherUser.id});
-      const experience = await givenExperienceInstance(experienceRepository, prepareExperience);
+      const experience = await givenExperienceInstance(
+        experienceRepository,
+        prepareExperience,
+      );
 
       const user = await givenUserInstance(userRepository, {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618r9',
       });
-      const userExperience = await givenUserExperienceInstance(userExperienceRepository, {
-        userId: user.id,
-        experienceId: experience.id,
-        cloned: true,
-      });
+      const userExperience = await givenUserExperienceInstance(
+        userExperienceRepository,
+        {
+          userId: user.id,
+          experienceId: experience.id,
+          cloned: true,
+        },
+      );
 
       prepareExperience.name = 'my experience';
       prepareExperience.createdBy = user.id;
@@ -294,9 +331,9 @@ describe('UserExperienceApplication', function () {
       const result = await experienceRepository.findById(response.body.id);
       expect(result).to.containDeep(updatedExperience);
 
-      await expect(userExperienceRepository.findById(userExperience.id)).to.be.rejectedWith(
-        EntityNotFoundError,
-      );
+      await expect(
+        userExperienceRepository.findById(userExperience.id),
+      ).to.be.rejectedWith(EntityNotFoundError);
     });
   });
 
@@ -306,10 +343,13 @@ describe('UserExperienceApplication', function () {
       createdBy: user.id,
     });
 
-    const userExperience = await givenUserExperienceInstance(userExperienceRepository, {
-      userId: user.id,
-      experienceId: experience.id,
-    });
+    const userExperience = await givenUserExperienceInstance(
+      userExperienceRepository,
+      {
+        userId: user.id,
+        experienceId: experience.id,
+      },
+    );
 
     const filter =
       'filter=' +

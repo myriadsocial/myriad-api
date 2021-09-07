@@ -33,7 +33,9 @@ describe('TransactionController', () => {
     it('returns a transaction if it exists', async () => {
       const findById = transactionRepository.stubs.findById;
       findById.resolves(aTransactionWithId);
-      expect(await controller.findById(aTransactionWithId.id as string)).to.eql(aTransactionWithId);
+      expect(await controller.findById(aTransactionWithId.id as string)).to.eql(
+        aTransactionWithId,
+      );
       sinon.assert.calledWith(findById, aTransactionWithId.id);
     });
   });
@@ -57,7 +59,9 @@ describe('TransactionController', () => {
     it('uses the provided filter', async () => {
       const find = transactionRepository.stubs.find;
       const filter = toJSON({
-        where: {from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864'},
+        where: {
+          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+        },
       });
 
       find.resolves(aListOfTransactions);

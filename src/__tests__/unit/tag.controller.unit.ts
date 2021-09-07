@@ -33,7 +33,9 @@ describe('TagController', () => {
     it('returns a tag if it exists', async () => {
       const findById = tagRepository.stubs.findById;
       findById.resolves(aTagWithId);
-      expect(await controller.findById(aTagWithId.id as string)).to.eql(aTagWithId);
+      expect(await controller.findById(aTagWithId.id as string)).to.eql(
+        aTagWithId,
+      );
       sinon.assert.calledWith(findById, aTagWithId.id);
     });
   });

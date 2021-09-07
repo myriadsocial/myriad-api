@@ -11,9 +11,9 @@ export class TransactionService {
 
   // ignore
   async totalTransactionAmount(field: string, id: string, groupBy: string) {
-    const collections = (this.transactionRepository.dataSource.connector as any).collection(
-      Transaction.modelName,
-    );
+    const collections = (
+      this.transactionRepository.dataSource.connector as any
+    ).collection(Transaction.modelName);
 
     return collections
       .aggregate([

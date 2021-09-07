@@ -1,6 +1,14 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
+import {
+  del,
+  get,
+  getModelSchemaRef,
+  param,
+  post,
+  requestBody,
+  response,
+} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
@@ -48,7 +56,8 @@ export class TagController {
     },
   })
   async find(
-    @param.filter(Tag, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<Tag>,
+    @param.filter(Tag, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Tag>,
   ): Promise<Tag[]> {
     return this.tagRepository.find(filter);
   }

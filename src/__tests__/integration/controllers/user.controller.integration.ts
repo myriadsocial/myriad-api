@@ -125,7 +125,9 @@ describe('UserControllerIntegration', () => {
       currencyId: currency.id,
     });
 
-    const response = await controller.find({include: ['currencies', 'friends', 'activityLogs']});
+    const response = await controller.find({
+      include: ['currencies', 'friends', 'activityLogs'],
+    });
 
     expect(response).to.containDeep([
       {
@@ -148,7 +150,9 @@ describe('UserControllerIntegration', () => {
       currencyId: currency.id,
     });
 
-    const response = await controller.findById(user.id, {include: ['currencies']});
+    const response = await controller.findById(user.id, {
+      include: ['currencies'],
+    });
 
     expect(response).to.containDeep({
       ...user,
@@ -184,7 +188,9 @@ describe('UserControllerIntegration', () => {
       userId: user.id,
     });
 
-    const response = await controller.findById(user.id, {include: ['activityLogs']});
+    const response = await controller.findById(user.id, {
+      include: ['activityLogs'],
+    });
 
     expect(response).to.containDeep({
       ...user,

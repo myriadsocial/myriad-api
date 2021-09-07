@@ -71,4 +71,5 @@ export interface UserSocialMediaRelations {
   // describe navigational properties here
 }
 
-export type UserSocialMediaWithRelations = UserSocialMedia & UserSocialMediaRelations;
+export type UserSocialMediaWithRelations = UserSocialMedia &
+  UserSocialMediaRelations;

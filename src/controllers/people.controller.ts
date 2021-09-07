@@ -27,7 +27,8 @@ export class PeopleController {
     },
   })
   async find(
-    @param.filter(People, {exclude: ['limit', 'skip', 'offset']}) filter?: Filter<People>,
+    @param.filter(People, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<People>,
   ): Promise<People[]> {
     return this.peopleRepository.find(filter);
   }

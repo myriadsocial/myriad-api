@@ -1,6 +1,14 @@
 import {intercept} from '@loopback/core';
 import {Count, CountSchema, repository} from '@loopback/repository';
-import {del, getModelSchemaRef, param, patch, post, requestBody, response} from '@loopback/rest';
+import {
+  del,
+  getModelSchemaRef,
+  param,
+  patch,
+  post,
+  requestBody,
+  response,
+} from '@loopback/rest';
 import {ValidateCurrencyInterceptor} from '../interceptors';
 import {UserCurrency} from '../models';
 import {UserCurrencyRepository, UserRepository} from '../repositories';
@@ -20,7 +28,9 @@ export class UserCurrencyController {
     responses: {
       '200': {
         description: 'create a UserCurrency model instance',
-        content: {'application/json': {schema: getModelSchemaRef(UserCurrency)}},
+        content: {
+          'application/json': {schema: getModelSchemaRef(UserCurrency)},
+        },
       },
     },
   })
@@ -73,6 +83,8 @@ export class UserCurrencyController {
     @param.path.string('userId') userId: string,
     @param.path.string('currencyId') currencyId: string,
   ): Promise<void> {
-    return this.userRepository.updateById(userId, {defaultCurrency: currencyId});
+    return this.userRepository.updateById(userId, {
+      defaultCurrency: currencyId,
+    });
   }
 }

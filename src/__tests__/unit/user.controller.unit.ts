@@ -35,7 +35,9 @@ describe('UserController', () => {
     it('returns a user if it exists', async () => {
       const findById = userRepository.stubs.findById;
       findById.resolves(aUserWithId);
-      expect(await controller.findById(aUserWithId.id as string)).to.eql(aUserWithId);
+      expect(await controller.findById(aUserWithId.id as string)).to.eql(
+        aUserWithId,
+      );
       sinon.assert.calledWith(findById, aUserWithId.id);
     });
   });

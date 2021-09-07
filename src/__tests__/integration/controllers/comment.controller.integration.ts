@@ -1,6 +1,11 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {CommentController} from '../../../controllers';
-import {CommentType, NotificationType, PlatformType, TransactionType} from '../../../enums';
+import {
+  CommentType,
+  NotificationType,
+  PlatformType,
+  TransactionType,
+} from '../../../enums';
 import {
   CommentRepository,
   NotificationRepository,
@@ -66,7 +71,8 @@ describe('CommentControllerIntegration', () => {
 
   it('includes Transactions in find method result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: '1',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
@@ -132,7 +138,8 @@ describe('CommentControllerIntegration', () => {
 
   it('includes Transactions in findById method result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: '1',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
@@ -140,7 +147,9 @@ describe('CommentControllerIntegration', () => {
       type: TransactionType.COMMENT,
     });
 
-    const response = await controller.findById(comment.id ?? '', {include: ['transactions']});
+    const response = await controller.findById(comment.id ?? '', {
+      include: ['transactions'],
+    });
 
     expect(response).to.containDeep({
       ...comment,
@@ -157,7 +166,9 @@ describe('CommentControllerIntegration', () => {
       postId: '1',
     });
 
-    const response = await controller.findById(comment.id ?? '', {include: ['user']});
+    const response = await controller.findById(comment.id ?? '', {
+      include: ['user'],
+    });
 
     expect(response).to.containDeep({
       ...comment,

@@ -38,27 +38,38 @@ describe('ActivityLogApplication', function () {
     let persistedActivityLogs: ActivityLog[];
 
     beforeEach(async () => {
-      persistedActivityLogs = await givenMultipleActivityLogInstances(activityLogRepository);
+      persistedActivityLogs = await givenMultipleActivityLogInstances(
+        activityLogRepository,
+      );
     });
 
     it('finds all activitiyLogs', async () => {
       const response = await client.get('/activity-logs').send().expect(200);
-      expect(toJSON(response.body.data)).to.containDeep(toJSON(persistedActivityLogs));
+      expect(toJSON(response.body.data)).to.containDeep(
+        toJSON(persistedActivityLogs),
+      );
     });
 
     it('queries activityLogs with a filter', async () => {
-      const activityLogInProgress = await givenActivityLogInstance(activityLogRepository, {
-        type: ActivityLogType.PROFILE,
-        message: 'You updated your profile',
-        userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c',
-      });
+      const activityLogInProgress = await givenActivityLogInstance(
+        activityLogRepository,
+        {
+          type: ActivityLogType.PROFILE,
+          message: 'You updated your profile',
+          userId:
+            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c',
+        },
+      );
 
       await client
         .get('/activity-logs')
         .query(
           'filter=' +
             JSON.stringify({
-              where: {userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c'},
+              where: {
+                userId:
+                  '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c',
+              },
             }),
         )
         .expect(200, {
@@ -76,7 +87,8 @@ describe('ActivityLogApplication', function () {
       await givenActivityLogInstance(activityLogRepository, {
         type: ActivityLogType.PROFILE,
         message: 'You updated your profile',
-        userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618cc',
+        userId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618cc',
       });
 
       const response = await client.get('/activity-logs').query('pageLimit=2');

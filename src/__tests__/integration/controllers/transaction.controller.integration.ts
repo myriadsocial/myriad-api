@@ -96,7 +96,9 @@ describe('TransactionControllerIntegration', () => {
       to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    const response = await controller.findById(transaction.id ?? '', {include: ['fromUser']});
+    const response = await controller.findById(transaction.id ?? '', {
+      include: ['fromUser'],
+    });
 
     expect(response).to.containDeep({
       ...transaction,
@@ -113,7 +115,9 @@ describe('TransactionControllerIntegration', () => {
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
 
-    const response = await controller.findById(transaction.id ?? '', {include: ['toUser']});
+    const response = await controller.findById(transaction.id ?? '', {
+      include: ['toUser'],
+    });
 
     expect(response).to.containDeep({
       ...transaction,

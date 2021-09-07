@@ -7,6 +7,8 @@ export function validateCredentials(credentials: Credentials) {
     throw new HttpErrors.UnprocessableEntity('invalid Email');
   }
   if (credentials.password.length < 6) {
-    throw new HttpErrors.UnprocessableEntity('password length should be greater than 6');
+    throw new HttpErrors.UnprocessableEntity(
+      'password length should be greater than 6',
+    );
   }
 }

@@ -41,7 +41,10 @@ describe('ExperienceApplication', function () {
     });
 
     it('gets a experience by ID', async () => {
-      const result = await client.get(`/experiences/${persistedExperience.id}`).send().expect(200);
+      const result = await client
+        .get(`/experiences/${persistedExperience.id}`)
+        .send()
+        .expect(200);
       const expected = toJSON(persistedExperience);
 
       expect(result.body).to.deepEqual(expected);
@@ -56,18 +59,26 @@ describe('ExperienceApplication', function () {
     let persistedExperiences: Experience[];
 
     beforeEach(async () => {
-      persistedExperiences = await givenMultipleExperienceInstances(experienceRepository);
+      persistedExperiences = await givenMultipleExperienceInstances(
+        experienceRepository,
+      );
     });
 
     it('finds all experiences', async () => {
       const response = await client.get('/experiences').send().expect(200);
-      expect(toJSON(response.body.data)).to.containDeep(toJSON(persistedExperiences));
+      expect(toJSON(response.body.data)).to.containDeep(
+        toJSON(persistedExperiences),
+      );
     });
 
     it('queries users with a filter', async () => {
-      const experienceInProgress = await givenExperienceInstance(experienceRepository, {
-        createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
-      });
+      const experienceInProgress = await givenExperienceInstance(
+        experienceRepository,
+        {
+          createdBy:
+            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
+        },
+      );
 
       await client
         .get('/experiences')
@@ -75,7 +86,8 @@ describe('ExperienceApplication', function () {
           'filter=' +
             JSON.stringify({
               where: {
-                createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
+                createdBy:
+                  '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
               },
             }),
         )

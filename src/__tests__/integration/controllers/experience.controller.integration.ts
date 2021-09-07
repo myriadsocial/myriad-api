@@ -53,7 +53,9 @@ describe('ExperienceControllerIntegration', () => {
     const experience = await givenExperienceInstance(experienceRepository, {
       createdBy: user.id,
     });
-    const response = await controller.findById(experience.id ?? '', {include: ['user']});
+    const response = await controller.findById(experience.id ?? '', {
+      include: ['user'],
+    });
 
     expect(response).to.containDeep({
       ...experience,

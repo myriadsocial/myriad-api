@@ -120,10 +120,14 @@ describe('LikeApplication', function () {
       true,
     );
     const post = postResponse.ops[0];
-    const like = await givenLikeInstance(likeRepository, {referenceId: post._id.toString()});
+    const like = await givenLikeInstance(likeRepository, {
+      referenceId: post._id.toString(),
+    });
 
     await client.del(`/likes/${like.id}`).send().expect(204);
-    await expect(likeRepository.findById(like.id)).to.be.rejectedWith(EntityNotFoundError);
+    await expect(likeRepository.findById(like.id)).to.be.rejectedWith(
+      EntityNotFoundError,
+    );
 
     sleep(500);
     const resultPost = await postRepository.findById(like.referenceId);

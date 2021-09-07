@@ -1,6 +1,10 @@
 import {repository, Where} from '@loopback/repository';
 import {Experience, Post} from '../models';
-import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../repositories';
+import {
+  ExperienceRepository,
+  UserExperienceRepository,
+  UserRepository,
+} from '../repositories';
 
 export class ExperienceService {
   constructor(
@@ -23,7 +27,9 @@ export class ExperienceService {
     if (!user) return null;
     if (!user.experiences) return null;
 
-    const experience = user.experiences.find(e => e.id === user.onTimeline?.toString());
+    const experience = user.experiences.find(
+      e => e.id === user.onTimeline?.toString(),
+    );
 
     if (!experience) return null;
 

@@ -54,7 +54,10 @@ describe('TagApplication', function () {
     });
 
     it('gets a tag by ID', async () => {
-      const result = await client.get(`/tags/${persistedTag.id}`).send().expect(200);
+      const result = await client
+        .get(`/tags/${persistedTag.id}`)
+        .send()
+        .expect(200);
       const expected = toJSON(persistedTag);
 
       expect(result.body).to.deepEqual(expected);
@@ -66,7 +69,9 @@ describe('TagApplication', function () {
 
     it('deletes the tag', async () => {
       await client.del(`/tags/${persistedTag.id}`).send().expect(204);
-      await expect(tagRepository.findById(persistedTag.id)).to.be.rejectedWith(EntityNotFoundError);
+      await expect(tagRepository.findById(persistedTag.id)).to.be.rejectedWith(
+        EntityNotFoundError,
+      );
     });
 
     it('returns 404 when deleting a tag that does not exist', async () => {

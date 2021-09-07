@@ -16,7 +16,10 @@ export class FriendService {
     public notificationService: NotificationService,
   ) {}
 
-  async validateFriendRequest(requesteeId: string, requestorId: string): Promise<void> {
+  async validateFriendRequest(
+    requesteeId: string,
+    requestorId: string,
+  ): Promise<void> {
     if (requesteeId === requestorId) {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself');
     }
@@ -50,13 +53,19 @@ export class FriendService {
     if (friend) {
       switch (friend.status) {
         case FriendStatusType.APPROVED:
-          throw new HttpErrors.UnprocessableEntity('You already friend with this user');
+          throw new HttpErrors.UnprocessableEntity(
+            'You already friend with this user',
+          );
 
         case FriendStatusType.PENDING:
           if (requestorId === friend.requestorId)
-            throw new HttpErrors.UnprocessableEntity("Please wait for your friend's approval!");
+            throw new HttpErrors.UnprocessableEntity(
+              "Please wait for your friend's approval!",
+            );
 
-          throw new HttpErrors.UnprocessableEntity('Your friend waited for your approval!');
+          throw new HttpErrors.UnprocessableEntity(
+            'Your friend waited for your approval!',
+          );
       }
     }
   }
@@ -108,7 +117,10 @@ export class FriendService {
   async deleteById(id: string): Promise<void> {
     const friend = await this.friendRepository.findById(id);
 
-    await this.notificationService.cancelFriendRequest(friend.requestorId, friend.requesteeId);
+    await this.notificationService.cancelFriendRequest(
+      friend.requestorId,
+      friend.requesteeId,
+    );
     await this.friendRepository.deleteById(id);
   }
 }

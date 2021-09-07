@@ -7,7 +7,11 @@ import {
 } from '@loopback/testlab';
 import {UserExperienceController} from '../../controllers/user-experience.controller';
 import {UserExperience} from '../../models';
-import {ExperienceRepository, UserExperienceRepository, UserRepository} from '../../repositories';
+import {
+  ExperienceRepository,
+  UserExperienceRepository,
+  UserRepository,
+} from '../../repositories';
 import {givenUserExperience} from '../helpers';
 
 describe('UserExperienceController', () => {
@@ -24,9 +28,9 @@ describe('UserExperienceController', () => {
     it('returns a userExperience if it exists', async () => {
       const findById = userExperienceRepository.stubs.findById;
       findById.resolves(aUserExperienceWithId);
-      expect(await controller.findById(aUserExperienceWithId.id as string)).to.eql(
-        aUserExperienceWithId,
-      );
+      expect(
+        await controller.findById(aUserExperienceWithId.id as string),
+      ).to.eql(aUserExperienceWithId);
       sinon.assert.calledWith(findById, aUserExperienceWithId.id);
     });
   });
@@ -76,7 +80,8 @@ describe('UserExperienceController', () => {
       givenUserExperience({
         cloned: false,
         experienceId: '2',
-        userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61823',
+        userId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61823',
       }),
     ] as UserExperience[];
 

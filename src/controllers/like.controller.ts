@@ -35,7 +35,9 @@ export class LikeController {
     like: Omit<Like, 'id'>,
   ): Promise<Like> {
     /* eslint-disable  @typescript-eslint/no-explicit-any */
-    const collection = (this.likeRepository.dataSource.connector as any).collection(Like.modelName);
+    const collection = (
+      this.likeRepository.dataSource.connector as any
+    ).collection(Like.modelName);
     const query = {
       userId: like.userId,
       type: like.type,

@@ -21,7 +21,5 @@
       "labels": ["document"]
     }
   ],
-  "ignore_labels": [
-    "ci"
-  ]
+  "ignore_labels": ["ci"]
 }

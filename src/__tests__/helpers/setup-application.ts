@@ -1,7 +1,13 @@
-import {Client, createRestAppClient, givenHttpServerConfig} from '@loopback/testlab';
+import {
+  Client,
+  createRestAppClient,
+  givenHttpServerConfig,
+} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 
-export async function setupApplication(setMongo?: boolean): Promise<AppWithClient> {
+export async function setupApplication(
+  setMongo?: boolean,
+): Promise<AppWithClient> {
   const restConfig = givenHttpServerConfig({
     // Customize the server configuration here.
     // Empty values (undefined, '') will be ignored by the helper.

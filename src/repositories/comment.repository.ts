@@ -7,7 +7,13 @@ import {
   repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Comment, CommentLink, CommentRelations, Transaction, User} from '../models';
+import {
+  Comment,
+  CommentLink,
+  CommentRelations,
+  Transaction,
+  User,
+} from '../models';
 import {CommentLinkRepository} from './comment-link.repository';
 import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
@@ -19,7 +25,10 @@ export class CommentRepository extends DefaultCrudRepository<
 > {
   public readonly user: BelongsToAccessor<User, typeof Comment.prototype.id>;
 
-  public readonly transactions: HasManyRepositoryFactory<Transaction, typeof Comment.prototype.id>;
+  public readonly transactions: HasManyRepositoryFactory<
+    Transaction,
+    typeof Comment.prototype.id
+  >;
 
   public readonly comments: HasManyThroughRepositoryFactory<
     Comment,
@@ -50,6 +59,9 @@ export class CommentRepository extends DefaultCrudRepository<
       'transactions',
       transactionRepositoryGetter,
     );
-    this.registerInclusionResolver('transactions', this.transactions.inclusionResolver);
+    this.registerInclusionResolver(
+      'transactions',
+      this.transactions.inclusionResolver,
+    );
   }
 }

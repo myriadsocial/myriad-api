@@ -36,7 +36,9 @@ describe('CommentController', () => {
     it('returns a user if it exists', async () => {
       const findById = commentRepository.stubs.findById;
       findById.resolves(aCommentWithId);
-      expect(await controller.findById(aCommentWithId.id as string)).to.eql(aCommentWithId);
+      expect(await controller.findById(aCommentWithId.id as string)).to.eql(
+        aCommentWithId,
+      );
       sinon.assert.calledWith(findById, aCommentWithId.id);
     });
   });

@@ -39,7 +39,10 @@ function updateConfig(dsConfig: AnyObject) {
 // gracefully. The `stop()` method is inherited from `juggler.DataSource`.
 // Learn more at https://loopback.io/doc/en/lb4/Life-cycle.html
 @lifeCycleObserver('datasource')
-export class MongoDataSource extends juggler.DataSource implements LifeCycleObserver {
+export class MongoDataSource
+  extends juggler.DataSource
+  implements LifeCycleObserver
+{
   static readonly dataSourceName = mongoConfig.name;
   static readonly defaultConfig = mongoConfig;
 
