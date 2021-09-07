@@ -59,26 +59,17 @@ spec:
                   key: password
             - name: MONGO_DATABASE
               value: {{ .Values.config.mongo.database }}
-            - name: FIREBASE_PROJECT_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "myriad-api.firebaseSecretName" . }}
-                  key: projectId
-            - name: FIREBASE_CLIENT_EMAIL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "myriad-api.firebaseSecretName" . }}
-                  key: clientEmail
-            - name: FIREBASE_PRIVATE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "myriad-api.firebaseSecretName" . }}
-                  key: privateKey
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /etc/gcp/sa_credentials.json
             - name: TWITTER_BEARER_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "myriad-api.twitterSecretName" . }}
                   key: bearerToken
+          volumeMounts:
+            - name: service-account-credentials-volume
+              mountPath: /etc/gcp
+              readOnly: true
           ports:
             - name: http
               containerPort: 3000
@@ -97,6 +88,13 @@ spec:
             periodSeconds: 20
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: service-account-credentials-volume
+          secret:
+            secretName: {{ include "myriad-api.firebaseSecretName" . }}
+            items:
+              - key: saJson
+                path: sa_credentials.json
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

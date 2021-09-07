@@ -115,9 +115,7 @@ jobs:
             mongoHost:${{ secrets.PROD_GCP_PROJECT_ID }}/mongoHost
             mongoUser:${{ secrets.PROD_GCP_PROJECT_ID }}/mongoUser
             mongoPassword:${{ secrets.PROD_GCP_PROJECT_ID }}/mongoPassword
-            firebaseProjectId:${{ secrets.PROD_GCP_PROJECT_ID }}/firebaseProjectId
-            firebaseClientEmail:${{ secrets.PROD_GCP_PROJECT_ID }}/firebaseClientEmail
-            firebasePrivateKey:${{ secrets.PROD_GCP_PROJECT_ID }}/firebasePrivateKey
+            firebaseSAJson:${{ secrets.PROD_GCP_PROJECT_ID }}/firebaseSAJson
             twitterBearerToken:${{ secrets.PROD_GCP_PROJECT_ID }}/twitterBearerToken
 
       - name: Install Helm
@@ -137,9 +135,7 @@ jobs:
             --set-string config.mongo.user=${{ steps.secrets.outputs.mongoUser }} \
             --set-string config.mongo.password=${{ steps.secrets.outputs.mongoPassword }} \
             --set-string config.mongo.database=myriad \
-            --set-string config.firebase.projectId=${{ steps.secrets.outputs.firebaseProjectId }} \
-            --set-string config.firebase.clientEmail=${{ steps.secrets.outputs.firebaseClientEmail }} \
-            --set-string config.firebase.privateKey=${{ steps.secrets.outputs.firebasePrivateKey }} \
+            --set-string config.firebase.saJson=${{ steps.secrets.outputs.firebaseSAJson }} \
             --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.twitterBearerToken }} \
             --set certificate.createTLSCertificate=true \
             --set ingress.enabled=true \
