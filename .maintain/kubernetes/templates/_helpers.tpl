@@ -72,7 +72,11 @@ Create base secret name.
 Create the name of tls secret.
 */}}
 {{- define "myriad-api.tlsSecretName" -}}
+{{- if .Values.ingress.tlsSecretName }}
+{{- .Values.ingress.tlsSecretName }}
+{{- else }}
 {{- printf "%s-%s" (include "myriad-api.baseSecretName" .) "tls" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end }}
 
 {{/*

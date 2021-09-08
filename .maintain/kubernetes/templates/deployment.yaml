@@ -70,6 +70,8 @@ spec:
             - name: service-account-credentials-volume
               mountPath: /etc/gcp
               readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
           ports:
             - name: http
               containerPort: 3000
@@ -101,8 +103,6 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 30
             successThreshold: 1
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: service-account-credentials-volume
           secret:
