@@ -92,7 +92,11 @@ export class NotificationService {
     return;
   }
 
-  async sendPostComment(from: string, comment: Comment): Promise<boolean> {
+  async sendPostComment(
+    from: string,
+    comment: Comment,
+    notificationType: NotificationType,
+  ): Promise<boolean> {
     const fromUser = await this.userRepository.findById(from);
     if (fromUser == null) return false;
     const post = await this.postRepository.findById(comment.postId);
@@ -112,7 +116,7 @@ export class NotificationService {
     if (toUser == null) return false;
 
     const notification = new Notification();
-    notification.type = NotificationType.POST_COMMENT;
+    notification.type = notificationType;
     notification.from = fromUser.id;
     notification.to = toUser.id;
     notification.referenceId = comment.id;
