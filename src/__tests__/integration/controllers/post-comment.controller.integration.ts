@@ -1,6 +1,11 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {PostCommentController} from '../../../controllers';
-import {CommentType, NotificationType, PlatformType, TransactionType} from '../../../enums';
+import {
+  CommentType,
+  NotificationType,
+  PlatformType,
+  TransactionType,
+} from '../../../enums';
 import {
   CommentRepository,
   NotificationRepository,
@@ -67,7 +72,8 @@ describe('PostCommentControllerIntegrations', () => {
   it('includes Transactions in find method result', async () => {
     const post = await givenPostInstance(postRepository);
     const comment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
       type: CommentType.POST,
@@ -77,7 +83,9 @@ describe('PostCommentControllerIntegrations', () => {
       type: TransactionType.COMMENT,
     });
 
-    const response = await controller.find(post.id, {include: ['transactions']});
+    const response = await controller.find(post.id, {
+      include: ['transactions'],
+    });
 
     expect(response).to.containDeep([
       {
@@ -125,7 +133,9 @@ describe('PostCommentControllerIntegrations', () => {
       type: TransactionType.COMMENT,
     });
 
-    const response = await controller.find(post.id, {include: ['user', 'transactions']});
+    const response = await controller.find(post.id, {
+      include: ['user', 'transactions'],
+    });
 
     expect(response).to.containDeep([
       {

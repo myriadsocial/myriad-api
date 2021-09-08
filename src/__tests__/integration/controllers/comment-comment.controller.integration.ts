@@ -1,6 +1,11 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {CommentCommentController} from '../../../controllers';
-import {CommentType, NotificationType, PlatformType, TransactionType} from '../../../enums';
+import {
+  CommentType,
+  NotificationType,
+  PlatformType,
+  TransactionType,
+} from '../../../enums';
 import {
   CommentLinkRepository,
   CommentRepository,
@@ -60,7 +65,10 @@ describe('CommentCommentControllerIntegration', () => {
       userSocialMediaRepository,
       fcmService,
     );
-    controller = new CommentCommentController(commentRepository, notificationService);
+    controller = new CommentCommentController(
+      commentRepository,
+      notificationService,
+    );
   });
 
   beforeEach(async () => {
@@ -70,13 +78,15 @@ describe('CommentCommentControllerIntegration', () => {
   it('includes Transactions in find method result', async () => {
     const post = await givenPostInstance(postRepository);
     const fromComment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
       type: CommentType.POST,
     });
     const toComment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: fromComment.id,
       type: CommentType.COMMENT,
@@ -91,7 +101,9 @@ describe('CommentCommentControllerIntegration', () => {
       toCommentId: toComment.id,
     });
 
-    const response = await controller.find(fromComment.id ?? '', {include: ['transactions']});
+    const response = await controller.find(fromComment.id ?? '', {
+      include: ['transactions'],
+    });
 
     expect(response).to.containDeep([
       {
@@ -107,7 +119,8 @@ describe('CommentCommentControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
     const fromComment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
       type: CommentType.POST,
@@ -124,7 +137,9 @@ describe('CommentCommentControllerIntegration', () => {
       toCommentId: toComment.id,
     });
 
-    const response = await controller.find(fromComment.id ?? '', {include: ['user']});
+    const response = await controller.find(fromComment.id ?? '', {
+      include: ['user'],
+    });
 
     expect(response).to.containDeep([
       {
@@ -140,7 +155,8 @@ describe('CommentCommentControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
     const fromComment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
       type: CommentType.POST,
@@ -185,7 +201,8 @@ describe('CommentCommentControllerIntegration', () => {
     });
     const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
       type: CommentType.POST,
@@ -237,7 +254,8 @@ describe('CommentCommentControllerIntegration', () => {
     });
     const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
       type: CommentType.POST,
