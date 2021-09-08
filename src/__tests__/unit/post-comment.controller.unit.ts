@@ -118,6 +118,7 @@ describe('PostCommentController', () => {
     });
   });
 
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   function resetRepositories() {
     postRepository = createStubInstance(PostRepository);
     constrainedCommentRepository = createStubInstance<
@@ -150,11 +151,8 @@ describe('PostCommentController', () => {
       .withArgs(aPostWithId.id!)
       .returns(constrainedCommentRepository);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (postRepository as any).comments = comments;
 
-    // Setup CRUD fakes
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ({
       create,
       find,
