@@ -2,7 +2,7 @@ import {AuthenticationComponent} from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
 import {ApplicationConfig} from '@loopback/core';
 import {HealthComponent} from '@loopback/health';
-import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
+import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {
   RestExplorerBindings,
@@ -15,7 +15,6 @@ import path from 'path';
 import {JWTAuthenticationComponent} from './components';
 import {config} from './config';
 import {MongoDataSource} from './datasources';
-import {QueueRepository} from './repositories';
 import {MyriadSequence} from './sequence';
 import {
   CurrencyService,
@@ -117,12 +116,5 @@ export class MyriadApiApplication extends BootMixin(
         }),
       });
     }
-  }
-
-  async migrateSchema(options?: SchemaMigrationOptions) {
-    await super.migrateSchema(options);
-
-    const queueRepository = await this.getRepository(QueueRepository);
-    await queueRepository.deleteAll();
   }
 }
