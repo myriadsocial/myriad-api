@@ -16,6 +16,7 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
+import {NotificationType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {Comment} from '../models';
 import {PostRepository} from '../repositories';
@@ -67,7 +68,6 @@ export class PostCommentController {
       content: {
         'application/json': {
           schema: getModelSchemaRef(Comment, {
-            title: 'NewCommentInPost',
             exclude: ['id', 'referenceId', 'type'],
           }),
         },
@@ -81,6 +81,7 @@ export class PostCommentController {
       await this.notificationService.sendPostComment(
         comment.userId,
         newComment,
+        NotificationType.POST_COMMENT,
       );
     } catch (error) {
       // ignored
