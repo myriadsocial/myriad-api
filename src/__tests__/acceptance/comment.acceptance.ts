@@ -139,7 +139,9 @@ describe('CommentApplication', function () {
 
     await client.post('/comments').send(comment).expect(200);
     const resultPost = await postRepository.findById(post.id);
-    post.metric.comments = post.metric.comments + 1;
+    post.metric.comments = (
+      await commentRepository.count({postId: post.id})
+    ).count;
 
     expect(resultPost).to.containDeep(post);
   });
