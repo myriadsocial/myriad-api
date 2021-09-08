@@ -170,7 +170,10 @@ describe('CommentCommentApplication', function () {
       type: undefined,
     });
 
-    await client.post(`/comments/${post.id}/comments`).send(comment).expect(200);
+    await client
+      .post(`/comments/${post.id}/comments`)
+      .send(comment)
+      .expect(200);
     const resultPost = await postRepository.findById(post.id);
     const countComment = await commentRepository.count({postId: post.id});
     post.metric.comments = countComment.count;
@@ -184,7 +187,10 @@ describe('CommentCommentApplication', function () {
       type: undefined,
     });
 
-    await client.post(`/comments/${post.id}/comments`).send(comment).expect(422);
+    await client
+      .post(`/comments/${post.id}/comments`)
+      .send(comment)
+      .expect(422);
   });
 
   context('when dealing with multiple persisted comments in post', () => {
@@ -194,7 +200,8 @@ describe('CommentCommentApplication', function () {
     beforeEach(async () => {
       notMyComment = await givenCommentInstance(commentRepository, {
         postId: '9999',
-        userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618521',
+        userId:
+          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618521',
         type: CommentType.COMMENT,
       });
       myComment = await Promise.all([
@@ -246,30 +253,44 @@ describe('CommentCommentApplication', function () {
         .expect(200);
 
       expect(response.body.count).to.eql(myComment.length);
-      const updatedComments = await commentRepository.comments(commentInPost.id).find();
-      const notUpdatedTComment = await commentRepository.findById(notMyComment.id);
+      const updatedComments = await commentRepository
+        .comments(commentInPost.id)
+        .find();
+      const notUpdatedTComment = await commentRepository.findById(
+        notMyComment.id,
+      );
       for (const comment of updatedComments) {
         expect(comment.toJSON()).to.containEql(patchedIsCompleteComment);
       }
-      expect(notUpdatedTComment.toJSON()).to.not.containEql(patchedIsCompleteComment);
+      expect(notUpdatedTComment.toJSON()).to.not.containEql(
+        patchedIsCompleteComment,
+      );
     });
 
     it('updates comments matching "where" condition', async () => {
       await commentRepository.deleteAll();
-      const wip = await givenCommentInstanceOfComment(commentRepository, commentInPost.id, {
-        text: 'test',
-        userId: user.id,
-        postId: post.id,
-        type: CommentType.COMMENT,
-        referenceId: commentInPost.id,
-      });
-      const done = await givenCommentInstanceOfComment(commentRepository, commentInPost.id, {
-        text: 'test2',
-        userId: user.id,
-        postId: post.id,
-        type: CommentType.COMMENT,
-        referenceId: commentInPost.id,
-      });
+      const wip = await givenCommentInstanceOfComment(
+        commentRepository,
+        commentInPost.id,
+        {
+          text: 'test',
+          userId: user.id,
+          postId: post.id,
+          type: CommentType.COMMENT,
+          referenceId: commentInPost.id,
+        },
+      );
+      const done = await givenCommentInstanceOfComment(
+        commentRepository,
+        commentInPost.id,
+        {
+          text: 'test2',
+          userId: user.id,
+          postId: post.id,
+          type: CommentType.COMMENT,
+          referenceId: commentInPost.id,
+        },
+      );
 
       const response = await client
         .patch(`/comments/${commentInPost.id}/comments`)
@@ -280,17 +301,30 @@ describe('CommentCommentApplication', function () {
       expect(response.body.count).to.equal(1);
 
       // the matched Todo was updated
-      expect(await commentRepository.findById(wip.id)).to.have.property('text', 'test3');
+      expect(await commentRepository.findById(wip.id)).to.have.property(
+        'text',
+        'test3',
+      );
 
       // the other Todo was not modified
-      expect(await commentRepository.findById(done.id)).to.have.property('text', 'test2');
+      expect(await commentRepository.findById(done.id)).to.have.property(
+        'text',
+        'test2',
+      );
     });
 
     it('deletes all comments in a post', async () => {
-      await client.del(`/comments/${commentInPost.id}/comments`).send().expect(200);
+      await client
+        .del(`/comments/${commentInPost.id}/comments`)
+        .send()
+        .expect(200);
 
-      const myDeletedComments = await commentRepository.comments(commentInPost.id).find();
-      const notDeletedComment = await commentRepository.findById(notMyComment.id);
+      const myDeletedComments = await commentRepository
+        .comments(commentInPost.id)
+        .find();
+      const notDeletedComment = await commentRepository.findById(
+        notMyComment.id,
+      );
       expect(myDeletedComments).to.be.empty();
       expect(notDeletedComment).to.eql(notMyComment);
     });
@@ -360,7 +394,10 @@ describe('CommentCommentApplication', function () {
       postId: post.id,
     });
 
-    await commentLinkRepository.create({fromCommentId: comment.id, toCommentId: otherComment.id});
+    await commentLinkRepository.create({
+      fromCommentId: comment.id,
+      toCommentId: otherComment.id,
+    });
 
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
@@ -371,9 +408,14 @@ describe('CommentCommentApplication', function () {
         include: ['user', 'transactions', 'comments'],
       },
     };
-    await commentLinkRepository.create({fromCommentId: commentInPost.id, toCommentId: comment.id});
+    await commentLinkRepository.create({
+      fromCommentId: commentInPost.id,
+      toCommentId: comment.id,
+    });
 
-    const response = await client.get(`/comments/${commentInPost.id}/comments`).query(filter);
+    const response = await client
+      .get(`/comments/${commentInPost.id}/comments`)
+      .query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
