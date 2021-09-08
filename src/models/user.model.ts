@@ -40,9 +40,6 @@ export class User extends Entity {
   @property({
     type: 'string',
     default: false,
-    index: {
-      unique: true,
-    },
   })
   username?: string;
 
