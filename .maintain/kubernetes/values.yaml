@@ -50,13 +50,6 @@ service:
   type: ClusterIP
   port: 80
 
-issuer:
-  createTLSCertificateIssuer: false
-  tlsCertificateIssuerEmail: "dev@example.com"
-
-certificate:
-  createTLSCertificate: false
-
 ingress:
   enabled: false
   className: ""
@@ -64,6 +57,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
   host: api.example.com
   tls: false
+  tlsSecretName: ""
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
