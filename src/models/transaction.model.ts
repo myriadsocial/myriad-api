@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {TransactionType} from '../enums/content-type.enum';
+import {ReferenceType} from '../enums/reference-type.enum';
 import {Currency} from './currency.model';
 import {User} from './user.model';
 
@@ -38,10 +38,10 @@ export class Transaction extends Entity {
     type: 'string',
     required: false,
     jsonSchema: {
-      enum: Object.values(TransactionType),
+      enum: Object.values(ReferenceType),
     },
   })
-  type: TransactionType;
+  type: ReferenceType;
 
   @property({
     type: 'string',

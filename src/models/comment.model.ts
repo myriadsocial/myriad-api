@@ -5,7 +5,7 @@ import {
   model,
   property,
 } from '@loopback/repository';
-import {CommentType} from '../enums';
+import {ReferenceType} from '../enums';
 import {CommentLink} from './comment-link.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
@@ -38,10 +38,10 @@ export class Comment extends Entity {
   @property({
     type: 'string',
     jsonSchema: {
-      enum: Object.values(CommentType),
+      enum: Object.values(ReferenceType),
     },
   })
-  type?: CommentType;
+  type?: ReferenceType;
 
   @property({
     type: 'string',

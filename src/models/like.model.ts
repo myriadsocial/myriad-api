@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {LikeType} from '../enums';
+import {ReferenceType} from '../enums';
 import {User} from './user.model';
 
 @model({
@@ -28,10 +28,10 @@ export class Like extends Entity {
     type: 'string',
     required: true,
     jsonSchema: {
-      enum: Object.values(LikeType),
+      enum: Object.values(ReferenceType),
     },
   })
-  type: LikeType;
+  type: ReferenceType;
 
   @property({
     type: 'boolean',

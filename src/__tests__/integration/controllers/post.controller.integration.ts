@@ -1,7 +1,7 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {PostController} from '../../../controllers';
 import {RedditDataSource} from '../../../datasources';
-import {CommentType, LikeType, TransactionType} from '../../../enums';
+import {ReferenceType} from '../../../enums';
 import {
   CommentRepository,
   LikeRepository,
@@ -106,7 +106,7 @@ describe('PostControllerIntegration', () => {
   it('includes Comment in find method result', async () => {
     const post = await givenPostInstance(postRepository);
     const comment = await givenCommentInstance(commentRepository, {
-      type: CommentType.POST,
+      type: ReferenceType.POST,
       referenceId: post.id,
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
@@ -127,7 +127,7 @@ describe('PostControllerIntegration', () => {
     const post = await givenPostInstance(postRepository);
     const like = await givenLikeInstance(likeRepository, {
       referenceId: post.id,
-      type: LikeType.POST,
+      type: ReferenceType.POST,
     });
 
     const response = await controller.getTimeline({include: ['likes']});
@@ -144,7 +144,7 @@ describe('PostControllerIntegration', () => {
     const post = await givenPostInstance(postRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
-      type: TransactionType.POST,
+      type: ReferenceType.POST,
     });
 
     const response = await controller.getTimeline({include: ['transactions']});
@@ -168,14 +168,14 @@ describe('PostControllerIntegration', () => {
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
-      type: TransactionType.POST,
+      type: ReferenceType.POST,
     });
     const like = await givenLikeInstance(likeRepository, {
       referenceId: post.id,
-      type: LikeType.POST,
+      type: ReferenceType.POST,
     });
     const comment = await givenCommentInstance(commentRepository, {
-      type: CommentType.POST,
+      type: ReferenceType.POST,
       referenceId: post.id,
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
@@ -226,7 +226,7 @@ describe('PostControllerIntegration', () => {
   it('includes Comment in findById method result', async () => {
     const post = await givenPostInstance(postRepository);
     const comment = await givenCommentInstance(commentRepository, {
-      type: CommentType.POST,
+      type: ReferenceType.POST,
       referenceId: post.id,
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
@@ -247,7 +247,7 @@ describe('PostControllerIntegration', () => {
     const post = await givenPostInstance(postRepository);
     const like = await givenLikeInstance(likeRepository, {
       referenceId: post.id,
-      type: LikeType.POST,
+      type: ReferenceType.POST,
     });
 
     const response = await controller.findById(post.id, {include: ['likes']});
@@ -262,7 +262,7 @@ describe('PostControllerIntegration', () => {
     const post = await givenPostInstance(postRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
-      type: TransactionType.POST,
+      type: ReferenceType.POST,
     });
 
     const response = await controller.findById(post.id, {
@@ -286,14 +286,14 @@ describe('PostControllerIntegration', () => {
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
-      type: TransactionType.POST,
+      type: ReferenceType.POST,
     });
     const like = await givenLikeInstance(likeRepository, {
       referenceId: post.id,
-      type: LikeType.POST,
+      type: ReferenceType.POST,
     });
     const comment = await givenCommentInstance(commentRepository, {
-      type: CommentType.POST,
+      type: ReferenceType.POST,
       referenceId: post.id,
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',

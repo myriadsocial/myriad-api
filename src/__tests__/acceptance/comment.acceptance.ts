@@ -1,7 +1,7 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {CommentType, NotificationType, TransactionType} from '../../enums';
+import {ReferenceType, NotificationType} from '../../enums';
 import {Comment, Notification, People, Post, User} from '../../models';
 import {
   CommentRepository,
@@ -93,7 +93,7 @@ describe('CommentApplication', function () {
       userId: user.id,
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
 
     const response = await client.post('/comments').send(comment).expect(200);
@@ -107,7 +107,7 @@ describe('CommentApplication', function () {
       userId: user.id,
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
 
     const response = await client.post('/comments').send(comment).expect(200);
@@ -134,7 +134,7 @@ describe('CommentApplication', function () {
       userId: user.id,
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
 
     await client.post('/comments').send(comment).expect(200);
@@ -150,7 +150,7 @@ describe('CommentApplication', function () {
     const comment = givenComment({
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
 
     await client.post('/comments').send(comment).expect(422);
@@ -172,7 +172,7 @@ describe('CommentApplication', function () {
     const comment = givenComment({
       userId: user.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
 
     await client.post('/comments').send(comment).expect(422);
@@ -186,7 +186,7 @@ describe('CommentApplication', function () {
         userId: user.id,
         postId: post.id,
         referenceId: post.id,
-        type: CommentType.POST,
+        type: ReferenceType.POST,
       });
     });
 
@@ -244,7 +244,7 @@ describe('CommentApplication', function () {
           userId: user.id,
           postId: post.id,
           referenceId: post.id,
-          type: CommentType.POST,
+          type: ReferenceType.POST,
         },
       );
     });
@@ -260,7 +260,7 @@ describe('CommentApplication', function () {
         userId: user.id,
         postId: post.id,
         referenceId: post.id,
-        type: CommentType.POST,
+        type: ReferenceType.POST,
       });
 
       const filter = {
@@ -291,7 +291,7 @@ describe('CommentApplication', function () {
         userId: user.id,
         postId: post.id,
         referenceId: post.id,
-        type: CommentType.POST,
+        type: ReferenceType.POST,
       });
 
       const response = await client.get('/comments').query('pageLimit=2');
@@ -304,11 +304,11 @@ describe('CommentApplication', function () {
       userId: user.id,
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
-      type: TransactionType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
     const filter =
       'filter=' +

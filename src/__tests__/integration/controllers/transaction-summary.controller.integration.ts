@@ -1,6 +1,6 @@
 import {expect} from '@loopback/testlab';
 import {TransactionSummaryController} from '../../../controllers';
-import {TransactionType} from '../../../enums';
+import {ReferenceType} from '../../../enums';
 import {
   CommentRepository,
   CurrencyRepository,
@@ -103,7 +103,7 @@ describe('TransactionSummaryControllerIntegration', function () {
       from: user.id,
       currencyId: currency.id,
       referenceId: post.id.toString(),
-      type: TransactionType.POST,
+      type: ReferenceType.POST,
     });
 
     const response = await controller.postTransactionSummary(
@@ -137,7 +137,7 @@ describe('TransactionSummaryControllerIntegration', function () {
       to: otherUser.id,
       currencyId: currency.id,
       referenceId: comment.id ? comment.id.toString() : '',
-      type: TransactionType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
 
     const response = await controller.commentTransactionSummary(

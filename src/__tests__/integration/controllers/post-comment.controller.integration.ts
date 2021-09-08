@@ -1,11 +1,6 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {PostCommentController} from '../../../controllers';
-import {
-  CommentType,
-  NotificationType,
-  PlatformType,
-  TransactionType,
-} from '../../../enums';
+import {ReferenceType, NotificationType, PlatformType} from '../../../enums';
 import {
   CommentRepository,
   NotificationRepository,
@@ -76,11 +71,11 @@ describe('PostCommentControllerIntegrations', () => {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
-      type: TransactionType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
 
     const response = await controller.find(post.id, {
@@ -104,7 +99,7 @@ describe('PostCommentControllerIntegrations', () => {
       userId: user.id,
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
 
     const response = await controller.find(post.id, {include: ['user']});
@@ -126,11 +121,11 @@ describe('PostCommentControllerIntegrations', () => {
       userId: user.id,
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
-      type: TransactionType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
 
     const response = await controller.find(post.id, {
@@ -160,7 +155,7 @@ describe('PostCommentControllerIntegrations', () => {
       userId: user.id,
       text: 'hello world',
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
 
     const newComment = await controller.create(post.id, commentInstance);
@@ -206,7 +201,7 @@ describe('PostCommentControllerIntegrations', () => {
       userId: user.id,
       text: 'hello world',
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
 
     const newComment = await controller.create(post.id, commentInstance);

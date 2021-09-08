@@ -8,7 +8,7 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {LikeType, MethodType} from '../enums';
+import {ReferenceType, MethodType} from '../enums';
 import {LikeRepository, PostRepository} from '../repositories';
 import {MetricService} from '../services';
 
@@ -49,7 +49,7 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     let referenceId = '';
-    let type: LikeType = LikeType.POST;
+    let type: ReferenceType = ReferenceType.POST;
 
     const methodName = invocationCtx.methodName;
 
@@ -69,7 +69,7 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
     // Add pre-invocation logic here
     const result = await next();
     // Add post-invocation logic here
-    if (type === LikeType.POST) {
+    if (type === ReferenceType.POST) {
       const metric = await this.metricService.publicMetric(type, referenceId);
 
       this.postRepository.updateById(referenceId, {

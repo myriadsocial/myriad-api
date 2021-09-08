@@ -1,12 +1,7 @@
 import {repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {config} from '../config';
-import {
-  DefaultCurrencyType,
-  LikeType,
-  PlatformType,
-  TransactionType,
-} from '../enums';
+import {DefaultCurrencyType, PlatformType, ReferenceType} from '../enums';
 import {
   Conversation,
   DetailTransaction,
@@ -359,7 +354,7 @@ export class MigrationScript100 implements MigrationScript {
       transactions.map((transaction: any) => {
         if (transaction.referenceId) {
           this.transactionRepository.updateById(transaction._id, {
-            type: TransactionType.POST,
+            type: ReferenceType.POST,
           }) as Promise<void>;
         }
 
@@ -476,7 +471,7 @@ export class MigrationScript100 implements MigrationScript {
       {},
       {
         $set: {
-          type: LikeType.POST,
+          type: ReferenceType.POST,
           state: true,
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
@@ -604,7 +599,7 @@ export class MigrationScript100 implements MigrationScript {
       {},
       {
         $set: {
-          type: LikeType.POST,
+          type: ReferenceType.POST,
           state: false,
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
