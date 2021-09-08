@@ -1,6 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {CommentType, NotificationType, TransactionType} from '../../enums';
+import {ReferenceType, NotificationType} from '../../enums';
 import {Comment, Notification, People, Post, User} from '../../models';
 import {
   CommentLinkRepository,
@@ -92,7 +92,7 @@ describe('CommentCommentApplication', function () {
       userId: user.id,
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
     await givenUserSocialMediaInstance(userSocialMediaRepository, {
       userId: otherUser.id,
@@ -118,7 +118,7 @@ describe('CommentCommentApplication', function () {
     });
     const expected = Object.assign(comment, {
       referenceId: commentInPost.id,
-      type: CommentType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
     expect(toJSON(createdComment)).to.containEql(expected);
     const created = await commentRepository.findById(response.body.id);
@@ -202,20 +202,20 @@ describe('CommentCommentApplication', function () {
         postId: '9999',
         userId:
           '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618521',
-        type: CommentType.COMMENT,
+        type: ReferenceType.COMMENT,
       });
       myComment = await Promise.all([
         givenCommentInstance(commentRepository, {
           userId: user.id,
           referenceId: commentInPost.id,
-          type: CommentType.COMMENT,
+          type: ReferenceType.COMMENT,
           postId: post.id,
         }),
         givenCommentInstance(commentRepository, {
           text: 'Hello world',
           userId: user.id,
           referenceId: commentInPost.id,
-          type: CommentType.COMMENT,
+          type: ReferenceType.COMMENT,
           postId: post.id,
         }),
       ]);
@@ -276,7 +276,7 @@ describe('CommentCommentApplication', function () {
           text: 'test',
           userId: user.id,
           postId: post.id,
-          type: CommentType.COMMENT,
+          type: ReferenceType.COMMENT,
           referenceId: commentInPost.id,
         },
       );
@@ -287,7 +287,7 @@ describe('CommentCommentApplication', function () {
           text: 'test2',
           userId: user.id,
           postId: post.id,
-          type: CommentType.COMMENT,
+          type: ReferenceType.COMMENT,
           referenceId: commentInPost.id,
         },
       );
@@ -337,7 +337,7 @@ describe('CommentCommentApplication', function () {
           text: 'wow',
           userId: user.id,
           postId: post.id,
-          type: CommentType.COMMENT,
+          type: ReferenceType.COMMENT,
           referenceId: commentInPost.id,
         },
       );
@@ -369,7 +369,7 @@ describe('CommentCommentApplication', function () {
         text: 'hello again',
         userId: user.id,
         postId: post.id,
-        type: CommentType.COMMENT,
+        type: ReferenceType.COMMENT,
         referenceId: commentInPost.id,
       });
 
@@ -384,13 +384,13 @@ describe('CommentCommentApplication', function () {
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       referenceId: commentInPost.id,
-      type: CommentType.COMMENT,
+      type: ReferenceType.COMMENT,
       postId: post.id,
     });
     const otherComment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       referenceId: comment.id,
-      type: CommentType.COMMENT,
+      type: ReferenceType.COMMENT,
       postId: post.id,
     });
 
@@ -401,7 +401,7 @@ describe('CommentCommentApplication', function () {
 
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
-      type: TransactionType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
     const filter = {
       filter: {

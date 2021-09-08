@@ -1,8 +1,7 @@
 import {
   ActivityLogType,
-  CommentType,
   FriendStatusType,
-  LikeType,
+  ReferenceType,
   NotificationType,
   PlatformType,
 } from '../../enums';
@@ -117,7 +116,7 @@ export function givenComment(comment?: Partial<Comment>) {
     {
       text: 'Hello world',
       referenceId: '1',
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     },
     comment,
   );
@@ -275,7 +274,7 @@ export async function givenMultipleFriendInstances(
 export function givenLike(like?: Partial<Like>) {
   const data = Object.assign(
     {
-      type: LikeType.POST,
+      type: ReferenceType.POST,
       state: true,
       referenceId: '1',
       userId:

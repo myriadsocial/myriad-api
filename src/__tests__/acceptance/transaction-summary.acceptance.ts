@@ -1,6 +1,6 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {DefaultCurrencyType, TransactionType} from '../../enums';
+import {DefaultCurrencyType, ReferenceType} from '../../enums';
 import {Transaction, User} from '../../models';
 import {TransactionRepository, UserRepository} from '../../repositories';
 import {
@@ -49,7 +49,7 @@ describe('TransactionSummaryApplication', function () {
       {
         to: user.id,
         referenceId: '1',
-        type: TransactionType.POST,
+        type: ReferenceType.POST,
       },
     );
     transactionReceivedInstance1 = await givenTransactionInstance(
@@ -63,7 +63,7 @@ describe('TransactionSummaryApplication', function () {
       {
         to: user.id,
         referenceId: '1',
-        type: TransactionType.POST,
+        type: ReferenceType.POST,
       },
     );
     transactionReceivedInstance2 = await givenTransactionInstance(
@@ -77,7 +77,7 @@ describe('TransactionSummaryApplication', function () {
       {
         to: user.id,
         referenceId: '2',
-        type: TransactionType.COMMENT,
+        type: ReferenceType.COMMENT,
       },
     );
     transactionReceivedInstance3 = await givenTransactionInstance(

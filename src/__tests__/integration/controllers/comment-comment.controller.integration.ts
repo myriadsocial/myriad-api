@@ -1,11 +1,6 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {CommentCommentController} from '../../../controllers';
-import {
-  CommentType,
-  NotificationType,
-  PlatformType,
-  TransactionType,
-} from '../../../enums';
+import {ReferenceType, NotificationType, PlatformType} from '../../../enums';
 import {
   CommentLinkRepository,
   CommentRepository,
@@ -82,18 +77,18 @@ describe('CommentCommentControllerIntegration', () => {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
     const toComment = await givenCommentInstance(commentRepository, {
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: fromComment.id,
-      type: CommentType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: toComment.id,
-      type: TransactionType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
 
     await commentLinkRepository.create({
@@ -123,13 +118,13 @@ describe('CommentCommentControllerIntegration', () => {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
     const toComment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: post.id,
       referenceId: fromComment.id,
-      type: CommentType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
 
     await commentLinkRepository.create({
@@ -159,18 +154,18 @@ describe('CommentCommentControllerIntegration', () => {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
     const toComment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: post.id,
       referenceId: fromComment.id,
-      type: CommentType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
 
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: toComment.id,
-      type: TransactionType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
 
     await commentLinkRepository.create({
@@ -205,14 +200,14 @@ describe('CommentCommentControllerIntegration', () => {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
     const commentInstance = givenComment({
       postId: post.id,
       userId: user.id,
       text: 'hello world',
       referenceId: comment.id,
-      type: CommentType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
 
     const newComment = await controller.create(comment.id, commentInstance);
@@ -258,14 +253,14 @@ describe('CommentCommentControllerIntegration', () => {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: post.id,
       referenceId: post.id,
-      type: CommentType.POST,
+      type: ReferenceType.POST,
     });
     const commentInstance = givenComment({
       postId: post.id,
       userId: user.id,
       text: 'hello world',
       referenceId: comment.id,
-      type: CommentType.COMMENT,
+      type: ReferenceType.COMMENT,
     });
 
     const newComment = await controller.create(comment.id, commentInstance);
