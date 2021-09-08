@@ -1,4 +1,8 @@
-import {Count, DefaultHasManyRepository, HasManyRepository} from '@loopback/repository';
+import {
+  Count,
+  DefaultHasManyRepository,
+  HasManyRepository,
+} from '@loopback/repository';
 import {
   createStubInstance,
   expect,
@@ -14,7 +18,9 @@ import {givenComment, givenPost} from '../helpers';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 describe('PostCommentController', () => {
   let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
-  let constrainedCommentRepository: StubbedInstanceWithSinonAccessor<HasManyRepository<Comment>>;
+  let constrainedCommentRepository: StubbedInstanceWithSinonAccessor<
+    HasManyRepository<Comment>
+  >;
   let notificationService: NotificationService;
 
   /*
@@ -64,7 +70,9 @@ describe('PostCommentController', () => {
   describe('create()', () => {
     it('creates a comment on a post', async () => {
       create.resolves(aCommentWithId);
-      expect(await controller.create(aPostWithId.id!, aComment)).to.eql(aCommentWithId);
+      expect(await controller.create(aPostWithId.id!, aComment)).to.eql(
+        aCommentWithId,
+      );
       sinon.assert.calledWith(comments, aPostWithId.id!);
       sinon.assert.calledWith(create, aComment);
     });
@@ -91,7 +99,9 @@ describe('PostCommentController', () => {
     it('returns a number of comments updated', async () => {
       patch.resolves({count: [aChangedComment].length});
       const where = {text: aCommentWithId.text};
-      expect(await controller.patch(aPostWithId.id!, aCommentToPatchTo, where)).to.eql({count: 1});
+      expect(
+        await controller.patch(aPostWithId.id!, aCommentToPatchTo, where),
+      ).to.eql({count: 1});
       sinon.assert.calledWith(comments, aPostWithId.id!);
       sinon.assert.calledWith(patch, aCommentToPatchTo, where);
     });
@@ -110,8 +120,9 @@ describe('PostCommentController', () => {
 
   function resetRepositories() {
     postRepository = createStubInstance(PostRepository);
-    constrainedCommentRepository =
-      createStubInstance<HasManyRepository<Comment>>(DefaultHasManyRepository);
+    constrainedCommentRepository = createStubInstance<
+      HasManyRepository<Comment>
+    >(DefaultHasManyRepository);
 
     aPostWithId = givenPost({
       id: '1',
@@ -134,14 +145,22 @@ describe('PostCommentController', () => {
       text: aCommentToPatchTo.text,
     });
 
-    comments = sinon.stub().withArgs(aPostWithId.id!).returns(constrainedCommentRepository);
+    comments = sinon
+      .stub()
+      .withArgs(aPostWithId.id!)
+      .returns(constrainedCommentRepository);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (postRepository as any).comments = comments;
 
     // Setup CRUD fakes
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ({create, find, patch, delete: del} = constrainedCommentRepository.stubs as any);
+    ({
+      create,
+      find,
+      patch,
+      delete: del,
+    } = constrainedCommentRepository.stubs as any);
 
     controller = new PostCommentController(postRepository, notificationService);
   }
