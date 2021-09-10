@@ -40,7 +40,7 @@ describe('LikeApplication', function () {
       postRepository,
       {
         metric: {
-          comments: 0,
+          discusions: 0,
           likes: 0,
           dislikes: 0,
           debates: 0,
@@ -62,7 +62,7 @@ describe('LikeApplication', function () {
         postRepository,
         {
           metric: {
-            comments: 0,
+            discusions: 0,
             likes: 0,
             dislikes: 0,
             debates: 0,
@@ -89,7 +89,7 @@ describe('LikeApplication', function () {
       postRepository,
       {
         metric: {
-          comments: 0,
+          discusions: 0,
           likes: 1,
           dislikes: 0,
           debates: 0,
