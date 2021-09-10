@@ -74,13 +74,13 @@ export class MyriadApiApplication extends BootMixin(
     this.component(JWTAuthenticationComponent);
     this.component(HealthComponent);
 
-    if (!this.options.test) {
-      this.component(MigrationComponent);
-      this.bind(MigrationBindings.CONFIG).to({
-        dataSourceName: MongoDataSource.dataSourceName,
-        modelName: 'db_migrations',
-      });
-    }
+    if (this.options.test) return;
+
+    this.component(MigrationComponent);
+    this.bind(MigrationBindings.CONFIG).to({
+      dataSourceName: MongoDataSource.dataSourceName,
+      modelName: 'db_migrations',
+    });
   }
 
   bindService() {
@@ -99,6 +99,7 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   firebaseInit() {
+    if (this.options.test) return;
     firebaseAdmin.initializeApp();
   }
 }
