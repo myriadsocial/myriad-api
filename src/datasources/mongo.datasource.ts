@@ -1,8 +1,8 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {AnyObject, juggler} from '@loopback/repository';
-import {config} from '../config';
+import {config as mongoConfig} from '../config';
 
-const mongoConfig = {
+const config = {
   name: 'mongo',
   connector: 'mongodb',
   url: '',
@@ -15,21 +15,22 @@ const mongoConfig = {
 };
 
 function updateConfig(dsConfig: AnyObject) {
-  if (config.MONGO_HOST) {
-    dsConfig.host = config.MONGO_HOST;
+  if (dsConfig.test) return dsConfig;
+  if (mongoConfig.MONGO_HOST) {
+    dsConfig.host = mongoConfig.MONGO_HOST;
   }
-  const envPort = config.MONGO_PORT;
+  const envPort = mongoConfig.MONGO_PORT;
   if (Number.isInteger(envPort)) {
     dsConfig.port = envPort;
   }
-  if (config.MONGO_USER) {
-    dsConfig.user = config.MONGO_USER;
+  if (mongoConfig.MONGO_USER) {
+    dsConfig.user = mongoConfig.MONGO_USER;
   }
-  if (config.MONGO_PASSWORD) {
-    dsConfig.password = config.MONGO_PASSWORD;
+  if (mongoConfig.MONGO_PASSWORD) {
+    dsConfig.password = mongoConfig.MONGO_PASSWORD;
   }
-  if (config.MONGO_DATABASE) {
-    dsConfig.database = config.MONGO_DATABASE;
+  if (mongoConfig.MONGO_DATABASE) {
+    dsConfig.database = mongoConfig.MONGO_DATABASE;
   }
   return dsConfig;
 }
@@ -39,16 +40,13 @@ function updateConfig(dsConfig: AnyObject) {
 // gracefully. The `stop()` method is inherited from `juggler.DataSource`.
 // Learn more at https://loopback.io/doc/en/lb4/Life-cycle.html
 @lifeCycleObserver('datasource')
-export class MongoDataSource
-  extends juggler.DataSource
-  implements LifeCycleObserver
-{
-  static readonly dataSourceName = mongoConfig.name;
-  static readonly defaultConfig = mongoConfig;
+export class MongoDataSource extends juggler.DataSource implements LifeCycleObserver {
+  static readonly dataSourceName = config.name;
+  static readonly defaultConfig = config;
 
   constructor(
     @inject('datasources.config.mongo', {optional: true})
-    dsConfig: AnyObject = mongoConfig,
+    dsConfig: AnyObject = config,
   ) {
     super(updateConfig(dsConfig));
   }
