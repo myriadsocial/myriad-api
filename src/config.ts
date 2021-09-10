@@ -20,10 +20,5 @@ export const config = {
   REFRESH_SECRET_KEY: process.env.REFRESH_TOKEN_SECRET_KEY ?? 'r3fr35htok3n',
   REFRESH_EXPIRES_IN: process.env.REFRESH_TOKEN_EXPIRES_IN ?? '216000',
 
-  FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ?? '',
-  FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ?? '',
-  FIREBASE_PRIVATE_KEY:
-    (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n') ?? '',
-
   TWITTER_BEARER_TOKEN: 'Bearer ' + process.env.TWITTER_BEARER_TOKEN ?? '',
 };
