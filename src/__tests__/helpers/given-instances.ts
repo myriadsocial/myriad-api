@@ -4,6 +4,7 @@ import {
   ReferenceType,
   NotificationType,
   PlatformType,
+  SectionType,
 } from '../../enums';
 import {
   ActivityLog,
@@ -117,6 +118,7 @@ export function givenComment(comment?: Partial<Comment>) {
       text: 'Hello world',
       referenceId: '1',
       type: ReferenceType.POST,
+      section: SectionType.DISCUSSION,
     },
     comment,
   );

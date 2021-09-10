@@ -160,10 +160,9 @@ describe('CommentApplication', function () {
     const comment = givenComment({
       userId: user.id,
       postId: post.id,
+      referenceId: undefined,
+      type: undefined,
     });
-
-    delete comment.referenceId;
-    delete comment.type;
 
     await client.post('/comments').send(comment).expect(422);
   });
