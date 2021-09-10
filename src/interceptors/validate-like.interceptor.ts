@@ -8,8 +8,13 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {ReferenceType, MethodType} from '../enums';
-import {LikeRepository, PostRepository} from '../repositories';
+import {HttpErrors} from '@loopback/rest';
+import {ReferenceType, MethodType, SectionType} from '../enums';
+import {
+  CommentRepository,
+  LikeRepository,
+  PostRepository,
+} from '../repositories';
 import {MetricService} from '../services';
 
 /**
@@ -21,6 +26,8 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${ValidateLikeInterceptor.name}`;
 
   constructor(
+    @repository(CommentRepository)
+    protected commentRepository: CommentRepository,
     @repository(LikeRepository)
     protected likeRepository: LikeRepository,
     @repository(PostRepository)
@@ -48,45 +55,94 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    let referenceId = '';
-    let type: ReferenceType = ReferenceType.POST;
+    const methodName = invocationCtx.methodName as MethodType;
+    const {type, referenceId} = await this.beforeCreation(
+      methodName,
+      invocationCtx,
+    );
 
-    const methodName = invocationCtx.methodName;
-
-    if (methodName === MethodType.CREATELIKE) {
-      ({referenceId, type} = invocationCtx.args[0]);
-
-      invocationCtx.args[0].createdAt = new Date().toString();
-      invocationCtx.args[0].updatedAt = new Date().toString();
-    }
-
-    if (methodName === MethodType.DELETEBYID) {
-      const like = await this.likeRepository.findById(invocationCtx.args[0]);
-
-      ({referenceId, type} = like);
-    }
-
-    // Add pre-invocation logic here
     const result = await next();
-    // Add post-invocation logic here
-    if (type === ReferenceType.POST) {
-      const metric = await this.metricService.publicMetric(type, referenceId);
-
-      this.postRepository.updateById(referenceId, {
-        metric: metric,
-      }) as Promise<void>;
-    }
+    await this.afterCreation(type, referenceId);
 
     if (methodName === MethodType.CREATELIKE) {
-      const id = result.value._id;
-      delete result.value._id;
-
-      return {
-        id,
-        ...result.value,
-      };
+      return Object.assign(result.value, {
+        id: result.value._id,
+        _id: undefined,
+      });
     }
 
     return result;
+  }
+
+  async beforeCreation(
+    methodName: MethodType,
+    invocationCtx: InvocationContext,
+  ): Promise<{referenceId: string; type: ReferenceType}> {
+    if (methodName === MethodType.DELETEBYID) {
+      const like = await this.likeRepository.findById(invocationCtx.args[0]);
+
+      return {
+        referenceId: like.referenceId,
+        type: like.type,
+      };
+    }
+
+    const {userId, referenceId, type, state, section} = invocationCtx.args[0];
+
+    if (type === ReferenceType.POST) invocationCtx.args[0].section = undefined;
+    if (type === ReferenceType.COMMENT && !section)
+      throw new HttpErrors.UnprocessableEntity(
+        'Section cannot empty when you like/dislike comment',
+      );
+
+    if (state === false) {
+      switch (type) {
+        case ReferenceType.POST: {
+          const postComment = await this.commentRepository.findOne({
+            where: {userId, referenceId, type, section: SectionType.DEBATE},
+          });
+          if (postComment) break;
+          throw new HttpErrors.UnprocessableEntity(
+            'Please comment first in debate sections, before you dislike this post',
+          );
+        }
+
+        case ReferenceType.COMMENT: {
+          const comment = await this.commentRepository.findOne({
+            where: {userId, referenceId, type, section},
+          });
+          if (comment) break;
+          throw new HttpErrors.UnprocessableEntity(
+            `Please comment first in ${section} sections, before you dislike this comment`,
+          );
+        }
+      }
+    }
+
+    return {
+      referenceId: referenceId,
+      type: type,
+    };
+  }
+
+  async afterCreation(type: ReferenceType, referenceId: string): Promise<void> {
+    const metric = await this.metricService.publicMetric(type, referenceId);
+
+    switch (type) {
+      case ReferenceType.POST: {
+        const post = await this.postRepository.findById(referenceId);
+        return this.postRepository.updateById(referenceId, {
+          metric: Object.assign(post.metric, metric),
+        });
+      }
+
+      case ReferenceType.COMMENT:
+        return this.commentRepository.updateById(referenceId, {
+          metric: metric,
+        });
+
+      default:
+        return;
+    }
   }
 }

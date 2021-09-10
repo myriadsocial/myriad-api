@@ -7,12 +7,13 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {CommentType, ControllerType, LikeType, MethodType} from '../enums';
+import {ReferenceType, ControllerType, MethodType} from '../enums';
 import {
   CommentRepository,
   CurrencyRepository,
+  LikeRepository,
   PostRepository,
   TransactionRepository,
   UserRepository,
@@ -36,6 +37,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected currencyRepository: CurrencyRepository,
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
+    @repository(LikeRepository)
+    protected likeRepository: LikeRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -122,18 +125,9 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         return;
       }
 
-      case ControllerType.POSTCOMMENT:
-      case ControllerType.COMMENTCOMMENT: {
-        if (className === ControllerType.COMMENTCOMMENT)
-          await this.validateComment(invocationCtx.args[0]);
-
-        invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
-          type:
-            className === ControllerType.POSTCOMMENT
-              ? CommentType.POST
-              : CommentType.COMMENT,
-          referenceId: invocationCtx.args[0],
-        });
+      case ControllerType.COMMENT: {
+        const {referenceId} = invocationCtx.args[0];
+        await this.validateComment(referenceId);
         return;
       }
 
@@ -142,8 +136,10 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     }
   }
 
-  /* eslint-disable  @typescript-eslint/no-explicit-any */
-  async afterCreation(className: ControllerType, result: any): Promise<void> {
+  async afterCreation(
+    className: ControllerType,
+    result: AnyObject,
+  ): Promise<void> {
     switch (className) {
       case ControllerType.USER: {
         await this.currencyService.defaultCurrency(result.id);
@@ -162,16 +158,16 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         return;
       }
 
-      case ControllerType.POSTCOMMENT:
-      case ControllerType.COMMENTCOMMENT:
       case ControllerType.COMMENT: {
         const metric = await this.metricService.publicMetric(
-          LikeType.POST,
-          result.postId,
+          result.type,
+          result.referenceId,
+          result.section,
         );
         await this.postRepository.updateById(result.postId, {
           metric: metric,
         });
+
         return;
       }
     }
@@ -181,7 +177,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     const lastComment = await this.commentRepository.findOne({
       where: {
         id: referenceId,
-        type: CommentType.COMMENT,
+        type: ReferenceType.COMMENT,
       },
     });
 
@@ -190,7 +186,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     const comment = await this.commentRepository.findOne({
       where: {
         id: lastComment.referenceId,
-        type: CommentType.COMMENT,
+        type: ReferenceType.COMMENT,
       },
     });
 
