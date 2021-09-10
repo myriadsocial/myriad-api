@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {ReferenceType} from '../enums';
+import {ReferenceType, SectionType} from '../enums';
 import {User} from './user.model';
 
 @model({
@@ -34,16 +34,25 @@ export class Like extends Entity {
   type: ReferenceType;
 
   @property({
-    type: 'boolean',
-    required: true,
-  })
-  state: boolean;
-
-  @property({
     type: 'string',
     required: true,
   })
   referenceId: string;
+
+  @property({
+    type: 'string',
+    jsonSchema: {
+      enum: Object.values(SectionType),
+    },
+    required: false,
+  })
+  section?: SectionType;
+
+  @property({
+    type: 'boolean',
+    required: true,
+  })
+  state: boolean;
 
   @property({
     type: 'date',
