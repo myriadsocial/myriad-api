@@ -25,7 +25,7 @@ import {
   testdb,
 } from '../../helpers';
 
-describe('CommentControllerIntegrations', () => {
+describe('CommentControllerIntegration', () => {
   let commentRepository: CommentRepository;
   let userRepository: UserRepository;
   let postRepository: PostRepository;
