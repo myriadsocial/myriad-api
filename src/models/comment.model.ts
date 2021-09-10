@@ -5,7 +5,8 @@ import {
   model,
   property,
 } from '@loopback/repository';
-import {ReferenceType} from '../enums';
+import {ReferenceType, SectionType} from '../enums';
+import {Metric} from '../interfaces';
 import {CommentLink} from './comment-link.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
@@ -40,19 +41,39 @@ export class Comment extends Entity {
     jsonSchema: {
       enum: Object.values(ReferenceType),
     },
+    required: true,
   })
-  type?: ReferenceType;
+  type: ReferenceType;
 
   @property({
     type: 'string',
+    required: true,
   })
-  referenceId?: string;
+  referenceId: string;
+
+  @property({
+    type: 'string',
+    jsonSchema: {
+      enum: Object.values(SectionType),
+    },
+    required: true,
+  })
+  section: SectionType;
 
   @property({
     type: 'string',
     required: true,
   })
   postId: string;
+
+  @property({
+    type: 'object',
+    default: {
+      likes: 0,
+      dislikes: 0,
+    },
+  })
+  metric: Metric;
 
   @property({
     type: 'date',
