@@ -66,7 +66,8 @@ describe('CommentControllerIntegrations', () => {
 
   it('includes Transactions in find method result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: '1',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
@@ -118,7 +119,9 @@ describe('CommentControllerIntegrations', () => {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
     });
-    const newOtherComment = await commentRepository.comments(comment.id).create(otherComment);
+    const newOtherComment = await commentRepository
+      .comments(comment.id)
+      .create(otherComment);
 
     const anotherComment = givenComment({
       userId: user.id,
@@ -172,7 +175,9 @@ describe('CommentControllerIntegrations', () => {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
     });
-    const newOtherComment = await commentRepository.comments(comment.id).create(otherComment);
+    const newOtherComment = await commentRepository
+      .comments(comment.id)
+      .create(otherComment);
 
     const anotherComment = givenComment({
       userId: user.id,
@@ -224,7 +229,8 @@ describe('CommentControllerIntegrations', () => {
 
   it('includes Transactions in findById method result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: '1',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
@@ -276,7 +282,9 @@ describe('CommentControllerIntegrations', () => {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
     });
-    const newOtherComment = await commentRepository.comments(comment.id).create(otherComment);
+    const newOtherComment = await commentRepository
+      .comments(comment.id)
+      .create(otherComment);
 
     const anotherComment = givenComment({
       userId: user.id,
@@ -328,7 +336,9 @@ describe('CommentControllerIntegrations', () => {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
     });
-    const newOtherComment = await commentRepository.comments(comment.id).create(otherComment);
+    const newOtherComment = await commentRepository
+      .comments(comment.id)
+      .create(otherComment);
 
     const anotherComment = givenComment({
       userId: user.id,
