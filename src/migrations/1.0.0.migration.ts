@@ -128,9 +128,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigrateCurrencies(): Promise<void> {
-    const collection = (this.tokenRepository.dataSource.connector as any).collection(
-      Token.modelName,
-    );
+    const collection = (
+      this.tokenRepository.dataSource.connector as any
+    ).collection(Token.modelName);
 
     const tokens = await collection.aggregate().get();
 
@@ -169,7 +169,9 @@ export class MigrationScript100 implements MigrationScript {
 
   async doMigratePosts(): Promise<void> {
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
-    const collection = (this.postRepository.dataSource.connector as any).collection(Post.modelName);
+    const collection = (
+      this.postRepository.dataSource.connector as any
+    ).collection(Post.modelName);
 
     // Renamed and removed field
     await collection.updateMany(
@@ -258,8 +260,12 @@ export class MigrationScript100 implements MigrationScript {
             /[.]jpg$|[.]jpeg$|[.]png$|[.]gif$|[.]tiff$|^https:\/\/preview.redd.it\//;
           const videoFormat = /[.]mp4$|[.]mp4?source=fallback$/;
 
-          const images = post.assets.filter((asset: string) => asset.match(imageFormat));
-          const videos = post.assets.filter((asset: string) => asset.match(videoFormat));
+          const images = post.assets.filter((asset: string) =>
+            asset.match(imageFormat),
+          );
+          const videos = post.assets.filter((asset: string) =>
+            asset.match(videoFormat),
+          );
 
           return collection.updateOne(
             {_id: post._id},
@@ -281,9 +287,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigrateUserCurrencies(): Promise<void> {
-    const collection = (this.userTokenRepository.dataSource.connector as any).collection(
-      UserToken.modelName,
-    );
+    const collection = (
+      this.userTokenRepository.dataSource.connector as any
+    ).collection(UserToken.modelName);
 
     const userTokens = await collection.aggregate().get();
 
@@ -311,9 +317,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigrateTransactions(): Promise<void> {
-    const collection = (this.transactionRepository.dataSource.connector as any).collection(
-      Transaction.modelName,
-    );
+    const collection = (
+      this.transactionRepository.dataSource.connector as any
+    ).collection(Transaction.modelName);
 
     await collection.updateMany(
       {},
@@ -358,9 +364,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigratePeople(): Promise<void> {
-    const collections = (this.peopleRepository.dataSource.connector as any).collection(
-      People.modelName,
-    );
+    const collections = (
+      this.peopleRepository.dataSource.connector as any
+    ).collection(People.modelName);
 
     await collections.updateMany(
       {},
@@ -383,9 +389,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigrateNotifications(): Promise<void> {
-    const collections = (this.notificationRepository.dataSource.connector as any).collection(
-      Notification.modelName,
-    );
+    const collections = (
+      this.notificationRepository.dataSource.connector as any
+    ).collection(Notification.modelName);
 
     await collections.updateMany(
       {},
@@ -398,9 +404,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigrateFriends(): Promise<void> {
-    const collection = (this.friendRepository.dataSource.connector as any).collection(
-      Friend.modelName,
-    );
+    const collection = (
+      this.friendRepository.dataSource.connector as any
+    ).collection(Friend.modelName);
 
     await collection.updateMany(
       {},
@@ -419,9 +425,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigrateUserSocialMedias(): Promise<void> {
-    const collection = (this.userCredentialRepository.dataSource.connector as any).collection(
-      UserCredential.modelName,
-    );
+    const collection = (
+      this.userCredentialRepository.dataSource.connector as any
+    ).collection(UserCredential.modelName);
 
     await collection.updateMany(
       {},
@@ -436,13 +442,15 @@ export class MigrationScript100 implements MigrationScript {
       },
     );
 
-    const newUserSocialMedias = (await collection.aggregate().get()).map((userSocialMedia: any) => {
-      if (userSocialMedia._id) {
-        delete userSocialMedia._id;
-      }
+    const newUserSocialMedias = (await collection.aggregate().get()).map(
+      (userSocialMedia: any) => {
+        if (userSocialMedia._id) {
+          delete userSocialMedia._id;
+        }
 
-      return userSocialMedia;
-    });
+        return userSocialMedia;
+      },
+    );
 
     await this.userSocialMediaRepository.createAll(newUserSocialMedias);
 
@@ -454,7 +462,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigrateLikes(): Promise<void> {
-    const collection = (this.likeRepository.dataSource.connector as any).collection(Like.modelName);
+    const collection = (
+      this.likeRepository.dataSource.connector as any
+    ).collection(Like.modelName);
 
     await collection.deleteMany({status: false});
     await collection.updateMany(
@@ -479,9 +489,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async dropPublicMetrics() {
-    const collection = (this.publicMetricRepository.dataSource.connector as any).collection(
-      PublicMetric.modelName,
-    );
+    const collection = (
+      this.publicMetricRepository.dataSource.connector as any
+    ).collection(PublicMetric.modelName);
 
     const publicMetrics = await collection
       .aggregate([
@@ -529,9 +539,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async dropConversations() {
-    const collection = (this.conversationRepository.dataSource.connector as any).collection(
-      Conversation.modelName,
-    );
+    const collection = (
+      this.conversationRepository.dataSource.connector as any
+    ).collection(Conversation.modelName);
 
     try {
       await collection.drop();
@@ -541,9 +551,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async dropDetailTransactions() {
-    const collection = (this.detailTransactionRepository.dataSource.connector as any).collection(
-      DetailTransaction.modelName,
-    );
+    const collection = (
+      this.detailTransactionRepository.dataSource.connector as any
+    ).collection(DetailTransaction.modelName);
 
     try {
       await collection.drop();
@@ -553,7 +563,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async dropTips() {
-    const collection = (this.tipRepository.dataSource.connector as any).collection(Tip.modelName);
+    const collection = (
+      this.tipRepository.dataSource.connector as any
+    ).collection(Tip.modelName);
 
     try {
       await collection.drop();
@@ -579,9 +591,9 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async addDislikesToLikeCollection(): Promise<void> {
-    const collection = (this.dislikeRepository.dataSource.connector as any).collection(
-      Dislike.modelName,
-    );
+    const collection = (
+      this.dislikeRepository.dataSource.connector as any
+    ).collection(Dislike.modelName);
 
     await collection.deleteMany({status: false});
     await collection.updateMany(
@@ -602,13 +614,15 @@ export class MigrationScript100 implements MigrationScript {
       },
     );
 
-    const dislikes = (await collection.aggregate().get()).map((dislike: any) => {
-      if (dislike._id) {
-        delete dislike._id;
-      }
+    const dislikes = (await collection.aggregate().get()).map(
+      (dislike: any) => {
+        if (dislike._id) {
+          delete dislike._id;
+        }
 
-      return dislike;
-    });
+        return dislike;
+      },
+    );
 
     await this.likeRepository.createAll(dislikes);
 
