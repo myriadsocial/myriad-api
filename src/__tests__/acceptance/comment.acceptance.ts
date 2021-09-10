@@ -139,9 +139,7 @@ describe('CommentApplication', function () {
 
     await client.post('/comments').send(comment).expect(200);
     const resultPost = await postRepository.findById(post.id);
-    post.metric.discussions = (
-      await commentRepository.count({postId: post.id})
-    ).count;
+    post.metric.discussions = (await commentRepository.count({postId: post.id})).count;
 
     expect(resultPost).to.containDeep(post);
   });
@@ -177,6 +175,47 @@ describe('CommentApplication', function () {
     await client.post('/comments').send(comment).expect(422);
   });
 
+  it('rejects request to create a comments more than three levels comment', async () => {
+    // First level
+    const comment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: post.id,
+      type: ReferenceType.POST,
+    });
+    const response = await client.post('/comments').send(comment).expect(200);
+    const newComment = response.body;
+
+    // Second level
+    const otherComment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: newComment.id,
+      type: ReferenceType.COMMENT,
+    });
+    const otherResponse = await client.post('/comments').send(otherComment).expect(200);
+    const otherNewComment = otherResponse.body;
+
+    // Third level
+    const anotherComment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: otherNewComment.id,
+      type: ReferenceType.COMMENT,
+    });
+    const anotherResponse = await client.post('/comments').send(anotherComment).expect(200);
+    const anotherNewComment = anotherResponse.body;
+
+    // Rejected comment
+    const rejectedComment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: anotherNewComment.id,
+      type: ReferenceType.COMMENT,
+    });
+    await client.post('/comments').send(rejectedComment).expect(422);
+  });
+
   context('when dealing with a single persisted comment', () => {
     let persistedComment: Comment;
 
@@ -190,10 +229,7 @@ describe('CommentApplication', function () {
     });
 
     it('gets a comment by ID', async () => {
-      const result = await client
-        .get(`/comments/${persistedComment.id}`)
-        .send()
-        .expect(200);
+      const result = await client.get(`/comments/${persistedComment.id}`).send().expect(200);
       const expected = toJSON(persistedComment);
 
       expect(result.body).to.deepEqual(expected);
@@ -208,10 +244,7 @@ describe('CommentApplication', function () {
         text: 'Apa kabar dunia',
       });
 
-      await client
-        .patch(`/comments/${persistedComment.id}`)
-        .send(updatedComment)
-        .expect(204);
+      await client.patch(`/comments/${persistedComment.id}`).send(updatedComment).expect(204);
 
       const result = await commentRepository.findById(persistedComment.id);
       expect(result).to.containEql(updatedComment);
@@ -223,9 +256,9 @@ describe('CommentApplication', function () {
 
     it('deletes the comment', async () => {
       await client.del(`/comments/${persistedComment.id}`).send().expect(204);
-      await expect(
-        commentRepository.findById(persistedComment.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
+      await expect(commentRepository.findById(persistedComment.id)).to.be.rejectedWith(
+        EntityNotFoundError,
+      );
     });
 
     it('returns 404 when deleting a comment that does not exist', async () => {
@@ -237,15 +270,12 @@ describe('CommentApplication', function () {
     let persistedComments: Comment[];
 
     beforeEach(async () => {
-      persistedComments = await givenMultipleCommentInstances(
-        commentRepository,
-        {
-          userId: user.id,
-          postId: post.id,
-          referenceId: post.id,
-          type: ReferenceType.POST,
-        },
-      );
+      persistedComments = await givenMultipleCommentInstances(commentRepository, {
+        userId: user.id,
+        postId: post.id,
+        referenceId: post.id,
+        type: ReferenceType.POST,
+      });
     });
 
     it('finds all comments', async () => {
@@ -309,13 +339,11 @@ describe('CommentApplication', function () {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
     });
-    const filter =
-      'filter=' +
-      JSON.stringify({
-        include: ['user', 'transactions'],
-      });
+    const filter = {
+      filter: {include: ['user', 'transactions']},
+    };
 
-    const response = await client.get('/comments').query(filter);
+    const response = await client.get('/comments/').query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
