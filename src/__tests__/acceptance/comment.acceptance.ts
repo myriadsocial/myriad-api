@@ -139,9 +139,7 @@ describe('CommentApplication', function () {
 
     await client.post('/comments').send(comment).expect(200);
     const resultPost = await postRepository.findById(post.id);
-    post.metric.discusions = (
-      await commentRepository.count({postId: post.id})
-    ).count;
+    post.metric.discussions = (await commentRepository.count({postId: post.id})).count;
 
     expect(resultPost).to.containDeep(post);
   });
@@ -190,10 +188,7 @@ describe('CommentApplication', function () {
     });
 
     it('gets a comment by ID', async () => {
-      const result = await client
-        .get(`/comments/${persistedComment.id}`)
-        .send()
-        .expect(200);
+      const result = await client.get(`/comments/${persistedComment.id}`).send().expect(200);
       const expected = toJSON(persistedComment);
 
       expect(result.body).to.deepEqual(expected);
@@ -208,10 +203,7 @@ describe('CommentApplication', function () {
         text: 'Apa kabar dunia',
       });
 
-      await client
-        .patch(`/comments/${persistedComment.id}`)
-        .send(updatedComment)
-        .expect(204);
+      await client.patch(`/comments/${persistedComment.id}`).send(updatedComment).expect(204);
 
       const result = await commentRepository.findById(persistedComment.id);
       expect(result).to.containEql(updatedComment);
@@ -223,9 +215,9 @@ describe('CommentApplication', function () {
 
     it('deletes the comment', async () => {
       await client.del(`/comments/${persistedComment.id}`).send().expect(204);
-      await expect(
-        commentRepository.findById(persistedComment.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
+      await expect(commentRepository.findById(persistedComment.id)).to.be.rejectedWith(
+        EntityNotFoundError,
+      );
     });
 
     it('returns 404 when deleting a comment that does not exist', async () => {
@@ -237,15 +229,12 @@ describe('CommentApplication', function () {
     let persistedComments: Comment[];
 
     beforeEach(async () => {
-      persistedComments = await givenMultipleCommentInstances(
-        commentRepository,
-        {
-          userId: user.id,
-          postId: post.id,
-          referenceId: post.id,
-          type: ReferenceType.POST,
-        },
-      );
+      persistedComments = await givenMultipleCommentInstances(commentRepository, {
+        userId: user.id,
+        postId: post.id,
+        referenceId: post.id,
+        type: ReferenceType.POST,
+      });
     });
 
     it('finds all comments', async () => {

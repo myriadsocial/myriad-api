@@ -83,7 +83,7 @@ export class MetricService {
     }
 
     if (section === SectionType.DISCUSSION || type === ReferenceType.POST) {
-      metric.discusions = (
+      metric.discussions = (
         await this.commentRepository.count({
           type,
           referenceId,
@@ -95,10 +95,7 @@ export class MetricService {
     return metric;
   }
 
-  async countData(
-    controller: ControllerType,
-    where: Where<AnyObject>,
-  ): Promise<Count> {
+  async countData(controller: ControllerType, where: Where<AnyObject>): Promise<Count> {
     switch (controller) {
       case ControllerType.USER:
         return this.userRepository.count(where);

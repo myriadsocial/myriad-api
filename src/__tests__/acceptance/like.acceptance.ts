@@ -40,7 +40,7 @@ describe('LikeApplication', function () {
       postRepository,
       {
         metric: {
-          discusions: 0,
+          discussions: 0,
           likes: 0,
           dislikes: 0,
           debates: 0,
@@ -62,7 +62,7 @@ describe('LikeApplication', function () {
         postRepository,
         {
           metric: {
-            discusions: 0,
+            discussions: 0,
             likes: 0,
             dislikes: 0,
             debates: 0,
@@ -89,7 +89,7 @@ describe('LikeApplication', function () {
       postRepository,
       {
         metric: {
-          discusions: 0,
+          discussions: 0,
           likes: 1,
           dislikes: 0,
           debates: 0,
@@ -103,9 +103,7 @@ describe('LikeApplication', function () {
     });
 
     await client.del(`/likes/${like.id}`).send().expect(204);
-    await expect(likeRepository.findById(like.id)).to.be.rejectedWith(
-      EntityNotFoundError,
-    );
+    await expect(likeRepository.findById(like.id)).to.be.rejectedWith(EntityNotFoundError);
 
     const resultPost = await postRepository.findById(like.referenceId);
     post.metric.likes = post.metric.likes - 1;
