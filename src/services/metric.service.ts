@@ -1,5 +1,5 @@
 import {AnyObject, Count, repository, Where} from '@loopback/repository';
-import {ControllerType, LikeType} from '../enums';
+import {ControllerType, ReferenceType, SectionType} from '../enums';
 import {Metric} from '../interfaces';
 import {
   ActivityLogRepository,
@@ -50,28 +50,49 @@ export class MetricService {
     protected activityLogRepository: ActivityLogRepository,
   ) {}
 
-  async publicMetric(type: LikeType, referenceId: string): Promise<Metric> {
+  async publicMetric(
+    type: ReferenceType,
+    referenceId: string,
+    section?: SectionType,
+  ): Promise<Metric> {
     const like = await this.likeRepository.count({
       type,
       referenceId,
       state: true,
     });
-
     const dislike = await this.likeRepository.count({
       type,
       referenceId,
       state: false,
     });
 
-    const comment = await this.commentRepository.count({
-      postId: referenceId,
-    });
-
-    return {
+    const metric: Metric = {
       likes: like.count,
       dislikes: dislike.count,
-      comments: comment.count,
     };
+
+    if (!section) return metric;
+    if (section === SectionType.DEBATE || type === ReferenceType.POST) {
+      metric.debates = (
+        await this.commentRepository.count({
+          type,
+          referenceId,
+          section: SectionType.DEBATE,
+        })
+      ).count;
+    }
+
+    if (section === SectionType.DISCUSSION || type === ReferenceType.POST) {
+      metric.discusions = (
+        await this.commentRepository.count({
+          type,
+          referenceId,
+          section: SectionType.DISCUSSION,
+        })
+      ).count;
+    }
+
+    return metric;
   }
 
   async countData(
@@ -112,8 +133,6 @@ export class MetricService {
       case ControllerType.USEREXPERIENCE:
         return this.userExperienceRepository.count(where);
 
-      case ControllerType.POSTCOMMENT:
-      case ControllerType.COMMENTCOMMENT:
       case ControllerType.COMMENT:
         return this.commentRepository.count(where);
 
