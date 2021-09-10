@@ -13,7 +13,6 @@ import * as firebaseAdmin from 'firebase-admin';
 import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
-import {config} from './config';
 import {MongoDataSource} from './datasources';
 import {MyriadSequence} from './sequence';
 import {
@@ -100,21 +99,6 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   firebaseInit() {
-    if (this.options.test) return;
-    if (
-      !config.FIREBASE_PROJECT_ID ||
-      !config.FIREBASE_CLIENT_EMAIL ||
-      !config.FIREBASE_PRIVATE_KEY
-    ) {
-      firebaseAdmin.initializeApp();
-    } else {
-      firebaseAdmin.initializeApp({
-        credential: firebaseAdmin.credential.cert({
-          projectId: config.FIREBASE_PROJECT_ID,
-          clientEmail: config.FIREBASE_CLIENT_EMAIL,
-          privateKey: config.FIREBASE_PRIVATE_KEY,
-        }),
-      });
-    }
+    firebaseAdmin.initializeApp();
   }
 }
