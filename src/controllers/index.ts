@@ -1,6 +1,5 @@
 export * from './activity-log.controller';
 export * from './authentication.controller';
-export * from './comment-comment.controller';
 export * from './comment.controller';
 export * from './currency.controller';
 export * from './experience.controller';
@@ -8,7 +7,6 @@ export * from './friend.controller';
 export * from './like.controller';
 export * from './notification.controller';
 export * from './people.controller';
-export * from './post-comment.controller';
 export * from './post-walletaddress.controller';
 export * from './post.controller';
 export * from './queue.controller';
