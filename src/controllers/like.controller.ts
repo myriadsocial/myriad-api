@@ -7,13 +7,13 @@ import {LikeRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
+@intercept(ValidateLikeInterceptor.BINDING_KEY)
 export class LikeController {
   constructor(
     @repository(LikeRepository)
     protected likeRepository: LikeRepository,
   ) {}
 
-  @intercept(ValidateLikeInterceptor.BINDING_KEY)
   @post('/likes', {
     responses: {
       '200': {
@@ -51,7 +51,6 @@ export class LikeController {
     return collection.findOneAndUpdate(query, update, options);
   }
 
-  @intercept(ValidateLikeInterceptor.BINDING_KEY)
   @del('/likes/{id}', {
     responses: {
       '200': {

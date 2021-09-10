@@ -4,13 +4,11 @@ import {
   del,
   get,
   getModelSchemaRef,
-  HttpErrors,
   param,
   patch,
   post,
   requestBody,
 } from '@loopback/rest';
-import {NotificationType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {Comment} from '../models';
 import {CommentRepository} from '../repositories';
@@ -90,18 +88,12 @@ export class CommentController {
     })
     comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    if (!comment.type || !comment.referenceId)
-      throw new HttpErrors.UnprocessableEntity(
-        'Type/ReferenceId cannot be empty',
-      );
-
     const newComment = await this.commentRepository.create(comment);
 
     try {
       await this.notificationService.sendPostComment(
         comment.userId,
         newComment,
-        NotificationType.POST_COMMENT,
       );
     } catch (error) {
       // ignored
