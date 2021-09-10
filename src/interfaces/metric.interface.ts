@@ -1,6 +1,6 @@
 export interface Metric {
   likes: number;
   dislikes: number;
-  discusions?: number;
+  discussions?: number;
   debates?: number;
 }
