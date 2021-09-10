@@ -25,7 +25,7 @@ import {
   testdb,
 } from '../../helpers';
 
-describe('CommentControllerIntegration', () => {
+describe('CommentControllerIntegrations', () => {
   let commentRepository: CommentRepository;
   let userRepository: UserRepository;
   let postRepository: PostRepository;
@@ -66,8 +66,7 @@ describe('CommentControllerIntegration', () => {
 
   it('includes Transactions in find method result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: '1',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
@@ -104,7 +103,59 @@ describe('CommentControllerIntegration', () => {
     ]);
   });
 
-  it('includes both Transaction and User in find method result', async () => {
+  it('includes two levels Comments in find method result', async () => {
+    const user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+    });
+    const comment = await givenCommentInstance(commentRepository, {
+      userId: user.id,
+      postId: '9999',
+      referenceId: '9999',
+    });
+    const otherComment = givenComment({
+      userId: user.id,
+      postId: '9999',
+      referenceId: comment.id,
+      type: ReferenceType.COMMENT,
+    });
+    const newOtherComment = await commentRepository.comments(comment.id).create(otherComment);
+
+    const anotherComment = givenComment({
+      userId: user.id,
+      postId: '9999',
+      referenceId: newOtherComment.id,
+      type: ReferenceType.COMMENT,
+    });
+
+    const newAnotherComment = await commentRepository
+      .comments(newOtherComment.id)
+      .create(anotherComment);
+
+    const response = await controller.find({
+      include: [
+        {
+          relation: 'comments',
+          scope: {
+            include: ['comments'],
+          },
+        },
+      ],
+    });
+
+    expect(response).to.containDeep([
+      {
+        ...comment,
+        comments: [
+          {
+            ...newOtherComment,
+            comments: [newAnotherComment],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('includes Transaction, User, and two levels Comments in find method result', async () => {
     const post = await givenPostInstance(postRepository);
     const user = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
@@ -115,26 +166,65 @@ describe('CommentControllerIntegration', () => {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
+    const otherComment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: comment.id,
+      type: ReferenceType.COMMENT,
+    });
+    const newOtherComment = await commentRepository.comments(comment.id).create(otherComment);
+
+    const anotherComment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: newOtherComment.id,
+      type: ReferenceType.COMMENT,
+    });
+
+    const newAnotherComment = await commentRepository
+      .comments(newOtherComment.id)
+      .create(anotherComment);
+
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
     });
 
-    const response = await controller.find({include: ['user', 'transactions']});
+    const response = await controller.find({
+      include: [
+        {
+          relation: 'user',
+        },
+        {
+          relation: 'transactions',
+        },
+        {
+          relation: 'comments',
+          scope: {
+            include: ['comments'],
+          },
+        },
+      ],
+    });
 
     expect(response).to.containDeep([
       {
         ...comment,
         user: user,
         transactions: [transaction],
+        comments: [
+          {
+            ...newOtherComment,
+            comments: [newAnotherComment],
+          },
+        ],
       },
     ]);
   });
 
   it('includes Transactions in findById method result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
       postId: '1',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
@@ -171,7 +261,57 @@ describe('CommentControllerIntegration', () => {
     });
   });
 
-  it('includes both Transaction and User in findById method result', async () => {
+  it('includes two levels Comments in findById method result', async () => {
+    const user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+    });
+    const comment = await givenCommentInstance(commentRepository, {
+      userId: user.id,
+      postId: '9999',
+      referenceId: '9999',
+    });
+    const otherComment = givenComment({
+      userId: user.id,
+      postId: '9999',
+      referenceId: comment.id,
+      type: ReferenceType.COMMENT,
+    });
+    const newOtherComment = await commentRepository.comments(comment.id).create(otherComment);
+
+    const anotherComment = givenComment({
+      userId: user.id,
+      postId: '9999',
+      referenceId: newOtherComment.id,
+      type: ReferenceType.COMMENT,
+    });
+
+    const newAnotherComment = await commentRepository
+      .comments(newOtherComment.id)
+      .create(anotherComment);
+
+    const response = await controller.findById(comment.id ?? '', {
+      include: [
+        {
+          relation: 'comments',
+          scope: {
+            include: ['comments'],
+          },
+        },
+      ],
+    });
+
+    expect(response).to.containDeep({
+      ...comment,
+      comments: [
+        {
+          ...newOtherComment,
+          comments: [newAnotherComment],
+        },
+      ],
+    });
+  });
+
+  it('includes Transaction, User, and two levels Comments in findById method result', async () => {
     const post = await givenPostInstance(postRepository);
     const user = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
@@ -182,19 +322,57 @@ describe('CommentControllerIntegration', () => {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
+    const otherComment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: comment.id,
+      type: ReferenceType.COMMENT,
+    });
+    const newOtherComment = await commentRepository.comments(comment.id).create(otherComment);
+
+    const anotherComment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: newOtherComment.id,
+      type: ReferenceType.COMMENT,
+    });
+
+    const newAnotherComment = await commentRepository
+      .comments(newOtherComment.id)
+      .create(anotherComment);
+
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
     });
 
     const response = await controller.findById(comment.id ?? '', {
-      include: ['user', 'transactions'],
+      include: [
+        {
+          relation: 'user',
+        },
+        {
+          relation: 'transactions',
+        },
+        {
+          relation: 'comments',
+          scope: {
+            include: ['comments'],
+          },
+        },
+      ],
     });
 
     expect(response).to.containDeep({
       ...comment,
       user: user,
       transactions: [transaction],
+      comments: [
+        {
+          ...newOtherComment,
+          comments: [newAnotherComment],
+        },
+      ],
     });
   });
 
