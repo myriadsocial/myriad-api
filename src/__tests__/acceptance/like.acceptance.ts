@@ -2,7 +2,11 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {SectionType} from '../../enums';
-import {CommentRepository, LikeRepository, PostRepository} from '../../repositories';
+import {
+  CommentRepository,
+  LikeRepository,
+  PostRepository,
+} from '../../repositories';
 import {
   givenComment,
   givenCommentRepository,
@@ -79,14 +83,16 @@ describe('LikeApplication', function () {
     const comment = givenComment({
       postId: post._id.toString(),
       referenceId: post._id.toString(),
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
       section: SectionType.DEBATE,
     });
     await client.post('/comments').send(comment).expect(200);
     const like = givenLike({
       referenceId: post._id.toString(),
       state: false,
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
     });
     const response = await client.post('/likes').send(like).expect(200);
     expect(response.body).to.containDeep(like);
@@ -165,7 +171,9 @@ describe('LikeApplication', function () {
     });
 
     await client.del(`/likes/${like.id}`).send().expect(204);
-    await expect(likeRepository.findById(like.id)).to.be.rejectedWith(EntityNotFoundError);
+    await expect(likeRepository.findById(like.id)).to.be.rejectedWith(
+      EntityNotFoundError,
+    );
 
     const resultPost = await postRepository.findById(like.referenceId);
     post.metric.likes = post.metric.likes - 1;
