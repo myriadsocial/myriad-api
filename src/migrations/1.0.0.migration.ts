@@ -524,7 +524,8 @@ export class MigrationScript100 implements MigrationScript {
           metric: {
             likes: metric.liked,
             dislikes: metric.disliked,
-            comments: metric.comment,
+            discusions: metric.comment,
+            debates: 0,
           },
         });
       }),
