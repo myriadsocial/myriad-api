@@ -63,6 +63,7 @@
     "loopback4-migration": "^1.2.1",
     "open-graph-scraper": "^4.9.1",
     "tslib": "^2.0.0",
+    "validator": "^13.6.0",
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
@@ -73,6 +74,7 @@
     "@types/node": "^10.17.60",
     "@types/open-graph-scraper": "^4.8.1",
     "@types/twitter": "^1.7.0",
+    "@types/validator": "^13.6.3",
     "eslint": "^7.28.0",
     "husky": "^7.0.2",
     "lint-staged": ">=10",
