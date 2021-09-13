@@ -39,7 +39,7 @@ export class User extends Entity {
 
   @property({
     type: 'string',
-    default: false,
+    required: false,
     index: {
       unique: true,
     },
@@ -48,13 +48,13 @@ export class User extends Entity {
 
   @property({
     type: 'string',
+    required: false,
   })
   profilePictureURL?: string;
 
   @property({
     type: 'string',
     required: false,
-    default: null,
   })
   bannerImageUrl?: string;
 
@@ -84,6 +84,12 @@ export class User extends Entity {
     default: DefaultCurrencyType.AUSD,
   })
   defaultCurrency?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  websiteURL?: string;
 
   @property({
     type: 'date',
