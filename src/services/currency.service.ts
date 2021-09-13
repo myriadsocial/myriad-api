@@ -87,7 +87,7 @@ export class CurrencyService {
       const to = userId;
 
       const acalaDecimal = 12;
-      const value = 100 * 10 ** acalaDecimal;
+      const value = config.AUSD_REWARD_AMOUNT * 10 ** acalaDecimal;
 
       const {nonce} = await api.query.system.account(from.address);
       const getNonce = await this.getQueueNumber(
