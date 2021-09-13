@@ -168,6 +168,37 @@ describe('UserApplication', function () {
       expect(result).to.containEql(updatedUser);
     });
 
+    it('rejects upadating the user by ID when url format is wrong', async () => {
+      const updatedUser: Partial<User> = givenUser({
+        name: 'Abdul Hakim',
+        bio: 'Hello, my name is Abdul Hakim',
+        profilePictureURL: 'notaprofilepictureurl.com',
+      });
+
+      delete updatedUser.id;
+
+      await client
+        .patch(`/users/${persistedUser.id}`)
+        .send(updatedUser)
+        .expect(422);
+
+      updatedUser.profilePictureURL = undefined;
+      updatedUser.bannerImageUrl = 'www.notabannerimageurl.com';
+
+      await client
+        .patch(`/users/${persistedUser.id}`)
+        .send(updatedUser)
+        .expect(422);
+
+      updatedUser.bannerImageUrl = undefined;
+      updatedUser.websiteURL = 'notawebsiteurl.com';
+
+      await client
+        .patch(`/users/${persistedUser.id}`)
+        .send(updatedUser)
+        .expect(422);
+    });
+
     it('returns 422 when updating a user username more than once', async () => {
       const updatedUser: Partial<User> = givenUser({
         username: 'abdulhakim',
