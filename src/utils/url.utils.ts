@@ -1,13 +1,15 @@
 import ogs from 'open-graph-scraper';
 import {PlatformType} from '../enums';
 import {EmbeddedURL, Media} from '../models';
+import validator from 'validator';
+import {HttpErrors} from '@loopback/rest';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export class UrlUtils {
   detail: string[];
 
-  constructor(socialMediaURL?: string) {
-    this.detail = this.getDetail(socialMediaURL ?? '');
+  constructor(socialMediaURL = '') {
+    this.detail = this.getDetail(socialMediaURL);
   }
 
   getDetail(socialMediaURL: string): string[] {
@@ -31,7 +33,9 @@ export class UrlUtils {
     return this.detail[1];
   }
 
-  async getOpenGraph(url: string): Promise<EmbeddedURL> {
+  static async getOpenGraph(url: string): Promise<EmbeddedURL> {
+    this.validateURL(url);
+
     const {result} = await ogs({url});
     const embeddedURL = new EmbeddedURL();
     const embedded: any = result;
@@ -52,5 +56,18 @@ export class UrlUtils {
     }
 
     return embeddedURL;
+  }
+
+  static validateURL(url?: string): void {
+    if (!url) return;
+
+    const isURL = validator.isURL(url, {
+      require_protocol: true,
+      require_valid_protocol: true,
+      protocols: ['http', 'https', 'ws', 'wss'],
+    });
+
+    if (isURL) return;
+    throw new HttpErrors.UnprocessableEntity('Wrong url format!');
   }
 }
