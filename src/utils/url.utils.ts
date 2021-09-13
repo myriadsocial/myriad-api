@@ -58,6 +58,7 @@ export class UrlUtils {
     return embeddedURL;
   }
 
+  /* eslint-disable   @typescript-eslint/naming-convention */
   static validateURL(url?: string): void {
     if (!url) return;
 
