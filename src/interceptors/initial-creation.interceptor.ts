@@ -19,6 +19,9 @@ import {
   UserRepository,
 } from '../repositories';
 import {CurrencyService, MetricService, TagService} from '../services';
+import {UrlUtils} from '../utils/url.utils';
+
+const {validateURL} = UrlUtils;
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -62,10 +65,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
-  async intercept(
-    invocationCtx: InvocationContext,
-    next: () => ValueOrPromise<InvocationResult>,
-  ) {
+  async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
     const methodName = invocationCtx.methodName;
     const className = invocationCtx.targetClass.name as ControllerType;
 
@@ -74,6 +74,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     }
 
     if (methodName === MethodType.UPDATEBYID) {
+      const {websiteURL, profilePictureURL, bannerImageUrl} = invocationCtx.args[1];
+
+      validateURL(websiteURL);
+      validateURL(profilePictureURL);
+      validateURL(bannerImageUrl);
+
       invocationCtx.args[1].updatedAt = new Date().toString();
       return next();
     }
@@ -91,10 +97,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     return result;
   }
 
-  async beforeCreation(
-    className: ControllerType,
-    invocationCtx: InvocationContext,
-  ): Promise<void> {
+  async beforeCreation(className: ControllerType, invocationCtx: InvocationContext): Promise<void> {
     switch (className) {
       case ControllerType.USER: {
         const newUser = invocationCtx.args[0];
@@ -104,10 +107,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           },
         });
 
-        if (user)
-          throw new HttpErrors.UnprocessableEntity('User already exist!');
+        if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
 
-        newUser.bio = `Hello, my name is ${newUser.name}!`;
         newUser.username =
           newUser.name.replace(/\s+/g, '').toLowerCase() +
           '.' +
@@ -118,9 +119,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.TRANSACTION: {
-        await this.currencyRepository.findById(
-          invocationCtx.args[0].currencyId.toUpperCase(),
-        );
+        await this.currencyRepository.findById(invocationCtx.args[0].currencyId.toUpperCase());
         await this.userRepository.findById(invocationCtx.args[0].from);
         return;
       }
@@ -136,10 +135,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     }
   }
 
-  async afterCreation(
-    className: ControllerType,
-    result: AnyObject,
-  ): Promise<void> {
+  async afterCreation(className: ControllerType, result: AnyObject): Promise<void> {
     switch (className) {
       case ControllerType.USER: {
         await this.currencyService.defaultCurrency(result.id);
