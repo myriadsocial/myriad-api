@@ -9,7 +9,7 @@ import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
-const {getOpenGraph} = new UrlUtils();
+const {getOpenGraph} = UrlUtils;
 
 export class SocialMediaService {
   constructor(
@@ -23,10 +23,7 @@ export class SocialMediaService {
     protected facebookService: Facebook,
   ) {}
 
-  async verifyToTwitter(
-    username: string,
-    publicKey: string,
-  ): Promise<ExtendedPeople> {
+  async verifyToTwitter(username: string, publicKey: string): Promise<ExtendedPeople> {
     const {data: user} = await this.twitterService.getActions(
       `2/users/by/username/${username}?user.fields=profile_image_url`,
     );
@@ -37,16 +34,14 @@ export class SocialMediaService {
       `2/users/${user.id}/tweets?max_results=5`,
     );
 
-    if (!tweets)
-      throw new HttpErrors.NotFound('Tweet not found/protected by user');
+    if (!tweets) throw new HttpErrors.NotFound('Tweet not found/protected by user');
 
     // Verify that the publicKey is existing in user twitter
     const foundTwitterPublicKey = tweets[0].text
       .split(' ')
       .find((tweet: string) => tweet === publicKey);
 
-    if (!foundTwitterPublicKey)
-      throw new HttpErrors.NotFound('Cannot find specified post');
+    if (!foundTwitterPublicKey) throw new HttpErrors.NotFound('Cannot find specified post');
 
     this.fetchTwitterFollowing(user.id) as Promise<void>;
 
@@ -60,14 +55,9 @@ export class SocialMediaService {
     } as ExtendedPeople;
   }
 
-  async verifyToReddit(
-    username: string,
-    publicKey: string,
-  ): Promise<ExtendedPeople> {
+  async verifyToReddit(username: string, publicKey: string): Promise<ExtendedPeople> {
     // Fetch data user from reddit api
-    const {data: redditUser} = await this.redditService.getActions(
-      `user/${username}/about.json`,
-    );
+    const {data: redditUser} = await this.redditService.getActions(`user/${username}/about.json`);
 
     // Fetch post timeline based on reddit username from reddit api
     const {data: foundRedditPost} = await this.redditService.getActions(
@@ -82,45 +72,28 @@ export class SocialMediaService {
       .split(' ')
       .find((post: string) => post === publicKey);
 
-    if (!foundRedditPublicKey)
-      throw new HttpErrors.NotFound('Cannot find specified post');
+    if (!foundRedditPublicKey) throw new HttpErrors.NotFound('Cannot find specified post');
 
     return {
-      name: redditUser.subreddit.title
-        ? redditUser.subreddit.title
-        : redditUser.name,
+      name: redditUser.subreddit.title ? redditUser.subreddit.title : redditUser.name,
       originUserId: 't2_' + redditUser.id,
       platform: PlatformType.REDDIT,
       username: redditUser.name,
-      profilePictureURL: redditUser.icon_img
-        ? redditUser.icon_img.split('?')[0]
-        : '',
+      profilePictureURL: redditUser.icon_img ? redditUser.icon_img.split('?')[0] : '',
       publicKey: publicKey,
     } as ExtendedPeople;
   }
 
-  async verifyToFacebook(
-    username: string,
-    publicKey: string,
-  ): Promise<ExtendedPeople> {
+  async verifyToFacebook(username: string, publicKey: string): Promise<ExtendedPeople> {
     const splitUsername = username.split('/');
     const fbUsername = splitUsername[3];
     const fbPostId = splitUsername[5];
 
-    const fbPost = await this.fetchFacebookPost(
-      fbUsername,
-      fbPostId,
-      publicKey,
-    );
+    const fbPost = await this.fetchFacebookPost(fbUsername, fbPostId, publicKey);
 
     if (!fbPost.platformUser) throw new Error('Platform user not exist!');
 
-    const {
-      username: userName,
-      name,
-      originUserId,
-      profilePictureURL,
-    } = fbPost.platformUser;
+    const {username: userName, name, originUserId, profilePictureURL} = fbPost.platformUser;
 
     return {
       name,
@@ -166,9 +139,7 @@ export class SocialMediaService {
         `1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`,
       );
     } catch {
-      throw new HttpErrors.UnprocessableEntity(
-        'Tweet not found/protected by user',
-      );
+      throw new HttpErrors.UnprocessableEntity('Tweet not found/protected by user');
     }
 
     const {
@@ -225,10 +196,7 @@ export class SocialMediaService {
 
     const findUrlInFullText = fullText.search('https://t.co/');
     const text = fullText
-      .substring(
-        0,
-        findUrlInFullText !== -1 ? findUrlInFullText : fullText.length,
-      )
+      .substring(0, findUrlInFullText !== -1 ? findUrlInFullText : fullText.length)
       .trim();
 
     return {
@@ -297,9 +265,7 @@ export class SocialMediaService {
     if (redditPost.media_metadata) {
       for (const img in redditPost.media_metadata) {
         if (redditPost.media_metadata[img].e === 'Image') {
-          asset.images.push(
-            redditPost.media_metadata[img].s.u.replace(/amp;/g, ''),
-          );
+          asset.images.push(redditPost.media_metadata[img].s.u.replace(/amp;/g, ''));
         }
 
         if (redditPost.media_metadata[img].e === 'RedditVideo') {
@@ -333,9 +299,7 @@ export class SocialMediaService {
     let user = null;
 
     try {
-      ({data: user} = await this.redditService.getActions(
-        'user/' + redditUser + '/about.json',
-      ));
+      ({data: user} = await this.redditService.getActions('user/' + redditUser + '/about.json'));
     } catch {
       throw new HttpErrors.UnprocessableEntity('User not found');
     }
@@ -373,8 +337,7 @@ export class SocialMediaService {
       const foundIndex = data.search(publicKey);
       const getPublicKey = data.substring(foundIndex, foundIndex + 66);
 
-      if (foundIndex === -1)
-        throw new HttpErrors.NotFound('Cannot find specified post');
+      if (foundIndex === -1) throw new HttpErrors.NotFound('Cannot find specified post');
       if (getPublicKey.replace('"', '').trim() !== publicKey)
         throw new HttpErrors.NotFound('Cannot find specified post');
     }
@@ -392,9 +355,7 @@ export class SocialMediaService {
 
     // Get platform account id
     const findEntityIdIndex = post.search('"entity_id"');
-    const entityIndex = post.substring(
-      findEntityIdIndex + '"entity_id"'.length + 2,
-    );
+    const entityIndex = post.substring(findEntityIdIndex + '"entity_id"'.length + 2);
 
     for (const char of entityIndex) {
       if (char === '"') break;
@@ -406,9 +367,7 @@ export class SocialMediaService {
     const findIndex = post.search(`"identifier":${platformAccountId}`);
     const getString = post.substring(findIndex);
     const findImageIndex = getString.search('"image"');
-    const getImageString = getString.substring(
-      findImageIndex + '"image"'.length + 2,
-    );
+    const getImageString = getString.substring(findImageIndex + '"image"'.length + 2);
 
     for (const char of getImageString) {
       if (char === '"') break;
@@ -426,9 +385,7 @@ export class SocialMediaService {
     }
 
     // Get username
-    const getUrl = post.substring(
-      findIndex + `"identifier":${platformAccountId},"url":"`.length,
-    );
+    const getUrl = post.substring(findIndex + `"identifier":${platformAccountId},"url":"`.length);
 
     let url = '';
 
@@ -441,9 +398,7 @@ export class SocialMediaService {
     const userName = url.replace(/\\/g, '').split('/')[3];
 
     if (!name || !userName) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Cannot find the specified post',
-      );
+      throw new HttpErrors.UnprocessableEntity('Cannot find the specified post');
     }
 
     return {

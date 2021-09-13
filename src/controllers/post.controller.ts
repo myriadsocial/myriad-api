@@ -21,7 +21,7 @@ import {PostService, SocialMediaService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 // import {authenticate} from '@loopback/authentication';
 
-const {getOpenGraph} = new UrlUtils();
+const {getOpenGraph} = UrlUtils;
 
 // @authenticate("jwt")
 export class PostController {
@@ -47,8 +47,7 @@ export class PostController {
     })
     newPost: Post,
   ): Promise<Post> {
-    if (!newPost.text)
-      throw new HttpErrors.UnprocessableEntity('Text field cannot be empty!');
+    if (!newPost.text) throw new HttpErrors.UnprocessableEntity('Text field cannot be empty!');
 
     let url = '';
     let embeddedURL = null;
@@ -117,10 +116,7 @@ export class PostController {
         break;
 
       case PlatformType.FACEBOOK:
-        newPost = await this.socialMediaService.fetchFacebookPost(
-          username,
-          originPostId,
-        );
+        newPost = await this.socialMediaService.fetchFacebookPost(username, originPostId);
         break;
 
       default:
@@ -129,9 +125,7 @@ export class PostController {
 
     if (newPost.tags && newPost.tags.length > 0) {
       const postTags = newPost.tags.filter((tag: string) => {
-        return !newTags
-          .map((newTag: string) => newTag.toLowerCase())
-          .includes(tag.toLowerCase());
+        return !newTags.map((newTag: string) => newTag.toLowerCase()).includes(tag.toLowerCase());
       });
 
       tags = [...tags, ...postTags];
