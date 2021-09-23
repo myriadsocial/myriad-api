@@ -111,11 +111,11 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@main
         with:
           secrets: |-
-            faucetMnemonic:${{ secrets.DEV_GCP_PROJECT_ID }}/faucetMnemonic
-            mongoUserAPI:${{ secrets.DEV_GCP_PROJECT_ID }}/mongoUserAPI
-            mongoPasswordAPI:${{ secrets.DEV_GCP_PROJECT_ID }}/mongoPasswordAPI
-            firebaseServiceAccountBase64:${{ secrets.DEV_GCP_PROJECT_ID }}/firebaseServiceAccountBase64
-            twitterBearerToken:${{ secrets.DEV_GCP_PROJECT_ID }}/twitterBearerToken
+            FAUCET_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
+            MONGO_USER_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_USER_API
+            MONGO_PASSWORD_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
+            FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.DEV_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
+            TWITTER_BEARER_TOKEN:${{ secrets.DEV_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
 
       - name: Install Helm
         run: |
@@ -127,16 +127,16 @@ jobs:
             --install \
             --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }}-${{ needs.compute-build-info.outputs.date }} \
             --set-string config.rpcWSURL=wss://rpc.dev.myriad.systems \
-            --set-string config.faucetMnemonic=${{ steps.secrets.outputs.faucetMnemonic }} \
+            --set-string config.FAUCET_MNEMONIC="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
             --set config.config.rewardAmount=1 \
             --set config.config.acalaAUDSrewardAmount=100 \
             --set-string config.mongo.host=myriad-db.default.svc.cluster.local \
             --set config.mongo.port=27017 \
-            --set-string config.mongo.user=${{ steps.secrets.outputs.mongoUserAPI }} \
-            --set-string config.mongo.password=${{ steps.secrets.outputs.mongoPasswordAPI }} \
+            --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
+            --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
             --set-string config.mongo.database=myriad \
-            --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.firebaseServiceAccountBase64 }} \
-            --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.twitterBearerToken }} \
+            --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
+            --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
             --set ingress.enabled=true \
             --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
             --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
