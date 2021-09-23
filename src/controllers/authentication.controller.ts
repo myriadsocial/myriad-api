@@ -2,6 +2,7 @@ import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors, post, requestBody} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
+import {logInvocation} from '@loopback/logging';
 import * as _ from 'lodash';
 import {NewAuthRequest, RefreshGrant, TokenObject} from '../interfaces';
 import {
@@ -60,6 +61,7 @@ export class AuthenticationController {
       },
     },
   })
+  @logInvocation()
   async signup(
     @requestBody({
       description: 'The input of signup function',
@@ -137,6 +139,7 @@ export class AuthenticationController {
       },
     },
   })
+  @logInvocation()
   async login(
     @requestBody({
       description: 'The input of login function',
@@ -194,6 +197,7 @@ export class AuthenticationController {
       },
     },
   })
+  @logInvocation()
   async refresh(
     @requestBody({
       description: 'Reissuing Acess Token',

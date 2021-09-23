@@ -4,6 +4,7 @@ import {ApplicationConfig} from '@loopback/core';
 import {HealthComponent} from '@loopback/health';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
+import {LoggingComponent} from '@loopback/logging';
 import {
   RestExplorerBindings,
   RestExplorerComponent,
@@ -73,6 +74,7 @@ export class MyriadApiApplication extends BootMixin(
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
     this.component(HealthComponent);
+    this.component(LoggingComponent);
 
     if (this.options.test) return;
 
