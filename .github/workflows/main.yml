@@ -127,7 +127,7 @@ jobs:
             --install \
             --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }}-${{ needs.compute-build-info.outputs.date }} \
             --set-string config.rpcWSURL=wss://rpc.dev.myriad.systems \
-            --set-string config.FAUCET_MNEMONIC="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
+            --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
             --set config.config.rewardAmount=1 \
             --set config.config.acalaAUDSrewardAmount=100 \
             --set-string config.mongo.host=myriad-db.default.svc.cluster.local \
