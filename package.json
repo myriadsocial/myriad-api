@@ -47,6 +47,7 @@
     "@loopback/boot": "^3.4.1",
     "@loopback/core": "^2.16.1",
     "@loopback/health": "^0.8.2",
+    "@loopback/logging": "^0.6.3",
     "@loopback/repository": "^3.7.0",
     "@loopback/rest": "^9.3.1",
     "@loopback/rest-explorer": "^3.3.1",
