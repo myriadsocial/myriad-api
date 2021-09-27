@@ -1,4 +1,4 @@
-import {Entity, model, property} from '@loopback/repository';
+import {AnyObject, Entity, model, property} from '@loopback/repository';
 
 @model({
   settings: {
@@ -21,25 +21,13 @@ export class Currency extends Entity {
     type: 'string',
     required: true,
   })
-  name: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
   image: string;
 
   @property({
     type: 'number',
-    required: true,
+    required: false,
   })
   decimal: number;
-
-  @property({
-    type: 'number',
-    required: true,
-  })
-  addressType: number;
 
   @property({
     type: 'string',
@@ -49,9 +37,16 @@ export class Currency extends Entity {
 
   @property({
     type: 'boolean',
-    required: true,
+    required: false,
   })
   native: boolean;
+
+  @property({
+    type: 'object',
+    required: false,
+    default: null,
+  })
+  types: AnyObject;
 
   @property({
     type: 'date',
@@ -75,12 +70,6 @@ export class Currency extends Entity {
 
   constructor(data?: Partial<Currency>) {
     super(data);
-    this.id = this.currencyToUpperCase();
-  }
-
-  currencyToUpperCase() {
-    if (this.id) return this.id.toUpperCase();
-    return '';
   }
 }
 
