@@ -8,8 +8,10 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
+import {ApiPromise} from '@polkadot/api';
 import {ControllerType} from '../enums';
 import {CurrencyRepository, UserCurrencyRepository} from '../repositories';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -41,10 +43,7 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
-  async intercept(
-    invocationCtx: InvocationContext,
-    next: () => ValueOrPromise<InvocationResult>,
-  ) {
+  async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
     const className = invocationCtx.targetClass.name as ControllerType;
 
     switch (className) {
@@ -62,9 +61,7 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
         });
 
         if (userCurrency) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You already have this token',
-          );
+          throw new HttpErrors.UnprocessableEntity('You already have this token');
         }
 
         break;
@@ -77,8 +74,35 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
           where: {id: invocationCtx.args[0].id},
         });
 
-        if (currency)
-          throw new HttpErrors.UnprocessableEntity('Currency already exists!');
+        if (currency) throw new HttpErrors.UnprocessableEntity('Currency already exists!');
+
+        let native = false;
+        let api: ApiPromise;
+
+        const {id, rpcURL, types} = invocationCtx.args[0];
+
+        const {polkadotApi, getSystemParameters} = new PolkadotJs();
+
+        try {
+          api = await polkadotApi(rpcURL, types);
+        } catch (err) {
+          throw new HttpErrors.UnprocessableEntity('Connection failed!');
+        }
+
+        const {symbols, symbolsDecimals} = await getSystemParameters(api);
+        const currencyId = symbols.find(e => e === id.toUpperCase());
+
+        if (!currencyId) throw new HttpErrors.NotFound('Currency not found!');
+
+        if (currencyId === symbols[0]) native = true;
+
+        invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+          id: currencyId,
+          decimal: symbolsDecimals[currencyId],
+          native,
+        });
+
+        await api.disconnect();
 
         break;
       }
