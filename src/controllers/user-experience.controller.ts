@@ -74,7 +74,31 @@ export class UserExperienceController {
   }
 
   @intercept(ExperienceInterceptor.BINDING_KEY)
-  @post('/users/{userId}/clone-experiences/{experienceId}', {
+  @post('/users/{userId}/subscribe/{experienceId}', {
+    responses: {
+      '200': {
+        description: 'subscribe an Experience model instance',
+        content: {
+          'application/json': {schema: getModelSchemaRef(UserExperience)},
+        },
+      },
+    },
+  })
+  async subscribe(
+    @param.path.string('userId') userId: string,
+    @param.path.string('experienceId') experienceId: string,
+  ): Promise<UserExperience> {
+    return this.userExperienceRepository.create(
+      Object.assign(new UserExperience(), {
+        userId,
+        experienceId,
+        subscribed: true,
+      }),
+    );
+  }
+
+  @intercept(ExperienceInterceptor.BINDING_KEY)
+  @post('/users/{userId}/clone/{experienceId}', {
     responses: {
       '200': {
         description: 'clone an Experience model instance',
@@ -85,26 +109,6 @@ export class UserExperienceController {
     },
   })
   async clone(
-    @param.path.string('userId') userId: string,
-    @param.path.string('experienceId') experienceId: string,
-  ): Promise<UserExperience> {
-    return this.userExperienceRepository.create(
-      Object.assign(new UserExperience(), {userId, experienceId, cloned: true}),
-    );
-  }
-
-  @intercept(ExperienceInterceptor.BINDING_KEY)
-  @post('/users/{userId}/modify-experiences/{experienceId}', {
-    responses: {
-      '200': {
-        description: 'modify an Experience model instance',
-        content: {
-          'application/json': {schema: getModelSchemaRef(UserExperience)},
-        },
-      },
-    },
-  })
-  async modify(
     @param.path.string('userId') userId: string,
     @param.path.string('experienceId') experienceId: string,
     @requestBody({
@@ -122,7 +126,7 @@ export class UserExperienceController {
     await this.userExperienceRepository.deleteAll({
       userId,
       experienceId,
-      cloned: true,
+      subscribed: true,
     });
     return this.userRepository.experiences(userId).create(experience);
   }
@@ -202,9 +206,9 @@ export class UserExperienceController {
     if (!userExperience)
       throw new HttpErrors.UnprocessableEntity('Experience not found');
 
-    if (userExperience.cloned)
+    if (userExperience.subscribed)
       throw new HttpErrors.UnprocessableEntity(
-        'You cannot update clone experience',
+        'You cannot update other user experience',
       );
 
     if (

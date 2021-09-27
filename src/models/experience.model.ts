@@ -65,7 +65,7 @@ export class Experience extends Entity {
     type: 'number',
     default: 0,
   })
-  clonedCount: number;
+  subscribedCount: number;
 
   @property({
     type: 'date',

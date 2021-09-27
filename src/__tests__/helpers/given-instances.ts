@@ -550,7 +550,7 @@ export async function givenMultipleExperienceInstances(
 export function givenUserExperience(userExperience?: Partial<UserExperience>) {
   const data = Object.assign(
     {
-      cloned: false,
+      subscribed: false,
       experienceId: '1',
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
@@ -573,7 +573,7 @@ export async function givenMultipleUserExperienceInstances(
   return Promise.all([
     givenUserExperienceInstance(userExperienceRepository),
     givenUserExperienceInstance(userExperienceRepository, {
-      cloned: true,
+      subscribed: true,
       experienceId: '2',
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',

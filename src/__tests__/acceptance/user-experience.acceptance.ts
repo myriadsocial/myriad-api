@@ -89,7 +89,7 @@ describe('UserExperienceApplication', function () {
       const userExperience = await givenUserExperienceInstance(
         userExperienceRepository,
         {
-          cloned: true,
+          subscribed: true,
           experienceId: '3',
           userId:
             '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6184z',
@@ -130,23 +130,23 @@ describe('UserExperienceApplication', function () {
     });
   });
 
-  context('when user cloned an experience', () => {
+  context('when user subscribed an experience', () => {
     beforeEach(async () => {
       await userRepository.deleteAll();
       await experienceRepository.deleteAll();
       await userExperienceRepository.deleteAll();
     });
 
-    it('clones other user experience', async () => {
+    it('subscribes other user experience', async () => {
       const user = await givenUserInstance(userRepository);
       const experience = await givenExperienceInstance(experienceRepository);
       const userExperience = givenUserExperience({
         userId: user.id,
         experienceId: experience.id,
-        cloned: true,
+        subscribed: true,
       });
       const response = await client
-        .post(`/users/${user.id}/clone-experiences/${experience.id}`)
+        .post(`/users/${user.id}/subscribe/${experience.id}`)
         .send()
         .expect(200);
       expect(response.body).to.containDeep(userExperience);
@@ -155,11 +155,11 @@ describe('UserExperienceApplication', function () {
       expect(result).to.containDeep(userExperience);
     });
 
-    it('sets cloned experience as user default timeline when user experience list is empty', async () => {
+    it('sets subscribed experience as user default timeline when user experience list is empty', async () => {
       const user = await givenUserInstance(userRepository);
       const experience = await givenExperienceInstance(experienceRepository);
       const response = await client
-        .post(`/users/${user.id}/clone-experiences/${experience.id}`)
+        .post(`/users/${user.id}/subscribe/${experience.id}`)
         .send()
         .expect(200);
 
@@ -173,49 +173,49 @@ describe('UserExperienceApplication', function () {
       expect(result).to.containDeep(expected);
     });
 
-    it('rejects clone other user experience when experience already belong to user', async () => {
+    it('rejects subscribe other user experience when experience already belong to user', async () => {
       const user = await givenUserInstance(userRepository);
       const experience = await givenExperienceInstance(experienceRepository, {
         createdBy: user.id,
       });
 
       await client
-        .post(`/users/${user.id}/clone-experiences/${experience.id}`)
+        .post(`/users/${user.id}/subscribe/${experience.id}`)
         .send()
         .expect(422);
     });
 
-    it('rejects clone other user experience when experience has been cloned', async () => {
+    it('rejects subscribe other user experience when experience has been subscribed', async () => {
       const user = await givenUserInstance(userRepository);
       const experience = await givenExperienceInstance(experienceRepository);
 
       await givenUserExperienceInstance(userExperienceRepository, {
         userId: user.id,
         experienceId: experience.id,
-        cloned: true,
+        subscribed: true,
       });
 
       await client
-        .post(`/users/${user.id}/clone-experiences/${experience.id}`)
+        .post(`/users/${user.id}/subscribe/${experience.id}`)
         .send()
         .expect(422);
     });
 
-    it('rejects clone other user experience when user has experience more than 10', async () => {
+    it('rejects subscribe other user experience when user has experience more than 10', async () => {
       const user = await givenUserInstance(userRepository);
 
       for (let i = 0; i < 10; i++) {
         await givenUserExperienceInstance(userExperienceRepository, {
           userId: user.id,
           experienceId: `${i + 1}`,
-          cloned: true,
+          subscribed: true,
         });
       }
 
       const experience = await givenExperienceInstance(experienceRepository);
 
       await client
-        .post(`/users/${user.id}/clone-experiences/${experience.id}`)
+        .post(`/users/${user.id}/subscribe/${experience.id}`)
         .send()
         .expect(422);
     });
@@ -242,13 +242,17 @@ describe('UserExperienceApplication', function () {
       expect(result).to.containDeep(experience);
 
       const resulUserExperience = await userExperienceRepository.findOne({
-        where: {userId: user.id, experienceId: response.body.id, cloned: false},
+        where: {
+          userId: user.id,
+          experienceId: response.body.id,
+          subscribed: false,
+        },
       });
 
       expect(resulUserExperience).to.containDeep({
         userId: user.id,
         experienceId: result.id,
-        cloned: false,
+        subscribed: false,
       });
     });
 
@@ -277,7 +281,7 @@ describe('UserExperienceApplication', function () {
         await givenUserExperienceInstance(userExperienceRepository, {
           userId: user.id,
           experienceId: `${i + 1}`,
-          cloned: true,
+          subscribed: true,
         });
       }
 
@@ -290,14 +294,14 @@ describe('UserExperienceApplication', function () {
     });
   });
 
-  context('when user modify an experience', () => {
+  context('when user clone an experience', () => {
     beforeEach(async () => {
       await userRepository.deleteAll();
       await experienceRepository.deleteAll();
       await userExperienceRepository.deleteAll();
     });
 
-    it('modifies from other user experience', async () => {
+    it('clones from other user experience', async () => {
       const otherUser = await givenUserInstance(userRepository);
       const prepareExperience = givenExperience({createdBy: otherUser.id});
       const experience = await givenExperienceInstance(
@@ -313,7 +317,7 @@ describe('UserExperienceApplication', function () {
         {
           userId: user.id,
           experienceId: experience.id,
-          cloned: true,
+          subscribed: true,
         },
       );
 
@@ -322,7 +326,7 @@ describe('UserExperienceApplication', function () {
       const updatedExperience = prepareExperience;
 
       const response = await client
-        .post(`/users/${user.id}/modify-experiences/${experience.id}`)
+        .post(`/users/${user.id}/clone/${experience.id}`)
         .send(updatedExperience)
         .expect(200);
 

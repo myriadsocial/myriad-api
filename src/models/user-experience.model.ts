@@ -25,7 +25,7 @@ export class UserExperience extends Entity {
     type: 'boolean',
     default: false,
   })
-  cloned?: boolean;
+  subscribed?: boolean;
 
   @property({
     type: 'date',

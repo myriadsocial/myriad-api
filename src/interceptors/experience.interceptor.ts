@@ -66,17 +66,17 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         });
         break;
 
-      case MethodType.CLONE:
+      case MethodType.SUBSCRIBE:
         numberOfUserExperience = await this.validateCloneExperience(
           userId,
           experienceId,
         );
         break;
 
-      case MethodType.MODIFY:
+      case MethodType.CLONE:
         invocationCtx.args[2] = Object.assign(invocationCtx.args[2], {
           createdBy: userId,
-          clonedCount: 0,
+          subscribedCount: 0,
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
         });
@@ -88,7 +88,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     // Add post-invocation logic here
 
     if (
-      (methodName === MethodType.CREATE || methodName === MethodType.CLONE) &&
+      (methodName === MethodType.CREATE ||
+        methodName === MethodType.SUBSCRIBE) &&
       numberOfUserExperience === 0
     ) {
       await this.userRepository.updateById(userId, {
@@ -97,19 +98,22 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       });
     }
 
-    if (methodName === MethodType.CLONE || methodName === MethodType.MODIFY) {
+    if (
+      methodName === MethodType.SUBSCRIBE ||
+      methodName === MethodType.CLONE
+    ) {
       const {count: currentNumberOfUserExperience} =
         await this.userExperienceRepository.count({
           experienceId,
-          cloned: true,
+          subscribed: true,
         });
 
       await this.experienceRepository.updateById(experienceId, {
-        clonedCount: currentNumberOfUserExperience,
+        subscribedCount: currentNumberOfUserExperience,
       });
     }
 
-    if (methodName === MethodType.MODIFY) {
+    if (methodName === MethodType.CLONE) {
       const user = await this.userRepository.findById(userId);
 
       if (user.onTimeline === experienceId) {
@@ -132,14 +136,14 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         'Experience already belong to you!',
       );
 
-    // Check if user has been cloned this experience
-    const cloned = await this.userExperienceRepository.findOne({
-      where: {userId, experienceId, cloned: true},
+    // Check if user has been subscribed this experience
+    const subscribed = await this.userExperienceRepository.findOne({
+      where: {userId, experienceId, subscribed: true},
     });
 
-    if (cloned)
+    if (subscribed)
       throw new HttpErrors.UnprocessableEntity(
-        'You already cloned this experience!',
+        'You already subscribed this experience!',
       );
 
     return this.validateNumberOfUserExperience(userId);
