@@ -1,3 +1,4 @@
+import {AnyObject} from '@loopback/repository';
 import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 import {KeyringPair} from '@polkadot/keyring/types';
 import {u8aToHex} from '@polkadot/util';
@@ -5,15 +6,37 @@ import {mnemonicGenerate} from '@polkadot/util-crypto';
 import {KeypairType} from '@polkadot/util-crypto/types';
 
 export class PolkadotJs {
-  async polkadotApi(wssProvider: string): Promise<ApiPromise> {
+  async polkadotApi(wssProvider: string, typesBundle = {}): Promise<ApiPromise> {
     try {
-      const provider = new WsProvider(wssProvider);
-      const api = await new ApiPromise({provider}).isReadyOrError;
+      const provider = new WsProvider(wssProvider, false);
+
+      provider.connect() as Promise<void>;
+
+      const api = await new ApiPromise({provider, typesBundle: typesBundle}).isReadyOrError;
 
       return api;
     } catch (e) {
       throw new Error('LostConnection');
     }
+  }
+
+  async getSystemParameters(api: ApiPromise) {
+    const params = await api.rpc.system.properties();
+    const decimals = params.tokenDecimals.value.toHuman() as string[];
+    const symbols = params.tokenSymbol.value.toHuman() as string[];
+    const symbolsDecimals = symbols.reduce(
+      (acc, symbol, index) => ({
+        ...acc,
+        [symbol]: +decimals[index],
+      }),
+      {},
+    );
+
+    return {
+      decimals: decimals as string[],
+      symbols: symbols as string[],
+      symbolsDecimals: symbolsDecimals as AnyObject,
+    };
   }
 
   getKeyring(type = 'sr25519', addressFormat = 42): Keyring {
