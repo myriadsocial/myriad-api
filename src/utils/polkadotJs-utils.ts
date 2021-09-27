@@ -6,13 +6,17 @@ import {mnemonicGenerate} from '@polkadot/util-crypto';
 import {KeypairType} from '@polkadot/util-crypto/types';
 
 export class PolkadotJs {
-  async polkadotApi(wssProvider: string, typesBundle = {}): Promise<ApiPromise> {
+  async polkadotApi(
+    wssProvider: string,
+    typesBundle = {},
+  ): Promise<ApiPromise> {
     try {
       const provider = new WsProvider(wssProvider, false);
 
       provider.connect() as Promise<void>;
 
-      const api = await new ApiPromise({provider, typesBundle: typesBundle}).isReadyOrError;
+      const api = await new ApiPromise({provider, typesBundle: typesBundle})
+        .isReadyOrError;
 
       return api;
     } catch (e) {
