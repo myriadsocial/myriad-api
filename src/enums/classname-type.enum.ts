@@ -23,8 +23,8 @@ export enum MethodType {
   UPDATEEXPERIENCE = 'updateExperience',
   TIMELINE = 'getTimeline',
   VERIFY = 'verify',
+  SUBSCRIBE = 'subscribe',
   CLONE = 'clone',
-  MODIFY = 'modify',
   CREATENEW = 'createNew',
   DELETEBYID = 'deleteById',
 }
