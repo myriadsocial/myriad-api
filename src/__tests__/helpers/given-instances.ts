@@ -56,11 +56,16 @@ export function givenUser(user?: Partial<User>) {
   return new User(data);
 }
 
-export async function givenUserInstance(userRepository: UserRepository, user?: Partial<User>) {
+export async function givenUserInstance(
+  userRepository: UserRepository,
+  user?: Partial<User>,
+) {
   return userRepository.create(givenUser(user));
 }
 
-export async function givenMultipleUserInstances(userRepository: UserRepository) {
+export async function givenMultipleUserInstances(
+  userRepository: UserRepository,
+) {
   return Promise.all([
     givenUserInstance(userRepository),
     givenUserInstance(userRepository, {
@@ -92,7 +97,9 @@ export async function givenPeopleInstance(
   return peopleRepository.create(givenPeople(people));
 }
 
-export async function givenMultiplePeopleInstances(peopleRepository: PeopleRepository) {
+export async function givenMultiplePeopleInstances(
+  peopleRepository: PeopleRepository,
+) {
   return Promise.all([
     givenPeopleInstance(peopleRepository),
     givenPeopleInstance(peopleRepository, {
@@ -148,8 +155,10 @@ export function givenPost(post?: Partial<Post>) {
       text: 'Tesla Solar + Powerwall battery enables consumers to be their own utility',
       originPostId: '1385108424761872387',
       url: 'https://twitter.com/44196397/status/1385108424761872387',
-      originCreatedAt: 'Thu Apr 22 2021 12:49:17 GMT+0700 (Western Indonesia Time)',
-      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      originCreatedAt:
+        'Thu Apr 22 2021 12:49:17 GMT+0700 (Western Indonesia Time)',
+      createdBy:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
     },
     post,
   );
@@ -161,7 +170,8 @@ export function givenMyriadPost(post?: Partial<Post>) {
     {
       tags: ['hello', 'world'],
       text: 'hello world',
-      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      createdBy:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
     },
     post,
   );
@@ -210,7 +220,9 @@ export async function givenCurrencyInstance(
   return currencyRepository.create(givenCurrency(currency));
 }
 
-export async function givenMultipleCurrencyInstances(currencyRepository: CurrencyRepository) {
+export async function givenMultipleCurrencyInstances(
+  currencyRepository: CurrencyRepository,
+) {
   return Promise.all([
     givenCurrencyInstance(currencyRepository),
     givenCurrencyInstance(currencyRepository, {
@@ -240,15 +252,21 @@ export async function givenFriendInstance(
   return friendRepository.create(givenFriend(friend));
 }
 
-export async function givenMultipleFriendInstances(friendRepository: FriendRepository) {
+export async function givenMultipleFriendInstances(
+  friendRepository: FriendRepository,
+) {
   return Promise.all([
     givenFriendInstance(friendRepository, {
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
     }),
     givenFriendInstance(friendRepository, {
-      requesteeId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61862',
-      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      requesteeId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61862',
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
     }),
   ]);
 }
@@ -259,14 +277,18 @@ export function givenLike(like?: Partial<Like>) {
       type: ReferenceType.POST,
       state: true,
       referenceId: '1',
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
     },
     like,
   );
   return new Like(data);
 }
 
-export async function givenLikeInstance(likeRepository: LikeRepository, like?: Partial<Like>) {
+export async function givenLikeInstance(
+  likeRepository: LikeRepository,
+  like?: Partial<Like>,
+) {
   return likeRepository.create(givenLike(like));
 }
 
@@ -276,7 +298,8 @@ export function givenNotification(notification?: Partial<Notification>) {
       type: NotificationType.FRIEND_REQUEST,
       read: false,
       message: 'sent you friend request',
-      referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      referenceId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
     },
@@ -301,7 +324,8 @@ export async function givenMultipleNotificationInstances(
       type: NotificationType.FRIEND_REQUEST,
       read: false,
       message: 'sent you friend request',
-      referenceId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
+      referenceId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866',
       to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
     }),
@@ -319,7 +343,10 @@ export function givenTag(tag?: Partial<Tag>) {
   return new Tag(data);
 }
 
-export async function givenTagInstance(tagRepository: TagRepository, tag?: Partial<Tag>) {
+export async function givenTagInstance(
+  tagRepository: TagRepository,
+  tag?: Partial<Tag>,
+) {
   return tagRepository.create(givenTag(tag));
 }
 
@@ -357,7 +384,8 @@ export async function givenTransactionInstance(
 export function givenUserCurrency(userCurrency?: Partial<UserCurrency>) {
   const data = Object.assign(
     {
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
       currencyId: 'AUSD',
     },
     userCurrency,
@@ -372,12 +400,15 @@ export async function givenUserCurrencyInstance(
   return userCurrencyRepository.create(givenUserCurrency(userCurrency));
 }
 
-export function givenUserSocialMedia(userSocialMedia?: Partial<UserSocialMedia>) {
+export function givenUserSocialMedia(
+  userSocialMedia?: Partial<UserSocialMedia>,
+) {
   const data = Object.assign(
     {
       verified: true,
       platform: PlatformType.TWITTER,
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
       peopleId: '1',
     },
     userSocialMedia,
@@ -389,14 +420,17 @@ export async function givenUserSocialMediaInstance(
   userSocialMediaRepository: UserSocialMediaRepository,
   userSocialMedia?: Partial<UserSocialMedia>,
 ) {
-  return userSocialMediaRepository.create(givenUserSocialMedia(userSocialMedia));
+  return userSocialMediaRepository.create(
+    givenUserSocialMedia(userSocialMedia),
+  );
 }
 
 export function givenPlatformPost(platformPost?: Partial<PlatformPost>) {
   const data = Object.assign(
     {
       url: 'https://www.reddit.com/r/ProgrammerHumor/comments/p7qrle/when_your_boss_has_no_clue_what_you_do/',
-      importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
+      importer:
+        '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
       tags: [],
     },
     platformPost,
@@ -404,10 +438,13 @@ export function givenPlatformPost(platformPost?: Partial<PlatformPost>) {
   return new PlatformPost(data);
 }
 
-export function givenUserVerification(userVerification?: Partial<UserVerification>) {
+export function givenUserVerification(
+  userVerification?: Partial<UserVerification>,
+) {
   const data = Object.assign(
     {
-      publicKey: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+      publicKey:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
       platform: PlatformType.REDDIT,
       username: 'NetworkMyriad',
     },
@@ -421,7 +458,8 @@ export function givenActivityLog(activityLog?: Partial<ActivityLog>) {
     {
       type: ActivityLogType.USERNAME,
       message: 'You updated your username',
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
     },
     activityLog,
   );
@@ -443,7 +481,8 @@ export async function givenMultipleActivityLogInstances(
     givenActivityLogInstance(activityLogRepository, {
       type: ActivityLogType.PROFILE,
       message: 'You updated your profile',
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
     }),
   ]);
 }
@@ -465,7 +504,8 @@ export function givenExperience(experience?: Partial<Experience>) {
         },
       ],
       description: 'best projects in cryptoverse',
-      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+      createdBy:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
     },
     experience,
   );
@@ -479,7 +519,9 @@ export function givenExperienceInstance(
   return experienceRepository.create(givenExperience(experience));
 }
 
-export async function givenMultipleExperienceInstances(experienceRepository: ExperienceRepository) {
+export async function givenMultipleExperienceInstances(
+  experienceRepository: ExperienceRepository,
+) {
   return Promise.all([
     givenExperienceInstance(experienceRepository),
     givenExperienceInstance(experienceRepository, {
@@ -497,7 +539,8 @@ export async function givenMultipleExperienceInstances(experienceRepository: Exp
         }),
       ],
       description: 'best projects in cryptoverse',
-      createdBy: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+      createdBy:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
     }),
   ]);
 }
@@ -507,7 +550,8 @@ export function givenUserExperience(userExperience?: Partial<UserExperience>) {
     {
       subscribed: false,
       experienceId: '1',
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
     },
     userExperience,
   );
@@ -529,7 +573,8 @@ export async function givenMultipleUserExperienceInstances(
     givenUserExperienceInstance(userExperienceRepository, {
       subscribed: true,
       experienceId: '2',
-      userId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+      userId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
     }),
   ]);
 }

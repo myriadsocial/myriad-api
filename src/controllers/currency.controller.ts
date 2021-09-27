@@ -1,7 +1,18 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {del, get, getModelSchemaRef, param, post, requestBody, response} from '@loopback/rest';
-import {PaginationInterceptor, ValidateCurrencyInterceptor} from '../interceptors';
+import {
+  del,
+  get,
+  getModelSchemaRef,
+  param,
+  post,
+  requestBody,
+  response,
+} from '@loopback/rest';
+import {
+  PaginationInterceptor,
+  ValidateCurrencyInterceptor,
+} from '../interceptors';
 import {Currency} from '../models';
 import {CurrencyRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';

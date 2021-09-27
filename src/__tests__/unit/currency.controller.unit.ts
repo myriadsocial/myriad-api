@@ -33,7 +33,9 @@ describe('CurrencyController', () => {
     it('returns a currency if it exists', async () => {
       const findById = currencyRepository.stubs.findById;
       findById.resolves(aCurrencyWithId);
-      expect(await controller.findById(aCurrencyWithId.id as string)).to.eql(aCurrencyWithId);
+      expect(await controller.findById(aCurrencyWithId.id as string)).to.eql(
+        aCurrencyWithId,
+      );
       sinon.assert.calledWith(findById, aCurrencyWithId.id);
     });
   });
