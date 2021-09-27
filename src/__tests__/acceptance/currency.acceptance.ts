@@ -10,6 +10,7 @@ import {
   givenMultipleCurrencyInstances,
   setupApplication,
 } from '../helpers';
+import types from '@acala-network/type-definitions/json/typesBundle.json';
 
 describe('CurrencyApplication', () => {
   let app: MyriadApiApplication;
@@ -31,10 +32,7 @@ describe('CurrencyApplication', () => {
 
   it('creates a currency', async function () {
     const currency = givenCurrency();
-    const response = await client
-      .post('/currencies')
-      .send(currency)
-      .expect(200);
+    const response = await client.post('/currencies').send(currency).expect(200);
     expect(response.body).to.containDeep(currency);
     const result = await currencyRepository.findById(response.body.id);
     expect(result).to.containDeep(currency);
@@ -46,27 +44,9 @@ describe('CurrencyApplication', () => {
     await client.post('/currencies').send(currency).expect(422);
   });
 
-  it('rejects requests to create a currency with no name', async () => {
-    const currency: Partial<Currency> = givenCurrency();
-    delete currency.name;
-    await client.post('/currencies').send(currency).expect(422);
-  });
-
   it('rejects requests to create a currency with no image', async () => {
     const currency: Partial<Currency> = givenCurrency();
     delete currency.image;
-    await client.post('/currencies').send(currency).expect(422);
-  });
-
-  it('rejects requests to create a currency with no decimal', async () => {
-    const currency: Partial<Currency> = givenCurrency();
-    delete currency.decimal;
-    await client.post('/currencies').send(currency).expect(422);
-  });
-
-  it('rejects requests to create a currency with no addressType', async () => {
-    const currency: Partial<Currency> = givenCurrency();
-    delete currency.addressType;
     await client.post('/currencies').send(currency).expect(422);
   });
 
@@ -95,13 +75,10 @@ describe('CurrencyApplication', () => {
     });
 
     it('deletes the currency', async () => {
-      await client
-        .del(`/currencies/${persistedCurrency.id}`)
-        .send()
-        .expect(204);
-      await expect(
-        currencyRepository.findById(persistedCurrency.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
+      await client.del(`/currencies/${persistedCurrency.id}`).send().expect(204);
+      await expect(currencyRepository.findById(persistedCurrency.id)).to.be.rejectedWith(
+        EntityNotFoundError,
+      );
     });
 
     it('returns 404 when deleting a currency that does not exist', async () => {
@@ -113,9 +90,7 @@ describe('CurrencyApplication', () => {
     let persistedCurrencies: Currency[];
 
     beforeEach(async () => {
-      persistedCurrencies = await givenMultipleCurrencyInstances(
-        currencyRepository,
-      );
+      persistedCurrencies = await givenMultipleCurrencyInstances(currencyRepository);
     });
 
     it('finds all currencies', async () => {
@@ -124,20 +99,16 @@ describe('CurrencyApplication', () => {
     });
 
     it('queries currencies with a filter', async () => {
-      const currencyInProgress = await givenCurrencyInstance(
-        currencyRepository,
-        {
-          id: 'DOT',
-          name: 'polkadot',
-          decimal: 10,
-          image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
-          addressType: 42,
-          native: false,
-          rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
-        },
-      );
+      const currencyInProgress = await givenCurrencyInstance(currencyRepository, {
+        id: 'DOT',
+        decimal: 10,
+        image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
+        native: false,
+        rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
+        types: types,
+      });
 
-      const filter = 'filter=' + JSON.stringify({where: {name: 'polkadot'}});
+      const filter = 'filter=' + JSON.stringify({where: {id: 'DOT'}});
 
       await client
         .get('/currencies')
@@ -156,10 +127,8 @@ describe('CurrencyApplication', () => {
     it('exploded filter conditions work', async () => {
       await givenCurrencyInstance(currencyRepository, {
         id: 'MYRIA',
-        name: 'myriad',
         decimal: 12,
         image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
-        addressType: 42,
         native: false,
         rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
       });

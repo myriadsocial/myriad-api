@@ -33,9 +33,7 @@ describe('CurrencyController', () => {
     it('returns a currency if it exists', async () => {
       const findById = currencyRepository.stubs.findById;
       findById.resolves(aCurrencyWithId);
-      expect(await controller.findById(aCurrencyWithId.id as string)).to.eql(
-        aCurrencyWithId,
-      );
+      expect(await controller.findById(aCurrencyWithId.id as string)).to.eql(aCurrencyWithId);
       sinon.assert.calledWith(findById, aCurrencyWithId.id);
     });
   });
@@ -85,10 +83,8 @@ describe('CurrencyController', () => {
       aCurrencyWithId,
       givenCurrency({
         id: 'ACA',
-        name: 'aca',
         decimal: 13,
         image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
-        addressType: 42,
         native: true,
         rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
       }),
