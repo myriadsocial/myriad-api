@@ -12,6 +12,7 @@ import {
 } from '../helpers';
 import types from '@acala-network/type-definitions/json/typesBundle.json';
 
+/* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('CurrencyApplication', () => {
   let app: MyriadApiApplication;
   let client: Client;
@@ -31,6 +32,7 @@ describe('CurrencyApplication', () => {
   });
 
   it('creates a currency', async function () {
+    this.timeout(5000);
     const currency = givenCurrency();
     const response = await client.post('/currencies').send(currency).expect(200);
     expect(response.body).to.containDeep(currency);
