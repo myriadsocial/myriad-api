@@ -171,9 +171,7 @@ export class MigrationScript100 implements MigrationScript {
     try {
       const acalaTokens = ['ACA', 'AUSD', 'DOT'];
 
-      for (let i = 0; i < acalaTokens.length; i++) {
-        const token = acalaTokens[i];
-
+      for (const token of acalaTokens) {
         try {
           await this.currencyRepository.updateById(token, {
             types: acala[0].types,
