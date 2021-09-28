@@ -39,7 +39,7 @@ export class MigrationScript000 implements MigrationScript {
 
   async up(): Promise<void> {
     await this.createUsers(usersSeed as User[]);
-    await this.createCurrencies(currenciesSeed as Currency[]);
+    await this.createCurrencies(currenciesSeed as unknown as Currency[]);
     await this.createPeople(peopleSeed as People[]);
     await this.createPost(postsSeed as ExtendedPost[]);
   }
@@ -75,8 +75,7 @@ export class MigrationScript000 implements MigrationScript {
       {
         id: DefaultCurrencyType.MYRIA,
         decimal: 12,
-        image:
-          'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
+        image: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
         rpcURL: config.MYRIAD_WS_RPC,
         native: true,
         createdAt: new Date().toString(),
@@ -97,9 +96,9 @@ export class MigrationScript000 implements MigrationScript {
     const filterPeople = (
       await Promise.all(
         people.map(async person => {
-          const collection = (
-            this.peopleRepository.dataSource.connector as any
-          ).collection(People.modelName);
+          const collection = (this.peopleRepository.dataSource.connector as any).collection(
+            People.modelName,
+          );
 
           const foundPeople = await collection
             .aggregate([
@@ -121,9 +120,7 @@ export class MigrationScript000 implements MigrationScript {
     ).filter(person => person !== null);
 
     if (filterPeople.length > 0) {
-      const newPeople = await this.peopleRepository.createAll(
-        filterPeople as People[],
-      );
+      const newPeople = await this.peopleRepository.createAll(filterPeople as People[]);
 
       await Promise.all(
         newPeople.map(person => {
@@ -144,21 +141,17 @@ export class MigrationScript000 implements MigrationScript {
     const newPosts = (
       await Promise.all(
         posts.map(async post => {
-          const postCollection = (
-            this.postRepository.dataSource.connector as any
-          ).collection(Post.modelName);
+          const postCollection = (this.postRepository.dataSource.connector as any).collection(
+            Post.modelName,
+          );
 
-          const foundPost = await postCollection.aggregate([
-            {$match: {textId: post.originPostId}},
-          ]);
+          const foundPost = await postCollection.aggregate([{$match: {textId: post.originPostId}}]);
 
           if (foundPost.length > 0) return null;
 
           const people = await this.peopleRepository.findOne({
             where: {
-              originUserId: post.platformUser
-                ? post.platformUser.originUserId
-                : '',
+              originUserId: post.platformUser ? post.platformUser.originUserId : '',
             },
           });
 
@@ -219,9 +212,7 @@ export class MigrationScript000 implements MigrationScript {
         } else {
           await this.tagRepository.updateById(foundTag.id, {
             updatedAt: new Date().toString(),
-            count: dateUtils.isToday(foundTag.updatedAt)
-              ? 1
-              : foundTag.count + 1,
+            count: dateUtils.isToday(foundTag.updatedAt) ? 1 : foundTag.count + 1,
           });
         }
       }
