@@ -42,7 +42,6 @@
     "start:docker": "node ."
   },
   "dependencies": {
-    "@acala-network/api": "^1.0.1",
     "@loopback/authentication": "^7.3.1",
     "@loopback/authentication-jwt": "^0.9.1",
     "@loopback/boot": "^3.4.1",
