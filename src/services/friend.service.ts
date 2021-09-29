@@ -52,12 +52,13 @@ export class FriendService {
 
     if (friend) {
       switch (friend.status) {
-        case FriendStatusType.APPROVED:
+        case FriendStatusType.APPROVED: {
           throw new HttpErrors.UnprocessableEntity(
             'You already friend with this user',
           );
+        }
 
-        case FriendStatusType.PENDING:
+        case FriendStatusType.PENDING: {
           if (requestorId === friend.requestorId)
             throw new HttpErrors.UnprocessableEntity(
               "Please wait for your friend's approval!",
@@ -66,6 +67,13 @@ export class FriendService {
           throw new HttpErrors.UnprocessableEntity(
             'Your friend waited for your approval!',
           );
+        }
+
+        case FriendStatusType.BLOCKED: {
+          throw new HttpErrors.UnprocessableEntity(
+            'You cannot added this friend!',
+          );
+        }
       }
     }
   }
