@@ -8,7 +8,7 @@ import {
 import {MongoDataSource} from '../datasources';
 import {
   Comment,
-  Like,
+  Vote,
   People,
   Post,
   PostRelations,
@@ -16,7 +16,7 @@ import {
   User,
 } from '../models';
 import {CommentRepository} from './comment.repository';
-import {LikeRepository} from './like.repository';
+import {VoteRepository} from './vote.repository';
 import {PeopleRepository} from './people.repository';
 import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
@@ -35,9 +35,9 @@ export class PostRepository extends DefaultCrudRepository<
     typeof Post.prototype.id
   >;
 
-  public readonly likes: HasManyRepositoryFactory<
-    Like,
-    typeof Like.prototype.id
+  public readonly votes: HasManyRepositoryFactory<
+    Vote,
+    typeof Vote.prototype.id
   >;
 
   public readonly transactions: HasManyRepositoryFactory<
@@ -55,8 +55,8 @@ export class PostRepository extends DefaultCrudRepository<
     protected commentRepositoryGetter: Getter<CommentRepository>,
     @repository.getter('TransactionRepository')
     protected transactionRepositoryGetter: Getter<TransactionRepository>,
-    @repository.getter('LikeRepository')
-    protected likeRepositoryGetter: Getter<LikeRepository>,
+    @repository.getter('VoteRepository')
+    protected voteRepositoryGetter: Getter<VoteRepository>,
   ) {
     super(Post, dataSource);
     this.transactions = this.createHasManyRepositoryFactoryFor(
@@ -79,10 +79,10 @@ export class PostRepository extends DefaultCrudRepository<
       commentRepositoryGetter,
     );
     this.registerInclusionResolver('comments', this.comments.inclusionResolver);
-    this.likes = this.createHasManyRepositoryFactoryFor(
-      'likes',
-      likeRepositoryGetter,
+    this.votes = this.createHasManyRepositoryFactoryFor(
+      'votes',
+      voteRepositoryGetter,
     );
-    this.registerInclusionResolver('likes', this.likes.inclusionResolver);
+    this.registerInclusionResolver('votes', this.votes.inclusionResolver);
   }
 }

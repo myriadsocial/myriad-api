@@ -5,7 +5,7 @@ import {
   CurrencyRepository,
   ExperienceRepository,
   FriendRepository,
-  LikeRepository,
+  VoteRepository,
   NotificationRepository,
   PeopleRepository,
   PostRepository,
@@ -51,7 +51,7 @@ export async function givenRepositories(testdb: any) {
     async () => userRepository,
     async () => commentRepository,
     async () => transactionRepository,
-    async () => likeRepository,
+    async () => voteRepository,
   );
   const userCurrencyRepository: UserCurrencyRepository =
     new UserCurrencyRepository(testdb, async () => currencyRepository);
@@ -76,7 +76,7 @@ export async function givenRepositories(testdb: any) {
       async () => userRepository,
       async () => currencyRepository,
     );
-  const likeRepository: LikeRepository = new LikeRepository(
+  const voteRepository: VoteRepository = new VoteRepository(
     testdb,
     async () => postRepository,
     async () => userRepository,
@@ -100,7 +100,7 @@ export async function givenRepositories(testdb: any) {
     postRepository,
     commentRepository,
     transactionRepository,
-    likeRepository,
+    voteRepository,
     notificationRepository,
     activityLogRepository,
     commentLinkRepository,
@@ -121,6 +121,7 @@ export async function givenEmptyDatabase(testdb: any) {
     peopleRepository,
     activityLogRepository,
     commentLinkRepository,
+    voteRepository,
   } = await givenRepositories(testdb);
 
   await peopleRepository.deleteAll();
@@ -135,4 +136,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await userSocialMediaRepository.deleteAll();
   await activityLogRepository.deleteAll();
   await commentLinkRepository.deleteAll();
+  await voteRepository.deleteAll();
 }

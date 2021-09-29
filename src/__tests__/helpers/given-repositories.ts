@@ -6,7 +6,7 @@ import {
   CurrencyRepository,
   ExperienceRepository,
   FriendRepository,
-  LikeRepository,
+  VoteRepository,
   NotificationRepository,
   PeopleRepository,
   PostRepository,
@@ -42,8 +42,8 @@ export async function givenPostRepository(app: MyriadApiApplication) {
   return app.getRepository(PostRepository);
 }
 
-export async function givenLikeRepository(app: MyriadApiApplication) {
-  return app.getRepository(LikeRepository);
+export async function givenVoteRepository(app: MyriadApiApplication) {
+  return app.getRepository(VoteRepository);
 }
 
 export async function givenNotificationRepository(app: MyriadApiApplication) {

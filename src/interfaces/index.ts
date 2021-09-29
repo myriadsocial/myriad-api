@@ -1,6 +1,5 @@
 export * from './balance.interace';
 export * from './extended-people.interface';
-export * from './like-dislike-metric.interface';
 export * from './meta-pagination.interface';
 export * from './metric.interface';
 export * from './new-auth-request.interface';

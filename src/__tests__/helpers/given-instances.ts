@@ -12,7 +12,6 @@ import {
   Currency,
   Experience,
   Friend,
-  Like,
   Notification,
   People,
   Post,
@@ -23,6 +22,7 @@ import {
   UserExperience,
   UserSocialMedia,
   UserVerification,
+  Vote,
 } from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
@@ -31,7 +31,6 @@ import {
   CurrencyRepository,
   ExperienceRepository,
   FriendRepository,
-  LikeRepository,
   NotificationRepository,
   PeopleRepository,
   PostRepository,
@@ -41,6 +40,7 @@ import {
   UserExperienceRepository,
   UserRepository,
   UserSocialMediaRepository,
+  VoteRepository,
 } from '../../repositories';
 import acala from '../../data-seed/currencies.json';
 
@@ -271,7 +271,7 @@ export async function givenMultipleFriendInstances(
   ]);
 }
 
-export function givenLike(like?: Partial<Like>) {
+export function givenVote(vote?: Partial<Vote>) {
   const data = Object.assign(
     {
       type: ReferenceType.POST,
@@ -280,16 +280,16 @@ export function givenLike(like?: Partial<Like>) {
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
     },
-    like,
+    vote,
   );
-  return new Like(data);
+  return new Vote(data);
 }
 
-export async function givenLikeInstance(
-  likeRepository: LikeRepository,
-  like?: Partial<Like>,
+export async function givenVoteInstance(
+  voteRepository: VoteRepository,
+  vote?: Partial<Vote>,
 ) {
-  return likeRepository.create(givenLike(like));
+  return voteRepository.create(givenVote(vote));
 }
 
 export function givenNotification(notification?: Partial<Notification>) {

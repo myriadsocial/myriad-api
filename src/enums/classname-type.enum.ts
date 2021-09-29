@@ -18,7 +18,7 @@ export enum ControllerType {
 export enum MethodType {
   FIND = 'find',
   CREATE = 'create',
-  CREATELIKE = 'createLike',
+  CREATEVOTE = 'createVote',
   UPDATEBYID = 'updateById',
   UPDATEEXPERIENCE = 'updateExperience',
   TIMELINE = 'getTimeline',

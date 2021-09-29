@@ -7,7 +7,7 @@ import {
   CurrencyRepository,
   ExperienceRepository,
   FriendRepository,
-  LikeRepository,
+  VoteRepository,
   NotificationRepository,
   PeopleRepository,
   PostRepository,
@@ -20,8 +20,8 @@ import {
 
 export class MetricService {
   constructor(
-    @repository(LikeRepository)
-    protected likeRepository: LikeRepository,
+    @repository(VoteRepository)
+    protected voteRepository: VoteRepository,
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
     @repository(PostRepository)
@@ -55,20 +55,20 @@ export class MetricService {
     referenceId: string,
     section?: SectionType,
   ): Promise<Metric> {
-    const like = await this.likeRepository.count({
+    const upvote = await this.voteRepository.count({
       type,
       referenceId,
       state: true,
     });
-    const dislike = await this.likeRepository.count({
+    const downvote = await this.voteRepository.count({
       type,
       referenceId,
       state: false,
     });
 
     const metric: Metric = {
-      likes: like.count,
-      dislikes: dislike.count,
+      upvotes: upvote.count,
+      downvotes: downvote.count,
     };
 
     if (!section) return metric;

@@ -6,7 +6,7 @@ import {Post, User} from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
   CommentRepository,
-  LikeRepository,
+  VoteRepository,
   PeopleRepository,
   PostRepository,
   TagRepository,
@@ -16,8 +16,8 @@ import {
 import {
   givenCommentInstance,
   givenCommentRepository,
-  givenLikeInstance,
-  givenLikeRepository,
+  givenVoteInstance,
+  givenVoteRepository,
   givenMyriadPost,
   givenMyriadPostInstance,
   givenPeopleInstance,
@@ -42,7 +42,7 @@ describe('PostApplication', function () {
   let postRepository: PostRepository;
   let userRepository: UserRepository;
   let tagRepository: TagRepository;
-  let likeRepository: LikeRepository;
+  let voteRepository: VoteRepository;
   let peopleRepository: PeopleRepository;
   let transactionRepository: TransactionRepository;
   let commentRepository: CommentRepository;
@@ -58,7 +58,7 @@ describe('PostApplication', function () {
     postRepository = await givenPostRepository(app);
     userRepository = await givenUserRepository(app);
     tagRepository = await givenTagRepository(app);
-    likeRepository = await givenLikeRepository(app);
+    voteRepository = await givenVoteRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     transactionRepository = await givenTransactionRepository(app);
     commentRepository = await givenCommentRepository(app);
@@ -71,7 +71,7 @@ describe('PostApplication', function () {
   after(async () => {
     await userRepository.deleteAll();
     await tagRepository.deleteAll();
-    await likeRepository.deleteAll();
+    await voteRepository.deleteAll();
     await peopleRepository.deleteAll();
     await transactionRepository.deleteAll();
     await commentRepository.deleteAll();
@@ -219,7 +219,7 @@ describe('PostApplication', function () {
     });
   });
 
-  it('includes user, people, comments, likes, and transactions in query result', async () => {
+  it('includes user, people, comments, votes, and transactions in query result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
     const post = await givenPostInstance(postRepository, {
       peopleId: people.id,
@@ -229,7 +229,7 @@ describe('PostApplication', function () {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
-    const like = await givenLikeInstance(likeRepository, {
+    const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
     });
     const comment = await givenCommentInstance(commentRepository, {
@@ -241,7 +241,7 @@ describe('PostApplication', function () {
 
     const response = await client.get('/posts').query({
       filter: {
-        include: ['user', 'people', 'comments', 'likes', 'transactions'],
+        include: ['user', 'people', 'comments', 'votes', 'transactions'],
       },
     });
 
@@ -251,7 +251,7 @@ describe('PostApplication', function () {
       user: toJSON(user),
       people: toJSON(people),
       comments: [toJSON(comment)],
-      likes: [toJSON(like)],
+      votes: [toJSON(vote)],
       transactions: [toJSON(transaction)],
     });
   });
