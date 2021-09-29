@@ -12,7 +12,7 @@ import {HttpErrors} from '@loopback/rest';
 import {ReferenceType, MethodType, SectionType} from '../enums';
 import {
   CommentRepository,
-  LikeRepository,
+  VoteRepository,
   PostRepository,
 } from '../repositories';
 import {MetricService} from '../services';
@@ -21,15 +21,15 @@ import {MetricService} from '../services';
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
  */
-@injectable({tags: {key: ValidateLikeInterceptor.BINDING_KEY}})
-export class ValidateLikeInterceptor implements Provider<Interceptor> {
-  static readonly BINDING_KEY = `interceptors.${ValidateLikeInterceptor.name}`;
+@injectable({tags: {key: ValidateVoteInterceptor.BINDING_KEY}})
+export class ValidateVoteInterceptor implements Provider<Interceptor> {
+  static readonly BINDING_KEY = `interceptors.${ValidateVoteInterceptor.name}`;
 
   constructor(
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
-    @repository(LikeRepository)
-    protected likeRepository: LikeRepository,
+    @repository(VoteRepository)
+    protected voteRepository: VoteRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
     @service(MetricService)
@@ -64,7 +64,7 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
     const result = await next();
     await this.afterCreation(type, referenceId);
 
-    if (methodName === MethodType.CREATELIKE) {
+    if (methodName === MethodType.CREATEVOTE) {
       return Object.assign(result.value, {
         id: result.value._id,
         _id: undefined,
@@ -79,11 +79,11 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
   ): Promise<{referenceId: string; type: ReferenceType}> {
     if (methodName === MethodType.DELETEBYID) {
-      const like = await this.likeRepository.findById(invocationCtx.args[0]);
+      const vote = await this.voteRepository.findById(invocationCtx.args[0]);
 
       return {
-        referenceId: like.referenceId,
-        type: like.type,
+        referenceId: vote.referenceId,
+        type: vote.type,
       };
     }
 
@@ -92,7 +92,7 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
     if (type === ReferenceType.POST) invocationCtx.args[0].section = undefined;
     if (type === ReferenceType.COMMENT && !section)
       throw new HttpErrors.UnprocessableEntity(
-        'Section cannot empty when you like/dislike comment',
+        'Section cannot empty when you upvote/downvote comment',
       );
 
     if (state === false) {
@@ -103,7 +103,7 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
           });
           if (postComment) break;
           throw new HttpErrors.UnprocessableEntity(
-            'Please comment first in debate sections, before you dislike this post',
+            'Please comment first in debate sections, before you downvote this post',
           );
         }
 
@@ -113,7 +113,7 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
           });
           if (comment) break;
           throw new HttpErrors.UnprocessableEntity(
-            `Please comment first in ${section} sections, before you dislike this comment`,
+            `Please comment first in ${section} sections, before you downvote this comment`,
           );
         }
       }
@@ -130,7 +130,11 @@ export class ValidateLikeInterceptor implements Provider<Interceptor> {
 
     switch (type) {
       case ReferenceType.POST: {
-        const post = await this.postRepository.findById(referenceId);
+        const post = await this.postRepository.findOne({
+          where: {id: referenceId},
+        });
+        if (!post) return;
+
         return this.postRepository.updateById(referenceId, {
           metric: Object.assign(post.metric, metric),
         });

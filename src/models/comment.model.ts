@@ -69,8 +69,8 @@ export class Comment extends Entity {
   @property({
     type: 'object',
     default: {
-      likes: 0,
-      dislikes: 0,
+      upvotes: 0,
+      downvotes: 0,
     },
   })
   metric: Metric;

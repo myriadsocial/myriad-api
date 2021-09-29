@@ -6,7 +6,7 @@ export * from './comment.repository';
 export * from './currency.repository';
 export * from './experience.repository';
 export * from './friend.repository';
-export * from './like.repository';
+export * from './vote.repository';
 export * from './migrate.repository';
 export * from './notification.repository';
 export * from './people.repository';

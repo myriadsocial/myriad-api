@@ -7,7 +7,7 @@ export * from './currency.model';
 export * from './embedded-url.model';
 export * from './experience.model';
 export * from './friend.model';
-export * from './like.model';
+export * from './vote.model';
 export * from './migrate.model';
 export * from './notification.model';
 export * from './people.model';

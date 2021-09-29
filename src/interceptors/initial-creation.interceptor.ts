@@ -178,8 +178,14 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           result.referenceId,
           result.section,
         );
+        const post = await this.postRepository.findOne({
+          where: {id: result.postId},
+        });
+
+        if (!post) return;
+
         await this.postRepository.updateById(result.postId, {
-          metric: metric,
+          metric: Object.assign(post.metric, metric),
         });
 
         return;

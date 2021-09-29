@@ -4,26 +4,26 @@ import {MyriadApiApplication} from '../../application';
 import {SectionType} from '../../enums';
 import {
   CommentRepository,
-  LikeRepository,
+  VoteRepository,
   PostRepository,
 } from '../../repositories';
 import {
   givenComment,
   givenCommentRepository,
-  givenLike,
-  givenLikeInstance,
-  givenLikeRepository,
+  givenVoteRepository,
   givenPostInstance,
   givenPostRepository,
   setupApplication,
+  givenVote,
+  givenVoteInstance,
 } from '../helpers';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
-describe('LikeApplication', function () {
+describe('VoteApplication', function () {
   this.timeout(5000);
   let app: MyriadApiApplication;
   let client: Client;
-  let likeRepository: LikeRepository;
+  let voteRepository: VoteRepository;
   let postRepository: PostRepository;
   let commentRepository: CommentRepository;
 
@@ -34,46 +34,46 @@ describe('LikeApplication', function () {
   after(() => app.stop());
 
   before(async () => {
-    likeRepository = await givenLikeRepository(app);
+    voteRepository = await givenVoteRepository(app);
     postRepository = await givenPostRepository(app);
     commentRepository = await givenCommentRepository(app);
   });
 
   beforeEach(async () => {
-    await likeRepository.deleteAll();
+    await voteRepository.deleteAll();
     await postRepository.deleteAll();
     await commentRepository.deleteAll();
   });
 
-  it('creates a like if not exists', async function () {
+  it('creates an upvote if not exists', async function () {
     const postResponse = await givenPostInstance(
       postRepository,
       {
         metric: {
           discussions: 0,
-          likes: 0,
-          dislikes: 0,
+          upvotes: 0,
+          downvotes: 0,
           debates: 0,
         },
       },
       true,
     );
     const post = postResponse.ops[0];
-    const like = givenLike({referenceId: post._id.toString()});
-    const response = await client.post('/likes').send(like).expect(200);
-    expect(response.body).to.containDeep(like);
-    const result = await likeRepository.findById(response.body.id);
-    expect(result).to.containDeep(like);
+    const upvote = givenVote({referenceId: post._id.toString()});
+    const response = await client.post('/votes').send(upvote).expect(200);
+    expect(response.body).to.containDeep(upvote);
+    const result = await voteRepository.findById(response.body.id);
+    expect(result).to.containDeep(upvote);
   });
 
-  it('can dislike post if user already comments to the post in the debate section', async function () {
+  it('can downvotes post if user already comments to the post in the debate section', async function () {
     const postResponse = await givenPostInstance(
       postRepository,
       {
         metric: {
           discussions: 0,
-          likes: 0,
-          dislikes: 0,
+          upvotes: 0,
+          downvotes: 0,
           debates: 0,
         },
       },
@@ -88,27 +88,27 @@ describe('LikeApplication', function () {
       section: SectionType.DEBATE,
     });
     await client.post('/comments').send(comment).expect(200);
-    const like = givenLike({
+    const downvote = givenVote({
       referenceId: post._id.toString(),
       state: false,
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
     });
-    const response = await client.post('/likes').send(like).expect(200);
-    expect(response.body).to.containDeep(like);
-    const result = await likeRepository.findById(response.body.id);
-    expect(result).to.containDeep(like);
+    const response = await client.post('/votes').send(downvote).expect(200);
+    expect(response.body).to.containDeep(downvote);
+    const result = await voteRepository.findById(response.body.id);
+    expect(result).to.containDeep(downvote);
   });
 
-  it('adds by 1 post metric likes', async function () {
+  it('adds by 1 upvotes', async function () {
     const postResponse = (
       await givenPostInstance(
         postRepository,
         {
           metric: {
             discussions: 0,
-            likes: 0,
-            dislikes: 0,
+            upvotes: 0,
+            downvotes: 0,
             debates: 0,
           },
         },
@@ -120,23 +120,23 @@ describe('LikeApplication', function () {
       _id: undefined,
     });
 
-    const like = givenLike({referenceId: post.id});
-    const response = await client.post('/likes').send(like);
+    const upvote = givenVote({referenceId: post.id});
+    const response = await client.post('/votes').send(upvote);
 
     const resultPost = await postRepository.findById(response.body.referenceId);
-    post.metric.likes = post.metric.likes + 1;
+    post.metric.upvotes = post.metric.upvotes + 1;
     expect(resultPost).to.containDeep(post);
   });
 
-  it('rejects to dislike the post if user has not comment in debate section', async () => {
+  it('rejects to downvote the post if user has not comment in debate section', async () => {
     const postResponse = (
       await givenPostInstance(
         postRepository,
         {
           metric: {
             discussions: 0,
-            likes: 0,
-            dislikes: 0,
+            upvotes: 0,
+            downvotes: 0,
             debates: 0,
           },
         },
@@ -148,35 +148,35 @@ describe('LikeApplication', function () {
       _id: undefined,
     });
 
-    const like = givenLike({referenceId: post.id, state: false});
-    await client.post('/likes').send(like).expect(422);
+    const downvote = givenVote({referenceId: post.id, state: false});
+    await client.post('/votes').send(downvote).expect(422);
   });
 
-  it('deletes the like and post metric likes reduces by 1', async function () {
+  it('deletes the upvotes and post metric upvotes reduces by 1', async function () {
     const postResponse = await givenPostInstance(
       postRepository,
       {
         metric: {
           discussions: 0,
-          likes: 1,
-          dislikes: 0,
+          upvotes: 1,
+          downvotes: 0,
           debates: 0,
         },
       },
       true,
     );
     const post = postResponse.ops[0];
-    const like = await givenLikeInstance(likeRepository, {
+    const vote = await givenVoteInstance(voteRepository, {
       referenceId: post._id.toString(),
     });
 
-    await client.del(`/likes/${like.id}`).send().expect(204);
-    await expect(likeRepository.findById(like.id)).to.be.rejectedWith(
+    await client.del(`/votes/${vote.id}`).send().expect(204);
+    await expect(voteRepository.findById(vote.id)).to.be.rejectedWith(
       EntityNotFoundError,
     );
 
-    const resultPost = await postRepository.findById(like.referenceId);
-    post.metric.likes = post.metric.likes - 1;
-    expect(resultPost.metric.likes).to.equal(post.metric.likes);
+    const resultPost = await postRepository.findById(vote.referenceId);
+    post.metric.upvotes = post.metric.upvotes - 1;
+    expect(resultPost.metric.upvotes).to.equal(post.metric.upvotes);
   });
 });

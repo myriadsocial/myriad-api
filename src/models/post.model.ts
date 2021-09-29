@@ -10,7 +10,7 @@ import {Metric} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
 import {Comment} from './comment.model';
 import {EmbeddedURL} from './embedded-url.model';
-import {Like} from './like.model';
+import {Vote} from './vote.model';
 import {People, PeopleWithRelations} from './people.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
@@ -102,10 +102,11 @@ export class Post extends Entity {
   @property({
     type: 'object',
     default: {
-      likes: 0,
-      dislikes: 0,
+      upvotes: 0,
+      downvotes: 0,
       discussions: 0,
       debates: 0,
+      shares: 0,
     },
   })
   metric: Metric;
@@ -115,6 +116,13 @@ export class Post extends Entity {
     require: false,
   })
   embeddedURL?: EmbeddedURL;
+
+  @property({
+    type: 'boolean',
+    require: false,
+    default: false,
+  })
+  isNSFW: boolean;
 
   @property({
     type: 'date',
@@ -156,8 +164,8 @@ export class Post extends Entity {
   @hasMany(() => Comment, {keyTo: 'referenceId'})
   comments: Comment[];
 
-  @hasMany(() => Like, {keyTo: 'referenceId'})
-  likes: Like[];
+  @hasMany(() => Vote, {keyTo: 'referenceId'})
+  votes: Vote[];
 
   @hasMany(() => Transaction, {keyTo: 'referenceId'})
   transactions: Transaction[];

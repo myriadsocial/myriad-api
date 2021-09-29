@@ -4,7 +4,7 @@ export * from './comment.controller';
 export * from './currency.controller';
 export * from './experience.controller';
 export * from './friend.controller';
-export * from './like.controller';
+export * from './vote.controller';
 export * from './notification.controller';
 export * from './people.controller';
 export * from './post-walletaddress.controller';

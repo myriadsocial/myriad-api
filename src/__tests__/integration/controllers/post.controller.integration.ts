@@ -4,7 +4,7 @@ import {RedditDataSource} from '../../../datasources';
 import {ReferenceType} from '../../../enums';
 import {
   CommentRepository,
-  LikeRepository,
+  VoteRepository,
   PeopleRepository,
   PostRepository,
   TransactionRepository,
@@ -22,7 +22,7 @@ import {UrlUtils} from '../../../utils/url.utils';
 import {
   givenCommentInstance,
   givenEmptyDatabase,
-  givenLikeInstance,
+  givenVoteInstance,
   givenPeopleInstance,
   givenPlatformPost,
   givenPostInstance,
@@ -42,7 +42,7 @@ describe('PostControllerIntegration', () => {
   let peopleRepository: PeopleRepository;
   let userRepository: UserRepository;
   let commentRepository: CommentRepository;
-  let likeRepository: LikeRepository;
+  let voteRepository: VoteRepository;
   let transactionRepository: TransactionRepository;
   let controller: PostController;
 
@@ -52,7 +52,7 @@ describe('PostControllerIntegration', () => {
       postRepository,
       peopleRepository,
       commentRepository,
-      likeRepository,
+      voteRepository,
       transactionRepository,
     } = await givenRepositories(testdb));
   });
@@ -123,19 +123,19 @@ describe('PostControllerIntegration', () => {
     ]);
   });
 
-  it('includes Like in find method result', async () => {
+  it('includes Vote in find method result', async () => {
     const post = await givenPostInstance(postRepository);
-    const like = await givenLikeInstance(likeRepository, {
+    const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
 
-    const response = await controller.getTimeline({include: ['likes']});
+    const response = await controller.getTimeline({include: ['votes']});
 
     expect(response).to.containDeep([
       {
         ...post,
-        likes: [like],
+        votes: [vote],
       },
     ]);
   });
@@ -157,7 +157,7 @@ describe('PostControllerIntegration', () => {
     ]);
   });
 
-  it('includes User, People, Comment, Likes, and Transaction in find method result', async () => {
+  it('includes User, People, Comment, votes, and Transaction in find method result', async () => {
     const user = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
@@ -170,7 +170,7 @@ describe('PostControllerIntegration', () => {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
-    const like = await givenLikeInstance(likeRepository, {
+    const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
@@ -183,7 +183,7 @@ describe('PostControllerIntegration', () => {
     });
 
     const response = await controller.getTimeline({
-      include: ['user', 'people', 'comments', 'likes', 'transactions'],
+      include: ['user', 'people', 'comments', 'votes', 'transactions'],
     });
 
     expect(response).to.containDeep([
@@ -191,7 +191,7 @@ describe('PostControllerIntegration', () => {
         ...post,
         user: user,
         people: people,
-        likes: [like],
+        votes: [vote],
         transactions: [transaction],
         comments: [comment],
       },
@@ -243,18 +243,18 @@ describe('PostControllerIntegration', () => {
     });
   });
 
-  it('includes Like in findById method result', async () => {
+  it('includes Vote in findById method result', async () => {
     const post = await givenPostInstance(postRepository);
-    const like = await givenLikeInstance(likeRepository, {
+    const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
 
-    const response = await controller.findById(post.id, {include: ['likes']});
+    const response = await controller.findById(post.id, {include: ['votes']});
 
     expect(response).to.containDeep({
       ...post,
-      likes: [like],
+      votes: [vote],
     });
   });
 
@@ -275,7 +275,7 @@ describe('PostControllerIntegration', () => {
     });
   });
 
-  it('includes User, People, Comment, Likes, and Transaction in findById method result', async () => {
+  it('includes User, People, Comment, votes, and Transaction in findById method result', async () => {
     const user = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
@@ -288,7 +288,7 @@ describe('PostControllerIntegration', () => {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
-    const like = await givenLikeInstance(likeRepository, {
+    const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
@@ -301,14 +301,14 @@ describe('PostControllerIntegration', () => {
     });
 
     const response = await controller.findById(post.id, {
-      include: ['user', 'people', 'comments', 'likes', 'transactions'],
+      include: ['user', 'people', 'comments', 'votes', 'transactions'],
     });
 
     expect(response).to.containDeep({
       ...post,
       user: user,
       people: people,
-      likes: [like],
+      votes: [vote],
       transactions: [transaction],
       comments: [comment],
     });

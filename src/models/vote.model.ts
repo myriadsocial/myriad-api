@@ -6,14 +6,14 @@ import {User} from './user.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'likes',
+      collection: 'votes',
     },
     jsonSchema: {
       require: ['userId'],
     },
   },
 })
-export class Like extends Entity {
+export class Vote extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -88,13 +88,13 @@ export class Like extends Entity {
   )
   userId: string;
 
-  constructor(data?: Partial<Like>) {
+  constructor(data?: Partial<Vote>) {
     super(data);
   }
 }
 
-export interface LikeRelations {
+export interface VoteRelations {
   // describe navigational properties here
 }
 
-export type LikeWithRelations = Like & LikeRelations;
+export type VoteWithRelations = Vote & VoteRelations;
