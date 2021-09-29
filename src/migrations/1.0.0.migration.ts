@@ -37,6 +37,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   UserTokenRepository,
+  VoteRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import acala from '../data-seed/currencies.json';
@@ -84,6 +85,8 @@ export class MigrationScript100 implements MigrationScript {
     protected tipRepository: TipRepository,
     @repository(DislikeRepository)
     protected dislikeRepository: DislikeRepository,
+    @repository(VoteRepository)
+    protected voteRepository: VoteRepository,
   ) {}
 
   async up(): Promise<void> {
@@ -97,6 +100,7 @@ export class MigrationScript100 implements MigrationScript {
     await this.doMigrateFriends();
     await this.doMigrateUserSocialMedias();
     await this.doMigrateLikes();
+    await this.doMigrateVotes();
 
     await this.dropPublicMetrics();
     await this.dropConversations();
@@ -168,20 +172,16 @@ export class MigrationScript100 implements MigrationScript {
       // ignore
     }
 
-    try {
-      const acalaTokens = ['ACA', 'AUSD', 'DOT'];
+    const acalaTokens = ['ACA', 'AUSD', 'DOT'];
 
-      for (const token of acalaTokens) {
-        try {
-          await this.currencyRepository.updateById(token, {
-            types: acala[0].types,
-          });
-        } catch {
-          // ignore
-        }
+    for (const token of acalaTokens) {
+      try {
+        await this.currencyRepository.updateById(token, {
+          types: acala[0].types,
+        });
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
     }
   }
 
@@ -211,9 +211,11 @@ export class MigrationScript100 implements MigrationScript {
         },
         $set: {
           metric: {
-            likes: 0,
-            dislikes: 0,
-            comments: 0,
+            upvotes: 0,
+            downvotes: 0,
+            discussions: 0,
+            debates: 0,
+            shares: 0,
           },
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
@@ -506,6 +508,26 @@ export class MigrationScript100 implements MigrationScript {
     await this.addDislikesToLikeCollection();
   }
 
+  async doMigrateVotes(): Promise<void> {
+    const collection = (
+      this.likeRepository.dataSource.connector as any
+    ).collection(Like.modelName);
+    const likes = await collection.aggregate().get();
+
+    await Promise.all(
+      likes.map(async (like: any) => {
+        delete like._id;
+        return this.voteRepository.create(like);
+      }),
+    );
+
+    try {
+      await collection.drop();
+    } catch {
+      // ignore
+    }
+  }
+
   async dropPublicMetrics() {
     const collection = (
       this.publicMetricRepository.dataSource.connector as any
@@ -540,10 +562,11 @@ export class MigrationScript100 implements MigrationScript {
         if (!post) return null;
         return this.postRepository.updateById(metric.postId, {
           metric: {
-            likes: metric.liked,
-            dislikes: metric.disliked,
+            upvotes: metric.upvotes,
+            downvotes: metric.downvotes,
             discussions: metric.comment,
             debates: 0,
+            shares: 0,
           },
         });
       }),
@@ -619,7 +642,7 @@ export class MigrationScript100 implements MigrationScript {
       {
         $set: {
           type: ReferenceType.POST,
-          state: false,
+          state: true,
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
         },

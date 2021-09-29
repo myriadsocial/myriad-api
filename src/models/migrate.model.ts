@@ -175,3 +175,25 @@ export class Dislike extends Entity {
 }
 
 export interface DislikeRelations {}
+
+@model({
+  settings: {
+    strictObjectIDCoercion: true,
+    mongodb: {
+      collection: 'likes',
+    },
+  },
+})
+export class Like extends Entity {
+  @property({
+    type: 'string',
+    id: true,
+    generated: true,
+    mongodb: {
+      dataType: 'ObjectId',
+    },
+  })
+  id?: string;
+}
+
+export interface LikeRelations {}

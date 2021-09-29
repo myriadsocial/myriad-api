@@ -8,6 +8,8 @@ import {
   DetailTransactionRelations,
   Dislike,
   DislikeRelations,
+  Like,
+  LikeRelations,
   PublicMetric,
   PublicMetricRelations,
   Tip,
@@ -97,5 +99,15 @@ export class DislikeRepository extends DefaultCrudRepository<
 > {
   constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
     super(Dislike, dataSource);
+  }
+}
+
+export class LikeRepository extends DefaultCrudRepository<
+  Like,
+  typeof Like.prototype.id,
+  LikeRelations
+> {
+  constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
+    super(Like, dataSource);
   }
 }
