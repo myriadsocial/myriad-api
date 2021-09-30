@@ -1,10 +1,4 @@
-import {
-  belongsTo,
-  Entity,
-  hasMany,
-  model,
-  property,
-} from '@loopback/repository';
+import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
 import {PlatformType, VisibilityType} from '../enums';
 import {Metric} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
@@ -61,6 +55,10 @@ export class Post extends Entity {
   @property({
     type: 'string',
     required: false,
+    jsonSchema: {
+      minLength: 1,
+      maxLength: 5000,
+    },
   })
   text?: string;
 
