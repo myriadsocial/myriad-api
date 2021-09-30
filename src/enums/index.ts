@@ -7,3 +7,6 @@ export * from './notification-type.enum';
 export * from './platform-type.enum';
 export * from './timelinefilter-type.enum';
 export * from './visibility-type.enum';
+export * from './report-status-type.enum';
+export * from './report-type.enum';
+export * from './reference-type.enum';
