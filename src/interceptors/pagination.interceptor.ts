@@ -9,7 +9,12 @@ import {
 } from '@loopback/core';
 import {Where} from '@loopback/repository';
 import {HttpErrors, RestBindings} from '@loopback/rest';
-import {ControllerType, MethodType, TimelineType, VisibilityType} from '../enums';
+import {
+  ControllerType,
+  MethodType,
+  TimelineType,
+  VisibilityType,
+} from '../enums';
 import {Post} from '../models';
 import {
   ExperienceService,
@@ -56,7 +61,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
    * @param invocationCtx - Invocation context
    * @param next - A function to invoke next interceptor or the target method
    */
-  async intercept(invocationCtx: InvocationContext, next: () => ValueOrPromise<InvocationResult>) {
+  async intercept(
+    invocationCtx: InvocationContext,
+    next: () => ValueOrPromise<InvocationResult>,
+  ) {
     const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
     const {pageNumber, pageLimit, userId, timelineType} = query;
     const methodName = invocationCtx.methodName as MethodType;
@@ -70,9 +78,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         );
 
       if (timelineType) {
-        if (!userId) throw new HttpErrors.UnprocessableEntity('UserId must be filled');
+        if (!userId)
+          throw new HttpErrors.UnprocessableEntity('UserId must be filled');
 
-        const where = await this.getTimeline(userId as string, timelineType as TimelineType);
+        const where = await this.getTimeline(
+          userId as string,
+          timelineType as TimelineType,
+        );
 
         if (where) filter.where = where;
         else
@@ -86,8 +98,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     let pageIndex = 1;
     let pageSize = 5;
 
-    if (!isNaN(Number(pageNumber)) || Number(pageNumber) > 0) pageIndex = Number(pageNumber);
-    if (!isNaN(Number(pageLimit)) || Number(pageLimit) > 0) pageSize = Number(pageLimit);
+    if (!isNaN(Number(pageNumber)) || Number(pageNumber) > 0)
+      pageIndex = Number(pageNumber);
+    if (!isNaN(Number(pageLimit)) || Number(pageLimit) > 0)
+      pageSize = Number(pageLimit);
 
     invocationCtx.args[0] = Object.assign(filter, {
       limit: pageSize,
@@ -98,7 +112,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const result = await next();
     const {count} = await this.metricService.countData(className, where);
 
-    if (className === ControllerType.NOTIFICATION && methodName === MethodType.FIND) {
+    if (
+      className === ControllerType.NOTIFICATION &&
+      methodName === MethodType.FIND
+    ) {
       const notificationFilter = invocationCtx.args[0];
       const toUser = notificationFilter.where
         ? notificationFilter.where.to
@@ -115,7 +132,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     };
   }
 
-  async getTimeline(userId: string, timelineType: TimelineType): Promise<Where<Post> | undefined> {
+  async getTimeline(
+    userId: string,
+    timelineType: TimelineType,
+  ): Promise<Where<Post> | undefined> {
     switch (timelineType) {
       case TimelineType.EXPERIENCE:
         return this.experienceService.experienceTimeline(userId);
@@ -127,12 +147,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return this.friendService.friendsTimeline(userId);
 
       case TimelineType.ALL: {
-        const approvedFriendIds = await this.friendService.getApprovedFriendIds(userId);
+        const approvedFriendIds = await this.friendService.getApprovedFriendIds(
+          userId,
+        );
         const trendingTopics = await this.tagService.trendingTopics();
 
         const experience = await this.experienceService.getExperience(userId);
         const experienceTopics = experience ? experience.tags : [];
-        const experiencePersonIds = experience ? experience.people.map(e => e.id) : [];
+        const experiencePersonIds = experience
+          ? experience.people.map(e => e.id)
+          : [];
 
         const friends = [...approvedFriendIds, userId];
         const topics = [...trendingTopics, ...experienceTopics];
