@@ -1,10 +1,4 @@
-import {
-  belongsTo,
-  Entity,
-  hasMany,
-  model,
-  property,
-} from '@loopback/repository';
+import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
 import {PlatformType} from '../enums';
 import {Metric} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
@@ -123,6 +117,12 @@ export class Post extends Entity {
     default: false,
   })
   isNSFW: boolean;
+
+  @property({
+    type: 'string',
+    require: false,
+  })
+  NSFWTag: string;
 
   @property({
     type: 'date',
