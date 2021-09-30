@@ -1,5 +1,5 @@
 import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
-import {PlatformType} from '../enums';
+import {PlatformType, VisibilityType} from '../enums';
 import {Metric} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
 import {Comment} from './comment.model';
@@ -123,6 +123,16 @@ export class Post extends Entity {
     require: false,
   })
   NSFWTag: string;
+
+  @property({
+    type: 'string',
+    required: false,
+    default: VisibilityType.PUBLIC,
+    jsonSchema: {
+      enum: Object.values(VisibilityType),
+    },
+  })
+  visibility: VisibilityType;
 
   @property({
     type: 'date',
