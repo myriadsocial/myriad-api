@@ -22,3 +22,4 @@ export * from './user-verification.model';
 export * from './user.model';
 export * from './wallet.model';
 export * from './comment-link.model';
+export * from './mention-user.model';
