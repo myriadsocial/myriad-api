@@ -61,6 +61,10 @@ export class User extends Entity {
   @property({
     type: 'string',
     required: false,
+    jsonSchema: {
+      minLength: 2,
+      maxLength: 160,
+    },
   })
   bio?: string;
 
