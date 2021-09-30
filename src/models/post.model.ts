@@ -8,6 +8,7 @@ import {Vote} from './vote.model';
 import {People, PeopleWithRelations} from './people.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
+import {MentionUser} from './mention-user.model';
 
 @model({
   settings: {
@@ -116,13 +117,13 @@ export class Post extends Entity {
     require: false,
     default: false,
   })
-  isNSFW: boolean;
+  isNSFW?: boolean;
 
   @property({
     type: 'string',
     require: false,
   })
-  NSFWTag: string;
+  NSFWTag?: string;
 
   @property({
     type: 'string',
@@ -132,7 +133,15 @@ export class Post extends Entity {
       enum: Object.values(VisibilityType),
     },
   })
-  visibility: VisibilityType;
+  visibility?: VisibilityType;
+
+  @property({
+    type: 'array',
+    itemType: 'object',
+    required: false,
+    default: [],
+  })
+  mentions: MentionUser[];
 
   @property({
     type: 'date',
