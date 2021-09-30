@@ -1,4 +1,4 @@
 export enum ReportStatusType {
   PENDING = 'pending',
-  DONE = 'done',
+  APPROVED = 'approved',
 }
