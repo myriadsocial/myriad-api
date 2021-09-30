@@ -1,5 +1,5 @@
 import {repository, Where} from '@loopback/repository';
-import {OrderFieldType, OrderType} from '../enums';
+import {OrderFieldType, OrderType, VisibilityType} from '../enums';
 import {Post, Tag} from '../models';
 import {TagRepository} from '../repositories';
 import {DateUtils} from '../utils/date-utils';
@@ -64,17 +64,24 @@ export class TagService {
     const regexTopic = new RegExp(joinTopics, 'i');
 
     return {
-      or: [
+      and: [
         {
-          tags: {
-            inq: trendingTopics,
-          },
+          or: [
+            {
+              tags: {
+                inq: trendingTopics,
+              },
+            },
+            {
+              text: regexTopic,
+            },
+            {
+              title: regexTopic,
+            },
+          ],
         },
         {
-          text: regexTopic,
-        },
-        {
-          title: regexTopic,
+          visibility: VisibilityType.PUBLIC,
         },
       ],
     } as Where<Post>;

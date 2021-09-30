@@ -1,7 +1,7 @@
 import {service} from '@loopback/core';
 import {repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {FriendStatusType} from '../enums';
+import {FriendStatusType, VisibilityType} from '../enums';
 import {Post} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {NotificationService} from './notification.service';
@@ -16,10 +16,7 @@ export class FriendService {
     public notificationService: NotificationService,
   ) {}
 
-  async validateFriendRequest(
-    requesteeId: string,
-    requestorId: string,
-  ): Promise<void> {
+  async validateFriendRequest(requesteeId: string, requestorId: string): Promise<void> {
     if (requesteeId === requestorId) {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself');
     }
@@ -53,26 +50,18 @@ export class FriendService {
     if (friend) {
       switch (friend.status) {
         case FriendStatusType.APPROVED: {
-          throw new HttpErrors.UnprocessableEntity(
-            'You already friend with this user',
-          );
+          throw new HttpErrors.UnprocessableEntity('You already friend with this user');
         }
 
         case FriendStatusType.PENDING: {
           if (requestorId === friend.requestorId)
-            throw new HttpErrors.UnprocessableEntity(
-              "Please wait for your friend's approval!",
-            );
+            throw new HttpErrors.UnprocessableEntity("Please wait for your friend's approval!");
 
-          throw new HttpErrors.UnprocessableEntity(
-            'Your friend waited for your approval!',
-          );
+          throw new HttpErrors.UnprocessableEntity('Your friend waited for your approval!');
         }
 
         case FriendStatusType.BLOCKED: {
-          throw new HttpErrors.UnprocessableEntity(
-            'You cannot added this friend!',
-          );
+          throw new HttpErrors.UnprocessableEntity('You cannot added this friend!');
         }
       }
     }
@@ -107,16 +96,30 @@ export class FriendService {
     if (!approvedFriendIds.length) return;
 
     return {
-      or: [
+      and: [
         {
-          importer: {
-            inq: approvedFriendIds,
-          },
+          or: [
+            {
+              importer: {
+                inq: approvedFriendIds,
+              },
+            },
+            {
+              createdBy: {
+                inq: approvedFriendIds,
+              },
+            },
+          ],
         },
         {
-          createdBy: {
-            inq: approvedFriendIds,
-          },
+          or: [
+            {
+              visibility: VisibilityType.FRIENDS,
+            },
+            {
+              visibility: VisibilityType.PUBLIC,
+            },
+          ],
         },
       ],
     } as Where<Post>;
@@ -125,10 +128,7 @@ export class FriendService {
   async deleteById(id: string): Promise<void> {
     const friend = await this.friendRepository.findById(id);
 
-    await this.notificationService.cancelFriendRequest(
-      friend.requestorId,
-      friend.requesteeId,
-    );
+    await this.notificationService.cancelFriendRequest(friend.requestorId, friend.requesteeId);
     await this.friendRepository.deleteById(id);
   }
 }
