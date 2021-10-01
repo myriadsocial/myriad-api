@@ -28,6 +28,13 @@ import {
   TransactionService,
   UserSocialMediaService,
 } from './services';
+import {LoggingBindings, WinstonLoggerOptions, 
+  WINSTON_FORMAT, WINSTON_TRANSPORT,
+  WinstonFormat,
+  WinstonTransports
+} from '@loopback/logging';
+import {format} from 'winston';
+import {extensionFor} from '@loopback/core';
 
 export {ApplicationConfig};
 
@@ -46,6 +53,16 @@ export class MyriadApiApplication extends BootMixin(
     // Customize @loopback/rest-explorer configuration here
     this.configure(RestExplorerBindings.COMPONENT).to({
       path: '/explorer',
+    });
+    this.configure(LoggingBindings.COMPONENT).to({
+      enableFluent: false,
+      enableHttpAccessLog: true,
+    });
+  
+    this.configure<WinstonLoggerOptions>(LoggingBindings.WINSTON_LOGGER).to({
+      level: 'info',
+      format: format.json(),
+      defaultMeta: {framework: 'LoopBack'},
     });
 
     // Bind component
@@ -83,6 +100,29 @@ export class MyriadApiApplication extends BootMixin(
       dataSourceName: MongoDataSource.dataSourceName,
       modelName: 'db_migrations',
     });
+
+    const myFormat: WinstonFormat = format((info, opts) => {
+      console.log(info);
+      return false;
+    })();
+    
+    this
+      .bind('logging.winston.formats.myFormat')
+      .to(myFormat)
+      .apply(extensionFor(WINSTON_FORMAT));
+    this
+      .bind('logging.winston.formats.colorize')
+      .to(format.colorize())
+      .apply(extensionFor(WINSTON_FORMAT));
+    
+    const consoleTransport = new WinstonTransports.Console({
+      level: 'info',
+      format: format.combine(format.colorize(), format.simple()),
+    });
+    this
+      .bind('logging.winston.transports.console')
+      .to(consoleTransport)
+      .apply(extensionFor(WINSTON_TRANSPORT));
   }
 
   bindService() {
