@@ -1,8 +1,10 @@
-import {Entity, model, property, belongsTo, AnyObject} from '@loopback/repository';
+import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {ReportStatusType} from '../enums/report-status-type.enum';
 import {ReportType} from '../enums/report-type.enum';
 import {User} from './user.model';
 import {ReferenceType} from '../enums';
+import {Post} from './post.model';
+import {PostWithRelations, UserWithRelations} from '.';
 
 @model({
   settings: {
@@ -10,6 +12,7 @@ import {ReferenceType} from '../enums';
     mongodb: {
       collection: 'reports',
     },
+    hiddenProperties: ['postId', 'userId'],
   },
 })
 export class Report extends Entity {
@@ -24,12 +27,6 @@ export class Report extends Entity {
   id?: string;
 
   @property({
-    type: 'object',
-    required: true,
-  })
-  content: AnyObject;
-
-  @property({
     type: 'string',
     required: true,
     jsonSchema: {
@@ -41,9 +38,6 @@ export class Report extends Entity {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      enum: Object.values(ReferenceType),
-    },
   })
   referenceId: string;
 
@@ -75,6 +69,12 @@ export class Report extends Entity {
     },
   })
   reason: string;
+
+  @property({
+    type: 'number',
+    required: false,
+  })
+  totalReported?: number;
 
   @property({
     type: 'date',
@@ -110,6 +110,12 @@ export class Report extends Entity {
   )
   reportedBy: string;
 
+  @belongsTo(() => Post)
+  postId: string;
+
+  @belongsTo(() => User)
+  userId: string;
+
   constructor(data?: Partial<Report>) {
     super(data);
   }
@@ -117,6 +123,8 @@ export class Report extends Entity {
 
 export interface ReportRelations {
   // describe navigational properties here
+  user?: UserWithRelations;
+  post?: PostWithRelations;
 }
 
 export type ReportWithRelations = Report & ReportRelations;
