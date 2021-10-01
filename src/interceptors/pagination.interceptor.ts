@@ -71,6 +71,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const className = invocationCtx.targetClass.name as ControllerType;
     const filter = invocationCtx.args[0] ?? {where: {}};
 
+    if (!filter.where) filter.where = {};
+
+    if (className === ControllerType.DELETEDCOLLECTIONCONTROLLER) {
+      filter.where = Object.assign(filter.where, {deletedAt: {$exists: true}});
+    } else {
+      filter.where = Object.assign(filter.where, {deletedAt: {$exists: false}});
+    }
+
     if (methodName === MethodType.TIMELINE) {
       if (filter.where && Object.keys(filter.where).length > 0 && timelineType)
         throw new HttpErrors.UnprocessableEntity(
@@ -110,7 +118,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     const where = filter.where;
     const result = await next();
-    const {count} = await this.metricService.countData(className, where);
+    const {count} = await this.metricService.countData(
+      className,
+      methodName,
+      where,
+    );
 
     if (
       className === ControllerType.NOTIFICATION &&
