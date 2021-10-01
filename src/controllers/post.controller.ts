@@ -1,7 +1,6 @@
 import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
-  del,
   get,
   getModelSchemaRef,
   HttpErrors,
@@ -60,11 +59,9 @@ export class PostController {
       for (let i = index; i < newPost.text.length; i++) {
         const letter = newPost.text[i];
 
-        if (letter === ' ') break;
+        if (letter === ' ' || letter === '"') break;
         url += letter;
       }
-
-      newPost.text = newPost.text.substring(0, index);
     }
 
     if (url) {
@@ -197,13 +194,5 @@ export class PostController {
     updatedPost: Post,
   ): Promise<void> {
     await this.postService.postRepository.updateById(id, updatedPost);
-  }
-
-  @del('/posts/{id}')
-  @response(204, {
-    description: 'Post DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.postService.postRepository.deleteById(id);
   }
 }

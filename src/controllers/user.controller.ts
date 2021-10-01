@@ -1,7 +1,6 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
-  del,
   get,
   getModelSchemaRef,
   HttpErrors,
@@ -137,13 +136,5 @@ export class UserController {
       type: ActivityLogType.PROFILE,
       message: 'You updated your profile',
     });
-  }
-
-  @del('/users/{id}')
-  @response(204, {
-    description: 'User DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.userRepository.deleteById(id);
   }
 }
