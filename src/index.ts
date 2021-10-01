@@ -28,7 +28,7 @@ if (require.main === module) {
         // useful when used with OpenAPI-to-GraphQL to locate your application
         setServersFromRequest: true,
       },
-      // Use LB4's requstHandler so it should not be listening.
+      // Use the LB4 application as a route. It should not be listening.
       listenOnStart: false,
     },
   };
