@@ -1,5 +1,5 @@
 import {AnyObject, Count, repository, Where} from '@loopback/repository';
-import {ControllerType, ReferenceType, SectionType} from '../enums';
+import {ControllerType, MethodType, ReferenceType, SectionType} from '../enums';
 import {Metric} from '../interfaces';
 import {
   ActivityLogRepository,
@@ -16,6 +16,7 @@ import {
   UserExperienceRepository,
   UserRepository,
   UserSocialMediaRepository,
+  ReportRepository,
 } from '../repositories';
 
 export class MetricService {
@@ -48,6 +49,8 @@ export class MetricService {
     protected userExperienceRepository: UserExperienceRepository,
     @repository(ActivityLogRepository)
     protected activityLogRepository: ActivityLogRepository,
+    @repository(ReportRepository)
+    protected reportRepository: ReportRepository,
   ) {}
 
   async publicMetric(
@@ -97,6 +100,7 @@ export class MetricService {
 
   async countData(
     controller: ControllerType,
+    methodName: MethodType,
     where: Where<AnyObject>,
   ): Promise<Count> {
     switch (controller) {
@@ -138,6 +142,30 @@ export class MetricService {
 
       case ControllerType.ACTIVITYLOG:
         return this.activityLogRepository.count(where);
+
+      case ControllerType.REPORT:
+        return this.reportRepository.count(where);
+
+      case ControllerType.DELETEDCOLLECTIONCONTROLLER:
+        return this.countDeletedData(methodName, where);
+
+      default:
+        return {
+          count: 0,
+        };
+    }
+  }
+
+  async countDeletedData(
+    methodName: MethodType,
+    where: Where<AnyObject>,
+  ): Promise<Count> {
+    switch (methodName) {
+      case MethodType.DELETEDUSERLIST:
+        return this.userRepository.count(where);
+
+      case MethodType.DELETEDPOSTLIST:
+        return this.postRepository.count(where);
 
       default:
         return {
