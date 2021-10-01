@@ -97,12 +97,8 @@ describe('PostApplication', function () {
         }),
       },
     });
-    expect(tagResult[0].id).to.equal(
-      result.tags.find(tag => tag === tagResult[0].id),
-    );
-    expect(tagResult[1].id).to.equal(
-      result.tags.find(tag => tag === tagResult[1].id),
-    );
+    expect(tagResult[0].id).to.equal(result.tags.find(tag => tag === tagResult[0].id));
+    expect(tagResult[1].id).to.equal(result.tags.find(tag => tag === tagResult[1].id));
   });
 
   it('rejects requests to create a post with no text', async () => {
@@ -129,10 +125,7 @@ describe('PostApplication', function () {
     });
 
     it('gets a post by ID', async () => {
-      const result = await client
-        .get(`/posts/${persistedPost.id}`)
-        .send()
-        .expect(200);
+      const result = await client.get(`/posts/${persistedPost.id}`).send().expect(200);
       const expected = toJSON(persistedPost);
 
       expect(result.body).to.deepEqual(expected);
@@ -146,27 +139,13 @@ describe('PostApplication', function () {
       const updatedPost = givenMyriadPost({
         text: 'Hello world',
       });
-      await client
-        .patch(`/posts/${persistedPost.id}`)
-        .send(updatedPost)
-        .expect(204);
+      await client.patch(`/posts/${persistedPost.id}`).send(updatedPost).expect(204);
       const result = await postRepository.findById(persistedPost.id);
       expect(result).to.containEql(updatedPost);
     });
 
     it('returns 404 when updating a post that does not exist', () => {
       return client.patch('/posts/99999').send(givenMyriadPost()).expect(404);
-    });
-
-    it('deletes the post', async () => {
-      await client.del(`/posts/${persistedPost.id}`).send().expect(204);
-      await expect(
-        postRepository.findById(persistedPost.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
-    });
-
-    it('returns 404 when deleting a post that does not exist', async () => {
-      await client.del(`/posts/99999`).expect(404);
     });
   });
 
@@ -265,10 +244,7 @@ describe('PostApplication', function () {
 
     it('creates a post from reddit', async function () {
       const platformPost = givenPlatformPost();
-      const response = await client
-        .post('/posts/import')
-        .send(platformPost)
-        .expect(200);
+      const response = await client.post('/posts/import').send(platformPost).expect(200);
       const result = await postRepository.findById(response.body.id, {
         include: ['people'],
       });
@@ -291,18 +267,13 @@ describe('PostApplication', function () {
 
     it('adds another importer for existing posts', async function () {
       const platformPost = givenPlatformPost({
-        importer:
-          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d95e',
+        importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d95e',
       });
       const platformPostWithOtherImporter = givenPlatformPost({
-        importer:
-          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
+        importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
       });
 
-      const response = await client
-        .post('/posts/import')
-        .send(platformPost)
-        .expect(200);
+      const response = await client.post('/posts/import').send(platformPost).expect(200);
       const otherResponse = await client
         .post('/posts/import')
         .send(platformPostWithOtherImporter)
@@ -314,8 +285,7 @@ describe('PostApplication', function () {
 
     it('rejects request to create a post from social media if importer alreay imported', async () => {
       const platformPost: Partial<PlatformPost> = givenPlatformPost({
-        importer:
-          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
+        importer: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
       });
       await client.post('/posts/import').send(platformPost).expect(200);
       await client.post('/posts/import').send(platformPost).expect(422);

@@ -81,15 +81,6 @@ describe('PostController', () => {
     });
   });
 
-  describe('deletePost', () => {
-    it('successfully deletes existing items', async () => {
-      const deleteById = postRepository.stubs.deleteById;
-      deleteById.resolves();
-      await controller.deleteById(aPostWithId.id as string);
-      sinon.assert.calledWith(deleteById, aPostWithId.id);
-    });
-  });
-
   function resetRepositories() {
     postRepository = createStubInstance(PostRepository);
     aPost = givenMyriadPost();
