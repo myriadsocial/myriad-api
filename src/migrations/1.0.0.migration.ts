@@ -121,6 +121,9 @@ export class MigrationScript100 implements MigrationScript {
         anonymous: '',
         seed_example: '',
       },
+      $set: {
+        defaultCurrency: DefaultCurrencyType.AUSD,
+      },
     });
 
     const users = await this.userRepository.find();
@@ -223,6 +226,7 @@ export class MigrationScript100 implements MigrationScript {
             shares: 0,
           },
           visibility: VisibilityType.PUBLIC,
+          mentions: [],
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
         },
