@@ -17,3 +17,5 @@ export * from './user-currency.controller';
 export * from './user-experience.controller';
 export * from './user-social-media.controller';
 export * from './user.controller';
+export * from './report.controller';
+export * from './deleted-collection.controller';

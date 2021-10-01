@@ -19,3 +19,4 @@ export * from './user-experience.repository';
 export * from './user-social-media.repository';
 export * from './user.repository';
 export * from './comment-link.repository';
+export * from './report.repository';
