@@ -28,10 +28,13 @@ import {
   TransactionService,
   UserSocialMediaService,
 } from './services';
-import {LoggingBindings, WinstonLoggerOptions, 
-  WINSTON_FORMAT, WINSTON_TRANSPORT,
+import {
+  LoggingBindings,
+  WinstonLoggerOptions,
+  WINSTON_FORMAT,
+  WINSTON_TRANSPORT,
   WinstonFormat,
-  WinstonTransports
+  WinstonTransports,
 } from '@loopback/logging';
 import {format} from 'winston';
 import {extensionFor} from '@loopback/core';
@@ -58,7 +61,7 @@ export class MyriadApiApplication extends BootMixin(
       enableFluent: false,
       enableHttpAccessLog: true,
     });
-  
+
     this.configure<WinstonLoggerOptions>(LoggingBindings.WINSTON_LOGGER).to({
       level: 'info',
       format: format.json(),
@@ -105,22 +108,19 @@ export class MyriadApiApplication extends BootMixin(
       console.log(info);
       return false;
     })();
-    
-    this
-      .bind('logging.winston.formats.myFormat')
+
+    this.bind('logging.winston.formats.myFormat')
       .to(myFormat)
       .apply(extensionFor(WINSTON_FORMAT));
-    this
-      .bind('logging.winston.formats.colorize')
+    this.bind('logging.winston.formats.colorize')
       .to(format.colorize())
       .apply(extensionFor(WINSTON_FORMAT));
-    
+
     const consoleTransport = new WinstonTransports.Console({
       level: 'info',
       format: format.combine(format.colorize(), format.simple()),
     });
-    this
-      .bind('logging.winston.transports.console')
+    this.bind('logging.winston.transports.console')
       .to(consoleTransport)
       .apply(extensionFor(WINSTON_TRANSPORT));
   }

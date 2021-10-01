@@ -89,7 +89,7 @@ export class AuthenticationController {
     })
     newAuthRequest: NewAuthRequest,
   ): Promise<Authentication> {
-    this.logger.log('info', newAuthRequest.email+" is registering...");
+    this.logger.log('info', newAuthRequest.email + ' is registering...');
     const foundAuth = await this.authenticationRepository.findOne({
       where: {
         email: newAuthRequest.email,
@@ -167,7 +167,7 @@ export class AuthenticationController {
     })
     credentials: Credentials,
   ): Promise<TokenObject> {
-    this.logger.log('info', credentials.email+" is logging in...");
+    this.logger.log('info', credentials.email + ' is logging in...');
     // ensure the user exists, and the password is correct
     const user = await this.authService.verifyCredentials(credentials);
     // convert a User object into a UserProfile object (reduced set of properties)
@@ -220,7 +220,10 @@ export class AuthenticationController {
     })
     refreshGrant: RefreshGrant,
   ): Promise<TokenObject> {
-    this.logger.log('info', "token "+refreshGrant.refreshToken +" is getting refreshed");
+    this.logger.log(
+      'info',
+      'token ' + refreshGrant.refreshToken + ' is getting refreshed',
+    );
     return this.refreshService.refreshToken(refreshGrant.refreshToken);
   }
 }
