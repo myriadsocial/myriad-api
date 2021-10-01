@@ -55,6 +55,7 @@
     "@polkadot/api": "^4.16.2",
     "@types/gun": "^0.9.3",
     "@sentry/node": "^6.13.3",
+    "@types/gun": "^0.9.3",
     "bcryptjs": "^2.4.3",
     "bn.js": "^5.2.0",
     "dotenv": "^10.0.0",
