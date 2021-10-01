@@ -2,7 +2,7 @@ import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors, post, requestBody} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
-import {logInvocation} from '@loopback/logging';
+import {LoggingBindings, WinstonLogger} from '@loopback/logging';
 import * as _ from 'lodash';
 import {NewAuthRequest, RefreshGrant, TokenObject} from '../interfaces';
 import {
@@ -19,6 +19,9 @@ import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {JWTService} from '../services/authentication/jwt.service';
 
 export class AuthenticationController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
   constructor(
     @repository(AuthenticationRepository)
     protected authenticationRepository: AuthenticationRepository,
@@ -61,7 +64,6 @@ export class AuthenticationController {
       },
     },
   })
-  @logInvocation()
   async signup(
     @requestBody({
       description: 'The input of signup function',
@@ -87,6 +89,7 @@ export class AuthenticationController {
     })
     newAuthRequest: NewAuthRequest,
   ): Promise<Authentication> {
+    this.logger.log('info', newAuthRequest.email+" is registering...");
     const foundAuth = await this.authenticationRepository.findOne({
       where: {
         email: newAuthRequest.email,
@@ -139,7 +142,6 @@ export class AuthenticationController {
       },
     },
   })
-  @logInvocation()
   async login(
     @requestBody({
       description: 'The input of login function',
@@ -165,6 +167,7 @@ export class AuthenticationController {
     })
     credentials: Credentials,
   ): Promise<TokenObject> {
+    this.logger.log('info', credentials.email+" is logging in...");
     // ensure the user exists, and the password is correct
     const user = await this.authService.verifyCredentials(credentials);
     // convert a User object into a UserProfile object (reduced set of properties)
@@ -197,7 +200,6 @@ export class AuthenticationController {
       },
     },
   })
-  @logInvocation()
   async refresh(
     @requestBody({
       description: 'Reissuing Acess Token',
@@ -218,6 +220,7 @@ export class AuthenticationController {
     })
     refreshGrant: RefreshGrant,
   ): Promise<TokenObject> {
+    this.logger.log('info', "token "+refreshGrant.refreshToken +" is getting refreshed");
     return this.refreshService.refreshToken(refreshGrant.refreshToken);
   }
 }
