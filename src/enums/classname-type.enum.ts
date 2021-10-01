@@ -13,6 +13,8 @@ export enum ControllerType {
   FRIEND = 'FriendController',
   COMMENT = 'CommentController',
   ACTIVITYLOG = 'ActivityLogController',
+  REPORT = 'ReportController',
+  DELETEDCOLLECTIONCONTROLLER = 'DeletedCollectionController',
 }
 
 export enum MethodType {
@@ -27,4 +29,6 @@ export enum MethodType {
   CLONE = 'clone',
   CREATENEW = 'createNew',
   DELETEBYID = 'deleteById',
+  DELETEDPOSTLIST = 'deletedPostList',
+  DELETEDUSERLIST = 'deletedUserList',
 }
