@@ -15,6 +15,7 @@ import {
   CurrencyRepository,
   LikeRepository,
   PostRepository,
+  ReportRepository,
   TransactionRepository,
   UserRepository,
 } from '../repositories';
@@ -42,6 +43,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected commentRepository: CommentRepository,
     @repository(LikeRepository)
     protected likeRepository: LikeRepository,
+    @repository(ReportRepository)
+    protected reportRepository: ReportRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -145,6 +148,28 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         return;
       }
 
+      case ControllerType.REPORT: {
+        const {referenceId, referenceType} = invocationCtx.args[0];
+        const {count} = await this.reportRepository.count({
+          referenceId,
+          referenceType,
+        });
+
+        if (referenceType === ReferenceType.POST) {
+          await this.postRepository.findById(referenceId);
+
+          invocationCtx.args[0].postId = referenceId;
+        } else {
+          await this.userRepository.findById(referenceId);
+
+          invocationCtx.args[0].userId = referenceId;
+        }
+
+        invocationCtx.args[0].totalReported = count + 1;
+
+        return;
+      }
+
       default:
         return;
     }
@@ -189,6 +214,16 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         });
 
         return;
+      }
+
+      case ControllerType.REPORT: {
+        await this.reportRepository.updateAll(
+          {totalReported: result.totalReported},
+          {
+            referenceId: result.referenceId,
+            referenceType: result.referenceType,
+          },
+        );
       }
     }
   }
