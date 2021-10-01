@@ -1,37 +1,30 @@
-import {ApplicationConfig, MyriadApiApplication} from './application';
-import {config} from './config';
-
+import {ApplicationConfig, ExpressServer} from './application';
+// import {config} from './config';
 export * from './application';
 
 export async function main(options: ApplicationConfig = {}) {
-  const app = new MyriadApiApplication(options);
-  await app.boot();
-  await app.start();
-
-  const url = app.restServer.url;
-  console.log(`Server is running at ${url}`);
-  return app;
+  const server = new ExpressServer(options);
+  await server.boot();
+  await server.start();
+  console.log('Server is running at http://127.0.0.1:3000');
 }
 
 if (require.main === module) {
-  // Run the application
-  const appConfig = {
+  const config = {
     rest: {
-      host: config.APPLICATION_HOST,
-      port: config.APPLICATION_PORT,
-      // The `gracePeriodForClose` provides a graceful close for http/https
-      // servers with keep-alive clients. The default value is `Infinity`
-      // (don't force-close). If you want to immediately destroy all sockets
-      // upon stop, set its value to `0`.
-      // See https://www.npmjs.com/package/stoppable
-      gracePeriodForClose: 5000, // 5 seconds
+      //TODO: should be able to set port the same as express here but keep PORT IN USE error
+      // port: +(process.env.PORT ?? 3000),
+      port: 3001,
+      host: process.env.HOST ?? 'localhost',
       openApiSpec: {
         // useful when used with OpenAPI-to-GraphQL to locate your application
         setServersFromRequest: true,
       },
+      // Use the LB4 application as a route. It should not be listening.
+      listenOnStart: false,
     },
   };
-  main(appConfig).catch(err => {
+  main(config).catch(err => {
     console.error('Cannot start the application.', err);
     process.exit(1);
   });

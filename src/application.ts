@@ -38,9 +38,66 @@ import {
 } from '@loopback/logging';
 import {format} from 'winston';
 import {extensionFor} from '@loopback/core';
+import express, {Request, Response} from 'express';
+require('gun/sea');
+const Gun = require('gun');
+import http from 'http';
+import {once} from 'events';
 
 export {ApplicationConfig};
 
+export class ExpressServer {
+  public readonly app: express.Application;
+  public readonly myriadApp: MyriadApiApplication;
+  public readonly gun: any;
+  private server?: http.Server;
+
+  constructor(options: ApplicationConfig = {}) {
+    this.app = express();
+    this.myriadApp = new MyriadApiApplication(options);
+    this.app.use('/lb', this.myriadApp.requestHandler);
+    const port = process.env.PORT;
+    this.gun = Gun({
+      web: this.app.listen(port, () => {
+        console.log(
+          '**Express & Loopback with GunDB is running at http://localhost:' +
+            port +
+            '**',
+        );
+      }),
+      peers: [process.env.GUN_HOST],
+      axe: false,
+      multicast: {
+        port: process.env.GUN_PORT,
+      },
+    });
+    this.app.use(Gun.serve);
+    this.gun.get('dummy').once((s: any) => console.log(s));
+    this.app.get('/', (_req: Request, res: Response) => {
+      res.sendFile(path.resolve('public/express.html'));
+    });
+  }
+  async boot() {
+    await this.myriadApp.boot();
+  }
+
+  public async start() {
+    await this.myriadApp.start();
+    const port = this.myriadApp.restServer.config.port ?? 3000;
+    const host = this.myriadApp.restServer.config.host || '127.0.0.1';
+    this.server = this.app.listen(port, host);
+    await once(this.server, 'listening');
+  }
+
+  // For testing purposes
+  public async stop() {
+    if (!this.server) return;
+    await this.myriadApp.stop();
+    this.server.close();
+    await once(this.server, 'close');
+    this.server = undefined;
+  }
+}
 export class MyriadApiApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
 ) {
