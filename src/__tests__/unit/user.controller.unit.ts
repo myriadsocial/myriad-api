@@ -77,15 +77,6 @@ describe('UserController', () => {
     });
   });
 
-  describe('deleteUser', () => {
-    it('successfully deletes existing items', async () => {
-      const deleteById = userRepository.stubs.deleteById;
-      deleteById.resolves();
-      await controller.deleteById(aUserWithId.id as string);
-      sinon.assert.calledWith(deleteById, aUserWithId.id);
-    });
-  });
-
   function resetRepositories() {
     userRepository = createStubInstance(UserRepository);
     activityLogRepository = createStubInstance(ActivityLogRepository);

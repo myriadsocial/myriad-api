@@ -67,9 +67,7 @@ describe('UserApplication', function () {
     expect(result).to.containDeep(user);
 
     const filter = JSON.stringify({include: ['currencies']});
-    const usersIncludeCurrencies = await client
-      .get('/users')
-      .query('filter=' + filter);
+    const usersIncludeCurrencies = await client.get('/users').query('filter=' + filter);
     const currencies = await currencyRepository.find({
       where: {
         or: [{id: DefaultCurrencyType.MYRIA}, {id: DefaultCurrencyType.AUSD}],
@@ -139,10 +137,7 @@ describe('UserApplication', function () {
     });
 
     it('gets a user by ID', async () => {
-      const result = await client
-        .get(`/users/${persistedUser.id}`)
-        .send()
-        .expect(200);
+      const result = await client.get(`/users/${persistedUser.id}`).send().expect(200);
       const expected = toJSON(persistedUser);
 
       expect(result.body).to.deepEqual(expected);
@@ -160,10 +155,7 @@ describe('UserApplication', function () {
 
       delete updatedUser.id;
 
-      await client
-        .patch(`/users/${persistedUser.id}`)
-        .send(updatedUser)
-        .expect(204);
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(204);
       const result = await userRepository.findById(persistedUser.id);
       expect(result).to.containEql(updatedUser);
     });
@@ -177,26 +169,17 @@ describe('UserApplication', function () {
 
       delete updatedUser.id;
 
-      await client
-        .patch(`/users/${persistedUser.id}`)
-        .send(updatedUser)
-        .expect(422);
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(422);
 
       updatedUser.profilePictureURL = undefined;
       updatedUser.bannerImageUrl = 'www.notabannerimageurl.com';
 
-      await client
-        .patch(`/users/${persistedUser.id}`)
-        .send(updatedUser)
-        .expect(422);
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(422);
 
       updatedUser.bannerImageUrl = undefined;
       updatedUser.websiteURL = 'notawebsiteurl.com';
 
-      await client
-        .patch(`/users/${persistedUser.id}`)
-        .send(updatedUser)
-        .expect(422);
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(422);
     });
 
     it('returns 422 when updating a user username more than once', async () => {
@@ -206,14 +189,8 @@ describe('UserApplication', function () {
 
       delete updatedUser.id;
 
-      await client
-        .patch(`/users/${persistedUser.id}`)
-        .send(updatedUser)
-        .expect(204);
-      await client
-        .patch(`/users/${persistedUser.id}`)
-        .send(updatedUser)
-        .expect(422);
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(204);
+      await client.patch(`/users/${persistedUser.id}`).send(updatedUser).expect(422);
     });
 
     it('returns 404 when updating a user that does not exist', () => {
@@ -222,17 +199,6 @@ describe('UserApplication', function () {
       delete updatedUser.id;
 
       return client.patch('/users/99999').send(updatedUser).expect(404);
-    });
-
-    it('deletes the user', async () => {
-      await client.del(`/users/${persistedUser.id}`).send().expect(204);
-      await expect(
-        userRepository.findById(persistedUser.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
-    });
-
-    it('returns 404 when deleting a user that does not exist', async () => {
-      await client.del(`/users/99999`).expect(404);
     });
   });
 
@@ -289,8 +255,7 @@ describe('UserApplication', function () {
     });
     const friend = await givenFriendInstance(friendRepository, {
       requesteeId: user.id,
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      requestorId: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
     });
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,
