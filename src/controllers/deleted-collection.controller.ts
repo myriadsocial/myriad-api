@@ -11,6 +11,7 @@ import {
   UserRepository,
 } from '../repositories';
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 export class DeletedCollectionController {
   constructor(
     @repository(UserRepository)

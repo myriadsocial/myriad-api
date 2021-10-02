@@ -70,17 +70,26 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
     const filter = invocationCtx.args[0] ?? {where: {}};
-
-    if (!filter.where) filter.where = {};
+    const where = filter.where ?? {};
 
     if (className === ControllerType.DELETEDCOLLECTIONCONTROLLER) {
-      filter.where = Object.assign(filter.where, {deletedAt: {$exists: true}});
-    } else {
-      filter.where = Object.assign(filter.where, {deletedAt: {$exists: false}});
+      filter.where = Object.assign(where, {deletedAt: {$exists: true}});
     }
 
-    if (methodName === MethodType.TIMELINE) {
-      if (filter.where && Object.keys(filter.where).length > 0 && timelineType)
+    if (
+      className === ControllerType.POST ||
+      className === ControllerType.USER
+    ) {
+      filter.where = Object.assign(where, {deletedAt: {$exists: false}});
+    }
+
+    // Set where filter when using timeline
+    // Both Where filter and timeline cannot be used together
+    if (
+      className === ControllerType.POST &&
+      methodName === MethodType.TIMELINE
+    ) {
+      if (where && Object.keys(where).length > 0 && timelineType)
         throw new HttpErrors.UnprocessableEntity(
           'Where filter and timelineType can not be used at the same time!',
         );
@@ -89,12 +98,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         if (!userId)
           throw new HttpErrors.UnprocessableEntity('UserId must be filled');
 
-        const where = await this.getTimeline(
+        const whereTimeline = await this.getTimeline(
           userId as string,
           timelineType as TimelineType,
         );
 
-        if (where) filter.where = where;
+        if (whereTimeline) filter.where = whereTimeline;
         else
           return {
             data: [],
@@ -103,27 +112,27 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
     }
 
-    let pageIndex = 1;
-    let pageSize = 5;
+    // Get pageMetadata
+    const {pageIndex, pageSize} = this.pageSetting(
+      Number(pageNumber),
+      Number(pageLimit),
+    );
+    const {count} = await this.metricService.countData(
+      className,
+      methodName,
+      filter.where,
+    );
+    const meta = pageMetadata(pageIndex, pageSize, count);
 
-    if (!isNaN(Number(pageNumber)) || Number(pageNumber) > 0)
-      pageIndex = Number(pageNumber);
-    if (!isNaN(Number(pageLimit)) || Number(pageLimit) > 0)
-      pageSize = Number(pageLimit);
-
+    // Reassign filter object
     invocationCtx.args[0] = Object.assign(filter, {
       limit: pageSize,
       offset: (pageIndex - 1) * pageSize,
     });
 
-    const where = filter.where;
     const result = await next();
-    const {count} = await this.metricService.countData(
-      className,
-      methodName,
-      where,
-    );
 
+    // Set notification has been read
     if (
       className === ControllerType.NOTIFICATION &&
       methodName === MethodType.FIND
@@ -140,7 +149,20 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     return {
       data: result,
-      meta: pageMetadata(pageIndex, pageSize, count),
+      meta: meta,
+    };
+  }
+
+  pageSetting(pageNumber: number, pageLimit: number) {
+    let pageIndex = 1;
+    let pageSize = 5;
+
+    if (!isNaN(pageNumber) || pageNumber > 0) pageIndex = pageNumber;
+    if (!isNaN(pageLimit) || pageLimit > 0) pageSize = pageLimit;
+
+    return {
+      pageIndex,
+      pageSize,
     };
   }
 

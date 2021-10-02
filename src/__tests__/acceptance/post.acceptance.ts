@@ -1,4 +1,3 @@
-import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ReferenceType} from '../../enums';
@@ -37,6 +36,7 @@ import {
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('PostApplication', function () {
   this.timeout(20000);
+
   let app: MyriadApiApplication;
   let client: Client;
   let postRepository: PostRepository;
@@ -49,7 +49,7 @@ describe('PostApplication', function () {
   let user: User;
 
   before(async () => {
-    ({app, client} = await setupApplication());
+    ({app, client} = await setupApplication(true));
   });
 
   after(() => app.stop());
@@ -65,7 +65,9 @@ describe('PostApplication', function () {
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository);
+    user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed14ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+    });
   });
 
   after(async () => {
@@ -81,27 +83,16 @@ describe('PostApplication', function () {
     await postRepository.deleteAll();
   });
 
-  it('creates a post', async function () {
+  it('creates a post', async () => {
     const myriadPost: Partial<Post> = givenMyriadPost({createdBy: user.id});
     delete myriadPost.platform;
     const response = await client.post('/posts').send(myriadPost).expect(200);
     expect(response.body).to.containDeep(myriadPost);
     const result = await postRepository.findById(response.body.id);
     expect(result).to.containDeep(myriadPost);
-    const tagResult = await tagRepository.find({
-      where: {
-        or: result.tags.map(tag => {
-          return {
-            id: tag,
-          };
-        }),
-      },
-    });
+    const tagResult = await tagRepository.find();
     expect(tagResult[0].id).to.equal(
       result.tags.find(tag => tag === tagResult[0].id),
-    );
-    expect(tagResult[1].id).to.equal(
-      result.tags.find(tag => tag === tagResult[1].id),
     );
   });
 

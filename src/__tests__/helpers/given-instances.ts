@@ -168,7 +168,7 @@ export function givenPost(post?: Partial<Post>) {
 export function givenMyriadPost(post?: Partial<Post>) {
   const data = Object.assign(
     {
-      tags: ['hello', 'world'],
+      tags: ['hello'],
       text: 'hello world',
       createdBy:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
