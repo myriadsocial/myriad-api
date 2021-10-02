@@ -67,9 +67,9 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
 
       post.importers.push(invocationCtx.args[0].importer);
 
-      this.postRepository.updateById(post.id, {
+      await this.postRepository.updateById(post.id, {
         importers: post.importers,
-      }) as Promise<void>;
+      });
 
       return post;
     }

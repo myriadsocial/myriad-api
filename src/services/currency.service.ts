@@ -4,7 +4,7 @@ import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
 import {DefaultCurrencyType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
-import {UserCurrency, UserSocialMedia} from '../models';
+import {UserSocialMedia} from '../models';
 import {
   CurrencyRepository,
   PeopleRepository,
@@ -56,10 +56,10 @@ export class CurrencyService {
       try {
         await this.userRepository.currencies(userId).create(currency);
       } catch {
-        this.userCurrencyRepository.create({
+        await this.userCurrencyRepository.create({
           userId: userId,
           currencyId: currency.id,
-        }) as Promise<UserCurrency>;
+        });
       }
     }
   }

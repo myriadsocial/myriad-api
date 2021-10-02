@@ -1,6 +1,6 @@
 import {repository, Where} from '@loopback/repository';
 import {OrderFieldType, OrderType, VisibilityType} from '../enums';
-import {Post, Tag} from '../models';
+import {Post} from '../models';
 import {TagRepository} from '../repositories';
 import {DateUtils} from '../utils/date-utils';
 
@@ -30,15 +30,15 @@ export class TagService {
       });
 
       if (!foundTag) {
-        this.tagRepository.create({
+        await this.tagRepository.create({
           id: tag,
           count: 1,
-        }) as Promise<Tag>;
+        });
       } else {
-        this.tagRepository.updateById(foundTag.id, {
+        await this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
           count: dateUtils.isToday(foundTag.updatedAt) ? 1 : foundTag.count + 1,
-        }) as Promise<void>;
+        });
       }
     }
   }

@@ -1,7 +1,5 @@
-import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {DefaultCurrencyType} from '../../enums';
 import {User} from '../../models';
 import {
   ActivityLogRepository,
@@ -28,6 +26,8 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserApplication', function () {
+  this.timeout(20000);
+
   let app: MyriadApiApplication;
   let client: Client;
   let userRepository: UserRepository;
@@ -37,7 +37,7 @@ describe('UserApplication', function () {
   let activityLogRepository: ActivityLogRepository;
 
   before(async () => {
-    ({app, client} = await setupApplication());
+    ({app, client} = await setupApplication(true));
   });
 
   after(() => app.stop());
@@ -58,29 +58,12 @@ describe('UserApplication', function () {
     await activityLogRepository.deleteAll();
   });
 
-  it('creates a user with a default currency MYRIA and AUSD', async function () {
-    this.timeout(10000);
+  it('creates a user', async () => {
     const user = givenUser();
     const response = await client.post('/users').send(user);
     expect(response.body).to.containDeep(user);
     const result = await userRepository.findById(response.body.id);
     expect(result).to.containDeep(user);
-
-    const filter = JSON.stringify({include: ['currencies']});
-    const usersIncludeCurrencies = await client
-      .get('/users')
-      .query('filter=' + filter);
-    const currencies = await currencyRepository.find({
-      where: {
-        or: [{id: DefaultCurrencyType.MYRIA}, {id: DefaultCurrencyType.AUSD}],
-      },
-    });
-
-    expect(usersIncludeCurrencies.body.data).to.have.length(1);
-    expect(usersIncludeCurrencies.body.data[0]).to.deepEqual({
-      ...toJSON(result),
-      currencies: [...toJSON(currencies)],
-    });
   });
 
   it('returns 422 when creates a user with same id', async () => {

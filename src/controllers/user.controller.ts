@@ -105,7 +105,7 @@ export class UserController {
         'application/json': {
           schema: getModelSchemaRef(User, {
             partial: true,
-            exclude: ['id', 'defaultCurrency', 'onTimeline'],
+            exclude: ['id', 'defaultCurrency', 'onTimeline', 'deletedAt'],
           }),
         },
       },

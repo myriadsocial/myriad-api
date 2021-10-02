@@ -187,7 +187,10 @@ export class PostController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Post, {partial: true}),
+          schema: getModelSchemaRef(Post, {
+            partial: true,
+            exclude: ['deletedAt'],
+          }),
         },
       },
     })
