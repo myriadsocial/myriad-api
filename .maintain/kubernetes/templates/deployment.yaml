@@ -8,6 +8,8 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  updateStrategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       {{- include "myriad-api.selectorLabels" . | nindent 6 }}
@@ -27,10 +29,33 @@ spec:
       serviceAccountName: {{ include "myriad-api.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.config.firebase.serviceAccountBase64 }}
+      volumes:
+        - name: google-service-account-credentials
+          secret:
+            secretName: {{ include "myriad-api.firebaseSecretName" . }}
+            items:
+              - key: serviceAccount
+                path: sa_credentials.json
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
@@ -39,7 +64,7 @@ spec:
             - name: MYRIAD_FAUCET_MNEMONIC
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "myriad-api.baseSecretName" . }}
+                  name: {{ include "myriad-api.faucetSecretName" . }}
                   key: faucetMnemonic
             - name: MYRIAD_REWARD_AMOUNT
               value: {{ .Values.config.rewardAmount | quote }}
@@ -62,40 +87,20 @@ spec:
             - name: MONGO_DATABASE
               value: {{ .Values.config.mongo.database }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /etc/gcp/sa_credentials.json
+              value: /etc/google/sa_credentials.json
             - name: TWITTER_BEARER_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "myriad-api.twitterSecretName" . }}
                   key: bearerToken
           volumeMounts:
-            - name: service-account-credentials-volume
-              mountPath: /etc/gcp
+            - name: google-service-account-credentials
+              mountPath: /etc/google
               readOnly: true
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
           ports:
             - name: http
               containerPort: 3000
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 6
-            successThreshold: 1
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 6
-            successThreshold: 1
           startupProbe:
             httpGet:
               path: /health
@@ -105,22 +110,21 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 30
             successThreshold: 1
-      volumes:
-        - name: service-account-credentials-volume
-          secret:
-            secretName: {{ include "myriad-api.firebaseSecretName" . }}
-            items:
-              - key: serviceAccount
-                path: sa_credentials.json
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            successThreshold: 1

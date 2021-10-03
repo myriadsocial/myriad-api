@@ -62,40 +62,29 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Create base secret name.
+Create the name of mongo secret.
 */}}
-{{- define "myriad-api.baseSecretName" -}}
-{{- (include "myriad-api.fullname" .) }}
-{{- end }}
-
-{{/*
-Create the name of tls secret.
-*/}}
-{{- define "myriad-api.tlsSecretName" -}}
-{{- if .Values.ingress.tlsSecretName }}
-{{- .Values.ingress.tlsSecretName }}
-{{- else }}
-{{- printf "%s-%s" (include "myriad-api.baseSecretName" .) "tls" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{- end }}
+{{- define "myriad-api.faucetSecretName" -}}
+{{- printf "%s-%s" (include "myriad-api.fullname" .) "faucet" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create the name of mongo secret.
 */}}
 {{- define "myriad-api.mongoSecretName" -}}
-{{- printf "%s-%s" (include "myriad-api.baseSecretName" .) "mongo" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" (include "myriad-api.fullname" .) "mongo" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create the name of firebase secret.
 */}}
 {{- define "myriad-api.firebaseSecretName" -}}
-{{- printf "%s-%s" (include "myriad-api.baseSecretName" .) "firebase" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" (include "myriad-api.fullname" .) "firebase" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create the name of twitter secret.
 */}}
 {{- define "myriad-api.twitterSecretName" -}}
-{{- printf "%s-%s" (include "myriad-api.baseSecretName" .) "twitter" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" (include "myriad-api.fullname" .) "twitter" | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
