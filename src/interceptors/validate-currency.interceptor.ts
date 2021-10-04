@@ -9,8 +9,12 @@ import {
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ApiPromise} from '@polkadot/api';
-import {ControllerType} from '../enums';
-import {CurrencyRepository, UserCurrencyRepository} from '../repositories';
+import {ControllerType, MethodType} from '../enums';
+import {
+  CurrencyRepository,
+  UserCurrencyRepository,
+  UserRepository,
+} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 
 /**
@@ -26,6 +30,8 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
     protected currencyRepository: CurrencyRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
   ) {}
 
   /**
@@ -48,25 +54,37 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const className = invocationCtx.targetClass.name as ControllerType;
+    const methodName = invocationCtx.methodName;
 
     switch (className) {
       case ControllerType.USERCURRENCY: {
         const {userId, currencyId} = invocationCtx.args[0];
 
-        await this.currencyRepository.findById(currencyId.toUpperCase());
+        if (methodName === MethodType.DELETE) {
+          const user = await this.userRepository.findById(userId);
 
-        // Check if user already has the crypto
-        const userCurrency = await this.userCurrencyRepository.findOne({
-          where: {
-            userId,
-            currencyId: currencyId.toUpperCase(),
-          },
-        });
+          if (user.defaultCurrency === currencyId)
+            throw new HttpErrors.UnprocessableEntity(
+              'Please changed your default currency, before deleting it',
+            );
+        }
 
-        if (userCurrency) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You already have this token',
-          );
+        if (methodName === MethodType.CREATE) {
+          await this.currencyRepository.findById(currencyId.toUpperCase());
+
+          // Check if user already has the crypto
+          const userCurrency = await this.userCurrencyRepository.findOne({
+            where: {
+              userId,
+              currencyId: currencyId.toUpperCase(),
+            },
+          });
+
+          if (userCurrency) {
+            throw new HttpErrors.UnprocessableEntity(
+              'You already have this token',
+            );
+          }
         }
 
         break;

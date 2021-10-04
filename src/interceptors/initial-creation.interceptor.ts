@@ -17,6 +17,7 @@ import {
   PostRepository,
   ReportRepository,
   TransactionRepository,
+  UserCurrencyRepository,
   UserRepository,
 } from '../repositories';
 import {CurrencyService, MetricService, TagService} from '../services';
@@ -45,6 +46,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected likeRepository: LikeRepository,
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
+    @repository(UserCurrencyRepository)
+    protected userCurrencyRepository: UserCurrencyRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -97,9 +100,20 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     }
 
     if (methodName === MethodType.SELECTCURRENCY) {
+      const userId = invocationCtx.args[0];
       const currencyId = invocationCtx.args[1].toUpperCase();
 
       await this.currencyRepository.findById(currencyId);
+
+      const userCurrency = await this.userCurrencyRepository.findOne({
+        where: {userId, currencyId},
+      });
+
+      if (!userCurrency)
+        throw new HttpErrors.UnprocessableEntity(
+          "You don't have this currency",
+        );
+
       invocationCtx.args[1] = currencyId;
       return next();
     }

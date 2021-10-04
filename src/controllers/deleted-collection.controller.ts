@@ -1,10 +1,17 @@
 import {intercept} from '@loopback/context';
-import {del, param, response, patch, get} from '@loopback/rest';
+import {
+  del,
+  param,
+  response,
+  patch,
+  get,
+  getModelSchemaRef,
+} from '@loopback/rest';
 import {repository} from '@loopback/repository';
 import {ReferenceType, ReportStatusType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {Post, User} from '../models';
-import {Filter} from '@loopback/repository';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   PostRepository,
   ReportRepository,
@@ -23,12 +30,28 @@ export class DeletedCollectionController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/posts/deleted-list')
+  @get('/posts/deleted')
   async deletedPostList(
     @param.filter(Post, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<Post>,
   ): Promise<Post[]> {
     return this.postRepository.find(filter);
+  }
+
+  @get('/posts/{id}/deleted')
+  @response(200, {
+    description: 'Deleted Post model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(Post, {includeRelations: true}),
+      },
+    },
+  })
+  async findDeletedPostById(
+    @param.path.string('id') id: string,
+    @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
+  ): Promise<Post> {
+    return this.postRepository.findById(id, filter);
   }
 
   @patch('/posts/{id}/recover')
@@ -58,12 +81,39 @@ export class DeletedCollectionController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/users/deleted-list')
+  @get('/users/deleted')
+  @response(200, {
+    description: 'Array of Deleted User model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(User, {includeRelations: true}),
+        },
+      },
+    },
+  })
   async deletedUserList(
     @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<User>,
   ): Promise<User[]> {
     return this.userRepository.find(filter);
+  }
+
+  @get('/users/{id}/deleted')
+  @response(200, {
+    description: 'Deleted User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: true}),
+      },
+    },
+  })
+  async findDeletedUserById(
+    @param.path.string('id') id: string,
+    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
+  ): Promise<User> {
+    return this.userRepository.findById(id, filter);
   }
 
   @patch('/users/{id}/recover')
