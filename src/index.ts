@@ -22,7 +22,9 @@ if (require.main === module) {
   // Run the application
   const appConfig = {
     rest: {
+      //TODO: should be able to set port the same as express here but keep PORT IN USE error
       port: +(process.env.PORT ?? 3000),
+      // port: 3001,
       host: process.env.HOST ?? 'localhost',
       openApiSpec: {
         // useful when used with OpenAPI-to-GraphQL to locate your application
