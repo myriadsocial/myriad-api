@@ -96,6 +96,14 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       return next();
     }
 
+    if (methodName === MethodType.SELECTCURRENCY) {
+      const currencyId = invocationCtx.args[1].toUpperCase();
+
+      await this.currencyRepository.findById(currencyId);
+      invocationCtx.args[1] = currencyId;
+      return next();
+    }
+
     const result = await next();
 
     if (methodName === MethodType.CREATE) {
