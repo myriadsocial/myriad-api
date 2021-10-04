@@ -31,4 +31,5 @@ export enum MethodType {
   DELETEBYID = 'deleteById',
   DELETEDPOSTLIST = 'deletedPostList',
   DELETEDUSERLIST = 'deletedUserList',
+  SELECTCURRENCY = 'selectCurrency',
 }
