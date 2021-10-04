@@ -5,6 +5,7 @@ import {
   NotificationType,
   PlatformType,
   SectionType,
+  ReportType,
 } from '../../enums';
 import {
   ActivityLog,
@@ -15,6 +16,7 @@ import {
   Notification,
   People,
   Post,
+  Report,
   Tag,
   Transaction,
   User,
@@ -34,6 +36,7 @@ import {
   NotificationRepository,
   PeopleRepository,
   PostRepository,
+  ReportRepository,
   TagRepository,
   TransactionRepository,
   UserCurrencyRepository,
@@ -596,4 +599,24 @@ export async function givenCommentInstanceOfComment(
 ) {
   const data: Partial<Comment> = givenComment(comment);
   return commentRepository.comments(id).create(data);
+}
+
+export function givenReport(report?: Partial<Report>) {
+  const data = Object.assign(
+    {
+      referenceType: ReferenceType.POST,
+      referenceId: '1',
+      type: ReportType.CHILD,
+      reason: 'Child abuse',
+    },
+    report,
+  );
+  return new Report(data);
+}
+
+export async function givenReportInstance(
+  reportRepository: ReportRepository,
+  report?: Partial<Report>,
+) {
+  return reportRepository.create(givenReport(report));
 }
