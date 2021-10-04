@@ -12,15 +12,13 @@ export async function main(options: ApplicationConfig = {}) {
 if (require.main === module) {
   const config = {
     rest: {
-      //TODO: should be able to set port the same as express here but keep PORT IN USE error
-      // port: +(process.env.PORT ?? 3000),
-      port: 3001,
+      port: +(process.env.PORT ?? 3000),
       host: process.env.HOST ?? 'localhost',
       openApiSpec: {
         // useful when used with OpenAPI-to-GraphQL to locate your application
         setServersFromRequest: true,
       },
-      // Use the LB4 application as a route. It should not be listening.
+      // Use LB4's requstHandler so it should not be listening.
       listenOnStart: false,
     },
   };
