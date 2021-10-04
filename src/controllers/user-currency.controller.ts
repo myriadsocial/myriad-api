@@ -83,8 +83,9 @@ export class UserCurrencyController {
     @param.path.string('userId') userId: string,
     @param.path.string('currencyId') currencyId: string,
   ): Promise<void> {
-    return this.userRepository.updateById(userId, {
+    await this.userRepository.updateById(userId, {
       defaultCurrency: currencyId,
+      updatedAt: new Date().toString(),
     });
   }
 }

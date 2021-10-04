@@ -28,6 +28,7 @@ export enum MethodType {
   SUBSCRIBE = 'subscribe',
   CLONE = 'clone',
   CREATENEW = 'createNew',
+  DELETE = 'delete',
   DELETEBYID = 'deleteById',
   DELETEDPOSTLIST = 'deletedPostList',
   DELETEDUSERLIST = 'deletedUserList',

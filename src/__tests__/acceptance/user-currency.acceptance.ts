@@ -10,6 +10,7 @@ import {
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenUserCurrency,
+  givenUserCurrencyInstance,
   givenUserCurrencyRepository,
   givenUserInstance,
   givenUserRepository,
@@ -56,18 +57,28 @@ describe('UserCurrencyApplication', function () {
     expect(result).to.containDeep(userCurrency);
   });
 
-  it('updates a user default currency', async () => {
+  it('selects a user default currency', async () => {
     const user = await givenUserInstance(userRepository);
-    await client.patch(
-      `/users/${user.id}/select-currency/${DefaultCurrencyType.MYRIA}`,
-    );
+    const currency = await givenCurrencyInstance(currencyRepository, {
+      id: DefaultCurrencyType.MYRIA,
+    });
+
+    await givenUserCurrencyInstance(userCurrencyRepository, {
+      userId: user.id,
+      currencyId: currency.id,
+    });
+
+    await client
+      .patch(`/users/${user.id}/select-currency/${DefaultCurrencyType.MYRIA}`)
+      .expect(204);
+
     const result = await userRepository.findById(user.id);
     expect(result.defaultCurrency).to.equal(DefaultCurrencyType.MYRIA);
   });
 
   it('returns 404 when creates user currency but the currency not exist', async () => {
     const userCurrency = givenUserCurrency({
-      currencyId: DefaultCurrencyType.MYRIA,
+      currencyId: 'DOT',
     });
     await client.post('/user-currencies').send(userCurrency).expect(404);
   });
@@ -78,7 +89,23 @@ describe('UserCurrencyApplication', function () {
   });
 
   it('deletes the user currency', async () => {
-    const userCurrency = givenUserCurrency();
+    const user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee62164',
+      defaultCurrency: DefaultCurrencyType.MYRIA,
+    });
+
+    await givenUserCurrencyInstance(userCurrencyRepository, {
+      userId: user.id,
+      currencyId: DefaultCurrencyType.MYRIA,
+    });
+
+    await givenUserCurrencyInstance(userCurrencyRepository, {
+      userId: user.id,
+      currencyId: DefaultCurrencyType.AUSD,
+    });
+
+    const userCurrency = givenUserCurrency({userId: user.id});
+
     await client
       .del(`/user-currencies`)
       .send({userId: userCurrency.userId, currencyId: userCurrency.currencyId})
