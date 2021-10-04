@@ -46,10 +46,18 @@ import {once} from 'events';
 
 export {ApplicationConfig};
 
+
+interface GunInstance {
+  web: http.Server;
+  peers: string[];
+  axe: boolean;
+  multicast: object;
+  get: Function;
+}
 export class ExpressServer {
   public readonly app: express.Application;
   public readonly myriadApp: MyriadApiApplication;
-  public readonly gun: any;
+  public readonly gun: GunInstance;
   private server?: http.Server;
 
   constructor(options: ApplicationConfig = {}) {
@@ -72,7 +80,7 @@ export class ExpressServer {
       },
     });
     this.app.use(Gun.serve);
-    this.gun.get('dummy').once((s: any) => console.log(s));
+    this.gun.get('dummy').once((s: object) => console.log(s));
     this.app.get('/', (_req: Request, res: Response) => {
       res.sendFile(path.resolve('public/express.html'));
     });
