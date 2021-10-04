@@ -46,9 +46,7 @@ import {once} from 'events';
 
 export {ApplicationConfig};
 
-
 interface GunInstance {
-  web: http.Server;
   peers: string[];
   axe: boolean;
   multicast: object;
@@ -64,15 +62,7 @@ export class ExpressServer {
     this.app = express();
     this.myriadApp = new MyriadApiApplication(options);
     this.app.use('/lb', this.myriadApp.requestHandler);
-    const port = process.env.PORT;
     this.gun = Gun({
-      web: this.app.listen(port, () => {
-        console.log(
-          '**Express & Loopback with GunDB is running at http://localhost:' +
-            port +
-            '**',
-        );
-      }),
       peers: [process.env.GUN_HOST],
       axe: false,
       multicast: {
@@ -92,8 +82,12 @@ export class ExpressServer {
   public async start() {
     await this.myriadApp.start();
     const port = this.myriadApp.restServer.config.port ?? 3000;
-    const host = this.myriadApp.restServer.config.host || '127.0.0.1';
-    this.server = this.app.listen(port, host);
+    const host = this.myriadApp.restServer.config.host ?? '127.0.0.1';
+    this.server = this.app.listen(port, host, () => {
+      console.log(
+        'Express & Loopback with GunDB is running at ' + host + ':' + port,
+      );
+    });
     await once(this.server, 'listening');
   }
 
