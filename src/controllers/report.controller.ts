@@ -10,11 +10,7 @@ import {
   response,
 } from '@loopback/rest';
 import {Report} from '../models';
-import {
-  PostRepository,
-  ReportRepository,
-  UserRepository,
-} from '../repositories';
+import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
 import {PaginationInterceptor} from '../interceptors';
 
@@ -22,10 +18,6 @@ export class ReportController {
   constructor(
     @repository(ReportRepository)
     public reportRepository: ReportRepository,
-    @repository(PostRepository)
-    public postRepository: PostRepository,
-    @repository(UserRepository)
-    public userRepository: UserRepository,
   ) {}
 
   @post('/reports')
@@ -68,20 +60,7 @@ export class ReportController {
   ): Promise<Report[]> {
     return this.reportRepository.find(
       Object.assign(filter, {
-        include: [
-          {
-            relation: 'user',
-            scope: {
-              fields: ['id', 'name', 'username'],
-            },
-          },
-          {
-            relation: 'post',
-            scope: {
-              fields: ['id', 'title', 'text', 'platform'],
-            },
-          },
-        ],
+        include: ['user', 'post', 'reporter'],
       }),
     );
   }
@@ -97,10 +76,15 @@ export class ReportController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Report, {exclude: 'where'})
+    @param.filter(Report, {exclude: ['where', 'include']})
     filter?: FilterExcludingWhere<Report>,
   ): Promise<Report> {
-    return this.reportRepository.findById(id, filter);
+    return this.reportRepository.findById(
+      id,
+      Object.assign(filter ?? {}, {
+        include: ['user', 'post', 'reporter'],
+      }),
+    );
   }
 
   @patch('/reports/{id}')
@@ -119,7 +103,7 @@ export class ReportController {
         },
       },
     })
-    report: Report,
+    report: Partial<Report>,
   ): Promise<void> {
     await this.reportRepository.updateById(id, report);
   }
