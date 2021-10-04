@@ -16,6 +16,7 @@ import {
   UserExperienceRepository,
   UserRepository,
   UserSocialMediaRepository,
+  ReportRepository,
 } from '../../repositories';
 
 export async function givenUserRepository(app: MyriadApiApplication) {
@@ -82,4 +83,8 @@ export async function givenUserExperienceRepository(app: MyriadApiApplication) {
 
 export async function givenCommentLinkRepository(app: MyriadApiApplication) {
   return app.getRepository(CommentLinkRepository);
+}
+
+export async function givenReportRepository(app: MyriadApiApplication) {
+  return app.getRepository(ReportRepository);
 }
