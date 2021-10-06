@@ -9,7 +9,7 @@ import {
   UserCurrencyRepository,
   UserRepository,
 } from '../../../repositories';
-import { User } from '../../../models'
+import {User} from '../../../models';
 import {
   givenActivityLogInstance,
   givenCurrencyInstance,
@@ -261,19 +261,19 @@ describe('UserControllerIntegration', () => {
 
   it('creates data in UserRepository when creating user', async () => {
     // @inject(PasswordHasherBindings.PASSWORD_HASHER)
-    const hasher = new BcryptHasher;
+    const hasher = new BcryptHasher();
     const user = new User({
-      "id": "0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bd",
-      "name": "ex irure",
-      "username": "dolor nostrud id laborum",
-      "bio": "mollit Duis est Excepteur"
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bd',
+      name: 'ex irure',
+      username: 'dolor nostrud id laborum',
+      bio: 'mollit Duis est Excepteur',
     });
 
     const response = await controller.create(user);
 
     const savedUser = await userRepository.find({
       where: {
-        id: user.id
+        id: user.id,
       },
     });
 
@@ -283,8 +283,7 @@ describe('UserControllerIntegration', () => {
     user.password = generatedPassword;
     expect(user).to.containEql(toJSON(savedUser));
     expect({
-      password: generatedPassword
-    }).to.equal(response.password)
+      password: generatedPassword,
+    }).to.equal(response.password);
   });
-
 });
