@@ -51,7 +51,7 @@ export class User extends Entity {
     required: false,
     jsonSchema: {
       maxLength: 87,
-      minLength: 87
+      minLength: 87,
     },
   })
   gunPub: string;
@@ -62,7 +62,7 @@ export class User extends Entity {
     required: false,
     jsonSchema: {
       maxLength: 87,
-      minLength: 87
+      minLength: 87,
     },
   })
   gunEpub: string;
