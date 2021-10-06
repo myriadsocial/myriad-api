@@ -103,18 +103,18 @@ export class FriendController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Friend, {exclude: ['id']}),
+          schema: getModelSchemaRef(Friend, {
+            partial: true,
+            exclude: ['id'],
+          }),
         },
       },
     })
-    friend: Omit<Friend, 'id'>,
+    friend: Partial<Friend>,
   ): Promise<void> {
     if (friend.status === FriendStatusType.APPROVED) {
       try {
-        await this.notificationService.sendFriendAccept(
-          friend.requesteeId,
-          friend.requestorId,
-        );
+        await this.notificationService.sendFriendAccept(id);
       } catch (error) {
         // ignored
       }
