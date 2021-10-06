@@ -40,6 +40,7 @@ export class UserCurrencyController {
         'application/json': {
           schema: getModelSchemaRef(UserCurrency, {
             title: 'NewUserCurrency',
+            exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'],
           }),
         },
       },
@@ -63,6 +64,7 @@ export class UserCurrencyController {
         'application/json': {
           schema: getModelSchemaRef(UserCurrency, {
             title: 'NewUserCurrency',
+            exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt'],
           }),
         },
       },
