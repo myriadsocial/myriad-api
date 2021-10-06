@@ -6,6 +6,7 @@ import {
   FriendRepository,
   NotificationRepository,
   PostRepository,
+  ReportRepository,
   UserRepository,
   UserSocialMediaRepository,
 } from '../repositories';
@@ -24,6 +25,8 @@ export class NotificationService {
     public userSocialMediaRepository: UserSocialMediaRepository,
     @repository(FriendRepository)
     public friendRepository: FriendRepository,
+    @repository(ReportRepository)
+    public reportRepository: ReportRepository,
     @service(FCMService)
     public fcmService: FCMService,
   ) {}
@@ -169,6 +172,53 @@ export class NotificationService {
 
     const title = 'New Report';
     const body = 'another user' + ' ' + notification.message;
+    await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
+
+    return true;
+  }
+
+  async sendUpdateReport(
+    referenceId: string,
+    type: ReferenceType,
+  ): Promise<boolean> {
+    const report = await this.reportRepository.findOne({
+      where: {
+        referenceId,
+        referenceType: type,
+      },
+    });
+
+    if (!report) return false;
+
+    const {reportedBy: from, referenceId: to, referenceType} = report;
+    const fromUser = await this.userRepository.findById(from);
+
+    let toUser = null;
+    let notificationType = null;
+    let message = null;
+
+    if (referenceType === ReferenceType.USER) {
+      toUser = await this.userRepository.findById(to);
+      notificationType = NotificationType.REPORT_USER;
+      message = 'your account has been deleted';
+    } else if (ReferenceType.POST) {
+      const post = await this.postRepository.findById(to);
+      toUser = await this.userRepository.findById(post.createdBy);
+      notificationType = NotificationType.REPORT_POST;
+      message = 'your post has been deleted';
+    } else return false;
+
+    const notification = new Notification();
+    notification.type = notificationType;
+    notification.from = fromUser.id;
+    notification.to = toUser.id;
+    notification.referenceId = to;
+    notification.message = message;
+
+    await this.notificationRepository.create(notification);
+
+    const title = 'New Report';
+    const body = notification.message;
     await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
 
     return true;
