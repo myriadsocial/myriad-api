@@ -1,8 +1,9 @@
 import {BindingScope, injectable, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {NotificationType, PlatformType} from '../enums';
+import {NotificationType, PlatformType, ReferenceType} from '../enums';
 import {Comment, Notification} from '../models';
 import {
+  FriendRepository,
   NotificationRepository,
   PostRepository,
   UserRepository,
@@ -21,6 +22,8 @@ export class NotificationService {
     public notificationRepository: NotificationRepository,
     @repository(UserSocialMediaRepository)
     public userSocialMediaRepository: UserSocialMediaRepository,
+    @repository(FriendRepository)
+    public friendRepository: FriendRepository,
     @service(FCMService)
     public fcmService: FCMService,
   ) {}
@@ -50,11 +53,13 @@ export class NotificationService {
     return true;
   }
 
-  async sendFriendAccept(from: string, to: string): Promise<boolean> {
-    const fromUser = await this.userRepository.findById(from);
-    if (fromUser == null) return false;
-    const toUser = await this.userRepository.findById(to);
-    if (toUser == null) return false;
+  async sendFriendAccept(friendId: string): Promise<boolean> {
+    const {requestee: fromUser, requestor: toUser} =
+      await this.friendRepository.findById(friendId, {
+        include: ['requestee', 'requestor'],
+      });
+
+    if (!fromUser || !toUser) return false;
 
     const notification = new Notification();
     notification.type = NotificationType.FRIEND_ACCEPT;
@@ -125,6 +130,45 @@ export class NotificationService {
 
     const title = 'New Comment';
     const body = fromUser.name + ' ' + notification.message;
+    await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
+
+    return true;
+  }
+
+  async sendReport(
+    from: string,
+    to: string,
+    referenceType: ReferenceType,
+  ): Promise<boolean> {
+    let toUser = null;
+    let notificationType = null;
+    let message = null;
+
+    const fromUser = await this.userRepository.findById(from);
+
+    if (referenceType === ReferenceType.USER) {
+      toUser = await this.userRepository.findById(to);
+      notificationType = NotificationType.REPORT_USER;
+      message = 'reported you';
+    } else if (ReferenceType.POST) {
+      const post = await this.postRepository.findById(to);
+
+      toUser = await this.userRepository.findById(post.createdBy);
+      notificationType = NotificationType.REPORT_POST;
+      message = 'reported your post';
+    } else return false;
+
+    const notification = new Notification();
+    notification.type = notificationType;
+    notification.from = fromUser.id;
+    notification.to = toUser.id;
+    notification.referenceId = to;
+    notification.message = message;
+
+    await this.notificationRepository.create(notification);
+
+    const title = 'New Report';
+    const body = 'another user' + ' ' + notification.message;
     await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
 
     return true;
