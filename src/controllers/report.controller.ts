@@ -13,11 +13,15 @@ import {Report} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
 import {PaginationInterceptor} from '../interceptors';
+import {service} from '@loopback/core';
+import {NotificationService} from '../services';
 
 export class ReportController {
   constructor(
     @repository(ReportRepository)
     public reportRepository: ReportRepository,
+    @service(NotificationService)
+    public notificationService: NotificationService,
   ) {}
 
   @post('/reports')
@@ -38,6 +42,17 @@ export class ReportController {
     })
     report: Omit<Report, 'id'>,
   ): Promise<Report> {
+    const {reportedBy, referenceId, referenceType} = report;
+
+    try {
+      await this.notificationService.sendReport(
+        reportedBy,
+        referenceId,
+        referenceType,
+      );
+    } catch {
+      // ignore
+    }
     return this.reportRepository.create(report);
   }
 
