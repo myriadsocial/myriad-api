@@ -5,7 +5,11 @@ import {
   PostRepository,
   UserRepository,
   ReportRepository,
+  NotificationRepository,
+  UserSocialMediaRepository,
+  FriendRepository,
 } from '../../../repositories';
+import {FCMService, NotificationService} from '../../../services';
 import {
   givenEmptyDatabase,
   givenPostInstance,
@@ -20,6 +24,11 @@ describe('ReportIntegration', () => {
   let userRepository: UserRepository;
   let postRepository: PostRepository;
   let controller: ReportController;
+  let notificationRepository: NotificationRepository;
+  let userSocialMediaRepository: UserSocialMediaRepository;
+  let friendRepository: FriendRepository;
+  let fcmService: FCMService;
+  let notificationService: NotificationService;
 
   before(async () => {
     ({reportRepository, userRepository, postRepository} =
@@ -27,7 +36,16 @@ describe('ReportIntegration', () => {
   });
 
   before(async () => {
-    controller = new ReportController(reportRepository);
+    notificationService = new NotificationService(
+      userRepository,
+      postRepository,
+      notificationRepository,
+      userSocialMediaRepository,
+      friendRepository,
+      reportRepository,
+      fcmService,
+    );
+    controller = new ReportController(reportRepository, notificationService);
   });
 
   beforeEach(async () => {

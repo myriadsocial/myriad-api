@@ -200,7 +200,7 @@ export class NotificationService {
     if (referenceType === ReferenceType.USER) {
       toUser = await this.userRepository.findById(to);
       notificationType = NotificationType.REPORT_USER;
-      message = 'your account has been deleted';
+      message = 'your account has been suspended';
     } else if (ReferenceType.POST) {
       const post = await this.postRepository.findById(to);
       toUser = await this.userRepository.findById(post.createdBy);

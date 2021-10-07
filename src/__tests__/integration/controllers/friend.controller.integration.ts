@@ -6,6 +6,7 @@ import {
   FriendRepository,
   NotificationRepository,
   PostRepository,
+  ReportRepository,
   UserRepository,
   UserSocialMediaRepository,
 } from '../../../repositories';
@@ -31,6 +32,7 @@ describe('FriendControllerIntegration', () => {
   let notificationRepository: NotificationRepository;
   let notificationService: NotificationService;
   let userSocialMediaRepository: UserSocialMediaRepository;
+  let reportRepository: ReportRepository;
   let friendService: FriendService;
   let fcmService: FCMService;
 
@@ -50,6 +52,8 @@ describe('FriendControllerIntegration', () => {
       postRepository,
       notificationRepository,
       userSocialMediaRepository,
+      friendRepository,
+      reportRepository,
       fcmService,
     );
     friendService = new FriendService(
