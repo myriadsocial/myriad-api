@@ -3,9 +3,11 @@ import {CommentController} from '../../../controllers';
 import {ReferenceType, NotificationType, PlatformType} from '../../../enums';
 import {
   CommentRepository,
+  FriendRepository,
   NotificationRepository,
   PeopleRepository,
   PostRepository,
+  ReportRepository,
   TransactionRepository,
   UserRepository,
   UserSocialMediaRepository,
@@ -36,6 +38,8 @@ describe('CommentControllerIntegration', () => {
   let peopleRepository: PeopleRepository;
   let notificationService: NotificationService;
   let fcmService: FCMService;
+  let friendRepository: FriendRepository;
+  let reportRepository: ReportRepository;
 
   before(async () => {
     ({
@@ -46,6 +50,8 @@ describe('CommentControllerIntegration', () => {
       transactionRepository,
       userSocialMediaRepository,
       peopleRepository,
+      friendRepository,
+      reportRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -55,6 +61,8 @@ describe('CommentControllerIntegration', () => {
       postRepository,
       notificationRepository,
       userSocialMediaRepository,
+      friendRepository,
+      reportRepository,
       fcmService,
     );
     controller = new CommentController(commentRepository, notificationService);
