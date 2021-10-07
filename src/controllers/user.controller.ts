@@ -58,12 +58,10 @@ export class UserController {
     user: User,
   ): Promise<User> {
     //TODO: override the default create() method and move password auto-generation there
-    const createdUser = await this.userRepository.create(user);
     //auto-generate a password by hashing the user's id
     const hasher = new BcryptHasher();
-    createdUser.password = await hasher.hashPassword(createdUser.id);
-    await this.userRepository.update(createdUser);
-    return createdUser;
+    user.password = await hasher.hashPassword(user.id);
+    return this.userRepository.create(user);
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
