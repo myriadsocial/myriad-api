@@ -89,7 +89,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       className === ControllerType.POST &&
       methodName === MethodType.TIMELINE
     ) {
-      if (where && Object.keys(where).length > 0 && timelineType)
+      if (Object.keys(where).length > 1 && timelineType)
         throw new HttpErrors.UnprocessableEntity(
           'Where filter and timelineType can not be used at the same time!',
         );
