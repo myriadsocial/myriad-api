@@ -13,7 +13,7 @@ export class PolkadotJs {
     try {
       const provider = new WsProvider(wssProvider, false);
 
-      provider.connect() as Promise<void>;
+      await provider.connect();
 
       const api = await new ApiPromise({provider, typesBundle: typesBundle})
         .isReadyOrError;
