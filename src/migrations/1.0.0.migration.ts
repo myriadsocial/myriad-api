@@ -51,6 +51,7 @@ import {
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import acala from '../data-seed/currencies.json';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
+import myriad from '../data-seed/myriad-types.json';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /* eslint-disable  @typescript-eslint/naming-convention */
@@ -269,6 +270,8 @@ export class MigrationScript100 implements MigrationScript {
     try {
       await this.currencyRepository.updateById(DefaultCurrencyType.MYRIA, {
         decimal: 18,
+        types: myriad,
+        rpcURL: config.MYRIAD_WS_RPC,
       });
     } catch {
       // ignore
