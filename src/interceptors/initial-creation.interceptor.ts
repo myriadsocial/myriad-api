@@ -9,8 +9,13 @@ import {
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ReferenceType, ControllerType, MethodType} from '../enums';
 import {User} from '../models';
+import {
+  ReferenceType,
+  ControllerType,
+  MethodType,
+  PlatformType,
+} from '../enums';
 import {
   CommentRepository,
   CurrencyRepository,
@@ -24,6 +29,7 @@ import {
   CurrencyService,
   FriendService,
   MetricService,
+  MyriadNodeService,
   TagService,
 } from '../services';
 
@@ -56,6 +62,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected tagService: TagService,
     @service(FriendService)
     protected friendService: FriendService,
+    @service(MyriadNodeService)
+    protected myriadNodeService: MyriadNodeService,
   ) {}
 
   /**
@@ -191,6 +199,14 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           invocationCtx.args[0].currencyId,
         );
         await this.userRepository.findById(invocationCtx.args[0].from);
+
+        const transaction = invocationCtx.args[0];
+
+        if (transaction.type === ReferenceType.POST) {
+          delete transaction.to;
+          invocationCtx.args[0] = transaction;
+        }
+
         return;
       }
 
@@ -220,7 +236,22 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.TRANSACTION: {
-        await this.currencyService.sendMyriadReward(result.from);
+        const {type, referenceId: postId, currencyId, amount} = result;
+
+        if (type === ReferenceType.POST) {
+          const post = await this.postRepository.findOne({where: {id: postId}});
+          if (!post) return;
+          const txRecipe = {
+            currencyId,
+            postId,
+            peopleId: post.peopleId,
+            platform: post.platform as PlatformType,
+            amount: amount,
+          };
+          await this.myriadNodeService.sendTip(txRecipe);
+        }
+
+        // await this.currencyService.sendMyriadReward(result.from);
         return;
       }
 
