@@ -21,6 +21,7 @@ import {
   ExperienceService,
   FCMService,
   FriendService,
+  MyriadNodeService,
   NotificationService,
   PostService,
   SocialMediaService,
@@ -38,8 +39,15 @@ import {
 } from '@loopback/logging';
 import {format} from 'winston';
 import {extensionFor} from '@loopback/core';
+import {WsProvider, ApiPromise} from '@polkadot/api';
+import {config} from './config';
+import myriadTypes from './data-seed/myriad-types.json';
+import {PlatformType} from './enums';
+import {PolkadotJs} from './utils/polkadotJs-utils';
 
 export {ApplicationConfig};
+
+const {getKeyring} = new PolkadotJs();
 
 export class MyriadApiApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
@@ -76,6 +84,9 @@ export class MyriadApiApplication extends BootMixin(
 
     // Firebase initialization
     this.firebaseInit();
+
+    // Myriad node initialization
+    this.myriadNodeInit() as Promise<void>;
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -135,6 +146,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(PostService);
     this.service(TagService);
     this.service(ExperienceService);
+    this.service(MyriadNodeService);
 
     // 3rd party service
     this.service(FCMService);
@@ -143,5 +155,41 @@ export class MyriadApiApplication extends BootMixin(
   firebaseInit() {
     if (this.options.test) return;
     firebaseAdmin.initializeApp();
+  }
+
+  async myriadNodeInit() {
+    const provider = new WsProvider(config.MYRIAD_WS_RPC, false);
+    await provider.connect();
+    const api = await new ApiPromise({provider, types: myriadTypes})
+      .isReadyOrError;
+
+    const platforms =
+      ((await api.query.platform.platforms()).toHuman() as string[]) ?? [];
+    const defaultPlatforms = [
+      PlatformType.FACEBOOK,
+      PlatformType.REDDIT,
+      PlatformType.TWITTER,
+    ];
+
+    const mnemonic = config.MYRIAD_MNEMONIC;
+    const signer = getKeyring().addFromMnemonic(mnemonic);
+    const {nonce} = await api.query.system.account(signer.address);
+
+    for (let i = 0; i < defaultPlatforms.length; i++) {
+      const defaultPlatform = defaultPlatforms[i];
+      const found = platforms.find(platform => defaultPlatform === platform);
+
+      if (found) continue;
+
+      try {
+        const tx = api.tx.platform.addPlatform(defaultPlatform);
+
+        await tx.signAndSend(signer, {nonce: nonce.toNumber() + i});
+      } catch {
+        // ignore
+      }
+    }
+
+    await api.disconnect();
   }
 }
