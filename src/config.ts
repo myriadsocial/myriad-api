@@ -1,12 +1,16 @@
+import {mnemonicGenerate} from '@polkadot/util-crypto';
 import dotenv from 'dotenv';
+
 dotenv.config();
+
+const mnemonic = mnemonicGenerate();
 
 export const config = {
   APPLICATION_HOST: process.env.HOST ?? 'localhost',
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
 
   MYRIAD_WS_RPC: process.env.MYRIAD_WS_RPC ?? 'ws://127.0.0.1:9944',
-  MYRIAD_MNEMONIC: process.env.MYRIAD_FAUCET_MNEMONIC ?? '',
+  MYRIAD_MNEMONIC: process.env.MYRIAD_FAUCET_MNEMONIC ?? mnemonic,
   MYRIAD_REWARD_AMOUNT: +(process.env.MYRIAD_REWARD_AMOUNT ?? 0),
 
   ACALA_AUSD_REWARD_AMOUNT: +(process.env.ACALA_AUSD_REWARD_AMOUNT ?? 0),

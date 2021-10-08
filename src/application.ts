@@ -85,9 +85,6 @@ export class MyriadApiApplication extends BootMixin(
     // Firebase initialization
     this.firebaseInit();
 
-    // Myriad node initialization
-    this.myriadNodeInit() as Promise<void>;
-
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
     this.bootOptions = {
@@ -158,38 +155,43 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   async myriadNodeInit() {
-    const provider = new WsProvider(config.MYRIAD_WS_RPC, false);
-    await provider.connect();
-    const api = await new ApiPromise({provider, types: myriadTypes})
-      .isReadyOrError;
+    if (this.options.test) return;
+    try {
+      const provider = new WsProvider(config.MYRIAD_WS_RPC, false);
+      await provider.connect();
+      const api = await new ApiPromise({provider, types: myriadTypes})
+        .isReadyOrError;
 
-    const platforms =
-      ((await api.query.platform.platforms()).toHuman() as string[]) ?? [];
-    const defaultPlatforms = [
-      PlatformType.FACEBOOK,
-      PlatformType.REDDIT,
-      PlatformType.TWITTER,
-    ];
+      const platforms =
+        ((await api.query.platform.platforms()).toHuman() as string[]) ?? [];
+      const defaultPlatforms = [
+        PlatformType.FACEBOOK,
+        PlatformType.REDDIT,
+        PlatformType.TWITTER,
+      ];
 
-    const mnemonic = config.MYRIAD_MNEMONIC;
-    const signer = getKeyring().addFromMnemonic(mnemonic);
-    const {nonce} = await api.query.system.account(signer.address);
+      const mnemonic = config.MYRIAD_MNEMONIC;
+      const signer = getKeyring().addFromMnemonic(mnemonic);
+      const {nonce} = await api.query.system.account(signer.address);
 
-    for (let i = 0; i < defaultPlatforms.length; i++) {
-      const defaultPlatform = defaultPlatforms[i];
-      const found = platforms.find(platform => defaultPlatform === platform);
+      for (let i = 0; i < defaultPlatforms.length; i++) {
+        const defaultPlatform = defaultPlatforms[i];
+        const found = platforms.find(platform => defaultPlatform === platform);
 
-      if (found) continue;
+        if (found) continue;
 
-      try {
-        const tx = api.tx.platform.addPlatform(defaultPlatform);
+        try {
+          const tx = api.tx.platform.addPlatform(defaultPlatform);
 
-        await tx.signAndSend(signer, {nonce: nonce.toNumber() + i});
-      } catch {
-        // ignore
+          await tx.signAndSend(signer, {nonce: nonce.toNumber() + i});
+        } catch {
+          // ignore
+        }
       }
-    }
 
-    await api.disconnect();
+      await api.disconnect();
+    } catch {
+      // ignore
+    }
   }
 }

@@ -244,7 +244,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           await this.myriadNodeService.sendTip(txRecipe);
         }
 
-        // await this.currencyService.sendMyriadReward(result.from);
+        await this.currencyService.sendMyriadReward(result.from);
         return;
       }
 
