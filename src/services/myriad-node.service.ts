@@ -22,24 +22,33 @@ export class MyriadNodeService {
 
   async addNewCurrency(currency: Currency): Promise<void> {
     const {id: currencyId, decimal, rpcURL, native} = currency;
-    const api = await this.connectMyriadNode();
-    const tx = api.tx.currencies.addCurrency(
-      currencyId,
-      decimal,
-      rpcURL,
-      native,
-    );
 
-    await tx.signAndSend(this.signer);
-    await api.disconnect();
+    try {
+      const api = await this.connectMyriadNode();
+      const tx = api.tx.currencies.addCurrency(
+        currencyId,
+        decimal,
+        rpcURL,
+        native,
+      );
+
+      await tx.signAndSend(this.signer);
+      await api.disconnect();
+    } catch {
+      // ignore
+    }
   }
 
   async addNewPlatform(platform: string): Promise<void> {
-    const api = await this.connectMyriadNode();
-    const tx = api.tx.platform.addPlatform(platform);
+    try {
+      const api = await this.connectMyriadNode();
+      const tx = api.tx.platform.addPlatform(platform);
 
-    await tx.signAndSend(this.signer);
-    await api.disconnect();
+      await tx.signAndSend(this.signer);
+      await api.disconnect();
+    } catch {
+      // ignore
+    }
   }
 
   async sendTip(txRecipe: TxRecipe): Promise<void> {
@@ -51,15 +60,20 @@ export class MyriadNodeService {
       currencyId,
       amount,
     } = txRecipe;
-    const api = await this.connectMyriadNode();
-    const tx = api.tx.escrow.sendTip(
-      currencyId,
-      {post_id, people_id, platform},
-      amount,
-    );
 
-    await tx.signAndSend(this.signer);
-    await api.disconnect();
+    try {
+      const api = await this.connectMyriadNode();
+      const tx = api.tx.escrow.sendTip(
+        currencyId,
+        {post_id, people_id, platform},
+        amount,
+      );
+
+      await tx.signAndSend(this.signer);
+      await api.disconnect();
+    } catch {
+      // ignore
+    }
   }
 
   async connectMyriadNode(): Promise<ApiPromise> {
