@@ -5,10 +5,7 @@ import {HealthComponent} from '@loopback/health';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {LoggingComponent} from '@loopback/logging';
-import {
-  RestExplorerBindings,
-  RestExplorerComponent,
-} from '@loopback/rest-explorer';
+import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
 import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
@@ -22,6 +19,7 @@ import {
   FCMService,
   FriendService,
   MetricService,
+  MyriadNodeService,
   NotificationService,
   PostService,
   SocialMediaService,
@@ -41,8 +39,15 @@ import {format} from 'winston';
 import {extensionFor} from '@loopback/core';
 import {UpdateExchangeRateJob, UpdateTrendingTopicJob} from './jobs';
 import {CronComponent} from '@loopback/cron';
+import {WsProvider, ApiPromise} from '@polkadot/api';
+import {config} from './config';
+import myriadTypes from './data-seed/myriad-types.json';
+import {PlatformType} from './enums';
+import {PolkadotJs} from './utils/polkadotJs-utils';
 
 export {ApplicationConfig};
+
+const {getKeyring} = new PolkadotJs();
 
 export class MyriadApiApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
@@ -83,6 +88,9 @@ export class MyriadApiApplication extends BootMixin(
     // Firebase initialization
     this.firebaseInit();
 
+    // Myriad node initialization
+    this.myriadNodeInit() as Promise<void>;
+
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
     this.bootOptions = {
@@ -116,9 +124,7 @@ export class MyriadApiApplication extends BootMixin(
       return false;
     })();
 
-    this.bind('logging.winston.formats.myFormat')
-      .to(myFormat)
-      .apply(extensionFor(WINSTON_FORMAT));
+    this.bind('logging.winston.formats.myFormat').to(myFormat).apply(extensionFor(WINSTON_FORMAT));
     this.bind('logging.winston.formats.colorize')
       .to(format.colorize())
       .apply(extensionFor(WINSTON_FORMAT));
@@ -143,6 +149,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(TagService);
     this.service(ExperienceService);
     this.service(MetricService);
+    this.service(MyriadNodeService);
 
     // 3rd party service
     this.service(FCMService);
@@ -156,5 +163,35 @@ export class MyriadApiApplication extends BootMixin(
   firebaseInit() {
     if (this.options.test) return;
     firebaseAdmin.initializeApp();
+  }
+
+  async myriadNodeInit() {
+    const provider = new WsProvider(config.MYRIAD_WS_RPC, false);
+    await provider.connect();
+    const api = await new ApiPromise({provider, types: myriadTypes}).isReadyOrError;
+
+    const platforms = ((await api.query.platform.platforms()).toHuman() as string[]) ?? [];
+    const defaultPlatforms = [PlatformType.FACEBOOK, PlatformType.REDDIT, PlatformType.TWITTER];
+
+    const mnemonic = config.MYRIAD_MNEMONIC;
+    const signer = getKeyring().addFromMnemonic(mnemonic);
+    const {nonce} = await api.query.system.account(signer.address);
+
+    for (let i = 0; i < defaultPlatforms.length; i++) {
+      const defaultPlatform = defaultPlatforms[i];
+      const found = platforms.find(platform => defaultPlatform === platform);
+
+      if (found) continue;
+
+      try {
+        const tx = api.tx.platform.addPlatform(defaultPlatform);
+
+        await tx.signAndSend(signer, {nonce: nonce.toNumber() + i});
+      } catch {
+        // ignore
+      }
+    }
+
+    await api.disconnect();
   }
 }
