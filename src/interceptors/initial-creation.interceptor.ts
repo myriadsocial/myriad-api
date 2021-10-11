@@ -23,7 +23,8 @@ import {
 import {CurrencyService, MetricService, TagService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
-const {validateURL} = UrlUtils;
+const urlUtils = new UrlUtils();
+const {validateURL} = urlUtils;
 
 /**
  * This class will be bound to the application as an `Interceptor` during

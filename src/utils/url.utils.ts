@@ -33,9 +33,7 @@ export class UrlUtils {
     return this.detail[1];
   }
 
-  static async getOpenGraph(url: string): Promise<EmbeddedURL> {
-    this.validateURL(url);
-
+  async getOpenGraph(url: string): Promise<EmbeddedURL> {
     const {result} = await ogs({url});
     const embeddedURL = new EmbeddedURL();
     const embedded: any = result;
@@ -59,7 +57,7 @@ export class UrlUtils {
   }
 
   /* eslint-disable   @typescript-eslint/naming-convention */
-  static validateURL(url?: string): void {
+  validateURL(url?: string): void {
     if (!url) return;
 
     const isURL = validator.isURL(url, {

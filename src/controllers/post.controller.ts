@@ -20,7 +20,8 @@ import {PostService, SocialMediaService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 // import {authenticate} from '@loopback/authentication';
 
-const {getOpenGraph} = UrlUtils;
+const urlUtils = new UrlUtils();
+const {validateURL, getOpenGraph} = urlUtils;
 
 // @authenticate("jwt")
 export class PostController {
@@ -66,6 +67,7 @@ export class PostController {
 
     if (url) {
       try {
+        validateURL(url);
         embeddedURL = await getOpenGraph(url);
       } catch {
         // ignore
