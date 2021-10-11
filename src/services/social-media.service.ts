@@ -9,7 +9,8 @@ import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
-const {getOpenGraph} = UrlUtils;
+const urlUtils = new UrlUtils();
+const {validateURL, getOpenGraph} = urlUtils;
 
 export class SocialMediaService {
   constructor(
@@ -217,6 +218,7 @@ export class SocialMediaService {
 
     if (urls.length > 0) {
       try {
+        validateURL(urls[0]);
         embedded = await getOpenGraph(urls[0]);
       } catch {
         // ignore
@@ -321,6 +323,7 @@ export class SocialMediaService {
         url = '';
       } else {
         try {
+          validateURL(url);
           embedded = await getOpenGraph(url);
         } catch {
           // ignore
