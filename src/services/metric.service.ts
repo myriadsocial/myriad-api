@@ -69,7 +69,10 @@ export class MetricService {
       state: false,
     });
 
+    // TODO: removed likes and dislikes
     const metric: Metric = {
+      likes: upvote.count,
+      dislikes: downvote.count,
       upvotes: upvote.count,
       downvotes: downvote.count,
     };
@@ -94,6 +97,9 @@ export class MetricService {
         })
       ).count;
     }
+
+    // TODO: removed comments
+    metric.comments = (metric.discussions ?? 0) + (metric.debates ?? 0);
 
     return metric;
   }

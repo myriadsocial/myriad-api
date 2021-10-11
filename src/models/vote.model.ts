@@ -8,9 +8,6 @@ import {User} from './user.model';
     mongodb: {
       collection: 'votes',
     },
-    jsonSchema: {
-      require: ['userId'],
-    },
   },
 })
 export class Vote extends Entity {
