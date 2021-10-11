@@ -266,7 +266,7 @@ describe('UserControllerIntegration', () => {
       bio: 'mollit Duis est Excepteur',
     });
 
-    await controller.create(user);
+    const response = await controller.create(user);
 
     const savedUser = await userRepository.findOne({
       where: {
@@ -277,5 +277,7 @@ describe('UserControllerIntegration', () => {
     //check that a password has been generated
     expect(savedUser).to.have.property('password');
     expect(savedUser?.password).not.equal(null);
+    expect(response).to.have.property('password');
+    expect(response?.password).not.equal(null);
   });
 });
