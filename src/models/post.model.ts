@@ -193,6 +193,9 @@ export class Post extends Entity {
   comments: Comment[];
 
   @hasMany(() => Vote, {keyTo: 'referenceId'})
+  likes: Vote[];
+
+  @hasMany(() => Vote, {keyTo: 'referenceId'})
   votes: Vote[];
 
   @hasMany(() => Transaction, {keyTo: 'referenceId'})
