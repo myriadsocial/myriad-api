@@ -65,6 +65,14 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     await this.afterCreation(type, referenceId);
 
     if (methodName === MethodType.CREATEVOTE) {
+      const popularCount = await this.metricService.countPopularPost(
+        result.value.postId,
+      );
+
+      await this.postRepository.updateById(result.value.postId, {
+        popularCount: popularCount,
+      });
+
       return Object.assign(result.value, {
         id: result.value._id,
         _id: undefined,
