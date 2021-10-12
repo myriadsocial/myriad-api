@@ -20,7 +20,7 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('VoteApplication', function () {
-  this.timeout(5000);
+  this.timeout(10000);
   let app: MyriadApiApplication;
   let client: Client;
   let voteRepository: VoteRepository;
@@ -59,7 +59,10 @@ describe('VoteApplication', function () {
       true,
     );
     const post = postResponse.ops[0];
-    const upvote = givenVote({referenceId: post._id.toString()});
+    const upvote = givenVote({
+      referenceId: post._id.toString(),
+      postId: post._id.toString(),
+    });
     const response = await client.post('/votes').send(upvote).expect(200);
     expect(response.body).to.containDeep(upvote);
     const result = await voteRepository.findById(response.body.id);
@@ -93,6 +96,7 @@ describe('VoteApplication', function () {
       state: false,
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+      postId: post._id.toString(),
     });
     const response = await client.post('/votes').send(downvote).expect(200);
     expect(response.body).to.containDeep(downvote);
@@ -120,7 +124,7 @@ describe('VoteApplication', function () {
       _id: undefined,
     });
 
-    const upvote = givenVote({referenceId: post.id});
+    const upvote = givenVote({referenceId: post.id, postId: post.id});
     const response = await client.post('/votes').send(upvote);
 
     const resultPost = await postRepository.findById(response.body.referenceId);
@@ -148,7 +152,11 @@ describe('VoteApplication', function () {
       _id: undefined,
     });
 
-    const downvote = givenVote({referenceId: post.id, state: false});
+    const downvote = givenVote({
+      referenceId: post.id,
+      state: false,
+      postId: post.id,
+    });
     await client.post('/votes').send(downvote).expect(422);
   });
 
@@ -168,6 +176,7 @@ describe('VoteApplication', function () {
     const post = postResponse.ops[0];
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post._id.toString(),
+      postId: post._id.toString(),
     });
 
     await client.del(`/votes/${vote.id}`).send().expect(204);
