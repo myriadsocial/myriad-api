@@ -127,6 +127,7 @@ describe('PostControllerIntegration', () => {
     const post = await givenPostInstance(postRepository);
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
+      postId: post.id,
       type: ReferenceType.POST,
     });
 
@@ -173,6 +174,7 @@ describe('PostControllerIntegration', () => {
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
+      postId: post.id,
     });
     const comment = await givenCommentInstance(commentRepository, {
       type: ReferenceType.POST,
@@ -248,6 +250,7 @@ describe('PostControllerIntegration', () => {
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
+      postId: post.id,
     });
 
     const response = await controller.findById(post.id, {include: ['votes']});
@@ -291,6 +294,7 @@ describe('PostControllerIntegration', () => {
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
+      postId: post.id,
     });
     const comment = await givenCommentInstance(commentRepository, {
       type: ReferenceType.POST,

@@ -211,6 +211,7 @@ describe('PostApplication', function () {
     });
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
+      postId: post.id,
     });
     const comment = await givenCommentInstance(commentRepository, {
       type: ReferenceType.POST,
