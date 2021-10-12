@@ -22,6 +22,7 @@ import {MentionUser} from './mention-user.model';
     mongodb: {
       collection: 'posts',
     },
+    hiddenProperties: ['popularCount'],
   },
 })
 export class Post extends Entity {
@@ -151,6 +152,13 @@ export class Post extends Entity {
     default: [],
   })
   mentions: MentionUser[];
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 0,
+  })
+  popularCount: number;
 
   @property({
     type: 'date',
