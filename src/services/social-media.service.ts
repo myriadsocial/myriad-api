@@ -8,6 +8,7 @@ import {People} from '../models';
 import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
+import {server} from '../index'
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -364,6 +365,24 @@ export class SocialMediaService {
     } as ExtendedPost;
   }
 
+  async fetchFacebookPostFromGun(
+    username: string,
+    textId: string,
+    publicKey?: string,
+  ): Promise<ExtendedPost> {
+    let gun = server.gun;
+    let preExistingPost = await gun.user("c7aFfFQSPEa3oMaLT87wl1vvA2hPABP6KXYctbxVGBI.5mGJEBLL6LHT-Qxsr-zORAnXh7MjKiTfeOyzIq17iUc").get("facebook");
+    console.log(preExistingPost[textId]);
+    if (!preExistingPost) return preExistingPost as unknown as ExtendedPost;
+
+    return {
+      platform: PlatformType.FACEBOOK,
+      textId: textId,
+      originCreatedAt: preExistingPost.date,
+      url: preExistingPost.url,
+      text: preExistingPost.text,
+    } as unknown as ExtendedPost;
+  }
   async fetchFacebookPost(
     username: string,
     textId: string,
@@ -464,5 +483,6 @@ export class SocialMediaService {
         platform: PlatformType.FACEBOOK,
       },
     } as unknown as ExtendedPost;
+    
   }
 }

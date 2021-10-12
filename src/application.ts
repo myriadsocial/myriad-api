@@ -52,6 +52,7 @@ interface GunInstance {
   axe: boolean;
   multicast: object;
   get: Function;
+  user: Function;
 }
 export class ExpressServer {
   public readonly app: express.Application;
@@ -71,7 +72,6 @@ export class ExpressServer {
       },
     });
     this.app.use(Gun.serve);
-    this.gun.get('dummy').once((s: object) => console.log(s));
     this.app.get('/', (_req: Request, res: Response) => {
       res.sendFile(path.resolve('public/express.html'));
     });
