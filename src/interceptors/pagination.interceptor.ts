@@ -12,6 +12,8 @@ import {HttpErrors, RestBindings} from '@loopback/rest';
 import {
   ControllerType,
   MethodType,
+  OrderFieldType,
+  OrderType,
   TimelineType,
   VisibilityType,
 } from '../enums';
@@ -97,6 +99,19 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       if (timelineType) {
         if (!userId)
           throw new HttpErrors.UnprocessableEntity('UserId must be filled');
+
+        let {sortBy, order} = query;
+        if (
+          sortBy &&
+          !Object.values(OrderFieldType).includes(sortBy as OrderFieldType)
+        ) {
+          throw new HttpErrors.UnprocessableEntity('Wrong sortBy format');
+        }
+        if (sortBy === OrderFieldType.POPULAR) sortBy = 'popularCount';
+        if (sortBy && !order) order = OrderType.DESC;
+        if (sortBy && order) {
+          filter.order = [sortBy + ' ' + order];
+        }
 
         const whereTimeline = await this.getTimeline(
           userId as string,
