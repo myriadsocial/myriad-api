@@ -225,6 +225,7 @@ export class MigrationScript100 implements MigrationScript {
             debates: 0,
             shares: 0,
           },
+          popularCount: 0,
           visibility: VisibilityType.PUBLIC,
           mentions: [],
           createdAt: new Date().toString(),
