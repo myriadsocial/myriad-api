@@ -142,6 +142,10 @@ describe('CommentApplication', function () {
     post.metric.discussions = (
       await commentRepository.count({postId: post.id})
     ).count;
+    post.metric.comments = post.metric.discussions;
+    post.metric.likes = 0;
+    post.metric.dislikes = 0;
+    post.popularCount = 1;
 
     expect(resultPost).to.containDeep(post);
   });
