@@ -232,8 +232,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
         if (!post) return;
 
+        const popularCount = await this.metricService.countPopularPost(
+          result.postId,
+        );
         await this.postRepository.updateById(result.postId, {
           metric: Object.assign(post.metric, metric),
+          popularCount: popularCount,
         });
 
         return;
