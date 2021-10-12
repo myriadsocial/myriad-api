@@ -179,4 +179,19 @@ export class MetricService {
         };
     }
   }
+
+  async countPopularPost(postId: string): Promise<number> {
+    const post = await this.postRepository.findOne({where: {id: postId}});
+    if (!post) return 0;
+
+    const {count: voteCount} = await this.voteRepository.count({
+      postId: post.id,
+      state: true,
+    });
+    const {count: commentCount} = await this.commentRepository.count({
+      postId: post.id,
+    });
+
+    return commentCount + voteCount;
+  }
 }
