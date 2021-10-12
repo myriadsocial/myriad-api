@@ -38,6 +38,12 @@ export class Vote extends Entity {
 
   @property({
     type: 'string',
+    required: true,
+  })
+  postId: string;
+
+  @property({
+    type: 'string',
     jsonSchema: {
       enum: Object.values(SectionType),
     },
