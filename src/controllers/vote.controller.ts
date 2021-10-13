@@ -1,9 +1,10 @@
-import {intercept} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {del, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
 import {ValidateVoteInterceptor} from '../interceptors';
 import {Vote} from '../models';
 import {VoteRepository} from '../repositories';
+import {NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -12,6 +13,8 @@ export class VoteController {
   constructor(
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   @post('/votes', {
@@ -48,7 +51,20 @@ export class VoteController {
     };
     const options = {upsert: true, returnOriginal: false};
 
-    return collection.findOneAndUpdate(query, update, options);
+    const result = await collection.findOneAndUpdate(query, update, options);
+
+    try {
+      await this.notificationService.sendPostVote(
+        vote.userId,
+        Object.assign(result.value, {
+          id: result.value._id,
+        }),
+      );
+    } catch {
+      // ignore
+    }
+
+    return result;
   }
 
   @del('/votes/{id}', {
