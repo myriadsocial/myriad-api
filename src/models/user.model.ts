@@ -104,7 +104,6 @@ export class User extends Entity {
     type: 'string',
     required: false,
     jsonSchema: {
-      minLength: 2,
       maxLength: 160,
     },
   })
