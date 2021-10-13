@@ -1,4 +1,4 @@
-import {intercept} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -12,6 +12,7 @@ import {
 import {PaginationInterceptor} from '../interceptors';
 import {Transaction} from '../models';
 import {TransactionRepository} from '../repositories';
+import {NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -19,6 +20,8 @@ export class TransactionController {
   constructor(
     @repository(TransactionRepository)
     protected transactionRepository: TransactionRepository,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   @post('/transactions')
@@ -39,7 +42,17 @@ export class TransactionController {
     })
     transaction: Omit<Transaction, 'id'>,
   ): Promise<Transaction> {
-    return this.transactionRepository.create(new Transaction(transaction));
+    const newTransaction = await this.transactionRepository.create(
+      new Transaction(transaction),
+    );
+
+    try {
+      await this.notificationService.sendTipsSuccess(newTransaction);
+    } catch {
+      // ignore
+    }
+
+    return newTransaction;
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
