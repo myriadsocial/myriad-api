@@ -121,9 +121,16 @@ export class NotificationService {
 
     // Notification comment to comment
     if (comment.type === ReferenceType.COMMENT) {
-      toUser = await this.userRepository.findById(comment.userId);
+      const toComment = await this.commentRepository.findById(
+        comment.referenceId,
+      );
+      toUser = await this.userRepository.findById(toComment.userId);
       notification.to = toUser.id;
+      notification.referenceId = toComment.id;
+
+      await this.notificationRepository.create(notification);
       await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
+      console.log(notification);
 
       return true;
     }
