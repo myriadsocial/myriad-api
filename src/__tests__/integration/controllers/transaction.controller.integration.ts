@@ -1,10 +1,23 @@
-import {expect} from '@loopback/testlab';
+import {expect, toJSON} from '@loopback/testlab';
 import {TransactionController} from '../../../controllers';
-import {TransactionRepository, UserRepository} from '../../../repositories';
-import {NotificationService} from '../../../services';
+import {NotificationType, ReferenceType} from '../../../enums';
 import {
+  CommentRepository,
+  FriendRepository,
+  NotificationRepository,
+  PostRepository,
+  ReportRepository,
+  TransactionRepository,
+  UserRepository,
+  UserSocialMediaRepository,
+} from '../../../repositories';
+import {FCMService, NotificationService} from '../../../services';
+import {
+  givenCommentInstance,
   givenEmptyDatabase,
+  givenPostInstance,
   givenRepositories,
+  givenTransaction,
   givenTransactionInstance,
   givenUserInstance,
   testdb,
@@ -13,14 +26,39 @@ import {
 describe('TransactionControllerIntegration', () => {
   let transactionRepository: TransactionRepository;
   let userRepository: UserRepository;
+  let postRepository: PostRepository;
+  let notificationRepository: NotificationRepository;
+  let userSocialMediaRepository: UserSocialMediaRepository;
+  let friendRepository: FriendRepository;
+  let reportRepository: ReportRepository;
+  let commentRepository: CommentRepository;
+  let fcmService: FCMService;
   let notificationService: NotificationService;
   let controller: TransactionController;
 
   before(async () => {
-    ({transactionRepository, userRepository} = await givenRepositories(testdb));
+    ({
+      transactionRepository,
+      userRepository,
+      postRepository,
+      notificationRepository,
+      userSocialMediaRepository,
+      friendRepository,
+      commentRepository,
+    } = await givenRepositories(testdb));
   });
 
   before(async () => {
+    notificationService = new NotificationService(
+      userRepository,
+      postRepository,
+      notificationRepository,
+      userSocialMediaRepository,
+      friendRepository,
+      reportRepository,
+      commentRepository,
+      fcmService,
+    );
     controller = new TransactionController(
       transactionRepository,
       notificationService,
@@ -150,6 +188,80 @@ describe('TransactionControllerIntegration', () => {
       ...transaction,
       fromUser: user,
       toUser: otherUser,
+    });
+  });
+
+  it('creates a notification when user send tips to another user from post', async () => {
+    const user = await givenUserInstance(userRepository);
+    const anotherUser = await givenUserInstance(userRepository, {
+      id: '0x06ccffd22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+    });
+    const post = await givenPostInstance(postRepository);
+    const transaction = givenTransaction({
+      from: user.id,
+      to: anotherUser.id,
+      referenceId: post.id,
+      type: ReferenceType.POST,
+    });
+    const response = await controller.create(transaction);
+    const notification = await notificationRepository.findOne({
+      where: {
+        from: response.from,
+      },
+    });
+
+    delete notification?.id;
+    delete notification?.createdAt;
+    delete notification?.updatedAt;
+    delete notification?.deletedAt;
+
+    expect(toJSON(notification)).to.deepEqual({
+      type: NotificationType.POST_TIPS,
+      from: response.from,
+      referenceId: response.id,
+      message: 'sent tips: ' + response.amount + ' ' + response.currencyId,
+      to: response.to,
+      read: false,
+    });
+  });
+
+  it('creates a notification when user send tips to another user from comment', async () => {
+    const user = await givenUserInstance(userRepository);
+    const anotherUser = await givenUserInstance(userRepository, {
+      id: '0x06ccffd22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+    });
+    const post = await givenPostInstance(postRepository);
+    const comment = await givenCommentInstance(commentRepository, {
+      referenceId: post.id,
+      postId: post.id,
+      type: ReferenceType.POST,
+      userId: anotherUser.id,
+    });
+    const transaction = givenTransaction({
+      from: user.id,
+      to: anotherUser.id,
+      referenceId: comment.id,
+      type: ReferenceType.COMMENT,
+    });
+    const response = await controller.create(transaction);
+    const notification = await notificationRepository.findOne({
+      where: {
+        from: response.from,
+      },
+    });
+
+    delete notification?.id;
+    delete notification?.createdAt;
+    delete notification?.updatedAt;
+    delete notification?.deletedAt;
+
+    expect(toJSON(notification)).to.deepEqual({
+      type: NotificationType.COMMENT_TIPS,
+      from: response.from,
+      referenceId: response.id,
+      message: 'sent tips: ' + response.amount + ' ' + response.currencyId,
+      to: response.to,
+      read: false,
     });
   });
 });
