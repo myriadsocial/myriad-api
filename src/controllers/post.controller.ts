@@ -16,7 +16,11 @@ import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.in
 import {ExtendedPost} from '../interfaces';
 import {Post} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
-import {PostService, SocialMediaService} from '../services';
+import {
+  NotificationService,
+  PostService,
+  SocialMediaService,
+} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 // import {authenticate} from '@loopback/authentication';
 
@@ -30,6 +34,8 @@ export class PostController {
     protected socialMediaService: SocialMediaService,
     @service(PostService)
     protected postService: PostService,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   @post('/posts')
@@ -65,20 +71,30 @@ export class PostController {
       }
     }
 
-    if (url) {
-      try {
-        validateURL(url);
-        embeddedURL = await getOpenGraph(url);
-      } catch {
-        // ignore
-      }
+    try {
+      if (url) validateURL(url);
+      embeddedURL = await getOpenGraph(url);
+    } catch {
+      // ignore
     }
 
     if (embeddedURL) {
       newPost.embeddedURL = embeddedURL;
     }
 
-    return this.postService.postRepository.create(newPost);
+    const result = await this.postService.postRepository.create(newPost);
+
+    try {
+      await this.notificationService.sendMention(
+        newPost.createdBy,
+        result.id,
+        newPost.mentions ?? [],
+      );
+    } catch {
+      // ignore
+    }
+
+    return result;
   }
 
   @intercept(ValidatePostImportURL.BINDING_KEY)
