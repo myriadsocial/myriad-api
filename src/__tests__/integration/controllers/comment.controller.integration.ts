@@ -481,4 +481,50 @@ describe('CommentControllerIntegration', () => {
       message: 'commented: ' + newComment.text,
     }).to.containDeep(toJSON(notifications[0]));
   });
+
+  it('creates a notification when a user comment on a comment', async () => {
+    const otherUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccckcfb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+    });
+    const post = await givenMyriadPostInstance(postRepository, {
+      createdBy: otherUser.id,
+      platform: PlatformType.MYRIAD,
+    });
+    const user = await givenUserInstance(userRepository);
+    const comment = await givenCommentInstance(commentRepository, {
+      postId: post.id,
+      userId: user.id,
+      text: 'hello world',
+      referenceId: post.id,
+      type: ReferenceType.POST,
+    });
+    const commentInstance = givenComment({
+      postId: post.id,
+      userId: otherUser.id,
+      text: 'welcome world',
+      referenceId: comment.id,
+      type: ReferenceType.COMMENT,
+    });
+
+    const response = await controller.create(commentInstance);
+    const notification = await notificationRepository.findOne({
+      where: {
+        from: response.userId,
+      },
+    });
+
+    delete notification?.id;
+    delete notification?.createdAt;
+    delete notification?.updatedAt;
+    delete notification?.deletedAt;
+
+    expect(toJSON(notification)).to.deepEqual({
+      type: NotificationType.COMMENT_COMMENT,
+      from: response.userId,
+      referenceId: response.referenceId,
+      message: 'commented: ' + response.text,
+      to: comment.userId,
+      read: false,
+    });
+  });
 });
