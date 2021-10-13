@@ -3,6 +3,7 @@ import {FriendController} from '../../../controllers';
 import {FriendStatusType, NotificationType} from '../../../enums';
 import {Friend} from '../../../models';
 import {
+  CommentRepository,
   FriendRepository,
   NotificationRepository,
   PostRepository,
@@ -27,6 +28,7 @@ import {
 describe('FriendControllerIntegration', () => {
   let userRepository: UserRepository;
   let friendRepository: FriendRepository;
+  let commentRepository: CommentRepository;
   let postRepository: PostRepository;
   let controller: FriendController;
   let notificationRepository: NotificationRepository;
@@ -54,6 +56,7 @@ describe('FriendControllerIntegration', () => {
       userSocialMediaRepository,
       friendRepository,
       reportRepository,
+      commentRepository,
       fcmService,
     );
     friendService = new FriendService(

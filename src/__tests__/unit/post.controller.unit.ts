@@ -9,7 +9,11 @@ import {PostController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {Post} from '../../models';
 import {PeopleRepository, PostRepository} from '../../repositories';
-import {PostService, SocialMediaService} from '../../services';
+import {
+  NotificationService,
+  PostService,
+  SocialMediaService,
+} from '../../services';
 import {givenMyriadPost} from '../helpers';
 
 describe('PostController', () => {
@@ -17,6 +21,7 @@ describe('PostController', () => {
   let peopleRepository: PeopleRepository;
   let postService: PostService;
   let socialMediaService: SocialMediaService;
+  let notificationService: NotificationService;
   let controller: PostController;
   let aPost: Post;
   let aPostWithId: Post;
@@ -104,6 +109,10 @@ describe('PostController', () => {
     });
 
     postService = new PostService(postRepository, peopleRepository);
-    controller = new PostController(socialMediaService, postService);
+    controller = new PostController(
+      socialMediaService,
+      postService,
+      notificationService,
+    );
   }
 });
