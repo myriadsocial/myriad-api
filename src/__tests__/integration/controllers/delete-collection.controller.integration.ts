@@ -3,6 +3,7 @@ import {DeletedCollectionController} from '../../../controllers';
 import {NotificationType, ReferenceType} from '../../../enums';
 import {Notification} from '../../../models';
 import {
+  CommentRepository,
   FriendRepository,
   NotificationRepository,
   PostRepository,
@@ -22,6 +23,7 @@ import {
 
 describe('DeleteCollectionControllerIntegration', () => {
   let userRepository: UserRepository;
+  let commentRepository: CommentRepository;
   let postRepository: PostRepository;
   let reportRepository: ReportRepository;
   let notificationRepository: NotificationRepository;
@@ -50,6 +52,7 @@ describe('DeleteCollectionControllerIntegration', () => {
       userSocialMediaRepository,
       friendRepository,
       reportRepository,
+      commentRepository,
       fcmService,
     );
 

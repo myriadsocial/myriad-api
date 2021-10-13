@@ -8,10 +8,12 @@ import {
 import {TransactionController} from '../../controllers';
 import {Transaction} from '../../models';
 import {TransactionRepository} from '../../repositories';
+import {NotificationService} from '../../services';
 import {givenTransaction} from '../helpers';
 
 describe('TransactionController', () => {
   let transactionRepository: StubbedInstanceWithSinonAccessor<TransactionRepository>;
+  let notificationService: NotificationService;
   let controller: TransactionController;
   let aTransaction: Transaction;
   let aTransactionWithId: Transaction;
@@ -97,6 +99,9 @@ describe('TransactionController', () => {
       }),
     ] as Transaction[];
 
-    controller = new TransactionController(transactionRepository);
+    controller = new TransactionController(
+      transactionRepository,
+      notificationService,
+    );
   }
 });

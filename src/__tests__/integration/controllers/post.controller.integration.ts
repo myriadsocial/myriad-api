@@ -12,6 +12,7 @@ import {
 } from '../../../repositories';
 import {
   Facebook,
+  NotificationService,
   PostService,
   Reddit,
   RedditProvider,
@@ -44,6 +45,7 @@ describe('PostControllerIntegration', () => {
   let commentRepository: CommentRepository;
   let voteRepository: VoteRepository;
   let transactionRepository: TransactionRepository;
+  let notificationService: NotificationService;
   let controller: PostController;
 
   before(async () => {
@@ -67,7 +69,11 @@ describe('PostControllerIntegration', () => {
       facebookService,
     );
     postService = new PostService(postRepository, peopleRepository);
-    controller = new PostController(socialMediaService, postService);
+    controller = new PostController(
+      socialMediaService,
+      postService,
+      notificationService,
+    );
   });
 
   beforeEach(async () => {

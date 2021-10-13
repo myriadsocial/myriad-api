@@ -1,6 +1,7 @@
 import {expect} from '@loopback/testlab';
 import {TransactionController} from '../../../controllers';
 import {TransactionRepository, UserRepository} from '../../../repositories';
+import {NotificationService} from '../../../services';
 import {
   givenEmptyDatabase,
   givenRepositories,
@@ -12,6 +13,7 @@ import {
 describe('TransactionControllerIntegration', () => {
   let transactionRepository: TransactionRepository;
   let userRepository: UserRepository;
+  let notificationService: NotificationService;
   let controller: TransactionController;
 
   before(async () => {
@@ -19,7 +21,10 @@ describe('TransactionControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new TransactionController(transactionRepository);
+    controller = new TransactionController(
+      transactionRepository,
+      notificationService,
+    );
   });
 
   beforeEach(async () => {

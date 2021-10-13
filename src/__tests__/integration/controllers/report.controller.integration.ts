@@ -8,6 +8,7 @@ import {
   NotificationRepository,
   UserSocialMediaRepository,
   FriendRepository,
+  CommentRepository,
 } from '../../../repositories';
 import {FCMService, NotificationService} from '../../../services';
 import {
@@ -26,6 +27,7 @@ describe('ReportIntegration', () => {
   let controller: ReportController;
   let notificationRepository: NotificationRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
+  let commentRepository: CommentRepository;
   let friendRepository: FriendRepository;
   let fcmService: FCMService;
   let notificationService: NotificationService;
@@ -43,6 +45,7 @@ describe('ReportIntegration', () => {
       userSocialMediaRepository,
       friendRepository,
       reportRepository,
+      commentRepository,
       fcmService,
     );
     controller = new ReportController(reportRepository, notificationService);
