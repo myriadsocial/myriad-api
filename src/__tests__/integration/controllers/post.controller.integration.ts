@@ -1,7 +1,8 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {PostController} from '../../../controllers';
 import {RedditDataSource} from '../../../datasources';
-import {ReferenceType} from '../../../enums';
+import {NotificationType, ReferenceType} from '../../../enums';
+import {MentionUser} from '../../../models';
 import {
   CommentRepository,
   VoteRepository,
@@ -9,9 +10,14 @@ import {
   PostRepository,
   TransactionRepository,
   UserRepository,
+  NotificationRepository,
+  UserSocialMediaRepository,
+  FriendRepository,
+  ReportRepository,
 } from '../../../repositories';
 import {
   Facebook,
+  FCMService,
   NotificationService,
   PostService,
   Reddit,
@@ -31,6 +37,7 @@ import {
   givenTransactionInstance,
   givenUserInstance,
   testdb,
+  givenPost,
 } from '../../helpers';
 
 describe('PostControllerIntegration', () => {
@@ -45,6 +52,11 @@ describe('PostControllerIntegration', () => {
   let commentRepository: CommentRepository;
   let voteRepository: VoteRepository;
   let transactionRepository: TransactionRepository;
+  let friendRepository: FriendRepository;
+  let notificationRepository: NotificationRepository;
+  let reportRepository: ReportRepository;
+  let userSocialMediaRepository: UserSocialMediaRepository;
+  let fcmService: FCMService;
   let notificationService: NotificationService;
   let controller: PostController;
 
@@ -56,6 +68,9 @@ describe('PostControllerIntegration', () => {
       commentRepository,
       voteRepository,
       transactionRepository,
+      notificationRepository,
+      friendRepository,
+      reportRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -67,6 +82,16 @@ describe('PostControllerIntegration', () => {
       twitterService,
       redditService,
       facebookService,
+    );
+    notificationService = new NotificationService(
+      userRepository,
+      postRepository,
+      notificationRepository,
+      userSocialMediaRepository,
+      friendRepository,
+      reportRepository,
+      commentRepository,
+      fcmService,
     );
     postService = new PostService(postRepository, peopleRepository);
     controller = new PostController(
@@ -348,6 +373,43 @@ describe('PostControllerIntegration', () => {
     delete redditPost.platformUser;
 
     expect(toJSON(response)).to.containEql(toJSON(redditPost));
+  });
+
+  it('creates a notification when post mentions another user', async () => {
+    const user = await givenUserInstance(userRepository);
+    const mentionUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ef118bc',
+    });
+    const post = givenPost({
+      mentions: [
+        new MentionUser({
+          id: mentionUser.id,
+          name: mentionUser.name,
+          username: mentionUser.name,
+        }),
+      ],
+      createdBy: user.id,
+    });
+    const response = await controller.create(post);
+    const notification = await notificationRepository.findOne({
+      where: {
+        from: response.createdBy,
+      },
+    });
+
+    delete notification?.id;
+    delete notification?.createdAt;
+    delete notification?.updatedAt;
+    delete notification?.deletedAt;
+
+    expect(toJSON(notification)).to.deepEqual({
+      type: NotificationType.POST_MENTION,
+      from: response.createdBy,
+      referenceId: response.id,
+      message: 'mentioned you',
+      to: mentionUser.id,
+      read: false,
+    });
   });
 
   async function givenRedditService() {
