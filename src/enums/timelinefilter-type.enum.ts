@@ -1,7 +1,9 @@
 export enum OrderFieldType {
+  UPVOTE = 'upvote',
+  COMMENT = 'comment',
   COUNT = 'count',
   POPULAR = 'popular',
-  CREATEDAT = 'createdAt',
+  LATEST = 'latest',
   UPDATEDAT = 'updatedAt',
 }
 
