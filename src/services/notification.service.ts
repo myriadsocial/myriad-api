@@ -396,32 +396,22 @@ export class NotificationService {
   }
 
   async sendTipsSuccess(transaction: Transaction): Promise<boolean> {
-    const {from, to: toUserId, referenceId, type} = transaction;
+    const {from, to: toUserId, type} = transaction;
     const fromUser = await this.userRepository.findById(from);
 
-    let toUser = null;
-
-    if (type === ReferenceType.USER || type === ReferenceType.COMMENT) {
-      toUser = await this.userRepository.findById(toUserId);
-    } else {
-      const post = await this.postRepository.findById(referenceId ?? '');
-      const userSocialMedia = await this.userSocialMediaRepository.findOne({
-        where: {peopleId: post.peopleId},
-      });
-
-      if (!userSocialMedia) return false;
-      toUser = await this.userRepository.findById(userSocialMedia.userId);
-    }
+    const toUser = await this.userRepository.findById(toUserId);
 
     const notification = new Notification();
 
-    notification.type =
-      transaction.type === ReferenceType.POST
-        ? NotificationType.POST_TIPS
-        : NotificationType.COMMENT_TIPS;
+    if (type === ReferenceType.COMMENT) {
+      notification.type = NotificationType.COMMENT_TIPS;
+    } else if (type === ReferenceType.POST) {
+      notification.type = NotificationType.POST_TIPS;
+    } else notification.type = NotificationType.USER_TIPS;
+
     notification.from = fromUser.id;
     notification.to = toUser.id;
-    notification.referenceId = referenceId;
+    notification.referenceId = transaction.id;
     notification.message =
       'sent tips: ' + transaction.amount + ' ' + transaction.currencyId;
 
