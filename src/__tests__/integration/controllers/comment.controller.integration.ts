@@ -63,6 +63,7 @@ describe('CommentControllerIntegration', () => {
       userSocialMediaRepository,
       friendRepository,
       reportRepository,
+      commentRepository,
       fcmService,
     );
     controller = new CommentController(commentRepository, notificationService);
