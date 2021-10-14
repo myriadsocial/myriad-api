@@ -2,5 +2,4 @@
 dist/
 node_modules/
 .eslintrc.js
-commitlint.config.js
 *.tsbuildinfo
