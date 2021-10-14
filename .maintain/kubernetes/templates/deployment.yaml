@@ -59,11 +59,13 @@ spec:
           env:
             - name: MYRIAD_WS_RPC
               value: {{ .Values.config.rpcWSURL }}
+            {{- if .Values.config.faucetMnemonic }}
             - name: MYRIAD_FAUCET_MNEMONIC
               valueFrom:
                 secretKeyRef:
                   name: {{ include "myriad-api.faucetSecretName" . }}
                   key: faucetMnemonic
+            {{- end }}
             - name: MYRIAD_REWARD_AMOUNT
               value: {{ .Values.config.rewardAmount | quote }}
             - name: ACALA_AUSD_REWARD_AMOUNT
@@ -72,6 +74,7 @@ spec:
               value: {{ .Values.config.mongo.host }}
             - name: MONGO_PORT
               value: {{ .Values.config.mongo.port | quote }}
+            {{- if and .Values.config.mongo.user .Values.config.mongo.password }}
             - name: MONGO_USER
               valueFrom:
                 secretKeyRef:
@@ -82,19 +85,33 @@ spec:
                 secretKeyRef:
                   name: {{ include "myriad-api.mongoSecretName" . }}
                   key: password
+            {{- end }}
             - name: MONGO_DATABASE
               value: {{ .Values.config.mongo.database }}
+            {{- if .Values.config.firebase.serviceAccountBase64 }}
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /etc/google/sa_credentials.json
+            {{- end }}
+            {{- if .Values.config.sentry.dns }}
+            - name: SENTRY_DNS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "myriad-api.sentrySecretName" . }}
+                  key: dns
+            {{- end }}
+            {{- if .Values.config.twitter.bearerToken }}
             - name: TWITTER_BEARER_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "myriad-api.twitterSecretName" . }}
                   key: bearerToken
+            {{- end }}
+          {{- if .Values.config.firebase.serviceAccountBase64 }}
           volumeMounts:
             - name: google-service-account-credentials
               mountPath: /etc/google
               readOnly: true
+          {{- end }}
           ports:
             - name: http
               containerPort: 3000
