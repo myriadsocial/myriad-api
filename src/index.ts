@@ -1,7 +1,4 @@
-import {
-  ApplicationConfig,
-  ExpressServer,
-} from './application';
+import {ApplicationConfig, ExpressServer} from './application';
 import {config} from './config';
 import * as Sentry from '@sentry/node';
 

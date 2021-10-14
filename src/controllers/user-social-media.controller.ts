@@ -66,10 +66,7 @@ export class UserSocialMediaController {
         break;
 
       case PlatformType.FACEBOOK:
-        platformUser = await this.socialMediaService.verifyToFacebook(
-          username,
-          publicKey,
-        );
+        throw new HttpErrors.NotFound('Please use myriad-claimer for Facebook');
 
         break;
 
