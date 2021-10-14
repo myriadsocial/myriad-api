@@ -1,4 +1,7 @@
-import {ApplicationConfig, MyriadApiApplication, ExpressServer} from './application';
+import {
+  ApplicationConfig,
+  ExpressServer,
+} from './application';
 import {config} from './config';
 import * as Sentry from '@sentry/node';
 
@@ -24,9 +27,14 @@ if (require.main === module) {
   const appConfig = {
     rest: {
       //TODO: should be able to set port the same as express here but keep PORT IN USE error
-      port: +(process.env.PORT ?? 3000),
-      // port: 3001,
-      host: process.env.HOST ?? 'localhost',
+      host: config.APPLICATION_HOST,
+      port: config.APPLICATION_PORT,
+      /* The `gracePeriodForClose` provides a graceful close for http/https      
+      servers with keep-alive clients. The default value is `Infinity`      
+      (don't force-close). If you want to immediately destroy all sockets      
+      upon stop, set its value to `0`. See https://www.npmjs.com/package/stoppable
+      */
+      gracePeriodForClose: 5000, // 5 seconds
       openApiSpec: {
         // useful when used with OpenAPI-to-GraphQL to locate your application
         setServersFromRequest: true,
@@ -35,7 +43,7 @@ if (require.main === module) {
       listenOnStart: false,
     },
   };
-  main(config).catch(err => {
+  main(appConfig).catch(err => {
     console.error('Cannot start the application.', err);
     process.exit(1);
   });
