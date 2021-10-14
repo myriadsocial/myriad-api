@@ -8,8 +8,7 @@ import {People, Post} from '../models';
 import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
-import {server} from '../index'
-import { GunPost } from '../models/gun-post.model';
+import {server} from '../index';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -370,20 +369,35 @@ export class SocialMediaService {
     username: string,
     urlId: string,
     publicKey?: string,
-  ): Promise<GunPost> {
+  ): Promise<ExtendedPost> {
     let gun = server.gun;
-    let preExistingPost = await gun.user(process.env.SCRAPER_PUB_KEY).get("facebook").get(username).get(urlId);
-    if (!preExistingPost) return preExistingPost as unknown as GunPost;
+    let gunPost = await gun
+      .user(process.env.SCRAPER_PUB_KEY)
+      .get('facebook')
+      .get(username)
+      .get(urlId);
+    if (!gunPost) return gunPost as unknown as ExtendedPost;
+    gunPost = JSON.parse(gunPost);
 
     return {
       platform: PlatformType.FACEBOOK,
-      originPostId: "gun_"+urlId, //add 'gun' prefix to differentiate from mongo 
-      id: "gun_"+preExistingPost.post_id,
-      originCreatedAt: preExistingPost.date,
-      url: preExistingPost.url,
-      text: preExistingPost.text,
-      tags: undefined,
-    } as unknown as GunPost;
+      originPostId: 'gun_' + gunPost.post_id,
+      originCreatedAt: gunPost.date,
+      text: gunPost.text,
+      url: gunPost.url,
+      asset: {
+        images: gunPost.images,
+        videos: [gunPost.video],
+      },
+      importers: gunPost.importers,
+      metric: {
+        upvotes: gunPost.metrics.likes,
+        discussions: gunPost.metrics.comments,
+        shares: gunPost.metrics.shares,
+      },
+      //TODO: can't set tags to null
+      tags: ['null'],
+    } as ExtendedPost;
   }
 
   async fetchFacebookPost(
@@ -486,6 +500,5 @@ export class SocialMediaService {
         platform: PlatformType.FACEBOOK,
       },
     } as unknown as ExtendedPost;
-    
   }
 }
