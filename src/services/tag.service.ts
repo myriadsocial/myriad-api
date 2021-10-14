@@ -3,7 +3,9 @@ import {OrderFieldType, OrderType, VisibilityType} from '../enums';
 import {Post} from '../models';
 import {TagRepository} from '../repositories';
 import {DateUtils} from '../utils/date-utils';
+import {injectable, BindingScope} from '@loopback/core';
 
+@injectable({scope: BindingScope.TRANSIENT})
 export class TagService {
   constructor(
     @repository(TagRepository)

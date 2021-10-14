@@ -5,7 +5,9 @@ import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {injectable, BindingScope} from '@loopback/core';
 
+@injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
   constructor(
     @repository(UserSocialMediaRepository)
