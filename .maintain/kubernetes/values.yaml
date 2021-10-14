@@ -17,7 +17,7 @@ config:
   rpcWSURL: ''
   faucetMnemonic: ''
   rewardAmount: 1
-  acalaAUDSrewardAmount: 0
+  acalaAUSDRewardAmount: 0
   mongo:
     host: ''
     port: 27017
