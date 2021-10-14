@@ -17,6 +17,7 @@ import {
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {TransactionService} from './transaction.service';
 import acala from '../data-seed/currencies.json';
+import {NotificationService} from '.';
 
 const BN = require('bn.js');
 
@@ -38,6 +39,8 @@ export class CurrencyService {
     protected queueRepository: QueueRepository,
     @service(TransactionService)
     protected transactionService: TransactionService,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   async defaultCurrency(userId: string): Promise<void> {
@@ -98,13 +101,15 @@ export class CurrencyService {
           name: 'Myriad',
         });
 
-      await this.transactionRepository.create({
+      const transaction = await this.transactionRepository.create({
         hash: txHash.toString(),
         amount: value / 10 ** acalaDecimal,
         to: to,
         from: getHexPublicKey(from),
         currencyId: DefaultCurrencyType.AUSD,
       });
+
+      await this.notificationService.sendIntitalAUSD(transaction);
 
       await api.disconnect();
     } catch {
@@ -147,13 +152,15 @@ export class CurrencyService {
           name: 'Myriad',
         });
 
-      await this.transactionRepository.create({
+      const transaction = await this.transactionRepository.create({
         hash: txHash.toString(),
         amount: rewardAmount / 10 ** myriadDecimal,
         to: to,
         from: getHexPublicKey(from),
         currencyId: DefaultCurrencyType.MYRIA,
       });
+
+      await this.notificationService.sendRewardSuccess(transaction);
 
       await api.disconnect();
     } catch (error) {
@@ -241,13 +248,15 @@ export class CurrencyService {
 
         const txHash = await transfer.signAndSend(from);
 
-        await this.transactionRepository.create({
+        const transaction = await this.transactionRepository.create({
           hash: txHash.toString(),
           amount: balance / 10 ** decimal,
           to: to,
           from: getHexPublicKey(from),
           currencyId: id,
         });
+
+        await this.notificationService.sendClaimTips(transaction);
 
         if (api && i === userCurrencies.length - 1) await api.disconnect();
       } catch (err) {
