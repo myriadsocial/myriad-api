@@ -26,6 +26,8 @@ config:
     database: myriad
   firebase:
     serviceAccountBase64: ''
+  sentry:
+    dns: ''
   twitter:
     bearerToken: ''
 
