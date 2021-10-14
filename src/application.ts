@@ -21,6 +21,7 @@ import {
   ExperienceService,
   FCMService,
   FriendService,
+  MetricService,
   NotificationService,
   PostService,
   SocialMediaService,
@@ -194,6 +195,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(PostService);
     this.service(TagService);
     this.service(ExperienceService);
+    this.service(MetricService);
 
     // 3rd party service
     this.service(FCMService);

@@ -1,8 +1,10 @@
 import {repository} from '@loopback/repository';
 import {Transaction} from '../models';
 import {TransactionRepository} from '../repositories';
+import {injectable, BindingScope} from '@loopback/core';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
+@injectable({scope: BindingScope.TRANSIENT})
 export class TransactionService {
   constructor(
     @repository(TransactionRepository)

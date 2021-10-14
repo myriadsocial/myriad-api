@@ -6,7 +6,9 @@ import {
   UserExperienceRepository,
   UserRepository,
 } from '../repositories';
+import {injectable, BindingScope} from '@loopback/core';
 
+@injectable({scope: BindingScope.TRANSIENT})
 export class ExperienceService {
   constructor(
     @repository(UserExperienceRepository)
