@@ -1,5 +1,6 @@
 import {ApplicationConfig, MyriadApiApplication} from './application';
 import {config} from './config';
+import * as Sentry from '@sentry/node';
 
 export * from './application';
 
@@ -14,6 +15,13 @@ export async function main(options: ApplicationConfig = {}) {
 }
 
 if (require.main === module) {
+  if (config.SENTRY_DNS) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      tracesSampleRate: 1.0,
+    });
+  }
+
   // Run the application
   const appConfig = {
     rest: {
