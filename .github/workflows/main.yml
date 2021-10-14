@@ -115,6 +115,7 @@ jobs:
             MONGO_USER_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_USER_API
             MONGO_PASSWORD_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.DEV_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
+            SENTRY_DNS::${{ secrets.DEV_GCP_PROJECT_ID }}/SENTRY_DNS
             TWITTER_BEARER_TOKEN:${{ secrets.DEV_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
 
       - name: Install Helm
@@ -136,6 +137,7 @@ jobs:
             --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
             --set-string config.mongo.database=myriad \
             --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
+            --set-string config.sentry.dns=${{ steps.secrets.outputs.SENTRY_DNS }} \
             --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
             --set ingress.enabled=true \
             --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
