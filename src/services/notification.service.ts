@@ -436,7 +436,7 @@ export class NotificationService {
     notification.type = NotificationType.USER_REWARD;
     notification.from = from;
     notification.to = to;
-    notification.referenceId = to;
+    notification.referenceId = transaction.id;
     notification.message =
       'sent rewards: ' + transaction.amount + ' ' + transaction.currencyId;
 
@@ -461,7 +461,7 @@ export class NotificationService {
     notification.type = NotificationType.USER_INITIAL_TIPS;
     notification.from = from;
     notification.to = to;
-    notification.referenceId = to;
+    notification.referenceId = transaction.id;
     notification.message =
       'sent tips: ' + transaction.amount + ' ' + transaction.currencyId;
 
@@ -475,6 +475,31 @@ export class NotificationService {
 
     await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
 
+    return true;
+  }
+
+  async sendClaimTips(transaction: Transaction): Promise<boolean> {
+    const {from, to} = transaction;
+
+    const notification = new Notification();
+    const toUser = await this.userRepository.findById(to);
+
+    notification.type = NotificationType.USER_CLAIM_TIPS;
+    notification.from = from;
+    notification.to = to;
+    notification.referenceId = transaction.id;
+    notification.message =
+      'claim tips: ' + transaction.amount + ' ' + transaction.currencyId;
+
+    const createdNotification = await this.notificationRepository.create(
+      notification,
+    );
+    if (createdNotification == null) return false;
+
+    const title = 'Send Claim Tips Success';
+    const body = 'You ' + notification.message;
+
+    await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
     return true;
   }
 
