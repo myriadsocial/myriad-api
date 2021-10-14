@@ -11,6 +11,7 @@ export enum NotificationType {
   COMMENT_TIPS = 'comment_tips',
   USER_REWARD = 'user_reward',
   USER_INITIAL_TIPS = 'user_initial_tips',
+  USER_CLAIM_TIPS = 'user_claim_tips',
   REPORT_POST = 'report_post',
   REPORT_USER = 'report_user',
 }
