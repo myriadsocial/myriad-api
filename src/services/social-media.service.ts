@@ -4,7 +4,7 @@ import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {ExtendedPeople, ExtendedPost} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
-import {People, Post} from '../models';
+import {People} from '../models';
 import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
@@ -99,39 +99,6 @@ export class SocialMediaService {
       profilePictureURL: redditUser.icon_img
         ? redditUser.icon_img.split('?')[0]
         : '',
-      publicKey: publicKey,
-    } as ExtendedPeople;
-  }
-
-  async verifyToFacebook(
-    username: string,
-    publicKey: string,
-  ): Promise<ExtendedPeople> {
-    const splitUsername = username.split('/');
-    const fbUsername = splitUsername[3];
-    const fbPostId = splitUsername[5];
-
-    const fbPost = await this.fetchFacebookPost(
-      fbUsername,
-      fbPostId,
-      publicKey,
-    );
-
-    if (!fbPost.platformUser) throw new Error('Platform user not exist!');
-
-    const {
-      username: userName,
-      name,
-      originUserId,
-      profilePictureURL,
-    } = fbPost.platformUser;
-
-    return {
-      name,
-      username: userName,
-      originUserId,
-      platform: PlatformType.FACEBOOK,
-      profilePictureURL,
       publicKey: publicKey,
     } as ExtendedPeople;
   }
@@ -368,9 +335,8 @@ export class SocialMediaService {
   async fetchFacebookPostFromGun(
     username: string,
     urlId: string,
-    publicKey?: string,
   ): Promise<ExtendedPost> {
-    let gun = server.gun;
+    const gun = server.gun;
     let gunPost = await gun
       .user(process.env.SCRAPER_PUB_KEY)
       .get('facebook')
@@ -398,107 +364,5 @@ export class SocialMediaService {
       //TODO: can't set tags to null
       tags: ['null'],
     } as ExtendedPost;
-  }
-
-  async fetchFacebookPost(
-    username: string,
-    textId: string,
-    publicKey?: string,
-  ): Promise<ExtendedPost> {
-    let platformAccountId = '';
-    let profileImageUrl = '';
-
-    const data = await this.facebookService.getActions(username, textId);
-
-    if (publicKey) {
-      const foundIndex = data.search(publicKey);
-      const getPublicKey = data.substring(foundIndex, foundIndex + 66);
-
-      if (foundIndex === -1)
-        throw new HttpErrors.NotFound('Cannot find specified post');
-      if (getPublicKey.replace('"', '').trim() !== publicKey)
-        throw new HttpErrors.NotFound('Cannot find specified post');
-    }
-
-    const findSocialMedialPostingIndex = data.search('"SocialMediaPosting"');
-    const post = data.substring(findSocialMedialPostingIndex);
-
-    // Get platform created at
-    const findDateCreatedIndex = post.search('"dateCreated"');
-    const findDateModifiedIndex = post.search('"dateModified"');
-    const platformCreatedAt = post.substring(
-      findDateCreatedIndex + '"dateCreated"'.length + 2,
-      findDateModifiedIndex - 2,
-    );
-
-    // Get platform account id
-    const findEntityIdIndex = post.search('"entity_id"');
-    const entityIndex = post.substring(
-      findEntityIdIndex + '"entity_id"'.length + 2,
-    );
-
-    for (const char of entityIndex) {
-      if (char === '"') break;
-
-      platformAccountId += char;
-    }
-
-    // Get profile image url
-    const findIndex = post.search(`"identifier":${platformAccountId}`);
-    const getString = post.substring(findIndex);
-    const findImageIndex = getString.search('"image"');
-    const getImageString = getString.substring(
-      findImageIndex + '"image"'.length + 2,
-    );
-
-    for (const char of getImageString) {
-      if (char === '"') break;
-      profileImageUrl += char;
-    }
-
-    // Get name
-    const arrayName = [];
-
-    for (let i = findIndex - 1; i > 0; i--) {
-      if (post[i] === ':') break;
-      if (post[i] === '"' || post[i] === ',') continue;
-
-      arrayName.unshift(post[i]);
-    }
-
-    // Get username
-    const getUrl = post.substring(
-      findIndex + `"identifier":${platformAccountId},"url":"`.length,
-    );
-
-    let url = '';
-
-    for (let i = 0; getUrl.length; i++) {
-      if (getUrl[i] === '"') break;
-      url += getUrl[i];
-    }
-
-    const name = arrayName.join('');
-    const userName = url.replace(/\\/g, '').split('/')[3];
-
-    if (!name || !userName) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Cannot find the specified post',
-      );
-    }
-
-    return {
-      platform: PlatformType.FACEBOOK,
-      textId: textId,
-      originCreatedAt: platformCreatedAt,
-      url: `https://facebook.com/${username}/posts/${textId}`,
-      platformUser: {
-        name: arrayName.join(''),
-        username: userName,
-        originUserId: platformAccountId,
-        profilePictureURL: profileImageUrl.split('\\').join(''),
-        platform: PlatformType.FACEBOOK,
-      },
-    } as unknown as ExtendedPost;
   }
 }
