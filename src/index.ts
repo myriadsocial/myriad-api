@@ -1,5 +1,7 @@
-import {ApplicationConfig, ExpressServer} from './application';
-// import {config} from './config';
+import {ApplicationConfig, MyriadApiApplication, ExpressServer} from './application';
+import {config} from './config';
+import * as Sentry from '@sentry/node';
+
 export * from './application';
 
 export async function main(options: ApplicationConfig = {}) {
@@ -10,7 +12,15 @@ export async function main(options: ApplicationConfig = {}) {
 }
 
 if (require.main === module) {
-  const config = {
+  if (config.SENTRY_DNS) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      tracesSampleRate: 1.0,
+    });
+  }
+
+  // Run the application
+  const appConfig = {
     rest: {
       port: +(process.env.PORT ?? 3000),
       host: process.env.HOST ?? 'localhost',
