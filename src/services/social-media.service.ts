@@ -4,11 +4,12 @@ import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {ExtendedPeople, ExtendedPost} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
-import {People} from '../models';
+import {People, Post} from '../models';
 import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import {server} from '../index'
+import { GunPost } from '../models/gun-post.model';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -367,22 +368,24 @@ export class SocialMediaService {
 
   async fetchFacebookPostFromGun(
     username: string,
-    textId: string,
+    urlId: string,
     publicKey?: string,
-  ): Promise<ExtendedPost> {
+  ): Promise<GunPost> {
     let gun = server.gun;
-    let preExistingPost = await gun.user("c7aFfFQSPEa3oMaLT87wl1vvA2hPABP6KXYctbxVGBI.5mGJEBLL6LHT-Qxsr-zORAnXh7MjKiTfeOyzIq17iUc").get("facebook");
-    console.log(preExistingPost[textId]);
-    if (!preExistingPost) return preExistingPost as unknown as ExtendedPost;
+    let preExistingPost = await gun.user(process.env.SCRAPER_PUB_KEY).get("facebook").get(username).get(urlId);
+    if (!preExistingPost) return preExistingPost as unknown as GunPost;
 
     return {
       platform: PlatformType.FACEBOOK,
-      textId: textId,
+      originPostId: "gun_"+urlId, //add 'gun' prefix to differentiate from mongo 
+      id: "gun_"+preExistingPost.post_id,
       originCreatedAt: preExistingPost.date,
       url: preExistingPost.url,
       text: preExistingPost.text,
-    } as unknown as ExtendedPost;
+      tags: undefined,
+    } as unknown as GunPost;
   }
+
   async fetchFacebookPost(
     username: string,
     textId: string,

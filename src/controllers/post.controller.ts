@@ -15,6 +15,7 @@ import {PaginationInterceptor} from '../interceptors';
 import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {ExtendedPost} from '../interfaces';
 import {Post} from '../models';
+import { GunPost } from '../models/gun-post.model';
 import {PlatformPost} from '../models/platform-post.model';
 import {
   NotificationService,
@@ -157,6 +158,69 @@ export class PostController {
     newPost.createdBy = importer;
 
     return this.postService.createPost(newPost);
+  }
+
+  @intercept(ValidatePostImportURL.BINDING_KEY)
+  @post('/posts/import/scraper')
+  @response(200, {
+    description: 'Post',
+    content: {'application/json': {schema: getModelSchemaRef(GunPost)}},
+  })
+  async importFromScraper(
+    @requestBody({
+      description: 'Import post from myriad-scraper',
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(PlatformPost),
+        },
+      },
+    })
+    platformPost: PlatformPost,
+  ): Promise<GunPost> {
+    const [platform, originPostId, username] = platformPost.url.split(',');
+
+    const newTags = platformPost.tags ? platformPost.tags : [];
+    const importer = platformPost.importer;
+
+    let newPost: GunPost;
+    let tags: string[] = newTags;
+
+    switch (platform) {
+      case PlatformType.TWITTER:
+        newPost = await this.socialMediaService.fetchTweet(originPostId);
+        break;
+
+      case PlatformType.REDDIT:
+        newPost = await this.socialMediaService.fetchRedditPost(originPostId);
+        break;
+
+      case PlatformType.FACEBOOK:
+        newPost = await this.socialMediaService.fetchFacebookPostFromGun(
+          username,
+          originPostId,
+        );
+        break;
+
+      default:
+        throw new HttpErrors.NotFound('Cannot find the platform!');
+    }
+
+    if (newPost.tags && newPost.tags.length > 0) {
+      const postTags = newPost.tags.filter((tag: string) => {
+        return !newTags
+          .map((newTag: string) => newTag.toLowerCase())
+          .includes(tag.toLowerCase());
+      });
+
+      tags = [...tags, ...postTags];
+    }
+
+    newPost.tags = tags;
+    newPost.importers = [importer];
+
+    //TODO: create post in mongo
+    // return this.postService.createPost(newPost);
+    return newPost;
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
