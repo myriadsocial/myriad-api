@@ -4,7 +4,9 @@ import {ExtendedPost} from '../interfaces';
 import {PostWithRelations} from '../models';
 import {PeopleRepository, PostRepository} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {injectable, BindingScope} from '@loopback/core';
 
+@injectable({scope: BindingScope.TRANSIENT})
 export class PostService {
   constructor(
     @repository(PostRepository)

@@ -1,4 +1,4 @@
-import {service} from '@loopback/core';
+import {BindingScope, service, injectable} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
@@ -17,10 +17,11 @@ import {
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {TransactionService} from './transaction.service';
 import acala from '../data-seed/currencies.json';
-import {NotificationService} from '.';
+import {NotificationService} from './notification.service';
 
 const BN = require('bn.js');
 
+@injectable({scope: BindingScope.TRANSIENT})
 export class CurrencyService {
   constructor(
     @repository(CurrencyRepository)
