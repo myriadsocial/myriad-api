@@ -11,7 +11,9 @@ import {UrlUtils} from '../utils/url.utils';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
+import {injectable, BindingScope} from '@loopback/core';
 
+@injectable({scope: BindingScope.TRANSIENT})
 export class SocialMediaService {
   constructor(
     @repository(PeopleRepository)

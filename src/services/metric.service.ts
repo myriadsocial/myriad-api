@@ -18,7 +18,9 @@ import {
   UserSocialMediaRepository,
   ReportRepository,
 } from '../repositories';
+import {injectable, BindingScope} from '@loopback/core';
 
+@injectable({scope: BindingScope.TRANSIENT})
 export class MetricService {
   constructor(
     @repository(VoteRepository)

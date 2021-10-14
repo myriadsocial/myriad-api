@@ -5,7 +5,9 @@ import {FriendStatusType, VisibilityType} from '../enums';
 import {Post} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {NotificationService} from './notification.service';
+import {injectable, BindingScope} from '@loopback/core';
 
+@injectable({scope: BindingScope.TRANSIENT})
 export class FriendService {
   constructor(
     @repository(FriendRepository)
