@@ -67,7 +67,7 @@ spec:
             - name: MYRIAD_REWARD_AMOUNT
               value: {{ .Values.config.rewardAmount | quote }}
             - name: ACALA_AUSD_REWARD_AMOUNT
-              value: {{ .Values.config.acalaAUDSrewardAmount | quote }}
+              value: {{ .Values.config.acalaAUSDRewardAmount | quote }}
             - name: MONGO_HOST
               value: {{ .Values.config.mongo.host }}
             - name: MONGO_PORT
