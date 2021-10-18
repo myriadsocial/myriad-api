@@ -7,10 +7,11 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {AnyObject, Where} from '@loopback/repository';
+import {AnyObject, Where, repository} from '@loopback/repository';
 import {HttpErrors, RestBindings} from '@loopback/rest';
 import {
   ControllerType,
+  FriendStatusType,
   MethodType,
   OrderFieldType,
   OrderType,
@@ -26,6 +27,7 @@ import {
   TagService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
+import {FriendRepository} from '../repositories';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -36,6 +38,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
 
   constructor(
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(ExperienceService)
@@ -72,17 +76,44 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
     const filter = invocationCtx.args[0] ?? {where: {}};
-    const where = filter.where ?? {};
+
+    filter.where = filter.where ?? {};
 
     if (className === ControllerType.DELETEDCOLLECTIONCONTROLLER) {
-      filter.where = Object.assign(where, {deletedAt: {$exists: true}});
+      filter.where = Object.assign(filter.where, {deletedAt: {$exists: true}});
     }
 
     if (
       className === ControllerType.POST ||
       className === ControllerType.USER
     ) {
-      filter.where = Object.assign(where, {deletedAt: {$exists: false}});
+      filter.where = Object.assign(filter.where, {deletedAt: {$exists: false}});
+    }
+
+    // Set filter for user
+    // Use for search unblock user
+    if (className === ControllerType.USER && userId) {
+      const blockedFriendIds = await this.friendService.getFriendIds(
+        userId.toString(),
+        FriendStatusType.BLOCKED,
+      );
+
+      filter.where = Object.assign(filter.where, {
+        id: {
+          nin: blockedFriendIds,
+        },
+      });
+    }
+
+    // Set filter for blocked friend
+    if (
+      className === ControllerType.FRIEND &&
+      methodName === MethodType.FINDBLOCKEDFRIEND
+    ) {
+      filter.where = Object.assign(filter.where, {
+        requestorId: userId ?? undefined,
+        status: FriendStatusType.BLOCKED,
+      });
     }
 
     // Set where filter when using timeline
@@ -91,7 +122,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       className === ControllerType.POST &&
       methodName === MethodType.TIMELINE
     ) {
-      if (Object.keys(where).length > 1 && timelineType)
+      if (Object.keys(filter.where).length > 1 && timelineType)
         throw new HttpErrors.UnprocessableEntity(
           'Where filter and timelineType can not be used at the same time!',
         );
@@ -108,23 +139,24 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         );
 
         if (whereTimeline) filter.where = whereTimeline;
-        else
+        else {
           return {
             data: [],
             meta: pageMetadata(NaN, NaN, 0),
           };
+        }
       }
     }
 
     // Get pageMetadata
-    const {pageIndex, pageSize} = this.pageSetting(
-      Number(pageNumber),
-      Number(pageLimit),
-    );
     const {count} = await this.metricService.countData(
       className,
       methodName,
       filter.where,
+    );
+    const {pageIndex, pageSize} = this.pageSetting(
+      Number(pageNumber),
+      Number(pageLimit),
     );
     const meta = pageMetadata(pageIndex, pageSize, count);
 
@@ -213,8 +245,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return this.friendService.friendsTimeline(userId);
 
       case TimelineType.ALL: {
-        const approvedFriendIds = await this.friendService.getApprovedFriendIds(
+        const approvedFriendIds = await this.friendService.getFriendIds(
           userId,
+          FriendStatusType.APPROVED,
         );
         const trendingTopics = await this.tagService.trendingTopics();
 
@@ -303,7 +336,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 },
               ],
             },
-            {userId: userId},
+            {createdBy: userId},
           ],
         } as Where<Post>;
       }
