@@ -262,6 +262,22 @@ describe('FriendApplication', function () {
       expect(response.body.data).to.containDeep(toJSON(persistedFriends));
     });
 
+    it('finds all blocked friends', async () => {
+      const requestee = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48w115e8449ee61859',
+      });
+      const requestor = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fli48b915e8449ee61859',
+      });
+      const blockedFriends = await givenFriendInstance(friendRepository, {
+        requesteeId: requestee.id,
+        requestorId: requestor.id,
+        status: FriendStatusType.BLOCKED,
+      });
+      const response = await client.get('/friends/blocked').send().expect(200);
+      expect(response.body.data).to.containDeep(toJSON([blockedFriends]));
+    });
+
     it('queries friends with a filter', async () => {
       const friendInProgress = await givenFriendInstance(friendRepository, {
         status: FriendStatusType.APPROVED,
