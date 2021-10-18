@@ -26,17 +26,6 @@ export class FriendService {
       throw new HttpErrors.UnprocessableEntity('Cannot add itself');
     }
 
-    const pendingFriend = await this.friendRepository.count({
-      requestorId: requestorId,
-      status: FriendStatusType.PENDING,
-    });
-
-    if (pendingFriend.count > 20) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Please approve current pending request, before add new friend!',
-      );
-    }
-
     const friend = await this.friendRepository.findOne({
       where: {
         or: [
@@ -73,14 +62,14 @@ export class FriendService {
 
         case FriendStatusType.BLOCKED: {
           throw new HttpErrors.UnprocessableEntity(
-            'You cannot added this friend!',
+            'You have blocked this user!',
           );
         }
       }
     }
   }
 
-  async getApprovedFriendIds(id: string): Promise<string[]> {
+  async getFriendIds(id: string, status: FriendStatusType): Promise<string[]> {
     const friends = await this.friendRepository.find({
       where: {
         or: [
@@ -91,7 +80,7 @@ export class FriendService {
             requesteeId: id,
           },
         ],
-        status: FriendStatusType.APPROVED,
+        status: status,
       },
     });
 
@@ -104,7 +93,10 @@ export class FriendService {
   }
 
   async friendsTimeline(userId: string): Promise<Where<Post> | undefined> {
-    const approvedFriendIds = await this.getApprovedFriendIds(userId);
+    const approvedFriendIds = await this.getFriendIds(
+      userId,
+      FriendStatusType.APPROVED,
+    );
 
     if (!approvedFriendIds.length) return;
 
