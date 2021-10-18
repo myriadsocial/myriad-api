@@ -27,7 +27,7 @@ import {
   TagService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
-import {FriendRepository} from '../repositories';
+import {FriendRepository, UserRepository} from '../repositories';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -38,6 +38,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
 
   constructor(
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
     @service(MetricService)
@@ -72,7 +74,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
-    const {pageNumber, pageLimit, userId, timelineType} = query;
+    const {pageNumber, pageLimit, userId, timelineType, q} = query;
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
     const filter = invocationCtx.args[0] ?? {where: {}};
@@ -116,6 +118,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       });
     }
 
+    if (className === ControllerType.POST && q) {
+      const whereByQuery = await this.getPostByQuery(q.toString());
+      filter.where = Object.assign(filter.where ?? {}, whereByQuery);
+    }
+
     // Set where filter when using timeline
     // Both Where filter and timeline cannot be used together
     if (
@@ -138,7 +145,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           timelineType as TimelineType,
         );
 
-        if (whereTimeline) filter.where = whereTimeline;
+        if (whereTimeline)
+          filter.where = Object.assign(filter.where ?? {}, whereTimeline);
         else {
           return {
             data: [],
@@ -228,6 +236,79 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     if (!order) order = OrderType.DESC;
     return [sortBy + ' ' + order];
+  }
+
+  async getPostByQuery(q: string): Promise<Where<Post>> {
+    const pattern = new RegExp(q, 'i');
+    const users = await this.userRepository.find({
+      where: {
+        or: [
+          {
+            name: {
+              regexp: pattern,
+            },
+          },
+          {
+            username: {
+              regexp: pattern,
+            },
+          },
+        ],
+      },
+    });
+    const userIds = users.map(user => user.id);
+    return {
+      or: [
+        {
+          and: [
+            {
+              createdBy: {
+                inq: userIds,
+              },
+            },
+            {
+              visibility: VisibilityType.PUBLIC,
+            },
+          ],
+        },
+        {
+          and: [
+            {
+              importers: {
+                inq: userIds,
+              },
+            },
+            {
+              visibility: VisibilityType.PUBLIC,
+            },
+          ],
+        },
+        {
+          and: [
+            {
+              text: {
+                regexp: pattern,
+              },
+            },
+            {
+              visibility: VisibilityType.PUBLIC,
+            },
+          ],
+        },
+        {
+          and: [
+            {
+              title: {
+                regexp: pattern,
+              },
+            },
+            {
+              visibility: VisibilityType.PUBLIC,
+            },
+          ],
+        },
+      ],
+    } as Where<Post>;
   }
 
   async getTimeline(
