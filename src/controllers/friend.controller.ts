@@ -4,6 +4,7 @@ import {
   del,
   get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
@@ -57,6 +58,54 @@ export class FriendController {
     return this.friendService.friendRepository.create(friend);
   }
 
+  @post('/friends/blocked')
+  @response(200, {
+    description: 'Blocked friend',
+    content: {'application/json': {schema: getModelSchemaRef(Friend)}},
+  })
+  async blocked(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Friend, {
+            title: 'NewFriend',
+            exclude: ['id', 'status', 'createdAt', 'updatedAt', 'deletedAt'],
+          }),
+        },
+      },
+    })
+    friend: Omit<Friend, 'id'>,
+  ): Promise<Friend> {
+    const found = await this.friendService.friendRepository.findOne({
+      where: {
+        or: [
+          {
+            requestorId: friend.requestorId,
+            requesteeId: friend.requesteeId,
+          },
+          {
+            requesteeId: friend.requestorId,
+            requestorId: friend.requesteeId,
+          },
+        ],
+      },
+    });
+
+    if (found) {
+      if (found.status === FriendStatusType.BLOCKED) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You already blocked this friends',
+        );
+      } else {
+        await this.friendService.friendRepository.deleteById(found.id);
+      }
+    }
+
+    friend.status = FriendStatusType.BLOCKED;
+
+    return this.friendService.friendRepository.create(friend);
+  }
+
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/friends')
   @response(200, {
@@ -71,6 +120,26 @@ export class FriendController {
     },
   })
   async find(
+    @param.filter(Friend, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Friend>,
+  ): Promise<Friend[]> {
+    return this.friendService.friendRepository.find(filter);
+  }
+
+  @intercept(PaginationInterceptor.BINDING_KEY)
+  @get('/friends/blocked')
+  @response(200, {
+    description: 'Array of Blocked Friend model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Friend, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findBlockedFriend(
     @param.filter(Friend, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<Friend>,
   ): Promise<Friend[]> {
