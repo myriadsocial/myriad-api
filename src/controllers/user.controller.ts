@@ -11,10 +11,14 @@ import {
   response,
 } from '@loopback/rest';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
-import {ActivityLogType} from '../enums';
+import {ActivityLogType, FriendStatusType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
-import {ActivityLogRepository, UserRepository} from '../repositories';
+import {
+  ActivityLogRepository,
+  FriendRepository,
+  UserRepository,
+} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -24,6 +28,8 @@ export class UserController {
     protected userRepository: UserRepository,
     @repository(ActivityLogRepository)
     protected activityLogRepository: ActivityLogRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
   ) {}
 
   @post('/users')
@@ -97,7 +103,26 @@ export class UserController {
   async findById(
     @param.path.string('id') id: string,
     @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
+    @param.query.string('userId') userId?: string,
   ): Promise<User> {
+    if (!userId) return this.userRepository.findById(id, filter);
+
+    const friend = await this.friendRepository.findOne({
+      where: {
+        or: [
+          {
+            requesteeId: userId,
+            requestorId: id,
+          },
+          {
+            requesteeId: id,
+            requestorId: userId,
+          },
+        ],
+      },
+    });
+
+    if (friend && friend.status === FriendStatusType.BLOCKED) return new User();
     return this.userRepository.findById(id, filter);
   }
 
