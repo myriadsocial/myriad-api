@@ -24,3 +24,4 @@ export * from './wallet.model';
 export * from './comment-link.model';
 export * from './mention-user.model';
 export * from './report.model';
+export * from './report-user.model';
