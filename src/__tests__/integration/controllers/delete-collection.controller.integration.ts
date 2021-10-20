@@ -1,7 +1,6 @@
-import {expect} from '@loopback/testlab';
+import {expect, toJSON} from '@loopback/testlab';
 import {DeletedCollectionController} from '../../../controllers';
 import {NotificationType, ReferenceType} from '../../../enums';
-import {Notification} from '../../../models';
 import {
   CommentRepository,
   FriendRepository,
@@ -84,15 +83,13 @@ describe('DeleteCollectionControllerIntegration', () => {
     delete result.updatedAt;
     delete result.deletedAt;
 
-    expect(result).to.deepEqual(
-      new Notification({
-        type: NotificationType.REPORT_USER,
-        message: 'your account has been suspended',
-        to: user.id,
-        referenceId: user.id,
-        read: false,
-      }),
-    );
+    expect(toJSON(result)).to.deepEqual({
+      type: NotificationType.REPORT_USER,
+      message: 'your account has been suspended',
+      to: user.id,
+      referenceId: user.id,
+      read: false,
+    });
   });
 
   it('adds notification when deleting a post', async () => {
@@ -114,14 +111,12 @@ describe('DeleteCollectionControllerIntegration', () => {
     delete result.updatedAt;
     delete result.deletedAt;
 
-    expect(result).to.deepEqual(
-      new Notification({
-        type: NotificationType.REPORT_POST,
-        message: 'your post has been deleted',
-        to: post.createdBy,
-        referenceId: post.id,
-        read: false,
-      }),
-    );
+    expect(toJSON(result)).to.deepEqual({
+      type: NotificationType.REPORT_POST,
+      message: 'your post has been deleted',
+      to: post.createdBy,
+      referenceId: post.id,
+      read: false,
+    });
   });
 });

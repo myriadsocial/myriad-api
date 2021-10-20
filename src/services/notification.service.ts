@@ -229,17 +229,8 @@ export class NotificationService {
     referenceId: string,
     type: ReferenceType,
   ): Promise<boolean> {
-    const report = await this.reportRepository.findOne({
-      where: {
-        referenceId,
-        referenceType: type,
-      },
-    });
-
-    if (!report) return false;
-
-    const {reportedBy: from, referenceId: to, referenceType} = report;
-    const fromUser = await this.userRepository.findById(from);
+    const to = referenceId;
+    const referenceType = type;
 
     let toUser = null;
     let notificationType = null;
@@ -258,7 +249,6 @@ export class NotificationService {
 
     const notification = new Notification();
     notification.type = notificationType;
-    notification.from = fromUser.id;
     notification.to = toUser.id;
     notification.referenceId = to;
     notification.message = message;

@@ -606,7 +606,7 @@ export function givenReport(report?: Partial<Report>) {
     {
       referenceType: ReferenceType.POST,
       referenceId: '1',
-      type: ReportType.CHILD,
+      type: ReportType.CHILDEXPLOIT,
       reason: 'Child abuse',
     },
     report,
