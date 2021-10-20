@@ -120,6 +120,8 @@ export class CurrencyService {
 
   async sendMyriadReward(userId: string): Promise<void> {
     try {
+      if (config.MYRIAD_REWARD_AMOUNT === 0) return;
+
       const {rpcURL: myriadRpc, decimal: myriadDecimal} =
         await this.currencyRepository.findById(DefaultCurrencyType.MYRIA);
 
