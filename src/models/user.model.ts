@@ -6,6 +6,8 @@ import {Experience} from './experience.model';
 import {Friend} from './friend.model';
 import {UserCurrency} from './user-currency.model';
 import {UserExperience} from './user-experience.model';
+import {Report} from './report.model';
+import {ReportUser} from './report-user.model';
 
 @model({
   settings: {
@@ -179,6 +181,9 @@ export class User extends Entity {
 
   @hasMany(() => ActivityLog)
   activityLogs: ActivityLog[];
+
+  @hasMany(() => Report, {through: {model: () => ReportUser}})
+  reports: Report[];
 
   constructor(data?: Partial<User>) {
     super(data);

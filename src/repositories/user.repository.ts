@@ -15,6 +15,8 @@ import {
   UserCurrency,
   UserExperience,
   UserRelations,
+  Report,
+  ReportUser,
 } from '../models';
 import {ActivityLogRepository} from './activity-log.repository';
 import {CurrencyRepository} from './currency.repository';
@@ -23,6 +25,8 @@ import {FriendRepository} from './friend.repository';
 import {UserCurrencyRepository} from './user-currency.repository';
 import {UserExperienceRepository} from './user-experience.repository';
 import {UserSocialMediaRepository} from './user-social-media.repository';
+import {ReportUserRepository} from './report-user.repository';
+import {ReportRepository} from './report.repository';
 
 export class UserRepository extends DefaultCrudRepository<
   User,
@@ -53,6 +57,13 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
+  public readonly reports: HasManyThroughRepositoryFactory<
+    Report,
+    typeof Report.prototype.id,
+    ReportUser,
+    typeof User.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
@@ -69,8 +80,18 @@ export class UserRepository extends DefaultCrudRepository<
     protected userExperienceRepositoryGetter: Getter<UserExperienceRepository>,
     @repository.getter('ActivityLogRepository')
     protected activityLogRepositoryGetter: Getter<ActivityLogRepository>,
+    @repository.getter('ReportUserRepository')
+    protected reportUserRepositoryGetter: Getter<ReportUserRepository>,
+    @repository.getter('ReportRepository')
+    protected reportRepositoryGetter: Getter<ReportRepository>,
   ) {
     super(User, dataSource);
+    this.reports = this.createHasManyThroughRepositoryFactoryFor(
+      'reports',
+      reportRepositoryGetter,
+      reportUserRepositoryGetter,
+    );
+    this.registerInclusionResolver('reports', this.reports.inclusionResolver);
     this.friends = this.createHasManyRepositoryFactoryFor(
       'friends',
       friendRepositoryGetter,

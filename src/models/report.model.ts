@@ -1,10 +1,17 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {
+  Entity,
+  model,
+  property,
+  belongsTo,
+  hasMany,
+} from '@loopback/repository';
 import {ReportStatusType} from '../enums/report-status-type.enum';
 import {ReportType} from '../enums/report-type.enum';
 import {User} from './user.model';
 import {ReferenceType} from '../enums';
 import {Post} from './post.model';
 import {PostWithRelations, UserWithRelations} from '.';
+import {ReportUser} from './report-user.model';
 
 @model({
   settings: {
@@ -43,16 +50,6 @@ export class Report extends Entity {
 
   @property({
     type: 'string',
-    required: true,
-    default: true,
-    jsonSchema: {
-      enum: Object.values(ReportType),
-    },
-  })
-  type: ReportType;
-
-  @property({
-    type: 'string',
     required: false,
     default: ReportStatusType.PENDING,
     jsonSchema: {
@@ -63,16 +60,26 @@ export class Report extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
+    jsonSchema: {
+      enum: Object.values(ReportType),
+    },
+  })
+  type?: ReportType;
+
+  @property({
+    type: 'string',
+    required: false,
     jsonSchema: {
       minLength: 3,
     },
   })
-  reason: string;
+  reason?: string;
 
   @property({
     type: 'number',
     required: false,
+    default: 0,
   })
   totalReported?: number;
 
@@ -96,25 +103,14 @@ export class Report extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'reporter'},
-    {
-      required: true,
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-    },
-  )
-  reportedBy: string;
-
   @belongsTo(() => Post)
   postId: string;
 
   @belongsTo(() => User)
   userId: string;
+
+  @hasMany(() => User, {through: {model: () => ReportUser}})
+  reporters: User[];
 
   constructor(data?: Partial<Report>) {
     super(data);

@@ -1,11 +1,9 @@
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
-  post,
   param,
   get,
   getModelSchemaRef,
   patch,
-  del,
   requestBody,
   response,
 } from '@loopback/rest';
@@ -23,38 +21,6 @@ export class ReportController {
     @service(NotificationService)
     public notificationService: NotificationService,
   ) {}
-
-  @post('/reports')
-  @response(200, {
-    description: 'Report model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Report)}},
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Report, {
-            title: 'NewReport',
-            exclude: ['id', 'status', 'totalReported', 'postId', 'userId'],
-          }),
-        },
-      },
-    })
-    report: Omit<Report, 'id'>,
-  ): Promise<Report> {
-    const {reportedBy, referenceId, referenceType} = report;
-
-    try {
-      await this.notificationService.sendReport(
-        reportedBy,
-        referenceId,
-        referenceType,
-      );
-    } catch {
-      // ignore
-    }
-    return this.reportRepository.create(report);
-  }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/reports')
@@ -75,7 +41,7 @@ export class ReportController {
   ): Promise<Report[]> {
     return this.reportRepository.find(
       Object.assign(filter, {
-        include: ['user', 'post', 'reporter'],
+        include: ['user', 'post'],
       }),
     );
   }
@@ -97,7 +63,7 @@ export class ReportController {
     return this.reportRepository.findById(
       id,
       Object.assign(filter ?? {}, {
-        include: ['user', 'post', 'reporter'],
+        include: ['user', 'post'],
       }),
     );
   }
@@ -121,13 +87,5 @@ export class ReportController {
     report: Partial<Report>,
   ): Promise<void> {
     await this.reportRepository.updateById(id, report);
-  }
-
-  @del('/reports/{id}')
-  @response(204, {
-    description: 'Report DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.reportRepository.deleteById(id);
   }
 }
