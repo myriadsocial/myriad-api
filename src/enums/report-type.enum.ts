@@ -1,5 +1,10 @@
 export enum ReportType {
   PORNOGRAPHY = 'pornography',
-  CHILD = 'child',
+  CHILDEXPLOIT = 'Child exploit',
+  COPYRIGHT = 'Copyright material',
+  TRADEMARK = 'Trademark',
+  ABUSIVE = 'Abusive and violent',
+  PRIVATE = 'Private information',
+  SPAM = 'Spam and system abuse',
   OTHER = 'other',
 }
