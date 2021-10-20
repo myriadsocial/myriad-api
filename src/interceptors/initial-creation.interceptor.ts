@@ -172,7 +172,21 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.REPORT: {
-        const {referenceId, referenceType} = invocationCtx.args[0];
+        const {referenceId, referenceType, reportedBy} = invocationCtx.args[0];
+
+        const found = await this.reportRepository.findOne({
+          where: {
+            referenceId,
+            referenceType,
+            reportedBy,
+          },
+        });
+
+        if (found)
+          throw new HttpErrors.UnprocessableEntity(
+            'You have already reported this ' + referenceType,
+          );
+
         const {count} = await this.reportRepository.count({
           referenceId,
           referenceType,
