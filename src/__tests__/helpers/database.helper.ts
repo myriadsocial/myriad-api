@@ -15,6 +15,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   ReportRepository,
+  ReportUserRepository,
 } from '../../repositories';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -28,6 +29,8 @@ export async function givenRepositories(testdb: any) {
     async () => experienceRepository,
     async () => userExperienceRepository,
     async () => activityLogRepository,
+    async () => reportUserRepository,
+    async () => reportRepository,
   );
   const userExperienceRepository: UserExperienceRepository =
     new UserExperienceRepository(
@@ -82,6 +85,9 @@ export async function givenRepositories(testdb: any) {
     async () => postRepository,
     async () => userRepository,
   );
+  const reportUserRepository: ReportUserRepository = new ReportUserRepository(
+    testdb,
+  );
   const notificationRepository: NotificationRepository =
     new NotificationRepository(testdb, async () => userRepository);
   const activityLogRepository: ActivityLogRepository =
@@ -92,6 +98,7 @@ export async function givenRepositories(testdb: any) {
     testdb,
     async () => userRepository,
     async () => postRepository,
+    async () => reportUserRepository,
   );
 
   return {
@@ -111,6 +118,7 @@ export async function givenRepositories(testdb: any) {
     activityLogRepository,
     commentLinkRepository,
     reportRepository,
+    reportUserRepository,
   };
 }
 
@@ -130,6 +138,7 @@ export async function givenEmptyDatabase(testdb: any) {
     commentLinkRepository,
     voteRepository,
     reportRepository,
+    reportUserRepository,
   } = await givenRepositories(testdb);
 
   await peopleRepository.deleteAll();
@@ -146,4 +155,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await commentLinkRepository.deleteAll();
   await voteRepository.deleteAll();
   await reportRepository.deleteAll();
+  await reportUserRepository.deleteAll();
 }

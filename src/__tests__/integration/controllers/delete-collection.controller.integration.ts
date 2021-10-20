@@ -70,13 +70,9 @@ describe('DeleteCollectionControllerIntegration', () => {
 
   it('adds notification when deleting a user', async () => {
     const user = await givenUserInstance(userRepository);
-    const reporter = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
-    });
-    const report = await givenReportInstance(reportRepository, {
+    await givenReportInstance(reportRepository, {
       referenceType: ReferenceType.USER,
       referenceId: user.id,
-      reportedBy: reporter.id,
     });
 
     await controller.deleteUserById(user.id);
@@ -92,7 +88,6 @@ describe('DeleteCollectionControllerIntegration', () => {
       new Notification({
         type: NotificationType.REPORT_USER,
         message: 'your account has been suspended',
-        from: report.reportedBy,
         to: user.id,
         referenceId: user.id,
         read: false,
@@ -102,16 +97,12 @@ describe('DeleteCollectionControllerIntegration', () => {
 
   it('adds notification when deleting a post', async () => {
     const creator = await givenUserInstance(userRepository);
-    const reporter = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
-    });
     const post = await givenPostInstance(postRepository, {
       createdBy: creator.id,
     });
-    const report = await givenReportInstance(reportRepository, {
+    await givenReportInstance(reportRepository, {
       referenceType: ReferenceType.POST,
       referenceId: post.id,
-      reportedBy: reporter.id,
     });
 
     await controller.deletePostById(post.id);
@@ -127,7 +118,6 @@ describe('DeleteCollectionControllerIntegration', () => {
       new Notification({
         type: NotificationType.REPORT_POST,
         message: 'your post has been deleted',
-        from: report.reportedBy,
         to: post.createdBy,
         referenceId: post.id,
         read: false,
