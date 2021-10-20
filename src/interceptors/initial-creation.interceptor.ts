@@ -16,6 +16,7 @@ import {
   LikeRepository,
   PostRepository,
   ReportRepository,
+  ReportUserRepository,
   TransactionRepository,
   UserCurrencyRepository,
   UserRepository,
@@ -49,6 +50,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected reportRepository: ReportRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(ReportUserRepository)
+    protected reportUserRepository: ReportUserRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -171,38 +174,37 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         return;
       }
 
-      case ControllerType.REPORT: {
-        const {referenceId, referenceType, reportedBy} = invocationCtx.args[0];
+      case ControllerType.USERREPORTCONTROLLER: {
+        const userId = invocationCtx.args[0];
+        const {referenceId, referenceType, type, reason} =
+          invocationCtx.args[1];
 
-        const found = await this.reportRepository.findOne({
+        const found = await this.userRepository.reports(userId).find({
           where: {
             referenceId,
             referenceType,
-            reportedBy,
           },
         });
 
-        if (found)
+        if (found.length > 0)
           throw new HttpErrors.UnprocessableEntity(
             'You have already reported this ' + referenceType,
           );
 
-        const {count} = await this.reportRepository.count({
-          referenceId,
-          referenceType,
-        });
-
         if (referenceType === ReferenceType.POST) {
           await this.postRepository.findById(referenceId);
+          invocationCtx.args[1].postId = referenceId;
 
-          invocationCtx.args[0].postId = referenceId;
-        } else {
+          if (type) delete invocationCtx.args[1].reason;
+          else throw new HttpErrors.UnprocessableEntity('Type cannot be empty');
+        } else if (referenceType === ReferenceType.USER) {
           await this.userRepository.findById(referenceId);
+          invocationCtx.args[1].userId = referenceId;
 
-          invocationCtx.args[0].userId = referenceId;
+          if (reason) delete invocationCtx.args[1].type;
+          else
+            throw new HttpErrors.UnprocessableEntity('Reason cannot be empty');
         }
-
-        invocationCtx.args[0].totalReported = count + 1;
 
         return;
       }
@@ -257,14 +259,14 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         return;
       }
 
-      case ControllerType.REPORT: {
-        await this.reportRepository.updateAll(
-          {totalReported: result.totalReported},
-          {
-            referenceId: result.referenceId,
-            referenceType: result.referenceType,
-          },
-        );
+      case ControllerType.USERREPORTCONTROLLER: {
+        const {count} = await this.reportUserRepository.count({
+          reportId: result.id.toString(),
+        });
+
+        await this.reportRepository.updateById(result.id, {
+          totalReported: count,
+        });
       }
     }
   }
