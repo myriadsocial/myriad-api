@@ -17,6 +17,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   ReportRepository,
+  UserReportRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 
@@ -53,6 +54,8 @@ export class MetricService {
     protected activityLogRepository: ActivityLogRepository,
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
+    @repository(UserReportRepository)
+    protected userReportRepository: UserReportRepository,
   ) {}
 
   async publicMetric(
@@ -156,6 +159,9 @@ export class MetricService {
 
       case ControllerType.DELETEDCOLLECTIONCONTROLLER:
         return this.countDeletedData(methodName, where);
+
+      case ControllerType.REPORTUSERCONTROLLER:
+        return this.userReportRepository.count(where);
 
       default:
         return {
