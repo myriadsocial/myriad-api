@@ -1,6 +1,5 @@
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
-  post,
   param,
   get,
   getModelSchemaRef,
@@ -13,48 +12,12 @@ import {Report} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
 import {PaginationInterceptor} from '../interceptors';
-import {service} from '@loopback/core';
-import {NotificationService} from '../services';
 
 export class ReportController {
   constructor(
     @repository(ReportRepository)
     public reportRepository: ReportRepository,
-    @service(NotificationService)
-    public notificationService: NotificationService,
   ) {}
-
-  @post('/reports')
-  @response(200, {
-    description: 'Report model instance',
-    content: {'application/json': {schema: getModelSchemaRef(Report)}},
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Report, {
-            title: 'NewReport',
-            exclude: ['id', 'status', 'totalReported', 'postId', 'userId'],
-          }),
-        },
-      },
-    })
-    report: Omit<Report, 'id'>,
-  ): Promise<Report> {
-    const {reportedBy, referenceId, referenceType} = report;
-
-    try {
-      await this.notificationService.sendReport(
-        reportedBy,
-        referenceId,
-        referenceType,
-      );
-    } catch {
-      // ignore
-    }
-    return this.reportRepository.create(report);
-  }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/reports')
@@ -74,8 +37,18 @@ export class ReportController {
     filter?: Filter<Report>,
   ): Promise<Report[]> {
     return this.reportRepository.find(
-      Object.assign(filter, {
-        include: ['user', 'post', 'reporter'],
+      Object.assign(filter ?? {}, {
+        include: [
+          {
+            relation: 'reportedUser',
+          },
+          {
+            relation: 'reportedPost',
+            scope: {
+              include: ['user'],
+            },
+          },
+        ],
       }),
     );
   }
@@ -97,7 +70,17 @@ export class ReportController {
     return this.reportRepository.findById(
       id,
       Object.assign(filter ?? {}, {
-        include: ['user', 'post', 'reporter'],
+        include: [
+          {
+            relation: 'reportedUser',
+          },
+          {
+            relation: 'reportedPost',
+            scope: {
+              include: ['user'],
+            },
+          },
+        ],
       }),
     );
   }
