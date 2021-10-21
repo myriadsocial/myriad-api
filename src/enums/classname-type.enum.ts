@@ -15,6 +15,8 @@ export enum ControllerType {
   ACTIVITYLOG = 'ActivityLogController',
   REPORT = 'ReportController',
   DELETEDCOLLECTIONCONTROLLER = 'DeletedCollectionController',
+  USERREPORTCONTROLLER = 'UserReportController',
+  REPORTUSERCONTROLLER = 'ReportUserController',
 }
 
 export enum MethodType {
