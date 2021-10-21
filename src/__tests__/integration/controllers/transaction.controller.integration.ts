@@ -219,7 +219,7 @@ describe('TransactionControllerIntegration', () => {
       type: NotificationType.POST_TIPS,
       from: response.from,
       referenceId: response.id,
-      message: 'sent tips: ' + response.amount + ' ' + response.currencyId,
+      message: response.amount + ' ' + response.currencyId,
       to: response.to,
       read: false,
     });
@@ -259,7 +259,7 @@ describe('TransactionControllerIntegration', () => {
       type: NotificationType.COMMENT_TIPS,
       from: response.from,
       referenceId: response.id,
-      message: 'sent tips: ' + response.amount + ' ' + response.currencyId,
+      message: response.amount + ' ' + response.currencyId,
       to: response.to,
       read: false,
     });
