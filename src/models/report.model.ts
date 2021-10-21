@@ -1,10 +1,16 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {
+  Entity,
+  model,
+  property,
+  belongsTo,
+  hasMany,
+} from '@loopback/repository';
 import {ReportStatusType} from '../enums/report-status-type.enum';
-import {ReportType} from '../enums/report-type.enum';
 import {User} from './user.model';
-import {ReferenceType} from '../enums';
 import {Post} from './post.model';
 import {PostWithRelations, UserWithRelations} from '.';
+import {UserReport} from './user-report.model';
+import {ReferenceType} from '../enums';
 
 @model({
   settings: {
@@ -37,19 +43,15 @@ export class Report extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  referenceId: string;
+  type: string;
 
   @property({
     type: 'string',
     required: true,
-    default: true,
-    jsonSchema: {
-      enum: Object.values(ReportType),
-    },
   })
-  type: ReportType;
+  referenceId: string;
 
   @property({
     type: 'string',
@@ -60,15 +62,6 @@ export class Report extends Entity {
     },
   })
   status: ReportStatusType;
-
-  @property({
-    type: 'string',
-    required: true,
-    jsonSchema: {
-      minLength: 3,
-    },
-  })
-  reason: string;
 
   @property({
     type: 'number',
@@ -96,25 +89,14 @@ export class Report extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'reporter'},
-    {
-      required: true,
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-    },
-  )
-  reportedBy: string;
-
-  @belongsTo(() => Post)
+  @belongsTo(() => Post, {name: 'reportedPost'})
   postId: string;
 
-  @belongsTo(() => User)
+  @belongsTo(() => User, {name: 'reportedUser'})
   userId: string;
+
+  @hasMany(() => UserReport)
+  reporters: UserReport[];
 
   constructor(data?: Partial<Report>) {
     super(data);
@@ -123,8 +105,8 @@ export class Report extends Entity {
 
 export interface ReportRelations {
   // describe navigational properties here
-  user?: UserWithRelations;
-  post?: PostWithRelations;
+  reportedUser?: UserWithRelations;
+  reportedPost?: PostWithRelations;
 }
 
 export type ReportWithRelations = Report & ReportRelations;

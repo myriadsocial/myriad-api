@@ -77,7 +77,6 @@ export class Notification extends Entity {
         minLength: 66,
         pattern: '^0x',
       },
-      required: true,
     },
   )
   from: string;
