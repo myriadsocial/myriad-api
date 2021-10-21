@@ -84,7 +84,7 @@ export class DeletedCollectionController {
       deletedAt: new Date().toString(),
     });
     await this.reportRepository.updateAll(
-      {status: ReportStatusType.APPROVED},
+      {status: ReportStatusType.REMOVED},
       {referenceId: id, referenceType: ReferenceType.POST},
     );
   }
@@ -151,7 +151,7 @@ export class DeletedCollectionController {
       deletedAt: new Date().toString(),
     });
     await this.reportRepository.updateAll(
-      {status: ReportStatusType.APPROVED},
+      {status: ReportStatusType.REMOVED},
       {referenceId: id, referenceType: ReferenceType.USER},
     );
   }
