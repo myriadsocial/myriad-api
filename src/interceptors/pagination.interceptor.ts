@@ -77,7 +77,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const {pageNumber, pageLimit, userId, timelineType, q} = query;
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
-    const filter = invocationCtx.args[0] ?? {where: {}};
+    const filter =
+      invocationCtx.args[0] && typeof invocationCtx.args[0] === 'object'
+        ? invocationCtx.args[0]
+        : {where: {}};
 
     filter.where = filter.where ?? {};
 
@@ -105,6 +108,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           nin: blockedFriendIds,
         },
       });
+    }
+
+    if (className === ControllerType.REPORTUSERCONTROLLER) {
+      filter.where = {
+        reportId: invocationCtx.args[0],
+      };
     }
 
     // Set filter for blocked friend
@@ -169,10 +178,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const meta = pageMetadata(pageIndex, pageSize, count);
 
     // Reassign filter object
-    invocationCtx.args[0] = Object.assign(filter, {
-      limit: pageSize,
-      offset: (pageIndex - 1) * pageSize,
-    });
+    if (className === ControllerType.REPORTUSERCONTROLLER) {
+      invocationCtx.args[1] = Object.assign(filter, {
+        limit: pageSize,
+        offset: (pageIndex - 1) * pageSize,
+      });
+    } else {
+      invocationCtx.args[0] = Object.assign(filter, {
+        limit: pageSize,
+        offset: (pageIndex - 1) * pageSize,
+      });
+    }
 
     const result = await next();
 
