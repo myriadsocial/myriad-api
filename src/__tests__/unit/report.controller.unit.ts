@@ -6,31 +6,18 @@ import {
   toJSON,
 } from '@loopback/testlab';
 import {ReportController} from '../../controllers';
-import {ReferenceType, ReportType} from '../../enums';
+import {ReferenceType} from '../../enums';
 import {Report} from '../../models';
 import {ReportRepository} from '../../repositories';
-import {NotificationService} from '../../services';
 import {givenReport} from '../helpers';
 
 describe('ReportController', () => {
   let reportRepository: StubbedInstanceWithSinonAccessor<ReportRepository>;
-  let notificationService: NotificationService;
   let controller: ReportController;
-  let aReport: Report;
   let aReportWithId: Report;
   let aListOfReports: Report[];
 
   beforeEach(resetRepositories);
-
-  describe('createReport', () => {
-    it('creates a Report', async () => {
-      const create = reportRepository.stubs.create;
-      create.resolves(aReportWithId);
-      const result = await controller.create(aReport);
-      expect(result).to.eql(aReportWithId);
-      sinon.assert.calledWith(create, aReport);
-    });
-  });
 
   describe('findReportById', () => {
     it('returns a report if it exists', async () => {
@@ -61,7 +48,7 @@ describe('ReportController', () => {
 
     it('uses the provided filter', async () => {
       const find = reportRepository.stubs.find;
-      const filter = toJSON({where: {type: ReportType.OTHER}});
+      const filter = toJSON({where: {type: 'other'}});
 
       find.resolves(aListOfReports);
       await controller.find(filter);
@@ -80,7 +67,6 @@ describe('ReportController', () => {
 
   function resetRepositories() {
     reportRepository = createStubInstance(ReportRepository);
-    aReport = givenReport();
     aReportWithId = givenReport({
       id: '1',
     });
@@ -90,13 +76,12 @@ describe('ReportController', () => {
         id: '2',
         referenceType: ReferenceType.POST,
         referenceId: '2',
-        type: ReportType.OTHER,
-        reason: 'other',
+        type: 'other',
         totalReported: 1,
         postId: '2',
       }),
     ] as Report[];
 
-    controller = new ReportController(reportRepository, notificationService);
+    controller = new ReportController(reportRepository);
   }
 });

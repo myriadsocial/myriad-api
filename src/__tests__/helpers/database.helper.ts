@@ -15,6 +15,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   ReportRepository,
+  UserReportRepository,
 } from '../../repositories';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -92,6 +93,12 @@ export async function givenRepositories(testdb: any) {
     testdb,
     async () => userRepository,
     async () => postRepository,
+    async () => userReportRepository,
+  );
+  const userReportRepository: UserReportRepository = new UserReportRepository(
+    testdb,
+    async () => userRepository,
+    async () => reportRepository,
   );
 
   return {
@@ -111,6 +118,7 @@ export async function givenRepositories(testdb: any) {
     activityLogRepository,
     commentLinkRepository,
     reportRepository,
+    userReportRepository,
   };
 }
 
@@ -130,6 +138,7 @@ export async function givenEmptyDatabase(testdb: any) {
     commentLinkRepository,
     voteRepository,
     reportRepository,
+    userReportRepository,
   } = await givenRepositories(testdb);
 
   await peopleRepository.deleteAll();
@@ -146,4 +155,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await commentLinkRepository.deleteAll();
   await voteRepository.deleteAll();
   await reportRepository.deleteAll();
+  await userReportRepository.deleteAll();
 }

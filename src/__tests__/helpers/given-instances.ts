@@ -5,7 +5,6 @@ import {
   NotificationType,
   PlatformType,
   SectionType,
-  ReportType,
 } from '../../enums';
 import {
   ActivityLog,
@@ -17,11 +16,13 @@ import {
   People,
   Post,
   Report,
+  ReportDetail,
   Tag,
   Transaction,
   User,
   UserCurrency,
   UserExperience,
+  UserReport,
   UserSocialMedia,
   UserVerification,
   Vote,
@@ -41,6 +42,7 @@ import {
   TransactionRepository,
   UserCurrencyRepository,
   UserExperienceRepository,
+  UserReportRepository,
   UserRepository,
   UserSocialMediaRepository,
   VoteRepository,
@@ -606,8 +608,7 @@ export function givenReport(report?: Partial<Report>) {
     {
       referenceType: ReferenceType.POST,
       referenceId: '1',
-      type: ReportType.CHILD,
-      reason: 'Child abuse',
+      type: 'Child abuse',
     },
     report,
   );
@@ -619,4 +620,36 @@ export async function givenReportInstance(
   report?: Partial<Report>,
 ) {
   return reportRepository.create(givenReport(report));
+}
+
+export function givenUserReport(userReport?: Partial<UserReport>) {
+  const data = Object.assign(
+    {
+      reportedBy:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      reportId: '1',
+      description: "I don't like this post",
+    },
+    userReport,
+  );
+  return new UserReport(data);
+}
+
+export async function givenUserReportInstance(
+  userReportRepository: UserReportRepository,
+  userReport?: Partial<UserReport>,
+) {
+  return userReportRepository.create(givenUserReport(userReport));
+}
+
+export function givenReportDetail(reportDetail?: Partial<ReportDetail>) {
+  const data = Object.assign(
+    {
+      referenceType: ReferenceType.USER,
+      referenceId: '1',
+      description: 'I hate this user',
+    },
+    reportDetail,
+  );
+  return new ReportDetail(data);
 }
