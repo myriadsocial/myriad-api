@@ -238,8 +238,7 @@ export class NotificationService {
 
     if (!report) return false;
 
-    const {reportedBy: from, referenceId: to, referenceType} = report;
-    const fromUser = await this.userRepository.findById(from);
+    const {referenceId: to, referenceType} = report;
 
     let toUser = null;
     let notificationType = null;
@@ -258,7 +257,6 @@ export class NotificationService {
 
     const notification = new Notification();
     notification.type = notificationType;
-    notification.from = fromUser.id;
     notification.to = toUser.id;
     notification.referenceId = to;
     notification.message = message;
@@ -412,8 +410,7 @@ export class NotificationService {
     notification.from = fromUser.id;
     notification.to = toUser.id;
     notification.referenceId = transaction.id;
-    notification.message =
-      'sent tips: ' + transaction.amount + ' ' + transaction.currencyId;
+    notification.message = transaction.amount + ' ' + transaction.currencyId;
 
     const createdNotification = await this.notificationRepository.create(
       notification,
@@ -437,8 +434,7 @@ export class NotificationService {
     notification.from = from;
     notification.to = to;
     notification.referenceId = transaction.id;
-    notification.message =
-      'sent rewards: ' + transaction.amount + ' ' + transaction.currencyId;
+    notification.message = transaction.amount + ' ' + transaction.currencyId;
 
     const createdNotification = await this.notificationRepository.create(
       notification,
@@ -462,8 +458,7 @@ export class NotificationService {
     notification.from = from;
     notification.to = to;
     notification.referenceId = transaction.id;
-    notification.message =
-      'sent tips: ' + transaction.amount + ' ' + transaction.currencyId;
+    notification.message = transaction.amount + ' ' + transaction.currencyId;
 
     const createdNotification = await this.notificationRepository.create(
       notification,
@@ -488,8 +483,7 @@ export class NotificationService {
     notification.from = from;
     notification.to = to;
     notification.referenceId = transaction.id;
-    notification.message =
-      'claim tips: ' + transaction.amount + ' ' + transaction.currencyId;
+    notification.message = transaction.amount + ' ' + transaction.currencyId;
 
     const createdNotification = await this.notificationRepository.create(
       notification,
