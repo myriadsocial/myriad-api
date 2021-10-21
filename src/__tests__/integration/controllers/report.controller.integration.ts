@@ -5,12 +5,7 @@ import {
   PostRepository,
   UserRepository,
   ReportRepository,
-  NotificationRepository,
-  UserSocialMediaRepository,
-  FriendRepository,
-  CommentRepository,
 } from '../../../repositories';
-import {FCMService, NotificationService} from '../../../services';
 import {
   givenEmptyDatabase,
   givenPostInstance,
@@ -25,12 +20,6 @@ describe('ReportIntegration', () => {
   let userRepository: UserRepository;
   let postRepository: PostRepository;
   let controller: ReportController;
-  let notificationRepository: NotificationRepository;
-  let userSocialMediaRepository: UserSocialMediaRepository;
-  let commentRepository: CommentRepository;
-  let friendRepository: FriendRepository;
-  let fcmService: FCMService;
-  let notificationService: NotificationService;
 
   before(async () => {
     ({reportRepository, userRepository, postRepository} =
@@ -38,17 +27,7 @@ describe('ReportIntegration', () => {
   });
 
   before(async () => {
-    notificationService = new NotificationService(
-      userRepository,
-      postRepository,
-      notificationRepository,
-      userSocialMediaRepository,
-      friendRepository,
-      reportRepository,
-      commentRepository,
-      fcmService,
-    );
-    controller = new ReportController(reportRepository, notificationService);
+    controller = new ReportController(reportRepository);
   });
 
   beforeEach(async () => {
@@ -59,22 +38,17 @@ describe('ReportIntegration', () => {
     const user = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
-    const reporter = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gh',
-    });
     const report = await givenReportInstance(reportRepository, {
       referenceType: ReferenceType.USER,
       referenceId: user.id,
       userId: user.id,
-      reportedBy: reporter.id,
     });
     const response = await controller.find({});
 
     expect(response).to.containDeep([
       {
         ...report,
-        user: user,
-        reporter: reporter,
+        reportedUser: user,
       },
     ]);
   });
@@ -85,8 +59,6 @@ describe('ReportIntegration', () => {
       referenceType: ReferenceType.POST,
       referenceId: post.id,
       postId: post.id,
-      reportedBy:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gh',
     });
 
     const response = await controller.find({});
@@ -94,7 +66,7 @@ describe('ReportIntegration', () => {
     expect(response).to.containDeep([
       {
         ...report,
-        post: post,
+        reportedPost: post,
       },
     ]);
   });
@@ -103,20 +75,16 @@ describe('ReportIntegration', () => {
     const user = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
     });
-    const reporter = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gh',
-    });
     const report = await givenReportInstance(reportRepository, {
       referenceType: ReferenceType.USER,
       referenceId: user.id,
       userId: user.id,
-      reportedBy: reporter.id,
     });
     const response = await controller.findById(report.id ?? '');
 
     expect(response).to.containDeep({
       ...report,
-      user: user,
+      reportedUser: user,
     });
   });
 
@@ -126,15 +94,13 @@ describe('ReportIntegration', () => {
       referenceType: ReferenceType.POST,
       referenceId: post.id,
       postId: post.id,
-      reportedBy:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gh',
     });
 
     const response = await controller.findById(report.id ?? '');
 
     expect(response).to.containDeep({
       ...report,
-      post: post,
+      reportedPost: post,
     });
   });
 });

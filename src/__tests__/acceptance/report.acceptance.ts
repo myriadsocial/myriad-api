@@ -1,4 +1,4 @@
-import {EntityNotFoundError} from '@loopback/repository';
+import {AnyObject, EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
 import {ReferenceType, ReportStatusType} from '../../enums';
@@ -11,7 +11,6 @@ import {
 import {
   givenPostInstance,
   givenPostRepository,
-  givenReport,
   givenReportInstance,
   givenReportRepository,
   givenUserInstance,
@@ -44,57 +43,17 @@ describe('ReportApplication', () => {
     await postRepository.deleteAll();
   });
 
-  it('creates a report when reporting a post', async () => {
-    const reporter = await givenUserInstance(userRepository);
-    const post = await givenPostInstance(postRepository);
-    const report = givenReport({
-      reportedBy: reporter.id,
-      referenceType: ReferenceType.POST,
-      referenceId: post.id,
-    });
-    const response = await client.post('/reports').send(report);
-    expect(response.body).to.containDeep(report);
-    const result = await reportRepository.findById(response.body.id);
-    expect(result).to.containDeep(report);
-  });
-
-  it('creates a report when reporting a user', async () => {
-    const reporter = await givenUserInstance(userRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ef31859',
-    });
-    const report = givenReport({
-      reportedBy: reporter.id,
-      referenceType: ReferenceType.USER,
-      referenceId: user.id,
-    });
-    const response = await client.post('/reports').send(report);
-    expect(response.body).to.containDeep(report);
-    const result = await reportRepository.findById(response.body.id);
-    expect(result).to.containDeep(report);
-  });
-
-  it('rejects request to create a report with no reportedBy', async () => {
-    const report = givenReport({
-      referenceType: ReferenceType.USER,
-      referenceId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ef52859',
-    });
-    await client.post('/reports').send(report).expect(422);
-  });
-
   context('when dealing with a single persisted report', () => {
     let persistedReport: Report;
-    let reporter: User;
     let post: Post;
 
     beforeEach(async () => {
-      reporter = await givenUserInstance(userRepository);
       post = await givenPostInstance(postRepository);
       persistedReport = await givenReportInstance(reportRepository, {
-        reportedBy: reporter.id,
         referenceType: ReferenceType.POST,
         referenceId: post.id,
+        type: 'other',
+        postId: post.id,
       });
     });
 
@@ -106,7 +65,7 @@ describe('ReportApplication', () => {
       const expected = toJSON(persistedReport);
       expect(result.body).to.deepEqual({
         ...expected,
-        reporter: toJSON(reporter),
+        reportedPost: toJSON(post),
       });
     });
 
@@ -116,7 +75,7 @@ describe('ReportApplication', () => {
 
     it('updates the reports by ID ', async () => {
       const updatedReport: Partial<Report> = new Report({
-        status: ReportStatusType.APPROVED,
+        status: ReportStatusType.REMOVED,
       });
 
       await client
@@ -141,29 +100,46 @@ describe('ReportApplication', () => {
 
   context('when dealing with multiple persisted reports', () => {
     let persistedReports: Report[];
-    let reporter: User;
     let post: Post;
     let user: User;
 
     beforeEach(async () => {
-      reporter = await givenUserInstance(userRepository);
       post = await givenPostInstance(postRepository);
       user = await givenUserInstance(userRepository, {
         id: '0x06cc7ed22ebd12ccd88fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       });
 
-      persistedReports = await Promise.all([
+      const newReports = await Promise.all([
         givenReportInstance(reportRepository, {
-          reportedBy: reporter.id,
           referenceType: ReferenceType.POST,
           referenceId: post.id,
+          type: 'other',
+          postId: post.id,
         }),
         givenReportInstance(reportRepository, {
-          reportedBy: reporter.id,
           referenceType: ReferenceType.USER,
           referenceId: user.id,
+          userId: user.id,
         }),
       ]);
+
+      persistedReports = newReports.map((newReport: Partial<Report>) => {
+        if (newReport.referenceType === ReferenceType.POST) {
+          delete newReport.postId;
+
+          return {
+            ...newReport,
+            reportedPost: post,
+          };
+        }
+
+        delete newReport.userId;
+
+        return {
+          ...newReport,
+          reportedUser: user,
+        };
+      }) as AnyObject as Report[];
     });
 
     it('finds all reports', async () => {
@@ -172,22 +148,23 @@ describe('ReportApplication', () => {
     });
 
     it('queries reports with a filter', async () => {
-      const newReporter = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccd88fb9c0d16b5c4420a331d89a5fef48b915e8449ee61863',
-      });
-      const reportInProgress = await givenReportInstance(reportRepository, {
-        reportedBy: newReporter.id,
-        referenceId: post.id,
-        referenceType: ReferenceType.POST,
-      });
+      const reportInProgress: Partial<Report> = await givenReportInstance(
+        reportRepository,
+        {
+          referenceId: post.id,
+          referenceType: ReferenceType.POST,
+          type: 'child',
+          postId: post.id,
+        },
+      );
+
+      delete reportInProgress.postId;
 
       await client
         .get('/reports')
-        .query(
-          'filter=' + JSON.stringify({where: {reportedBy: newReporter.id}}),
-        )
+        .query('filter=' + JSON.stringify({where: {type: 'child'}}))
         .expect(200, {
-          data: [toJSON({...reportInProgress, reporter: newReporter})],
+          data: [toJSON({...reportInProgress, reportedPost: post})],
           meta: {
             currentPage: 1,
             itemsPerPage: 1,
