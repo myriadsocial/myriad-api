@@ -48,6 +48,12 @@ export class ReportController {
               include: ['user'],
             },
           },
+          {
+            relation: 'reporters',
+            scope: {
+              limit: 2,
+            },
+          },
         ],
       }),
     );
