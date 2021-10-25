@@ -3,10 +3,11 @@ import {
   ControllerType,
   FriendStatusType,
   MethodType,
+  PlatformType,
   ReferenceType,
   SectionType,
 } from '../enums';
-import {Metric, UserMetric} from '../interfaces';
+import {Metric} from '../interfaces';
 import {
   ActivityLogRepository,
   CommentRepository,
@@ -133,17 +134,9 @@ export class MetricService {
       ],
     });
     const {count: totalPosts} = await this.postRepository.count({
-      or: [
-        {
-          createdBy: userId,
-        },
-        {
-          importers: {
-            inq: [userId],
-          },
-        },
-      ],
-    } as Where<Post>);
+      createdBy: userId,
+      platform: PlatformType.MYRIAD,
+    });
 
     const userMetric = {
       totalPosts,
