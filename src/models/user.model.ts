@@ -1,5 +1,6 @@
 import {Entity, hasMany, model, property} from '@loopback/repository';
 import {DefaultCurrencyType} from '../enums';
+import {UserMetric} from '../interfaces';
 import {ActivityLog} from './activity-log.model';
 import {Currency} from './currency.model';
 import {Experience} from './experience.model';
@@ -95,8 +96,7 @@ export class User extends Entity {
   @property({
     type: 'string',
     required: false,
-    default:
-      'https://res.cloudinary.com/dsget80gs/background/profile-default-bg.png',
+    default: 'https://res.cloudinary.com/dsget80gs/background/profile-default-bg.png',
   })
   bannerImageUrl?: string;
 
@@ -135,6 +135,18 @@ export class User extends Entity {
     required: false,
   })
   websiteURL?: string;
+
+  @property({
+    type: 'object',
+    required: false,
+    default: {
+      totalPost: 0,
+      totalKudos: 0,
+      totalFriends: 0,
+      totalExperience: 0,
+    },
+  })
+  metric: UserMetric;
 
   @property({
     type: 'date',
