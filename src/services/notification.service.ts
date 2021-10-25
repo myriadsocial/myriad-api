@@ -1,7 +1,14 @@
 import {BindingScope, injectable, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {NotificationType, PlatformType, ReferenceType} from '../enums';
-import {Comment, MentionUser, Notification, Transaction, Vote} from '../models';
+import {
+  Comment,
+  MentionUser,
+  Notification,
+  Transaction,
+  User,
+  Vote,
+} from '../models';
 import {
   CommentRepository,
   FriendRepository,
@@ -57,12 +64,7 @@ export class NotificationService {
     return true;
   }
 
-  async sendFriendAccept(friendId: string): Promise<boolean> {
-    const {requestee: fromUser, requestor: toUser} =
-      await this.friendRepository.findById(friendId, {
-        include: ['requestee', 'requestor'],
-      });
-
+  async sendFriendAccept(fromUser: User, toUser: User): Promise<boolean> {
     if (!fromUser || !toUser) return false;
 
     const notification = new Notification();
