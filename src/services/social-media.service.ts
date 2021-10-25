@@ -45,6 +45,7 @@ export class SocialMediaService {
 
     // Verify that the publicKey is existing in user twitter
     const foundTwitterPublicKey = tweets[0].text
+      .replace(/\n/g, ' ')
       .split(' ')
       .find((tweet: string) => tweet === publicKey);
 
@@ -82,6 +83,7 @@ export class SocialMediaService {
 
     // Verify that the publicKey is existing in user reddit
     const foundRedditPublicKey = foundRedditPost.children[0].data.title
+      .replace(/\n/g, ' ')
       .split(' ')
       .find((post: string) => post === publicKey);
 
