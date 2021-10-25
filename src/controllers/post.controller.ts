@@ -17,6 +17,7 @@ import {ExtendedPost} from '../interfaces';
 import {Post} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {
+  MetricService,
   NotificationService,
   PostService,
   SocialMediaService,
@@ -36,6 +37,8 @@ export class PostController {
     protected postService: PostService,
     @service(NotificationService)
     protected notificationService: NotificationService,
+    @service(MetricService)
+    protected metricService: MetricService,
   ) {}
 
   @post('/posts')
@@ -86,13 +89,15 @@ export class PostController {
 
     try {
       await this.notificationService.sendMention(
-        newPost.createdBy,
+        result.createdBy,
         result.id,
-        newPost.mentions ?? [],
+        result.mentions ?? [],
       );
     } catch {
       // ignore
     }
+
+    await this.metricService.userMetric(result.createdBy);
 
     return result;
   }

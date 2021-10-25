@@ -78,7 +78,7 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     // Add pre-invocation logic here
     const result = await next();
 
-    this.tagService.createTags(result.tags) as Promise<void>;
+    await this.tagService.createTags(result.tags);
     // Add post-invocation logic here
     return result;
   }
