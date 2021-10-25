@@ -1,6 +1,12 @@
 import {AnyObject, Count, repository, Where} from '@loopback/repository';
-import {ControllerType, MethodType, ReferenceType, SectionType} from '../enums';
-import {Metric} from '../interfaces';
+import {
+  ControllerType,
+  FriendStatusType,
+  MethodType,
+  ReferenceType,
+  SectionType,
+} from '../enums';
+import {Metric, UserMetric} from '../interfaces';
 import {
   ActivityLogRepository,
   CommentRepository,
@@ -20,6 +26,7 @@ import {
   UserReportRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
+import {Post} from '../models';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class MetricService {
@@ -107,6 +114,45 @@ export class MetricService {
     metric.comments = (metric.discussions ?? 0) + (metric.debates ?? 0);
 
     return metric;
+  }
+
+  async userMetric(userId: string): Promise<void> {
+    const {count: totalExperiences} = await this.userExperienceRepository.count(
+      {userId},
+    );
+    const {count: totalFriends} = await this.friendRepository.count({
+      or: [
+        {
+          requesteeId: userId,
+          status: FriendStatusType.APPROVED,
+        },
+        {
+          requestorId: userId,
+          status: FriendStatusType.APPROVED,
+        },
+      ],
+    });
+    const {count: totalPosts} = await this.postRepository.count({
+      or: [
+        {
+          createdBy: userId,
+        },
+        {
+          importers: {
+            inq: [userId],
+          },
+        },
+      ],
+    } as Where<Post>);
+
+    const userMetric = {
+      totalPosts,
+      totalExperiences,
+      totalFriends,
+      totalKudos: 0,
+    };
+
+    await this.userRepository.updateById(userId, {metric: userMetric});
   }
 
   async countData(
