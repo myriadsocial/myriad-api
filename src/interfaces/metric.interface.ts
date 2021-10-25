@@ -9,3 +9,10 @@ export interface Metric {
   debates?: number;
   shares?: number;
 }
+
+export interface UserMetric {
+  totalPosts: number;
+  totalExperiences: number;
+  totalKudos: number;
+  totalFriends: number;
+}
