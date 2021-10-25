@@ -4,6 +4,7 @@ import {
   InvocationContext,
   InvocationResult,
   Provider,
+  service,
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
@@ -14,6 +15,7 @@ import {
   UserExperienceRepository,
   UserRepository,
 } from '../repositories';
+import {MetricService} from '../services';
 /**
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
@@ -29,6 +31,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     protected userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @service(MetricService)
+    protected metricService: MetricService,
   ) {}
 
   /**
@@ -120,6 +124,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         await this.userRepository.updateById(userId, {onTimeline: result.id});
       }
     }
+
+    await this.metricService.userMetric(userId);
 
     return result;
   }
