@@ -15,7 +15,7 @@ import {FriendStatusType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {ValidateFriendRequestInterceptor} from '../interceptors/validate-friend-request.interceptor';
 import {Friend} from '../models';
-import {FriendService, NotificationService} from '../services';
+import {FriendService, MetricService, NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -25,6 +25,8 @@ export class FriendController {
     protected notificationService: NotificationService,
     @service(FriendService)
     protected friendService: FriendService,
+    @service(MetricService)
+    protected metricService: MetricService,
   ) {}
 
   @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
@@ -181,15 +183,23 @@ export class FriendController {
     })
     friend: Partial<Friend>,
   ): Promise<void> {
+    await this.friendService.friendRepository.updateById(id, friend);
+
     if (friend.status === FriendStatusType.APPROVED) {
       try {
-        await this.notificationService.sendFriendAccept(id);
+        const {requestee, requestor} =
+          await this.friendService.friendRepository.findById(id, {
+            include: ['requestee', 'requestor'],
+          });
+
+        await this.metricService.userMetric(requestee.id);
+        await this.metricService.userMetric(requestor.id);
+
+        await this.notificationService.sendFriendAccept(requestee, requestor);
       } catch (error) {
         // ignored
       }
     }
-
-    await this.friendService.friendRepository.updateById(id, friend);
   }
 
   @del('/friends/{id}')
