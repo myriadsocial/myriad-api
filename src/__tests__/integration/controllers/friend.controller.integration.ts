@@ -14,6 +14,7 @@ import {
 import {
   FCMService,
   FriendService,
+  MetricService,
   NotificationService,
 } from '../../../services';
 import {
@@ -35,6 +36,7 @@ describe('FriendControllerIntegration', () => {
   let notificationService: NotificationService;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let reportRepository: ReportRepository;
+  let metricService: MetricService;
   let friendService: FriendService;
   let fcmService: FCMService;
 
@@ -43,8 +45,10 @@ describe('FriendControllerIntegration', () => {
       userRepository,
       friendRepository,
       postRepository,
+      commentRepository,
       notificationRepository,
       userSocialMediaRepository,
+      userRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -64,7 +68,11 @@ describe('FriendControllerIntegration', () => {
       userRepository,
       notificationService,
     );
-    controller = new FriendController(notificationService, friendService);
+    controller = new FriendController(
+      notificationService,
+      friendService,
+      metricService,
+    );
   });
 
   beforeEach(async () => {
@@ -262,6 +270,8 @@ describe('FriendControllerIntegration', () => {
         referenceId: friend.requestorId,
       },
     });
+
+    console.log(notifications);
 
     delete notifications[0].id;
     delete notifications[0].createdAt;

@@ -166,6 +166,12 @@ describe('UserExperienceApplication', function () {
       const expected = {
         ...user,
         onTimeline: response.body.experienceId,
+        metric: {
+          totalPosts: 0,
+          totalKudos: 0,
+          totalExperiences: 1,
+          totalFriends: 0,
+        },
       };
 
       const result = await userRepository.findById(user.id);
@@ -267,6 +273,12 @@ describe('UserExperienceApplication', function () {
       const expected = {
         ...user,
         onTimeline: response.body.id,
+        metric: {
+          totalPosts: 0,
+          totalExperiences: 1,
+          totalFriends: 0,
+          totalKudos: 0,
+        },
       };
 
       const result = await userRepository.findById(user.id);
@@ -370,6 +382,4 @@ describe('UserExperienceApplication', function () {
       experience: toJSON(experience),
     });
   });
-
-  // it('creates an ');
 });

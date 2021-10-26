@@ -6,6 +6,7 @@ import {
   CommentRepository,
   VoteRepository,
   PostRepository,
+  UserRepository,
 } from '../../repositories';
 import {
   givenComment,
@@ -16,6 +17,8 @@ import {
   setupApplication,
   givenVote,
   givenVoteInstance,
+  givenUserRepository,
+  givenUserInstance,
 } from '../helpers';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
@@ -26,6 +29,7 @@ describe('VoteApplication', function () {
   let voteRepository: VoteRepository;
   let postRepository: PostRepository;
   let commentRepository: CommentRepository;
+  let userRepository: UserRepository;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -37,15 +41,18 @@ describe('VoteApplication', function () {
     voteRepository = await givenVoteRepository(app);
     postRepository = await givenPostRepository(app);
     commentRepository = await givenCommentRepository(app);
+    userRepository = await givenUserRepository(app);
   });
 
   beforeEach(async () => {
     await voteRepository.deleteAll();
     await postRepository.deleteAll();
     await commentRepository.deleteAll();
+    await userRepository.deleteAll();
   });
 
   it('creates an upvote if not exists', async function () {
+    const user = await givenUserInstance(userRepository);
     const postResponse = await givenPostInstance(
       postRepository,
       {
@@ -55,6 +62,7 @@ describe('VoteApplication', function () {
           downvotes: 0,
           debates: 0,
         },
+        createdBy: user.id,
       },
       true,
     );
@@ -70,6 +78,7 @@ describe('VoteApplication', function () {
   });
 
   it('can downvotes post if user already comments to the post in the debate section', async function () {
+    const user = await givenUserInstance(userRepository);
     const postResponse = await givenPostInstance(
       postRepository,
       {
@@ -79,6 +88,7 @@ describe('VoteApplication', function () {
           downvotes: 0,
           debates: 0,
         },
+        createdBy: user.id,
       },
       true,
     );
@@ -105,6 +115,7 @@ describe('VoteApplication', function () {
   });
 
   it('adds by 1 upvotes', async function () {
+    const user = await givenUserInstance(userRepository);
     const postResponse = (
       await givenPostInstance(
         postRepository,
@@ -115,6 +126,7 @@ describe('VoteApplication', function () {
             downvotes: 0,
             debates: 0,
           },
+          createdBy: user.id,
         },
         true,
       )
@@ -133,6 +145,7 @@ describe('VoteApplication', function () {
   });
 
   it('rejects to downvote the post if user has not comment in debate section', async () => {
+    const user = await givenUserInstance(userRepository);
     const postResponse = (
       await givenPostInstance(
         postRepository,
@@ -143,6 +156,7 @@ describe('VoteApplication', function () {
             downvotes: 0,
             debates: 0,
           },
+          createdBy: user.id,
         },
         true,
       )
@@ -161,6 +175,7 @@ describe('VoteApplication', function () {
   });
 
   it('deletes the upvotes and post metric upvotes reduces by 1', async function () {
+    const user = await givenUserInstance(userRepository);
     const postResponse = await givenPostInstance(
       postRepository,
       {
@@ -170,6 +185,7 @@ describe('VoteApplication', function () {
           downvotes: 0,
           debates: 0,
         },
+        createdBy: user.id,
       },
       true,
     );
