@@ -118,16 +118,6 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
             'Please comment first in debate sections, before you downvote this post',
           );
         }
-
-        case ReferenceType.COMMENT: {
-          const comment = await this.commentRepository.findOne({
-            where: {userId, referenceId, type, section},
-          });
-          if (comment) break;
-          throw new HttpErrors.UnprocessableEntity(
-            `Please comment first in ${section} sections, before you downvote this comment`,
-          );
-        }
       }
     }
 
