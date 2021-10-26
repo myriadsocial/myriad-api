@@ -8,6 +8,7 @@ import {User} from './user.model';
     mongodb: {
       collection: 'votes',
     },
+    hiddenProperties: ['toUserId'],
   },
 })
 export class Vote extends Entity {
@@ -56,6 +57,17 @@ export class Vote extends Entity {
     required: true,
   })
   state: boolean;
+
+  @property({
+    type: 'string',
+    required: false,
+    jsonSchema: {
+      maxLength: 66,
+      minLength: 66,
+      pattern: '^0x',
+    },
+  })
+  toUserId: string;
 
   @property({
     type: 'date',
