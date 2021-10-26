@@ -160,15 +160,14 @@ export class PostController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/posts', {
-    responses: {
-      '200': {
-        description: 'Array of Post model instances',
-        content: {
-          'application/json': {
-            schema: 'array',
-            items: getModelSchemaRef(Post, {includeRelations: true}),
-          },
+  @get('/posts')
+  @response(200, {
+    description: 'Array of Post model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Post, {includeRelations: true}),
         },
       },
     },
