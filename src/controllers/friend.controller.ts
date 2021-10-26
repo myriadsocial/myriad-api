@@ -193,9 +193,9 @@ export class FriendController {
           });
 
         if (requestee && requestor) {
+          await this.notificationService.sendFriendAccept(requestee, requestor);
           await this.metricService.userMetric(requestee.id);
           await this.metricService.userMetric(requestor.id);
-          await this.notificationService.sendFriendAccept(requestee, requestor);
         }
       } catch (error) {
         // ignored
