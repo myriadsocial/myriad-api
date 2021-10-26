@@ -97,17 +97,20 @@ export class Transaction extends Entity {
   )
   to: string;
 
-  @belongsTo(() => Currency, {}, {required: true})
+  @belongsTo(
+    () => Currency,
+    {},
+    {
+      required: true,
+      jsonSchema: {
+        transform: ['toUpperCase'],
+      },
+    },
+  )
   currencyId: string;
 
   constructor(data?: Partial<Transaction>) {
     super(data);
-    this.currencyId = this.currencyToUpperCase();
-  }
-
-  currencyToUpperCase() {
-    if (this.currencyId) return this.currencyId.toUpperCase();
-    return '';
   }
 }
 
