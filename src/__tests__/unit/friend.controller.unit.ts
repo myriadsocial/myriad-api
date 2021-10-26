@@ -9,13 +9,18 @@ import {FriendController} from '../../controllers';
 import {FriendStatusType} from '../../enums';
 import {Friend} from '../../models';
 import {FriendRepository, UserRepository} from '../../repositories';
-import {FriendService, NotificationService} from '../../services';
+import {
+  FriendService,
+  MetricService,
+  NotificationService,
+} from '../../services';
 import {givenFriend} from '../helpers';
 
 describe('FriendController', () => {
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
   let userRepository: UserRepository;
   let friendService: FriendService;
+  let metricService: MetricService;
   let notificationService: NotificationService;
   let controller: FriendController;
   let aFriend: Friend;
@@ -103,6 +108,10 @@ describe('FriendController', () => {
       userRepository,
       notificationService,
     );
-    controller = new FriendController(notificationService, friendService);
+    controller = new FriendController(
+      notificationService,
+      friendService,
+      metricService,
+    );
   }
 });
