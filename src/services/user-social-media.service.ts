@@ -58,7 +58,7 @@ export class UserSocialMediaService {
 
     const userSocialMedia = await this.userSocialMediaRepository.findOne({
       where: {
-        peopleId: people.id,
+        peopleId: foundPeople.id,
         platform: platform as PlatformType,
       },
     });
