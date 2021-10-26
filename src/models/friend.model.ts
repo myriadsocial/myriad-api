@@ -86,8 +86,8 @@ export class Friend extends Entity {
 
 export interface FriendRelations {
   // describe navigational properties here
-  requestee: UserWithRelations;
-  requestor: UserWithRelations;
+  requestee?: UserWithRelations;
+  requestor?: UserWithRelations;
 }
 
 export type FriendWithRelations = Friend & FriendRelations;
