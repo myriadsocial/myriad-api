@@ -95,7 +95,11 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
       };
     }
 
-    const {userId, referenceId, type, state, section} = invocationCtx.args[0];
+    const {userId, referenceId, type, state, section, postId} =
+      invocationCtx.args[0];
+
+    const {createdBy} = await this.postRepository.findById(postId);
+    invocationCtx.args[0].toUserId = createdBy;
 
     if (type === ReferenceType.POST) invocationCtx.args[0].section = undefined;
     if (type === ReferenceType.COMMENT && !section)
