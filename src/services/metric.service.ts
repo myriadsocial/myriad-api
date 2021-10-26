@@ -27,7 +27,6 @@ import {
   UserReportRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
-import {Post} from '../models';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class MetricService {
