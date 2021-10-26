@@ -31,6 +31,7 @@ export class VoteController {
         'application/json': {
           schema: getModelSchemaRef(Vote, {
             title: 'NewVote',
+            exclude: ['toUserId'],
           }),
         },
       },
