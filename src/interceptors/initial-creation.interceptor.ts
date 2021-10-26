@@ -20,10 +20,6 @@ import {
   UserRepository,
 } from '../repositories';
 import {CurrencyService, MetricService, TagService} from '../services';
-import {UrlUtils} from '../utils/url.utils';
-
-const urlUtils = new UrlUtils();
-const {validateURL} = urlUtils;
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -81,13 +77,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     }
 
     if (methodName === MethodType.UPDATEBYID) {
-      const {websiteURL, profilePictureURL, bannerImageUrl} =
-        invocationCtx.args[1];
-
-      validateURL(websiteURL);
-      validateURL(profilePictureURL);
-      validateURL(bannerImageUrl);
-
       invocationCtx.args[1].updatedAt = new Date().toString();
       return next();
     }
