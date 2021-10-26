@@ -137,11 +137,21 @@ export class MetricService {
       platform: PlatformType.MYRIAD,
     });
 
+    const {count: totalUpvote} = await this.voteRepository.count({
+      state: true,
+      toUserId: userId,
+    });
+
+    const {count: totalDownvote} = await this.voteRepository.count({
+      state: false,
+      toUserId: userId,
+    });
+
     const userMetric = {
       totalPosts,
       totalExperiences,
       totalFriends,
-      totalKudos: 0,
+      totalKudos: totalUpvote - totalDownvote,
     };
 
     await this.userRepository.updateById(userId, {metric: userMetric});
