@@ -70,13 +70,13 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
         }
 
         if (methodName === MethodType.CREATE) {
-          await this.currencyRepository.findById(currencyId.toUpperCase());
+          await this.currencyRepository.findById(currencyId);
 
           // Check if user already has the crypto
           const userCurrency = await this.userCurrencyRepository.findOne({
             where: {
               userId,
-              currencyId: currencyId.toUpperCase(),
+              currencyId: currencyId,
             },
           });
 

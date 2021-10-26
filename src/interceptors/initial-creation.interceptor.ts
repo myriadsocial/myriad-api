@@ -88,7 +88,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
     if (methodName === MethodType.SELECTCURRENCY) {
       const userId = invocationCtx.args[0];
-      const currencyId = invocationCtx.args[1].toUpperCase();
+      const currencyId = invocationCtx.args[1];
 
       await this.currencyRepository.findById(currencyId);
 
@@ -101,7 +101,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           "You don't have this currency",
         );
 
-      invocationCtx.args[1] = currencyId;
       return next();
     }
 
@@ -145,7 +144,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
       case ControllerType.TRANSACTION: {
         await this.currencyRepository.findById(
-          invocationCtx.args[0].currencyId.toUpperCase(),
+          invocationCtx.args[0].currencyId,
         );
         await this.userRepository.findById(invocationCtx.args[0].from);
         return;
