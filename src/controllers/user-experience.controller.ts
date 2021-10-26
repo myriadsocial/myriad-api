@@ -161,8 +161,8 @@ export class UserExperienceController {
   // Select experience
   @patch('/users/{userId}/select-experiences/{experienceId}', {
     responses: {
-      '200': {
-        desription: 'Select User Experience',
+      '204': {
+        description: 'Select User Experience',
       },
     },
   })
