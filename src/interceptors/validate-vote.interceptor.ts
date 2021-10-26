@@ -73,6 +73,8 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
         popularCount: popularCount,
       });
 
+      await this.metricService.userMetric(result.value.toUserId);
+
       return Object.assign(result.value, {
         id: result.value._id,
         _id: undefined,
