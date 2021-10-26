@@ -337,6 +337,12 @@ export class SocialMediaService {
     urlId: string,
   ): Promise<ExtendedPost> {
     const gun = server.gun;
+    if (username === '_UNKNOWN_') {
+      username = await gun
+        .user(process.env.SCRAPER_PUB_KEY)
+        .get('facebook')
+        .get(urlId);
+    }
     let gunPost = await gun
       .user(process.env.SCRAPER_PUB_KEY)
       .get('facebook')
