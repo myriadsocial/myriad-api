@@ -82,8 +82,8 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@master
         with:
-          project_id: ${{ secrets.BETA_GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.BETA_GCP_SA_KEY }}
+          project_id: ${{ secrets.PREPROD_GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.PREPROD_GCP_SA_KEY }}
           export_default_credentials: true
       - name: Get the GKE credentials
         uses: google-github-actions/get-gke-credentials@main
@@ -95,18 +95,18 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@main
         with:
           secrets: |-
-            RPC_WS_URL:${{ secrets.DEV_GCP_PROJECT_ID }}/RPC_WS_URL
-            FAUCET_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
-            REWARD_AMOUNT:${{ secrets.DEV_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.DEV_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
-            MONGO_HOST:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_HOST
-            MONGO_PORT:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PORT
-            MONGO_DB:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_DB
-            MONGO_USER_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_USER_API
-            MONGO_PASSWORD_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
-            FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.DEV_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
-            API_SENTRY_DNS:${{ secrets.DEV_GCP_PROJECT_ID }}/API_SENTRY_DNS
-            TWITTER_BEARER_TOKEN:${{ secrets.DEV_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
+            RPC_WS_URL:${{ secrets.PREPROD_GCP_PROJECT_ID }}/RPC_WS_URL
+            FAUCET_MNEMONIC:${{ secrets.PREPROD_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
+            REWARD_AMOUNT:${{ secrets.PREPROD_GCP_PROJECT_ID }}/REWARD_AMOUNT
+            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.PREPROD_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
+            MONGO_HOST:${{ secrets.PREPROD_GCP_PROJECT_ID }}/MONGO_HOST
+            MONGO_PORT:${{ secrets.PREPROD_GCP_PROJECT_ID }}/MONGO_PORT
+            MONGO_DB:${{ secrets.PREPROD_GCP_PROJECT_ID }}/MONGO_DB
+            MONGO_USER_API:${{ secrets.PREPROD_GCP_PROJECT_ID }}/MONGO_USER_API
+            MONGO_PASSWORD_API:${{ secrets.PREPROD_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
+            FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.PREPROD_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
+            API_SENTRY_DNS:${{ secrets.PREPROD_GCP_PROJECT_ID }}/API_SENTRY_DNS
+            TWITTER_BEARER_TOKEN:${{ secrets.PREPROD_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
 
       - name: Install Helm
         run: |
