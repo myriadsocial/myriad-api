@@ -111,11 +111,17 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@main
         with:
           secrets: |-
+            RPC_WS_URL:${{ secrets.DEV_GCP_PROJECT_ID }}/RPC_WS_URL
             FAUCET_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
+            REWARD_AMOUNT:${{ secrets.DEV_GCP_PROJECT_ID }}/REWARD_AMOUNT
+            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.DEV_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
+            MONGO_HOST:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_HOST
+            MONGO_PORT:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PORT
+            MONGO_DB:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_DB
             MONGO_USER_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_USER_API
             MONGO_PASSWORD_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.DEV_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
-            SENTRY_DNS:${{ secrets.DEV_GCP_PROJECT_ID }}/SENTRY_DNS
+            API_SENTRY_DNS:${{ secrets.DEV_GCP_PROJECT_ID }}/API_SENTRY_DNS
             TWITTER_BEARER_TOKEN:${{ secrets.DEV_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
 
       - name: Install Helm
@@ -127,17 +133,17 @@ jobs:
           helm upgrade myriad-api .maintain/kubernetes \
             --install \
             --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }}-${{ needs.compute-build-info.outputs.date }} \
-            --set-string config.rpcWSURL=wss://rpc.dev.myriad.systems \
+            --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
             --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
-            --set config.rewardAmount=0 \
-            --set config.acalaAUSDRewardAmount=10 \
-            --set-string config.mongo.host=myriad-db.default.svc.cluster.local \
-            --set config.mongo.port=27017 \
+            --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
+            --set config.acalaAUSDRewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT_ACALA_AUSD }} \
+            --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
+            --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
+            --set-string config.mongo.database=${{ steps.secrets.outputs.MONGO_DB }} \
             --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
             --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
-            --set-string config.mongo.database=myriad \
             --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
-            --set-string config.sentry.dns=${{ steps.secrets.outputs.SENTRY_DNS }} \
+            --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DNS }} \
             --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
             --set ingress.enabled=true \
             --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
