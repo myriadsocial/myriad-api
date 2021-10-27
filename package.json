@@ -54,6 +54,7 @@
     "@loopback/service-proxy": "^3.2.1",
     "@polkadot/api": "^4.16.2",
     "@sentry/node": "^6.13.3",
+    "@sentry/tracing": "^6.13.3",
     "bcryptjs": "^2.4.3",
     "bn.js": "^5.2.0",
     "dotenv": "^10.0.0",
