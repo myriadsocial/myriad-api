@@ -88,13 +88,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       filter.where = Object.assign(filter.where, {deletedAt: {$exists: true}});
     }
 
-    if (
-      className === ControllerType.POST ||
-      className === ControllerType.USER
-    ) {
-      filter.where = Object.assign(filter.where, {deletedAt: {$exists: false}});
-    }
-
     // Set filter for user
     // Use for search unblock user
     if (className === ControllerType.USER && userId) {
