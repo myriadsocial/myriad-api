@@ -130,6 +130,39 @@ export class ReportInterceptor implements Provider<Interceptor> {
     await this.userReportRepository.deleteAll({
       reportId: reportId,
     });
+
+    const reports = await this.reportRepository.find({
+      where: {
+        referenceType,
+        referenceId,
+      },
+    });
+
+    const reportIds = reports.map(report => {
+      return {
+        reportId: report.id,
+      };
+    });
+
+    reportIds.push({
+      reportId: reportId,
+    });
+
+    await this.userReportRepository.deleteAll({
+      or: reportIds,
+    });
+
+    await this.reportRepository.updateAll(
+      <any>{
+        $unset: {
+          status: '',
+        },
+      },
+      {
+        referenceId,
+        referenceType,
+      },
+    );
   }
 
   async updateReport(
