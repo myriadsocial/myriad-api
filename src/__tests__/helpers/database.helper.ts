@@ -93,6 +93,7 @@ export async function givenRepositories(testdb: any) {
     testdb,
     async () => userRepository,
     async () => postRepository,
+    async () => commentRepository,
     async () => userReportRepository,
   );
   const userReportRepository: UserReportRepository = new UserReportRepository(

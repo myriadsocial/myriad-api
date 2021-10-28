@@ -1,6 +1,13 @@
 import {service} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {response, post, getModelSchemaRef, param, requestBody, HttpErrors} from '@loopback/rest';
+import {
+  response,
+  post,
+  getModelSchemaRef,
+  param,
+  requestBody,
+  HttpErrors,
+} from '@loopback/rest';
 import {ReferenceType, ReportStatusType} from '../enums';
 import {Report, ReportDetail} from '../models';
 import {ReportRepository, UserReportRepository} from '../repositories';
@@ -43,7 +50,8 @@ export class UserReportController {
     const {referenceId, referenceType, description, type} = reportDetail;
 
     if (
-      (referenceType === ReferenceType.POST || referenceType === ReferenceType.COMMENT) &&
+      (referenceType === ReferenceType.POST ||
+        referenceType === ReferenceType.COMMENT) &&
       !type
     ) {
       throw new HttpErrors.UnprocessableEntity('Type cannot be empty');
@@ -91,7 +99,9 @@ export class UserReportController {
       }
 
       case ReportStatusType.REMOVED: {
-        throw new HttpErrors.UnprocessableEntity('This post/comment/user has been removed/banned');
+        throw new HttpErrors.UnprocessableEntity(
+          'This post/comment/user has been removed/banned',
+        );
       }
     }
 

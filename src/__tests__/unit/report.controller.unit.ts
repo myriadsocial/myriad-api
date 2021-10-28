@@ -8,11 +8,21 @@ import {
 import {ReportController} from '../../controllers';
 import {ReferenceType} from '../../enums';
 import {Report} from '../../models';
-import {ReportRepository} from '../../repositories';
+import {
+  PostRepository,
+  ReportRepository,
+  UserReportRepository,
+  UserRepository,
+  CommentRepository,
+} from '../../repositories';
 import {givenReport} from '../helpers';
 
 describe('ReportController', () => {
   let reportRepository: StubbedInstanceWithSinonAccessor<ReportRepository>;
+  let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
+  let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
+  let userReportRepository: StubbedInstanceWithSinonAccessor<UserReportRepository>;
+  let commentRepository: StubbedInstanceWithSinonAccessor<CommentRepository>;
   let controller: ReportController;
   let aReportWithId: Report;
   let aListOfReports: Report[];
@@ -82,6 +92,12 @@ describe('ReportController', () => {
       }),
     ] as Report[];
 
-    controller = new ReportController(reportRepository);
+    controller = new ReportController(
+      reportRepository,
+      userReportRepository,
+      userRepository,
+      postRepository,
+      commentRepository,
+    );
   }
 });

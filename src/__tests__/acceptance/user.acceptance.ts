@@ -37,7 +37,7 @@ describe('UserApplication', function () {
   let activityLogRepository: ActivityLogRepository;
 
   before(async () => {
-    ({app, client} = await setupApplication(true));
+    ({app, client} = await setupApplication());
   });
 
   after(() => app.stop());
