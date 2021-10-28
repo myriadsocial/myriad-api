@@ -26,6 +26,18 @@ export class UserSocialMediaService {
       publicKey,
     } = people;
 
+    const newUserSocialMedia: Partial<UserSocialMedia> = {
+      userId: publicKey,
+      platform: platform as PlatformType,
+      verified: true,
+    };
+
+    const {count} = await this.userSocialMediaRepository.count({
+      userId: publicKey,
+    });
+
+    if (count === 0) newUserSocialMedia.primary = true;
+
     const foundPeople = await this.peopleRepository.findOne({
       where: {
         originUserId: originUserId,
@@ -49,11 +61,9 @@ export class UserSocialMediaService {
         walletAddress: getHexPublicKey(newKey),
       });
 
-      return this.peopleRepository.userSocialMedia(newPeople.id).create({
-        userId: publicKey,
-        platform: platform as PlatformType,
-        verified: true,
-      });
+      return this.peopleRepository
+        .userSocialMedia(newPeople.id)
+        .create(newUserSocialMedia);
     }
 
     const userSocialMedia = await this.userSocialMediaRepository.findOne({
@@ -87,10 +97,8 @@ export class UserSocialMediaService {
       return userSocialMedia;
     }
 
-    return this.peopleRepository.userSocialMedia(foundPeople.id).create({
-      userId: publicKey,
-      platform: platform as PlatformType,
-      verified: true,
-    });
+    return this.peopleRepository
+      .userSocialMedia(foundPeople.id)
+      .create(newUserSocialMedia);
   }
 }
