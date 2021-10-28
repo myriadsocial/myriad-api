@@ -1,6 +1,7 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {User} from './user.model';
 import {Report} from './report.model';
+import {ReferenceType} from '../enums';
 
 @model({
   settings: {
@@ -26,6 +27,15 @@ export class UserReport extends Entity {
     required: true,
   })
   description: string;
+
+  @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      enum: Object.values(ReferenceType),
+    },
+  })
+  referenceType: ReferenceType;
 
   @property({
     type: 'date',
