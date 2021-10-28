@@ -1,6 +1,6 @@
 import {expect, toJSON} from '@loopback/testlab';
 import {UserController} from '../../../controllers';
-import {ActivityLogType, FriendStatusType} from '../../../enums';
+import {ActivityLogType} from '../../../enums';
 import {
   ActivityLogRepository,
   CurrencyRepository,

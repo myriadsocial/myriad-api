@@ -44,62 +44,57 @@ export class DeletedDocument implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    try {
-      const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
-      const {userId} = query;
-      const id = invocationCtx.args[0];
-      const className = invocationCtx.targetClass.name as ControllerType;
+    const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
+    const {userId} = query;
+    const id = invocationCtx.args[0];
+    const className = invocationCtx.targetClass.name as ControllerType;
 
-      if (className === ControllerType.USER) {
-        if (userId) {
-          const friend = await this.friendRepository.findOne({
-            where: {
-              or: [
-                {
-                  requesteeId: userId.toString(),
-                  requestorId: id,
-                },
-                {
-                  requesteeId: id,
-                  requestorId: userId.toString(),
-                },
-              ],
-            },
+    if (className === ControllerType.USER) {
+      if (userId) {
+        const friend = await this.friendRepository.findOne({
+          where: {
+            or: [
+              {
+                requesteeId: userId.toString(),
+                requestorId: id,
+              },
+              {
+                requesteeId: id,
+                requestorId: userId.toString(),
+              },
+            ],
+          },
+        });
+
+        if (friend && friend.status === FriendStatusType.BLOCKED) return null;
+      }
+    }
+    // Add pre-invocation logic here
+    const result = await next();
+    // Add post-invocation logic here
+
+    if (result.deletedAt) {
+      switch (className) {
+        case ControllerType.USER:
+          return Object.assign(result, {
+            name: '[user banned]',
           });
 
-          if (friend && friend.status === FriendStatusType.BLOCKED) return null;
-        }
+        case ControllerType.POST:
+          return Object.assign(result, {
+            text: '[post removed]',
+          });
+
+        case ControllerType.COMMENT:
+          return Object.assign(result, {
+            text: '[comment removed]',
+          });
+
+        default:
+          return null;
       }
-      // Add pre-invocation logic here
-      const result = await next();
-      // Add post-invocation logic here
-
-      if (result.deletedAt) {
-        switch (className) {
-          case ControllerType.USER:
-            return Object.assign(result, {
-              name: '[user banned]',
-            });
-
-          case ControllerType.POST:
-            return Object.assign(result, {
-              text: '[post removed]',
-            });
-
-          case ControllerType.COMMENT:
-            return Object.assign(result, {
-              text: '[comment removed]',
-            });
-
-          default:
-            return null;
-        }
-      }
-
-      return result;
-    } catch (err) {
-      // Add error handling logic here
-      throw err;
     }
+
+    return result;
   }
 }

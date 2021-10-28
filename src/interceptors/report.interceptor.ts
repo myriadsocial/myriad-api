@@ -64,45 +64,41 @@ export class ReportInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    try {
-      const methodName = invocationCtx.methodName as MethodType;
-      const {referenceId, referenceType, penaltyStatus} =
-        await this.reportRepository.findById(invocationCtx.args[0]);
+    const methodName = invocationCtx.methodName as MethodType;
+    const {referenceId, referenceType, penaltyStatus} =
+      await this.reportRepository.findById(invocationCtx.args[0]);
 
-      switch (methodName) {
-        case MethodType.UPDATEBYID: {
-          const report: Report = invocationCtx.args[1];
+    switch (methodName) {
+      case MethodType.UPDATEBYID: {
+        const report: Report = invocationCtx.args[1];
 
-          await this.updateReport(
-            report,
-            referenceId,
-            referenceType,
-            invocationCtx,
-            penaltyStatus,
-          );
+        await this.updateReport(
+          report,
+          referenceId,
+          referenceType,
+          invocationCtx,
+          penaltyStatus,
+        );
 
-          break;
-        }
-
-        case MethodType.RESTORE: {
-          await this.restoreDocument(
-            invocationCtx.args[0],
-            referenceId,
-            referenceType,
-          );
-        }
+        break;
       }
 
-      // Add pre-invocation logic here
-      const result = await next();
-      // Add post-invocation logic here
-      return result;
-    } catch (err) {
-      // Add error handling logic here
-      throw err;
+      case MethodType.RESTORE: {
+        await this.restoreDocument(
+          invocationCtx.args[0],
+          referenceId,
+          referenceType,
+        );
+      }
     }
+
+    // Add pre-invocation logic here
+    const result = await next();
+    // Add post-invocation logic here
+    return result;
   }
 
+  /* eslint-disable  @typescript-eslint/no-explicit-any */
   async restoreDocument(
     reportId: string,
     referenceId: string,

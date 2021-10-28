@@ -156,6 +156,7 @@ export class ReportController {
     description: 'Restore Report success',
   })
   async restore(@param.path.string('id') id: string): Promise<void> {
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
     await this.reportRepository.updateById(id, <any>{
       $unset: {
         status: '',
