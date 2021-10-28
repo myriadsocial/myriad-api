@@ -5,10 +5,18 @@ import {
   belongsTo,
   hasMany,
 } from '@loopback/repository';
-import {ReportStatusType} from '../enums/report-status-type.enum';
+import {
+  ReportStatusType,
+  PenaltyStatusType,
+} from '../enums/report-status-type.enum';
 import {User} from './user.model';
 import {Post} from './post.model';
-import {PostWithRelations, UserWithRelations} from '.';
+import {
+  Comment,
+  CommentWithRelations,
+  PostWithRelations,
+  UserWithRelations,
+} from '.';
 import {UserReport} from './user-report.model';
 import {ReferenceType} from '../enums';
 
@@ -64,6 +72,15 @@ export class Report extends Entity {
   status: ReportStatusType;
 
   @property({
+    type: 'string',
+    required: false,
+    jsonSchema: {
+      enum: Object.values(PenaltyStatusType),
+    },
+  })
+  penaltyStatus?: PenaltyStatusType;
+
+  @property({
     type: 'number',
     required: false,
   })
@@ -95,6 +112,9 @@ export class Report extends Entity {
   @belongsTo(() => User, {name: 'reportedUser'})
   userId: string;
 
+  @belongsTo(() => Comment, {name: 'reportedComment'})
+  commentId: string;
+
   @hasMany(() => UserReport)
   reporters: UserReport[];
 
@@ -107,6 +127,7 @@ export interface ReportRelations {
   // describe navigational properties here
   reportedUser?: UserWithRelations;
   reportedPost?: PostWithRelations;
+  reportedComment?: CommentWithRelations;
 }
 
 export type ReportWithRelations = Report & ReportRelations;
