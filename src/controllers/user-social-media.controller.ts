@@ -9,6 +9,7 @@ import {
   post,
   requestBody,
   response,
+  patch,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
@@ -118,6 +119,24 @@ export class UserSocialMediaController {
       id,
       filter,
     );
+  }
+
+  @patch('/user-social-medias/{id}/primary')
+  @response(204, {
+    description: 'Set primary social media',
+  })
+  async updatePrimary(@param.path.string('id') id: string): Promise<void> {
+    const {userId: userId} =
+      await this.userSocialMediaService.userSocialMediaRepository.findById(id);
+
+    await this.userSocialMediaService.userSocialMediaRepository.updateAll(
+      {primary: false},
+      {userId: userId},
+    );
+
+    await this.userSocialMediaService.userSocialMediaRepository.updateById(id, {
+      primary: true,
+    });
   }
 
   @del('/user-social-medias/{id}')
