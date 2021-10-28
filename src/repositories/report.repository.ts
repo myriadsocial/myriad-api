@@ -6,10 +6,18 @@ import {
   HasManyRepositoryFactory,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Report, ReportRelations, User, Post, UserReport} from '../models';
+import {
+  Report,
+  ReportRelations,
+  User,
+  Post,
+  UserReport,
+  Comment,
+} from '../models';
 import {UserRepository} from './user.repository';
 import {PostRepository} from './post.repository';
 import {UserReportRepository} from './user-report.repository';
+import {CommentRepository} from '.';
 
 export class ReportRepository extends DefaultCrudRepository<
   Report,
@@ -19,6 +27,11 @@ export class ReportRepository extends DefaultCrudRepository<
   public readonly post: BelongsToAccessor<Post, typeof Report.prototype.id>;
 
   public readonly user: BelongsToAccessor<User, typeof Report.prototype.id>;
+
+  public readonly comment: BelongsToAccessor<
+    Comment,
+    typeof Report.prototype.id
+  >;
 
   public readonly reporters: HasManyRepositoryFactory<
     UserReport,
@@ -31,6 +44,8 @@ export class ReportRepository extends DefaultCrudRepository<
     protected userRepositoryGetter: Getter<UserRepository>,
     @repository.getter('PostRepository')
     protected postRepositoryGetter: Getter<PostRepository>,
+    @repository.getter('CommentRepository')
+    protected commentRepositoryGetter: Getter<CommentRepository>,
     @repository.getter('UserReportRepository')
     protected userReportRepositoryGetter: Getter<UserReportRepository>,
   ) {
@@ -53,5 +68,13 @@ export class ReportRepository extends DefaultCrudRepository<
       postRepositoryGetter,
     );
     this.registerInclusionResolver('reportedPost', this.post.inclusionResolver);
+    this.comment = this.createBelongsToAccessorFor(
+      'reportedComment',
+      commentRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'reportedComment',
+      this.comment.inclusionResolver,
+    );
   }
 }
