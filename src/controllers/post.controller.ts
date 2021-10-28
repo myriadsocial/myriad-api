@@ -11,7 +11,7 @@ import {
   response,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {PaginationInterceptor} from '../interceptors';
+import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {ExtendedPost} from '../interfaces';
 import {Post} from '../models';
@@ -179,6 +179,7 @@ export class PostController {
     return this.postService.postRepository.find(filter);
   }
 
+  @intercept(DeletedDocument.BINDING_KEY)
   @get('/posts/{id}')
   @response(200, {
     description: 'Post model instance',

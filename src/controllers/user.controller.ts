@@ -11,8 +11,8 @@ import {
   response,
 } from '@loopback/rest';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
-import {ActivityLogType, FriendStatusType} from '../enums';
-import {PaginationInterceptor} from '../interceptors';
+import {ActivityLogType} from '../enums';
+import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
 import {
   ActivityLogRepository,
@@ -90,6 +90,7 @@ export class UserController {
     return this.userRepository.find(filter);
   }
 
+  @intercept(DeletedDocument.BINDING_KEY)
   @get('/users/{id}')
   @response(200, {
     description: 'User model instance',
@@ -103,26 +104,7 @@ export class UserController {
   async findById(
     @param.path.string('id') id: string,
     @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
-    @param.query.string('userId') userId?: string,
   ): Promise<User> {
-    if (!userId) return this.userRepository.findById(id, filter);
-
-    const friend = await this.friendRepository.findOne({
-      where: {
-        or: [
-          {
-            requesteeId: userId,
-            requestorId: id,
-          },
-          {
-            requesteeId: id,
-            requestorId: userId,
-          },
-        ],
-      },
-    });
-
-    if (friend && friend.status === FriendStatusType.BLOCKED) return new User();
     return this.userRepository.findById(id, filter);
   }
 
