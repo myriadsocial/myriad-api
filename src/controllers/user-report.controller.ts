@@ -103,6 +103,9 @@ export class UserReportController {
           'This post/comment/user has been removed/banned',
         );
       }
+
+      default:
+        report.status = ReportStatusType.PENDING;
     }
 
     await this.userReportRepository.create({
