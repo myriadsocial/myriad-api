@@ -5,6 +5,8 @@ import {
   PostRepository,
   UserRepository,
   ReportRepository,
+  UserReportRepository,
+  CommentRepository,
 } from '../../../repositories';
 import {
   givenEmptyDatabase,
@@ -19,15 +21,23 @@ describe('ReportIntegration', () => {
   let reportRepository: ReportRepository;
   let userRepository: UserRepository;
   let postRepository: PostRepository;
+  let commentRepository: CommentRepository;
+  let userReportRepository: UserReportRepository;
   let controller: ReportController;
 
   before(async () => {
-    ({reportRepository, userRepository, postRepository} =
+    ({reportRepository, userRepository, postRepository, commentRepository} =
       await givenRepositories(testdb));
   });
 
   before(async () => {
-    controller = new ReportController(reportRepository);
+    controller = new ReportController(
+      reportRepository,
+      userReportRepository,
+      userRepository,
+      postRepository,
+      commentRepository,
+    );
   });
 
   beforeEach(async () => {

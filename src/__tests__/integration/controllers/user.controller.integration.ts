@@ -295,11 +295,7 @@ describe('UserControllerIntegration', () => {
       requestorId: user.id,
       status: FriendStatusType.BLOCKED,
     });
-    const response = await controller.findById(
-      otherUser.id,
-      undefined,
-      user.id,
-    );
+    const response = await controller.findById(otherUser.id, undefined);
 
     expect(toJSON(response)).to.deepEqual({});
   });
