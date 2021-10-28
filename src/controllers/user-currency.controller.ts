@@ -73,7 +73,7 @@ export class UserCurrencyController {
   ): Promise<Count> {
     return this.userCurrencyRepository.deleteAll({
       userId: userCurrency.userId,
-      currencyId: userCurrency.currencyId.toUpperCase(),
+      currencyId: userCurrency.currencyId,
     });
   }
 

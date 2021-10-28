@@ -9,7 +9,7 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
-import {PaginationInterceptor} from '../interceptors';
+import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {Comment} from '../models';
 import {CommentRepository} from '../repositories';
 import {NotificationService} from '../services';
@@ -47,6 +47,7 @@ export class CommentController {
     return this.commentRepository.find(filter);
   }
 
+  @intercept(DeletedDocument.BINDING_KEY)
   @get('/comments/{id}', {
     responses: {
       '200': {
