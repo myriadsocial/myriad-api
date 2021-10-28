@@ -1,6 +1,8 @@
 import {expect} from '@loopback/testlab';
 import {UserReportController} from '../../../controllers';
 import {
+  CommentRepository,
+  PostRepository,
   ReportRepository,
   UserReportRepository,
   UserRepository,
@@ -18,18 +20,27 @@ describe('UserReportControllerIntegration', () => {
   let reportRepository: ReportRepository;
   let userRepository: UserRepository;
   let userReportRepository: UserReportRepository;
+  let postRepository: PostRepository;
+  let commentRepository: CommentRepository;
   let notificationService: NotificationService;
   let controller: UserReportController;
 
   before(async () => {
-    ({reportRepository, userReportRepository, userRepository} =
-      await givenRepositories(testdb));
+    ({
+      reportRepository,
+      userReportRepository,
+      userRepository,
+      postRepository,
+      commentRepository,
+    } = await givenRepositories(testdb));
   });
 
   before(async () => {
     controller = new UserReportController(
       reportRepository,
       userReportRepository,
+      postRepository,
+      commentRepository,
       notificationService,
     );
   });
