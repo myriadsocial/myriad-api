@@ -1,5 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
+import {ReferenceType} from '../../enums';
 import {
   ReportRepository,
   UserReportRepository,
@@ -46,6 +47,7 @@ describe('ReportUserApplication', () => {
     const userReport = await givenUserReportInstance(userReportRepository, {
       reportId: report.id,
       reportedBy: reporter.id,
+      referenceType: ReferenceType.USER,
     });
     const response = await client
       .get(`/reports/${report.id}/users`)

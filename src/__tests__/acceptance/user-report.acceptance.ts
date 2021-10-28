@@ -66,14 +66,4 @@ describe('UserReportApplication', () => {
       .send(reportDetail)
       .expect(422);
   });
-
-  it('rejects to create report if user already reported', async () => {
-    const reportDetail = givenReportDetail();
-    const user = await givenUserInstance(userRepository);
-    await client.post(`/users/${user.id}/reports`).send(reportDetail);
-    await client
-      .post(`/users/${user.id}/reports`)
-      .send(reportDetail)
-      .expect(422);
-  });
 });
