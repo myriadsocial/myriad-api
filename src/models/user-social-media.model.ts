@@ -37,6 +37,13 @@ export class UserSocialMedia extends Entity {
   platform: PlatformType;
 
   @property({
+    type: 'boolean',
+    default: false,
+    required: false,
+  })
+  primary: boolean;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
