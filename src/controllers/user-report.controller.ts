@@ -1,13 +1,6 @@
 import {service} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {
-  response,
-  post,
-  getModelSchemaRef,
-  param,
-  requestBody,
-  HttpErrors,
-} from '@loopback/rest';
+import {response, post, getModelSchemaRef, param, requestBody, HttpErrors} from '@loopback/rest';
 import {ReferenceType, ReportStatusType} from '../enums';
 import {Report, ReportDetail} from '../models';
 import {ReportRepository, UserReportRepository} from '../repositories';
@@ -49,8 +42,15 @@ export class UserReportController {
     // TODO: Added notification service when report a post or a user
     const {referenceId, referenceType, description, type} = reportDetail;
 
-    if (referenceType === ReferenceType.POST && !type) {
+    if (
+      (referenceType === ReferenceType.POST || referenceType === ReferenceType.COMMENT) &&
+      !type
+    ) {
       throw new HttpErrors.UnprocessableEntity('Type cannot be empty');
+    }
+
+    if (referenceType === ReferenceType.USER && type) {
+      throw new HttpErrors.UnprocessableEntity('Type cannot be filled');
     }
 
     let report = await this.reportRepository.findOne({
@@ -58,7 +58,6 @@ export class UserReportController {
         referenceId,
         referenceType,
         type,
-        status: ReportStatusType.PENDING,
       },
     });
 
@@ -72,24 +71,32 @@ export class UserReportController {
           },
           referenceType === ReferenceType.POST
             ? {postId: referenceId}
+            : referenceType === ReferenceType.COMMENT
+            ? {commentId: referenceId}
             : {userId: referenceId},
         ),
       );
     }
 
-    const found = await this.userReportRepository.findOne({
-      where: {
-        reportId: report.id,
-        reportedBy: id,
-      },
-    });
+    const {status} = report;
 
-    if (found)
-      throw new HttpErrors.UnprocessableEntity(
-        'You have already reported this ' + referenceType,
-      );
+    switch (status) {
+      case ReportStatusType.IGNORED:
+      case ReportStatusType.APPROVED: {
+        report.status = ReportStatusType.PENDING;
+        await this.reportRepository.updateById(report.id, {
+          status: ReportStatusType.PENDING,
+        });
+        break;
+      }
+
+      case ReportStatusType.REMOVED: {
+        throw new HttpErrors.UnprocessableEntity('This post/comment/user has been removed/banned');
+      }
+    }
 
     await this.userReportRepository.create({
+      referenceType,
       description,
       reportedBy: id,
       reportId: report.id,
