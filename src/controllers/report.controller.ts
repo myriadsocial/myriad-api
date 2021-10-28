@@ -7,16 +7,32 @@ import {
   del,
   requestBody,
   response,
+  post,
 } from '@loopback/rest';
 import {Report} from '../models';
-import {ReportRepository} from '../repositories';
+import {
+  CommentRepository,
+  PostRepository,
+  ReportRepository,
+  UserReportRepository,
+  UserRepository,
+} from '../repositories';
 import {intercept} from '@loopback/context';
 import {PaginationInterceptor} from '../interceptors';
+import {ReportInterceptor} from '../interceptors/report.interceptor';
 
 export class ReportController {
   constructor(
     @repository(ReportRepository)
     public reportRepository: ReportRepository,
+    @repository(UserReportRepository)
+    public userReportRepository: UserReportRepository,
+    @repository(UserRepository)
+    public userRepository: UserRepository,
+    @repository(PostRepository)
+    public postRepository: PostRepository,
+    @repository(CommentRepository)
+    public commentRepository: CommentRepository,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -44,6 +60,12 @@ export class ReportController {
           },
           {
             relation: 'reportedPost',
+            scope: {
+              include: ['user'],
+            },
+          },
+          {
+            relation: 'reportedComment',
             scope: {
               include: ['user'],
             },
@@ -86,11 +108,18 @@ export class ReportController {
               include: ['user'],
             },
           },
+          {
+            relation: 'reportedComment',
+            scope: {
+              include: ['user'],
+            },
+          },
         ],
       }),
     );
   }
 
+  @intercept(ReportInterceptor.BINDING_KEY)
   @patch('/reports/{id}')
   @response(204, {
     description: 'Report PATCH success',
@@ -102,7 +131,7 @@ export class ReportController {
         'application/json': {
           schema: getModelSchemaRef(Report, {
             partial: true,
-            exclude: ['postId', 'userId'],
+            exclude: ['postId', 'userId', 'commentId'],
           }),
         },
       },
@@ -110,6 +139,19 @@ export class ReportController {
     report: Partial<Report>,
   ): Promise<void> {
     await this.reportRepository.updateById(id, report);
+  }
+
+  @intercept(ReportInterceptor.BINDING_KEY)
+  @post('/reports/{id}/restore')
+  @response(200, {
+    description: 'Restore Report success',
+  })
+  async restore(@param.path.string('id') id: string): Promise<void> {
+    await this.reportRepository.updateById(id, <any>{
+      $unset: {
+        status: '',
+      },
+    });
   }
 
   @del('/reports/{id}')
