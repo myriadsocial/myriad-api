@@ -284,19 +284,4 @@ describe('UserControllerIntegration', () => {
     expect(response).to.have.property('password');
     expect(response?.password).not.equal(null);
   });
-
-  it('rejects to find blocked user', async () => {
-    const user = await givenUserInstance(userRepository);
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61810',
-    });
-    await givenFriendInstance(friendRepository, {
-      requesteeId: otherUser.id,
-      requestorId: user.id,
-      status: FriendStatusType.BLOCKED,
-    });
-    const response = await controller.findById(otherUser.id, undefined);
-
-    expect(toJSON(response)).to.deepEqual({});
-  });
 });
