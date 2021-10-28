@@ -5,6 +5,7 @@ import {
   model,
   property,
 } from '@loopback/repository';
+import {Vote} from '.';
 import {ReferenceType, SectionType} from '../enums';
 import {Metric} from '../interfaces';
 import {CommentLink} from './comment-link.model';
@@ -117,6 +118,9 @@ export class Comment extends Entity {
     },
   })
   comments: Comment[];
+
+  @hasMany(() => Vote, {keyTo: 'referenceId'})
+  votes: Vote[];
 
   @hasMany(() => Transaction, {keyTo: 'referenceId'})
   transactions: Transaction[];

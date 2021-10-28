@@ -6,6 +6,7 @@ import {
   HasManyThroughRepositoryFactory,
   repository,
 } from '@loopback/repository';
+import {VoteRepository} from '.';
 import {MongoDataSource} from '../datasources';
 import {
   Comment,
@@ -13,6 +14,7 @@ import {
   CommentRelations,
   Transaction,
   User,
+  Vote,
 } from '../models';
 import {CommentLinkRepository} from './comment-link.repository';
 import {TransactionRepository} from './transaction.repository';
@@ -24,6 +26,11 @@ export class CommentRepository extends DefaultCrudRepository<
   CommentRelations
 > {
   public readonly user: BelongsToAccessor<User, typeof Comment.prototype.id>;
+
+  public readonly votes: HasManyRepositoryFactory<
+    Vote,
+    typeof Vote.prototype.id
+  >;
 
   public readonly transactions: HasManyRepositoryFactory<
     Transaction,
@@ -45,6 +52,8 @@ export class CommentRepository extends DefaultCrudRepository<
     protected transactionRepositoryGetter: Getter<TransactionRepository>,
     @repository.getter('CommentLinkRepository')
     protected commentLinkRepositoryGetter: Getter<CommentLinkRepository>,
+    @repository.getter('VoteRepository')
+    protected voteRepositoryGetter: Getter<VoteRepository>,
   ) {
     super(Comment, dataSource);
     this.comments = this.createHasManyThroughRepositoryFactoryFor(
@@ -63,5 +72,10 @@ export class CommentRepository extends DefaultCrudRepository<
       'transactions',
       this.transactions.inclusionResolver,
     );
+    this.votes = this.createHasManyRepositoryFactoryFor(
+      'votes',
+      voteRepositoryGetter,
+    );
+    this.registerInclusionResolver('votes', this.votes.inclusionResolver);
   }
 }

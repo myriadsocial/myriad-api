@@ -71,6 +71,7 @@ export async function givenRepositories(testdb: any) {
     async () => userRepository,
     async () => transactionRepository,
     async () => commentLinkRepository,
+    async () => voteRepository,
   );
   const transactionRepository: TransactionRepository =
     new TransactionRepository(
