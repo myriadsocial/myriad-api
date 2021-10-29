@@ -367,8 +367,12 @@ export class SocialMediaService {
         discussions: gunPost.metrics.comments,
         shares: gunPost.metrics.shares,
       },
-      //TODO: can't set tags to null
-      tags: ['null'],
+      platformUser: {
+        name: gunPost.username,
+        username: username,
+        originUserId: gunPost.user_id,
+        platform: PlatformType.FACEBOOK,
+      },
     } as ExtendedPost;
   }
 }
