@@ -9,7 +9,12 @@ export async function main(options: ApplicationConfig = {}) {
   server = new ExpressServer(options);
   await server.boot();
   await server.start();
-  console.log('Server is running at http://127.0.0.1:3000');
+  console.log(
+    'Server is running at ' +
+      config.APPLICATION_HOST +
+      ':' +
+      config.APPLICATION_PORT,
+  );
 }
 
 if (require.main === module) {
