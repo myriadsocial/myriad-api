@@ -75,8 +75,12 @@ export class UserReportController {
         );
       }
 
-      default:
+      default: {
         report.status = ReportStatusType.PENDING;
+        if (report.referenceType === ReferenceType.USER) {
+          report.penaltyStatus = undefined;
+        }
+      }
     }
 
     await this.userReportRepository.create({
