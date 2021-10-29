@@ -7,12 +7,13 @@ import {
 } from '@loopback/testlab';
 import {CommentController} from '../../controllers';
 import {Comment} from '../../models';
-import {CommentRepository} from '../../repositories';
+import {CommentRepository, PostRepository} from '../../repositories';
 import {NotificationService} from '../../services';
 import {givenComment} from '../helpers';
 
 describe('CommentController', () => {
   let commentRepository: StubbedInstanceWithSinonAccessor<CommentRepository>;
+  let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
   let notificationService: StubbedInstanceWithSinonAccessor<NotificationService>;
   let controller: CommentController;
   let aComment: Comment;
@@ -106,6 +107,10 @@ describe('CommentController', () => {
       text: "what's up",
     });
 
-    controller = new CommentController(commentRepository, notificationService);
+    controller = new CommentController(
+      commentRepository,
+      postRepository,
+      notificationService,
+    );
   }
 });

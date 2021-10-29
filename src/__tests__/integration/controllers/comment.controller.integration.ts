@@ -66,7 +66,11 @@ describe('CommentControllerIntegration', () => {
       commentRepository,
       fcmService,
     );
-    controller = new CommentController(commentRepository, notificationService);
+    controller = new CommentController(
+      commentRepository,
+      postRepository,
+      notificationService,
+    );
   });
 
   beforeEach(async () => {
