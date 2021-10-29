@@ -10,8 +10,8 @@ import {
   requestBody,
 } from '@loopback/rest';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
-import {Comment} from '../models';
-import {CommentRepository} from '../repositories';
+import {Comment, Post} from '../models';
+import {CommentRepository, PostRepository} from '../repositories';
 import {NotificationService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
@@ -20,6 +20,8 @@ export class CommentController {
   constructor(
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -133,5 +135,29 @@ export class CommentController {
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.commentRepository.deleteById(id);
+  }
+
+  @get('/comments/{id}/posts', {
+    responses: {
+      '200': {
+        description: 'Post model instances from Comment',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(Post, {includeRelations: true}),
+          },
+        },
+      },
+    },
+  })
+  async findPost(
+    @param.path.string('id') id: string,
+    @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere,
+  ): Promise<Post> {
+    const comment = await this.commentRepository.findById(id);
+
+    return this.postRepository.findById(
+      comment.postId,
+      filter as FilterExcludingWhere<Post>,
+    );
   }
 }
