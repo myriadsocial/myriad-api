@@ -266,13 +266,13 @@ export class SocialMediaService {
     }
 
     const redditPost = data.data.children[0].data;
+    const text = redditPost.selftext;
     const asset: Asset = {
       images: [],
       videos: [],
     };
 
     let url = redditPost.url_overridden_by_dest ?? '';
-    let text = redditPost.selftext;
 
     const found = text.match(/https:\/\/|http:\/\/|www./g);
     if (found) {
@@ -286,8 +286,6 @@ export class SocialMediaService {
         if (letter === ')') break;
         url += letter;
       }
-
-      text = text.substring(0, text.indexOf('[' + found[0]));
     }
 
     if (redditPost.post_hint === 'image') {
