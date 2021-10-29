@@ -66,9 +66,6 @@ export class UserReportController {
       case ReportStatusType.IGNORED:
       case ReportStatusType.APPROVED: {
         report.status = ReportStatusType.PENDING;
-        await this.reportRepository.updateById(report.id, {
-          status: ReportStatusType.PENDING,
-        });
         break;
       }
 
