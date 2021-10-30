@@ -86,26 +86,12 @@ export class FriendService {
   async getFriendIds(id: string, status: FriendStatusType): Promise<string[]> {
     const friends = await this.friendRepository.find({
       where: {
-        or: [
-          {
-            requestorId: id,
-          },
-          {
-            requesteeId: id,
-          },
-        ],
+        requestorId: id,
         status: status,
       },
     });
 
-    const friendIds = friends.map(friend => friend.requesteeId);
-    const requestorIds = friends.map(friend => friend.requestorId);
-
-    const ids = [...new Set([...friendIds, ...requestorIds])].filter(
-      userId => userId !== id,
-    );
-
-    return ids;
+    return friends.map(friend => friend.requesteeId);
   }
 
   async friendsTimeline(userId: string): Promise<Where<Post> | undefined> {
@@ -148,8 +134,22 @@ export class FriendService {
       throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
     }
 
-    await this.notificationService.cancelFriendRequest(friend.requestorId, friend.requesteeId);
-    await this.friendRepository.deleteById(id);
+    await this.notificationService.cancelFriendRequest(
+      friend.requestorId,
+      friend.requesteeId,
+    );
+    await this.friendRepository.deleteAll({
+      or: [
+        {
+          requesteeId: friend.requesteeId,
+          requestorId: friend.requestorId,
+        },
+        {
+          requestorId: friend.requesteeId,
+          requesteeId: friend.requestorId,
+        },
+      ],
+    });
   }
 
   async defaultFriend(userId: string): Promise<void> {
