@@ -176,7 +176,7 @@ export class User extends Entity {
   })
   deletedAt?: string;
 
-  @hasMany(() => Friend, {keyTo: 'requesteeId'})
+  @hasMany(() => Friend, {keyTo: 'requestorId'})
   friends: Friend[];
 
   @hasMany(() => Experience, {
