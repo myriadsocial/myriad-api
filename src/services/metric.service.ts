@@ -112,20 +112,10 @@ export class MetricService {
   }
 
   async userMetric(userId: string): Promise<void> {
-    const {count: totalExperiences} = await this.userExperienceRepository.count(
-      {userId},
-    );
+    const {count: totalExperiences} = await this.userExperienceRepository.count({userId});
     const {count: totalFriends} = await this.friendRepository.count({
-      or: [
-        {
-          requesteeId: userId,
-          status: FriendStatusType.APPROVED,
-        },
-        {
-          requestorId: userId,
-          status: FriendStatusType.APPROVED,
-        },
-      ],
+      requestorId: userId,
+      status: FriendStatusType.APPROVED,
     });
     const {count: totalPosts} = await this.postRepository.count({
       createdBy: userId,
@@ -213,10 +203,7 @@ export class MetricService {
     }
   }
 
-  async countDeletedData(
-    methodName: MethodType,
-    where: Where<AnyObject>,
-  ): Promise<Count> {
+  async countDeletedData(methodName: MethodType, where: Where<AnyObject>): Promise<Count> {
     switch (methodName) {
       case MethodType.DELETEDUSERLIST:
         return this.userRepository.count(where);
