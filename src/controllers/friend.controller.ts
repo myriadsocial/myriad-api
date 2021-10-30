@@ -78,7 +78,7 @@ export class FriendController {
     })
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
-    let found = await this.friendService.friendRepository.findOne({
+    const found = await this.friendService.friendRepository.findOne({
       where: {
         or: [
           {
