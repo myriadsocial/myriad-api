@@ -137,26 +137,6 @@ export class FriendController {
     return this.friendService.friendRepository.find(filter);
   }
 
-  @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/friends/blocked')
-  @response(200, {
-    description: 'Array of Blocked Friend model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Friend, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async findBlockedFriend(
-    @param.filter(Friend, {exclude: ['limit', 'skip', 'offset']})
-    filter?: Filter<Friend>,
-  ): Promise<Friend[]> {
-    return this.friendService.friendRepository.find(filter);
-  }
-
   @get('/friends/{id}')
   @response(200, {
     description: 'Friend model instance',
