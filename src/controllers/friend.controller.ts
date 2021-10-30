@@ -49,10 +49,7 @@ export class FriendController {
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
     try {
-      await this.notificationService.sendFriendRequest(
-        friend.requestorId,
-        friend.requesteeId,
-      );
+      await this.notificationService.sendFriendRequest(friend.requestorId, friend.requesteeId);
     } catch (error) {
       // ignored
     }
@@ -78,7 +75,7 @@ export class FriendController {
     })
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
-    const found = await this.friendService.friendRepository.findOne({
+    let found = await this.friendService.friendRepository.findOne({
       where: {
         or: [
           {
@@ -86,22 +83,31 @@ export class FriendController {
             requesteeId: friend.requesteeId,
           },
           {
-            requesteeId: friend.requestorId,
             requestorId: friend.requesteeId,
+            requesteeId: friend.requestorId,
           },
         ],
       },
     });
 
-    if (found) {
-      if (found.status === FriendStatusType.BLOCKED) {
-        throw new HttpErrors.UnprocessableEntity(
-          'You already blocked this friends',
-        );
-      } else {
-        await this.friendService.friendRepository.deleteById(found.id);
-      }
+    if (found && found.status === FriendStatusType.BLOCKED) {
+      throw new HttpErrors.UnprocessableEntity(
+        'You already blocked/has been blocked by this friends',
+      );
     }
+
+    await this.friendService.friendRepository.deleteAll({
+      or: [
+        {
+          requestorId: friend.requestorId,
+          requesteeId: friend.requesteeId,
+        },
+        {
+          requestorId: friend.requesteeId,
+          requesteeId: friend.requestorId,
+        },
+      ],
+    });
 
     friend.status = FriendStatusType.BLOCKED;
 
@@ -176,7 +182,7 @@ export class FriendController {
         'application/json': {
           schema: getModelSchemaRef(Friend, {
             partial: true,
-            exclude: ['id'],
+            exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt', 'requesteeId', 'requestorId'],
           }),
         },
       },
@@ -195,21 +201,27 @@ export class FriendController {
 
     await this.friendService.friendRepository.updateById(id, friend);
 
-    if (friend.status === FriendStatusType.APPROVED) {
-      try {
-        const {requestee, requestor} =
-          await this.friendService.friendRepository.findById(id, {
-            include: ['requestee', 'requestor'],
-          });
+    const {requestee, requestor} = await this.friendService.friendRepository.findById(id, {
+      include: ['requestee', 'requestor'],
+    });
 
-        if (requestee && requestor) {
-          await this.notificationService.sendFriendAccept(requestee, requestor);
-          await this.metricService.userMetric(requestee.id);
-          await this.metricService.userMetric(requestor.id);
-        }
-      } catch (error) {
+    if (requestee && requestor) {
+      await this.friendService.friendRepository.create({
+        requesteeId: requestor.id,
+        requestorId: requestee.id,
+        status: FriendStatusType.APPROVED,
+      });
+
+      await this.metricService.userMetric(requestee.id);
+      await this.metricService.userMetric(requestor.id);
+
+      try {
+        await this.notificationService.sendFriendAccept(requestee, requestor);
+      } catch {
         // ignored
       }
+    } else {
+      throw new HttpErrors.UnprocessableEntity('Wrong requesteeId/requestorId');
     }
   }
 
