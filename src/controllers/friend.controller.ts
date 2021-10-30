@@ -49,7 +49,10 @@ export class FriendController {
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
     try {
-      await this.notificationService.sendFriendRequest(friend.requestorId, friend.requesteeId);
+      await this.notificationService.sendFriendRequest(
+        friend.requestorId,
+        friend.requesteeId,
+      );
     } catch (error) {
       // ignored
     }
@@ -182,7 +185,14 @@ export class FriendController {
         'application/json': {
           schema: getModelSchemaRef(Friend, {
             partial: true,
-            exclude: ['id', 'createdAt', 'updatedAt', 'deletedAt', 'requesteeId', 'requestorId'],
+            exclude: [
+              'id',
+              'createdAt',
+              'updatedAt',
+              'deletedAt',
+              'requesteeId',
+              'requestorId',
+            ],
           }),
         },
       },

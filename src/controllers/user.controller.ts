@@ -129,7 +129,9 @@ export class UserController {
       });
 
       if (count >= 1)
-        throw new HttpErrors.UnprocessableEntity('You can only updated username once');
+        throw new HttpErrors.UnprocessableEntity(
+          'You can only updated username once',
+        );
 
       await this.activityLogRepository.create({
         userId: id,
