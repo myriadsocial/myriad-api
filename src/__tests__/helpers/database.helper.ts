@@ -122,7 +122,7 @@ export async function givenRepositories(testdb: any) {
     new AccountSettingRepository(testdb, async () => userRepository);
   const notificationSettingRepository: NotificationSettingRepository =
     new NotificationSettingRepository(testdb, async () => userRepository);
-  const tagRepository = new TagRepository(testdb);
+  const tagRepository: TagRepository = new TagRepository(testdb);
 
   const metricService = new MetricService(
     voteRepository,
@@ -163,6 +163,7 @@ export async function givenRepositories(testdb: any) {
     userRepository,
     notificationService,
   );
+
 
   const postService = new PostService(
     postRepository,

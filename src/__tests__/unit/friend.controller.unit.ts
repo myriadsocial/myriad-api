@@ -25,7 +25,6 @@ describe('FriendController', () => {
   let controller: FriendController;
   let aFriend: Friend;
   let aFriendWithId: Friend;
-  let aChangedFriend: Friend;
   let aListOfFriends: Friend[];
 
   beforeEach(resetRepositories);
@@ -77,15 +76,6 @@ describe('FriendController', () => {
     });
   });
 
-  describe('updateFriend', () => {
-    it('successfully updates existing items', async () => {
-      const updateById = friendRepository.stubs.updateById;
-      updateById.resolves();
-      await controller.updateById(aFriendWithId.id as string, aChangedFriend);
-      sinon.assert.calledWith(updateById, aFriendWithId.id, aChangedFriend);
-    });
-  });
-
   function resetRepositories() {
     friendRepository = createStubInstance(FriendRepository);
 
@@ -99,9 +89,6 @@ describe('FriendController', () => {
         status: FriendStatusType.APPROVED,
       }),
     ] as Friend[];
-    aChangedFriend = givenFriend({
-      status: FriendStatusType.APPROVED,
-    });
 
     friendService = new FriendService(
       friendRepository,
