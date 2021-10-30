@@ -120,10 +120,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
 
     // Set filter for blocked friend
-    if (
-      className === ControllerType.FRIEND &&
-      methodName === MethodType.FINDBLOCKEDFRIEND
-    ) {
+    if (className === ControllerType.FRIEND && methodName === MethodType.FINDBLOCKEDFRIEND) {
       filter.where = Object.assign(filter.where, {
         requestorId: userId ?? undefined,
         status: FriendStatusType.BLOCKED,
@@ -191,15 +188,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
 
     // Get pageMetadata
-    const {count} = await this.metricService.countData(
-      className,
-      methodName,
-      filter.where,
-    );
-    const {pageIndex, pageSize} = this.pageSetting(
-      Number(pageNumber),
-      Number(pageLimit),
-    );
+    const {count} = await this.metricService.countData(className, methodName, filter.where);
+    const {pageIndex, pageSize} = this.pageSetting(Number(pageNumber), Number(pageLimit));
     const meta = pageMetadata(pageIndex, pageSize, count);
 
     const paginationFilter = Object.assign(filter, {
@@ -495,10 +485,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     } as Where<Post>;
   }
 
-  async getTimeline(
-    userId: string,
-    timelineType: TimelineType,
-  ): Promise<Where<Post> | undefined> {
+  async getTimeline(userId: string, timelineType: TimelineType): Promise<Where<Post> | undefined> {
     switch (timelineType) {
       case TimelineType.EXPERIENCE:
         return this.experienceService.experienceTimeline(userId);
