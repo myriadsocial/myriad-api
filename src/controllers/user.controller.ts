@@ -1,5 +1,11 @@
 import {intercept} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {
+  Count,
+  CountSchema,
+  Filter,
+  FilterExcludingWhere,
+  repository,
+} from '@loopback/repository';
 import {
   get,
   getModelSchemaRef,
@@ -11,10 +17,14 @@ import {
   response,
 } from '@loopback/rest';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
-import {ActivityLogType} from '../enums';
+import {ActivityLogType, FriendStatusType} from '../enums';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
-import {User} from '../models';
-import {ActivityLogRepository, UserRepository} from '../repositories';
+import {Friend, User} from '../models';
+import {
+  ActivityLogRepository,
+  FriendRepository,
+  UserRepository,
+} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -24,6 +34,8 @@ export class UserController {
     protected userRepository: UserRepository,
     @repository(ActivityLogRepository)
     protected activityLogRepository: ActivityLogRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
   ) {}
 
   @post('/users')
@@ -172,6 +184,51 @@ export class UserController {
     });
 
     return;
+  }
+
+  @get('/users/{id}/count-mutual/userId')
+  @response(200, {
+    description: 'Count mutual friends',
+    content: {
+      'application/json': {
+        schema: CountSchema,
+      },
+    },
+  })
+  async countMutual(
+    @param.path.string('id') id: string,
+    @param.path.string('userId') userId: string,
+  ): Promise<Count> {
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
+    const collection = (
+      this.friendRepository.dataSource.connector as any
+    ).collection(Friend.modelName);
+
+    const countMutual = await collection
+      .aggregate([
+        {
+          $match: {
+            $or: [
+              {
+                requestorId: id,
+                status: FriendStatusType.APPROVED,
+              },
+              {
+                requestorId: userId,
+                status: FriendStatusType.APPROVED,
+              },
+            ],
+          },
+        },
+        {$group: {_id: '$requesteeId', count: {$sum: 1}}},
+        {$match: {count: 2}},
+        {$group: {_id: null, count: {$sum: 1}}},
+        {$project: {_id: 0}},
+      ])
+      .get();
+
+    if (countMutual.length === 0) return {count: 0};
+    return countMutual[0];
   }
 
   validateUsername(username: string): void {
