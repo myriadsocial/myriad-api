@@ -207,20 +207,28 @@ describe('FriendApplication', function () {
     });
 
     it('updates the friend by ID ', async () => {
+      const requestee = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6111',
+      });
+      const requestor = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6112',
+      });
+
+      const friend = await givenFriendInstance(friendRepository, {
+        requestorId: requestor.id,
+        requesteeId: requestee.id,
+      });
+
       const updatedFriend = givenFriend({
         status: FriendStatusType.APPROVED,
-        requesteeId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61aq3',
-        requestorId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61cv5',
       });
 
       await client
-        .patch(`/friends/${persistedFriend.id}`)
+        .patch(`/friends/${friend.id}`)
         .send(updatedFriend)
         .expect(204);
 
-      const result = await friendRepository.findById(persistedFriend.id);
+      const result = await friendRepository.findById(friend.id);
       expect(result).to.containEql(updatedFriend);
     });
 
@@ -229,10 +237,7 @@ describe('FriendApplication', function () {
         .patch('/friends/99999')
         .send(
           givenFriend({
-            requesteeId:
-              '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61aq3',
-            requestorId:
-              '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61cv5',
+            status: FriendStatusType.APPROVED,
           }),
         )
         .expect(404);
@@ -274,7 +279,10 @@ describe('FriendApplication', function () {
         requestorId: requestor.id,
         status: FriendStatusType.BLOCKED,
       });
-      const response = await client.get('/friends/blocked').send().expect(200);
+      const response = await client
+        .get('/friends?filter[where][status]=blocked')
+        .send()
+        .expect(200);
       expect(response.body.data).to.containDeep(toJSON([blockedFriends]));
     });
 
