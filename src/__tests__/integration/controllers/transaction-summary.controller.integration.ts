@@ -28,7 +28,7 @@ describe('TransactionSummaryControllerIntegration', function () {
   let currencyRepository: CurrencyRepository;
   let postRepository: PostRepository;
   let commentRepository: CommentRepository;
-  let service: TransactionService;
+  let transactionService: TransactionService;
   let controller: TransactionSummaryController;
 
   before(async () => {
@@ -38,12 +38,12 @@ describe('TransactionSummaryControllerIntegration', function () {
       currencyRepository,
       postRepository,
       commentRepository,
+      transactionService,
     } = await givenRepositories(testDBMongo));
   });
 
   before(async () => {
-    service = new TransactionService(transactionRepository);
-    controller = new TransactionSummaryController(service);
+    controller = new TransactionSummaryController(transactionService);
   });
 
   beforeEach(async () => {

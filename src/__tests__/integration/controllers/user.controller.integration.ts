@@ -79,8 +79,8 @@ describe('UserControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
     });
     const friend = await givenFriendInstance(friendRepository, {
-      requestorId: otherUser.id,
-      requesteeId: user.id,
+      requestorId: user.id,
+      requesteeId: otherUser.id,
     });
     const response = await controller.find({include: ['friends']});
 
@@ -121,8 +121,8 @@ describe('UserControllerIntegration', () => {
       userId: user.id,
     });
     const friend = await givenFriendInstance(friendRepository, {
-      requestorId: otherUser.id,
-      requesteeId: user.id,
+      requestorId: user.id,
+      requesteeId: otherUser.id,
     });
 
     await givenUserCurrencyInstance(userCurrencyRepository, {
@@ -173,8 +173,8 @@ describe('UserControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
     });
     const friend = await givenFriendInstance(friendRepository, {
-      requestorId: otherUser.id,
-      requesteeId: user.id,
+      requestorId: user.id,
+      requesteeId: otherUser.id,
     });
     const response = await controller.findById(user.id, {include: ['friends']});
 
@@ -212,8 +212,8 @@ describe('UserControllerIntegration', () => {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
     });
     const friend = await givenFriendInstance(friendRepository, {
-      requestorId: otherUser.id,
-      requesteeId: user.id,
+      requestorId: user.id,
+      requesteeId: otherUser.id,
     });
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,
