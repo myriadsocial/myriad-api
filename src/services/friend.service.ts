@@ -20,52 +20,49 @@ export class FriendService {
     public notificationService: NotificationService,
   ) {}
 
-  async validateFriendRequest(
-    requesteeId: string,
-    requestorId: string,
-  ): Promise<void> {
+  async validateFriendRequest(requesteeId: string, requestorId: string): Promise<void> {
     if (requesteeId === requestorId) {
-      throw new HttpErrors.UnprocessableEntity('Cannot add itself');
+      throw new HttpErrors.UnprocessableEntity('You cannot request to yourself!');
     }
 
-    const friend = await this.friendRepository.findOne({
+    let friend = await this.friendRepository.findOne({
       where: {
-        or: [
-          {
-            requesteeId: requesteeId,
-            requestorId: requestorId,
-          },
-          {
-            requesteeId: requestorId,
-            requestorId: requesteeId,
-          },
-        ],
+        requesteeId: requesteeId,
+        requestorId: requestorId,
       },
     });
 
     if (friend) {
       switch (friend.status) {
         case FriendStatusType.APPROVED: {
-          throw new HttpErrors.UnprocessableEntity(
-            'You already friend with this user',
-          );
+          throw new HttpErrors.UnprocessableEntity('You already friend with this user');
         }
 
         case FriendStatusType.PENDING: {
-          if (requestorId === friend.requestorId)
-            throw new HttpErrors.UnprocessableEntity(
-              "Please wait for your friend's approval!",
-            );
-
-          throw new HttpErrors.UnprocessableEntity(
-            'Your friend waited for your approval!',
-          );
+          throw new HttpErrors.UnprocessableEntity("Please wait for your friend's approval!");
         }
 
         case FriendStatusType.BLOCKED: {
-          throw new HttpErrors.UnprocessableEntity(
-            'You have blocked this user!',
-          );
+          throw new HttpErrors.UnprocessableEntity('You have blocked this user!');
+        }
+      }
+    } else {
+      friend = await this.friendRepository.findOne({
+        where: {
+          requestorId: requesteeId,
+          requesteeId: requestorId,
+        },
+      });
+    }
+
+    if (friend) {
+      switch (friend.status) {
+        case FriendStatusType.PENDING: {
+          throw new HttpErrors.UnprocessableEntity('Please approved your friend request!');
+        }
+
+        case FriendStatusType.BLOCKED: {
+          throw new HttpErrors.UnprocessableEntity('You have been blocked by this user!');
         }
       }
     }
@@ -97,10 +94,7 @@ export class FriendService {
   }
 
   async friendsTimeline(userId: string): Promise<Where<Post> | undefined> {
-    const approvedFriendIds = await this.getFriendIds(
-      userId,
-      FriendStatusType.APPROVED,
-    );
+    const approvedFriendIds = await this.getFriendIds(userId, FriendStatusType.APPROVED);
 
     if (!approvedFriendIds.length) return;
 
@@ -136,10 +130,7 @@ export class FriendService {
       throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
     }
 
-    await this.notificationService.cancelFriendRequest(
-      friend.requestorId,
-      friend.requesteeId,
-    );
+    await this.notificationService.cancelFriendRequest(friend.requestorId, friend.requesteeId);
     await this.friendRepository.deleteById(id);
   }
 
