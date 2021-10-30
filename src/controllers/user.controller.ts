@@ -13,12 +13,8 @@ import {
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {ActivityLogType} from '../enums';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
-import {ActivityLog, User} from '../models';
-import {
-  ActivityLogRepository,
-  FriendRepository,
-  UserRepository,
-} from '../repositories';
+import {User} from '../models';
+import {ActivityLogRepository, UserRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -28,8 +24,6 @@ export class UserController {
     protected userRepository: UserRepository,
     @repository(ActivityLogRepository)
     protected activityLogRepository: ActivityLogRepository,
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
   ) {}
 
   @post('/users')
@@ -135,9 +129,7 @@ export class UserController {
       });
 
       if (count >= 1)
-        throw new HttpErrors.UnprocessableEntity(
-          'You can only updated username once',
-        );
+        throw new HttpErrors.UnprocessableEntity('You can only updated username once');
 
       await this.activityLogRepository.create({
         userId: id,
@@ -156,8 +148,7 @@ export class UserController {
 
   @post('/users/{id}/skip-username')
   @response(200, {
-    description: 'Activity Log instance',
-    content: {'application/json': {schema: getModelSchemaRef(ActivityLog)}},
+    description: 'Skip username success',
   })
   async skipUsername(@param.path.string('id') id: string): Promise<void> {
     const found = await this.userRepository.activityLogs(id).find({
