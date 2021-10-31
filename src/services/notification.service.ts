@@ -73,8 +73,9 @@ export class NotificationService {
     return true;
   }
 
-  async sendFriendAccept(fromUser: User, toUser: User): Promise<boolean> {
-    if (!fromUser || !toUser) return false;
+  async sendFriendAccept(from: string, to: string): Promise<boolean> {
+    const fromUser = await this.userRepository.findById(from);
+    const toUser = await this.userRepository.findById(to);
 
     const notification = new Notification({
       type: NotificationType.FRIEND_ACCEPT,

@@ -1,10 +1,8 @@
-import {service} from '@loopback/core';
-import {repository, Where} from '@loopback/repository';
+import {AnyObject, repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {FriendStatusType, VisibilityType} from '../enums';
 import {Post} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
-import {NotificationService} from './notification.service';
 import {injectable, BindingScope} from '@loopback/core';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {config} from '../config';
@@ -16,11 +14,9 @@ export class FriendService {
     public friendRepository: FriendRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @service(NotificationService)
-    public notificationService: NotificationService,
   ) {}
 
-  async validateFriendRequest(
+  async validatePendingFriendRequest(
     requesteeId: string,
     requestorId: string,
   ): Promise<void> {
@@ -124,6 +120,30 @@ export class FriendService {
     }
   }
 
+  async validateApproveFriendRequest(friendId: string): Promise<AnyObject> {
+    const {requestee, requestor} = await this.friendRepository.findById(
+      friendId,
+      {
+        include: ['requestee', 'requestor'],
+      },
+    );
+
+    if (requestee && requestor) {
+      await this.friendRepository.create({
+        requesteeId: requestor.id,
+        requestorId: requestee.id,
+        status: FriendStatusType.APPROVED,
+      });
+
+      return {
+        requesteeId: requestee.id,
+        requestorId: requestor.id,
+      };
+    } else {
+      throw new HttpErrors.UnprocessableEntity('Wrong requesteeId/requestorId');
+    }
+  }
+
   async getFriendIds(id: string, status: FriendStatusType): Promise<string[]> {
     const friends = await this.friendRepository.find({
       where: {
@@ -168,31 +188,6 @@ export class FriendService {
     } as Where<Post>;
   }
 
-  async deleteById(id: string): Promise<void> {
-    const friend = await this.friendRepository.findById(id);
-
-    if (friend.requesteeId === this.myriadOfficialUserId()) {
-      throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
-    }
-
-    await this.notificationService.cancelFriendRequest(
-      friend.requestorId,
-      friend.requesteeId,
-    );
-    await this.friendRepository.deleteAll({
-      or: [
-        {
-          requesteeId: friend.requesteeId,
-          requestorId: friend.requestorId,
-        },
-        {
-          requestorId: friend.requesteeId,
-          requesteeId: friend.requestorId,
-        },
-      ],
-    });
-  }
-
   async defaultFriend(userId: string): Promise<void> {
     await this.friendRepository.create({
       status: FriendStatusType.APPROVED,
@@ -208,5 +203,55 @@ export class FriendService {
     const pair = getKeyring().addFromMnemonic(mnemonic);
 
     return getHexPublicKey(pair);
+  }
+
+  async getImporterIds(userId?: string): Promise<string[]> {
+    if (!userId) return [];
+
+    const friends = await this.friendRepository.find({
+      where: {
+        or: [
+          {
+            requesteeId: userId.toString(),
+          },
+          {
+            requestorId: userId.toString(),
+          },
+        ],
+        status: FriendStatusType.APPROVED,
+      },
+      limit: 5,
+      order: ['updatedAt DESC'],
+    });
+
+    if (friends.length > 0) {
+      const requesteeIds = friends.map(friend => friend.requesteeId);
+      const requestorIds = friends.map(friend => friend.requestorId);
+      const friendIds = [...requesteeIds, ...requestorIds];
+
+      return friendIds;
+    }
+
+    return [];
+  }
+
+  async removedFriend(friendId: string): Promise<AnyObject> {
+    const {requesteeId, requestorId} = await this.friendRepository.findById(
+      friendId,
+    );
+
+    if (requesteeId === this.myriadOfficialUserId()) {
+      throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
+    }
+
+    await this.friendRepository.deleteAll({
+      requestorId: requesteeId,
+      requesteeId: requestorId,
+    });
+
+    return {
+      requesteeId: requesteeId,
+      requestorId: requestorId,
+    };
   }
 }

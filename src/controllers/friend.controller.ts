@@ -1,32 +1,26 @@
-import {intercept, service} from '@loopback/core';
-import {Filter, FilterExcludingWhere} from '@loopback/repository';
+import {intercept} from '@loopback/core';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
   getModelSchemaRef,
-  HttpErrors,
   param,
   patch,
   post,
   requestBody,
   response,
 } from '@loopback/rest';
-import {FriendStatusType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {ValidateFriendRequestInterceptor} from '../interceptors/validate-friend-request.interceptor';
 import {Friend} from '../models';
-import {FriendService, MetricService, NotificationService} from '../services';
+import {FriendRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
 export class FriendController {
   constructor(
-    @service(NotificationService)
-    protected notificationService: NotificationService,
-    @service(FriendService)
-    protected friendService: FriendService,
-    @service(MetricService)
-    protected metricService: MetricService,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
   ) {}
 
   @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
@@ -48,18 +42,7 @@ export class FriendController {
     })
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
-    try {
-      if (friend.status === FriendStatusType.PENDING) {
-        await this.notificationService.sendFriendRequest(
-          friend.requestorId,
-          friend.requesteeId,
-        );
-      }
-    } catch (error) {
-      // ignored
-    }
-
-    return this.friendService.friendRepository.create(friend);
+    return this.friendRepository.create(friend);
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -79,7 +62,7 @@ export class FriendController {
     @param.filter(Friend, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<Friend>,
   ): Promise<Friend[]> {
-    return this.friendService.friendRepository.find(filter);
+    return this.friendRepository.find(filter);
   }
 
   @get('/friends/{id}')
@@ -96,9 +79,10 @@ export class FriendController {
     @param.filter(Friend, {exclude: 'where'})
     filter?: FilterExcludingWhere<Friend>,
   ): Promise<Friend> {
-    return this.friendService.friendRepository.findById(id, filter);
+    return this.friendRepository.findById(id, filter);
   }
 
+  @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
   @patch('/friends/{id}')
   @response(204, {
     description: 'Friend PATCH success',
@@ -124,68 +108,15 @@ export class FriendController {
     })
     friend: Partial<Friend>,
   ): Promise<void> {
-    if (friend.status === FriendStatusType.BLOCKED) {
-      const found = await this.friendService.friendRepository.findById(id);
-
-      if (found.requesteeId === this.friendService.myriadOfficialUserId()) {
-        throw new HttpErrors.UnprocessableEntity(
-          'You cannot blocked this user!',
-        );
-      }
-    }
-
-    await this.friendService.friendRepository.updateById(id, friend);
-
-    const {requestee, requestor} = await this.friendService.friendRepository.findById(id, {
-      include: ['requestee', 'requestor'],
-    });
-
-    if (requestee && requestor) {
-      await this.friendService.friendRepository.create({
-        requesteeId: requestor.id,
-        requestorId: requestee.id,
-        status: FriendStatusType.APPROVED,
-      });
-
-      await this.metricService.userMetric(requestee.id);
-      await this.metricService.userMetric(requestor.id);
-
-      try {
-        await this.notificationService.sendFriendAccept(requestee, requestor);
-      } catch {
-        // ignored
-      }
-    } else {
-      throw new HttpErrors.UnprocessableEntity('Wrong requesteeId/requestorId');
-    }
+    await this.friendRepository.updateById(id, friend);
   }
 
+  @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
   @del('/friends/{id}')
   @response(204, {
     description: 'Friend DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    const friend = await this.friendService.friendRepository.findById(id);
-
-    await this.notificationService.cancelFriendRequest(
-      friend.requestorId,
-      friend.requesteeId,
-    );
-
-    await this.friendService.friendRepository.deleteAll({
-      or: [
-        {
-          requesteeId: friend.requesteeId,
-          requestorId: friend.requestorId,
-        },
-        {
-          requestorId: friend.requesteeId,
-          requesteeId: friend.requestorId,
-        },
-      ],
-    });
-
-    await this.metricService.userMetric(friend.requesteeId);
-    await this.metricService.userMetric(friend.requestorId);
+    await this.friendRepository.deleteById(id);
   }
 }
