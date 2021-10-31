@@ -1,14 +1,19 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {FriendStatusType} from '../../enums';
+import {FriendStatusType, NotificationType} from '../../enums';
 import {Friend} from '../../models';
-import {FriendRepository, UserRepository} from '../../repositories';
+import {
+  FriendRepository,
+  NotificationRepository,
+  UserRepository,
+} from '../../repositories';
 import {
   givenFriend,
   givenFriendInstance,
   givenFriendRepository,
   givenMultipleFriendInstances,
+  givenNotificationRepository,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
@@ -19,6 +24,7 @@ describe('FriendApplication', function () {
   let client: Client;
   let friendRepository: FriendRepository;
   let userRepository: UserRepository;
+  let notificationRepository: NotificationRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -29,6 +35,7 @@ describe('FriendApplication', function () {
   before(async () => {
     friendRepository = await givenFriendRepository(app);
     userRepository = await givenUserRepository(app);
+    notificationRepository = await givenNotificationRepository(app);
   });
 
   beforeEach(async () => {
@@ -244,10 +251,22 @@ describe('FriendApplication', function () {
     });
 
     it('deletes the friend', async () => {
-      await client.del(`/friends/${persistedFriend.id}`).send().expect(204);
-      await expect(
-        friendRepository.findById(persistedFriend.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
+      const requestee = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6111',
+      });
+      const requestor = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6112',
+      });
+
+      const friend = await givenFriendInstance(friendRepository, {
+        requestorId: requestor.id,
+        requesteeId: requestee.id,
+      });
+
+      await client.del(`/friends/${friend.id}`).send().expect(204);
+      await expect(friendRepository.findById(friend.id)).to.be.rejectedWith(
+        EntityNotFoundError,
+      );
     });
 
     it('returns 404 when deleting a friend that does not exist', async () => {
@@ -349,5 +368,83 @@ describe('FriendApplication', function () {
       requestee: toJSON(requestee),
       requestor: toJSON(requestor),
     });
+  });
+
+  it('creates notification when sending a pending friend request', async () => {
+    const user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+    });
+    const otherUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+    });
+
+    const friend = givenFriend({
+      requestorId: user.id,
+      requesteeId: otherUser.id,
+    });
+
+    await client.post('/friends').send(friend).expect(200);
+
+    const notifications = await notificationRepository.find({
+      where: {
+        from: friend.requestorId,
+        to: friend.requesteeId,
+        referenceId: friend.requesteeId,
+      },
+    });
+
+    delete notifications[0].id;
+    delete notifications[0].createdAt;
+    delete notifications[0].updatedAt;
+
+    expect({
+      type: NotificationType.FRIEND_REQUEST,
+      from: friend.requestorId,
+      read: false,
+      to: friend.requesteeId,
+      referenceId: friend.requesteeId,
+      message: 'sent you friend request',
+    }).to.containDeep(toJSON(notifications[0]));
+  });
+
+  it('creates notification when approving a pending friend request', async () => {
+    const user = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+    });
+    const otherUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+    });
+
+    const friend = await givenFriendInstance(friendRepository, {
+      requestorId: user.id,
+      requesteeId: otherUser.id,
+    });
+
+    const updatedFriend = givenFriend({
+      status: FriendStatusType.APPROVED,
+    });
+
+    await client.patch(`/friends/${friend.id}`).send(updatedFriend).expect(204);
+
+    const notifications = await notificationRepository.find({
+      where: {
+        from: friend.requesteeId,
+        to: friend.requestorId,
+        referenceId: friend.requestorId,
+      },
+    });
+
+    delete notifications[0].id;
+    delete notifications[0].createdAt;
+    delete notifications[0].updatedAt;
+
+    expect({
+      type: NotificationType.FRIEND_ACCEPT,
+      from: friend.requesteeId,
+      read: false,
+      to: friend.requestorId,
+      referenceId: friend.requestorId,
+      message: 'accept your friend request',
+    }).to.containEql(toJSON(notifications[0]));
   });
 });

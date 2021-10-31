@@ -158,11 +158,7 @@ export async function givenRepositories(testdb: any) {
     fcmService,
   );
 
-  const friendService = new FriendService(
-    friendRepository,
-    userRepository,
-    notificationService,
-  );
+  const friendService = new FriendService(friendRepository, userRepository);
 
 
   const postService = new PostService(

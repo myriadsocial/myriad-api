@@ -1,10 +1,7 @@
-import {expect, toJSON} from '@loopback/testlab';
+import {expect} from '@loopback/testlab';
 import {FriendController} from '../../../controllers';
-import {FriendStatusType, NotificationType} from '../../../enums';
-import {Friend} from '../../../models';
 import {
   FriendRepository,
-  NotificationRepository,
   UserRepository,
 } from '../../../repositories';
 import {
@@ -14,7 +11,6 @@ import {
 } from '../../../services';
 import {
   givenEmptyDatabase,
-  givenFriend,
   givenFriendInstance,
   givenRepositories,
   givenUserInstance,
@@ -24,7 +20,6 @@ import {
 describe('FriendControllerIntegration', () => {
   let userRepository: UserRepository;
   let friendRepository: FriendRepository;
-  let notificationRepository: NotificationRepository;
   let notificationService: NotificationService;
   let friendService: FriendService;
   let metricService: MetricService;
@@ -34,7 +29,6 @@ describe('FriendControllerIntegration', () => {
     ({
       userRepository,
       friendRepository,
-      notificationRepository,
       notificationService,
       friendService,
       metricService,
@@ -47,6 +41,11 @@ describe('FriendControllerIntegration', () => {
       friendService,
       metricService,
     );
+  })
+
+  before(async () => {
+    ({userRepository, friendRepository, userRepository} =
+      await givenRepositories(testdb));
   });
 
   beforeEach(async () => {
@@ -179,85 +178,5 @@ describe('FriendControllerIntegration', () => {
       requestor: user,
       requestee: otherUser,
     });
-  });
-
-  it('creates notification when sending a pending friend request', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
-    });
-
-    const friendInstance = givenFriend({
-      requestorId: user.id,
-      requesteeId: otherUser.id,
-    });
-
-    const friend = await controller.add(friendInstance);
-
-    const notifications = await notificationRepository.find({
-      where: {
-        from: friend.requestorId,
-        to: friend.requesteeId,
-        referenceId: friend.requestorId,
-      },
-    });
-
-    delete notifications[0].id;
-    delete notifications[0].createdAt;
-    delete notifications[0].updatedAt;
-
-    expect({
-      type: NotificationType.FRIEND_REQUEST,
-      from: friend.requestorId,
-      read: false,
-      to: friend.requesteeId,
-      referenceId: friend.requestorId,
-      additionalReferenceId: [],
-      message: 'sent you friend request',
-    }).to.containDeep(toJSON(notifications[0]));
-  });
-
-  it('creates notification when approving a pending friend request', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
-    });
-
-    const friend = await givenFriendInstance(friendRepository, {
-      requestorId: user.id,
-      requesteeId: otherUser.id,
-    });
-
-    await controller.updateById(friend.id ?? '', {
-      status: FriendStatusType.APPROVED,
-      requestorId: user.id,
-      requesteeId: otherUser.id,
-    } as Omit<Friend, 'id'>);
-
-    const notifications = await notificationRepository.find({
-      where: {
-        from: friend.requesteeId,
-        to: friend.requestorId,
-        referenceId: friend.requesteeId,
-      },
-    });
-
-    delete notifications[0].id;
-    delete notifications[0].createdAt;
-    delete notifications[0].updatedAt;
-
-    expect({
-      type: NotificationType.FRIEND_ACCEPT,
-      from: friend.requesteeId,
-      read: false,
-      to: friend.requestorId,
-      referenceId: friend.requesteeId,
-      additionalReferenceId: [],
-      message: 'accept your friend request',
-    }).to.containEql(toJSON(notifications[0]));
   });
 });
