@@ -58,6 +58,12 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
       case MethodType.UPDATEBYID: {
         friendId = invocationCtx.args[0];
         status = invocationCtx.args[1].status;
+
+        if (status !== FriendStatusType.APPROVED)
+          throw new HttpErrors.UnprocessableEntity(
+            'Only accept approved friend request!',
+          );
+
         break;
       }
 
@@ -67,10 +73,15 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
 
       default:
         ({requestorId, requesteeId, status} = invocationCtx.args[0]);
+
+        if (status === FriendStatusType.APPROVED)
+          throw new HttpErrors.UnprocessableEntity(
+            'Please set status to pending or blocked',
+          );
     }
 
     switch (status) {
-      // Handle add method when blocked friend
+      // Handle add method when pending friend
       case FriendStatusType.PENDING: {
         await this.friendService.validatePendingFriendRequest(
           requesteeId,
@@ -83,15 +94,8 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
 
       // Handle updateById method
       case FriendStatusType.APPROVED: {
-        if (methodName !== MethodType.UPDATEBYID) {
-          throw new HttpErrors.UnprocessableEntity(
-            'Please set status to pending or blocked',
-          );
-        }
-
         ({requestorId, requesteeId} =
           await this.friendService.validateApproveFriendRequest(friendId));
-
         await this.createNotification(requesteeId, requestorId, status);
         break;
       }
