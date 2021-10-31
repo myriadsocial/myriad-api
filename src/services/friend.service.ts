@@ -83,6 +83,12 @@ export class FriendService {
     requestorId: string,
     requesteeId: string,
   ): Promise<void> {
+    if (requesteeId === requestorId) {
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot request to yourself!',
+      );
+    }
+
     const found = await this.friendRepository.findOne({
       where: {
         or: [
