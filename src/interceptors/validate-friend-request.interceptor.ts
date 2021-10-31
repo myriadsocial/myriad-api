@@ -8,8 +8,8 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {HttpErrors} from '@loopback/rest';
-import {FriendStatusType} from '../enums';
-import {FriendService} from '../services';
+import {FriendStatusType, MethodType} from '../enums';
+import {FriendService, MetricService, NotificationService} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -22,6 +22,10 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
   constructor(
     @service(FriendService)
     protected friendService: FriendService,
+    @service(MetricService)
+    protected metricService: MetricService,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   /**
@@ -43,9 +47,56 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    const {requesteeId, requestorId, status} = invocationCtx.args[0];
+    const methodName = invocationCtx.methodName as MethodType;
+
+    let friendId = null;
+    let requesteeId = null;
+    let requestorId = null;
+    let status = null;
+
+    switch (methodName) {
+      case MethodType.UPDATEBYID: {
+        friendId = invocationCtx.args[0];
+        status = invocationCtx.args[1].status;
+        break;
+      }
+
+      case MethodType.DELETEBYID:
+        friendId = invocationCtx.args[0];
+        break;
+
+      default:
+        ({requestorId, requesteeId, status} = invocationCtx.args[0]);
+    }
 
     switch (status) {
+      // Handle add method when blocked friend
+      case FriendStatusType.PENDING: {
+        await this.friendService.validatePendingFriendRequest(
+          requesteeId,
+          requestorId,
+        );
+        await this.createNotification(requesteeId, requestorId, status);
+
+        break;
+      }
+
+      // Handle updateById method
+      case FriendStatusType.APPROVED: {
+        if (methodName !== MethodType.UPDATEBYID) {
+          throw new HttpErrors.UnprocessableEntity(
+            'Please set status to pending or blocked',
+          );
+        }
+
+        ({requestorId, requesteeId} =
+          await this.friendService.validateApproveFriendRequest(friendId));
+
+        await this.createNotification(requesteeId, requestorId, status);
+        break;
+      }
+
+      // Handle add method when blocked friend
       case FriendStatusType.BLOCKED: {
         await this.friendService.validateBlockFriendRequest(
           requestorId,
@@ -54,23 +105,59 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case FriendStatusType.PENDING: {
-        await this.friendService.validateFriendRequest(
-          requesteeId,
-          requestorId,
-        );
-        break;
-      }
-
+      // For handle deleteById method
       default:
-        throw new HttpErrors.UnprocessableEntity(
-          'Please set status to pending or blocked',
-        );
+        ({requesteeId, requestorId} = await this.friendService.removedFriend(
+          friendId,
+        ));
+        await this.createNotification(requesteeId, requestorId);
     }
 
     // Add pre-invocation logic here
     const result = await next();
     // Add post-invocation logic here
+
+    if (
+      methodName === MethodType.UPDATEBYID ||
+      methodName === MethodType.DELETEBYID
+    ) {
+      await this.metricService.userMetric(requestorId);
+      await this.metricService.userMetric(requesteeId);
+    }
+
     return result;
+  }
+
+  async createNotification(
+    requesteeId: string,
+    requestorId: string,
+    status?: FriendStatusType,
+  ): Promise<void> {
+    try {
+      if (status === FriendStatusType.PENDING) {
+        await this.notificationService.sendFriendRequest(
+          requestorId,
+          requesteeId,
+        );
+        return;
+      }
+
+      if (status === FriendStatusType.APPROVED) {
+        await this.notificationService.sendFriendAccept(
+          requesteeId,
+          requestorId,
+        );
+        return;
+      }
+
+      await this.notificationService.cancelFriendRequest(
+        requestorId,
+        requesteeId,
+      );
+    } catch {
+      // ignore
+    }
+
+    return;
   }
 }
