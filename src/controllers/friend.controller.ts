@@ -49,70 +49,15 @@ export class FriendController {
     friend: Omit<Friend, 'id'>,
   ): Promise<Friend> {
     try {
-      await this.notificationService.sendFriendRequest(
-        friend.requestorId,
-        friend.requesteeId,
-      );
+      if (friend.status === FriendStatusType.PENDING) {
+        await this.notificationService.sendFriendRequest(
+          friend.requestorId,
+          friend.requesteeId,
+        );
+      }
     } catch (error) {
       // ignored
     }
-
-    return this.friendService.friendRepository.create(friend);
-  }
-
-  @post('/friends/blocked')
-  @response(200, {
-    description: 'Blocked friend',
-    content: {'application/json': {schema: getModelSchemaRef(Friend)}},
-  })
-  async blocked(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Friend, {
-            title: 'NewFriend',
-            exclude: ['id', 'status', 'createdAt', 'updatedAt', 'deletedAt'],
-          }),
-        },
-      },
-    })
-    friend: Omit<Friend, 'id'>,
-  ): Promise<Friend> {
-    const found = await this.friendService.friendRepository.findOne({
-      where: {
-        or: [
-          {
-            requestorId: friend.requestorId,
-            requesteeId: friend.requesteeId,
-          },
-          {
-            requestorId: friend.requesteeId,
-            requesteeId: friend.requestorId,
-          },
-        ],
-      },
-    });
-
-    if (found && found.status === FriendStatusType.BLOCKED) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You already blocked/has been blocked by this friends',
-      );
-    }
-
-    await this.friendService.friendRepository.deleteAll({
-      or: [
-        {
-          requestorId: friend.requestorId,
-          requesteeId: friend.requesteeId,
-        },
-        {
-          requestorId: friend.requesteeId,
-          requesteeId: friend.requestorId,
-        },
-      ],
-    });
-
-    friend.status = FriendStatusType.BLOCKED;
 
     return this.friendService.friendRepository.create(friend);
   }
@@ -220,6 +165,27 @@ export class FriendController {
     description: 'Friend DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.friendService.deleteById(id);
+    const friend = await this.friendService.friendRepository.findById(id);
+
+    await this.notificationService.cancelFriendRequest(
+      friend.requestorId,
+      friend.requesteeId,
+    );
+
+    await this.friendService.friendRepository.deleteAll({
+      or: [
+        {
+          requesteeId: friend.requesteeId,
+          requestorId: friend.requestorId,
+        },
+        {
+          requestorId: friend.requesteeId,
+          requesteeId: friend.requestorId,
+        },
+      ],
+    });
+
+    await this.metricService.userMetric(friend.requesteeId);
+    await this.metricService.userMetric(friend.requestorId);
   }
 }

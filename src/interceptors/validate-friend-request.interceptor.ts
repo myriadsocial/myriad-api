@@ -7,6 +7,8 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
+import {HttpErrors} from '@loopback/rest';
+import {FriendStatusType} from '../enums';
 import {FriendService} from '../services';
 
 /**
@@ -41,9 +43,30 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    const {requesteeId, requestorId} = invocationCtx.args[0];
+    const {requesteeId, requestorId, status} = invocationCtx.args[0];
 
-    await this.friendService.validateFriendRequest(requesteeId, requestorId);
+    switch (status) {
+      case FriendStatusType.BLOCKED: {
+        await this.friendService.validateBlockFriendRequest(
+          requestorId,
+          requesteeId,
+        );
+        break;
+      }
+
+      case FriendStatusType.PENDING: {
+        await this.friendService.validateFriendRequest(
+          requesteeId,
+          requestorId,
+        );
+        break;
+      }
+
+      default:
+        throw new HttpErrors.UnprocessableEntity(
+          'Please set status to pending or blocked',
+        );
+    }
 
     // Add pre-invocation logic here
     const result = await next();
