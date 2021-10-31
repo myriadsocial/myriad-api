@@ -83,6 +83,47 @@ export class FriendService {
     }
   }
 
+  async validateBlockFriendRequest(
+    requestorId: string,
+    requesteeId: string,
+  ): Promise<void> {
+    const found = await this.friendRepository.findOne({
+      where: {
+        or: [
+          {
+            requestorId: requestorId,
+            requesteeId: requesteeId,
+          },
+          {
+            requestorId: requesteeId,
+            requesteeId: requestorId,
+          },
+        ],
+      },
+    });
+
+    if (found) {
+      if (found.status === FriendStatusType.BLOCKED) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You already blocked/has been blocked by this friends',
+        );
+      } else {
+        await this.friendRepository.deleteAll({
+          or: [
+            {
+              requestorId: requestorId,
+              requesteeId: requesteeId,
+            },
+            {
+              requestorId: requesteeId,
+              requesteeId: requestorId,
+            },
+          ],
+        });
+      }
+    }
+  }
+
   async getFriendIds(id: string, status: FriendStatusType): Promise<string[]> {
     const friends = await this.friendRepository.find({
       where: {
