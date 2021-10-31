@@ -23,13 +23,12 @@ export class Friend extends Entity {
 
   @property({
     type: 'string',
-    required: false,
+    required: true,
     jsonSchema: {
       enum: Object.values(FriendStatusType),
     },
-    default: FriendStatusType.PENDING,
   })
-  status: string;
+  status: FriendStatusType;
 
   @property({
     type: 'date',
