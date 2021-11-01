@@ -97,16 +97,7 @@ export class Transaction extends Entity {
   )
   to: string;
 
-  @belongsTo(
-    () => Currency,
-    {},
-    {
-      required: true,
-      jsonSchema: {
-        transform: ['toUpperCase'],
-      },
-    },
-  )
+  @belongsTo(() => Currency, {}, {required: true})
   currencyId: string;
 
   constructor(data?: Partial<Transaction>) {
