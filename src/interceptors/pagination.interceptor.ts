@@ -121,7 +121,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
 
     if (className === ControllerType.POST && q) {
-      const whereByQuery = await this.getPostByQuery(q.toString());
+      const whereByQuery = await this.getPostByQuery(
+        q.toString(),
+        userId?.toString(),
+      );
       filter.where = Object.assign(filter.where ?? {}, whereByQuery);
     }
 
@@ -247,20 +250,48 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     return [sortBy + ' ' + order];
   }
 
-  async getPostByQuery(q: string): Promise<Where<Post>> {
+  async getPostByQuery(q: string, userId?: string): Promise<Where<Post>> {
+    console.log(userId);
+    let blockedFriendIds: string[] = [];
+
+    if (userId) {
+      blockedFriendIds = await this.friendService.getFriendIds(
+        userId,
+        FriendStatusType.BLOCKED,
+      );
+    }
+
     const pattern = new RegExp(q, 'i');
     const users = await this.userRepository.find({
       where: {
         or: [
           {
-            name: {
-              regexp: pattern,
-            },
+            and: [
+              {
+                name: {
+                  regexp: pattern,
+                },
+              },
+              {
+                id: {
+                  nin: blockedFriendIds,
+                },
+              },
+            ],
           },
           {
-            username: {
-              regexp: pattern,
-            },
+            and: [
+              {
+                username: {
+                  regexp: pattern,
+                },
+              },
+              {
+                id: {
+                  nin: blockedFriendIds,
+                },
+              },
+            ],
           },
         ],
       },
