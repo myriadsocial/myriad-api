@@ -14,9 +14,6 @@ export class Currency extends Entity {
     id: true,
     generated: false,
     required: true,
-    jsonSchema: {
-      transform: ['toUpperCase'],
-    },
   })
   id: string;
 

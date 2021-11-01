@@ -63,28 +63,30 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
         if (methodName === MethodType.DELETE) {
           const user = await this.userRepository.findById(userId);
 
-          if (user.defaultCurrency === currencyId)
+          if (user.defaultCurrency === currencyId.toUpperCase())
             throw new HttpErrors.UnprocessableEntity(
               'Please changed your default currency, before deleting it',
             );
         }
 
         if (methodName === MethodType.CREATE) {
-          await this.currencyRepository.findById(currencyId);
+          await this.currencyRepository.findById(currencyId.toUpperCase());
 
           // Check if user already has the crypto
           const userCurrency = await this.userCurrencyRepository.findOne({
             where: {
               userId,
-              currencyId: currencyId,
+              currencyId: currencyId.toUpperCase(),
             },
           });
 
           if (userCurrency) {
             throw new HttpErrors.UnprocessableEntity(
-              'You already have this token',
+              'You already have this currency',
             );
           }
+
+          invocationCtx.args[0].currencyId = currencyId.toUpperCase();
         }
 
         break;

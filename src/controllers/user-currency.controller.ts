@@ -50,6 +50,7 @@ export class UserCurrencyController {
     return this.userCurrencyRepository.create(userCurrency);
   }
 
+  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
   @del('/user-currencies', {
     responses: {
       '200': {
