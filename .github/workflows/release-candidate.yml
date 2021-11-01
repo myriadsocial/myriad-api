@@ -2,8 +2,8 @@ name: Release-candidate automation
 
 on:
   push:
-    branches:
-      - release-[0-9]+.[0-9]+.[0-9]+
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
 
 concurrency:
   group: release-candidate-automation
@@ -13,10 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      sha_short: ${{ steps.build-info.outputs.sha_short }}
-      date: ${{ steps.build-info.outputs.date }}
-      new_tag: ${{ steps.build-info.outputs.new_tag }}
-      first_rc: ${{ steps.build-info.outputs.first_rc }}
+      latest_tag: ${{ steps.build-info.outputs.latest_tag }}
 
     steps:
       - name: Checkout code
@@ -28,48 +25,14 @@ jobs:
         id: build-info
         shell: bash
         run: |
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          echo "::set-output name=date::$(date +'%Y%m%d')"
-          # Get last rc tag if exists, else set it to {version}-rc1
-          version=${GITHUB_REF#refs/heads/release-}
-          echo "$version"
-          echo "::set-output name=version::$version"
-          git tag -l
-          last_rc=$(git tag -l "$version-rc*" | sort -V | tail -n 1)
-          if [ -n "$last_rc" ]; then
-            suffix=$(echo "$last_rc" | grep -Eo '[0-9]+$')
-            echo $suffix
-            ((suffix++))
-            echo $suffix
-            echo "::set-output name=new_tag::$version-rc$suffix"
-            echo "::set-output name=first_rc::false"
-          else
-            echo "::set-output name=new_tag::$version-rc1"
-            echo "::set-output name=first_rc::true"
-          fi
-
-  apply-rc-tag:
-    runs-on: ubuntu-latest
-
-    needs: compute-build-info
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Apply new tag
-        uses: mathieudutour/github-tag-action@v5.5
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag_prefix: ''
-          custom_tag: ${{ needs.compute-build-info.outputs.new_tag }}
+          version=${GITHUB_REF#refs/*/}
+          echo $version
+          echo "::set-output name=latest_tag::$version"
 
   build-and-publish-docker-image:
     runs-on: ubuntu-latest
 
-    needs: [compute-build-info, apply-rc-tag]
+    needs: compute-build-info
 
     steps:
       - name: Checkout code
@@ -103,7 +66,7 @@ jobs:
           push: true
           file: .maintain/docker/Dockerfile
           tags: |
-            ${{ github.repository }}:${{ needs.compute-build-info.outputs.new_tag }}
+            ${{ github.repository }}:${{ needs.compute-build-info.outputs.latest_tag }}
             ${{ github.repository }}:latest-rc
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
@@ -133,63 +96,65 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@master
         with:
-          project_id: ${{ secrets.STG_GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.STG_GCP_SA_KEY }}
+          project_id: ${{ secrets.PROD_GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.PROD_GCP_SA_KEY }}
           export_default_credentials: true
-
-      - name: Get the GKE credentials
-        uses: google-github-actions/get-gke-credentials@main
-        with:
-          cluster_name: myriad
-          location: asia-southeast2-a
 
       - name: Get secrets
         id: secrets
         uses: google-github-actions/get-secretmanager-secrets@main
         with:
           secrets: |-
-            RPC_WS_URL:${{ secrets.STG_GCP_PROJECT_ID }}/RPC_WS_URL
-            FAUCET_MNEMONIC:${{ secrets.STG_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
-            REWARD_AMOUNT:${{ secrets.STG_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.STG_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
-            MONGO_HOST:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_HOST
-            MONGO_PORT:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_PORT
-            MONGO_DB:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_DB
-            MONGO_USER_API:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_USER_API
-            MONGO_PASSWORD_API:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
-            FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.STG_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
-            API_SENTRY_DNS:${{ secrets.STG_GCP_PROJECT_ID }}/API_SENTRY_DNS
-            TWITTER_BEARER_TOKEN:${{ secrets.STG_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
-
-      - name: Install Helm
-        run: |
-          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+            RPC_WS_URL:${{ secrets.PROD_GCP_PROJECT_ID }}/RPC_WS_URL
+            FAUCET_MNEMONIC:${{ secrets.PROD_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
+            REWARD_AMOUNT:${{ secrets.PROD_GCP_PROJECT_ID }}/REWARD_AMOUNT
+            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.PROD_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
+            MONGO_HOST:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_HOST
+            MONGO_PORT:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_PORT
+            MONGO_DB:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_DB
+            MONGO_USER_API:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_USER_API
+            MONGO_PASSWORD_API:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
+            FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.PROD_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
+            API_SENTRY_DNS:${{ secrets.PROD_GCP_PROJECT_ID }}/API_SENTRY_DNS
+            TWITTER_BEARER_TOKEN:${{ secrets.PROD_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
+            SSH_HOST:${{ secrets.PROD_GCP_PROJECT_ID }}/SSH_HOST
+            SSH_USERNAME:${{ secrets.PROD_GCP_PROJECT_ID }}/SSH_USERNAME
+            SSH_KEY:${{ secrets.PROD_GCP_PROJECT_ID }}/SSH_KEY
+            SSH_PORT:${{ secrets.PROD_GCP_PROJECT_ID }}/SSH_PORT
 
       - name: Deploy
-        run: |
-          helm upgrade myriad-api .maintain/kubernetes \
-            --install \
-            --set-string image.tag=${{ needs.compute-build-info.outputs.new_tag }} \
-            --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
-            --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
-            --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
-            --set config.acalaAUSDRewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT_ACALA_AUSD }} \
-            --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
-            --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
-            --set-string config.mongo.database=${{ steps.secrets.outputs.MONGO_DB }} \
-            --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
-            --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
-            --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
-            --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DNS }} \
-            --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
-            --set ingress.enabled=true \
-            --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
-            --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-            --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/limit-rps"="10" \
-            --set-string ingress.hosts[0].host=api.stg.myriad.systems \
-            --set-string ingress.hosts[0].paths[0].path=/ \
-            --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
-            --set-string ingress.tls[0].secretName=myriad-api-tls \
-            --set-string ingress.tls[0].hosts[0]=api.stg.myriad.systems \
-            --set autoscaling.enabled=true
-          kubectl rollout status deployment/myriad-api
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ steps.secrets.outputs.SSH_HOST }}
+          username: ${{ steps.secrets.outputs.SSH_USERNAME }}
+          key: ${{ steps.secrets.outputs.SSH_KEY }}
+          port: ${{ steps.secrets.outputs.SSH_PORT }}
+          script: |
+            helm repo add myriad https://charts.myriad.systems
+            helm repo update
+            helm upgrade myriad-api myriad/myriad-api \
+              --install \
+              --set-string image.tag=${{ needs.compute-build-info.outputs.new_tag }} \
+              --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
+              --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
+              --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
+              --set config.acalaAUSDRewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT_ACALA_AUSD }} \
+              --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
+              --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
+              --set-string config.mongo.database=${{ steps.secrets.outputs.MONGO_DB }} \
+              --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
+              --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
+              --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
+              --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DNS }} \
+              --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
+              --set ingress.enabled=true \
+              --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
+              --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
+              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/limit-rps"="10" \
+              --set-string ingress.hosts[0].host=api.myriad.systems \
+              --set-string ingress.hosts[0].paths[0].path=/ \
+              --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
+              --set-string ingress.tls[0].secretName=myriad-api-tls \
+              --set-string ingress.tls[0].hosts[0]=api.myriad.systems \
+              --set autoscaling.enabled=true
+            kubectl rollout status deployment/myriad-api
