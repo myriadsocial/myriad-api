@@ -7,6 +7,7 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
+import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {PostRepository} from '../repositories';
 import {TagService} from '../services';
@@ -21,7 +22,7 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${ValidatePostImportURL.name}`;
 
   constructor(
-    @service(PostRepository)
+    @repository(PostRepository)
     protected postRepository: PostRepository,
     @service(TagService)
     protected tagService: TagService,

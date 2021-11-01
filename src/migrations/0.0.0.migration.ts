@@ -1,10 +1,6 @@
 import {repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {config} from '../config';
-import currenciesSeed from '../data-seed/currencies.json';
-import peopleSeed from '../data-seed/people.json';
-import postsSeed from '../data-seed/posts.json';
-import usersSeed from '../data-seed/users.json';
 import {DefaultCurrencyType} from '../enums';
 import {ExtendedPost} from '../interfaces';
 import {Currency, People, Post, User} from '../models';
@@ -17,6 +13,10 @@ import {
 } from '../repositories';
 import {DateUtils} from '../utils/date-utils';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
+import path from 'path';
+import fs from 'fs';
+
+const dataSeed = '../data-seed/';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /* eslint-disable  @typescript-eslint/naming-convention */
@@ -38,10 +38,51 @@ export class MigrationScript000 implements MigrationScript {
   ) {}
 
   async up(): Promise<void> {
-    await this.createUsers(usersSeed as User[]);
-    await this.createCurrencies(currenciesSeed as unknown as Currency[]);
-    await this.createPeople(peopleSeed as People[]);
-    await this.createPost(postsSeed as ExtendedPost[]);
+    const files = fs.readdirSync(path.join(__dirname, dataSeed));
+
+    files.forEach(async file => {
+      switch (file) {
+        case 'currencies.json': {
+          const currenciesRawData = fs.readFileSync(
+            path.join(__dirname, dataSeed + file),
+          );
+          const currenciesSeed = JSON.parse(currenciesRawData.toString());
+
+          await this.createCurrencies(currenciesSeed as unknown as Currency[]);
+          break;
+        }
+
+        case 'people.json': {
+          const peopleRawData = fs.readFileSync(
+            path.join(__dirname, dataSeed + file),
+          );
+          const peopleSeed = JSON.parse(peopleRawData.toString());
+
+          await this.createPeople(peopleSeed as People[]);
+          break;
+        }
+
+        case 'posts.json': {
+          const postsRawData = fs.readFileSync(
+            path.join(__dirname, dataSeed + file),
+          );
+          const postsSeed = JSON.parse(postsRawData.toString());
+
+          await this.createPost(postsSeed as ExtendedPost[]);
+          break;
+        }
+
+        case 'users.json': {
+          const usersRawData = fs.readFileSync(
+            path.join(__dirname, dataSeed + file),
+          );
+          const usersSeed = JSON.parse(usersRawData.toString());
+
+          await this.createUsers(usersSeed as User[]);
+          break;
+        }
+      }
+    });
   }
 
   async createUsers(users: User[]): Promise<void> {
