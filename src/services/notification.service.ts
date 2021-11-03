@@ -376,9 +376,12 @@ export class NotificationService {
     if (toUsers.length === 0) return false;
 
     const notifications = toUsers.map(toUser => {
-      notification.to = toUser.id;
+      const updatedNotification = {
+        ...notification,
+        to: toUser.id,
+      };
 
-      return notification;
+      return new Notification(updatedNotification);
     });
 
     const createdNotification = await this.notificationRepository.createAll(
