@@ -389,7 +389,7 @@ describe('FriendApplication', function () {
       where: {
         from: friend.requestorId,
         to: friend.requesteeId,
-        referenceId: friend.requesteeId,
+        referenceId: friend.requestorId,
       },
     });
 
@@ -402,7 +402,7 @@ describe('FriendApplication', function () {
       from: friend.requestorId,
       read: false,
       to: friend.requesteeId,
-      referenceId: friend.requesteeId,
+      referenceId: friend.requestorId,
       message: 'sent you friend request',
     }).to.containDeep(toJSON(notifications[0]));
   });
@@ -430,7 +430,7 @@ describe('FriendApplication', function () {
       where: {
         from: friend.requesteeId,
         to: friend.requestorId,
-        referenceId: friend.requestorId,
+        referenceId: friend.requesteeId,
       },
     });
 
@@ -443,7 +443,7 @@ describe('FriendApplication', function () {
       from: friend.requesteeId,
       read: false,
       to: friend.requestorId,
-      referenceId: friend.requestorId,
+      referenceId: friend.requesteeId,
       message: 'accept your friend request',
     }).to.containEql(toJSON(notifications[0]));
   });
