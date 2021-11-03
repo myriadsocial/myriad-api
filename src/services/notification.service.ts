@@ -128,7 +128,6 @@ export class NotificationService {
       );
       toUser = await this.userRepository.findById(toComment.userId);
       notification.to = toUser.id;
-      notification.referenceId = toComment.id;
 
       await this.notificationRepository.create(notification);
       await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
