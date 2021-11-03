@@ -49,7 +49,7 @@ export class NotificationService {
     notification.type = NotificationType.FRIEND_REQUEST;
     notification.from = fromUser.id;
     notification.to = toUser.id;
-    notification.referenceId = toUser.id;
+    notification.referenceId = fromUser.id;
     notification.message = 'sent you friend request';
 
     const createdNotification = await this.notificationRepository.create(
@@ -71,7 +71,7 @@ export class NotificationService {
     notification.type = NotificationType.FRIEND_ACCEPT;
     notification.from = fromUser.id;
     notification.to = toUser.id;
-    notification.referenceId = toUser.id;
+    notification.referenceId = fromUser.id;
     notification.message = 'accept your friend request';
 
     const createdNotification = await this.notificationRepository.create(
