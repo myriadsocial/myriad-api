@@ -251,7 +251,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   }
 
   async getPostByQuery(q: string, userId?: string): Promise<Where<Post>> {
-    console.log(userId);
     let blockedFriendIds: string[] = [];
 
     if (userId) {

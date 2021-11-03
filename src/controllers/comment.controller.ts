@@ -159,9 +159,10 @@ export class CommentController {
     },
   })
   async findPost(@param.path.string('id') id: string): Promise<Post> {
+    const firstId = id;
+
     let filter: Filter<Post> = {};
     let lastComment = await this.commentRepository.findById(id);
-    let firstId = id;
     let secondId = null;
     let thirdId = null;
 

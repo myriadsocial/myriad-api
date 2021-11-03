@@ -131,7 +131,6 @@ export class NotificationService {
 
       await this.notificationRepository.create(notification);
       await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
-      console.log(notification);
 
       return true;
     }

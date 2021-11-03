@@ -226,7 +226,7 @@ describe('FriendControllerIntegration', () => {
       where: {
         from: friend.requestorId,
         to: friend.requesteeId,
-        referenceId: friend.requesteeId,
+        referenceId: friend.requestorId,
       },
     });
 
@@ -239,7 +239,7 @@ describe('FriendControllerIntegration', () => {
       from: friend.requestorId,
       read: false,
       to: friend.requesteeId,
-      referenceId: friend.requesteeId,
+      referenceId: friend.requestorId,
       message: 'sent you friend request',
     }).to.containDeep(toJSON(notifications[0]));
   });
@@ -267,11 +267,9 @@ describe('FriendControllerIntegration', () => {
       where: {
         from: friend.requesteeId,
         to: friend.requestorId,
-        referenceId: friend.requestorId,
+        referenceId: friend.requesteeId,
       },
     });
-
-    console.log(notifications);
 
     delete notifications[0].id;
     delete notifications[0].createdAt;
@@ -282,7 +280,7 @@ describe('FriendControllerIntegration', () => {
       from: friend.requesteeId,
       read: false,
       to: friend.requestorId,
-      referenceId: friend.requestorId,
+      referenceId: friend.requesteeId,
       message: 'accept your friend request',
     }).to.containEql(toJSON(notifications[0]));
   });

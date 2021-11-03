@@ -525,7 +525,7 @@ describe('CommentControllerIntegration', () => {
     expect(toJSON(notification)).to.deepEqual({
       type: NotificationType.COMMENT_COMMENT,
       from: response.userId,
-      referenceId: response.referenceId,
+      referenceId: response.id,
       message: 'commented: ' + response.text,
       to: comment.userId,
       read: false,
