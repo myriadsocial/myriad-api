@@ -9,6 +9,7 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
+import {ReferenceType} from '../enums';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {Comment, Post} from '../models';
 import {CommentRepository, PostRepository} from '../repositories';
@@ -91,7 +92,15 @@ export class CommentController {
     })
     comment: Omit<Comment, 'id'>,
   ): Promise<Comment> {
-    const newComment = await this.commentRepository.create(comment);
+    let newComment = null;
+
+    if (comment.type === ReferenceType.POST) {
+      newComment = await this.commentRepository.create(comment);
+    } else {
+      newComment = await this.commentRepository
+        .comments(comment.referenceId)
+        .create(comment);
+    }
 
     try {
       await this.notificationService.sendPostComment(
@@ -149,15 +158,98 @@ export class CommentController {
       },
     },
   })
-  async findPost(
-    @param.path.string('id') id: string,
-    @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere,
-  ): Promise<Post> {
-    const comment = await this.commentRepository.findById(id);
+  async findPost(@param.path.string('id') id: string): Promise<Post> {
+    let filter: Filter<Post> = {};
+    let lastComment = await this.commentRepository.findById(id);
+    let firstId = id;
+    let secondId = null;
+    let thirdId = null;
 
-    return this.postRepository.findById(
-      comment.postId,
-      filter as FilterExcludingWhere<Post>,
-    );
+    if (lastComment.type === ReferenceType.POST) {
+      filter = {
+        include: [
+          {
+            relation: 'comments',
+            scope: {
+              where: {
+                id: firstId,
+              },
+            },
+          },
+        ],
+      } as Filter<Post>;
+    } else {
+      lastComment = await this.commentRepository.findById(
+        lastComment.referenceId,
+      );
+      secondId = lastComment.id;
+
+      if (lastComment.type === ReferenceType.POST) {
+        filter = {
+          include: [
+            {
+              relation: 'comments',
+              scope: {
+                where: {
+                  id: secondId,
+                },
+                include: [
+                  {
+                    relation: 'comments',
+                    scope: {
+                      where: {
+                        id: firstId,
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        } as Filter<Post>;
+      } else {
+        lastComment = await this.commentRepository.findById(
+          lastComment.referenceId,
+        );
+        thirdId = lastComment.id;
+
+        if (lastComment.type === ReferenceType.POST) {
+          filter = {
+            include: [
+              {
+                relation: 'comments',
+                scope: {
+                  where: {
+                    id: thirdId,
+                  },
+                  include: [
+                    {
+                      relation: 'comments',
+                      scope: {
+                        where: {
+                          id: secondId,
+                        },
+                        include: [
+                          {
+                            relation: 'comments',
+                            scope: {
+                              where: {
+                                id: firstId,
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          };
+        }
+      }
+    }
+
+    return this.postRepository.findById(lastComment.postId, filter);
   }
 }
