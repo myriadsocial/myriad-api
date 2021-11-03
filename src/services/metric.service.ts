@@ -68,6 +68,7 @@ export class MetricService {
   async publicMetric(
     type: ReferenceType,
     referenceId: string,
+    postId?: string,
     section?: SectionType,
   ): Promise<Metric> {
     const upvote = await this.voteRepository.count({
@@ -90,21 +91,19 @@ export class MetricService {
     };
 
     if (!section) return metric;
-    if (section === SectionType.DEBATE || type === ReferenceType.POST) {
+    if (section === SectionType.DEBATE) {
       metric.debates = (
         await this.commentRepository.count({
-          type,
-          referenceId,
+          postId,
           section: SectionType.DEBATE,
         })
       ).count;
     }
 
-    if (section === SectionType.DISCUSSION || type === ReferenceType.POST) {
+    if (section === SectionType.DISCUSSION) {
       metric.discussions = (
         await this.commentRepository.count({
-          type,
-          referenceId,
+          postId,
           section: SectionType.DISCUSSION,
         })
       ).count;

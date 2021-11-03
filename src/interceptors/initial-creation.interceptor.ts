@@ -185,16 +185,18 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.COMMENT: {
-        const metric = await this.metricService.publicMetric(
-          result.type,
-          result.referenceId,
-          result.section,
-        );
         const post = await this.postRepository.findOne({
           where: {id: result.postId},
         });
 
         if (!post) return;
+
+        const metric = await this.metricService.publicMetric(
+          result.type,
+          result.referenceId,
+          result.postId,
+          result.section,
+        );
 
         const popularCount = await this.metricService.countPopularPost(
           result.postId,
