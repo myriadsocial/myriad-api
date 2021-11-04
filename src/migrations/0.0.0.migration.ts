@@ -16,7 +16,7 @@ import {PolkadotJs} from '../utils/polkadotJs-utils';
 import path from 'path';
 import fs from 'fs';
 
-const dataSeed = '../data-seed/';
+const dataSeed = '../../src/data-seed/';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /* eslint-disable  @typescript-eslint/naming-convention */
@@ -40,49 +40,52 @@ export class MigrationScript000 implements MigrationScript {
   async up(): Promise<void> {
     const files = fs.readdirSync(path.join(__dirname, dataSeed));
 
-    files.forEach(async file => {
-      switch (file) {
-        case 'currencies.json': {
-          const currenciesRawData = fs.readFileSync(
-            path.join(__dirname, dataSeed + file),
-          );
-          const currenciesSeed = JSON.parse(currenciesRawData.toString());
+    await Promise.all(
+      files.map(async file => {
+        switch (file) {
+          case 'currencies.json': {
+            const currenciesRawData = fs.readFileSync(
+              path.join(__dirname, dataSeed + file),
+            );
+            const currenciesSeed = JSON.parse(currenciesRawData.toString());
 
-          await this.createCurrencies(currenciesSeed as unknown as Currency[]);
-          break;
+            return this.createCurrencies(
+              currenciesSeed as unknown as Currency[],
+            );
+          }
+
+          case 'people.json': {
+            const peopleRawData = fs.readFileSync(
+              path.join(__dirname, dataSeed + file),
+            );
+            const peopleSeed = JSON.parse(peopleRawData.toString());
+
+            return this.createPeople(peopleSeed as People[]);
+          }
+
+          case 'posts.json': {
+            const postsRawData = fs.readFileSync(
+              path.join(__dirname, dataSeed + file),
+            );
+            const postsSeed = JSON.parse(postsRawData.toString());
+
+            return this.createPost(postsSeed as ExtendedPost[]);
+          }
+
+          case 'users.json': {
+            const usersRawData = fs.readFileSync(
+              path.join(__dirname, dataSeed + file),
+            );
+            const usersSeed = JSON.parse(usersRawData.toString());
+
+            return this.createUsers(usersSeed as User[]);
+          }
+
+          default:
+            return;
         }
-
-        case 'people.json': {
-          const peopleRawData = fs.readFileSync(
-            path.join(__dirname, dataSeed + file),
-          );
-          const peopleSeed = JSON.parse(peopleRawData.toString());
-
-          await this.createPeople(peopleSeed as People[]);
-          break;
-        }
-
-        case 'posts.json': {
-          const postsRawData = fs.readFileSync(
-            path.join(__dirname, dataSeed + file),
-          );
-          const postsSeed = JSON.parse(postsRawData.toString());
-
-          await this.createPost(postsSeed as ExtendedPost[]);
-          break;
-        }
-
-        case 'users.json': {
-          const usersRawData = fs.readFileSync(
-            path.join(__dirname, dataSeed + file),
-          );
-          const usersSeed = JSON.parse(usersRawData.toString());
-
-          await this.createUsers(usersSeed as User[]);
-          break;
-        }
-      }
-    });
+      }),
+    );
   }
 
   async createUsers(users: User[]): Promise<void> {
