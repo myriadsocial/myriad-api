@@ -3,3 +3,5 @@ export * from './mongo.datasource';
 export * from './reddit.datasource';
 export * from './rsshub.datasource';
 export * from './twitter.datasource';
+export * from './exchange-rate.datasource';
+export * from './coin-market-cap.datasource';
