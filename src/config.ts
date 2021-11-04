@@ -25,4 +25,6 @@ export const config = {
   SENTRY_DNS: process.env.SENTRY_DSN ?? '',
 
   TWITTER_BEARER_TOKEN: 'Bearer ' + process.env.TWITTER_BEARER_TOKEN ?? '',
+
+  COIN_MARKET_CAP_API_KEY: process.env.COIN_MARKET_CAP_API_KEY ?? '',
 };
