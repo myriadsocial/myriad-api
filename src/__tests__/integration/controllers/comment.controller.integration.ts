@@ -436,6 +436,7 @@ describe('CommentControllerIntegration', () => {
       read: false,
       to: post.createdBy,
       referenceId: newComment.id,
+      additionalReferenceId: [{postId: post.id}],
       message: 'commented: ' + newComment.text,
     }).to.containDeep(toJSON(notifications[0]));
   });
@@ -482,6 +483,7 @@ describe('CommentControllerIntegration', () => {
       read: false,
       to: otherUser.id,
       referenceId: newComment.id,
+      additionalReferenceId: [{postId: post.id}],
       message: 'commented: ' + newComment.text,
     }).to.containDeep(toJSON(notifications[0]));
   });
@@ -527,6 +529,7 @@ describe('CommentControllerIntegration', () => {
       from: response.userId,
       referenceId: response.id,
       message: 'commented: ' + response.text,
+      additionalReferenceId: [{postId: post.id}, {firstCommentId: comment.id}],
       to: comment.userId,
       read: false,
     });
