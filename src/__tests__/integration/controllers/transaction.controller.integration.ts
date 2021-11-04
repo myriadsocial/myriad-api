@@ -220,6 +220,7 @@ describe('TransactionControllerIntegration', () => {
       from: response.from,
       referenceId: response.id,
       message: response.amount + ' ' + response.currencyId,
+      additionalReferenceId: [],
       to: response.to,
       read: false,
     });
@@ -260,6 +261,7 @@ describe('TransactionControllerIntegration', () => {
       from: response.from,
       referenceId: response.id,
       message: response.amount + ' ' + response.currencyId,
+      additionalReferenceId: [],
       to: response.to,
       read: false,
     });

@@ -407,6 +407,7 @@ describe('PostControllerIntegration', () => {
       from: response.createdBy,
       referenceId: response.id,
       message: 'mentioned you',
+      additionalReferenceId: [],
       to: mentionUser.id,
       read: false,
     });

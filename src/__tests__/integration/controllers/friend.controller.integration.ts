@@ -240,6 +240,7 @@ describe('FriendControllerIntegration', () => {
       read: false,
       to: friend.requesteeId,
       referenceId: friend.requestorId,
+      additionalReferenceId: [],
       message: 'sent you friend request',
     }).to.containDeep(toJSON(notifications[0]));
   });
@@ -281,6 +282,7 @@ describe('FriendControllerIntegration', () => {
       read: false,
       to: friend.requestorId,
       referenceId: friend.requesteeId,
+      additionalReferenceId: [],
       message: 'accept your friend request',
     }).to.containEql(toJSON(notifications[0]));
   });

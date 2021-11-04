@@ -122,6 +122,7 @@ describe('CommentApplication', function () {
       read: false,
       referenceId: response.body.id,
       message: 'commented: ' + comment.text,
+      additionalReferenceId: [{postId: post.id}],
       createdAt: notification?.createdAt,
       updatedAt: notification?.updatedAt,
       deletedAt: undefined,
