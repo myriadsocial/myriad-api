@@ -375,4 +375,38 @@ export class SocialMediaService {
       },
     } as ExtendedPost;
   }
+
+  async fetchTelegramMsgFromGun(
+    username: string,
+    msgId: string,
+  ): Promise<ExtendedPost> {
+    const gun = server.gun;
+    console.log(process.env.SCRAPER_PUB_KEY, username, msgId);
+    let gunPost = await gun
+      .user(process.env.SCRAPER_PUB_KEY)
+      .get('telegram')
+      .get(username)
+      .get(msgId);
+    console.log('RAW', gunPost);
+    if (!gunPost) return {} as ExtendedPost;
+    gunPost = JSON.parse(gunPost);
+    console.log('PARSED', gunPost);
+
+    return {
+      platform: PlatformType.TELEGRAM,
+      originPostId: 'gun_' + msgId,
+      originCreatedAt: undefined,
+      text: gunPost.text,
+      url: gunPost.url,
+      asset: {
+        images: gunPost.profilePicture,
+      },
+      importers: [gunPost.importer],
+      platformUser: {
+        name: gunPost.username,
+        username: gunPost.username,
+        platform: PlatformType.TELEGRAM,
+      },
+    } as ExtendedPost;
+  }
 }
