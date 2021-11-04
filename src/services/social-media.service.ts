@@ -4,7 +4,6 @@ import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {ExtendedPeople, ExtendedPost} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
-import {People} from '../models';
 import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
@@ -52,7 +51,7 @@ export class SocialMediaService {
     if (!foundTwitterPublicKey)
       throw new HttpErrors.NotFound('Cannot find specified post');
 
-    this.fetchTwitterFollowing(user.id) as Promise<void>;
+    // await this.fetchTwitterFollowing(user.id);
 
     return {
       name: user.name,
@@ -152,13 +151,13 @@ export class SocialMediaService {
       });
 
       if (!foundPerson) {
-        this.peopleRepository.create({
+        await this.peopleRepository.create({
           name: person.name,
           username: person.username,
           originUserId: person.id,
           platform: PlatformType.TWITTER,
           profilePictureURL: person.profile_image_url || '',
-        }) as Promise<People>;
+        });
       }
     }
   }
