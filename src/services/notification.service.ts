@@ -115,6 +115,47 @@ export class NotificationService {
     notification.referenceId = comment.id;
     notification.message = 'commented: ' + comment.text;
 
+    if (ReferenceType.COMMENT) {
+      const lastCommentId = comment.id;
+
+      let additionalReferenceId = [];
+      let firstCommentId = null;
+      let secondCommentId = null;
+
+      let lastComment = await this.commentRepository.findById(lastCommentId);
+
+      if (lastComment.type === ReferenceType.POST) {
+        additionalReferenceId = [{postId: lastComment.postId}];
+      } else {
+        lastComment = await this.commentRepository.findById(
+          lastComment.referenceId,
+        );
+
+        firstCommentId = lastComment.id;
+        secondCommentId = lastComment.id;
+
+        if (lastComment.type === ReferenceType.POST) {
+          additionalReferenceId = [
+            {postId: lastComment.postId},
+            {firstCommentId: firstCommentId},
+          ];
+        } else {
+          lastComment = await this.commentRepository.findById(
+            lastComment.referenceId,
+          );
+          firstCommentId = lastComment.id;
+
+          additionalReferenceId = [
+            {postId: lastComment.postId},
+            {firstCommentId: firstCommentId},
+            {secondCommentId: secondCommentId},
+          ];
+        }
+      }
+
+      notification.additionalReferenceId = additionalReferenceId;
+    }
+
     // FCM messages
     const title = 'New Comment';
     const body = fromUser.name + ' ' + notification.message;
