@@ -23,6 +23,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+RUN chown -R myriad /app
 # Set to a non-root built-in user
 USER myriad
 # Set environment variable
