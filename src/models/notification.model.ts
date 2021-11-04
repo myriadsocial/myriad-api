@@ -49,6 +49,14 @@ export class Notification extends Entity {
   message: string;
 
   @property({
+    type: 'array',
+    itemType: 'object',
+    required: false,
+    default: [],
+  })
+  additionalReferenceId: object[];
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
