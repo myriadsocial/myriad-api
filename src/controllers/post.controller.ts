@@ -137,6 +137,12 @@ export class PostController {
           originPostId,
         );
         break;
+      case PlatformType.TELEGRAM:
+        newPost = await this.socialMediaService.fetchTelegramMsgFromGun(
+          username,
+          originPostId,
+        );
+        break;
 
       default:
         throw new HttpErrors.NotFound('Cannot find the platform!');
