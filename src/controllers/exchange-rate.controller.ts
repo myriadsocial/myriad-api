@@ -21,7 +21,9 @@ export class ExchangeRateController {
       },
     },
   })
-  async find(@param.filter(ExchangeRate) filter?: Filter<ExchangeRate>): Promise<ExchangeRate[]> {
+  async find(
+    @param.filter(ExchangeRate) filter?: Filter<ExchangeRate>,
+  ): Promise<ExchangeRate[]> {
     return this.exchangeRateRepository.find(filter);
   }
 
