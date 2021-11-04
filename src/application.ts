@@ -5,7 +5,10 @@ import {HealthComponent} from '@loopback/health';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {LoggingComponent} from '@loopback/logging';
-import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
+import {
+  RestExplorerBindings,
+  RestExplorerComponent,
+} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
 import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
@@ -113,7 +116,9 @@ export class MyriadApiApplication extends BootMixin(
       return false;
     })();
 
-    this.bind('logging.winston.formats.myFormat').to(myFormat).apply(extensionFor(WINSTON_FORMAT));
+    this.bind('logging.winston.formats.myFormat')
+      .to(myFormat)
+      .apply(extensionFor(WINSTON_FORMAT));
     this.bind('logging.winston.formats.colorize')
       .to(format.colorize())
       .apply(extensionFor(WINSTON_FORMAT));

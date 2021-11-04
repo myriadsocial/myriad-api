@@ -17,7 +17,7 @@ export class UpdateExchangeRateJob extends CronJob {
     super({
       name: 'update-coin-market-cap-job',
       onTick: async () => {
-        this.performJob();
+        await this.performJob();
       },
       cronTime: '0 */5 * * * *',
       start: true,
@@ -28,9 +28,7 @@ export class UpdateExchangeRateJob extends CronJob {
     const currencies = await this.currencyRepository.find();
     const currencyIds = currencies.map(currency => currency.id);
 
-    for (let i = 0; i < currencyIds.length; i++) {
-      const currencyId = currencyIds[i];
-
+    for (const currencyId of currencyIds) {
       try {
         const {data} = await this.coinMarketCapService.getActions(
           `cryptocurrency/quotes/latest?symbol=${currencyId}`,
