@@ -39,7 +39,7 @@ import {
 } from '@loopback/logging';
 import {format} from 'winston';
 import {extensionFor} from '@loopback/core';
-import {UpdateExchangeRateJob} from './jobs';
+import {UpdateExchangeRateJob, UpdateTrendingTopicJob} from './jobs';
 import {CronComponent} from '@loopback/cron';
 
 export {ApplicationConfig};
@@ -150,6 +150,7 @@ export class MyriadApiApplication extends BootMixin(
 
   bindJob() {
     this.add(createBindingFromClass(UpdateExchangeRateJob));
+    this.add(createBindingFromClass(UpdateTrendingTopicJob));
   }
 
   firebaseInit() {
