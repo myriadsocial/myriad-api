@@ -11,3 +11,4 @@ export * from './social-media.service';
 export * from './tag.service';
 export * from './transaction.service';
 export * from './user-social-media.service';
+export * from './coin-market-cap.service';
