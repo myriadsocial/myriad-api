@@ -71,7 +71,6 @@ export class ExpressServer {
         port: process.env.GUN_PORT,
       },
     });
-    this.app.use(Gun.serve);
     this.app.get('/', (_req: Request, res: Response) => {
       res.sendFile(path.resolve('public/express.html'));
     });
