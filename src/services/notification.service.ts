@@ -92,7 +92,7 @@ export class NotificationService {
         type: NotificationType.FRIEND_REQUEST,
         from: from,
         to: to,
-        referenceId: to,
+        referenceId: from,
       },
     });
 
@@ -115,7 +115,7 @@ export class NotificationService {
     notification.referenceId = comment.id;
     notification.message = 'commented: ' + comment.text;
 
-    if (ReferenceType.COMMENT) {
+    if (comment.type === ReferenceType.COMMENT) {
       const lastCommentId = comment.id;
 
       let additionalReferenceId = [];
@@ -199,8 +199,12 @@ export class NotificationService {
     if (toUsers.length === 0) return false;
 
     const notifications = toUsers.map(to => {
-      notification.to = to;
-      return notification;
+      const updatedNotification = {
+        ...notification,
+        to: to,
+      };
+
+      return new Notification(updatedNotification);
     });
 
     const createdNotification = await this.notificationRepository.createAll(
@@ -361,10 +365,21 @@ export class NotificationService {
       toUsers = [...toUsers, ...post.importers, post.createdBy];
     }
 
-    const createdNotification = await this.notificationRepository.create(
-      notification,
+    if (toUsers.length === 0) return false;
+
+    const notifications = toUsers.map(to => {
+      const updatedNotification = {
+        ...notification,
+        to: to,
+      };
+
+      return new Notification(updatedNotification);
+    });
+
+    const createdNotifications = await this.notificationRepository.createAll(
+      notifications,
     );
-    if (createdNotification == null) return false;
+    if (createdNotifications === null) return false;
 
     const users = await this.userRepository.find({
       where: {
@@ -438,17 +453,55 @@ export class NotificationService {
   }
 
   async sendTipsSuccess(transaction: Transaction): Promise<boolean> {
-    const {from, to: toUserId, type} = transaction;
+    const {from, to, type, referenceId} = transaction;
     const fromUser = await this.userRepository.findById(from);
-
-    const toUser = await this.userRepository.findById(toUserId);
+    const toUser = await this.userRepository.findById(to);
 
     const notification = new Notification();
 
-    if (type === ReferenceType.COMMENT) {
+    if (type === ReferenceType.COMMENT && referenceId) {
       notification.type = NotificationType.COMMENT_TIPS;
-    } else if (type === ReferenceType.POST) {
+
+      const lastCommentId = referenceId;
+
+      let additionalReferenceId = [];
+      let firstCommentId = null;
+      let secondCommentId = null;
+
+      let lastComment = await this.commentRepository.findById(lastCommentId);
+
+      if (lastComment.type === ReferenceType.POST) {
+        additionalReferenceId = [{postId: lastComment.postId}];
+      } else {
+        lastComment = await this.commentRepository.findById(
+          lastComment.referenceId,
+        );
+
+        firstCommentId = lastComment.id;
+        secondCommentId = lastComment.id;
+
+        if (lastComment.type === ReferenceType.POST) {
+          additionalReferenceId = [
+            {postId: lastComment.postId},
+            {firstCommentId: firstCommentId},
+          ];
+        } else {
+          lastComment = await this.commentRepository.findById(
+            lastComment.referenceId,
+          );
+          firstCommentId = lastComment.id;
+
+          additionalReferenceId = [
+            {postId: lastComment.postId},
+            {firstCommentId: firstCommentId},
+            {secondCommentId: secondCommentId},
+          ];
+        }
+      }
+      notification.additionalReferenceId = additionalReferenceId;
+    } else if (type === ReferenceType.POST && referenceId) {
       notification.type = NotificationType.POST_TIPS;
+      notification.additionalReferenceId = [{postId: referenceId}];
     } else notification.type = NotificationType.USER_TIPS;
 
     notification.from = fromUser.id;
