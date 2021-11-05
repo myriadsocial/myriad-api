@@ -3,6 +3,7 @@ import {inject} from '@loopback/core';
 import {CoinMarketCap} from '../services';
 import {repository} from '@loopback/repository';
 import {CurrencyRepository, ExchangeRateRepository} from '../repositories';
+import {DefaultCurrencyType} from '../enums';
 
 @cronJob()
 export class UpdateExchangeRateJob extends CronJob {
@@ -26,13 +27,16 @@ export class UpdateExchangeRateJob extends CronJob {
 
   async performJob() {
     const currencies = await this.currencyRepository.find();
-    const currencyIds = currencies.map(currency => currency.id);
+    const currencyIds = currencies
+      .map(currency => currency.id)
+      .filter(currencyId => currencyId !== DefaultCurrencyType.MYRIA);
 
-    for (const currencyId of currencyIds) {
-      try {
-        const {data} = await this.coinMarketCapService.getActions(
-          `cryptocurrency/quotes/latest?symbol=${currencyId}`,
-        );
+    try {
+      const {data} = await this.coinMarketCapService.getActions(
+        `cryptocurrency/quotes/latest?symbol=${currencyIds.join(',')}`,
+      );
+
+      for (const currencyId of currencyIds) {
         const price = data[currencyId].quote.USD.price;
         const found = await this.exchangeRateRepository.findOne({
           where: {
@@ -51,9 +55,9 @@ export class UpdateExchangeRateJob extends CronJob {
             price: price,
           });
         }
-      } catch {
-        // ignore
       }
+    } catch {
+      // ignore
     }
   }
 }
