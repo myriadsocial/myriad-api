@@ -1,5 +1,5 @@
 import {BindingScope, injectable, service} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {NotificationType, PlatformType, ReferenceType} from '../enums';
 import {
   Comment,
@@ -116,44 +116,8 @@ export class NotificationService {
     notification.message = 'commented: ' + comment.text;
 
     if (comment.type === ReferenceType.COMMENT) {
-      const lastCommentId = comment.id;
-
-      let additionalReferenceId = [];
-      let firstCommentId = null;
-      let secondCommentId = null;
-
-      let lastComment = await this.commentRepository.findById(lastCommentId);
-
-      if (lastComment.type === ReferenceType.POST) {
-        additionalReferenceId = [{postId: lastComment.postId}];
-      } else {
-        lastComment = await this.commentRepository.findById(
-          lastComment.referenceId,
-        );
-
-        firstCommentId = lastComment.id;
-        secondCommentId = lastComment.id;
-
-        if (lastComment.type === ReferenceType.POST) {
-          additionalReferenceId = [
-            {postId: lastComment.postId},
-            {firstCommentId: firstCommentId},
-          ];
-        } else {
-          lastComment = await this.commentRepository.findById(
-            lastComment.referenceId,
-          );
-          firstCommentId = lastComment.id;
-
-          additionalReferenceId = [
-            {postId: lastComment.postId},
-            {firstCommentId: firstCommentId},
-            {secondCommentId: secondCommentId},
-          ];
-        }
-      }
-
-      notification.additionalReferenceId = additionalReferenceId;
+      notification.additionalReferenceId =
+        await this.getCommentAdditionalReferenceIds(comment.id ?? '');
     }
 
     // FCM messages
@@ -339,6 +303,9 @@ export class NotificationService {
 
       toUser = await this.userRepository.findById(toComment.userId);
       notification.to = toUser.id;
+      notification.additionalReferenceId =
+        await this.getCommentAdditionalReferenceIds(toComment.id ?? '');
+
       await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
 
       return true;
@@ -461,44 +428,8 @@ export class NotificationService {
 
     if (type === ReferenceType.COMMENT && referenceId) {
       notification.type = NotificationType.COMMENT_TIPS;
-
-      const lastCommentId = referenceId;
-
-      let additionalReferenceId = [];
-      let firstCommentId = null;
-      let secondCommentId = null;
-
-      let lastComment = await this.commentRepository.findById(lastCommentId);
-
-      if (lastComment.type === ReferenceType.POST) {
-        additionalReferenceId = [{postId: lastComment.postId}];
-      } else {
-        lastComment = await this.commentRepository.findById(
-          lastComment.referenceId,
-        );
-
-        firstCommentId = lastComment.id;
-        secondCommentId = lastComment.id;
-
-        if (lastComment.type === ReferenceType.POST) {
-          additionalReferenceId = [
-            {postId: lastComment.postId},
-            {firstCommentId: firstCommentId},
-          ];
-        } else {
-          lastComment = await this.commentRepository.findById(
-            lastComment.referenceId,
-          );
-          firstCommentId = lastComment.id;
-
-          additionalReferenceId = [
-            {postId: lastComment.postId},
-            {firstCommentId: firstCommentId},
-            {secondCommentId: secondCommentId},
-          ];
-        }
-      }
-      notification.additionalReferenceId = additionalReferenceId;
+      notification.additionalReferenceId =
+        await this.getCommentAdditionalReferenceIds(referenceId);
     } else if (type === ReferenceType.POST && referenceId) {
       notification.type = NotificationType.POST_TIPS;
       notification.additionalReferenceId = [{postId: referenceId}];
@@ -592,6 +523,49 @@ export class NotificationService {
 
     await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
     return true;
+  }
+
+  async getCommentAdditionalReferenceIds(
+    commentId: string,
+  ): Promise<AnyObject[]> {
+    const lastCommentId = commentId;
+
+    let additionalReferenceId = [];
+    let firstCommentId = null;
+    let secondCommentId = null;
+
+    let lastComment = await this.commentRepository.findById(lastCommentId);
+
+    if (lastComment.type === ReferenceType.POST) {
+      additionalReferenceId = [{postId: lastComment.postId}];
+    } else {
+      lastComment = await this.commentRepository.findById(
+        lastComment.referenceId,
+      );
+
+      firstCommentId = lastComment.id;
+      secondCommentId = lastComment.id;
+
+      if (lastComment.type === ReferenceType.POST) {
+        additionalReferenceId = [
+          {postId: lastComment.postId},
+          {firstCommentId: firstCommentId},
+        ];
+      } else {
+        lastComment = await this.commentRepository.findById(
+          lastComment.referenceId,
+        );
+        firstCommentId = lastComment.id;
+
+        additionalReferenceId = [
+          {postId: lastComment.postId},
+          {firstCommentId: firstCommentId},
+          {secondCommentId: secondCommentId},
+        ];
+      }
+    }
+
+    return additionalReferenceId;
   }
 
   async readNotification(to?: string): Promise<void> {
