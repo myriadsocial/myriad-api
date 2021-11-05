@@ -131,6 +131,7 @@ jobs:
           key: ${{ steps.secrets.outputs.SSH_KEY }}
           port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
+            ./connect.sh
             helm repo add myriad https://charts.myriad.systems
             helm repo update
             helm upgrade myriad-api myriad/myriad-api \
