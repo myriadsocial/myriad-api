@@ -53,13 +53,19 @@ export class MigrationScript000 implements MigrationScript {
 
     await Promise.all(
       users.map(async user => {
-        const mnemonic = config.MYRIAD_MNEMONIC;
-        const pair = getKeyring().addFromMnemonic(mnemonic);
+        if (user.name === 'Myriad') {
+          const mnemonic = config.MYRIAD_MNEMONIC;
+          const pair = getKeyring().addFromMnemonic(mnemonic);
 
-        user.id = getHexPublicKey(pair);
+          user.id = getHexPublicKey(pair);
+        }
+
         user.createdAt = new Date().toString();
         user.updatedAt = new Date().toString();
-        user.username = 'myriad';
+        user.username =
+          user.name.replace(/\s+/g, '').toLowerCase() +
+          '.' +
+          Math.random().toString(36).substr(2, 9);
 
         return this.userRepository.create(user);
       }),
