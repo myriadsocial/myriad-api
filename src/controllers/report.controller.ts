@@ -10,13 +10,7 @@ import {
   post,
 } from '@loopback/rest';
 import {Report} from '../models';
-import {
-  CommentRepository,
-  PostRepository,
-  ReportRepository,
-  UserReportRepository,
-  UserRepository,
-} from '../repositories';
+import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
 import {PaginationInterceptor} from '../interceptors';
 import {ReportInterceptor} from '../interceptors/report.interceptor';
@@ -25,14 +19,6 @@ export class ReportController {
   constructor(
     @repository(ReportRepository)
     public reportRepository: ReportRepository,
-    @repository(UserReportRepository)
-    public userReportRepository: UserReportRepository,
-    @repository(UserRepository)
-    public userRepository: UserRepository,
-    @repository(PostRepository)
-    public postRepository: PostRepository,
-    @repository(CommentRepository)
-    public commentRepository: CommentRepository,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -56,24 +42,9 @@ export class ReportController {
       Object.assign(filter ?? {}, {
         include: [
           {
-            relation: 'reportedUser',
-          },
-          {
-            relation: 'reportedPost',
-            scope: {
-              include: ['user'],
-            },
-          },
-          {
-            relation: 'reportedComment',
-            scope: {
-              include: ['user'],
-            },
-          },
-          {
             relation: 'reporters',
             scope: {
-              limit: 2,
+              limit: 5,
             },
           },
         ],
@@ -95,28 +66,7 @@ export class ReportController {
     @param.filter(Report, {exclude: ['where', 'include']})
     filter?: FilterExcludingWhere<Report>,
   ): Promise<Report> {
-    return this.reportRepository.findById(
-      id,
-      Object.assign(filter ?? {}, {
-        include: [
-          {
-            relation: 'reportedUser',
-          },
-          {
-            relation: 'reportedPost',
-            scope: {
-              include: ['user'],
-            },
-          },
-          {
-            relation: 'reportedComment',
-            scope: {
-              include: ['user'],
-            },
-          },
-        ],
-      }),
-    );
+    return this.reportRepository.findById(id, filter);
   }
 
   @intercept(ReportInterceptor.BINDING_KEY)
@@ -133,9 +83,6 @@ export class ReportController {
             partial: true,
             exclude: [
               'id',
-              'postId',
-              'userId',
-              'commentId',
               'referenceType',
               'referenceId',
               'penaltyStatus',
