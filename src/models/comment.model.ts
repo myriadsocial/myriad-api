@@ -5,7 +5,7 @@ import {
   model,
   property,
 } from '@loopback/repository';
-import {Vote} from '.';
+import {UserWithRelations, Vote} from '.';
 import {ReferenceType, SectionType} from '../enums';
 import {Metric} from '../interfaces';
 import {CommentLink} from './comment-link.model';
@@ -132,6 +132,7 @@ export class Comment extends Entity {
 
 export interface CommentRelations {
   // describe navigational properties here
+  user?: UserWithRelations;
 }
 
 export type CommentWithRelations = Comment & CommentRelations;
