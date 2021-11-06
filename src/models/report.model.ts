@@ -2,23 +2,15 @@ import {
   Entity,
   model,
   property,
-  belongsTo,
   hasMany,
+  AnyObject,
 } from '@loopback/repository';
 import {
   ReportStatusType,
   PenaltyStatusType,
 } from '../enums/report-status-type.enum';
-import {User} from './user.model';
-import {Post} from './post.model';
-import {
-  Comment,
-  CommentWithRelations,
-  PostWithRelations,
-  UserWithRelations,
-} from '.';
 import {UserReport} from './user-report.model';
-import {ReferenceType} from '../enums';
+import {ReferenceType, ReportType} from '../enums';
 
 @model({
   settings: {
@@ -26,7 +18,6 @@ import {ReferenceType} from '../enums';
     mongodb: {
       collection: 'reports',
     },
-    hiddenProperties: ['postId', 'userId'],
   },
 })
 export class Report extends Entity {
@@ -41,6 +32,12 @@ export class Report extends Entity {
   id?: string;
 
   @property({
+    type: 'object',
+    required: false,
+  })
+  reportedDetail: AnyObject;
+
+  @property({
     type: 'string',
     required: true,
     jsonSchema: {
@@ -52,8 +49,11 @@ export class Report extends Entity {
   @property({
     type: 'string',
     required: false,
+    jsonSchema: {
+      enum: Object.values(ReportType),
+    },
   })
-  type: string;
+  type: ReportType;
 
   @property({
     type: 'string',
@@ -106,15 +106,6 @@ export class Report extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => Post, {name: 'reportedPost'})
-  postId: string;
-
-  @belongsTo(() => User, {name: 'reportedUser'})
-  userId: string;
-
-  @belongsTo(() => Comment, {name: 'reportedComment'})
-  commentId: string;
-
   @hasMany(() => UserReport)
   reporters: UserReport[];
 
@@ -125,9 +116,6 @@ export class Report extends Entity {
 
 export interface ReportRelations {
   // describe navigational properties here
-  reportedUser?: UserWithRelations;
-  reportedPost?: PostWithRelations;
-  reportedComment?: CommentWithRelations;
 }
 
 export type ReportWithRelations = Report & ReportRelations;
