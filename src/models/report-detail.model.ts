@@ -1,5 +1,5 @@
 import {Model, model, property} from '@loopback/repository';
-import {ReferenceType} from '../enums';
+import {ReferenceType, ReportType} from '../enums';
 
 @model()
 export class ReportDetail extends Model {
@@ -21,8 +21,11 @@ export class ReportDetail extends Model {
   @property({
     type: 'string',
     required: false,
+    jsonSchema: {
+      enum: Object.values(ReportType),
+    },
   })
-  type: string;
+  type: ReportType;
 
   @property({
     type: 'string',

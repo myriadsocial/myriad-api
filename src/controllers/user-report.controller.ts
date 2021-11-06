@@ -8,13 +8,14 @@ import {
   requestBody,
   HttpErrors,
 } from '@loopback/rest';
-import {ReferenceType, ReportStatusType} from '../enums';
+import {ReferenceType, ReportStatusType, ReportType} from '../enums';
 import {Report, ReportDetail} from '../models';
 import {
   ReportRepository,
   UserReportRepository,
   PostRepository,
   CommentRepository,
+  UserRepository,
 } from '../repositories';
 import {NotificationService} from '../services';
 
@@ -28,6 +29,8 @@ export class UserReportController {
     protected postRepository: PostRepository,
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -57,12 +60,12 @@ export class UserReportController {
   ): Promise<Report> {
     // TODO: Added notification service when report a post or a user
     const {referenceId, referenceType, description, type} = reportDetail;
-
-    await this.validateReporter(referenceId, referenceType, id, type);
-
-    const report = await this.getReport(referenceId, referenceType, type);
+    const report = await this.getReport(referenceId, referenceType, type, id);
 
     switch (report.status) {
+      case ReportStatusType.PENDING:
+        break;
+
       case ReportStatusType.IGNORED:
       case ReportStatusType.APPROVED: {
         report.status = ReportStatusType.PENDING;
@@ -102,8 +105,11 @@ export class UserReportController {
   async getReport(
     referenceId: string,
     referenceType: ReferenceType,
-    type: string,
+    type: ReportType,
+    id: string,
   ): Promise<Report> {
+    await this.validateReporter(referenceId, referenceType, id, type);
+
     let report = await this.reportRepository.findOne({
       where: {
         referenceId,
@@ -113,20 +119,61 @@ export class UserReportController {
     });
 
     if (!report) {
-      report = await this.reportRepository.create(
-        Object.assign(
-          {
-            referenceType,
-            referenceId,
-            type,
+      let reportedDetail = null;
+
+      if (referenceType === ReferenceType.POST) {
+        const post = await this.postRepository.findById(referenceId, {
+          include: ['user'],
+        });
+
+        reportedDetail = {
+          title: post.title,
+          text: post.text,
+          platform: post.platform,
+          user: {
+            id: post.user?.id,
+            name: post.user?.name,
+            username: post.user?.username,
+            profilePictureURL: post.user?.profilePictureURL,
+            createdAt: post.user?.createdAt,
           },
-          referenceType === ReferenceType.POST
-            ? {postId: referenceId}
-            : referenceType === ReferenceType.COMMENT
-            ? {commentId: referenceId}
-            : {userId: referenceId},
-        ),
-      );
+        };
+      } else if (referenceType === ReferenceType.COMMENT) {
+        const comment = await this.commentRepository.findById(referenceId, {
+          include: ['user'],
+        });
+
+        reportedDetail = {
+          text: comment.text,
+          postId: comment.postId,
+          user: {
+            id: comment.user?.id,
+            name: comment.user?.name,
+            username: comment.user?.username,
+            profilePictureURL: comment.user?.profilePictureURL,
+            createdAt: comment.user?.createdAt,
+          },
+        };
+      } else {
+        const user = await this.userRepository.findById(referenceId);
+
+        reportedDetail = {
+          user: {
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            profilePictureURL: user.profilePictureURL,
+            createdAt: user.createdAt,
+          },
+        };
+      }
+
+      report = await this.reportRepository.create({
+        reportedDetail,
+        referenceType,
+        referenceId,
+        type,
+      });
     }
 
     return report;
@@ -136,7 +183,7 @@ export class UserReportController {
     referenceId: string,
     referenceType: ReferenceType,
     id: string,
-    type: string,
+    type: ReportType,
   ): Promise<void> {
     if (referenceType === ReferenceType.POST) {
       if (!type) {

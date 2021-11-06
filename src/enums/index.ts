@@ -9,3 +9,4 @@ export * from './timelinefilter-type.enum';
 export * from './visibility-type.enum';
 export * from './report-status-type.enum';
 export * from './reference-type.enum';
+export * from './report-type.enum';
