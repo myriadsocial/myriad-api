@@ -15,6 +15,7 @@ import {People, PeopleWithRelations} from './people.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
 import {MentionUser} from './mention-user.model';
+import {UserWithRelations} from '.';
 
 @model({
   settings: {
@@ -217,6 +218,7 @@ export class Post extends Entity {
 export interface PostRelations {
   // describe navigational properties here
   people?: PeopleWithRelations;
+  user?: UserWithRelations;
 }
 
 export type PostWithRelations = Post & PostRelations;
