@@ -1,5 +1,5 @@
-import {service} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {service, intercept} from '@loopback/core';
+import {AnyObject, repository} from '@loopback/repository';
 import {
   response,
   post,
@@ -9,10 +9,10 @@ import {
   HttpErrors,
 } from '@loopback/rest';
 import {ReferenceType, ReportStatusType, ReportType} from '../enums';
+import {ReportInterceptor} from '../interceptors';
 import {Report, ReportDetail} from '../models';
 import {
   ReportRepository,
-  UserReportRepository,
   PostRepository,
   CommentRepository,
   UserRepository,
@@ -23,8 +23,6 @@ export class UserReportController {
   constructor(
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
-    @repository(UserReportRepository)
-    protected userReportRepository: UserReportRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
     @repository(CommentRepository)
@@ -35,6 +33,7 @@ export class UserReportController {
     protected notificationService: NotificationService,
   ) {}
 
+  @intercept(ReportInterceptor.BINDING_KEY)
   @post('/users/{id}/reports')
   @response(200, {
     description: 'Report model instance',
@@ -59,9 +58,142 @@ export class UserReportController {
     reportDetail: ReportDetail,
   ): Promise<Report> {
     // TODO: Added notification service when report a post or a user
-    const {referenceId, referenceType, description, type} = reportDetail;
-    const report = await this.getReport(referenceId, referenceType, type, id);
+    return this.getReport(id, reportDetail);
+  }
 
+  async getReport(id: string, reportDetail: ReportDetail): Promise<Report> {
+    const {referenceId, referenceType, type} = reportDetail;
+    const reported = await this.validateReporter(
+      referenceId,
+      referenceType,
+      id,
+      type,
+    );
+
+    let report = await this.reportRepository.findOne({
+      where: {
+        referenceId,
+        referenceType,
+        type,
+      },
+    });
+
+    if (!report) {
+      const reportedDetail = this.getReportedDetail(reported, referenceType);
+
+      report = await this.reportRepository.create({
+        reportedDetail,
+        referenceType,
+        referenceId,
+        type,
+      });
+    }
+
+    return this.updateReportStatus(report);
+  }
+
+  async validateReporter(
+    referenceId: string,
+    referenceType: ReferenceType,
+    id: string,
+    type: ReportType,
+  ): Promise<AnyObject> {
+    if (referenceType === ReferenceType.POST) {
+      if (!type) {
+        throw new HttpErrors.UnprocessableEntity('Type cannot be empty');
+      }
+
+      const foundPost = await this.postRepository.findById(referenceId, {
+        include: ['user'],
+      });
+
+      if (foundPost.createdBy === id) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You cannot report your own post',
+        );
+      }
+
+      return foundPost;
+    }
+
+    if (referenceType === ReferenceType.COMMENT) {
+      if (!type) {
+        throw new HttpErrors.UnprocessableEntity('Type cannot be empty');
+      }
+
+      const comment = await this.commentRepository.findById(referenceId, {
+        include: ['user'],
+      });
+
+      if (comment.userId === id) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You cannot report your own comment',
+        );
+      }
+
+      return comment;
+    }
+
+    if (referenceType === ReferenceType.USER) {
+      if (type) {
+        throw new HttpErrors.UnprocessableEntity('Type cannot be filled');
+      }
+
+      if (referenceId === id) {
+        throw new HttpErrors.UnprocessableEntity('You cannot report yourself');
+      }
+
+      return this.userRepository.findById(referenceId);
+    }
+
+    return {};
+  }
+
+  getReportedDetail(
+    reported: AnyObject,
+    referenceType: ReferenceType,
+  ): AnyObject {
+    if (referenceType === ReferenceType.POST) {
+      return {
+        title: reported.title,
+        text: reported.text,
+        platform: reported.platform,
+        user: {
+          id: reported.user?.id,
+          name: reported.user?.name,
+          username: reported.user?.username,
+          profilePictureURL: reported.user?.profilePictureURL,
+          createdAt: reported.user?.createdAt,
+        },
+      };
+    }
+
+    if (referenceType === ReferenceType.COMMENT) {
+      return {
+        text: reported.text,
+        postId: reported.postId,
+        user: {
+          id: reported.user?.id,
+          name: reported.user?.name,
+          username: reported.user?.username,
+          profilePictureURL: reported.user?.profilePictureURL,
+          createdAt: reported.user?.createdAt,
+        },
+      };
+    }
+
+    return {
+      user: {
+        id: reported.id,
+        name: reported.name,
+        username: reported.username,
+        profilePictureURL: reported.profilePictureURL,
+        createdAt: reported.createdAt,
+      },
+    };
+  }
+
+  updateReportStatus(report: Report): Report {
     switch (report.status) {
       case ReportStatusType.PENDING:
         break;
@@ -86,141 +218,6 @@ export class UserReportController {
       }
     }
 
-    await this.userReportRepository.create({
-      referenceType,
-      description,
-      reportedBy: id,
-      reportId: report.id,
-    });
-
-    const {count} = await this.userReportRepository.count({
-      reportId: report.id?.toString(),
-    });
-
-    await this.reportRepository.updateById(report.id, {totalReported: count});
-
-    return Object.assign(report, {totalReported: count});
-  }
-
-  async getReport(
-    referenceId: string,
-    referenceType: ReferenceType,
-    type: ReportType,
-    id: string,
-  ): Promise<Report> {
-    await this.validateReporter(referenceId, referenceType, id, type);
-
-    let report = await this.reportRepository.findOne({
-      where: {
-        referenceId,
-        referenceType,
-        type,
-      },
-    });
-
-    if (!report) {
-      let reportedDetail = null;
-
-      if (referenceType === ReferenceType.POST) {
-        const post = await this.postRepository.findById(referenceId, {
-          include: ['user'],
-        });
-
-        reportedDetail = {
-          title: post.title,
-          text: post.text,
-          platform: post.platform,
-          user: {
-            id: post.user?.id,
-            name: post.user?.name,
-            username: post.user?.username,
-            profilePictureURL: post.user?.profilePictureURL,
-            createdAt: post.user?.createdAt,
-          },
-        };
-      } else if (referenceType === ReferenceType.COMMENT) {
-        const comment = await this.commentRepository.findById(referenceId, {
-          include: ['user'],
-        });
-
-        reportedDetail = {
-          text: comment.text,
-          postId: comment.postId,
-          user: {
-            id: comment.user?.id,
-            name: comment.user?.name,
-            username: comment.user?.username,
-            profilePictureURL: comment.user?.profilePictureURL,
-            createdAt: comment.user?.createdAt,
-          },
-        };
-      } else {
-        const user = await this.userRepository.findById(referenceId);
-
-        reportedDetail = {
-          user: {
-            id: user.id,
-            name: user.name,
-            username: user.username,
-            profilePictureURL: user.profilePictureURL,
-            createdAt: user.createdAt,
-          },
-        };
-      }
-
-      report = await this.reportRepository.create({
-        reportedDetail,
-        referenceType,
-        referenceId,
-        type,
-      });
-    }
-
     return report;
-  }
-
-  async validateReporter(
-    referenceId: string,
-    referenceType: ReferenceType,
-    id: string,
-    type: ReportType,
-  ): Promise<void> {
-    if (referenceType === ReferenceType.POST) {
-      if (!type) {
-        throw new HttpErrors.UnprocessableEntity('Type cannot be empty');
-      }
-
-      const {createdBy} = await this.postRepository.findById(referenceId);
-
-      if (createdBy === id) {
-        throw new HttpErrors.UnprocessableEntity(
-          'You cannot report your own post',
-        );
-      }
-    }
-
-    if (referenceType === ReferenceType.COMMENT) {
-      if (!type) {
-        throw new HttpErrors.UnprocessableEntity('Type cannot be empty');
-      }
-
-      const {userId} = await this.commentRepository.findById(referenceId);
-
-      if (userId === id) {
-        throw new HttpErrors.UnprocessableEntity(
-          'You cannot report your own comment',
-        );
-      }
-    }
-
-    if (referenceType === ReferenceType.USER) {
-      if (type) {
-        throw new HttpErrors.UnprocessableEntity('Type cannot be filled');
-      }
-
-      if (referenceId === id) {
-        throw new HttpErrors.UnprocessableEntity('You cannot report yourself');
-      }
-    }
   }
 }

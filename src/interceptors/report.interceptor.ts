@@ -65,11 +65,15 @@ export class ReportInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const methodName = invocationCtx.methodName as MethodType;
-    const {referenceId, referenceType, penaltyStatus} =
-      await this.reportRepository.findById(invocationCtx.args[0]);
 
-    switch (methodName) {
-      case MethodType.UPDATEBYID: {
+    if (
+      methodName === MethodType.UPDATEBYID ||
+      methodName === MethodType.RESTORE
+    ) {
+      const {referenceId, referenceType, penaltyStatus} =
+        await this.reportRepository.findById(invocationCtx.args[0]);
+
+      if (methodName === MethodType.UPDATEBYID) {
         const report: Report = invocationCtx.args[1];
 
         await this.updateReport(
@@ -79,11 +83,9 @@ export class ReportInterceptor implements Provider<Interceptor> {
           invocationCtx,
           penaltyStatus,
         );
-
-        break;
       }
 
-      case MethodType.RESTORE: {
+      if (methodName === MethodType.RESTORE) {
         await this.restoreDocument(
           invocationCtx.args[0],
           referenceId,
@@ -95,6 +97,26 @@ export class ReportInterceptor implements Provider<Interceptor> {
     // Add pre-invocation logic here
     const result = await next();
     // Add post-invocation logic here
+
+    if (methodName === MethodType.CREATE) {
+      const reportDetail = invocationCtx.args[1];
+
+      await this.userReportRepository.create({
+        referenceType: reportDetail.referenceType,
+        description: reportDetail.description,
+        reportedBy: invocationCtx.args[0],
+        reportId: result.id,
+      });
+
+      const {count} = await this.userReportRepository.count({
+        reportId: result.id.toString(),
+      });
+
+      await this.reportRepository.updateById(result.id, {totalReported: count});
+
+      return Object.assign(result, {totalReported: count});
+    }
+
     return result;
   }
 
@@ -121,6 +143,10 @@ export class ReportInterceptor implements Provider<Interceptor> {
 
       case ReferenceType.USER:
         await this.userRepository.updateById(referenceId, <any>where);
+        break;
+
+      default:
+        throw new HttpErrors.UnprocessableEntity('ReferenceId not found!');
     }
 
     await this.userReportRepository.deleteAll({
