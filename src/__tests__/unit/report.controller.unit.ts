@@ -6,23 +6,13 @@ import {
   toJSON,
 } from '@loopback/testlab';
 import {ReportController} from '../../controllers';
-import {ReferenceType} from '../../enums';
+import {ReferenceType, ReportType} from '../../enums';
 import {Report} from '../../models';
-import {
-  PostRepository,
-  ReportRepository,
-  UserReportRepository,
-  UserRepository,
-  CommentRepository,
-} from '../../repositories';
+import {ReportRepository} from '../../repositories';
 import {givenReport} from '../helpers';
 
 describe('ReportController', () => {
   let reportRepository: StubbedInstanceWithSinonAccessor<ReportRepository>;
-  let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
-  let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
-  let userReportRepository: StubbedInstanceWithSinonAccessor<UserReportRepository>;
-  let commentRepository: StubbedInstanceWithSinonAccessor<CommentRepository>;
   let controller: ReportController;
   let aReportWithId: Report;
   let aListOfReports: Report[];
@@ -86,18 +76,11 @@ describe('ReportController', () => {
         id: '2',
         referenceType: ReferenceType.POST,
         referenceId: '2',
-        type: 'other',
+        type: ReportType.ABUSIVE,
         totalReported: 1,
-        postId: '2',
       }),
     ] as Report[];
 
-    controller = new ReportController(
-      reportRepository,
-      userReportRepository,
-      userRepository,
-      postRepository,
-      commentRepository,
-    );
+    controller = new ReportController(reportRepository);
   }
 });

@@ -1,7 +1,7 @@
-import {AnyObject, EntityNotFoundError} from '@loopback/repository';
+import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
-import {ReferenceType, ReportStatusType} from '../../enums';
+import {ReferenceType, ReportStatusType, ReportType} from '../../enums';
 import {Post, Report, User} from '../../models';
 import {
   PostRepository,
@@ -52,8 +52,7 @@ describe('ReportApplication', () => {
       persistedReport = await givenReportInstance(reportRepository, {
         referenceType: ReferenceType.POST,
         referenceId: post.id,
-        type: 'other',
-        postId: post.id,
+        type: ReportType.ABUSIVE,
       });
     });
 
@@ -65,7 +64,6 @@ describe('ReportApplication', () => {
       const expected = toJSON(persistedReport);
       expect(result.body).to.deepEqual({
         ...expected,
-        reportedPost: toJSON(post),
       });
     });
 
@@ -109,37 +107,17 @@ describe('ReportApplication', () => {
         id: '0x06cc7ed22ebd12ccd88fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       });
 
-      const newReports = await Promise.all([
+      persistedReports = await Promise.all([
         givenReportInstance(reportRepository, {
           referenceType: ReferenceType.POST,
           referenceId: post.id,
-          type: 'other',
-          postId: post.id,
+          type: ReportType.ABUSIVE,
         }),
         givenReportInstance(reportRepository, {
           referenceType: ReferenceType.USER,
           referenceId: user.id,
-          userId: user.id,
         }),
       ]);
-
-      persistedReports = newReports.map((newReport: Partial<Report>) => {
-        if (newReport.referenceType === ReferenceType.POST) {
-          delete newReport.postId;
-
-          return {
-            ...newReport,
-            reportedPost: post,
-          };
-        }
-
-        delete newReport.userId;
-
-        return {
-          ...newReport,
-          reportedUser: user,
-        };
-      }) as AnyObject as Report[];
     });
 
     it('finds all reports', async () => {
@@ -153,18 +131,18 @@ describe('ReportApplication', () => {
         {
           referenceId: post.id,
           referenceType: ReferenceType.POST,
-          type: 'child',
-          postId: post.id,
+          type: ReportType.CHILDEXPLOITATION,
         },
       );
 
-      delete reportInProgress.postId;
-
       await client
         .get('/reports')
-        .query('filter=' + JSON.stringify({where: {type: 'child'}}))
+        .query(
+          'filter=' +
+            JSON.stringify({where: {type: ReportType.CHILDEXPLOITATION}}),
+        )
         .expect(200, {
-          data: [toJSON({...reportInProgress, reportedPost: post})],
+          data: [toJSON({...reportInProgress})],
           meta: {
             currentPage: 1,
             itemsPerPage: 1,
