@@ -41,8 +41,11 @@ describe('UserReportApplication', () => {
   });
 
   it('creates a report', async () => {
-    const reportDetail = givenReportDetail();
     const user = await givenUserInstance(userRepository);
+    const reportedUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+    });
+    const reportDetail = givenReportDetail({referenceId: reportedUser.id});
     const response = await client
       .post(`/users/${user.id}/reports`)
       .send(reportDetail)
@@ -55,6 +58,13 @@ describe('UserReportApplication', () => {
     expect(response.body).to.containDeep({
       referenceType: reportDetail.referenceType,
       referenceId: reportDetail.referenceId,
+    });
+
+    const [userReportesult] = await userReportRepository.find();
+    expect(userReportesult).to.containEql({
+      reportedBy: user.id,
+      reportId: response.body.id,
+      description: reportDetail.description,
     });
   });
 

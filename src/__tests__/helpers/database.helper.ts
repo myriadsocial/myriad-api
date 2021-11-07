@@ -92,9 +92,6 @@ export async function givenRepositories(testdb: any) {
     new CommentLinkRepository(testdb);
   const reportRepository: ReportRepository = new ReportRepository(
     testdb,
-    async () => userRepository,
-    async () => postRepository,
-    async () => commentRepository,
     async () => userReportRepository,
   );
   const userReportRepository: UserReportRepository = new UserReportRepository(
