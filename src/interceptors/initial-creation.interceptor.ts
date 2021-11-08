@@ -167,8 +167,10 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
   ): Promise<void> {
     switch (className) {
       case ControllerType.USER: {
+        await this.userRepository.accountSetting(result.id).create({});
+        await this.userRepository.notificationSetting(result.id).create({});
         await this.currencyService.defaultCurrency(result.id);
-        await this.currencyService.defaultAcalaTips(result.id);
+        await this.currencyService.defaultAcalaTips(result.id); // TODO: removed default acala tips
         return;
       }
 
