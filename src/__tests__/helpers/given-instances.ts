@@ -5,14 +5,17 @@ import {
   NotificationType,
   PlatformType,
   SectionType,
+  AccountSettingType,
 } from '../../enums';
 import {
+  AccountSetting,
   ActivityLog,
   Comment,
   Currency,
   Experience,
   Friend,
   Notification,
+  NotificationSetting,
   People,
   Post,
   Report,
@@ -29,12 +32,14 @@ import {
 } from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
+  AccountSettingRepository,
   ActivityLogRepository,
   CommentRepository,
   CurrencyRepository,
   ExperienceRepository,
   FriendRepository,
   NotificationRepository,
+  NotificationSettingRepository,
   PeopleRepository,
   PostRepository,
   ReportRepository,
@@ -652,4 +657,46 @@ export function givenReportDetail(reportDetail?: Partial<ReportDetail>) {
     reportDetail,
   );
   return new ReportDetail(data);
+}
+
+export function givenNotificationSetting(
+  notificationSetting?: Partial<NotificationSetting>,
+) {
+  const data = Object.assign(
+    {
+      comments: true,
+      mentions: true,
+      friendRequests: true,
+      tips: true,
+    },
+    notificationSetting,
+  );
+  return new NotificationSetting(data);
+}
+
+export async function givenNotificationSettingInstance(
+  notificationSettingRepository: NotificationSettingRepository,
+  notificationSetting?: Partial<NotificationSetting>,
+) {
+  return notificationSettingRepository.create(
+    givenNotificationSetting(notificationSetting),
+  );
+}
+
+export function givenAccountSetting(accountSetting?: Partial<AccountSetting>) {
+  const data = Object.assign(
+    {
+      accountPrivacy: AccountSettingType.PUBLIC,
+      socialMediaPrivacy: AccountSettingType.PUBLIC,
+    },
+    accountSetting,
+  );
+  return new AccountSetting(data);
+}
+
+export async function givenAccountSettingInstance(
+  accountSettingRepository: AccountSettingRepository,
+  accountSetting?: Partial<AccountSetting>,
+) {
+  return accountSettingRepository.create(givenAccountSetting(accountSetting));
 }
