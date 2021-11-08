@@ -1,4 +1,4 @@
-import {Entity, hasMany, model, property} from '@loopback/repository';
+import {Entity, hasMany, model, property, hasOne} from '@loopback/repository';
 import {DefaultCurrencyType} from '../enums';
 import {UserMetric} from '../interfaces';
 import {ActivityLog} from './activity-log.model';
@@ -7,6 +7,8 @@ import {Experience} from './experience.model';
 import {Friend} from './friend.model';
 import {UserCurrency} from './user-currency.model';
 import {UserExperience} from './user-experience.model';
+import {AccountSetting} from './account-setting.model';
+import {NotificationSetting} from './notification-setting.model';
 
 @model({
   settings: {
@@ -192,6 +194,12 @@ export class User extends Entity {
 
   @hasMany(() => ActivityLog)
   activityLogs: ActivityLog[];
+
+  @hasOne(() => AccountSetting)
+  accountSetting: AccountSetting;
+
+  @hasOne(() => NotificationSetting)
+  notificationSetting: NotificationSetting;
 
   constructor(data?: Partial<User>) {
     super(data);
