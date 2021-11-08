@@ -16,7 +16,7 @@ export class UrlUtils {
     return socialMediaURL
       ? socialMediaURL
           .replace(/(https?:\/\/)?(www.)?/i, '')
-          .replace(new RegExp(/user\/|u\/|r\//), '')
+          .replace(new RegExp(/\/user\/|\/u\/|\/r\//), '/')
           .split('/')
       : [];
   }
