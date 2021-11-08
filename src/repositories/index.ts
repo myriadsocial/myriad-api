@@ -22,3 +22,5 @@ export * from './comment-link.repository';
 export * from './report.repository';
 export * from './user-report.repository';
 export * from './exchange-rate.repository';
+export * from './account-setting.repository';
+export * from './notification-setting.repository';
