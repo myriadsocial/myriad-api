@@ -7,8 +7,11 @@ import {
   FriendRepository,
   UserCurrencyRepository,
   UserRepository,
+  AccountSettingRepository,
+  NotificationSettingRepository,
 } from '../../repositories';
 import {
+  givenAccountSettingRepository,
   givenActivityLogInstance,
   givenActivityLogRepository,
   givenCurrencyInstance,
@@ -16,6 +19,7 @@ import {
   givenFriendInstance,
   givenFriendRepository,
   givenMultipleUserInstances,
+  givenNotificationSettingRepository,
   givenUser,
   givenUserCurrencyInstance,
   givenUserCurrencyRepository,
@@ -35,6 +39,8 @@ describe('UserApplication', function () {
   let currencyRepository: CurrencyRepository;
   let friendRepository: FriendRepository;
   let activityLogRepository: ActivityLogRepository;
+  let notificationSettingRepository: NotificationSettingRepository;
+  let accountSettingRepository: AccountSettingRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -48,6 +54,10 @@ describe('UserApplication', function () {
     currencyRepository = await givenCurrencyRepository(app);
     friendRepository = await givenFriendRepository(app);
     activityLogRepository = await givenActivityLogRepository(app);
+    notificationSettingRepository = await givenNotificationSettingRepository(
+      app,
+    );
+    accountSettingRepository = await givenAccountSettingRepository(app);
   });
 
   beforeEach(async () => {
@@ -56,6 +66,8 @@ describe('UserApplication', function () {
     await userCurrencyRepository.deleteAll();
     await friendRepository.deleteAll();
     await activityLogRepository.deleteAll();
+    await notificationSettingRepository.deleteAll();
+    await accountSettingRepository.deleteAll();
   });
 
   it('creates a user', async () => {
@@ -64,6 +76,22 @@ describe('UserApplication', function () {
     expect(response.body).to.containDeep(user);
     const result = await userRepository.findById(response.body.id);
     expect(result).to.containDeep(user);
+  });
+
+  it('creates a user with default settings', async () => {
+    const user = givenUser();
+    const response = await client.post('/users').send(user);
+    const createdUser = await userRepository.findById(response.body.id, {
+      include: ['notificationSetting', 'accountSetting'],
+    });
+    const notificationSetting = await userRepository
+      .notificationSetting(response.body.id)
+      .get();
+    const accountSetting = await userRepository
+      .accountSetting(response.body.id)
+      .get();
+    expect(createdUser.accountSetting).to.containDeep(accountSetting);
+    expect(createdUser.notificationSetting).to.containDeep(notificationSetting);
   });
 
   it('returns 422 when creates a user with same id', async () => {
