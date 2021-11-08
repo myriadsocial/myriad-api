@@ -4,6 +4,7 @@ import {
   HasManyRepositoryFactory,
   HasManyThroughRepositoryFactory,
   repository,
+  HasOneRepositoryFactory,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {
@@ -15,6 +16,8 @@ import {
   UserCurrency,
   UserExperience,
   UserRelations,
+  AccountSetting,
+  NotificationSetting,
 } from '../models';
 import {ActivityLogRepository} from './activity-log.repository';
 import {CurrencyRepository} from './currency.repository';
@@ -23,6 +26,8 @@ import {FriendRepository} from './friend.repository';
 import {UserCurrencyRepository} from './user-currency.repository';
 import {UserExperienceRepository} from './user-experience.repository';
 import {UserSocialMediaRepository} from './user-social-media.repository';
+import {AccountSettingRepository} from './account-setting.repository';
+import {NotificationSettingRepository} from './notification-setting.repository';
 
 export class UserRepository extends DefaultCrudRepository<
   User,
@@ -53,6 +58,16 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
+  public readonly accountSetting: HasOneRepositoryFactory<
+    AccountSetting,
+    typeof User.prototype.id
+  >;
+
+  public readonly notificationSetting: HasOneRepositoryFactory<
+    NotificationSetting,
+    typeof User.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
@@ -69,8 +84,28 @@ export class UserRepository extends DefaultCrudRepository<
     protected userExperienceRepositoryGetter: Getter<UserExperienceRepository>,
     @repository.getter('ActivityLogRepository')
     protected activityLogRepositoryGetter: Getter<ActivityLogRepository>,
+    @repository.getter('AccountSettingRepository')
+    protected accountSettingRepositoryGetter: Getter<AccountSettingRepository>,
+    @repository.getter('NotificationSettingRepository')
+    protected notificationSettingRepositoryGetter: Getter<NotificationSettingRepository>,
   ) {
     super(User, dataSource);
+    this.notificationSetting = this.createHasOneRepositoryFactoryFor(
+      'notificationSetting',
+      notificationSettingRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'notificationSetting',
+      this.notificationSetting.inclusionResolver,
+    );
+    this.accountSetting = this.createHasOneRepositoryFactoryFor(
+      'accountSetting',
+      accountSettingRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'accountSetting',
+      this.accountSetting.inclusionResolver,
+    );
     this.friends = this.createHasManyRepositoryFactoryFor(
       'friends',
       friendRepositoryGetter,
