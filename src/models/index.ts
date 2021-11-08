@@ -27,3 +27,5 @@ export * from './report.model';
 export * from './user-report.model';
 export * from './report-detail.model';
 export * from './exchange-rate.model';
+export * from './account-setting.model';
+export * from './notification-setting.model';
