@@ -13,6 +13,7 @@ import {
   CommentRepository,
   FriendRepository,
   NotificationRepository,
+  NotificationSettingRepository,
   PostRepository,
   ReportRepository,
   UserRepository,
@@ -37,11 +38,19 @@ export class NotificationService {
     public reportRepository: ReportRepository,
     @repository(CommentRepository)
     public commentRepository: CommentRepository,
+    @repository(NotificationSettingRepository)
+    public notificationSettingRepository: NotificationSettingRepository,
     @service(FCMService)
     public fcmService: FCMService,
   ) {}
 
   async sendFriendRequest(from: string, to: string): Promise<boolean> {
+    const {friendRequests} = await this.notificationSettingRepository.findById(
+      to,
+    );
+
+    if (!friendRequests) return false;
+
     const fromUser = await this.userRepository.findById(from);
     const toUser = await this.userRepository.findById(to);
 
@@ -124,13 +133,19 @@ export class NotificationService {
     const title = 'New Comment';
     const body = fromUser.name + ' ' + notification.message;
 
-    let toUser = null;
+    let toUser: User = new User();
 
     // Notification comment to comment
     if (comment.type === ReferenceType.COMMENT) {
       const toComment = await this.commentRepository.findById(
         comment.referenceId,
       );
+      const {comments} = await this.notificationSettingRepository.findById(
+        toComment.userId,
+      );
+
+      if (!comments) return false;
+
       toUser = await this.userRepository.findById(toComment.userId);
       notification.to = toUser.id;
 
@@ -161,6 +176,15 @@ export class NotificationService {
     }
 
     if (toUsers.length === 0) return false;
+    if (!toUser) return false;
+
+    const {comments} = await this.notificationSettingRepository.findById(
+      toUser.id,
+    );
+
+    if (!comments) {
+      toUsers = toUsers.filter(userId => userId !== toUser.id);
+    }
 
     const notifications = toUsers.map(to => {
       const updatedNotification = {
@@ -396,14 +420,26 @@ export class NotificationService {
 
     if (toUsers.length === 0) return false;
 
-    const notifications = toUsers.map(toUser => {
-      const updatedNotification = {
-        ...notification,
-        to: toUser.id,
-      };
+    const notifications = toUsers
+      .filter(async user => {
+        try {
+          const {mentions: mentionUsers} =
+            await this.notificationSettingRepository.findById(user.id);
 
-      return new Notification(updatedNotification);
-    });
+          if (!mentionUsers) return false;
+          return true;
+        } catch {
+          // ignore
+        }
+      })
+      .map(toUser => {
+        const updatedNotification = {
+          ...notification,
+          to: toUser.id,
+        };
+
+        return new Notification(updatedNotification);
+      });
 
     const createdNotification = await this.notificationRepository.createAll(
       notifications,
@@ -423,6 +459,10 @@ export class NotificationService {
     const {from, to, type, referenceId} = transaction;
     const fromUser = await this.userRepository.findById(from);
     const toUser = await this.userRepository.findById(to);
+
+    const {tips} = await this.notificationSettingRepository.findById(toUser.id);
+
+    if (!tips) return false;
 
     const notification = new Notification();
 
@@ -506,6 +546,10 @@ export class NotificationService {
 
     const notification = new Notification();
     const toUser = await this.userRepository.findById(to);
+
+    const {tips} = await this.notificationSettingRepository.findById(toUser.id);
+
+    if (!tips) return false;
 
     notification.type = NotificationType.USER_CLAIM_TIPS;
     notification.from = from;
