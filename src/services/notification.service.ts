@@ -166,6 +166,8 @@ export class NotificationService {
 
       toUser = await this.userRepository.findById(toComment.userId);
       notification.to = toUser.id;
+      notification.additionalReferenceId =
+        await this.getCommentAdditionalReferenceIds(comment.id ?? '');
 
       await this.notificationRepository.create(notification);
       await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
@@ -544,6 +546,7 @@ export class NotificationService {
     from: string,
     to: string,
     mentions: MentionUser[],
+    type?: ReferenceType,
   ): Promise<boolean> {
     if (mentions.length === 0) return false;
 
@@ -553,6 +556,11 @@ export class NotificationService {
     notification.from = fromUser.id;
     notification.referenceId = to;
     notification.message = 'mentioned you';
+
+    if (type === ReferenceType.COMMENT) {
+      notification.additionalReferenceId =
+        await this.getCommentAdditionalReferenceIds(to);
+    }
 
     // FCM messages
     const title = 'New Mention';
