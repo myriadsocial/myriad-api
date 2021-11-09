@@ -6,6 +6,7 @@ import {Comment, Notification, People, Post, User} from '../../models';
 import {
   CommentRepository,
   NotificationRepository,
+  NotificationSettingRepository,
   PeopleRepository,
   PostRepository,
   TransactionRepository,
@@ -18,6 +19,8 @@ import {
   givenCommentRepository,
   givenMultipleCommentInstances,
   givenNotificationRepository,
+  givenNotificationSettingInstance,
+  givenNotificationSettingRepository,
   givenPeopleInstance,
   givenPeopleRepository,
   givenPostInstance,
@@ -39,6 +42,7 @@ describe('CommentApplication', function () {
   let postRepository: PostRepository;
   let transactionRepository: TransactionRepository;
   let notificationRepository: NotificationRepository;
+  let notificationSettingRepository: NotificationSettingRepository;
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let user: User;
@@ -60,6 +64,9 @@ describe('CommentApplication', function () {
     notificationRepository = await givenNotificationRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
+    notificationSettingRepository = await givenNotificationSettingRepository(
+      app,
+    );
   });
 
   beforeEach(async () => {
@@ -70,6 +77,7 @@ describe('CommentApplication', function () {
     await notificationRepository.deleteAll();
     await peopleRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();
+    await notificationSettingRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -127,6 +135,31 @@ describe('CommentApplication', function () {
       updatedAt: notification?.updatedAt,
       deletedAt: undefined,
     });
+    expect(expected).to.containDeep(notification);
+  });
+
+  it('does not create a notification when notification setting for comments is off', async () => {
+    await givenNotificationSettingInstance(notificationSettingRepository, {
+      userId: user.id,
+      comments: false,
+    });
+    await givenNotificationSettingInstance(notificationSettingRepository, {
+      userId: otherUser.id,
+      comments: false,
+    });
+
+    const comment = givenComment({
+      userId: user.id,
+      postId: post.id,
+      referenceId: post.id,
+      type: ReferenceType.POST,
+    });
+
+    const response = await client.post('/comments').send(comment).expect(200);
+    const notification = await notificationRepository.findOne({
+      where: {referenceId: response.body.id},
+    });
+    const expected = null;
     expect(expected).to.containDeep(notification);
   });
 
