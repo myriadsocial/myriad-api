@@ -45,11 +45,13 @@ export class NotificationService {
   ) {}
 
   async sendFriendRequest(from: string, to: string): Promise<boolean> {
-    const {friendRequests} = await this.notificationSettingRepository.findById(
-      to,
-    );
+    const notificationSetting =
+      await this.notificationSettingRepository.findOne({
+        where: {userId: to},
+      });
 
-    if (!friendRequests) return false;
+    if (notificationSetting && !notificationSetting.friendRequests)
+      return false;
 
     const fromUser = await this.userRepository.findById(from);
     const toUser = await this.userRepository.findById(to);
@@ -140,11 +142,12 @@ export class NotificationService {
       const toComment = await this.commentRepository.findById(
         comment.referenceId,
       );
-      const {comments} = await this.notificationSettingRepository.findById(
-        toComment.userId,
-      );
+      const notificationSetting =
+        await this.notificationSettingRepository.findOne({
+          where: {userId: toComment.userId},
+        });
 
-      if (!comments) return false;
+      if (notificationSetting && !notificationSetting.comments) return false;
 
       toUser = await this.userRepository.findById(toComment.userId);
       notification.to = toUser.id;
@@ -178,11 +181,12 @@ export class NotificationService {
     if (toUsers.length === 0) return false;
     if (!toUser) return false;
 
-    const {comments} = await this.notificationSettingRepository.findById(
-      toUser.id,
-    );
+    const notificationSetting =
+      await this.notificationSettingRepository.findOne({
+        where: {userId: toUser.id},
+      });
 
-    if (!comments) {
+    if (notificationSetting && !notificationSetting.comments) {
       toUsers = toUsers.filter(userId => userId !== toUser.id);
     }
 
@@ -423,10 +427,15 @@ export class NotificationService {
     const notifications = toUsers
       .filter(async user => {
         try {
-          const {mentions: mentionUsers} =
-            await this.notificationSettingRepository.findById(user.id);
+          const notificationSetting =
+            await this.notificationSettingRepository.findOne({
+              where: {
+                userId: user.id,
+              },
+            });
 
-          if (!mentionUsers) return false;
+          if (notificationSetting && !notificationSetting.mentions)
+            return false;
           return true;
         } catch {
           // ignore
@@ -460,9 +469,14 @@ export class NotificationService {
     const fromUser = await this.userRepository.findById(from);
     const toUser = await this.userRepository.findById(to);
 
-    const {tips} = await this.notificationSettingRepository.findById(toUser.id);
+    const notificationSetting =
+      await this.notificationSettingRepository.findOne({
+        where: {
+          userId: toUser.id,
+        },
+      });
 
-    if (!tips) return false;
+    if (notificationSetting && !notificationSetting.tips) return false;
 
     const notification = new Notification();
 
@@ -547,9 +561,14 @@ export class NotificationService {
     const notification = new Notification();
     const toUser = await this.userRepository.findById(to);
 
-    const {tips} = await this.notificationSettingRepository.findById(toUser.id);
+    const notificationSetting =
+      await this.notificationSettingRepository.findOne({
+        where: {
+          userId: toUser.id,
+        },
+      });
 
-    if (!tips) return false;
+    if (notificationSetting && !notificationSetting.tips) return false;
 
     notification.type = NotificationType.USER_CLAIM_TIPS;
     notification.from = from;
