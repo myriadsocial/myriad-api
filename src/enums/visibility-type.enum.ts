@@ -1,5 +1,5 @@
 export enum VisibilityType {
   PUBLIC = 'public',
-  FRIENDS = 'friends',
+  FRIEND = 'friend',
   PRIVATE = 'private',
 }
