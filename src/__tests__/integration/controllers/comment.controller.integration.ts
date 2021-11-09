@@ -5,6 +5,7 @@ import {
   CommentRepository,
   FriendRepository,
   NotificationRepository,
+  NotificationSettingRepository,
   PeopleRepository,
   PostRepository,
   ReportRepository,
@@ -39,6 +40,7 @@ describe('CommentControllerIntegration', () => {
   let notificationService: NotificationService;
   let fcmService: FCMService;
   let friendRepository: FriendRepository;
+  let notificationSettingRepository: NotificationSettingRepository;
   let reportRepository: ReportRepository;
 
   before(async () => {
@@ -52,6 +54,7 @@ describe('CommentControllerIntegration', () => {
       peopleRepository,
       friendRepository,
       reportRepository,
+      notificationSettingRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -64,6 +67,7 @@ describe('CommentControllerIntegration', () => {
       friendRepository,
       reportRepository,
       commentRepository,
+      notificationSettingRepository,
       fcmService,
     );
     controller = new CommentController(

@@ -6,6 +6,7 @@ import {
   CommentRepository,
   FriendRepository,
   NotificationRepository,
+  NotificationSettingRepository,
   PostRepository,
   ReportRepository,
   UserRepository,
@@ -36,6 +37,7 @@ describe('FriendControllerIntegration', () => {
   let notificationService: NotificationService;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let reportRepository: ReportRepository;
+  let notificationSettingRepository: NotificationSettingRepository;
   let metricService: MetricService;
   let friendService: FriendService;
   let fcmService: FCMService;
@@ -49,6 +51,7 @@ describe('FriendControllerIntegration', () => {
       notificationRepository,
       userSocialMediaRepository,
       userRepository,
+      notificationSettingRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -61,6 +64,7 @@ describe('FriendControllerIntegration', () => {
       friendRepository,
       reportRepository,
       commentRepository,
+      notificationSettingRepository,
       fcmService,
     );
     friendService = new FriendService(
