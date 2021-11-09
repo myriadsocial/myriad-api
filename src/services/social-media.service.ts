@@ -349,7 +349,7 @@ export class SocialMediaService {
       originPostId: textId,
       originCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
       title: redditPost.title,
-      text: text.trim(),
+      text: text.replace('&#x200B', '').trim(),
       url: `https://reddit.com/${textId}`,
       asset: asset,
       embeddedURL: embedded,
