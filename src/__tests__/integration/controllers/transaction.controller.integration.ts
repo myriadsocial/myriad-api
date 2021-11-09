@@ -5,6 +5,7 @@ import {
   CommentRepository,
   FriendRepository,
   NotificationRepository,
+  NotificationSettingRepository,
   PostRepository,
   ReportRepository,
   TransactionRepository,
@@ -32,6 +33,7 @@ describe('TransactionControllerIntegration', () => {
   let friendRepository: FriendRepository;
   let reportRepository: ReportRepository;
   let commentRepository: CommentRepository;
+  let notificationSettingRepository: NotificationSettingRepository;
   let fcmService: FCMService;
   let notificationService: NotificationService;
   let controller: TransactionController;
@@ -45,6 +47,7 @@ describe('TransactionControllerIntegration', () => {
       userSocialMediaRepository,
       friendRepository,
       commentRepository,
+      notificationSettingRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -57,6 +60,7 @@ describe('TransactionControllerIntegration', () => {
       friendRepository,
       reportRepository,
       commentRepository,
+      notificationSettingRepository,
       fcmService,
     );
     controller = new TransactionController(
