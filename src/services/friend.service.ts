@@ -119,7 +119,7 @@ export class FriendService {
         {
           or: [
             {
-              visibility: VisibilityType.FRIENDS,
+              visibility: VisibilityType.FRIEND,
             },
             {
               visibility: VisibilityType.PUBLIC,
