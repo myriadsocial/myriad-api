@@ -5,7 +5,7 @@ import {
   model,
   property,
 } from '@loopback/repository';
-import {UserWithRelations, Vote} from '.';
+import {MentionUser, UserWithRelations, Vote} from '.';
 import {ReferenceType, SectionType} from '../enums';
 import {Metric} from '../interfaces';
 import {CommentLink} from './comment-link.model';
@@ -36,6 +36,14 @@ export class Comment extends Entity {
     required: true,
   })
   text: string;
+
+  @property({
+    type: 'array',
+    itemType: 'object',
+    required: false,
+    default: [],
+  })
+  mentions: MentionUser[];
 
   @property({
     type: 'string',
