@@ -19,7 +19,12 @@ import {
   UserCurrencyRepository,
   UserRepository,
 } from '../repositories';
-import {CurrencyService, MetricService, TagService} from '../services';
+import {
+  CurrencyService,
+  FriendService,
+  MetricService,
+  TagService,
+} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -48,6 +53,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected currencyService: CurrencyService,
     @service(TagService)
     protected tagService: TagService,
+    @service(FriendService)
+    protected friendService: FriendService,
   ) {}
 
   /**
@@ -175,6 +182,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       case ControllerType.USER: {
         await this.userRepository.accountSetting(result.id).create({});
         await this.userRepository.notificationSetting(result.id).create({});
+        await this.friendService.defaultFriend(result.id);
         await this.currencyService.defaultCurrency(result.id);
         await this.currencyService.defaultAcalaTips(result.id); // TODO: removed default acala tips
         return;
