@@ -193,6 +193,8 @@ export class NotificationService {
     if (toUsers.length === 0) return false;
     if (!toUser) return false;
 
+    notification.additionalReferenceId = [{postId: comment.postId}]
+
     const notificationSetting =
       await this.notificationSettingRepository.findOne({
         where: {userId: toUser.id},
@@ -235,7 +237,81 @@ export class NotificationService {
     return true;
   }
 
-  async sendReportResponstToReporters() {}
+  async sendReportResponseToReporters(reportId: string, type: ReferenceType, referenceId: string): Promise<boolean> {
+    const reporters = await this.userReportReportRepository.find({where: {reportId: reportId}});
+
+    if (reporters.length === 0) return false;
+
+    const notification = new Notification();
+
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
+
+    const mnemonic = config.MYRIAD_MNEMONIC;
+    const pair = getKeyring().addFromMnemonic(mnemonic);
+
+    notification.from = getHexPublicKey(pair)
+    notification.message = 'approved your report';
+
+    switch (type) {
+      case ReferenceType.USER: {
+        notification.type = NotificationType.USER_BANNED;
+        notification.referenceId = referenceId;
+        break;
+      }
+
+      case ReferenceType.POST: {
+        notification.type = NotificationType.POST_REMOVED;
+        notification.referenceId = referenceId;
+        break;
+      }
+
+      case ReferenceType.COMMENT: {
+        notification.type = NotificationType.COMMENT_REMOVED;
+        notification.referenceId = referenceId;
+        notification.additionalReferenceId = await this.getCommentAdditionalReferenceIds(referenceId);
+        break;
+      }
+
+      default:
+        return false;
+    }
+
+    const notifications = reporters.map(reporter => {
+      const updatedNotification = {
+        ...notification,
+        to: reporter.reportedBy,
+      };
+
+      return new Notification(updatedNotification);
+    });
+
+    const createdNotification = await this.notificationRepository.createAll(
+      notifications,
+    );
+    if (createdNotification == null) return false;
+
+    const users = await this.userRepository.find({
+      where: {
+        or: reporters.map(reporter => {
+          return {
+            id: reporter.reportedBy,
+          };
+        }),
+      },
+    });
+
+    await Promise.all(
+      users.map(to => {
+        return this.fcmService.sendNotification(
+          to.fcmTokens,
+          'Report Approved',
+          'Myriad Official ' + notification.message,
+        );
+      }),
+    );
+
+    return true;
+  }
 
   async sendReportResponseToUser(report: Report): Promise<boolean> {
     const {referenceId, referenceType, status} = report;
@@ -249,6 +325,8 @@ export class NotificationService {
 
     const notification = new Notification();
 
+    notification.from = getHexPublicKey(pair);
+
     switch (referenceType) {
       case ReferenceType.COMMENT: {
         notification.type = NotificationType.COMMENT_REMOVED;
@@ -258,7 +336,7 @@ export class NotificationService {
 
         const comment = await this.commentRepository.findById(referenceId);
 
-        notification.from = getHexPublicKey(pair);
+
         notification.to = comment.userId;
         notification.message = 'removed your comment';
 
@@ -271,14 +349,13 @@ export class NotificationService {
           'Myriad Official ' + notification.message,
         );
 
-        return true;
+        break;
       }
 
       case ReferenceType.POST: {
         notification.type = NotificationType.POST_REMOVED;
         notification.referenceId = referenceId;
         notification.message = 'removed your post';
-        notification.from = getHexPublicKey(pair);
 
         const post = await this.postRepository.findById(referenceId);
 
@@ -338,14 +415,13 @@ export class NotificationService {
           }),
         );
 
-        return true;
+        break;
       }
 
       case ReferenceType.USER: {
         notification.type = NotificationType.USER_BANNED;
         notification.referenceId = referenceId;
         notification.message = 'banned you';
-        notification.from = getHexPublicKey(pair);
         notification.to = referenceId;
 
         const user = await this.userRepository.findById(referenceId);
@@ -362,90 +438,6 @@ export class NotificationService {
       default:
         return false;
     }
-
-    return true;
-  }
-
-  async sendReport(
-    from: string,
-    to: string,
-    referenceType: ReferenceType,
-  ): Promise<boolean> {
-    let toUser = null;
-    let notificationType = null;
-    let message = null;
-
-    const fromUser = await this.userRepository.findById(from);
-
-    if (referenceType === ReferenceType.USER) {
-      toUser = await this.userRepository.findById(to);
-      notificationType = NotificationType.REPORT_USER;
-      message = 'reported you';
-    } else if (ReferenceType.POST) {
-      const post = await this.postRepository.findById(to);
-
-      toUser = await this.userRepository.findById(post.createdBy);
-      notificationType = NotificationType.REPORT_POST;
-      message = 'reported your post';
-    } else return false;
-
-    const notification = new Notification();
-    notification.type = notificationType;
-    notification.from = fromUser.id;
-    notification.to = toUser.id;
-    notification.referenceId = to;
-    notification.message = message;
-
-    await this.notificationRepository.create(notification);
-
-    const title = 'New Report';
-    const body = 'another user' + ' ' + notification.message;
-    await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
-
-    return true;
-  }
-
-  async sendUpdateReport(
-    referenceId: string,
-    type: ReferenceType,
-  ): Promise<boolean> {
-    const report = await this.reportRepository.findOne({
-      where: {
-        referenceId,
-        referenceType: type,
-      },
-    });
-
-    if (!report) return false;
-
-    const {referenceId: to, referenceType} = report;
-
-    let toUser = null;
-    let notificationType = null;
-    let message = null;
-
-    if (referenceType === ReferenceType.USER) {
-      toUser = await this.userRepository.findById(to);
-      notificationType = NotificationType.REPORT_USER;
-      message = 'your account has been suspended';
-    } else if (ReferenceType.POST) {
-      const post = await this.postRepository.findById(to);
-      toUser = await this.userRepository.findById(post.createdBy);
-      notificationType = NotificationType.REPORT_POST;
-      message = 'your post has been deleted';
-    } else return false;
-
-    const notification = new Notification();
-    notification.type = notificationType;
-    notification.to = toUser.id;
-    notification.referenceId = to;
-    notification.message = message;
-
-    await this.notificationRepository.create(notification);
-
-    const title = 'New Report';
-    const body = notification.message;
-    await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
 
     return true;
   }
