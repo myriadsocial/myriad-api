@@ -9,7 +9,11 @@ import {UserSocialMediaController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {UserSocialMedia} from '../../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../../repositories';
-import {NotificationService, SocialMediaService, UserSocialMediaService} from '../../services';
+import {
+  NotificationService,
+  SocialMediaService,
+  UserSocialMediaService,
+} from '../../services';
 import {givenUserSocialMedia} from '../helpers';
 
 describe('UserSocialMediaController', () => {
@@ -93,7 +97,7 @@ describe('UserSocialMediaController', () => {
     controller = new UserSocialMediaController(
       socialMediaService,
       userSocialMediaService,
-      notificationService
+      notificationService,
     );
   }
 });

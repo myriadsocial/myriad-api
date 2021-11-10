@@ -56,8 +56,19 @@ describe('UserSocialMediaControllerIntegration', function () {
   let controller: UserSocialMediaController;
 
   before(async () => {
-    ({userSocialMediaRepository, peopleRepository, userRepository, postRepository, notificationRepository, friendRepository, reportRepository, commentRepository, userReportRepository, notificationSettingRepository, userSocialMediaRepository} =
-      await givenRepositories(testdb));
+    ({
+      userSocialMediaRepository,
+      peopleRepository,
+      userRepository,
+      postRepository,
+      notificationRepository,
+      friendRepository,
+      reportRepository,
+      commentRepository,
+      userReportRepository,
+      notificationSettingRepository,
+      userSocialMediaRepository,
+    } = await givenRepositories(testdb));
   });
 
   before(givenRedditService);
@@ -92,7 +103,7 @@ describe('UserSocialMediaControllerIntegration', function () {
     controller = new UserSocialMediaController(
       socialMediaService,
       userSocialMediaService,
-      notificationService
+      notificationService,
     );
   });
 
