@@ -39,7 +39,7 @@
     "openapi-spec": "node ./dist/openapi-spec",
     "prestart": "yarn run rebuild",
     "start": "node -r source-map-support/register .",
-    "start:watch": "tsc-watch --target es2017 --outDir ./dist --onSuccess \"node .\"",
+    "start:watch": "tsc-watch --outDir ./dist --onSuccess \"node .\"",
     "start:docker": "node ."
   },
   "dependencies": {
