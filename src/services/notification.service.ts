@@ -11,7 +11,6 @@ import {
   Comment,
   MentionUser,
   Notification,
-  Report,
   Transaction,
   User,
   UserSocialMedia,
@@ -242,11 +241,10 @@ export class NotificationService {
     return true;
   }
 
-  async sendReportResponseToReporters(
-    reportId: string,
-    type: ReferenceType,
-    referenceId: string,
-  ): Promise<boolean> {
+  async sendReportResponseToReporters(reportId: string): Promise<boolean> {
+    const {referenceType, referenceId} = await this.reportRepository.findById(
+      reportId,
+    );
     const reporters = await this.userReportReportRepository.find({
       where: {reportId: reportId},
     });
@@ -263,7 +261,7 @@ export class NotificationService {
     notification.from = getHexPublicKey(pair);
     notification.message = 'approved your report';
 
-    switch (type) {
+    switch (referenceType) {
       case ReferenceType.USER: {
         notification.type = NotificationType.USER_BANNED;
         notification.referenceId = referenceId;
@@ -325,8 +323,9 @@ export class NotificationService {
     return true;
   }
 
-  async sendReportResponseToUser(report: Report): Promise<boolean> {
-    const {referenceId, referenceType, status} = report;
+  async sendReportResponseToUser(reportId: string): Promise<boolean> {
+    const {referenceId, referenceType, status} =
+      await this.reportRepository.findById(reportId);
 
     if (status !== ReportStatusType.REMOVED) return false;
 
