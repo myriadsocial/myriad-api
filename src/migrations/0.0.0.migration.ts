@@ -92,12 +92,12 @@ export class MigrationScript000 implements MigrationScript {
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
     await this.userRepository.deleteAll({
-      or: [{name: 'Myriad'}, {name: 'myriad'}],
+      name: {regexp: new RegExp('myriad', 'i')},
     });
 
     await Promise.all(
       users.map(async user => {
-        if (user.name === 'Myriad') {
+        if (user.name === 'Myriad Official') {
           const mnemonic = config.MYRIAD_MNEMONIC;
           const pair = getKeyring().addFromMnemonic(mnemonic);
 
@@ -106,10 +106,12 @@ export class MigrationScript000 implements MigrationScript {
 
         user.createdAt = new Date().toString();
         user.updatedAt = new Date().toString();
+
         user.username =
+          user.username ??
           user.name.replace(/\s+/g, '').toLowerCase() +
-          '.' +
-          Math.random().toString(36).substr(2, 9);
+            '.' +
+            Math.random().toString(36).substr(2, 9);
 
         return this.userRepository.create(user);
       }),
