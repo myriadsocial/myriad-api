@@ -8,7 +8,12 @@ import {
   requestBody,
   HttpErrors,
 } from '@loopback/rest';
-import {ReferenceType, ReportStatusType, ReportType} from '../enums';
+import {
+  PlatformType,
+  ReferenceType,
+  ReportStatusType,
+  ReportType,
+} from '../enums';
 import {ReportInterceptor} from '../interceptors';
 import {Report, ReportDetail} from '../models';
 import {
@@ -16,6 +21,7 @@ import {
   PostRepository,
   CommentRepository,
   UserRepository,
+  UserSocialMediaRepository,
 } from '../repositories';
 import {NotificationService} from '../services';
 
@@ -29,6 +35,8 @@ export class UserReportController {
     protected commentRepository: CommentRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(UserSocialMediaRepository)
+    protected userSocialMediaRepository: UserSocialMediaRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -57,7 +65,6 @@ export class UserReportController {
     })
     reportDetail: ReportDetail,
   ): Promise<Report> {
-    // TODO: Added notification service when report a post or a user
     return this.getReport(id, reportDetail);
   }
 
@@ -107,13 +114,33 @@ export class UserReportController {
         include: ['user'],
       });
 
-      if (foundPost.createdBy === id) {
-        throw new HttpErrors.UnprocessableEntity(
-          'You cannot report your own post',
-        );
-      }
+      if (foundPost.platform === PlatformType.MYRIAD) {
+        if (foundPost.createdBy === id) {
+          throw new HttpErrors.UnprocessableEntity(
+            'You cannot report your own post',
+          );
+        }
 
-      return foundPost;
+        return foundPost;
+      } else {
+        const userSocialMedia = await this.userSocialMediaRepository.findOne({
+          where: {
+            peopleId: foundPost.peopleId,
+          },
+        });
+
+        if (!userSocialMedia) {
+          throw new HttpErrors.UnprocessableEntity(
+            'You cannot report this post, because this post does not belong to any user!',
+          );
+        }
+
+        foundPost.user = await this.userRepository.findById(
+          userSocialMedia.userId,
+        );
+
+        return foundPost;
+      }
     }
 
     if (referenceType === ReferenceType.COMMENT) {

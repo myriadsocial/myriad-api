@@ -14,11 +14,15 @@ import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
 import {PaginationInterceptor} from '../interceptors';
 import {ReportInterceptor} from '../interceptors/report.interceptor';
+import {service} from '@loopback/core';
+import {NotificationService} from '../services';
 
 export class ReportController {
   constructor(
     @repository(ReportRepository)
     public reportRepository: ReportRepository,
+    @service(NotificationService)
+    public notificationService: NotificationService,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -95,6 +99,13 @@ export class ReportController {
     report: Partial<Report>,
   ): Promise<void> {
     await this.reportRepository.updateById(id, report);
+
+    try {
+      await this.notificationService.sendReportResponseToUser(id);
+      await this.notificationService.sendReportResponseToReporters(id);
+    } catch {
+      // ignore
+    }
   }
 
   @intercept(ReportInterceptor.BINDING_KEY)
