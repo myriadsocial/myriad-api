@@ -193,7 +193,7 @@ export class NotificationService {
     if (toUsers.length === 0) return false;
     if (!toUser) return false;
 
-    notification.additionalReferenceId = [{postId: comment.postId}]
+    notification.additionalReferenceId = [{postId: comment.postId}];
 
     const notificationSetting =
       await this.notificationSettingRepository.findOne({
@@ -237,8 +237,14 @@ export class NotificationService {
     return true;
   }
 
-  async sendReportResponseToReporters(reportId: string, type: ReferenceType, referenceId: string): Promise<boolean> {
-    const reporters = await this.userReportReportRepository.find({where: {reportId: reportId}});
+  async sendReportResponseToReporters(
+    reportId: string,
+    type: ReferenceType,
+    referenceId: string,
+  ): Promise<boolean> {
+    const reporters = await this.userReportReportRepository.find({
+      where: {reportId: reportId},
+    });
 
     if (reporters.length === 0) return false;
 
@@ -249,7 +255,7 @@ export class NotificationService {
     const mnemonic = config.MYRIAD_MNEMONIC;
     const pair = getKeyring().addFromMnemonic(mnemonic);
 
-    notification.from = getHexPublicKey(pair)
+    notification.from = getHexPublicKey(pair);
     notification.message = 'approved your report';
 
     switch (type) {
@@ -268,7 +274,8 @@ export class NotificationService {
       case ReferenceType.COMMENT: {
         notification.type = NotificationType.COMMENT_REMOVED;
         notification.referenceId = referenceId;
-        notification.additionalReferenceId = await this.getCommentAdditionalReferenceIds(referenceId);
+        notification.additionalReferenceId =
+          await this.getCommentAdditionalReferenceIds(referenceId);
         break;
       }
 
@@ -335,7 +342,6 @@ export class NotificationService {
           await this.getCommentAdditionalReferenceIds(referenceId);
 
         const comment = await this.commentRepository.findById(referenceId);
-
 
         notification.to = comment.userId;
         notification.message = 'removed your comment';
