@@ -12,8 +12,6 @@ export enum NotificationType {
   USER_REWARD = 'user_reward',
   USER_INITIAL_TIPS = 'user_initial_tips',
   USER_CLAIM_TIPS = 'user_claim_tips',
-  REPORT_POST = 'report_post',
-  REPORT_USER = 'report_user',
   CONNECTED_SOCIAL_MEDIA = 'connected_social_media',
   DISCONNECTED_SOCIAL_MEDIA = 'disconnected_social_media',
   POST_REMOVED = 'post_removed',
