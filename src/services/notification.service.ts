@@ -126,6 +126,13 @@ export class NotificationService {
   }
 
   async sendPostComment(from: string, comment: Comment): Promise<boolean> {
+    await this.sendMention(
+      from,
+      comment.id ?? '',
+      comment.mentions,
+      ReferenceType.COMMENT,
+    );
+
     const fromUser = await this.userRepository.findById(from);
     const notification = new Notification();
 
@@ -145,34 +152,30 @@ export class NotificationService {
 
     const post = await this.postRepository.findById(comment.postId);
 
+    notification.additionalReferenceId =
+      await this.getCommentAdditionalReferenceIds(comment.id ?? '');
+
     // Notification comment to comment
     if (comment.type === ReferenceType.COMMENT) {
       const toComment = await this.commentRepository.findById(
         comment.referenceId,
       );
 
-      if (toComment.userId === comment.userId) return false;
+      if (toComment.userId !== comment.userId) {
+        const notificationSetting =
+          await this.notificationSettingRepository.findOne({
+            where: {userId: toComment.userId},
+          });
 
-      const notificationSetting =
-        await this.notificationSettingRepository.findOne({
-          where: {userId: toComment.userId},
-        });
+        // TODO: fixed notification setting
+        if (notificationSetting && !notificationSetting.comments) return false;
 
-      // TODO: fixed notification setting
-      if (notificationSetting && !notificationSetting.comments) return false;
+        toUser = await this.userRepository.findById(toComment.userId);
+        notification.to = toUser.id;
 
-      notification.additionalReferenceId =
-        await this.getCommentAdditionalReferenceIds(comment.id ?? '');
-
-      toUser = await this.userRepository.findById(toComment.userId);
-      notification.to = toUser.id;
-      notification.additionalReferenceId =
-        await this.getCommentAdditionalReferenceIds(comment.id ?? '');
-
-      await this.notificationRepository.create(notification);
-      await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
-    } else {
-      notification.additionalReferenceId = [{postId: post.id}];
+        await this.notificationRepository.create(notification);
+        await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
+      }
     }
 
     // Notification comment to post
@@ -552,7 +555,10 @@ export class NotificationService {
 
     const fromUser = await this.userRepository.findById(from);
     const notification = new Notification();
-    notification.type = NotificationType.POST_MENTION;
+    notification.type =
+      type === ReferenceType.COMMENT
+        ? NotificationType.COMMENT_MENTION
+        : NotificationType.POST_MENTION;
     notification.from = fromUser.id;
     notification.referenceId = to;
     notification.message = 'mentioned you';
