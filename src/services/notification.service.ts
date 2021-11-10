@@ -138,44 +138,49 @@ export class NotificationService {
     notification.referenceId = comment.id;
     notification.message = 'commented: ' + comment.text;
 
-    if (comment.type === ReferenceType.COMMENT) {
-      notification.additionalReferenceId =
-        await this.getCommentAdditionalReferenceIds(comment.id ?? '');
-    }
-
     // FCM messages
     const title = 'New Comment';
     const body = fromUser.name + ' ' + notification.message;
 
     let toUser: User = new User();
 
+    const post = await this.postRepository.findById(comment.postId);
+
     // Notification comment to comment
     if (comment.type === ReferenceType.COMMENT) {
       const toComment = await this.commentRepository.findById(
         comment.referenceId,
       );
+
+      if (toComment.userId === comment.userId) return false;
+
       const notificationSetting =
         await this.notificationSettingRepository.findOne({
           where: {userId: toComment.userId},
         });
 
+      // TODO: fixed notification setting
       if (notificationSetting && !notificationSetting.comments) return false;
+
+      notification.additionalReferenceId =
+        await this.getCommentAdditionalReferenceIds(comment.id ?? '');
 
       toUser = await this.userRepository.findById(toComment.userId);
       notification.to = toUser.id;
 
       await this.notificationRepository.create(notification);
       await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
-
-      return true;
+    } else {
+      notification.additionalReferenceId = [{postId: post.id}];
     }
-
-    const post = await this.postRepository.findById(comment.postId);
 
     // Notification comment to post
     let toUsers: string[] = [];
     if (post.platform === PlatformType.MYRIAD) {
       toUser = await this.userRepository.findById(post.createdBy);
+
+      if (toUser.id === comment.userId) return false;
+
       toUsers.push(toUser.id);
     } else {
       const userSocialMedia = await this.userSocialMediaRepository.findOne({
@@ -187,13 +192,13 @@ export class NotificationService {
         toUsers.push(toUser.id);
       }
 
-      toUsers = [...toUsers, ...post.importers, post.createdBy];
+      toUsers = [...toUsers, ...post.importers].filter(
+        userId => userId !== comment.userId,
+      );
     }
 
     if (toUsers.length === 0) return false;
     if (!toUser) return false;
-
-    notification.additionalReferenceId = [{postId: comment.postId}];
 
     const notificationSetting =
       await this.notificationSettingRepository.findOne({
@@ -555,11 +560,13 @@ export class NotificationService {
     const body = fromUser.name + ' ' + notification.message;
     const toUsers = await this.userRepository.find({
       where: {
-        or: mentions.map(mention => {
-          return {
-            id: mention.id,
-          };
-        }),
+        or: mentions
+          .filter(mention => mention.id !== from)
+          .map(mention => {
+            return {
+              id: mention.id,
+            };
+          }),
       },
     });
 
@@ -567,20 +574,15 @@ export class NotificationService {
 
     const notifications = toUsers
       .filter(async user => {
-        try {
-          const notificationSetting =
-            await this.notificationSettingRepository.findOne({
-              where: {
-                userId: user.id,
-              },
-            });
+        const notificationSetting =
+          await this.notificationSettingRepository.findOne({
+            where: {
+              userId: user.id,
+            },
+          });
 
-          if (notificationSetting && !notificationSetting.mentions)
-            return false;
-          return true;
-        } catch {
-          // ignore
-        }
+        if (notificationSetting && !notificationSetting.mentions) return false;
+        return true;
       })
       .map(toUser => {
         const updatedNotification = {
