@@ -8,6 +8,7 @@ import {
   Notification,
   Transaction,
   User,
+  UserSocialMedia,
   Vote,
 } from '../models';
 import {
@@ -592,6 +593,63 @@ export class NotificationService {
     const body = 'You ' + notification.message;
 
     await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
+    return true;
+  }
+
+  async sendConnectedSocialMedia(userSocialMedia: UserSocialMedia) {
+    const {userId, platform, peopleId} = userSocialMedia;
+    const notification = new Notification();
+    const toUser = await this.userRepository.findById(userId);
+
+    notification.type = NotificationType.CONNECTED_SOCIAL_MEDIA;
+    notification.from = toUser.id;
+    notification.to = toUser.id;
+    notification.referenceId = toUser.id;
+    notification.message = `connected your ${platform} social media`;
+    notification.additionalReferenceId = [{peopleId: peopleId}];
+
+    const createdNotification = await this.notificationRepository.create(
+      notification,
+    );
+
+    if (createdNotification === null) return false;
+
+    const title = `Connected ${
+      platform[0].toUpperCase() + platform.substring(1)
+    } Success`;
+    const body = 'You ' + notification.message;
+
+    await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
+
+    return true;
+  }
+
+  async sendDisconnectedSocialMedia(id: string) {
+    const userSocialMedia = await this.userSocialMediaRepository.findById(id);
+    const {userId, platform, peopleId} = userSocialMedia;
+    const notification = new Notification();
+    const toUser = await this.userRepository.findById(userId);
+
+    notification.type = NotificationType.DISCONNECTED_SOCIAL_MEDIA;
+    notification.from = toUser.id;
+    notification.to = toUser.id;
+    notification.referenceId = toUser.id;
+    notification.message = `disconnected your ${platform} social media`;
+    notification.additionalReferenceId = [{peopleId: peopleId}];
+
+    const createdNotification = await this.notificationRepository.create(
+      notification,
+    );
+
+    if (createdNotification === null) return false;
+
+    const title = `Disconnected ${
+      platform[0].toUpperCase() + platform.substring(1)
+    } Success`;
+    const body = 'You ' + notification.message;
+
+    await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
+
     return true;
   }
 
