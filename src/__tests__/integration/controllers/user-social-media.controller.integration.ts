@@ -2,12 +2,21 @@ import {expect, toJSON} from '@loopback/testlab';
 import {UserSocialMediaController} from '../../../controllers';
 import {RedditDataSource} from '../../../datasources';
 import {
+  CommentRepository,
+  FriendRepository,
+  NotificationRepository,
+  NotificationSettingRepository,
   PeopleRepository,
+  PostRepository,
+  ReportRepository,
+  UserReportRepository,
   UserRepository,
   UserSocialMediaRepository,
 } from '../../../repositories';
 import {
   Facebook,
+  FCMService,
+  NotificationService,
   Reddit,
   RedditProvider,
   SocialMediaService,
@@ -34,11 +43,20 @@ describe('UserSocialMediaControllerIntegration', function () {
   let redditService: Reddit;
   let facebookService: Facebook;
   let peopleRepository: PeopleRepository;
+  let postRepository: PostRepository;
+  let notificationRepository: NotificationRepository;
+  let friendRepository: FriendRepository;
+  let reportRepository: ReportRepository;
+  let commentRepository: CommentRepository;
+  let userReportRepository: UserReportRepository;
+  let notificationSettingRepository: NotificationSettingRepository;
+  let notificationService: NotificationService;
+  let fcmService: FCMService;
   let userRepository: UserRepository;
   let controller: UserSocialMediaController;
 
   before(async () => {
-    ({userSocialMediaRepository, peopleRepository, userRepository} =
+    ({userSocialMediaRepository, peopleRepository, userRepository, postRepository, notificationRepository, friendRepository, reportRepository, commentRepository, userReportRepository, notificationSettingRepository, userSocialMediaRepository} =
       await givenRepositories(testdb));
   });
 
@@ -49,6 +67,18 @@ describe('UserSocialMediaControllerIntegration', function () {
   });
 
   before(async () => {
+    notificationService = new NotificationService(
+      userRepository,
+      postRepository,
+      notificationRepository,
+      userSocialMediaRepository,
+      friendRepository,
+      reportRepository,
+      commentRepository,
+      userReportRepository,
+      notificationSettingRepository,
+      fcmService,
+    );
     socialMediaService = new SocialMediaService(
       peopleRepository,
       twitterService,
@@ -62,6 +92,7 @@ describe('UserSocialMediaControllerIntegration', function () {
     controller = new UserSocialMediaController(
       socialMediaService,
       userSocialMediaService,
+      notificationService
     );
   });
 

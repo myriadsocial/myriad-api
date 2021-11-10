@@ -15,6 +15,7 @@ import {
   FriendRepository,
   ReportRepository,
   NotificationSettingRepository,
+  UserReportRepository,
 } from '../../../repositories';
 import {
   Facebook,
@@ -58,6 +59,7 @@ describe('PostControllerIntegration', () => {
   let reportRepository: ReportRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let notificationSettingRepository: NotificationSettingRepository;
+  let userReportRepository: UserReportRepository;
   let fcmService: FCMService;
   let notificationService: NotificationService;
   let controller: PostController;
@@ -74,6 +76,7 @@ describe('PostControllerIntegration', () => {
       friendRepository,
       reportRepository,
       notificationSettingRepository,
+      userReportRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -94,6 +97,7 @@ describe('PostControllerIntegration', () => {
       friendRepository,
       reportRepository,
       commentRepository,
+      userReportRepository,
       notificationSettingRepository,
       fcmService,
     );
