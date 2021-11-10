@@ -183,6 +183,16 @@ export class FriendController {
     })
     friend: Partial<Friend>,
   ): Promise<void> {
+    if (friend.status === FriendStatusType.BLOCKED) {
+      const found = await this.friendService.friendRepository.findById(id);
+
+      if (found.requesteeId === this.friendService.myriadOfficialUserId()) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You cannot blocked this user!',
+        );
+      }
+    }
+
     await this.friendService.friendRepository.updateById(id, friend);
 
     if (friend.status === FriendStatusType.APPROVED) {
