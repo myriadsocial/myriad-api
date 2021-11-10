@@ -6,6 +6,8 @@ import {Post} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {NotificationService} from './notification.service';
 import {injectable, BindingScope} from '@loopback/core';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {config} from '../config';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class FriendService {
@@ -133,10 +135,31 @@ export class FriendService {
   async deleteById(id: string): Promise<void> {
     const friend = await this.friendRepository.findById(id);
 
+    if (friend.requesteeId === this.myriadOfficialUserId()) {
+      throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
+    }
+
     await this.notificationService.cancelFriendRequest(
       friend.requestorId,
       friend.requesteeId,
     );
     await this.friendRepository.deleteById(id);
+  }
+
+  async defaultFriend(userId: string): Promise<void> {
+    await this.friendRepository.create({
+      status: FriendStatusType.APPROVED,
+      requestorId: userId,
+      requesteeId: this.myriadOfficialUserId(),
+    });
+  }
+
+  myriadOfficialUserId(): string {
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
+
+    const mnemonic = config.MYRIAD_MNEMONIC;
+    const pair = getKeyring().addFromMnemonic(mnemonic);
+
+    return getHexPublicKey(pair);
   }
 }
