@@ -1,5 +1,10 @@
 [
   {
-    "name": "Myriad"
+    "name": "Myriad Official",
+    "username": "myriad_official",
+    "profilePictureURL": "https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg",
+    "bannerImageUrl": "https://pbs.twimg.com/profile_banners/1358714439583690753/1624432887/1500x500",
+    "bio": "A social metaverse & metasocial network on web3, pulling content from mainstream social media and turning every post into a tipping wallet.",
+    "websiteURL": "https://www.myriad.social/"
   }
 ]
