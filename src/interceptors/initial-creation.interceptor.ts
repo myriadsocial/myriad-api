@@ -143,6 +143,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.TRANSACTION: {
+        if (invocationCtx.args[0].from === invocationCtx.args[0].to) {
+          throw new HttpErrors.UnprocessableEntity(
+            'From and to address cannot be the same!',
+          );
+        }
+
         await this.currencyRepository.findById(
           invocationCtx.args[0].currencyId,
         );
