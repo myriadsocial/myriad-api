@@ -17,8 +17,6 @@ import {
   ReportRepository,
   UserRepository,
 } from '../repositories';
-import {service} from '@loopback/core';
-import {NotificationService} from '../services';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export class DeletedCollectionController {
@@ -29,8 +27,6 @@ export class DeletedCollectionController {
     public postRepository: PostRepository,
     @repository(ReportRepository)
     public reportRepository: ReportRepository,
-    @service(NotificationService)
-    public notificationService: NotificationService,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -75,11 +71,6 @@ export class DeletedCollectionController {
     description: 'Post DELETE success',
   })
   async deletePostById(@param.path.string('id') id: string): Promise<void> {
-    try {
-      await this.notificationService.sendUpdateReport(id, ReferenceType.POST);
-    } catch {
-      // ignore
-    }
     await this.postRepository.updateById(id, {
       deletedAt: new Date().toString(),
     });
@@ -142,11 +133,6 @@ export class DeletedCollectionController {
     description: 'User DELETE success',
   })
   async deleteUserById(@param.path.string('id') id: string): Promise<void> {
-    try {
-      await this.notificationService.sendUpdateReport(id, ReferenceType.USER);
-    } catch {
-      // ignore
-    }
     await this.userRepository.updateById(id, {
       deletedAt: new Date().toString(),
     });
