@@ -194,9 +194,9 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.POST: {
+        await this.metricService.userMetric(result.createdBy);
         if (result.tags.length === 0) return;
         await this.tagService.createTags(result.tags);
-        await this.metricService.userMetric(result.createdBy);
         return;
       }
 
