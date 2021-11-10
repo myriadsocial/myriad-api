@@ -1,5 +1,6 @@
 import {BindingScope, injectable, service} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
+import {config} from '../config';
 import {NotificationType, PlatformType, ReferenceType} from '../enums';
 import {
   Comment,
@@ -19,6 +20,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
 } from '../repositories';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {FCMService} from './fcm.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -570,9 +572,14 @@ export class NotificationService {
 
     if (notificationSetting && !notificationSetting.tips) return false;
 
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
+
+    const mnemonic = config.MYRIAD_MNEMONIC;
+    const pair = getKeyring().addFromMnemonic(mnemonic);
+
     notification.type = NotificationType.USER_CLAIM_TIPS;
     notification.from = from;
-    notification.to = to;
+    notification.to = getHexPublicKey(pair);
     notification.referenceId = transaction.id;
     notification.message = transaction.amount + ' ' + transaction.currencyId;
 
