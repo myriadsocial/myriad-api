@@ -49,6 +49,12 @@ export class Currency extends Entity {
   types: AnyObject;
 
   @property({
+    type: 'string',
+    required: false,
+  })
+  explorerURL: string;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
