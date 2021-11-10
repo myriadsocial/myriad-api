@@ -90,10 +90,6 @@ describe('PostApplication', function () {
     expect(response.body).to.containDeep(myriadPost);
     const result = await postRepository.findById(response.body.id);
     expect(result).to.containDeep(myriadPost);
-    const tagResult = await tagRepository.find();
-    expect(tagResult[0].id).to.equal(
-      result.tags.find(tag => tag === tagResult[0].id),
-    );
   });
 
   it('rejects requests to create a post with no text', async () => {
