@@ -1,11 +1,17 @@
 import {BindingScope, injectable, service} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {config} from '../config';
-import {NotificationType, PlatformType, ReferenceType} from '../enums';
+import {
+  NotificationType,
+  PlatformType,
+  ReferenceType,
+  ReportStatusType,
+} from '../enums';
 import {
   Comment,
   MentionUser,
   Notification,
+  Report,
   Transaction,
   User,
   UserSocialMedia,
@@ -18,6 +24,7 @@ import {
   NotificationSettingRepository,
   PostRepository,
   ReportRepository,
+  UserReportRepository,
   UserRepository,
   UserSocialMediaRepository,
 } from '../repositories';
@@ -41,6 +48,8 @@ export class NotificationService {
     public reportRepository: ReportRepository,
     @repository(CommentRepository)
     public commentRepository: CommentRepository,
+    @repository(UserReportRepository)
+    public userReportReportRepository: UserReportRepository,
     @repository(NotificationSettingRepository)
     public notificationSettingRepository: NotificationSettingRepository,
     @service(FCMService)
@@ -222,6 +231,137 @@ export class NotificationService {
         return this.fcmService.sendNotification(to.fcmTokens, title, body);
       }),
     );
+
+    return true;
+  }
+
+  async sendReportResponstToReporters() {}
+
+  async sendReportResponseToUser(report: Report): Promise<boolean> {
+    const {referenceId, referenceType, status} = report;
+
+    if (status !== ReportStatusType.REMOVED) return false;
+
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
+
+    const mnemonic = config.MYRIAD_MNEMONIC;
+    const pair = getKeyring().addFromMnemonic(mnemonic);
+
+    const notification = new Notification();
+
+    switch (referenceType) {
+      case ReferenceType.COMMENT: {
+        notification.type = NotificationType.COMMENT_REMOVED;
+        notification.referenceId = referenceId;
+        notification.additionalReferenceId =
+          await this.getCommentAdditionalReferenceIds(referenceId);
+
+        const comment = await this.commentRepository.findById(referenceId);
+
+        notification.from = getHexPublicKey(pair);
+        notification.to = comment.userId;
+        notification.message = 'removed your comment';
+
+        const commentUser = await this.userRepository.findById(comment.userId);
+
+        await this.notificationRepository.create(notification);
+        await this.fcmService.sendNotification(
+          commentUser.fcmTokens,
+          'Comment Removed',
+          'Myriad Official ' + notification.message,
+        );
+
+        return true;
+      }
+
+      case ReferenceType.POST: {
+        notification.type = NotificationType.POST_REMOVED;
+        notification.referenceId = referenceId;
+        notification.message = 'removed your post';
+        notification.from = getHexPublicKey(pair);
+
+        const post = await this.postRepository.findById(referenceId);
+
+        let toUsers: string[] = [];
+        let toUser: User = new User();
+
+        if (post.platform === PlatformType.MYRIAD) {
+          toUser = await this.userRepository.findById(post.createdBy);
+          toUsers.push(toUser.id);
+        } else {
+          const userSocialMedia = await this.userSocialMediaRepository.findOne({
+            where: {peopleId: post.peopleId},
+          });
+
+          if (userSocialMedia) {
+            toUser = await this.userRepository.findById(userSocialMedia.userId);
+            toUsers.push(toUser.id);
+          }
+
+          toUsers = [...toUsers, ...post.importers, post.createdBy];
+        }
+
+        if (toUsers.length === 0) return false;
+        if (!toUser) return false;
+
+        const notifications = toUsers.map(to => {
+          const updatedNotification = {
+            ...notification,
+            to: to,
+          };
+
+          return new Notification(updatedNotification);
+        });
+
+        const createdNotification = await this.notificationRepository.createAll(
+          notifications,
+        );
+        if (createdNotification == null) return false;
+
+        const users = await this.userRepository.find({
+          where: {
+            or: toUsers.map(userId => {
+              return {
+                id: userId,
+              };
+            }),
+          },
+        });
+
+        await Promise.all(
+          users.map(to => {
+            return this.fcmService.sendNotification(
+              to.fcmTokens,
+              'Post Removed',
+              'Myriad Official ' + notification.message,
+            );
+          }),
+        );
+
+        return true;
+      }
+
+      case ReferenceType.USER: {
+        notification.type = NotificationType.USER_BANNED;
+        notification.referenceId = referenceId;
+        notification.message = 'banned you';
+        notification.from = getHexPublicKey(pair);
+        notification.to = referenceId;
+
+        const user = await this.userRepository.findById(referenceId);
+
+        await this.notificationRepository.create(notification);
+        await this.fcmService.sendNotification(
+          user.fcmTokens,
+          'User Removed',
+          'Myriad Official ' + notification.message,
+        );
+        break;
+      }
+
+      default:
+        return false;
+    }
 
     return true;
   }
@@ -527,7 +667,7 @@ export class NotificationService {
     if (createdNotification == null) return false;
 
     const title = 'Send Reward Success';
-    const body = 'Myriad' + ' ' + notification.message;
+    const body = 'Myriad Official' + ' ' + notification.message;
 
     await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
 
@@ -551,7 +691,7 @@ export class NotificationService {
     if (createdNotification == null) return false;
 
     const title = 'Send Initial AUSD Success';
-    const body = 'Myriad' + ' ' + notification.message;
+    const body = 'Myriad Official' + ' ' + notification.message;
 
     await this.fcmService.sendNotification(toUser.fcmTokens, title, body);
 
