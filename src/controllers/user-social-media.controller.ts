@@ -14,7 +14,11 @@ import {
 import {PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {UserSocialMedia, UserVerification} from '../models';
-import {SocialMediaService, UserSocialMediaService} from '../services';
+import {
+  NotificationService,
+  SocialMediaService,
+  UserSocialMediaService,
+} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -24,6 +28,8 @@ export class UserSocialMediaController {
     protected socialMediaService: SocialMediaService,
     @service(UserSocialMediaService)
     protected userSocialMediaService: UserSocialMediaService,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   @post('/user-social-medias/verify')
@@ -78,7 +84,17 @@ export class UserSocialMediaController {
         throw new HttpErrors.NotFound('Platform does not exist');
     }
 
-    return this.userSocialMediaService.createSocialMedia(platformUser);
+    const userSocialMedia = await this.userSocialMediaService.createSocialMedia(
+      platformUser,
+    );
+
+    try {
+      await this.notificationService.sendConnectedSocialMedia(userSocialMedia);
+    } catch {
+      // ignore
+    }
+
+    return userSocialMedia;
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -144,6 +160,12 @@ export class UserSocialMediaController {
     description: 'UserSocialMedia DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
+    try {
+      await this.notificationService.sendDisconnectedSocialMedia(id);
+    } catch {
+      // ignore
+    }
+
     await this.userSocialMediaService.userSocialMediaRepository.deleteById(id);
   }
 }
