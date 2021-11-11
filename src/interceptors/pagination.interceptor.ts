@@ -231,11 +231,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         break;
 
       case OrderFieldType.UPVOTE:
-        sortBy = 'metric.upvote';
+        sortBy = 'metric.upvotes';
         break;
 
       case OrderFieldType.COMMENT:
-        sortBy = 'metric.comment';
+        sortBy = 'metric.comments';
         break;
 
       case OrderFieldType.LATEST:
