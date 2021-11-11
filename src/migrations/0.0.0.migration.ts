@@ -13,10 +13,8 @@ import {
 } from '../repositories';
 import {DateUtils} from '../utils/date-utils';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
-import path from 'path';
-import fs from 'fs';
-
-const dataSeed = '../../src/data-seed/';
+import currenciesSeed from '../data-seed/currencies.json';
+import usersSeed from '../data-seed/users.json';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /* eslint-disable  @typescript-eslint/naming-convention */
@@ -38,54 +36,8 @@ export class MigrationScript000 implements MigrationScript {
   ) {}
 
   async up(): Promise<void> {
-    const files = fs.readdirSync(path.join(__dirname, dataSeed));
-
-    await Promise.all(
-      files.map(async file => {
-        switch (file) {
-          case 'currencies.json': {
-            const currenciesRawData = fs.readFileSync(
-              path.join(__dirname, dataSeed + file),
-            );
-            const currenciesSeed = JSON.parse(currenciesRawData.toString());
-
-            return this.createCurrencies(
-              currenciesSeed as unknown as Currency[],
-            );
-          }
-
-          case 'people.json': {
-            const peopleRawData = fs.readFileSync(
-              path.join(__dirname, dataSeed + file),
-            );
-            const peopleSeed = JSON.parse(peopleRawData.toString());
-
-            return this.createPeople(peopleSeed as People[]);
-          }
-
-          case 'posts.json': {
-            const postsRawData = fs.readFileSync(
-              path.join(__dirname, dataSeed + file),
-            );
-            const postsSeed = JSON.parse(postsRawData.toString());
-
-            return this.createPost(postsSeed as ExtendedPost[]);
-          }
-
-          case 'users.json': {
-            const usersRawData = fs.readFileSync(
-              path.join(__dirname, dataSeed + file),
-            );
-            const usersSeed = JSON.parse(usersRawData.toString());
-
-            return this.createUsers(usersSeed as User[]);
-          }
-
-          default:
-            return;
-        }
-      }),
-    );
+    await this.createCurrencies(currenciesSeed as unknown as Currency[]);
+    await this.createUsers(usersSeed as User[]);
   }
 
   async createUsers(users: User[]): Promise<void> {
