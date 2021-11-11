@@ -100,7 +100,7 @@ jobs:
       DEPLOY: ${{ secrets.PREPROD_DEPLOY }}
     steps:
       - name: Checkout code
-        if: "${{ env.Dif: "${{ env.DEPLOY == 'true' }}"EPLOY == 'true' }}"
+        if: "${{ env.DEPLOY == 'true' }}"
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
