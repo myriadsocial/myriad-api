@@ -11,8 +11,7 @@ jobs:
   compute-build-info:
     runs-on: ubuntu-latest
     outputs:
-      sha_short: ${{ steps.build-info.outputs.sha_short }}
-      date: ${{ steps.build-info.outputs.date }}
+      latest_tag: ${{ steps.build-info.outputs.latest_tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -22,8 +21,9 @@ jobs:
         id: build-info
         shell: bash
         run: |
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          echo "::set-output name=date::$(date +'%Y%m%d')"
+          version=${GITHUB_REF#refs/*/}
+          echo $version
+          echo "::set-output name=latest_tag::$version"
 
   build-and-publish-docker-image:
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
           push: true
           file: .maintain/docker/Dockerfile
           tags: |
-            ${{ github.repository }}:${{ github.event.release.tag_name }}
+            ${{ github.repository }}:${{ github.event.release.latest_tag }}
             ${{ github.repository }}:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
@@ -67,7 +67,7 @@ jobs:
           push: true
           file: .maintain/docker/Dockerfile
           tags: |
-            ${{ github.repository }}:${{ github.event.release.tag_name }}
+            ${{ github.repository }}:${{ github.event.release.latest_tag }}
             ${{ github.repository }}:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
@@ -137,7 +137,7 @@ jobs:
             helm repo update
             helm upgrade myriad-api myriad/myriad-api \
               --install \
-              --set-string image.tag=${{ github.event.release.tag_name }} \
+              --set-string image.tag=${{ github.event.release.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
@@ -219,7 +219,7 @@ jobs:
             helm repo update
             helm upgrade myriad-api myriad/myriad-api \
               --install \
-              --set-string image.tag=${{ github.event.release.tag_name }} \
+              --set-string image.tag=${{ github.event.release.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
