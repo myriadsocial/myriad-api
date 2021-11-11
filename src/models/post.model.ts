@@ -112,7 +112,7 @@ export class Post extends Entity {
       downvotes: 0,
       discussions: 0,
       debates: 0,
-      shares: 0,
+      comments: 0,
     },
   })
   metric: Metric;
