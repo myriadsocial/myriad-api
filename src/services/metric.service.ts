@@ -109,7 +109,6 @@ export class MetricService {
       ).count;
     }
 
-    // TODO: removed comments
     metric.comments = (metric.discussions ?? 0) + (metric.debates ?? 0);
 
     return metric;
