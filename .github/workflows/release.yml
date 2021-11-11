@@ -56,8 +56,8 @@ jobs:
           push: true
           file: .maintain/docker/Dockerfile
           tags: |
-            ${{ github.repository }}:${{ github.event.release.latest_tag }}
-            ${{ github.repository }}:latest
+            ${{ github.repository }}:${{ needs.compute-build-info.outputs.latest_tag }}
+            ${{ github.repository }}:latest-rc
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
       - name: Build and push release
@@ -67,7 +67,7 @@ jobs:
           push: true
           file: .maintain/docker/Dockerfile
           tags: |
-            ${{ github.repository }}:${{ github.event.release.latest_tag }}
+            ${{ github.repository }}:${{ needs.compute-build-info.outputs.latest_tag }}
             ${{ github.repository }}:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
@@ -137,7 +137,7 @@ jobs:
             helm repo update
             helm upgrade myriad-api myriad/myriad-api \
               --install \
-              --set-string image.tag=${{ github.event.release.latest_tag }} \
+              --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
@@ -219,7 +219,7 @@ jobs:
             helm repo update
             helm upgrade myriad-api myriad/myriad-api \
               --install \
-              --set-string image.tag=${{ github.event.release.latest_tag }} \
+              --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
