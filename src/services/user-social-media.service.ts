@@ -1,11 +1,12 @@
 import {repository} from '@loopback/repository';
-import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
-import {injectable, BindingScope} from '@loopback/core';
+import {injectable, BindingScope, service} from '@loopback/core';
+import {NotificationService} from './';
+import {HttpErrors} from '@loopback/rest';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
@@ -14,6 +15,8 @@ export class UserSocialMediaService {
     public userSocialMediaRepository: UserSocialMediaRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   async createSocialMedia(people: ExtendedPeople): Promise<UserSocialMedia> {
@@ -32,13 +35,7 @@ export class UserSocialMediaService {
       verified: true,
     };
 
-    const {count} = await this.userSocialMediaRepository.count({
-      userId: publicKey,
-    });
-
-    if (count === 0) newUserSocialMedia.primary = true;
-
-    const foundPeople = await this.peopleRepository.findOne({
+    let foundPeople = await this.peopleRepository.findOne({
       where: {
         originUserId: originUserId,
         platform: platform,
@@ -46,7 +43,7 @@ export class UserSocialMediaService {
     });
 
     if (!foundPeople) {
-      const newPeople = await this.peopleRepository.create({
+      foundPeople = await this.peopleRepository.create({
         name,
         username,
         originUserId,
@@ -55,15 +52,11 @@ export class UserSocialMediaService {
       });
 
       const {getKeyring, getHexPublicKey} = new PolkadotJs();
-      const newKey = getKeyring().addFromUri('//' + newPeople.id);
+      const newKey = getKeyring().addFromUri('//' + foundPeople.id);
 
-      await this.peopleRepository.updateById(newPeople.id, {
+      await this.peopleRepository.updateById(foundPeople.id, {
         walletAddress: getHexPublicKey(newKey),
       });
-
-      return this.peopleRepository
-        .userSocialMedia(newPeople.id)
-        .create(newUserSocialMedia);
     }
 
     const userSocialMedia = await this.userSocialMediaRepository.findOne({
@@ -75,27 +68,27 @@ export class UserSocialMediaService {
 
     if (userSocialMedia) {
       if (userSocialMedia.userId !== publicKey) {
+        try {
+          await this.notificationService.sendDisconnectedSocialMedia(
+            userSocialMedia.id,
+            publicKey,
+          );
+        } catch {
+          // ignore
+        }
+        await this.userSocialMediaRepository.deleteById(userSocialMedia.id);
+      } else {
         throw new HttpErrors.UnprocessableEntity(
-          `Another user already claim this ${platform}!`,
+          `You already claimed this ${platform}`,
         );
       }
-
-      if (userSocialMedia.verified) {
-        throw new HttpErrors.UnprocessableEntity(
-          'You already verified this social media',
-        );
-      }
-
-      userSocialMedia.verified = true;
-      userSocialMedia.updatedAt = new Date().toString();
-
-      await this.userSocialMediaRepository.updateById(
-        userSocialMedia.id,
-        userSocialMedia,
-      );
-
-      return userSocialMedia;
     }
+
+    const {count} = await this.userSocialMediaRepository.count({
+      userId: publicKey,
+    });
+
+    if (count === 0) newUserSocialMedia.primary = true;
 
     return this.peopleRepository
       .userSocialMedia(foundPeople.id)
