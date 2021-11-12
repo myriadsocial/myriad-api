@@ -99,6 +99,7 @@ describe('UserSocialMediaControllerIntegration', function () {
     userSocialMediaService = new UserSocialMediaService(
       userSocialMediaRepository,
       peopleRepository,
+      notificationService,
     );
     controller = new UserSocialMediaController(
       socialMediaService,

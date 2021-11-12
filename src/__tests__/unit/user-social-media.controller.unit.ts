@@ -93,6 +93,7 @@ describe('UserSocialMediaController', () => {
     userSocialMediaService = new UserSocialMediaService(
       userSocialMediaRepository,
       peopleRepository,
+      notificationService,
     );
     controller = new UserSocialMediaController(
       socialMediaService,
