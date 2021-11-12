@@ -777,16 +777,19 @@ export class NotificationService {
     return true;
   }
 
-  async sendDisconnectedSocialMedia(id: string) {
+  async sendDisconnectedSocialMedia(id: string, fromUserId?: string) {
     const userSocialMedia = await this.userSocialMediaRepository.findById(id);
     const {userId, platform, peopleId} = userSocialMedia;
     const notification = new Notification();
     const toUser = await this.userRepository.findById(userId);
 
+    if (!fromUserId) fromUserId = toUser.id;
+    else await this.userRepository.findById(fromUserId);
+
     notification.type = NotificationType.DISCONNECTED_SOCIAL_MEDIA;
-    notification.from = toUser.id;
+    notification.from = fromUserId;
     notification.to = toUser.id;
-    notification.referenceId = toUser.id;
+    notification.referenceId = fromUserId;
     notification.message = `disconnected your ${platform} social media`;
     notification.additionalReferenceId = [{peopleId: peopleId}];
 
