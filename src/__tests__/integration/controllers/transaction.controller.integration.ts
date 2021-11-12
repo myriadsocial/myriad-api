@@ -35,8 +35,8 @@ describe('TransactionControllerIntegration', () => {
       userRepository,
       postRepository,
       notificationRepository,
-      commentRepository,
       notificationService,
+      commentRepository,
     } = await givenRepositories(testdb));
   });
 

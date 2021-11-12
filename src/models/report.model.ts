@@ -18,10 +18,6 @@ import {ReferenceType, ReportType} from '../enums';
     mongodb: {
       collection: 'reports',
     },
-<<<<<<< HEAD
-=======
-    hiddenProperties: ['postId', 'userId', 'commentId'],
->>>>>>> 8a7a237 (added hidden property to report model)
   },
 })
 export class Report extends Entity {

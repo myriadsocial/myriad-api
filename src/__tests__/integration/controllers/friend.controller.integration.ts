@@ -1,14 +1,6 @@
 import {expect} from '@loopback/testlab';
 import {FriendController} from '../../../controllers';
-import {
-  FriendRepository,
-  UserRepository,
-} from '../../../repositories';
-import {
-  FriendService,
-  MetricService,
-  NotificationService,
-} from '../../../services';
+import {FriendRepository, UserRepository} from '../../../repositories';
 import {
   givenEmptyDatabase,
   givenFriendInstance,
@@ -20,28 +12,16 @@ import {
 describe('FriendControllerIntegration', () => {
   let userRepository: UserRepository;
   let friendRepository: FriendRepository;
-  let notificationService: NotificationService;
-  let friendService: FriendService;
-  let metricService: MetricService;
   let controller: FriendController;
 
   before(async () => {
-    ({
-      userRepository,
-      friendRepository,
-      notificationService,
-      friendService,
-      metricService,
-    } = await givenRepositories(testdb));
+    ({userRepository, friendRepository, userRepository} =
+      await givenRepositories(testdb));
   });
 
   before(async () => {
-    controller = new FriendController(
-      notificationService,
-      friendService,
-      metricService,
-    );
-  })
+    controller = new FriendController(friendRepository);
+  });
 
   before(async () => {
     ({userRepository, friendRepository, userRepository} =
