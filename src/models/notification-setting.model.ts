@@ -5,7 +5,7 @@ import {User} from './user.model';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collections: 'notificationSettings',
+      collection: 'notificationSettings',
     },
   },
 })
