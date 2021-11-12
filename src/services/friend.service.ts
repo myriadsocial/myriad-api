@@ -89,6 +89,10 @@ export class FriendService {
       );
     }
 
+    if (requesteeId === this.myriadOfficialUserId()) {
+      throw new HttpErrors.UnprocessableEntity('You cannot blocked myriad official')
+    }
+
     const found = await this.friendRepository.findOne({
       where: {
         or: [
