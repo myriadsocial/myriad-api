@@ -63,7 +63,8 @@ export async function givenRepositories(testdb: any) {
     async () => voteRepository,
     async () => postImporterRepository,
   );
-  const postImporterRepository: PostImporterRepository = new PostImporterRepository(testdb);
+  const postImporterRepository: PostImporterRepository =
+    new PostImporterRepository(testdb);
   const userCurrencyRepository: UserCurrencyRepository =
     new UserCurrencyRepository(testdb, async () => currencyRepository);
   const currencyRepository: CurrencyRepository = new CurrencyRepository(testdb);

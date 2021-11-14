@@ -14,8 +14,8 @@ export class PostImporter extends Entity {
     id: true,
     generated: true,
     mongodb: {
-      dataType: 'ObjectId'
-    }
+      dataType: 'ObjectId',
+    },
   })
   id?: string;
 
