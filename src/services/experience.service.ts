@@ -1,6 +1,6 @@
 import {repository, Where} from '@loopback/repository';
-import {VisibilityType} from '../enums';
-import {Experience, Post} from '../models';
+import {PlatformType, VisibilityType} from '../enums';
+import {Experience, People, Post} from '../models';
 import {
   ExperienceRepository,
   UserExperienceRepository,
@@ -24,7 +24,18 @@ export class ExperienceService {
       where: {
         id: userId,
       },
-      include: ['experiences'],
+      include: [
+        {
+          relation: 'experiences',
+          scope: {
+            include: [
+              {
+                relation: 'users',
+              },
+            ],
+          },
+        },
+      ],
     });
 
     if (!user) return null;
@@ -45,7 +56,10 @@ export class ExperienceService {
     if (!experience) return;
 
     const tags = experience.tags;
-    const personIds = experience.people.map(e => e.id);
+    const personIds = experience.people
+      .filter((e: People) => e.platform !== PlatformType.MYRIAD)
+      .map(e => e.id);
+    const userIds = (experience.users ?? []).map(e => e.id);
 
     const joinTags = tags.join('|');
     const regexTag = new RegExp(joinTags, 'i');
@@ -69,6 +83,16 @@ export class ExperienceService {
             },
             {
               title: regexTag,
+            },
+            {
+              importers: {
+                inq: userIds,
+              },
+            },
+            {
+              createdBy: {
+                inq: userIds,
+              },
             },
           ],
         },
