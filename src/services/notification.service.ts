@@ -187,6 +187,7 @@ export class NotificationService {
         toUsers.push(toUser.id);
       }
 
+      if (post.claimed) toUsers.push(post.createdBy);
       const importers = post.importers.map(importer => importer.id);
 
       toUsers = [...toUsers, ...importers].filter(
@@ -332,6 +333,8 @@ export class NotificationService {
             toUsers.push(toUser.id);
           }
 
+          if (post.claimed) toUsers.push(post.createdBy);
+
           const importers = post.importers.map(importer => importer.id);
 
           toUsers = [...toUsers, ...importers, post.createdBy];
@@ -427,9 +430,13 @@ export class NotificationService {
         toUsers.push(toUser.id);
       }
 
+      if (post.claimed) toUsers.push(post.createdBy);
+
       const importers = post.importers.map(importer => importer.id);
 
-      toUsers = [...toUsers, ...importers, post.createdBy];
+      toUsers = [...toUsers, ...importers, post.createdBy].filter(
+        userId => userId !== vote.userId,
+      );
     }
 
     if (toUsers.length === 0) return false;
