@@ -1,21 +1,6 @@
-import {
-  Count,
-  CountSchema,
-  Filter,
-  repository,
-  Where,
-} from '@loopback/repository';
-import {
-  del,
-  get,
-  getModelSchemaRef,
-  getWhereSchemaFor,
-  param,
-  patch,
-  post,
-  requestBody,
-} from '@loopback/rest';
-import {Post, User} from '../models';
+import {Filter, repository} from '@loopback/repository';
+import {get, getModelSchemaRef, param} from '@loopback/rest';
+import {User} from '../models';
 import {PostRepository} from '../repositories';
 
 export class PostImporterController {

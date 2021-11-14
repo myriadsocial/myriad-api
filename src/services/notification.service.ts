@@ -185,9 +185,9 @@ export class NotificationService {
         toUsers.push(toUser.id);
       }
 
-      const importer = post.importers.map(importer => importer.id);
+      const importers = post.importers.map(importer => importer.id);
 
-      toUsers = [...toUsers, ...importer].filter(
+      toUsers = [...toUsers, ...importers].filter(
         userId => userId !== comment.userId,
       );
     }
@@ -310,7 +310,9 @@ export class NotificationService {
         notification.referenceId = referenceId;
         notification.message = 'removed your post';
 
-        const post = await this.postRepository.findById(referenceId, {include: ['importers']});
+        const post = await this.postRepository.findById(referenceId, {
+          include: ['importers'],
+        });
 
         let toUsers: string[] = [];
         let toUser: User = new User();
@@ -328,7 +330,7 @@ export class NotificationService {
             toUsers.push(toUser.id);
           }
 
-          const importers = post.importers.map(importer => importer.id)
+          const importers = post.importers.map(importer => importer.id);
 
           toUsers = [...toUsers, ...importers, post.createdBy];
         }
@@ -403,7 +405,9 @@ export class NotificationService {
       return true;
     }
 
-    const post = await this.postRepository.findById(vote.postId, {include: ['importers']});
+    const post = await this.postRepository.findById(vote.postId, {
+      include: ['importers'],
+    });
 
     // Notification vote to post
     let toUsers: string[] = [];
@@ -421,7 +425,7 @@ export class NotificationService {
         toUsers.push(toUser.id);
       }
 
-      const importers = post.importers.map(importer => importer.id)
+      const importers = post.importers.map(importer => importer.id);
 
       toUsers = [...toUsers, ...importers, post.createdBy];
     }

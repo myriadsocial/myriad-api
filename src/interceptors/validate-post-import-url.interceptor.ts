@@ -9,7 +9,11 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {PostImporterRepository, PostRepository, UserRepository} from '../repositories';
+import {
+  PostImporterRepository,
+  PostRepository,
+  UserRepository,
+} from '../repositories';
 import {TagService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
@@ -58,7 +62,7 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
 
     const post = await this.postRepository.findOne({
       where: {originPostId, platform},
-      include: ['importers', 'people']
+      include: ['importers', 'people'],
     });
 
     if (post) {
@@ -74,7 +78,7 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
       await this.postImporterRepository.create({
         postId: post.id,
         importerId: invocationCtx.args[0].importer,
-      })
+      });
 
       post.importers = await this.postRepository.importers(post.id).find();
 
@@ -88,12 +92,14 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     await this.postImporterRepository.create({
       postId: result.id,
       importerId: invocationCtx.args[0].importer,
-    })
+    });
     await this.tagService.createTags(result.tags);
 
-    const user = await this.userRepository.findById(invocationCtx.args[0].importer)
+    const user = await this.userRepository.findById(
+      invocationCtx.args[0].importer,
+    );
 
-    result.importers = [user]
+    result.importers = [user];
 
     // Add post-invocation logic here
     return result;
