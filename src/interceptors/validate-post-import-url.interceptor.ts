@@ -9,7 +9,7 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {PostRepository} from '../repositories';
+import {PostImporterRepository, PostRepository, UserRepository} from '../repositories';
 import {TagService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
@@ -24,6 +24,10 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
+    @repository(PostImporterRepository)
+    protected postImporterRepository: PostImporterRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(TagService)
     protected tagService: TagService,
   ) {}
@@ -54,11 +58,12 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
 
     const post = await this.postRepository.findOne({
       where: {originPostId, platform},
+      include: ['importers', 'people']
     });
 
     if (post) {
       const importers = post.importers.find(
-        userId => userId === invocationCtx.args[0].importer,
+        user => user.id === invocationCtx.args[0].importer,
       );
 
       if (importers)
@@ -66,11 +71,12 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
           'You have already import this post',
         );
 
-      post.importers.push(invocationCtx.args[0].importer);
+      await this.postImporterRepository.create({
+        postId: post.id,
+        importerId: invocationCtx.args[0].importer,
+      })
 
-      await this.postRepository.updateById(post.id, {
-        importers: post.importers,
-      });
+      post.importers = await this.postRepository.importers(post.id).find();
 
       return post;
     }
@@ -79,7 +85,16 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     // Add pre-invocation logic here
     const result = await next();
 
+    await this.postImporterRepository.create({
+      postId: result.id,
+      importerId: invocationCtx.args[0].importer,
+    })
     await this.tagService.createTags(result.tags);
+
+    const user = await this.userRepository.findById(invocationCtx.args[0].importer)
+
+    result.importers = [user]
+
     // Add post-invocation logic here
     return result;
   }
