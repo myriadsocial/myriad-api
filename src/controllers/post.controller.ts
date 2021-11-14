@@ -158,6 +158,7 @@ export class PostController {
 
     newPost.tags = tags;
     newPost.createdBy = importer;
+    newPost.claimed = false;
 
     return this.postService.createPost(newPost);
   }

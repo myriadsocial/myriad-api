@@ -15,6 +15,7 @@ import {
   CommentRepository,
   CurrencyRepository,
   LikeRepository,
+  PeopleRepository,
   PostRepository,
   TransactionRepository,
   UserCurrencyRepository,
@@ -48,6 +49,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected likeRepository: LikeRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(PeopleRepository)
+    protected peopleRepository: PeopleRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -116,6 +119,17 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
     if (methodName === MethodType.CREATE) {
       this.afterCreation(className, result) as Promise<void>;
+    }
+
+    if (methodName === MethodType.VERIFY) {
+      this.currencyService.autoClaimTips(result) as Promise<void>;
+
+      const {userId, peopleId} = result;
+
+      await this.postRepository.updateAll(
+        {peopleId: peopleId},
+        {createdBy: userId},
+      );
     }
 
     return result;

@@ -2,7 +2,11 @@ import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
 import {PostWithRelations} from '../models';
-import {PeopleRepository, PostRepository} from '../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  UserSocialMediaRepository,
+} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
@@ -15,6 +19,8 @@ export class PostService {
     public postRepository: PostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
+    @repository(UserSocialMediaRepository)
+    protected userSocialMediaRepository: UserSocialMediaRepository,
   ) {}
 
   async createPost(post: Omit<ExtendedPost, 'id'>): Promise<PostWithRelations> {
@@ -43,6 +49,17 @@ export class PostService {
         }) as Promise<void>;
       } else {
         throw new HttpErrors.NotFound('Platform user not found!');
+      }
+    } else {
+      const found = await this.userSocialMediaRepository.findOne({
+        where: {
+          peopleId: people.id,
+        },
+      });
+
+      if (found) {
+        post.createdBy = found.userId;
+        post.claimed = true;
       }
     }
 

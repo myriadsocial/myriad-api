@@ -156,6 +156,12 @@ export class Post extends Entity {
   popularCount: number;
 
   @property({
+    type: 'boolean',
+    required: false,
+  })
+  claimed?: boolean;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
