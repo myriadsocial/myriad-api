@@ -1,7 +1,7 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param, response} from '@loopback/rest';
-import {PaginationInterceptor} from '../interceptors';
+import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
 import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
 // import {authenticate} from '@loopback/authentication';
@@ -33,6 +33,7 @@ export class ExperienceController {
     return this.experienceRepository.find(filter);
   }
 
+  @intercept(ExperienceInterceptor.BINDING_KEY)
   @get('/experiences/{id}')
   @response(200, {
     description: 'Experience model instance',
