@@ -3,6 +3,7 @@ import {PeopleController} from '../../../controllers';
 import {
   PeopleRepository,
   PostRepository,
+  UserRepository,
   UserSocialMediaRepository,
 } from '../../../repositories';
 import {
@@ -17,16 +18,21 @@ import {
 describe('PeopleControllerIntegration', () => {
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
+  let userRepository: UserRepository;
   let postRepository: PostRepository;
   let controller: PeopleController;
 
   before(async () => {
-    ({peopleRepository, userSocialMediaRepository, postRepository} =
-      await givenRepositories(testdb));
+    ({
+      peopleRepository,
+      userSocialMediaRepository,
+      postRepository,
+      userRepository,
+    } = await givenRepositories(testdb));
   });
 
   before(async () => {
-    controller = new PeopleController(peopleRepository);
+    controller = new PeopleController(peopleRepository, userRepository);
   });
 
   beforeEach(async () => {

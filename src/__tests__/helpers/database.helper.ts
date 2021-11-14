@@ -18,6 +18,7 @@ import {
   UserReportRepository,
   AccountSettingRepository,
   NotificationSettingRepository,
+  ExperienceUserRepository,
 } from '../../repositories';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -69,7 +70,10 @@ export async function givenRepositories(testdb: any) {
   const experienceRepository: ExperienceRepository = new ExperienceRepository(
     testdb,
     async () => userRepository,
+    async () => experienceUserRepository,
   );
+  const experienceUserRepository: ExperienceUserRepository =
+    new ExperienceUserRepository(testdb);
   const commentRepository: CommentRepository = new CommentRepository(
     testdb,
     async () => userRepository,
