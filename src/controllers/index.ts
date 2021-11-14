@@ -25,3 +25,4 @@ export * from './user-report.controller';
 export * from './exchange-rate.controller';
 export * from './user-account-setting.controller';
 export * from './user-notification-setting.controller';
+export * from './post-importer.controller';

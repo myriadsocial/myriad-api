@@ -19,6 +19,7 @@ import {
   AccountSettingRepository,
   NotificationSettingRepository,
   ExperienceUserRepository,
+  PostImporterRepository,
 } from '../../repositories';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -60,7 +61,9 @@ export async function givenRepositories(testdb: any) {
     async () => commentRepository,
     async () => transactionRepository,
     async () => voteRepository,
+    async () => postImporterRepository,
   );
+  const postImporterRepository: PostImporterRepository = new PostImporterRepository(testdb);
   const userCurrencyRepository: UserCurrencyRepository =
     new UserCurrencyRepository(testdb, async () => currencyRepository);
   const currencyRepository: CurrencyRepository = new CurrencyRepository(testdb);
