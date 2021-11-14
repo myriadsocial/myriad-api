@@ -238,24 +238,23 @@ describe('PostApplication', function () {
 
     beforeEach(async () => {
       await postRepository.deleteAll();
+      await userRepository.deleteAll();
     });
 
     it('creates a post from reddit', async function () {
+      await givenUserInstance(userRepository, {
+        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
+      });
+
       const platformPost = givenPlatformPost();
       const response = await client
         .post('/posts/import')
         .send(platformPost)
         .expect(200);
       const result = await postRepository.findById(response.body.id, {
-        include: ['people'],
+        include: ['people', 'importers'],
       });
-      const people = await peopleRepository.findById(result.peopleId);
-      expect(toJSON(result)).to.containDeep(
-        toJSON({
-          ...response.body,
-          people: people,
-        }),
-      );
+      expect(toJSON(result)).to.containDeep(toJSON(response.body));
 
       peopleId = response.body.peopleId;
     });
@@ -266,7 +265,14 @@ describe('PostApplication', function () {
       expect(toJSON(result)).to.containDeep(toJSON(response.body));
     });
 
-    it('adds another importer for existing posts', async function () {
+    it('adds another importer for existing posts', async () => {
+      await givenUserInstance(userRepository, {
+        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d95e',
+      });
+      await givenUserInstance(userRepository, {
+        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
+      });
+
       const platformPost = givenPlatformPost({
         importer:
           '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d95e',
@@ -285,11 +291,16 @@ describe('PostApplication', function () {
         .send(platformPostWithOtherImporter)
         .expect(200);
       expect(response.body.id).to.equal(otherResponse.body.id);
-      const result = await postRepository.findById(otherResponse.body.id);
+      const result = await postRepository.findById(otherResponse.body.id, {
+        include: ['people', 'importers'],
+      });
       expect(toJSON(result)).to.containDeep(toJSON(otherResponse.body));
     });
 
     it('rejects request to create a post from social media if importer alreay imported', async () => {
+      await givenUserInstance(userRepository, {
+        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
+      });
       const platformPost: Partial<PlatformPost> = givenPlatformPost({
         importer:
           '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',

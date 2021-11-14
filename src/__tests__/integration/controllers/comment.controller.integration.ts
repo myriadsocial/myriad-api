@@ -7,6 +7,7 @@ import {
   NotificationRepository,
   NotificationSettingRepository,
   PeopleRepository,
+  PostImporterRepository,
   PostRepository,
   ReportRepository,
   TransactionRepository,
@@ -21,6 +22,7 @@ import {
   givenEmptyDatabase,
   givenMyriadPostInstance,
   givenPeopleInstance,
+  givenPostImporterInstance,
   givenPostInstance,
   givenRepositories,
   givenTransactionInstance,
@@ -44,6 +46,7 @@ describe('CommentControllerIntegration', () => {
   let userReportRepository: UserReportRepository;
   let notificationSettingRepository: NotificationSettingRepository;
   let reportRepository: ReportRepository;
+  let postImporterRepository: PostImporterRepository;
 
   before(async () => {
     ({
@@ -58,6 +61,7 @@ describe('CommentControllerIntegration', () => {
       reportRepository,
       notificationSettingRepository,
       userReportRepository,
+      postImporterRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -461,6 +465,10 @@ describe('CommentControllerIntegration', () => {
     const post = await givenPostInstance(postRepository, {
       createdBy: otherUser.id,
       peopleId: people.id,
+    });
+    await givenPostImporterInstance(postImporterRepository, {
+      importerId: otherUser.id,
+      postId: post.id,
     });
     const user = await givenUserInstance(userRepository);
     const commentInstance = givenComment({

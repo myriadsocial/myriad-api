@@ -8,6 +8,7 @@ import {
   NotificationRepository,
   NotificationSettingRepository,
   PeopleRepository,
+  PostImporterRepository,
   PostRepository,
   TransactionRepository,
   UserRepository,
@@ -23,6 +24,8 @@ import {
   givenNotificationSettingRepository,
   givenPeopleInstance,
   givenPeopleRepository,
+  givenPostImporterInstance,
+  givenPostImporterRepository,
   givenPostInstance,
   givenPostRepository,
   givenTransactionInstance,
@@ -45,6 +48,7 @@ describe('CommentApplication', function () {
   let notificationSettingRepository: NotificationSettingRepository;
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
+  let postImporterRepository: PostImporterRepository;
   let user: User;
   let post: Post;
   let people: People;
@@ -64,6 +68,7 @@ describe('CommentApplication', function () {
     notificationRepository = await givenNotificationRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
+    postImporterRepository = await givenPostImporterRepository(app);
     notificationSettingRepository = await givenNotificationSettingRepository(
       app,
     );
@@ -78,6 +83,7 @@ describe('CommentApplication', function () {
     await peopleRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();
     await notificationSettingRepository.deleteAll();
+    await postImporterRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -111,6 +117,15 @@ describe('CommentApplication', function () {
   });
 
   it('creates a notification when creating a comment', async () => {
+    const importer = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+    });
+
+    await givenPostImporterInstance(postImporterRepository, {
+      postId: post.id,
+      importerId: importer.id,
+    });
+
     const comment = givenComment({
       userId: user.id,
       postId: post.id,

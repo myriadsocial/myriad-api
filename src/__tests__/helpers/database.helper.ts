@@ -137,6 +137,7 @@ export async function givenRepositories(testdb: any) {
     userReportRepository,
     accountSettingRepository,
     notificationSettingRepository,
+    postImporterRepository,
   };
 }
 
@@ -159,6 +160,7 @@ export async function givenEmptyDatabase(testdb: any) {
     userReportRepository,
     accountSettingRepository,
     notificationSettingRepository,
+    postImporterRepository,
   } = await givenRepositories(testdb);
 
   await peopleRepository.deleteAll();
@@ -178,4 +180,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await userReportRepository.deleteAll();
   await accountSettingRepository.deleteAll();
   await notificationSettingRepository.deleteAll();
+  await postImporterRepository.deleteAll();
 }
