@@ -21,6 +21,7 @@ export enum ControllerType {
 
 export enum MethodType {
   FIND = 'find',
+  FINDBYID = 'findById',
   CREATE = 'create',
   CREATEVOTE = 'createVote',
   UPDATEBYID = 'updateById',
