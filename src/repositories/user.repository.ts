@@ -1,4 +1,4 @@
-import {Getter, inject} from '@loopback/core';
+import {Getter, inject, bind, BindingScope} from '@loopback/core';
 import {
   DefaultCrudRepository,
   HasManyRepositoryFactory,
@@ -29,6 +29,7 @@ import {UserSocialMediaRepository} from './user-social-media.repository';
 import {AccountSettingRepository} from './account-setting.repository';
 import {NotificationSettingRepository} from './notification-setting.repository';
 
+@bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<
   User,
   typeof User.prototype.id,
