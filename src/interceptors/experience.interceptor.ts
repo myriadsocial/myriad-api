@@ -9,9 +9,11 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {MethodType} from '../enums';
+import {MethodType, PlatformType} from '../enums';
+import {People, User} from '../models';
 import {
   ExperienceRepository,
+  ExperienceUserRepository,
   UserExperienceRepository,
   UserRepository,
 } from '../repositories';
@@ -31,6 +33,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     protected userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(ExperienceUserRepository)
+    protected experienceUserRepository: ExperienceUserRepository,
     @service(MetricService)
     protected metricService: MetricService,
   ) {}
@@ -59,32 +63,72 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     const experienceId = invocationCtx.args[1];
 
     let numberOfUserExperience = 0;
+    let people = [];
+    let users = [];
 
     switch (methodName) {
-      case MethodType.CREATE:
+      case MethodType.CREATE: {
+        people = invocationCtx.args[1].people.filter(
+          (e: People) => e.platform !== PlatformType.MYRIAD,
+        );
+        users = invocationCtx.args[1].people.filter(
+          (e: People) => e.platform === PlatformType.MYRIAD,
+        );
+
         numberOfUserExperience = await this.validateNumberOfUserExperience(
           userId,
         );
         invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
           createdBy: userId,
+          people: people,
         });
         break;
+      }
 
-      case MethodType.SUBSCRIBE:
+      case MethodType.SUBSCRIBE: {
         numberOfUserExperience = await this.validateCloneExperience(
           userId,
           experienceId,
         );
         break;
+      }
 
-      case MethodType.CLONE:
+      case MethodType.CLONE: {
+        people = invocationCtx.args[2].people.filter(
+          (e: People) => e.platform !== PlatformType.MYRIAD,
+        );
+        users = invocationCtx.args[2].people.filter(
+          (e: People) => e.platform === PlatformType.MYRIAD,
+        );
+
         invocationCtx.args[2] = Object.assign(invocationCtx.args[2], {
           createdBy: userId,
           subscribedCount: 0,
+          people: people,
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
         });
         break;
+      }
+
+      case MethodType.UPDATEEXPERIENCE: {
+        await this.experienceUserRepository.deleteAll({
+          experienceId: experienceId,
+        });
+
+        people = invocationCtx.args[2].people.filter(
+          (e: People) => e.platform !== PlatformType.MYRIAD,
+        );
+        users = invocationCtx.args[2].people.filter(
+          (e: People) => e.platform === PlatformType.MYRIAD,
+        );
+
+        invocationCtx.args[2] = Object.assign(invocationCtx.args[2], {
+          people: people,
+        });
+
+        break;
+      }
     }
 
     // Add pre-invocation logic here
@@ -115,6 +159,25 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       await this.experienceRepository.updateById(experienceId, {
         subscribedCount: currentNumberOfUserExperience,
       });
+    }
+
+    if (
+      (methodName === MethodType.CREATE ||
+        methodName === MethodType.CLONE ||
+        methodName === MethodType.UPDATEEXPERIENCE) &&
+      users.length > 0
+    ) {
+      await Promise.all(
+        users.map(async (user: User) => {
+          return this.experienceUserRepository.create({
+            userId: user.id,
+            experienceId:
+              methodName === MethodType.UPDATEEXPERIENCE
+                ? experienceId
+                : result.id,
+          });
+        }),
+      );
     }
 
     if (methodName === MethodType.CLONE) {
