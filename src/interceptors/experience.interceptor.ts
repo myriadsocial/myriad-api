@@ -129,6 +129,12 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
         break;
       }
+
+      case MethodType.FINDBYID: {
+        invocationCtx.args[1] = Object.assign(invocationCtx.args[1] ?? {}, {
+          include: ['users'],
+        });
+      }
     }
 
     // Add pre-invocation logic here
@@ -188,7 +194,27 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
     }
 
-    await this.metricService.userMetric(userId);
+    if (methodName !== MethodType.FINDBYID) {
+      await this.metricService.userMetric(userId);
+    } else {
+      users = result.users;
+      delete result.users;
+
+      const userToPeople = users.map((user: User) => {
+        return new People({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          platform: PlatformType.MYRIAD,
+          originUserId: user.id,
+          profilePictureURL: user.profilePictureURL,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        });
+      });
+
+      result.people = [...result.people, ...userToPeople];
+    }
 
     return result;
   }
