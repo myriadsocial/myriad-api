@@ -7,11 +7,12 @@ import {
 } from '@loopback/testlab';
 import {PeopleController} from '../../controllers';
 import {People} from '../../models';
-import {PeopleRepository} from '../../repositories';
+import {PeopleRepository, UserRepository} from '../../repositories';
 import {givenPeople} from '../helpers';
 
 describe('PeopleController', () => {
   let peopleRepository: StubbedInstanceWithSinonAccessor<PeopleRepository>;
+  let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
   let controller: PeopleController;
   let aPeopleWithId: People;
   let aListOfPeople: People[];
@@ -66,6 +67,7 @@ describe('PeopleController', () => {
 
   function resetRepositories() {
     peopleRepository = createStubInstance(PeopleRepository);
+    userRepository = createStubInstance(UserRepository);
     aPeopleWithId = givenPeople({
       id: '1',
     });
@@ -82,6 +84,6 @@ describe('PeopleController', () => {
       }),
     ] as People[];
 
-    controller = new PeopleController(peopleRepository);
+    controller = new PeopleController(peopleRepository, userRepository);
   }
 });
