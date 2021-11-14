@@ -158,6 +158,6 @@ export class UserSocialMediaController {
       // ignore
     }
 
-    await this.userSocialMediaService.userSocialMediaRepository.deleteById(id);
+    await this.userSocialMediaService.disconnectSocialMedia(id);
   }
 }
