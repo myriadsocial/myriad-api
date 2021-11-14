@@ -15,10 +15,11 @@ import {
   MethodType,
   OrderFieldType,
   OrderType,
+  PlatformType,
   TimelineType,
   VisibilityType,
 } from '../enums';
-import {Post} from '../models';
+import {Experience, People, Post, UserExperienceWithRelations} from '../models';
 import {
   ExperienceService,
   FriendService,
@@ -186,7 +187,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       });
     }
 
-    const result = await next();
+    let result = await next();
 
     // Set notification has been read
     if (
@@ -201,6 +202,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         : null;
 
       await this.notificationService.readNotification(toUser);
+    }
+
+    if (
+      className === ControllerType.USEREXPERIENCE &&
+      Object.prototype.hasOwnProperty.call(filter.where, 'userId')
+    ) {
+      result = this.combinePeopleAndUser(result);
     }
 
     return {
@@ -376,6 +384,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const experiencePersonIds = experience
           ? experience.people.map(e => e.id)
           : [];
+        const experienceUserIds = experience
+          ? (experience.users ?? []).map(e => e.id)
+          : [];
 
         const friends = [...approvedFriendIds, userId];
         const topics = [...trendingTopics, ...experienceTopics];
@@ -436,7 +447,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               and: [
                 {
                   importers: {
-                    inq: friends,
+                    inq: [...friends, ...experienceUserIds],
                   },
                 },
                 {
@@ -448,7 +459,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               and: [
                 {
                   createdBy: {
-                    inq: friends,
+                    inq: [...friends, ...experienceUserIds],
                   },
                 },
                 {
@@ -461,5 +472,41 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         } as Where<Post>;
       }
     }
+  }
+
+  combinePeopleAndUser(
+    result: UserExperienceWithRelations[],
+  ): UserExperienceWithRelations[] {
+    return result.map((userExperience: UserExperienceWithRelations) => {
+      const users = userExperience.experience?.users;
+
+      if (!users) return userExperience;
+
+      const newExperience: Partial<Experience> = {
+        ...userExperience.experience,
+      };
+
+      delete newExperience.users;
+
+      const userToPeople = users.map(user => {
+        return new People({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          platform: PlatformType.MYRIAD,
+          originUserId: user.id,
+          profilePictureURL: user.profilePictureURL,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        });
+      });
+
+      const people = userExperience.experience?.people ?? [];
+
+      newExperience.people = [...userToPeople, ...people];
+      userExperience.experience = newExperience as Experience;
+
+      return userExperience;
+    });
   }
 }
