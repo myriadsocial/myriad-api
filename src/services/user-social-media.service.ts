@@ -2,7 +2,11 @@ import {repository} from '@loopback/repository';
 import {PlatformType} from '../enums';
 import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';
-import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  UserSocialMediaRepository,
+} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {NotificationService} from './';
@@ -17,6 +21,8 @@ export class UserSocialMediaService {
     public userSocialMediaRepository: UserSocialMediaRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -98,5 +104,15 @@ export class UserSocialMediaService {
     return this.peopleRepository
       .userSocialMedia(foundPeople.id)
       .create(newUserSocialMedia);
+  }
+
+  async disconnectSocialMedia(userSocialMediaId: string): Promise<void> {
+    const {peopleId} = await this.userSocialMediaRepository.findById(
+      userSocialMediaId,
+    );
+
+    await this.postRepository.updateAll({peopleId: peopleId}, {claimed: false});
+
+    await this.userSocialMediaRepository.deleteById(userSocialMediaId);
   }
 }
