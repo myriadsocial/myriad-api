@@ -16,6 +16,7 @@ import {Transaction} from './transaction.model';
 import {User} from './user.model';
 import {MentionUser} from './mention-user.model';
 import {UserWithRelations} from '.';
+import {PostImporter} from './post-importer.model';
 
 @model({
   settings: {
@@ -97,13 +98,6 @@ export class Post extends Entity {
     default: () => new Date(),
   })
   originCreatedAt?: string;
-
-  @property({
-    type: 'array',
-    itemType: 'string',
-    default: [],
-  })
-  importers: string[];
 
   @property({
     type: 'object',
@@ -210,6 +204,11 @@ export class Post extends Entity {
   @hasMany(() => Transaction, {keyTo: 'referenceId'})
   transactions: Transaction[];
 
+  @hasMany(() => User, {
+    through: {model: () => PostImporter, keyTo: 'importerId'},
+  })
+  importers: User[];
+
   constructor(data?: Partial<Post>) {
     super(data);
   }
@@ -219,6 +218,7 @@ export interface PostRelations {
   // describe navigational properties here
   people?: PeopleWithRelations;
   user?: UserWithRelations;
+  importers?: UserWithRelations[];
 }
 
 export type PostWithRelations = Post & PostRelations;
