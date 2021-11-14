@@ -176,6 +176,7 @@ export class UserExperienceController {
     });
   }
 
+  @intercept(ExperienceInterceptor.BINDING_KEY)
   @patch('/users/{userId}/experiences/{experienceId}', {
     responses: {
       '204': {
