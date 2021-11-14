@@ -1,6 +1,13 @@
-import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {
+  belongsTo,
+  Entity,
+  model,
+  property,
+  hasMany,
+} from '@loopback/repository';
 import {People} from './people.model';
 import {User} from './user.model';
+import {ExperienceUser} from './experience-user.model';
 
 @model({
   settings: {
@@ -100,6 +107,9 @@ export class Experience extends Entity {
     },
   )
   createdBy: string;
+
+  @hasMany(() => User, {through: {model: () => ExperienceUser}})
+  users: User[];
 
   constructor(data?: Partial<Experience>) {
     super(data);
