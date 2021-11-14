@@ -77,6 +77,7 @@ describe('PostControllerIntegration', () => {
       reportRepository,
       notificationSettingRepository,
       userReportRepository,
+      userSocialMediaRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -101,7 +102,11 @@ describe('PostControllerIntegration', () => {
       notificationSettingRepository,
       fcmService,
     );
-    postService = new PostService(postRepository, peopleRepository);
+    postService = new PostService(
+      postRepository,
+      peopleRepository,
+      userSocialMediaRepository,
+    );
     controller = new PostController(
       socialMediaService,
       postService,

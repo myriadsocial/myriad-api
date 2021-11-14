@@ -8,7 +8,11 @@ import {
 import {PostController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {Post} from '../../models';
-import {PeopleRepository, PostRepository} from '../../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  UserSocialMediaRepository,
+} from '../../repositories';
 import {
   NotificationService,
   PostService,
@@ -19,6 +23,7 @@ import {givenMyriadPost} from '../helpers';
 describe('PostController', () => {
   let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
   let peopleRepository: PeopleRepository;
+  let userSocialMediaRepository: UserSocialMediaRepository;
   let postService: PostService;
   let socialMediaService: SocialMediaService;
   let notificationService: NotificationService;
@@ -108,7 +113,11 @@ describe('PostController', () => {
       text: 'woah',
     });
 
-    postService = new PostService(postRepository, peopleRepository);
+    postService = new PostService(
+      postRepository,
+      peopleRepository,
+      userSocialMediaRepository,
+    );
     controller = new PostController(
       socialMediaService,
       postService,

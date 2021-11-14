@@ -8,7 +8,11 @@ import {
 import {UserSocialMediaController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {UserSocialMedia} from '../../models';
-import {PeopleRepository, UserSocialMediaRepository} from '../../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  UserSocialMediaRepository,
+} from '../../repositories';
 import {
   NotificationService,
   SocialMediaService,
@@ -18,6 +22,7 @@ import {givenUserSocialMedia} from '../helpers';
 
 describe('UserSocialMediaController', () => {
   let userSocialMediaRepository: StubbedInstanceWithSinonAccessor<UserSocialMediaRepository>;
+  let postRepository: PostRepository;
   let socialMediaService: SocialMediaService;
   let notificationService: NotificationService;
   let userSocialMediaService: UserSocialMediaService;
@@ -65,15 +70,6 @@ describe('UserSocialMediaController', () => {
     });
   });
 
-  describe('deleteUserSocialMediaById', () => {
-    it('successfully deletes existing items', async () => {
-      const deleteById = userSocialMediaRepository.stubs.deleteById;
-      deleteById.resolves();
-      await controller.deleteById(aUserSocialMediaWithId.id as string);
-      sinon.assert.calledWith(deleteById, aUserSocialMediaWithId.id);
-    });
-  });
-
   function resetRepositories() {
     userSocialMediaRepository = createStubInstance(UserSocialMediaRepository);
     aUserSocialMediaWithId = givenUserSocialMedia({
@@ -93,6 +89,7 @@ describe('UserSocialMediaController', () => {
     userSocialMediaService = new UserSocialMediaService(
       userSocialMediaRepository,
       peopleRepository,
+      postRepository,
       notificationService,
     );
     controller = new UserSocialMediaController(
