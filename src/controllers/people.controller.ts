@@ -99,6 +99,7 @@ export class PeopleController {
           },
         ],
       },
+      include: ['userSocialMedia'],
       order: ['createdAt DESC'],
       limit: 10 - userToPeople.length,
     });
