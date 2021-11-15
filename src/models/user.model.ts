@@ -86,6 +86,9 @@ export class User extends Entity {
     index: {
       unique: true,
     },
+    jsonSchema: {
+      maxLength: 16,
+    },
   })
   username?: string;
 
