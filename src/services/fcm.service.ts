@@ -1,4 +1,5 @@
 import {BindingScope, injectable} from '@loopback/core';
+import {AnyObject} from '@loopback/repository';
 import * as firebaseAdmin from 'firebase-admin';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -9,6 +10,7 @@ export class FCMService {
     fcmTokens?: string[],
     title?: string,
     body?: string,
+    data?: AnyObject,
   ): Promise<void> {
     if (fcmTokens == null || fcmTokens.length <= 0) return;
 
@@ -18,6 +20,7 @@ export class FCMService {
         body: body,
       },
       tokens: fcmTokens,
+      data: data,
     };
 
     await firebaseAdmin.messaging().sendMulticast(message);
