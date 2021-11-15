@@ -1,10 +1,15 @@
 import {intercept} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {
+  Count,
+  CountSchema,
+  Filter,
+  FilterExcludingWhere,
+  repository,
+} from '@loopback/repository';
 import {
   del,
   get,
   getModelSchemaRef,
-  HttpErrors,
   param,
   patch,
   post,
@@ -180,7 +185,8 @@ export class UserExperienceController {
   @patch('/users/{userId}/experiences/{experienceId}', {
     responses: {
       '204': {
-        description: 'User.Experience PATCH success',
+        description: 'Experience model count',
+        content: {'application/json': {schema: CountSchema}},
       },
     },
   })
@@ -195,32 +201,10 @@ export class UserExperienceController {
       },
     })
     experience: Partial<Experience>,
-  ): Promise<void> {
-    const userExperience = await this.userExperienceRepository.findOne({
-      where: {
-        userId,
-        experienceId,
-      },
-      include: ['experience'],
-    });
-
-    if (!userExperience)
-      throw new HttpErrors.UnprocessableEntity('Experience not found');
-
-    if (userExperience.subscribed)
-      throw new HttpErrors.UnprocessableEntity(
-        'You cannot update other user experience',
-      );
-
-    if (
-      userExperience.experience &&
-      userExperience.experience.createdBy !== userId
-    )
-      throw new HttpErrors.UnprocessableEntity(
-        'You cannot update other user experience',
-      );
-
-    return this.experienceRepository.updateById(experienceId, experience);
+  ): Promise<Count> {
+    return this.userRepository
+      .experiences(userId)
+      .patch(experience, {id: experienceId});
   }
 
   @del('/user-experiences/{id}', {
