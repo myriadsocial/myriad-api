@@ -79,8 +79,12 @@ export class NotificationService {
     );
     if (createdNotification === null) return false;
 
+    const title = 'Friend Request Accepted';
+    const body = fromUser.name + ' ' + notification.message;
     await this.fcmService.sendNotification(
       toUser.fcmTokens,
+      title,
+      body,
       createdNotification,
     );
 
@@ -102,8 +106,12 @@ export class NotificationService {
     );
     if (createdNotification === null) return false;
 
+    const title = 'Friend Request Accepted';
+    const body = fromUser.name + ' ' + notification.message;
     await this.fcmService.sendNotification(
       toUser.fcmTokens,
+      title,
+      body,
       createdNotification,
     );
 
@@ -146,6 +154,10 @@ export class NotificationService {
     notification.referenceId = comment.id;
     notification.message = 'commented: ' + comment.text;
 
+    // FCM messages
+    const title = 'New Comment';
+    const body = fromUser.name + ' ' + notification.message;
+
     let toUser: User = new User();
 
     const post = await this.postRepository.findById(comment.postId);
@@ -176,6 +188,8 @@ export class NotificationService {
         );
         await this.fcmService.sendNotification(
           toUser.fcmTokens,
+          title,
+          body,
           createdNotification,
         );
       }
@@ -245,7 +259,12 @@ export class NotificationService {
         const found = createdNotifications.find(notif => notif.to === to.id);
 
         if (found) {
-          return this.fcmService.sendNotification(to.fcmTokens, found);
+          return this.fcmService.sendNotification(
+            to.fcmTokens,
+            title,
+            body,
+            found,
+          );
         }
 
         return;
@@ -329,7 +348,12 @@ export class NotificationService {
         const found = createdNotifications.find(notif => notif.to === to.id);
 
         if (found) {
-          return this.fcmService.sendNotification(to.fcmTokens, found);
+          return this.fcmService.sendNotification(
+            to.fcmTokens,
+            'Report Approved',
+            'Myriad Official ' + notification.message,
+            found,
+          );
         }
 
         return;
@@ -373,6 +397,8 @@ export class NotificationService {
         );
         await this.fcmService.sendNotification(
           commentUser.fcmTokens,
+          'Comment Removed',
+          'Myriad Official ' + notification.message,
           createdNotification,
         );
 
@@ -438,7 +464,12 @@ export class NotificationService {
             );
 
             if (found) {
-              return this.fcmService.sendNotification(to.fcmTokens, found);
+              return this.fcmService.sendNotification(
+                to.fcmTokens,
+                'Post Removed',
+                'Myriad Official ' + notification.message,
+                found,
+              );
             }
 
             return;
@@ -461,6 +492,8 @@ export class NotificationService {
         );
         await this.fcmService.sendNotification(
           user.fcmTokens,
+          'User Removed',
+          'Myriad Official ' + notification.message,
           createdNotification,
         );
         break;
@@ -485,6 +518,10 @@ export class NotificationService {
     notification.referenceId = vote.id;
     notification.message = vote.state ? 'upvoted' : 'downvoted';
 
+    // FCM messages
+    const title = 'New Vote';
+    const body = fromUser.name + ' ' + notification.message;
+
     let toUser = null;
 
     // Notification vote to comment
@@ -502,6 +539,8 @@ export class NotificationService {
 
       await this.fcmService.sendNotification(
         toUser.fcmTokens,
+        title,
+        body,
         createdNotification,
       );
 
@@ -560,7 +599,12 @@ export class NotificationService {
         const found = createdNotifications.find(notif => notif.to === to.id);
 
         if (found) {
-          return this.fcmService.sendNotification(to.fcmTokens, found);
+          return this.fcmService.sendNotification(
+            to.fcmTokens,
+            title,
+            body,
+            found,
+          );
         }
       }),
     );
@@ -590,6 +634,10 @@ export class NotificationService {
       notification.additionalReferenceId =
         await this.getCommentAdditionalReferenceIds(to);
     }
+
+    // FCM messages
+    const title = 'New Mention';
+    const body = fromUser.name + ' ' + notification.message;
 
     const toUsers = await this.userRepository.find({
       where: {
@@ -638,7 +686,12 @@ export class NotificationService {
         );
 
         if (found) {
-          return this.fcmService.sendNotification(toUser.fcmTokens, found);
+          return this.fcmService.sendNotification(
+            toUser.fcmTokens,
+            title,
+            body,
+            found,
+          );
         }
 
         return;
@@ -683,8 +736,13 @@ export class NotificationService {
     );
     if (createdNotification == null) return false;
 
+    const title = 'Send Tips Success';
+    const body = fromUser.name + ' ' + notification.message;
+
     await this.fcmService.sendNotification(
       toUser.fcmTokens,
+      title,
+      body,
       createdNotification,
     );
 
@@ -707,8 +765,13 @@ export class NotificationService {
     );
     if (createdNotification == null) return false;
 
+    const title = 'Send Reward Success';
+    const body = 'Myriad Official' + ' ' + notification.message;
+
     await this.fcmService.sendNotification(
       toUser.fcmTokens,
+      title,
+      body,
       createdNotification,
     );
 
@@ -731,8 +794,13 @@ export class NotificationService {
     );
     if (createdNotification == null) return false;
 
+    const title = 'Send Initial AUSD Success';
+    const body = 'Myriad Official' + ' ' + notification.message;
+
     await this.fcmService.sendNotification(
       toUser.fcmTokens,
+      title,
+      body,
       createdNotification,
     );
 
@@ -770,8 +838,13 @@ export class NotificationService {
     );
     if (createdNotification == null) return false;
 
+    const title = 'Send Claim Tips Success';
+    const body = 'You ' + notification.message;
+
     await this.fcmService.sendNotification(
       toUser.fcmTokens,
+      title,
+      body,
       createdNotification,
     );
     return true;
@@ -795,8 +868,15 @@ export class NotificationService {
 
     if (createdNotification === null) return false;
 
+    const title = `Connected ${
+      platform[0].toUpperCase() + platform.substring(1)
+    } Success`;
+    const body = 'You ' + notification.message;
+
     await this.fcmService.sendNotification(
       toUser.fcmTokens,
+      title,
+      body,
       createdNotification,
     );
 
@@ -825,8 +905,15 @@ export class NotificationService {
 
     if (createdNotification === null) return false;
 
+    const title = `Disconnected ${
+      platform[0].toUpperCase() + platform.substring(1)
+    } Success`;
+    const body = 'You ' + notification.message;
+
     await this.fcmService.sendNotification(
       toUser.fcmTokens,
+      title,
+      body,
       createdNotification,
     );
 
