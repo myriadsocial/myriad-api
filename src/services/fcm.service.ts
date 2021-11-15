@@ -8,6 +8,8 @@ export class FCMService {
 
   async sendNotification(
     fcmTokens?: string[],
+    title?: string,
+    body?: string,
     data?: AnyObject,
   ): Promise<void> {
     if (fcmTokens == null || fcmTokens.length <= 0) return;
@@ -15,6 +17,10 @@ export class FCMService {
     const message = {
       tokens: fcmTokens,
       data: data,
+      notification: {
+        title: title,
+        body: body,
+      },
     };
 
     await firebaseAdmin.messaging().sendMulticast(message);
