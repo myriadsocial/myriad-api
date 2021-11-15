@@ -112,6 +112,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
 
       case MethodType.UPDATEEXPERIENCE: {
+        await this.validateUpdateExperience(userId, experienceId);
         await this.experienceUserRepository.deleteAll({
           experienceId: experienceId,
         });
@@ -256,5 +257,34 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       );
 
     return count;
+  }
+
+  async validateUpdateExperience(
+    userId: string,
+    experienceId: string,
+  ): Promise<void> {
+    const userExperience = await this.userExperienceRepository.findOne({
+      where: {
+        userId,
+        experienceId,
+      },
+      include: ['experience'],
+    });
+
+    if (!userExperience)
+      throw new HttpErrors.UnprocessableEntity('Experience not found');
+
+    if (userExperience.subscribed)
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot update other user experience',
+      );
+
+    if (
+      userExperience.experience &&
+      userExperience.experience.createdBy !== userId
+    )
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot update other user experience',
+      );
   }
 }
