@@ -140,10 +140,31 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         if (user)
           throw new HttpErrors.UnprocessableEntity('User already exist!');
 
-        newUser.username =
-          newUser.name.replace(/\s+/g, '').toLowerCase() +
-          '.' +
-          Math.random().toString(36).substr(2, 9);
+        const flag = true;
+        const usernameBase = newUser.name
+          .replace(/\s+/g, '')
+          .toLowerCase()
+          .substring(0, 16);
+
+        let newUsername = usernameBase;
+
+        while (flag) {
+          const found = await this.userRepository.findOne({
+            where: {
+              username: newUsername,
+            },
+          });
+
+          if (found) {
+            newUsername =
+              usernameBase.substring(0, 6) +
+              '.' +
+              Math.random().toString(36).substr(2, 9);
+          } else {
+            newUser.username = newUsername;
+            break;
+          }
+        }
 
         invocationCtx.args[0] = newUser;
         return;
