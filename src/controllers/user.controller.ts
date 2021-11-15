@@ -127,6 +127,14 @@ export class UserController {
     user: Partial<User>,
   ): Promise<void> {
     if (user.username) {
+      if (user.username.includes('.') && user.username.includes('_')) {
+        throw new HttpErrors.UnprocessableEntity('Wrong username format');
+      }
+
+      if (!user.username.match('^[a-z0-9._]+$')) {
+        throw new HttpErrors.UnprocessableEntity('Wrong username format');
+      }
+
       const {count} = await this.activityLogRepository.count({
         userId: id,
         type: ActivityLogType.USERNAME,
