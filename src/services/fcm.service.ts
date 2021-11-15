@@ -8,17 +8,11 @@ export class FCMService {
 
   async sendNotification(
     fcmTokens?: string[],
-    title?: string,
-    body?: string,
     data?: AnyObject,
   ): Promise<void> {
     if (fcmTokens == null || fcmTokens.length <= 0) return;
 
     const message = {
-      notification: {
-        title: title,
-        body: body,
-      },
       tokens: fcmTokens,
       data: data,
     };
