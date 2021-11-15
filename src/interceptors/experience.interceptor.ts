@@ -197,8 +197,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     if (methodName !== MethodType.FINDBYID) {
       await this.metricService.userMetric(userId);
     } else {
-      users = result.users;
-      delete result.users;
+      if (result.users) {
+        users = result.users;
+        delete result.users;
+      }
 
       const userToPeople = users.map((user: User) => {
         return new People({
