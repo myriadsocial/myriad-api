@@ -13,7 +13,7 @@ import {
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {ActivityLogType} from '../enums';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
-import {User} from '../models';
+import {ActivityLog, User} from '../models';
 import {
   ActivityLogRepository,
   FriendRepository,
@@ -150,5 +150,32 @@ export class UserController {
       type: ActivityLogType.PROFILE,
       message: 'You updated your profile',
     });
+  }
+
+  @post('/users/{id}/skip-username')
+  @response(200, {
+    description: 'Activity Log instance',
+    content: {'application/json': {schema: getModelSchemaRef(ActivityLog)}},
+  })
+  async skipUsername(@param.path.string('id') id: string): Promise<void> {
+    const found = await this.userRepository.activityLogs(id).find({
+      where: {
+        type: ActivityLogType.SKIP,
+      },
+    });
+
+    if (found.length >= 1) {
+      throw new HttpErrors.UnprocessableEntity(
+        'You have already skip updating username',
+      );
+    }
+
+    await this.userRepository.activityLogs(id).create({
+      type: ActivityLogType.SKIP,
+      message: 'You skipped updating username',
+      userId: id,
+    });
+
+    return;
   }
 }
