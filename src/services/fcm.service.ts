@@ -16,7 +16,9 @@ export class FCMService {
 
     const message = {
       tokens: fcmTokens,
-      data: data,
+      data: {
+        body: JSON.stringify(data),
+      },
       notification: {
         title: title,
         body: body,
