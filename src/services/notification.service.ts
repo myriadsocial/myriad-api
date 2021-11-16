@@ -137,7 +137,9 @@ export class NotificationService {
       additionalReferenceId: additionalReferenceId,
     });
 
-    const post = await this.postRepository.findById(comment.postId);
+    const post = await this.postRepository.findById(comment.postId, {
+      include: ['importers'],
+    });
 
     // FCM messages
     const title = 'New Comment';
