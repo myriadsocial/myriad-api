@@ -148,7 +148,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           .split(' ')[0]
           .toLowerCase();
 
-        let newUsername = usernameBase + '.';
+        let newUsername = usernameBase;
 
         while (flag) {
           const found = await this.userRepository.findOne({
@@ -273,6 +273,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     const randomCharOne = Math.random().toString(36).substr(2);
     const randomCharTwo = Math.random().toString(36).substr(2);
 
-    return randomCharOne + randomCharTwo;
+    return '.' + randomCharOne + randomCharTwo;
   }
 }
