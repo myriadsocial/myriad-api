@@ -132,10 +132,10 @@ describe('UserApplication', function () {
     await client.post('/users').send(user).expect(422);
   });
 
-  it('rejects requests to create a user with name length less than 3', async () => {
+  it('rejects requests to create a user with name length less than 2', async () => {
     const user: Partial<User> = givenUser({
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-      name: 'Hi',
+      name: 'H',
     });
     await client.post('/users').send(user).expect(422);
   });
