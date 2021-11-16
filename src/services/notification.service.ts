@@ -615,40 +615,26 @@ export class NotificationService {
   async getCommentAdditionalReferenceIds(
     commentId: string,
   ): Promise<AnyObject[]> {
-    const lastCommentId = commentId;
+    const additionalReferenceId = [];
+    const flag = true;
 
-    let additionalReferenceId = [];
-    let firstCommentId = null;
-    let secondCommentId = null;
+    let lastCommentId = commentId;
 
-    let lastComment = await this.commentRepository.findById(lastCommentId);
-
-    if (lastComment.type === ReferenceType.POST) {
-      additionalReferenceId = [{postId: lastComment.postId}];
-    } else {
-      lastComment = await this.commentRepository.findById(
-        lastComment.referenceId,
-      );
-
-      firstCommentId = lastComment.id;
-      secondCommentId = lastComment.id;
+    while (flag) {
+      let lastComment = await this.commentRepository.findById(lastCommentId);
 
       if (lastComment.type === ReferenceType.POST) {
-        additionalReferenceId = [
-          {postId: lastComment.postId},
-          {firstCommentId: firstCommentId},
-        ];
+        additionalReferenceId.unshift({postId: lastComment.postId});
+        break;
       } else {
         lastComment = await this.commentRepository.findById(
           lastComment.referenceId,
         );
-        firstCommentId = lastComment.id;
+        additionalReferenceId.unshift({commentId: lastComment.id});
 
-        additionalReferenceId = [
-          {postId: lastComment.postId},
-          {firstCommentId: firstCommentId},
-          {secondCommentId: secondCommentId},
-        ];
+        if (lastComment.id) {
+          lastCommentId = lastComment.id;
+        } else break;
       }
     }
 
