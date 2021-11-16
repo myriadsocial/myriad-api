@@ -56,37 +56,24 @@ export class NotificationService {
   ) {}
 
   async sendFriendRequest(from: string, to: string): Promise<boolean> {
-    const notificationSetting =
-      await this.notificationSettingRepository.findOne({
-        where: {userId: to},
-      });
-
-    if (notificationSetting && !notificationSetting.friendRequests)
-      return false;
+    const active = await this.checkNotificationSetting(
+      to,
+      NotificationType.FRIEND_REQUEST,
+    );
+    if (!active) return false;
 
     const fromUser = await this.userRepository.findById(from);
-    const toUser = await this.userRepository.findById(to);
-
-    const notification = new Notification();
-    notification.type = NotificationType.FRIEND_REQUEST;
-    notification.from = fromUser.id;
-    notification.to = toUser.id;
-    notification.referenceId = fromUser.id;
-    notification.message = 'sent you friend request';
-
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
-    if (createdNotification === null) return false;
+    const notification = new Notification({
+      type: NotificationType.FRIEND_REQUEST,
+      from: fromUser.id,
+      referenceId: fromUser.id,
+      message: 'sent you friend request',
+    });
 
     const title = 'Friend Request Accepted';
     const body = fromUser.name + ' ' + notification.message;
-    await this.fcmService.sendNotification(
-      toUser.fcmTokens,
-      title,
-      body,
-      createdNotification,
-    );
+
+    await this.sendNotificationToUser(notification, to, title, body);
 
     return true;
   }
@@ -94,26 +81,17 @@ export class NotificationService {
   async sendFriendAccept(fromUser: User, toUser: User): Promise<boolean> {
     if (!fromUser || !toUser) return false;
 
-    const notification = new Notification();
-    notification.type = NotificationType.FRIEND_ACCEPT;
-    notification.from = fromUser.id;
-    notification.to = toUser.id;
-    notification.referenceId = fromUser.id;
-    notification.message = 'accept your friend request';
-
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
-    if (createdNotification === null) return false;
+    const notification = new Notification({
+      type: NotificationType.FRIEND_ACCEPT,
+      from: fromUser.id,
+      referenceId: fromUser.id,
+      message: 'accept your friend request',
+    });
 
     const title = 'Friend Request Accepted';
     const body = fromUser.name + ' ' + notification.message;
-    await this.fcmService.sendNotification(
-      toUser.fcmTokens,
-      title,
-      body,
-      createdNotification,
-    );
+
+    await this.sendNotificationToUser(notification, toUser.id, title, body);
 
     return true;
   }
@@ -144,26 +122,28 @@ export class NotificationService {
     );
 
     const fromUser = await this.userRepository.findById(from);
-    const notification = new Notification();
+    const additionalReferenceId = await this.getCommentAdditionalReferenceIds(
+      comment.id ?? '',
+    );
 
-    notification.type =
-      comment.type === ReferenceType.POST
-        ? NotificationType.POST_COMMENT
-        : NotificationType.COMMENT_COMMENT;
-    notification.from = fromUser.id;
-    notification.referenceId = comment.id;
-    notification.message = 'commented: ' + comment.text;
+    const notification = new Notification({
+      type:
+        comment.type === ReferenceType.POST
+          ? NotificationType.POST_COMMENT
+          : NotificationType.COMMENT_COMMENT,
+      from: fromUser.id,
+      referenceId: comment.id,
+      message: 'commented: ' + comment.text,
+      additionalReferenceId: additionalReferenceId,
+    });
+
+    const post = await this.postRepository.findById(comment.postId);
 
     // FCM messages
     const title = 'New Comment';
     const body = fromUser.name + ' ' + notification.message;
 
     let toUser: User = new User();
-
-    const post = await this.postRepository.findById(comment.postId);
-
-    notification.additionalReferenceId =
-      await this.getCommentAdditionalReferenceIds(comment.id ?? '');
 
     // Notification comment to comment
     if (comment.type === ReferenceType.COMMENT) {
@@ -172,26 +152,18 @@ export class NotificationService {
       );
 
       if (toComment.userId !== comment.userId) {
-        const notificationSetting =
-          await this.notificationSettingRepository.findOne({
-            where: {userId: toComment.userId},
-          });
-
-        // TODO: fixed notification setting
-        if (notificationSetting && !notificationSetting.comments) return false;
-
-        toUser = await this.userRepository.findById(toComment.userId);
-        notification.to = toUser.id;
-
-        const createdNotification = await this.notificationRepository.create(
-          notification,
+        const commentActive = await this.checkNotificationSetting(
+          toComment.userId,
+          NotificationType.COMMENT_COMMENT,
         );
-        await this.fcmService.sendNotification(
-          toUser.fcmTokens,
-          title,
-          body,
-          createdNotification,
-        );
+        if (commentActive) {
+          await this.sendNotificationToUser(
+            notification,
+            toComment.userId,
+            title,
+            body,
+          );
+        }
       }
     }
 
@@ -221,54 +193,17 @@ export class NotificationService {
     if (toUsers.length === 0) return false;
     if (!toUser) return false;
 
-    const notificationSetting =
-      await this.notificationSettingRepository.findOne({
-        where: {userId: toUser.id},
-      });
-
-    if (notificationSetting && !notificationSetting.comments) {
-      toUsers = toUsers.filter(userId => userId !== toUser.id);
-    }
-
-    const notifications = toUsers.map(to => {
-      const updatedNotification = {
-        ...notification,
-        to: to,
-      };
-
-      return new Notification(updatedNotification);
-    });
-
-    const createdNotifications = await this.notificationRepository.createAll(
-      notifications,
+    const postActive = await this.checkNotificationSetting(
+      toUser.id,
+      NotificationType.POST_COMMENT,
     );
-    if (createdNotifications.length === 0) return false;
+    if (!postActive) toUsers = toUsers.filter(userId => userId !== toUser.id);
 
-    const users = await this.userRepository.find({
-      where: {
-        or: toUsers.map(userId => {
-          return {
-            id: userId,
-          };
-        }),
-      },
-    });
-
-    await Promise.all(
-      users.map(to => {
-        const found = createdNotifications.find(notif => notif.to === to.id);
-
-        if (found) {
-          return this.fcmService.sendNotification(
-            to.fcmTokens,
-            title,
-            body,
-            found,
-          );
-        }
-
-        return;
-      }),
+    await this.sendNotificationToMultipleUsers(
+      notification,
+      toUsers,
+      title,
+      body,
     );
 
     return true;
@@ -284,15 +219,15 @@ export class NotificationService {
 
     if (reporters.length === 0) return false;
 
-    const notification = new Notification();
-
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
     const mnemonic = config.MYRIAD_MNEMONIC;
     const pair = getKeyring().addFromMnemonic(mnemonic);
 
-    notification.from = getHexPublicKey(pair);
-    notification.message = 'approved your report';
+    const notification = new Notification({
+      from: getHexPublicKey(pair),
+      message: 'approved your report',
+    });
 
     switch (referenceType) {
       case ReferenceType.USER: {
@@ -319,45 +254,15 @@ export class NotificationService {
         return false;
     }
 
-    const notifications = reporters.map(reporter => {
-      const updatedNotification = {
-        ...notification,
-        to: reporter.reportedBy,
-      };
+    const reporterIds = reporters.map(reporter => reporter.reportedBy);
+    const title = 'Report Approved';
+    const body = 'Myriad Official ' + notification.message;
 
-      return new Notification(updatedNotification);
-    });
-
-    const createdNotifications = await this.notificationRepository.createAll(
-      notifications,
-    );
-    if (createdNotifications.length === 0) return false;
-
-    const users = await this.userRepository.find({
-      where: {
-        or: reporters.map(reporter => {
-          return {
-            id: reporter.reportedBy,
-          };
-        }),
-      },
-    });
-
-    await Promise.all(
-      users.map(to => {
-        const found = createdNotifications.find(notif => notif.to === to.id);
-
-        if (found) {
-          return this.fcmService.sendNotification(
-            to.fcmTokens,
-            'Report Approved',
-            'Myriad Official ' + notification.message,
-            found,
-          );
-        }
-
-        return;
-      }),
+    await this.sendNotificationToMultipleUsers(
+      notification,
+      reporterIds,
+      title,
+      body,
     );
 
     return true;
@@ -374,32 +279,25 @@ export class NotificationService {
     const mnemonic = config.MYRIAD_MNEMONIC;
     const pair = getKeyring().addFromMnemonic(mnemonic);
 
-    const notification = new Notification();
-
-    notification.from = getHexPublicKey(pair);
+    const notification = new Notification({
+      from: getHexPublicKey(pair),
+    });
 
     switch (referenceType) {
       case ReferenceType.COMMENT: {
         notification.type = NotificationType.COMMENT_REMOVED;
         notification.referenceId = referenceId;
+        notification.message = 'removed your comment';
         notification.additionalReferenceId =
           await this.getCommentAdditionalReferenceIds(referenceId);
 
         const comment = await this.commentRepository.findById(referenceId);
 
-        notification.to = comment.userId;
-        notification.message = 'removed your comment';
-
-        const commentUser = await this.userRepository.findById(comment.userId);
-
-        const createdNotification = await this.notificationRepository.create(
+        await this.sendNotificationToUser(
           notification,
-        );
-        await this.fcmService.sendNotification(
-          commentUser.fcmTokens,
+          comment.userId,
           'Comment Removed',
           'Myriad Official ' + notification.message,
-          createdNotification,
         );
 
         break;
@@ -434,46 +332,11 @@ export class NotificationService {
         if (toUsers.length === 0) return false;
         if (!toUser) return false;
 
-        const notifications = toUsers.map(to => {
-          const updatedNotification = {
-            ...notification,
-            to: to,
-          };
-
-          return new Notification(updatedNotification);
-        });
-
-        const createdNotifications =
-          await this.notificationRepository.createAll(notifications);
-        if (createdNotifications.length === 0) return false;
-
-        const users = await this.userRepository.find({
-          where: {
-            or: toUsers.map(userId => {
-              return {
-                id: userId,
-              };
-            }),
-          },
-        });
-
-        await Promise.all(
-          users.map(to => {
-            const found = createdNotifications.find(
-              notif => notif.to === to.id,
-            );
-
-            if (found) {
-              return this.fcmService.sendNotification(
-                to.fcmTokens,
-                'Post Removed',
-                'Myriad Official ' + notification.message,
-                found,
-              );
-            }
-
-            return;
-          }),
+        await this.sendNotificationToMultipleUsers(
+          notification,
+          toUsers,
+          'Post Removed',
+          'Myriad Official ' + notification.message,
         );
 
         break;
@@ -483,19 +346,14 @@ export class NotificationService {
         notification.type = NotificationType.USER_BANNED;
         notification.referenceId = referenceId;
         notification.message = 'banned you';
-        notification.to = referenceId;
 
-        const user = await this.userRepository.findById(referenceId);
-
-        const createdNotification = await this.notificationRepository.create(
+        await this.sendNotificationToUser(
           notification,
-        );
-        await this.fcmService.sendNotification(
-          user.fcmTokens,
+          referenceId,
           'User Removed',
           'Myriad Official ' + notification.message,
-          createdNotification,
         );
+
         break;
       }
 
@@ -508,15 +366,15 @@ export class NotificationService {
 
   async sendPostVote(from: string, vote: Vote): Promise<boolean> {
     const fromUser = await this.userRepository.findById(from);
-    const notification = new Notification();
-
-    notification.type =
-      vote.type === ReferenceType.POST
-        ? NotificationType.POST_VOTE
-        : NotificationType.COMMENT_VOTE;
-    notification.from = fromUser.id;
-    notification.referenceId = vote.id;
-    notification.message = vote.state ? 'upvoted' : 'downvoted';
+    const notification = new Notification({
+      type:
+        vote.type === ReferenceType.POST
+          ? NotificationType.POST_VOTE
+          : NotificationType.COMMENT_VOTE,
+      from: fromUser.id,
+      referenceId: vote.id,
+      message: vote.state ? 'upvoted' : 'downvoted',
+    });
 
     // FCM messages
     const title = 'New Vote';
@@ -528,20 +386,14 @@ export class NotificationService {
     if (vote.type === ReferenceType.COMMENT) {
       const toComment = await this.commentRepository.findById(vote.referenceId);
 
-      toUser = await this.userRepository.findById(toComment.userId);
-      notification.to = toUser.id;
       notification.additionalReferenceId =
         await this.getCommentAdditionalReferenceIds(toComment.id ?? '');
 
-      const createdNotification = await this.notificationRepository.create(
+      await this.sendNotificationToUser(
         notification,
-      );
-
-      await this.fcmService.sendNotification(
-        toUser.fcmTokens,
+        toComment.userId,
         title,
         body,
-        createdNotification,
       );
 
       return true;
@@ -570,43 +422,11 @@ export class NotificationService {
 
     if (toUsers.length === 0) return false;
 
-    const notifications = toUsers.map(to => {
-      const updatedNotification = {
-        ...notification,
-        to: to,
-      };
-
-      return new Notification(updatedNotification);
-    });
-
-    const createdNotifications = await this.notificationRepository.createAll(
-      notifications,
-    );
-    if (createdNotifications.length === 0) return false;
-
-    const users = await this.userRepository.find({
-      where: {
-        or: toUsers.map(userId => {
-          return {
-            id: userId,
-          };
-        }),
-      },
-    });
-
-    await Promise.all(
-      users.map(to => {
-        const found = createdNotifications.find(notif => notif.to === to.id);
-
-        if (found) {
-          return this.fcmService.sendNotification(
-            to.fcmTokens,
-            title,
-            body,
-            found,
-          );
-        }
-      }),
+    await this.sendNotificationToMultipleUsers(
+      notification,
+      toUsers,
+      title,
+      body,
     );
 
     return true;
@@ -621,14 +441,15 @@ export class NotificationService {
     if (mentions.length === 0) return false;
 
     const fromUser = await this.userRepository.findById(from);
-    const notification = new Notification();
-    notification.type =
-      type === ReferenceType.COMMENT
-        ? NotificationType.COMMENT_MENTION
-        : NotificationType.POST_MENTION;
-    notification.from = fromUser.id;
-    notification.referenceId = to;
-    notification.message = 'mentioned you';
+    const notification = new Notification({
+      type:
+        type === ReferenceType.COMMENT
+          ? NotificationType.COMMENT_MENTION
+          : NotificationType.POST_MENTION,
+      from: fromUser.id,
+      referenceId: to,
+      message: 'mentioned you',
+    });
 
     if (type === ReferenceType.COMMENT) {
       notification.additionalReferenceId =
@@ -639,63 +460,24 @@ export class NotificationService {
     const title = 'New Mention';
     const body = fromUser.name + ' ' + notification.message;
 
-    const toUsers = await this.userRepository.find({
-      where: {
-        or: mentions
-          .filter(mention => mention.id !== from)
-          .map(mention => {
-            return {
-              id: mention.id,
-            };
-          }),
-      },
-    });
-
-    if (toUsers.length === 0) return false;
-
-    const notifications = toUsers
+    const userIds = mentions
+      .filter(mention => mention.id !== from)
       .filter(async user => {
-        const notificationSetting =
-          await this.notificationSettingRepository.findOne({
-            where: {
-              userId: user.id,
-            },
-          });
-
-        if (notificationSetting && !notificationSetting.mentions) return false;
-        return true;
-      })
-      .map(toUser => {
-        const updatedNotification = {
-          ...notification,
-          to: toUser.id,
-        };
-
-        return new Notification(updatedNotification);
-      });
-
-    const createdNotifications = await this.notificationRepository.createAll(
-      notifications,
-    );
-    if (createdNotifications.length === 0) return false;
-
-    await Promise.all(
-      toUsers.map(toUser => {
-        const found = createdNotifications.find(
-          notif => notif.to === toUser.id,
+        const mentionActive = await this.checkNotificationSetting(
+          user.id,
+          NotificationType.POST_MENTION,
         );
 
-        if (found) {
-          return this.fcmService.sendNotification(
-            toUser.fcmTokens,
-            title,
-            body,
-            found,
-          );
-        }
+        if (!mentionActive) return false;
+        return true;
+      })
+      .map(user => user.id);
 
-        return;
-      }),
+    await this.sendNotificationToMultipleUsers(
+      notification,
+      userIds,
+      title,
+      body,
     );
 
     return true;
@@ -704,18 +486,18 @@ export class NotificationService {
   async sendTipsSuccess(transaction: Transaction): Promise<boolean> {
     const {from, to, type, referenceId} = transaction;
     const fromUser = await this.userRepository.findById(from);
-    const toUser = await this.userRepository.findById(to);
 
-    const notificationSetting =
-      await this.notificationSettingRepository.findOne({
-        where: {
-          userId: toUser.id,
-        },
-      });
+    const tipsActive = await this.checkNotificationSetting(
+      to,
+      NotificationType.POST_TIPS,
+    );
+    if (!tipsActive) return false;
 
-    if (notificationSetting && !notificationSetting.tips) return false;
-
-    const notification = new Notification();
+    const notification = new Notification({
+      from: fromUser.id,
+      referenceId: transaction.id,
+      message: transaction.amount + ' ' + transaction.currencyId,
+    });
 
     if (type === ReferenceType.COMMENT && referenceId) {
       notification.type = NotificationType.COMMENT_TIPS;
@@ -726,159 +508,96 @@ export class NotificationService {
       notification.additionalReferenceId = [{postId: referenceId}];
     } else notification.type = NotificationType.USER_TIPS;
 
-    notification.from = fromUser.id;
-    notification.to = toUser.id;
-    notification.referenceId = transaction.id;
-    notification.message = transaction.amount + ' ' + transaction.currencyId;
-
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
-    if (createdNotification == null) return false;
-
     const title = 'Send Tips Success';
     const body = fromUser.name + ' ' + notification.message;
 
-    await this.fcmService.sendNotification(
-      toUser.fcmTokens,
-      title,
-      body,
-      createdNotification,
-    );
+    await this.sendNotificationToUser(notification, to, title, body);
 
     return true;
   }
 
   async sendRewardSuccess(transaction: Transaction): Promise<boolean> {
     const {from, to} = transaction;
-    const notification = new Notification();
-    const toUser = await this.userRepository.findById(to);
 
-    notification.type = NotificationType.USER_REWARD;
-    notification.from = from;
-    notification.to = to;
-    notification.referenceId = transaction.id;
-    notification.message = transaction.amount + ' ' + transaction.currencyId;
-
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
-    if (createdNotification == null) return false;
+    const notification = new Notification({
+      type: NotificationType.USER_REWARD,
+      from: from,
+      referenceId: transaction.id,
+      message: transaction.amount + ' ' + transaction.currencyId,
+    });
 
     const title = 'Send Reward Success';
     const body = 'Myriad Official' + ' ' + notification.message;
 
-    await this.fcmService.sendNotification(
-      toUser.fcmTokens,
-      title,
-      body,
-      createdNotification,
-    );
+    await this.sendNotificationToUser(notification, to, title, body);
 
     return true;
   }
 
   async sendIntitalAUSD(transaction: Transaction): Promise<boolean> {
     const {from, to} = transaction;
-    const notification = new Notification();
-    const toUser = await this.userRepository.findById(to);
 
-    notification.type = NotificationType.USER_INITIAL_TIPS;
-    notification.from = from;
-    notification.to = to;
-    notification.referenceId = transaction.id;
-    notification.message = transaction.amount + ' ' + transaction.currencyId;
-
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
-    if (createdNotification == null) return false;
+    const notification = new Notification({
+      type: NotificationType.USER_INITIAL_TIPS,
+      from: from,
+      referenceId: transaction.id,
+      message: transaction.amount + ' ' + transaction.currencyId,
+    });
 
     const title = 'Send Initial AUSD Success';
     const body = 'Myriad Official' + ' ' + notification.message;
 
-    await this.fcmService.sendNotification(
-      toUser.fcmTokens,
-      title,
-      body,
-      createdNotification,
-    );
+    await this.sendNotificationToUser(notification, to, title, body);
 
     return true;
   }
 
   async sendClaimTips(transaction: Transaction): Promise<boolean> {
-    const {from, to} = transaction;
+    const {to} = transaction;
 
-    const notification = new Notification();
-    const toUser = await this.userRepository.findById(to);
-
-    const notificationSetting =
-      await this.notificationSettingRepository.findOne({
-        where: {
-          userId: toUser.id,
-        },
-      });
-
-    if (notificationSetting && !notificationSetting.tips) return false;
+    const tipsActive = await this.checkNotificationSetting(
+      to,
+      NotificationType.POST_TIPS,
+    );
+    if (!tipsActive) return false;
 
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
     const mnemonic = config.MYRIAD_MNEMONIC;
     const pair = getKeyring().addFromMnemonic(mnemonic);
 
-    notification.type = NotificationType.USER_CLAIM_TIPS;
-    notification.from = from;
-    notification.to = getHexPublicKey(pair);
-    notification.referenceId = transaction.id;
-    notification.message = transaction.amount + ' ' + transaction.currencyId;
-
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
-    if (createdNotification == null) return false;
+    const notification = new Notification({
+      type: NotificationType.USER_CLAIM_TIPS,
+      from: getHexPublicKey(pair),
+      referenceId: transaction.id,
+      message: transaction.amount + ' ' + transaction.currencyId,
+    });
 
     const title = 'Send Claim Tips Success';
     const body = 'You ' + notification.message;
 
-    await this.fcmService.sendNotification(
-      toUser.fcmTokens,
-      title,
-      body,
-      createdNotification,
-    );
+    await this.sendNotificationToUser(notification, to, title, body);
+
     return true;
   }
 
   async sendConnectedSocialMedia(userSocialMedia: UserSocialMedia) {
     const {userId, platform, peopleId} = userSocialMedia;
-    const notification = new Notification();
-    const toUser = await this.userRepository.findById(userId);
 
-    notification.type = NotificationType.CONNECTED_SOCIAL_MEDIA;
-    notification.from = toUser.id;
-    notification.to = toUser.id;
-    notification.referenceId = toUser.id;
-    notification.message = `connected your ${platform} social media`;
-    notification.additionalReferenceId = [{peopleId: peopleId}];
-
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
-
-    if (createdNotification === null) return false;
+    const notification = new Notification({
+      type: NotificationType.CONNECTED_SOCIAL_MEDIA,
+      from: userId,
+      referenceId: userId,
+      message: `connected your ${platform} social media`,
+      additionalReferenceId: [{peopleId: peopleId}],
+    });
 
     const title = `Connected ${
       platform[0].toUpperCase() + platform.substring(1)
     } Success`;
     const body = 'You ' + notification.message;
 
-    await this.fcmService.sendNotification(
-      toUser.fcmTokens,
-      title,
-      body,
-      createdNotification,
-    );
+    await this.sendNotificationToUser(notification, userId, title, body);
 
     return true;
   }
@@ -886,38 +605,97 @@ export class NotificationService {
   async sendDisconnectedSocialMedia(id: string, fromUserId?: string) {
     const userSocialMedia = await this.userSocialMediaRepository.findById(id);
     const {userId, platform, peopleId} = userSocialMedia;
-    const notification = new Notification();
-    const toUser = await this.userRepository.findById(userId);
 
-    if (!fromUserId) fromUserId = toUser.id;
+    if (!fromUserId) fromUserId = userId;
     else await this.userRepository.findById(fromUserId);
 
-    notification.type = NotificationType.DISCONNECTED_SOCIAL_MEDIA;
-    notification.from = fromUserId;
-    notification.to = toUser.id;
-    notification.referenceId = fromUserId;
-    notification.message = `disconnected your ${platform} social media`;
-    notification.additionalReferenceId = [{peopleId: peopleId}];
-
-    const createdNotification = await this.notificationRepository.create(
-      notification,
-    );
-
-    if (createdNotification === null) return false;
+    const notification = new Notification({
+      type: NotificationType.DISCONNECTED_SOCIAL_MEDIA,
+      from: fromUserId,
+      referenceId: fromUserId,
+      message: `disconnected your ${platform} social media`,
+      additionalReferenceId: [{peopleId: peopleId}],
+    });
 
     const title = `Disconnected ${
       platform[0].toUpperCase() + platform.substring(1)
     } Success`;
     const body = 'You ' + notification.message;
 
+    await this.sendNotificationToUser(notification, userId, title, body);
+
+    return true;
+  }
+
+  async sendNotificationToUser(
+    notification: Notification,
+    userId: string,
+    title?: string,
+    body?: string,
+  ): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    const createdNotification = await this.notificationRepository.create({
+      ...notification,
+      to: user.id,
+    });
+
+    if (!createdNotification) return;
+
     await this.fcmService.sendNotification(
-      toUser.fcmTokens,
+      user.fcmTokens,
       title,
       body,
       createdNotification,
     );
+  }
 
-    return true;
+  async sendNotificationToMultipleUsers(
+    notification: Notification,
+    userIds: string[],
+    title?: string,
+    body?: string,
+  ): Promise<void> {
+    const notifications = userIds.map(id => {
+      const updatedNotification = {
+        ...notification,
+        to: id,
+      };
+
+      return new Notification(updatedNotification);
+    });
+
+    const createdNotifications = await this.notificationRepository.createAll(
+      notifications,
+    );
+
+    if (!createdNotifications || !createdNotifications.length) return;
+
+    const users = await this.userRepository.find({
+      where: {
+        or: userIds.map(userId => {
+          return {
+            id: userId,
+          };
+        }),
+      },
+    });
+
+    await Promise.all(
+      users.map(user => {
+        const found = createdNotifications.find(notif => notif.to === user.id);
+
+        if (found) {
+          return this.fcmService.sendNotification(
+            user.fcmTokens,
+            title,
+            body,
+            found,
+          );
+        }
+
+        return;
+      }),
+    );
   }
 
   async getCommentAdditionalReferenceIds(
@@ -961,6 +739,45 @@ export class NotificationService {
     }
 
     return additionalReferenceId;
+  }
+
+  async checkNotificationSetting(
+    userId: string,
+    type: NotificationType,
+  ): Promise<boolean> {
+    const notificationSetting =
+      await this.notificationSettingRepository.findOne({
+        where: {userId: userId},
+      });
+
+    if (notificationSetting) {
+      switch (type) {
+        case NotificationType.FRIEND_REQUEST:
+          if (!notificationSetting.friendRequests) return false;
+          break;
+
+        case NotificationType.POST_COMMENT:
+        case NotificationType.COMMENT_COMMENT:
+          if (!notificationSetting.comments) return false;
+          break;
+
+        case NotificationType.POST_MENTION:
+        case NotificationType.COMMENT_MENTION:
+          if (!notificationSetting.mentions) return false;
+          break;
+
+        case NotificationType.POST_TIPS:
+        case NotificationType.COMMENT_TIPS:
+        case NotificationType.USER_TIPS:
+          if (!notificationSetting.tips) return false;
+          break;
+
+        default:
+          return false;
+      }
+    }
+
+    return true;
   }
 
   async readNotification(to?: string): Promise<void> {
