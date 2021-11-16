@@ -10,6 +10,7 @@ import {
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ReferenceType, ControllerType, MethodType} from '../enums';
+import {User} from '../models';
 import {
   CommentRepository,
   CurrencyRepository,
@@ -130,7 +131,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
   ): Promise<void> {
     switch (className) {
       case ControllerType.USER: {
-        const newUser = invocationCtx.args[0];
+        const newUser = new User(invocationCtx.args[0]);
         const user = await this.userRepository.findOne({
           where: {
             id: newUser.id,
@@ -141,12 +142,13 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('User already exist!');
 
         const flag = true;
+        const name = newUser.name.substring(0, 22);
         const usernameBase = newUser.name
-          .replace(/\s+/g, '')
-          .toLowerCase()
-          .substring(0, 16);
+          .replace(/\s+/g, ' ')
+          .split(' ')[0]
+          .toLowerCase();
 
-        let newUsername = usernameBase;
+        let newUsername = usernameBase + '.';
 
         while (flag) {
           const found = await this.userRepository.findOne({
@@ -156,15 +158,13 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           });
 
           if (found) {
-            newUsername =
-              usernameBase.substring(0, 6) +
-              '.' +
-              Math.random().toString(36).substr(2, 9);
-          } else {
-            newUser.username = newUsername;
-            break;
-          }
+            newUsername = usernameBase + this.generateRandomCharacter();
+            newUsername = newUsername.substring(0, 16);
+          } else break;
         }
+
+        newUser.name = name;
+        newUser.username = newUsername;
 
         invocationCtx.args[0] = newUser;
         return;
@@ -267,5 +267,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
     if (!comment) return;
     throw new HttpErrors.UnprocessableEntity('Cannot added comment anymore');
+  }
+
+  generateRandomCharacter(): string {
+    const randomCharOne = Math.random().toString(36).substr(2);
+    const randomCharTwo = Math.random().toString(36).substr(2);
+
+    return randomCharOne + randomCharTwo;
   }
 }
