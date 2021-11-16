@@ -75,7 +75,7 @@ export class User extends Entity {
     type: 'string',
     required: true,
     jsonSchema: {
-      minLength: 3,
+      minLength: 2,
     },
   })
   name: string;
