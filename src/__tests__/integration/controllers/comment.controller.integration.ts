@@ -514,7 +514,7 @@ describe('CommentControllerIntegration', () => {
       from: response.userId,
       referenceId: response.id,
       message: 'commented: ' + response.text,
-      additionalReferenceId: [{postId: post.id}, {firstCommentId: comment.id}],
+      additionalReferenceId: [{postId: post.id}, {commentId: comment.id}],
       to: comment.userId,
       read: false,
     });
