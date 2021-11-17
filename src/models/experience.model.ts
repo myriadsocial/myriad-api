@@ -48,7 +48,7 @@ export class Experience extends Entity {
   @property({
     type: 'array',
     itemType: 'object',
-    required: true,
+    required: false,
   })
   people: People[];
 

@@ -68,6 +68,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
     switch (methodName) {
       case MethodType.CREATE: {
+        if (invocationCtx.args[1].people.length === 0) {
+          throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
+        }
+
         people = invocationCtx.args[1].people.filter(
           (e: People) => e.platform !== PlatformType.MYRIAD,
         );
@@ -94,6 +98,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
 
       case MethodType.CLONE: {
+        if (invocationCtx.args[2].people.length === 0) {
+          throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
+        }
+
         people = invocationCtx.args[2].people.filter(
           (e: People) => e.platform !== PlatformType.MYRIAD,
         );
@@ -112,6 +120,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
 
       case MethodType.UPDATEEXPERIENCE: {
+        if (invocationCtx.args[2].people.length === 0) {
+          throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
+        }
+
         await this.validateUpdateExperience(userId, experienceId);
         await this.experienceUserRepository.deleteAll({
           experienceId: experienceId,
@@ -129,12 +141,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         });
 
         break;
-      }
-
-      case MethodType.FINDBYID: {
-        invocationCtx.args[1] = Object.assign(invocationCtx.args[1] ?? {}, {
-          include: ['users'],
-        });
       }
     }
 
