@@ -127,7 +127,7 @@ jobs:
             MONGO_USER_API:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_USER_API
             MONGO_PASSWORD_API:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.STG_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
-            API_SENTRY_DNS:${{ secrets.STG_GCP_PROJECT_ID }}/API_SENTRY_DNS
+            API_SENTRY_DSN:${{ secrets.STG_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_BEARER_TOKEN:${{ secrets.STG_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
             COIN_MARKET_CAP_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
             SSH_HOST:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_HOST
@@ -160,7 +160,7 @@ jobs:
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
-              --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DNS }} \
+              --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
               --set ingress.enabled=true \
