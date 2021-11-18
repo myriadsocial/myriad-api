@@ -5,7 +5,10 @@ import {HealthComponent} from '@loopback/health';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {LoggingComponent} from '@loopback/logging';
-import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
+import {
+  RestExplorerBindings,
+  RestExplorerComponent,
+} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
 import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
@@ -124,7 +127,9 @@ export class MyriadApiApplication extends BootMixin(
       return false;
     })();
 
-    this.bind('logging.winston.formats.myFormat').to(myFormat).apply(extensionFor(WINSTON_FORMAT));
+    this.bind('logging.winston.formats.myFormat')
+      .to(myFormat)
+      .apply(extensionFor(WINSTON_FORMAT));
     this.bind('logging.winston.formats.colorize')
       .to(format.colorize())
       .apply(extensionFor(WINSTON_FORMAT));
@@ -168,10 +173,16 @@ export class MyriadApiApplication extends BootMixin(
   async myriadNodeInit() {
     const provider = new WsProvider(config.MYRIAD_WS_RPC, false);
     await provider.connect();
-    const api = await new ApiPromise({provider, types: myriadTypes}).isReadyOrError;
+    const api = await new ApiPromise({provider, types: myriadTypes})
+      .isReadyOrError;
 
-    const platforms = ((await api.query.platform.platforms()).toHuman() as string[]) ?? [];
-    const defaultPlatforms = [PlatformType.FACEBOOK, PlatformType.REDDIT, PlatformType.TWITTER];
+    const platforms =
+      ((await api.query.platform.platforms()).toHuman() as string[]) ?? [];
+    const defaultPlatforms = [
+      PlatformType.FACEBOOK,
+      PlatformType.REDDIT,
+      PlatformType.TWITTER,
+    ];
 
     const mnemonic = config.MYRIAD_MNEMONIC;
     const signer = getKeyring().addFromMnemonic(mnemonic);
