@@ -611,7 +611,6 @@ export class MigrationScript100 implements MigrationScript {
             downvotes: metric.downvotes,
             discussions: metric.comment,
             debates: 0,
-            shares: 0,
           },
         });
       }),
