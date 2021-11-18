@@ -72,14 +72,6 @@ export class UserSocialMediaController {
 
         break;
 
-      case PlatformType.FACEBOOK:
-        platformUser = await this.socialMediaService.verifyToFacebook(
-          username,
-          publicKey,
-        );
-
-        break;
-
       default:
         throw new HttpErrors.NotFound('Platform does not exist');
     }
