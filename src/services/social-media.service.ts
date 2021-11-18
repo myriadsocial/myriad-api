@@ -29,15 +29,23 @@ export class SocialMediaService {
     username: string,
     publicKey: string,
   ): Promise<ExtendedPeople> {
-    const {data: user} = await this.twitterService.getActions(
-      `2/users/by/username/${username}?user.fields=profile_image_url`,
-    );
-    if (!user) throw new HttpErrors.NotFound('Invalid username');
+    let user = null;
+    let tweets = null;
 
-    // Fetch post timeline based on twitter userId from twitter api
-    const {data: tweets} = await this.twitterService.getActions(
-      `2/users/${user.id}/tweets?max_results=5`,
-    );
+    try {
+      ({data: user} = await this.twitterService.getActions(
+        `2/users/by/username/${username}?user.fields=profile_image_url`,
+      ));
+
+      // Fetch post timeline based on twitter userId from twitter api
+      ({data: tweets} = await this.twitterService.getActions(
+        `2/users/${user.id}/tweets?max_results=5`,
+      ));
+    } catch {
+      // ignore
+    }
+
+    if (!user) throw new HttpErrors.NotFound('Invalid username');
 
     if (!tweets)
       throw new HttpErrors.NotFound('Tweet not found/protected by user');
@@ -67,15 +75,24 @@ export class SocialMediaService {
     username: string,
     publicKey: string,
   ): Promise<ExtendedPeople> {
-    // Fetch data user from reddit api
-    const {data: redditUser} = await this.redditService.getActions(
-      `user/${username}/about.json`,
-    );
+    let redditUser = null;
+    let foundRedditPost = null;
 
-    // Fetch post timeline based on reddit username from reddit api
-    const {data: foundRedditPost} = await this.redditService.getActions(
-      `user/${username}/.json?limit=1`,
-    );
+    try {
+      // Fetch data user from reddit api
+      ({data: redditUser} = await this.redditService.getActions(
+        `user/${username}/about.json`,
+      ));
+
+      // Fetch post timeline based on reddit username from reddit api
+      ({data: foundRedditPost} = await this.redditService.getActions(
+        `user/${username}/.json?limit=1`,
+      ));
+    } catch {
+      // ignore
+    }
+
+    if (!redditUser) throw new HttpErrors.NotFound('Invalid username');
 
     if (foundRedditPost.children.length === 0)
       throw new HttpErrors.NotFound('Cannot find the spesified post');
