@@ -141,7 +141,7 @@ export class NotificationService {
 
     // FCM messages
     const title = 'New Comment';
-    const body = fromUser.name + ' ' + notification.message;
+    const body = fromUser.name + ' commented to your post';
 
     let toUser: User = new User();
 
@@ -161,7 +161,7 @@ export class NotificationService {
             notification,
             toComment.userId,
             title,
-            body,
+            fromUser.name + ' ' + 'reply to your comment',
           );
         }
       }
