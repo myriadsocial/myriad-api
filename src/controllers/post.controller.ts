@@ -82,6 +82,8 @@ export class PostController {
       newPost.embeddedURL = embeddedURL;
     }
 
+    newPost.tags = newPost.tags.map(tag => tag.toLowerCase());
+
     const result = await this.postService.postRepository.create(newPost);
 
     try {
@@ -143,11 +145,13 @@ export class PostController {
     }
 
     if (newPost.tags && newPost.tags.length > 0) {
-      const postTags = newPost.tags.filter((tag: string) => {
-        return !newTags
-          .map((newTag: string) => newTag.toLowerCase())
-          .includes(tag.toLowerCase());
-      });
+      const postTags = newPost.tags
+        .filter((tag: string) => {
+          return !newTags
+            .map((newTag: string) => newTag.toLowerCase())
+            .includes(tag.toLowerCase());
+        })
+        .map(tag => tag.toLowerCase());
 
       tags = [...tags, ...postTags];
     }

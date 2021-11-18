@@ -1,7 +1,7 @@
 import {repository, Where} from '@loopback/repository';
 import {OrderFieldType, OrderType, VisibilityType} from '../enums';
 import {Post} from '../models';
-import {TagRepository} from '../repositories';
+import {PostRepository, TagRepository} from '../repositories';
 import {DateUtils} from '../utils/date-utils';
 import {injectable, BindingScope} from '@loopback/core';
 
@@ -10,11 +10,13 @@ export class TagService {
   constructor(
     @repository(TagRepository)
     protected tagRepository: TagRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
   ) {}
 
   async createTags(tags: string[]): Promise<void> {
     const dateUtils = new DateUtils();
-    for (const tag of tags) {
+    for (const tag of [...new Set(tags)]) {
       const foundTag = await this.tagRepository.findOne({
         where: {
           or: [
@@ -31,15 +33,32 @@ export class TagService {
         },
       });
 
+      let count = 1;
+
       if (!foundTag) {
         await this.tagRepository.create({
           id: tag,
-          count: 1,
+          count: count,
         });
       } else {
+        const today = new Date();
+
+        if (!dateUtils.isToday(foundTag.updatedAt)) {
+          ({count} = await this.postRepository.count({
+            tags: {
+              inq: [[foundTag.id]],
+            },
+            createdAt: {
+              gt: new Date(
+                today.getTime() - new Date(foundTag.updatedAt).getTime(),
+              ).toString(),
+            },
+          }));
+        }
+
         await this.tagRepository.updateById(foundTag.id, {
           updatedAt: new Date().toString(),
-          count: dateUtils.isToday(foundTag.updatedAt) ? 1 : foundTag.count + 1,
+          count: count,
         });
       }
     }
