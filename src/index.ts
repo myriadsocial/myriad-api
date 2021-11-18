@@ -15,7 +15,7 @@ export async function main(options: ApplicationConfig = {}) {
 }
 
 if (require.main === module) {
-  if (config.SENTRY_DNS) {
+  if (config.SENTRY_DSN) {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
       tracesSampleRate: 1.0,
