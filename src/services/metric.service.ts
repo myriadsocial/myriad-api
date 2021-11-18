@@ -82,10 +82,7 @@ export class MetricService {
       state: false,
     });
 
-    // TODO: removed likes and dislikes
     const metric: Metric = {
-      likes: upvote.count,
-      dislikes: downvote.count,
       upvotes: upvote.count,
       downvotes: downvote.count,
     };

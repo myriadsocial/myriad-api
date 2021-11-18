@@ -40,12 +40,6 @@ export class PostRepository extends DefaultCrudRepository<
     typeof Vote.prototype.id
   >;
 
-  // TODO: Delete after revamp is finished
-  public readonly likes: HasManyRepositoryFactory<
-    Vote,
-    typeof Vote.prototype.id
-  >;
-
   public readonly transactions: HasManyRepositoryFactory<
     Transaction,
     typeof Post.prototype.id
@@ -90,11 +84,5 @@ export class PostRepository extends DefaultCrudRepository<
       voteRepositoryGetter,
     );
     this.registerInclusionResolver('votes', this.votes.inclusionResolver);
-    // TODO: Delete after revamp
-    this.likes = this.createHasManyRepositoryFactoryFor(
-      'likes',
-      voteRepositoryGetter,
-    );
-    this.registerInclusionResolver('likes', this.likes.inclusionResolver);
   }
 }
