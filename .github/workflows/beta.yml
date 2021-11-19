@@ -130,6 +130,7 @@ jobs:
             API_SENTRY_DSN:${{ secrets.PREPROD_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_BEARER_TOKEN:${{ secrets.PREPROD_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
             COIN_MARKET_CAP_API_KEY:${{ secrets.PREPROD_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
+            API_IP_WHITELIST:${{ secrets.PREPROD_GCP_PROJECT_ID }}/API_IP_WHITELIST
             SSH_HOST:${{ secrets.PREPROD_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.PREPROD_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.PREPROD_GCP_PROJECT_ID }}/SSH_KEY
@@ -167,6 +168,7 @@ jobs:
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/limit-rps"="10" \
+              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/whitelist-source-range"=${{ steps.secrets.outputs.API_IP_WHITELIST }} \
               --set-string ingress.hosts[0].host=api.testnet.myriad.systems \
               --set-string ingress.hosts[0].paths[0].path=/ \
               --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
