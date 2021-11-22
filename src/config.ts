@@ -12,6 +12,8 @@ export const config = {
   MYRIAD_MNEMONIC: process.env.MYRIAD_FAUCET_MNEMONIC ?? generateSeed(),
   MYRIAD_REWARD_AMOUNT: +(process.env.MYRIAD_REWARD_AMOUNT ?? 0),
 
+  ESCROW_SECRET_KEY: process.env.ESCROW_SECRET_KEY ?? '',
+
   ACALA_AUSD_REWARD_AMOUNT: +(process.env.ACALA_AUSD_REWARD_AMOUNT ?? 0),
 
   MONGO_HOST: process.env.MONGO_HOST,
