@@ -110,6 +110,7 @@ jobs:
             FAUCET_MNEMONIC:${{ secrets.PROD_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             REWARD_AMOUNT:${{ secrets.PROD_GCP_PROJECT_ID }}/REWARD_AMOUNT
             REWARD_AMOUNT_ACALA_AUSD:${{ secrets.PROD_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
+            ESCROW_SECRET_KEY:${{ secrets.PROD_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
             MONGO_HOST:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_PORT
             MONGO_DB:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_DB
@@ -142,6 +143,7 @@ jobs:
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
+              --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
               --set config.acalaAUSDRewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT_ACALA_AUSD }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
@@ -194,6 +196,7 @@ jobs:
             FAUCET_MNEMONIC:${{ secrets.PROD_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             REWARD_AMOUNT:${{ secrets.PROD_GCP_PROJECT_ID }}/REWARD_AMOUNT
             REWARD_AMOUNT_ACALA_AUSD:${{ secrets.PROD_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
+            ESCROW_SECRET_KEY:${{ secrets.PROD_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
             MONGO_HOST:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_PORT
             MONGO_DB:${{ secrets.PROD_GCP_PROJECT_ID }}/MONGO_DB
@@ -226,6 +229,7 @@ jobs:
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
+              --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
               --set config.acalaAUSDRewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT_ACALA_AUSD }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
