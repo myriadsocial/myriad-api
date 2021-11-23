@@ -11,6 +11,7 @@ export * from './post-walletaddress.controller';
 export * from './post.controller';
 export * from './queue.controller';
 export * from './tag.controller';
+export * from './tip.controller';
 export * from './transaction-summary.controller';
 export * from './transaction.controller';
 export * from './user-currency.controller';
