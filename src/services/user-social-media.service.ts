@@ -7,6 +7,8 @@ import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {NotificationService} from './';
 import {HttpErrors} from '@loopback/rest';
+import {config} from '../config';
+import {BcryptHasher} from './authentication/hash.password.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
@@ -52,8 +54,11 @@ export class UserSocialMediaService {
       });
 
       const {getKeyring, getHexPublicKey} = new PolkadotJs();
-      const newKey = getKeyring().addFromUri('//' + foundPeople.id);
-
+      const hasher = new BcryptHasher();
+      const hashPeopleId = await hasher.hashPassword(
+        foundPeople.id + config.ESCROW_SECRET_KEY,
+      );
+      const newKey = getKeyring().addFromUri('//' + hashPeopleId);
       await this.peopleRepository.updateById(foundPeople.id, {
         walletAddress: getHexPublicKey(newKey),
       });

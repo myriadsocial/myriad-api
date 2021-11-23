@@ -5,6 +5,8 @@ import {PostWithRelations} from '../models';
 import {PeopleRepository, PostRepository} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope} from '@loopback/core';
+import {BcryptHasher} from './authentication/hash.password.service';
+import {config} from '../config';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class PostService {
@@ -30,7 +32,11 @@ export class PostService {
       if (platformUser) {
         people = await this.peopleRepository.create(platformUser);
 
-        const newKey = getKeyring().addFromUri('//' + people.id);
+        const hasher = new BcryptHasher();
+        const hashPeopleId = await hasher.hashPassword(
+          people.id + config.ESCROW_SECRET_KEY,
+        );
+        const newKey = getKeyring().addFromUri('//' + hashPeopleId);
 
         this.peopleRepository.updateById(people.id, {
           walletAddress: getHexPublicKey(newKey),
