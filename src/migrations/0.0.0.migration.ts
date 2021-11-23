@@ -15,6 +15,7 @@ import {DateUtils} from '../utils/date-utils';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import currenciesSeed from '../data-seed/currencies.json';
 import usersSeed from '../data-seed/users.json';
+import {BcryptHasher} from '../services/authentication/hash.password.service';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /* eslint-disable  @typescript-eslint/naming-convention */
@@ -130,8 +131,12 @@ export class MigrationScript000 implements MigrationScript {
       );
 
       await Promise.all(
-        newPeople.map(person => {
-          const newKey = getKeyring().addFromUri('//' + person.id);
+        newPeople.map(async person => {
+          const hasher = new BcryptHasher();
+          const hashPeopleId = await hasher.hashPassword(
+            person.id + config.ESCROW_SECRET_KEY,
+          );
+          const newKey = getKeyring().addFromUri('//' + hashPeopleId);
           const walletAddress = getHexPublicKey(newKey);
           return this.peopleRepository.updateById(person.id, {
             createdAt: new Date().toString(),

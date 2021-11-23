@@ -19,6 +19,7 @@ import {TransactionService} from './transaction.service';
 import acala from '../data-seed/currencies.json';
 import {NotificationService} from './notification.service';
 import {HttpErrors} from '@loopback/rest';
+import {BcryptHasher} from './authentication/hash.password.service';
 
 const BN = require('bn.js');
 
@@ -177,7 +178,11 @@ export class CurrencyService {
     const {userId, peopleId} = userSocialMedia;
     const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
 
-    const from = getKeyring().addFromUri('//' + peopleId);
+    const hasher = new BcryptHasher();
+    const hashPeopleId = await hasher.hashPassword(
+      peopleId + config.ESCROW_SECRET_KEY,
+    );
+    const from = getKeyring().addFromUri('//' + hashPeopleId);
     const to = userId;
 
     const userCurrencies = await this.userCurrencyRepository.find({
@@ -339,7 +344,11 @@ export class CurrencyService {
     }
 
     for (const peopleId of peopleIds) {
-      const from = getKeyring().addFromUri('//' + peopleId);
+      const hasher = new BcryptHasher();
+      const hashPeopleId = await hasher.hashPassword(
+        peopleId + config.ESCROW_SECRET_KEY,
+      );
+      const from = getKeyring().addFromUri('//' + hashPeopleId);
 
       if (native) {
         const nativeBalance = await api.query.system.account(from.publicKey);
@@ -415,7 +424,11 @@ export class CurrencyService {
     let totalBalance = 0;
 
     for (const peopleId of peopleIds) {
-      const address = getKeyring().addFromUri('//' + peopleId);
+      const hasher = new BcryptHasher();
+      const hashPeopleId = await hasher.hashPassword(
+        peopleId + config.ESCROW_SECRET_KEY,
+      );
+      const address = getKeyring().addFromUri('//' + hashPeopleId);
 
       if (native) {
         const nativeBalance = await api.query.system.account(address.address);

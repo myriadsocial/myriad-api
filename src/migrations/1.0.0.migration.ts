@@ -48,6 +48,7 @@ import {
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import acala from '../data-seed/currencies.json';
+import {BcryptHasher} from '../services/authentication/hash.password.service';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 /* eslint-disable  @typescript-eslint/naming-convention */
@@ -664,8 +665,12 @@ export class MigrationScript100 implements MigrationScript {
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
     await Promise.all(
-      people.map(person => {
-        const newKey = getKeyring().addFromUri('//' + person.id);
+      people.map(async person => {
+        const hasher = new BcryptHasher();
+        const hashPeopleId = await hasher.hashPassword(
+          person.id + config.ESCROW_SECRET_KEY,
+        );
+        const newKey = getKeyring().addFromUri('//' + hashPeopleId);
         const walletAddress = getHexPublicKey(newKey);
 
         return this.peopleRepository.updateById(person.id, {
