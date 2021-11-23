@@ -1,10 +1,11 @@
-import {AnyObject, repository} from '@loopback/repository';
+import {AnyObject} from '@loopback/repository';
 import {post, response, param, get} from '@loopback/rest';
 import {CurrencyService} from '../services';
+import {service} from '@loopback/core';
 
 export class TipController {
   constructor(
-    @repository(CurrencyService)
+    @service(CurrencyService)
     protected currencyService: CurrencyService,
   ) {}
 
@@ -16,7 +17,7 @@ export class TipController {
     @param.path.string('userId') userId: string,
     @param.path.string('currencyId') currencyId: string,
   ): Promise<void> {
-    return this.currencyService.claimTips(userId, currencyId);
+    return this.currencyService.claimTips(userId, currencyId.toUpperCase());
   }
 
   @get('/users/{userId}/balance/{currencyId}')
@@ -42,6 +43,6 @@ export class TipController {
     @param.path.string('userId') userId: string,
     @param.path.string('currencyId') currencyId: string,
   ): Promise<AnyObject> {
-    return this.currencyService.getBalance(userId, currencyId);
+    return this.currencyService.getBalance(userId, currencyId.toUpperCase());
   }
 }
