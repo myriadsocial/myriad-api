@@ -118,10 +118,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       this.afterCreation(className, result) as Promise<void>;
     }
 
-    if (methodName === MethodType.VERIFY) {
-      this.currencyService.claimTips(result) as Promise<void>;
-    }
-
     return result;
   }
 
