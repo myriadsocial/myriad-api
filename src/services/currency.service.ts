@@ -1,5 +1,5 @@
 import {BindingScope, service, injectable} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
 import {DefaultCurrencyType} from '../enums';
@@ -18,6 +18,7 @@ import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {TransactionService} from './transaction.service';
 import acala from '../data-seed/currencies.json';
 import {NotificationService} from './notification.service';
+import {HttpErrors} from '@loopback/rest';
 
 const BN = require('bn.js');
 
@@ -171,7 +172,8 @@ export class CurrencyService {
     }
   }
 
-  async claimTips(userSocialMedia: UserSocialMedia): Promise<void> {
+  // Automatic claimed
+  async autoClaimTips(userSocialMedia: UserSocialMedia): Promise<void> {
     const {userId, peopleId} = userSocialMedia;
     const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
 
@@ -314,6 +316,127 @@ export class CurrencyService {
     }
 
     return txFee;
+  }
+
+  // Manually claimmed
+  async claimTips(userId: string, currencyId: string): Promise<void> {
+    const {id, decimal, rpcURL, native, types} =
+      await this.currencyRepository.findById(currencyId);
+    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
+    const userSocialMedias = await this.userSocialMediaRepository.find({
+      where: {userId: userId},
+    });
+    const peopleIds = userSocialMedias.map(e => e.peopleId);
+    const to = userId;
+
+    let api: ApiPromise;
+    let balance = 0;
+
+    try {
+      api = await polkadotApi(rpcURL, types);
+    } catch {
+      throw new HttpErrors.UnprocessableEntity('Unable to claim!');
+    }
+
+    for (const peopleId of peopleIds) {
+      const from = getKeyring().addFromUri('//' + peopleId);
+
+      if (native) {
+        const nativeBalance = await api.query.system.account(from.publicKey);
+
+        balance = nativeBalance.data.free.toJSON();
+      } else {
+        const nonNativeBalance = await api.query.tokens.accounts(
+          from.publicKey,
+          {Token: id},
+        );
+        const result = nonNativeBalance.toJSON() as unknown as Balance;
+
+        balance = result.free;
+      }
+
+      if (!balance) continue;
+
+      const paymentInfo = {
+        amount: balance,
+        to: to,
+        from: from,
+        currencyId: id as DefaultCurrencyType,
+        decimal: decimal,
+        native: native,
+      };
+
+      const txFee = await this.getTransactionFee(api, paymentInfo);
+
+      if (balance - txFee < 0) continue;
+
+      let transfer;
+
+      if (native) transfer = api.tx.balances.transfer(to, balance - txFee);
+      else {
+        transfer = api.tx.currencies.transfer(to, {Token: id}, balance - txFee);
+      }
+
+      const txHash = await transfer.signAndSend(from);
+
+      const transaction = await this.transactionRepository.create({
+        hash: txHash.toString(),
+        amount: balance / 10 ** decimal,
+        to: to,
+        from: getHexPublicKey(from),
+        currencyId: id,
+      });
+
+      await this.notificationService.sendClaimTips(transaction);
+    }
+
+    await api.disconnect();
+
+    return;
+  }
+
+  async getBalance(userId: string, currencyId: string): Promise<AnyObject> {
+    const {id, rpcURL, native, types, decimal} =
+      await this.currencyRepository.findById(currencyId);
+    const {polkadotApi, getKeyring} = new PolkadotJs();
+    const userSocialMedias = await this.userSocialMediaRepository.find({
+      where: {userId: userId},
+    });
+    const peopleIds = userSocialMedias.map(e => e.peopleId);
+
+    let api: ApiPromise;
+
+    try {
+      api = await polkadotApi(rpcURL, types);
+    } catch {
+      throw new HttpErrors.UnprocessableEntity('Unable to show balance!');
+    }
+
+    let totalBalance = 0;
+
+    for (const peopleId of peopleIds) {
+      const address = getKeyring().addFromUri('//' + peopleId);
+
+      if (native) {
+        const nativeBalance = await api.query.system.account(address.address);
+
+        totalBalance += nativeBalance.data.free.toJSON();
+      } else {
+        const nonNativeBalance = await api.query.tokens.accounts(
+          address.publicKey,
+          {Token: id},
+        );
+
+        totalBalance += (nonNativeBalance.toJSON() as unknown as Balance).free;
+      }
+    }
+
+    await api.disconnect();
+
+    return {
+      currencyId: id,
+      balance: totalBalance / decimal,
+    };
   }
 
   async getQueueNumber(
