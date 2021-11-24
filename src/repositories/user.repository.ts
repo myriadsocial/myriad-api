@@ -18,6 +18,8 @@ import {
   UserRelations,
   AccountSetting,
   NotificationSetting,
+  People,
+  UserSocialMedia,
 } from '../models';
 import {ActivityLogRepository} from './activity-log.repository';
 import {CurrencyRepository} from './currency.repository';
@@ -28,6 +30,7 @@ import {UserExperienceRepository} from './user-experience.repository';
 import {UserSocialMediaRepository} from './user-social-media.repository';
 import {AccountSettingRepository} from './account-setting.repository';
 import {NotificationSettingRepository} from './notification-setting.repository';
+import {PeopleRepository} from './people.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<
@@ -69,6 +72,13 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
+  public readonly people: HasManyThroughRepositoryFactory<
+    People,
+    typeof People.prototype.id,
+    UserSocialMedia,
+    typeof User.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
@@ -89,8 +99,16 @@ export class UserRepository extends DefaultCrudRepository<
     protected accountSettingRepositoryGetter: Getter<AccountSettingRepository>,
     @repository.getter('NotificationSettingRepository')
     protected notificationSettingRepositoryGetter: Getter<NotificationSettingRepository>,
+    @repository.getter('PeopleRepository')
+    protected peopleRepositoryGetter: Getter<PeopleRepository>,
   ) {
     super(User, dataSource);
+    this.people = this.createHasManyThroughRepositoryFactoryFor(
+      'people',
+      peopleRepositoryGetter,
+      userSocialMediaRepositoryGetter,
+    );
+    this.registerInclusionResolver('people', this.people.inclusionResolver);
     this.notificationSetting = this.createHasOneRepositoryFactoryFor(
       'notificationSetting',
       notificationSettingRepositoryGetter,

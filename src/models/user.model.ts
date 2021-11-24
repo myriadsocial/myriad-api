@@ -9,6 +9,8 @@ import {UserCurrency} from './user-currency.model';
 import {UserExperience} from './user-experience.model';
 import {AccountSetting} from './account-setting.model';
 import {NotificationSetting} from './notification-setting.model';
+import {People} from './people.model';
+import {UserSocialMedia} from './user-social-media.model';
 
 @model({
   settings: {
@@ -203,6 +205,9 @@ export class User extends Entity {
 
   @hasOne(() => NotificationSetting)
   notificationSetting: NotificationSetting;
+
+  @hasMany(() => People, {through: {model: () => UserSocialMedia}})
+  people: People[];
 
   constructor(data?: Partial<User>) {
     super(data);
