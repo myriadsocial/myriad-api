@@ -127,12 +127,25 @@ export class UserController {
     user: Partial<User>,
   ): Promise<void> {
     if (user.username) {
+      if (
+        user.username[user.username.length - 1] === '.' ||
+        user.username[user.username.length - 1] === '_'
+      ) {
+        throw new HttpErrors.UnprocessableEntity(
+          'Last character must be an ascii letter (a-z) or number (0-9)',
+        );
+      }
+
       if (user.username.includes('.') && user.username.includes('_')) {
-        throw new HttpErrors.UnprocessableEntity('Wrong username format');
+        throw new HttpErrors.UnprocessableEntity(
+          'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
+        );
       }
 
       if (!user.username.match('^[a-z0-9._]+$')) {
-        throw new HttpErrors.UnprocessableEntity('Wrong username format');
+        throw new HttpErrors.UnprocessableEntity(
+          'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
+        );
       }
 
       const {count} = await this.activityLogRepository.count({
