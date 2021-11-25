@@ -140,27 +140,40 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         const flag = true;
         const name = newUser.name.substring(0, 22);
         const usernameBase = newUser.name
+          .replace(/[^A-Za-z0-9]/g, ' ')
           .replace(/\s+/g, ' ')
           .split(' ')[0]
           .toLowerCase();
 
-        let newUsername = usernameBase;
+        let username = usernameBase.substring(0, 16);
 
         while (flag) {
           const found = await this.userRepository.findOne({
             where: {
-              username: newUsername,
+              username: username,
             },
           });
 
+          let count = 2;
+
           if (found) {
-            newUsername = usernameBase + this.generateRandomCharacter();
+            let newUsername = usernameBase + this.generateRandomCharacter();
             newUsername = newUsername.substring(0, 16);
+
+            if (newUsername === found.username) {
+              username =
+                newUsername.substr(0, 16 - count) +
+                this.generateRandomCharacter();
+              username = username.substr(0, 16);
+              count++;
+            } else {
+              username = newUsername;
+            }
           } else break;
         }
 
         newUser.name = name;
-        newUser.username = newUsername;
+        newUser.username = username;
 
         invocationCtx.args[0] = newUser;
         return;
