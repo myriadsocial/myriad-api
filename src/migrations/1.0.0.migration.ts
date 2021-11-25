@@ -33,6 +33,7 @@ import {
   LikeRepository,
   NotificationRepository,
   PeopleRepository,
+  PostImporterRepository,
   PostRepository,
   PublicMetricRepository,
   TipRepository,
@@ -97,6 +98,8 @@ export class MigrationScript100 implements MigrationScript {
     protected voteRepository: VoteRepository,
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
+    @repository(PostImporterRepository)
+    protected postImporterRepository: PostImporterRepository,
   ) {}
 
   async up(): Promise<void> {
@@ -111,6 +114,7 @@ export class MigrationScript100 implements MigrationScript {
     await this.doMigrateUserSocialMedias();
     await this.doMigrateLikes();
     await this.doMigrateVotes();
+    await this.doMigratePostImporter();
 
     await this.dropPublicMetrics();
     await this.dropConversations();
@@ -286,7 +290,11 @@ export class MigrationScript100 implements MigrationScript {
 
     await Promise.all(
       posts.map(async (post: any) => {
-        if (post.importers.length > 0) {
+        if (
+          post.importers &&
+          typeof post.importers === 'object' &&
+          post.importers.length > 0
+        ) {
           return this.postRepository.updateById(post._id, <any>{
             createdBy: post.importers[0],
           });
@@ -350,6 +358,42 @@ export class MigrationScript100 implements MigrationScript {
         }
       }),
     );
+  }
+
+  async doMigratePostImporter(): Promise<void> {
+    const collection = (
+      this.postRepository.dataSource.connector as any
+    ).collection(Post.modelName);
+
+    const posts = await collection.aggregate().get();
+
+    for (const post of posts) {
+      if (!post.importers) continue;
+      if (
+        post.importers &&
+        typeof post.importers === 'object' &&
+        post.importers.length === 0
+      )
+        continue;
+
+      await Promise.all(
+        post.importers.map((importer: string) => {
+          return this.postImporterRepository.create({
+            postId: post._id,
+            importerId: importer,
+          });
+        }),
+      );
+
+      await collection.updateMany(
+        {},
+        {
+          $unset: {
+            importers: '',
+          },
+        },
+      );
+    }
   }
 
   async doMigrateUserCurrencies(): Promise<void> {
