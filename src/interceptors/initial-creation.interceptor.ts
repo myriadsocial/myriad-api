@@ -142,6 +142,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         const usernameBase = newUser.name
           .replace(/[^A-Za-z0-9]/g, ' ')
           .replace(/\s+/g, ' ')
+          .trim()
           .split(' ')[0]
           .toLowerCase();
 
