@@ -32,6 +32,7 @@ import {
   FriendRepository,
   LikeRepository,
   NotificationRepository,
+  NotificationSettingRepository,
   PeopleRepository,
   PostImporterRepository,
   PostRepository,
@@ -100,6 +101,8 @@ export class MigrationScript100 implements MigrationScript {
     protected userExperienceRepository: UserExperienceRepository,
     @repository(PostImporterRepository)
     protected postImporterRepository: PostImporterRepository,
+    @repository(NotificationSettingRepository)
+    protected notificationSettingRepository: NotificationSettingRepository,
   ) {}
 
   async up(): Promise<void> {
@@ -145,6 +148,9 @@ export class MigrationScript100 implements MigrationScript {
             '.' +
             Math.random().toString(36).substr(2, 9);
 
+        await this.doDefaultFriend(user.id);
+        await this.doNotificationSetting(user.id);
+
         const {count: totalExperiences} =
           await this.userExperienceRepository.count({
             userId: user.id,
@@ -166,17 +172,66 @@ export class MigrationScript100 implements MigrationScript {
           platform: PlatformType.MYRIAD,
         });
 
+        const {count: totalUpvote} = await this.voteRepository.count({
+          state: true,
+          toUserId: user.id,
+        });
+
+        const {count: totalDownvote} = await this.voteRepository.count({
+          state: false,
+          toUserId: user.id,
+        });
+
         return this.userRepository.updateById(user.id, {
           username,
           metric: {
             totalExperiences,
             totalFriends,
             totalPosts,
-            totalKudos: 0,
+            totalKudos: totalUpvote - totalDownvote,
           },
         });
       }),
     );
+  }
+
+  async doNotificationSetting(userId: string): Promise<void> {
+    const found = await this.notificationSettingRepository.findOne({
+      where: {userId: userId},
+    });
+
+    if (found) return;
+    await this.userRepository.notificationSetting(userId).create({});
+  }
+
+  async doDefaultFriend(userId: string): Promise<void> {
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
+
+    const mnemonic = config.MYRIAD_MNEMONIC;
+    const pair = getKeyring().addFromMnemonic(mnemonic);
+
+    const found = await this.friendRepository.findOne({
+      where: {
+        or: [
+          {
+            requestorId: userId,
+            requesteeId: getHexPublicKey(pair),
+          },
+          {
+            requesteeId: userId,
+            requestorId: getHexPublicKey(pair),
+          },
+        ],
+      },
+    });
+
+    if (found) return;
+
+    await this.friendRepository.create({
+      status: FriendStatusType.APPROVED,
+      requestorId: userId,
+      requesteeId: getHexPublicKey(pair),
+    });
   }
 
   async doMigrateCurrencies(): Promise<void> {
@@ -267,8 +322,6 @@ export class MigrationScript100 implements MigrationScript {
           popularCount: 0,
           visibility: VisibilityType.PUBLIC,
           mentions: [],
-          createdAt: new Date().toString(),
-          updatedAt: new Date().toString(),
         },
       },
     );
