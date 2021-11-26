@@ -127,26 +127,7 @@ export class UserController {
     user: Partial<User>,
   ): Promise<void> {
     if (user.username) {
-      if (
-        user.username[user.username.length - 1] === '.' ||
-        user.username[user.username.length - 1] === '_'
-      ) {
-        throw new HttpErrors.UnprocessableEntity(
-          'Last character must be an ascii letter (a-z) or number (0-9)',
-        );
-      }
-
-      if (user.username.includes('.') && user.username.includes('_')) {
-        throw new HttpErrors.UnprocessableEntity(
-          'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
-        );
-      }
-
-      if (!user.username.match('^[a-z0-9._]+$')) {
-        throw new HttpErrors.UnprocessableEntity(
-          'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
-        );
-      }
+      this.validateUsername(user.username);
 
       const {count} = await this.activityLogRepository.count({
         userId: id,
@@ -198,5 +179,34 @@ export class UserController {
     });
 
     return;
+  }
+
+  validateUsername(username: string): void {
+    if (
+      username[username.length - 1] === '.' ||
+      username[username.length - 1] === '_'
+    ) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Last character must be an ascii letter (a-z) or number (0-9)',
+      );
+    }
+
+    if (username[0] === '.' || username[0] === '_') {
+      throw new HttpErrors.UnprocessableEntity(
+        'Character must be start from an ascii letter (a-z) or number (0-9)',
+      );
+    }
+
+    if (username.includes('.') && username.includes('_')) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
+      );
+    }
+
+    if (!username.match('^[a-z0-9._]+$')) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
+      );
+    }
   }
 }
