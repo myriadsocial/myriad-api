@@ -8,12 +8,7 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {HttpErrors} from '@loopback/rest';
-import {
-  PostImporterRepository,
-  PostRepository,
-  UserRepository,
-} from '../repositories';
+import {PostRepository, UserRepository} from '../repositories';
 import {TagService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
@@ -28,8 +23,6 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(PostImporterRepository)
-    protected postImporterRepository: PostImporterRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @service(TagService)
@@ -60,46 +53,11 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     const originPostId = urlUtils.getOriginPostId();
     const username = urlUtils.getUsername();
 
-    const post = await this.postRepository.findOne({
-      where: {originPostId, platform},
-      include: ['importers', 'people'],
-    });
-
-    if (post) {
-      const importers = post.importers.find(
-        user => user.id === invocationCtx.args[0].importer,
-      );
-
-      if (importers)
-        throw new HttpErrors.UnprocessableEntity(
-          'You have already import this post',
-        );
-
-      await this.postImporterRepository.create({
-        postId: post.id,
-        importerId: invocationCtx.args[0].importer,
-      });
-
-      post.importers = await this.postRepository.importers(post.id).find();
-
-      return post;
-    }
-
     invocationCtx.args[0].url = [platform, originPostId, username].join(',');
     // Add pre-invocation logic here
     const result = await next();
 
-    await this.postImporterRepository.create({
-      postId: result.id,
-      importerId: invocationCtx.args[0].importer,
-    });
     await this.tagService.createTags(result.tags);
-
-    const user = await this.userRepository.findById(
-      invocationCtx.args[0].importer,
-    );
-
-    result.importers = [user];
 
     // Add post-invocation logic here
     return result;
