@@ -4,7 +4,6 @@ import {
   DefaultCrudRepository,
   HasManyRepositoryFactory,
   repository,
-  HasManyThroughRepositoryFactory,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {
@@ -15,14 +14,12 @@ import {
   PostRelations,
   Transaction,
   User,
-  PostImporter,
 } from '../models';
 import {CommentRepository} from './comment.repository';
 import {VoteRepository} from './vote.repository';
 import {PeopleRepository} from './people.repository';
 import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
-import {PostImporterRepository} from './post-importer.repository';
 
 export class PostRepository extends DefaultCrudRepository<
   Post,
@@ -43,13 +40,6 @@ export class PostRepository extends DefaultCrudRepository<
     typeof Vote.prototype.id
   >;
 
-  public readonly importers: HasManyThroughRepositoryFactory<
-    User,
-    typeof User.prototype.id,
-    PostImporter,
-    typeof Post.prototype.id
-  >;
-
   public readonly transactions: HasManyRepositoryFactory<
     Transaction,
     typeof Post.prototype.id
@@ -67,19 +57,8 @@ export class PostRepository extends DefaultCrudRepository<
     protected transactionRepositoryGetter: Getter<TransactionRepository>,
     @repository.getter('VoteRepository')
     protected voteRepositoryGetter: Getter<VoteRepository>,
-    @repository.getter('PostImporterRepository')
-    protected postImporterRepositoryGetter: Getter<PostImporterRepository>,
   ) {
     super(Post, dataSource);
-    this.importers = this.createHasManyThroughRepositoryFactoryFor(
-      'importers',
-      userRepositoryGetter,
-      postImporterRepositoryGetter,
-    );
-    this.registerInclusionResolver(
-      'importers',
-      this.importers.inclusionResolver,
-    );
     this.transactions = this.createHasManyRepositoryFactoryFor(
       'transactions',
       transactionRepositoryGetter,
