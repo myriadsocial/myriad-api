@@ -19,7 +19,7 @@ import {
 } from '../interceptors';
 import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {ExtendedPost} from '../interfaces';
-import {Post} from '../models';
+import {People, Post, PostWithRelations} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {
   NotificationService,
@@ -126,27 +126,66 @@ export class PostController {
     const newTags = platformPost.tags ? platformPost.tags : [];
     const importer = platformPost.importer;
 
+    const posts = await this.postService.postRepository.find({
+      where: {
+        or: [
+          {
+            originPostId,
+            platform: platform as PlatformType,
+          },
+          {
+            originPostId,
+            platform: platform as PlatformType,
+            createdBy: importer,
+          },
+        ],
+      },
+      include: ['people'],
+      limit: 5,
+    });
+
     let newPost: ExtendedPost;
     let tags: string[] = newTags;
 
-    switch (platform) {
-      case PlatformType.TWITTER:
-        newPost = await this.socialMediaService.fetchTweet(originPostId);
-        break;
+    if (!posts.length) {
+      switch (platform) {
+        case PlatformType.TWITTER:
+          newPost = await this.socialMediaService.fetchTweet(originPostId);
+          break;
 
-      case PlatformType.REDDIT:
-        newPost = await this.socialMediaService.fetchRedditPost(originPostId);
-        break;
+        case PlatformType.REDDIT:
+          newPost = await this.socialMediaService.fetchRedditPost(originPostId);
+          break;
 
-      case PlatformType.FACEBOOK:
-        newPost = await this.socialMediaService.fetchFacebookPost(
-          username,
-          originPostId,
+        case PlatformType.FACEBOOK:
+          newPost = await this.socialMediaService.fetchFacebookPost(
+            username,
+            originPostId,
+          );
+          break;
+
+        default:
+          throw new HttpErrors.NotFound('Cannot find the platform!');
+      }
+    } else {
+      const found = posts.find(e => e.createdBy === importer);
+
+      if (found) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You have already import this post',
         );
-        break;
+      }
 
-      default:
-        throw new HttpErrors.NotFound('Cannot find the platform!');
+      const existingPost: Partial<PostWithRelations> = posts[0];
+      const platformUser: Partial<People> | undefined = existingPost.people;
+
+      delete existingPost.id;
+      delete existingPost.people;
+      delete platformUser?.id;
+
+      newPost = Object.assign(existingPost as ExtendedPost, {
+        platformUser: platformUser,
+      });
     }
 
     if (newPost.tags && newPost.tags.length > 0) {
