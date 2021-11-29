@@ -27,37 +27,37 @@ export class PostService {
     const {platformUser, platform} = post;
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
+    if (!platformUser)
+      throw new HttpErrors.NotFound('Platform user not found!');
+
     let people = await this.peopleRepository.findOne({
       where: {
-        originUserId: platformUser?.originUserId,
+        originUserId: platformUser.originUserId,
         platform: platform,
       },
     });
 
     if (!people) {
-      if (platformUser) {
-        people = await this.peopleRepository.create(platformUser);
+      people = await this.peopleRepository.create(platformUser);
 
-        const hasher = new BcryptHasher();
-        const hashPeopleId = await hasher.hashPassword(
-          people.id + config.ESCROW_SECRET_KEY,
-        );
-        const newKey = getKeyring().addFromUri('//' + hashPeopleId);
+      const hasher = new BcryptHasher();
+      const hashPeopleId = await hasher.hashPassword(
+        people.id + config.ESCROW_SECRET_KEY,
+      );
+      const newKey = getKeyring().addFromUri('//' + hashPeopleId);
 
-        this.peopleRepository.updateById(people.id, {
-          walletAddress: getHexPublicKey(newKey),
-        }) as Promise<void>;
-      } else {
-        throw new HttpErrors.NotFound('Platform user not found!');
-      }
+      await this.peopleRepository.updateById(people.id, {
+        walletAddress: getHexPublicKey(newKey),
+      });
     }
 
     delete post.platformUser;
-    post.peopleId = people.id;
 
-    const newPost: PostWithRelations = await this.postRepository.create(post);
-    newPost.people = people;
-    return newPost;
+    const newPost: PostWithRelations = await this.postRepository.create(
+      Object.assign(post, {peopleId: people.id}),
+    );
+
+    return Object.assign(newPost, {people: people});
   }
 
   async deletePost(id: string): Promise<void> {
