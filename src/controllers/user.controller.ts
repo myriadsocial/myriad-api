@@ -186,7 +186,7 @@ export class UserController {
     return;
   }
 
-  @get('/users/{id}/count-mutual/userId')
+  @get('/users/{id}/count-mutual/{userId}')
   @response(200, {
     description: 'Count mutual friends',
     content: {
