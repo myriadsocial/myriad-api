@@ -1,12 +1,7 @@
 import {BindingScope, injectable, service} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {config} from '../config';
-import {
-  NotificationType,
-  PlatformType,
-  ReferenceType,
-  ReportStatusType,
-} from '../enums';
+import {NotificationType, ReferenceType, ReportStatusType} from '../enums';
 import {
   Comment,
   MentionUser,
@@ -137,15 +132,11 @@ export class NotificationService {
       additionalReferenceId: additionalReferenceId,
     });
 
-    const post = await this.postRepository.findById(comment.postId, {
-      include: ['importers'],
-    });
+    const post = await this.postRepository.findById(comment.postId);
 
     // FCM messages
     const title = 'New Comment';
     const body = fromUser.name + ' commented to your post';
-
-    let toUser: User = new User();
 
     // Notification comment to comment
     if (comment.type === ReferenceType.COMMENT) {
@@ -170,42 +161,18 @@ export class NotificationService {
     }
 
     // Notification comment to post
-    let toUsers: string[] = [];
-    if (post.platform === PlatformType.MYRIAD) {
-      toUser = await this.userRepository.findById(post.createdBy);
-
-      if (toUser.id === comment.userId) return false;
-
-      toUsers.push(toUser.id);
-    } else {
-      const userSocialMedia = await this.userSocialMediaRepository.findOne({
-        where: {peopleId: post.peopleId},
-      });
-
-      if (userSocialMedia) {
-        toUser = await this.userRepository.findById(userSocialMedia.userId);
-        toUsers.push(toUser.id);
-      }
-
-      const importers = post.importers.map(importer => importer.id);
-
-      toUsers = [...toUsers, ...importers].filter(
-        userId => userId !== comment.userId,
-      );
-    }
-
-    if (toUsers.length === 0) return false;
-    if (!toUser) return false;
+    if (post.createdBy === comment.userId) return false;
 
     const postActive = await this.checkNotificationSetting(
-      toUser.id,
+      post.createdBy,
       NotificationType.POST_COMMENT,
     );
-    if (!postActive) toUsers = toUsers.filter(userId => userId !== toUser.id);
 
-    await this.sendNotificationToMultipleUsers(
+    if (!postActive) return postActive;
+
+    await this.sendNotificationToUser(
       notification,
-      toUsers,
+      post.createdBy,
       title,
       body,
     );
@@ -312,37 +279,11 @@ export class NotificationService {
         notification.referenceId = referenceId;
         notification.message = 'removed your post';
 
-        const post = await this.postRepository.findById(referenceId, {
-          include: ['importers'],
-        });
+        const post = await this.postRepository.findById(referenceId);
 
-        let toUsers: string[] = [];
-        let toUser: User = new User();
-
-        if (post.platform === PlatformType.MYRIAD) {
-          toUser = await this.userRepository.findById(post.createdBy);
-          toUsers.push(toUser.id);
-        } else {
-          const userSocialMedia = await this.userSocialMediaRepository.findOne({
-            where: {peopleId: post.peopleId},
-          });
-
-          if (userSocialMedia) {
-            toUser = await this.userRepository.findById(userSocialMedia.userId);
-            toUsers.push(toUser.id);
-          }
-
-          const importers = post.importers.map(importer => importer.id);
-
-          toUsers = [...toUsers, ...importers, post.createdBy];
-        }
-
-        if (toUsers.length === 0) return false;
-        if (!toUser) return false;
-
-        await this.sendNotificationToMultipleUsers(
+        await this.sendNotificationToUser(
           notification,
-          toUsers,
+          post.createdBy,
           'Post Removed',
           'Myriad Official ' + notification.message,
         );
@@ -388,8 +329,6 @@ export class NotificationService {
     const title = 'New Vote';
     const body = fromUser.name + ' ' + notification.message;
 
-    let toUser = null;
-
     // Notification vote to comment
     if (vote.type === ReferenceType.COMMENT) {
       const toComment = await this.commentRepository.findById(vote.referenceId);
@@ -397,46 +336,25 @@ export class NotificationService {
       notification.additionalReferenceId =
         await this.getCommentAdditionalReferenceIds(toComment.id ?? '');
 
-      await this.sendNotificationToUser(
-        notification,
-        toComment.userId,
-        title,
-        body,
-      );
+      if (toComment.userId !== vote.userId) {
+        await this.sendNotificationToUser(
+          notification,
+          toComment.userId,
+          title,
+          body,
+        );
 
-      return true;
-    }
-
-    const post = await this.postRepository.findById(vote.postId, {
-      include: ['importers'],
-    });
-
-    // Notification vote to post
-    let toUsers: string[] = [];
-
-    if (post.platform === PlatformType.MYRIAD) {
-      toUser = await this.userRepository.findById(post.createdBy);
-      toUsers.push(toUser.id);
-    } else {
-      const userSocialMedia = await this.userSocialMediaRepository.findOne({
-        where: {peopleId: post.peopleId},
-      });
-
-      if (userSocialMedia) {
-        toUser = await this.userRepository.findById(userSocialMedia.userId);
-        toUsers.push(toUser.id);
+        return true;
       }
 
-      const importers = post.importers.map(importer => importer.id);
-
-      toUsers = [...toUsers, ...importers, post.createdBy];
+      return false;
     }
 
-    if (toUsers.length === 0) return false;
+    const post = await this.postRepository.findById(vote.postId);
 
-    await this.sendNotificationToMultipleUsers(
+    await this.sendNotificationToUser(
       notification,
-      toUsers,
+      post.createdBy,
       title,
       body,
     );
