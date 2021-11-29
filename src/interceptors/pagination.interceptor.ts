@@ -19,7 +19,13 @@ import {
   TimelineType,
   VisibilityType,
 } from '../enums';
-import {Experience, People, Post, UserExperienceWithRelations} from '../models';
+import {
+  Experience,
+  People,
+  Post,
+  PostWithRelations,
+  UserExperienceWithRelations,
+} from '../models';
 import {
   ExperienceService,
   FriendService,
@@ -28,7 +34,11 @@ import {
   TagService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
-import {FriendRepository, UserRepository} from '../repositories';
+import {
+  FriendRepository,
+  PostRepository,
+  UserRepository,
+} from '../repositories';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -43,6 +53,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected userRepository: UserRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(ExperienceService)
@@ -75,7 +87,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
-    const {pageNumber, pageLimit, userId, timelineType, q} = query;
+    const {pageNumber, pageLimit, userId, timelineType, q, importers} = query;
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
     const filter =
@@ -209,6 +221,22 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       Object.prototype.hasOwnProperty.call(filter.where, 'userId')
     ) {
       result = this.combinePeopleAndUser(result);
+    }
+
+    if (className === ControllerType.POST && importers === 'true') {
+      result = await Promise.all(
+        result.map(async (post: Post) => {
+          if (post.platform === PlatformType.MYRIAD) return post;
+
+          const friendIds = await this.getFriendIds(userId?.toString());
+          const detailImporters = await this.getDetailImporters(
+            post,
+            friendIds,
+          );
+
+          return Object.assign(post, detailImporters);
+        }),
+      );
     }
 
     return {
@@ -508,5 +536,68 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       return userExperience;
     });
+  }
+
+  async getFriendIds(userId?: string): Promise<string[]> {
+    if (!userId) return [];
+
+    const friends = await this.friendRepository.find({
+      where: {
+        or: [
+          {
+            requesteeId: userId.toString(),
+          },
+          {
+            requestorId: userId.toString(),
+          },
+        ],
+      },
+      limit: 5,
+      order: ['updatedAt DESC'],
+    });
+
+    if (friends) {
+      const requesteeIds = friends.map(friend => friend.requesteeId);
+      const requestorIds = friends.map(friend => friend.requestorId);
+
+      return [...requesteeIds, ...requestorIds].filter(id => id !== userId);
+    }
+
+    return [];
+  }
+
+  async getDetailImporters(post: PostWithRelations, friendIds: string[]) {
+    const {count: totalImporter} = await this.postRepository.count({
+      platform: post.platform as PlatformType,
+      originPostId: post.originPostId,
+    });
+
+    if (friendIds.length === 0) {
+      return {
+        totalImporter: totalImporter,
+      };
+    }
+
+    const posts = await this.postRepository.find({
+      where: {
+        platform: post.platform as PlatformType,
+        originPostId: post.originPostId,
+        or: friendIds.map(friendId => {
+          return {
+            createdBy: friendId,
+          };
+        }),
+      },
+      include: ['user'],
+      limit: 5,
+      order: ['updatedAt DESC'],
+    });
+
+    const postImporters = posts.map(e => e.user);
+
+    return {
+      totalImporter: totalImporter,
+      importers: postImporters,
+    };
   }
 }
