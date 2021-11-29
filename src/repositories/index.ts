@@ -25,4 +25,3 @@ export * from './exchange-rate.repository';
 export * from './account-setting.repository';
 export * from './notification-setting.repository';
 export * from './experience-user.repository';
-export * from './post-importer.repository';
