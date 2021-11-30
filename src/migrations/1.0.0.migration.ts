@@ -48,8 +48,8 @@ export class MigrationScript100 implements MigrationScript {
                   originPostId: post.originPostId,
                   platform: post.platform,
                   createdBy: post.createdBy,
-                }
-              })
+                },
+              });
 
               if (found) return null;
 
@@ -102,7 +102,7 @@ export class MigrationScript100 implements MigrationScript {
             originPostId: post.originPostId,
             platform: post.platform,
             createdBy: post.createdBy,
-          }
+          },
         });
 
         if (found) return null;
