@@ -64,17 +64,13 @@ export class PostService {
     });
   }
 
-  async getDetailImporters(post: Post, friendIds?: string[]) {
+  async getDetailImporters(post: Post, friendIds: string[]) {
     const {count: totalImporter} = await this.postRepository.count({
       platform: post.platform as PlatformType,
       originPostId: post.originPostId,
     });
 
-    if (!friendIds || friendIds.length === 0) {
-      return {
-        totalImporter: totalImporter,
-      };
-    }
+    friendIds.push(post.createdBy);
 
     const posts = await this.postRepository.find({
       where: {
