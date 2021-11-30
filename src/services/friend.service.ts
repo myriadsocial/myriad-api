@@ -89,7 +89,9 @@ export class FriendService {
     const friendIds = friends.map(friend => friend.requesteeId);
     const requestorIds = friends.map(friend => friend.requestorId);
 
-    const ids = [...friendIds, ...requestorIds].filter(userId => userId !== id);
+    const ids = [...new Set(...friendIds, ...requestorIds)].filter(
+      userId => userId !== id,
+    );
 
     return ids;
   }
@@ -106,11 +108,6 @@ export class FriendService {
       and: [
         {
           or: [
-            {
-              importer: {
-                inq: approvedFriendIds,
-              },
-            },
             {
               createdBy: {
                 inq: approvedFriendIds,
@@ -161,5 +158,34 @@ export class FriendService {
     const pair = getKeyring().addFromMnemonic(mnemonic);
 
     return getHexPublicKey(pair);
+  }
+
+  async getImporterIds(userId?: string): Promise<string[]> {
+    if (!userId) return [];
+
+    const friends = await this.friendRepository.find({
+      where: {
+        or: [
+          {
+            requesteeId: userId.toString(),
+          },
+          {
+            requestorId: userId.toString(),
+          },
+        ],
+      },
+      limit: 5,
+      order: ['updatedAt DESC'],
+    });
+
+    if (friends.length > 0) {
+      const requesteeIds = friends.map(friend => friend.requesteeId);
+      const requestorIds = friends.map(friend => friend.requestorId);
+      const friendIds = [...requesteeIds, ...requestorIds];
+
+      return [...new Set(friendIds)];
+    }
+
+    return [userId];
   }
 }

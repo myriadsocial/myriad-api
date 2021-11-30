@@ -1,16 +1,13 @@
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
-import {PostWithRelations} from '../models';
-import {
-  CommentRepository,
-  PeopleRepository,
-  PostRepository,
-} from '../repositories';
+import {Post, PostWithRelations} from '../models';
+import {PeopleRepository, PostRepository, CommentRepository} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
+import {PlatformType} from '../enums';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class PostService {
@@ -65,5 +62,40 @@ export class PostService {
     await this.commentRepository.deleteAll({
       postId: id,
     });
+  }
+
+  async getDetailImporters(post: Post, friendIds?: string[]) {
+    const {count: totalImporter} = await this.postRepository.count({
+      platform: post.platform as PlatformType,
+      originPostId: post.originPostId,
+    });
+
+    if (!friendIds || friendIds.length === 0) {
+      return {
+        totalImporter: totalImporter,
+      };
+    }
+
+    const posts = await this.postRepository.find({
+      where: {
+        platform: post.platform as PlatformType,
+        originPostId: post.originPostId,
+        or: friendIds.map(friendId => {
+          return {
+            createdBy: friendId,
+          };
+        }),
+      },
+      include: ['user'],
+      limit: 5,
+      order: ['updatedAt DESC'],
+    });
+
+    const postImporters = posts.map(e => e.user);
+
+    return {
+      totalImporter: totalImporter,
+      importers: postImporters,
+    };
   }
 }
