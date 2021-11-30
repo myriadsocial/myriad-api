@@ -19,7 +19,7 @@ import {
 } from '../interceptors';
 import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {ExtendedPost} from '../interfaces';
-import {People, Post, PostWithRelations} from '../models';
+import {People, Post, PostWithRelations, User} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {
   NotificationService,
@@ -224,6 +224,38 @@ export class PostController {
     filter?: Filter<Post>,
   ): Promise<Post[]> {
     return this.postService.postRepository.find(filter);
+  }
+
+  @intercept(PaginationInterceptor.BINDING_KEY)
+  @get('/posts/{originPostId}/importers/{platform}')
+  @response(200, {
+    description: 'Array of Importer model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(User),
+        },
+      },
+    },
+  })
+  async getImporters(
+    @param.path.string('originPostId') originPostId: string,
+    @param.path.string('platform') platform: string,
+    @param.filter(Post, {
+      exclude: ['limit', 'skip', 'offset', 'where', 'include'],
+    })
+    filter?: Filter<Post>,
+  ): Promise<Post[]> {
+    return this.postService.postRepository.find(
+      Object.assign(filter ?? {}, {
+        where: {
+          originPostId,
+          platform: platform as PlatformType,
+        },
+        include: ['user'],
+      }),
+    );
   }
 
   @intercept(DeletedDocument.BINDING_KEY)

@@ -7,9 +7,7 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {repository} from '@loopback/repository';
-import {PostRepository, UserRepository} from '../repositories';
-import {TagService} from '../services';
+import {FriendService, PostService, TagService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
 /**
@@ -21,12 +19,12 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${ValidatePostImportURL.name}`;
 
   constructor(
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
     @service(TagService)
     protected tagService: TagService,
+    @service(FriendService)
+    protected friendService: FriendService,
+    @service(PostService)
+    protected postService: PostService,
   ) {}
 
   /**
@@ -59,7 +57,13 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
 
     await this.tagService.createTags(result.tags);
 
+    const userId = result.createdBy;
+    const friendIds = await this.friendService.getImporterIds(userId);
+    const detailImporters = await this.postService.getDetailImporters(
+      result,
+      friendIds,
+    );
     // Add post-invocation logic here
-    return result;
+    return Object.assign(result, detailImporters);
   }
 }
