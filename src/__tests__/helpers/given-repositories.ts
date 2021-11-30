@@ -20,7 +20,6 @@ import {
   UserReportRepository,
   NotificationSettingRepository,
   AccountSettingRepository,
-  PostImporterRepository,
 } from '../../repositories';
 
 export async function givenUserRepository(app: MyriadApiApplication) {
@@ -105,8 +104,4 @@ export async function givenNotificationSettingRepository(
   app: MyriadApiApplication,
 ) {
   return app.getRepository(NotificationSettingRepository);
-}
-
-export async function givenPostImporterRepository(app: MyriadApiApplication) {
-  return app.getRepository(PostImporterRepository);
 }

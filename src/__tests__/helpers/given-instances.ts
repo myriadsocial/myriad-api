@@ -18,7 +18,6 @@ import {
   NotificationSetting,
   People,
   Post,
-  PostImporter,
   Report,
   ReportDetail,
   Tag,
@@ -42,7 +41,6 @@ import {
   NotificationRepository,
   NotificationSettingRepository,
   PeopleRepository,
-  PostImporterRepository,
   PostRepository,
   ReportRepository,
   TagRepository,
@@ -162,7 +160,7 @@ export function givenPost(post?: Partial<Post>) {
   const data = Object.assign(
     {
       tags: [],
-      platform: 'twitter',
+      platform: PlatformType.TWITTER,
       title: '',
       text: 'Tesla Solar + Powerwall battery enables consumers to be their own utility',
       originPostId: '1385108424761872387',
@@ -184,6 +182,7 @@ export function givenMyriadPost(post?: Partial<Post>) {
       text: 'hello world',
       createdBy:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      platform: PlatformType.MYRIAD,
     },
     post,
   );
@@ -701,23 +700,4 @@ export async function givenAccountSettingInstance(
   accountSetting?: Partial<AccountSetting>,
 ) {
   return accountSettingRepository.create(givenAccountSetting(accountSetting));
-}
-
-export function givenPostImporter(postImporter?: Partial<PostImporter>) {
-  const data = Object.assign(
-    {
-      importerId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
-      postId: '1',
-    },
-    postImporter,
-  );
-  return new PostImporter(data);
-}
-
-export async function givenPostImporterInstance(
-  postImporterRepository: PostImporterRepository,
-  postImporter?: Partial<PostImporter>,
-) {
-  return postImporterRepository.create(givenPostImporter(postImporter));
 }
