@@ -14,7 +14,6 @@ import {User} from '../models';
 import {
   CommentRepository,
   CurrencyRepository,
-  LikeRepository,
   PostRepository,
   TransactionRepository,
   UserCurrencyRepository,
@@ -44,8 +43,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected currencyRepository: CurrencyRepository,
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
-    @repository(LikeRepository)
-    protected likeRepository: LikeRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
     @service(MetricService)
