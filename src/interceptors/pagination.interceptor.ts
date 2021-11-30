@@ -31,14 +31,11 @@ import {
   FriendService,
   MetricService,
   NotificationService,
+  PostService,
   TagService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
-import {
-  FriendRepository,
-  PostRepository,
-  UserRepository,
-} from '../repositories';
+import {UserRepository} from '../repositories';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -51,10 +48,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(ExperienceService)
@@ -65,6 +58,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected friendService: FriendService,
     @service(NotificationService)
     protected notificationService: NotificationService,
+    @service(PostService)
+    protected postService: PostService,
   ) {}
 
   /**
@@ -174,6 +169,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
     }
 
+    if (
+      className === ControllerType.POST &&
+      methodName === MethodType.GETIMPORTERS
+    ) {
+      filter.where = {
+        originPostId: invocationCtx.args[0],
+        platform: invocationCtx.args[1],
+      };
+    }
+
     // Get pageMetadata
     const {count} = await this.metricService.countData(
       className,
@@ -189,6 +194,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     // Reassign filter object
     if (className === ControllerType.REPORTUSERCONTROLLER) {
       invocationCtx.args[1] = Object.assign(filter, {
+        limit: pageSize,
+        offset: (pageIndex - 1) * pageSize,
+      });
+    } else if (
+      className === ControllerType.POST &&
+      methodName === MethodType.GETIMPORTERS
+    ) {
+      invocationCtx.args[2] = Object.assign(filter, {
         limit: pageSize,
         offset: (pageIndex - 1) * pageSize,
       });
@@ -223,20 +236,33 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       result = this.combinePeopleAndUser(result);
     }
 
-    if (className === ControllerType.POST && importers === 'true') {
-      result = await Promise.all(
-        result.map(async (post: Post) => {
-          if (post.platform === PlatformType.MYRIAD) return post;
+    if (className === ControllerType.POST) {
+      if (methodName === MethodType.TIMELINE) {
+        result = await Promise.all(
+          result.map(async (post: Post) => {
+            if (post.platform === PlatformType.MYRIAD) return post;
 
-          const friendIds = await this.getFriendIds(userId?.toString());
-          const detailImporters = await this.getDetailImporters(
-            post,
-            friendIds,
-          );
+            let friendIds: string[] = [];
 
-          return Object.assign(post, detailImporters);
-        }),
-      );
+            if (importers === 'true' && userId) {
+              friendIds = await this.friendService.getImporterIds(
+                userId?.toString(),
+              );
+            }
+
+            const detailImporters = await this.postService.getDetailImporters(
+              post,
+              friendIds,
+            );
+
+            return Object.assign(post, detailImporters);
+          }),
+        );
+      }
+
+      if (methodName === MethodType.GETIMPORTERS) {
+        result = result.map((e: PostWithRelations) => e.user);
+      }
     }
 
     return {
@@ -288,11 +314,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
   async getPostByQuery(q: string, userId?: string): Promise<Where<Post>> {
     let blockedFriendIds: string[] = [];
+    let approvedFriendIds: string[] = [];
 
     if (userId) {
       blockedFriendIds = await this.friendService.getFriendIds(
         userId,
         FriendStatusType.BLOCKED,
+      );
+
+      approvedFriendIds = await this.friendService.getFriendIds(
+        userId,
+        FriendStatusType.APPROVED,
       );
     }
 
@@ -338,7 +370,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           and: [
             {
               createdBy: {
-                inq: userIds,
+                inq: [...userIds, ...approvedFriendIds],
               },
             },
             {
@@ -349,12 +381,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         {
           and: [
             {
-              importers: {
-                inq: userIds,
+              createdBy: {
+                inq: approvedFriendIds,
               },
             },
             {
-              visibility: VisibilityType.PUBLIC,
+              visibility: VisibilityType.FRIEND,
             },
           ],
         },
@@ -474,7 +506,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             {
               and: [
                 {
-                  importers: {
+                  createdBy: {
                     inq: [...friends, ...experienceUserIds],
                   },
                 },
@@ -487,11 +519,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               and: [
                 {
                   createdBy: {
-                    inq: [...friends, ...experienceUserIds],
+                    inq: friends,
                   },
                 },
                 {
-                  visibility: VisibilityType.PUBLIC,
+                  visibility: VisibilityType.FRIEND,
                 },
               ],
             },
@@ -536,68 +568,5 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       return userExperience;
     });
-  }
-
-  async getFriendIds(userId?: string): Promise<string[]> {
-    if (!userId) return [];
-
-    const friends = await this.friendRepository.find({
-      where: {
-        or: [
-          {
-            requesteeId: userId.toString(),
-          },
-          {
-            requestorId: userId.toString(),
-          },
-        ],
-      },
-      limit: 5,
-      order: ['updatedAt DESC'],
-    });
-
-    if (friends) {
-      const requesteeIds = friends.map(friend => friend.requesteeId);
-      const requestorIds = friends.map(friend => friend.requestorId);
-
-      return [...requesteeIds, ...requestorIds].filter(id => id !== userId);
-    }
-
-    return [];
-  }
-
-  async getDetailImporters(post: PostWithRelations, friendIds: string[]) {
-    const {count: totalImporter} = await this.postRepository.count({
-      platform: post.platform as PlatformType,
-      originPostId: post.originPostId,
-    });
-
-    if (friendIds.length === 0) {
-      return {
-        totalImporter: totalImporter,
-      };
-    }
-
-    const posts = await this.postRepository.find({
-      where: {
-        platform: post.platform as PlatformType,
-        originPostId: post.originPostId,
-        or: friendIds.map(friendId => {
-          return {
-            createdBy: friendId,
-          };
-        }),
-      },
-      include: ['user'],
-      limit: 5,
-      order: ['updatedAt DESC'],
-    });
-
-    const postImporters = posts.map(e => e.user);
-
-    return {
-      totalImporter: totalImporter,
-      importers: postImporters,
-    };
   }
 }

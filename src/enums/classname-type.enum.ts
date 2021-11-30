@@ -38,4 +38,5 @@ export enum MethodType {
   DELETEDUSERLIST = 'deletedUserList',
   SELECTCURRENCY = 'selectCurrency',
   FINDBLOCKEDFRIEND = 'findBlockedFriend',
+  GETIMPORTERS = 'getImporters',
 }
