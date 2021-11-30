@@ -2,7 +2,11 @@ import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
 import {PostWithRelations} from '../models';
-import {PeopleRepository, PostRepository} from '../repositories';
+import {
+  CommentRepository,
+  PeopleRepository,
+  PostRepository,
+} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
@@ -15,6 +19,8 @@ export class PostService {
     public postRepository: PostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
+    @repository(CommentRepository)
+    protected commentRepository: CommentRepository,
   ) {}
 
   async createPost(post: Omit<ExtendedPost, 'id'>): Promise<PostWithRelations> {
@@ -52,5 +58,12 @@ export class PostService {
     const newPost: PostWithRelations = await this.postRepository.create(post);
     newPost.people = people;
     return newPost;
+  }
+
+  async deletePost(id: string): Promise<void> {
+    await this.postRepository.deleteById(id);
+    await this.commentRepository.deleteAll({
+      postId: id,
+    });
   }
 }

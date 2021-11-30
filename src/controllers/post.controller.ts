@@ -1,6 +1,7 @@
 import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
+  del,
   get,
   getModelSchemaRef,
   HttpErrors,
@@ -223,5 +224,13 @@ export class PostController {
     updatedPost: Post,
   ): Promise<void> {
     await this.postService.postRepository.updateById(id, updatedPost);
+  }
+
+  @del('/posts/{id}')
+  @response(204, {
+    description: 'Post DELETE success',
+  })
+  async deleteById(@param.path.string('id') id: string): Promise<void> {
+    await this.postService.deletePost(id);
   }
 }
