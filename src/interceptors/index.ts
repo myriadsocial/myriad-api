@@ -7,3 +7,4 @@ export * from './validate-vote.interceptor';
 export * from './validate-post-import-url.interceptor';
 export * from './deleted-document.interceptor';
 export * from './report.interceptor';
+export * from './restricted-post.interceptor';
