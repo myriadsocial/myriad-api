@@ -225,6 +225,7 @@ describe('PostApplication', function () {
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(post as Post),
+      totalImporter: 1,
       user: toJSON(user),
       people: toJSON(people),
       comments: [toJSON(comment)],
@@ -252,7 +253,7 @@ describe('PostApplication', function () {
         .send(platformPost)
         .expect(200);
       const result = await postRepository.findById(response.body.id, {
-        include: ['people', 'importers'],
+        include: ['people'],
       });
       expect(toJSON(result)).to.containDeep(toJSON(response.body));
 
@@ -263,38 +264,6 @@ describe('PostApplication', function () {
       const response = await client.get(`/people/${peopleId}`);
       const result = await peopleRepository.findById(peopleId);
       expect(toJSON(result)).to.containDeep(toJSON(response.body));
-    });
-
-    it('adds another importer for existing posts', async () => {
-      await givenUserInstance(userRepository, {
-        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d95e',
-      });
-      await givenUserInstance(userRepository, {
-        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
-      });
-
-      const platformPost = givenPlatformPost({
-        importer:
-          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d95e',
-      });
-      const platformPostWithOtherImporter = givenPlatformPost({
-        importer:
-          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
-      });
-
-      const response = await client
-        .post('/posts/import')
-        .send(platformPost)
-        .expect(200);
-      const otherResponse = await client
-        .post('/posts/import')
-        .send(platformPostWithOtherImporter)
-        .expect(200);
-      expect(response.body.id).to.equal(otherResponse.body.id);
-      const result = await postRepository.findById(otherResponse.body.id, {
-        include: ['people', 'importers'],
-      });
-      expect(toJSON(result)).to.containDeep(toJSON(otherResponse.body));
     });
 
     it('rejects request to create a post from social media if importer alreay imported', async () => {

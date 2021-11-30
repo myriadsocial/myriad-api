@@ -19,7 +19,6 @@ import {
   AccountSettingRepository,
   NotificationSettingRepository,
   ExperienceUserRepository,
-  PostImporterRepository,
 } from '../../repositories';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -61,10 +60,7 @@ export async function givenRepositories(testdb: any) {
     async () => commentRepository,
     async () => transactionRepository,
     async () => voteRepository,
-    async () => postImporterRepository,
   );
-  const postImporterRepository: PostImporterRepository =
-    new PostImporterRepository(testdb);
   const userCurrencyRepository: UserCurrencyRepository =
     new UserCurrencyRepository(testdb, async () => currencyRepository);
   const currencyRepository: CurrencyRepository = new CurrencyRepository(testdb);
@@ -137,7 +133,6 @@ export async function givenRepositories(testdb: any) {
     userReportRepository,
     accountSettingRepository,
     notificationSettingRepository,
-    postImporterRepository,
   };
 }
 
@@ -160,7 +155,6 @@ export async function givenEmptyDatabase(testdb: any) {
     userReportRepository,
     accountSettingRepository,
     notificationSettingRepository,
-    postImporterRepository,
   } = await givenRepositories(testdb);
 
   await peopleRepository.deleteAll();
@@ -180,5 +174,4 @@ export async function givenEmptyDatabase(testdb: any) {
   await userReportRepository.deleteAll();
   await accountSettingRepository.deleteAll();
   await notificationSettingRepository.deleteAll();
-  await postImporterRepository.deleteAll();
 }
