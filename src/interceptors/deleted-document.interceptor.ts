@@ -72,6 +72,7 @@ export class DeletedDocument implements Provider<Interceptor> {
     // Add pre-invocation logic here
     const result = await next();
     // Add post-invocation logic here
+    if (className === ControllerType.POST && result.message) return result;
 
     if (result.deletedAt) {
       switch (className) {
