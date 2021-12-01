@@ -160,7 +160,6 @@ export async function givenRepositories(testdb: any) {
 
   const friendService = new FriendService(friendRepository, userRepository);
 
-
   const postService = new PostService(
     postRepository,
     peopleRepository,
