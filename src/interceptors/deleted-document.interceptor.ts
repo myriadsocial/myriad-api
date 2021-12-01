@@ -9,7 +9,7 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {RestBindings} from '@loopback/rest';
-import {ControllerType, FriendStatusType} from '../enums';
+import {ControllerType, FriendStatusType, PlatformType} from '../enums';
 import {FriendService, PostService} from '../services';
 
 /**
@@ -75,7 +75,10 @@ export class DeletedDocument implements Provider<Interceptor> {
     let result = await next();
     // Add post-invocation logic here
     if (className === ControllerType.POST && result.message) return result;
-    if (className === ControllerType.POST) {
+    if (
+      className === ControllerType.POST &&
+      result.platform !== PlatformType.MYRIAD
+    ) {
       const postUserId = result.createdBy;
       const friendIds = await this.friendService.getImporterIds(postUserId);
       const detailImporters = await this.postService.getDetailImporters(
