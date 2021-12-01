@@ -173,6 +173,7 @@ export class FriendService {
             requestorId: userId.toString(),
           },
         ],
+        status: FriendStatusType.APPROVED,
       },
       limit: 5,
       order: ['updatedAt DESC'],
