@@ -181,11 +181,9 @@ export class FriendService {
     if (friends.length > 0) {
       const requesteeIds = friends.map(friend => friend.requesteeId);
       const requestorIds = friends.map(friend => friend.requestorId);
-      const friendIds = [...requesteeIds, ...requestorIds].filter(
-        id => userId !== id,
-      );
+      const friendIds = [...requesteeIds, ...requestorIds];
 
-      return [...new Set(friendIds)];
+      return friendIds;
     }
 
     return [];
