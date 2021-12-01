@@ -226,6 +226,7 @@ describe('PostApplication', function () {
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(post as Post),
       totalImporter: 1,
+      importers: [toJSON(user)],
       user: toJSON(user),
       people: toJSON(people),
       comments: [toJSON(comment)],
@@ -243,7 +244,7 @@ describe('PostApplication', function () {
     });
 
     it('creates a post from reddit', async function () {
-      await givenUserInstance(userRepository, {
+      const importer = await givenUserInstance(userRepository, {
         id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
       });
 
@@ -255,6 +256,10 @@ describe('PostApplication', function () {
       const result = await postRepository.findById(response.body.id, {
         include: ['people'],
       });
+
+      result.importers = [importer];
+      result.totalImporter = 1;
+
       expect(toJSON(result)).to.containDeep(toJSON(response.body));
 
       peopleId = response.body.peopleId;

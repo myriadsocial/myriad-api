@@ -128,55 +128,63 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       });
     }
 
-    if (className === ControllerType.POST && q) {
-      const whereByQuery = await this.getPostByQuery(
-        q.toString(),
-        userId?.toString(),
-      );
-      filter.where = Object.assign(filter.where ?? {}, whereByQuery);
-    }
-
     // Set where filter when using timeline
     // Both Where filter and timeline cannot be used together
-    if (
-      className === ControllerType.POST &&
-      methodName === MethodType.TIMELINE
-    ) {
-      if (Object.keys(filter.where).length > 1 && timelineType)
-        throw new HttpErrors.UnprocessableEntity(
-          'Where filter and timelineType can not be used at the same time!',
+    if (className === ControllerType.POST) {
+      if (q) {
+        const whereByQuery = await this.getPostByQuery(
+          q.toString(),
+          userId?.toString(),
         );
+        filter.where = Object.assign(filter.where ?? {}, whereByQuery);
+      }
 
-      if (timelineType) {
-        if (!userId)
-          throw new HttpErrors.UnprocessableEntity('UserId must be filled');
+      switch (methodName) {
+        case MethodType.TIMELINE: {
+          if (Object.keys(filter.where).length > 1 && timelineType)
+            throw new HttpErrors.UnprocessableEntity(
+              'Where filter and timelineType can not be used at the same time!',
+            );
 
-        filter.order = this.orderSetting(query);
+          if (timelineType) {
+            if (!userId)
+              throw new HttpErrors.UnprocessableEntity('UserId must be filled');
 
-        const whereTimeline = await this.getTimeline(
-          userId as string,
-          timelineType as TimelineType,
-        );
+            filter.order = this.orderSetting(query);
 
-        if (whereTimeline)
-          filter.where = Object.assign(filter.where ?? {}, whereTimeline);
-        else {
-          return {
-            data: [],
-            meta: pageMetadata(NaN, NaN, 0),
-          };
+            const whereTimeline = await this.getTimeline(
+              userId as string,
+              timelineType as TimelineType,
+            );
+
+            if (whereTimeline)
+              filter.where = Object.assign(filter.where ?? {}, whereTimeline);
+            else {
+              return {
+                data: [],
+                meta: pageMetadata(NaN, NaN, 0),
+              };
+            }
+          }
+          break;
+        }
+
+        case MethodType.GETIMPORTERS: {
+          if (filter.include && filter.include > 0) {
+            filter.include = ['user', ...filter.include];
+          } else {
+            filter.include = ['user'];
+          }
+
+          filter.order = this.orderSetting(query);
+          filter.where = Object.assign(filter.where, {
+            originPostId: invocationCtx.args[0],
+            platform: invocationCtx.args[1],
+          });
+
+          break;
         }
       }
-    }
-
-    if (
-      className === ControllerType.POST &&
-      methodName === MethodType.GETIMPORTERS
-    ) {
-      filter.where = {
-        originPostId: invocationCtx.args[0],
-        platform: invocationCtx.args[1],
-      };
     }
 
     // Get pageMetadata
@@ -191,26 +199,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     );
     const meta = pageMetadata(pageIndex, pageSize, count);
 
+    const paginationFilter = Object.assign(filter, {
+      limit: pageSize,
+      offset: (pageIndex - 1) * pageSize,
+    });
+
     // Reassign filter object
-    if (className === ControllerType.REPORTUSERCONTROLLER) {
-      invocationCtx.args[1] = Object.assign(filter, {
-        limit: pageSize,
-        offset: (pageIndex - 1) * pageSize,
-      });
-    } else if (
-      className === ControllerType.POST &&
-      methodName === MethodType.GETIMPORTERS
-    ) {
-      invocationCtx.args[2] = Object.assign(filter, {
-        limit: pageSize,
-        offset: (pageIndex - 1) * pageSize,
-      });
-    } else {
-      invocationCtx.args[0] = Object.assign(filter, {
-        limit: pageSize,
-        offset: (pageIndex - 1) * pageSize,
-      });
-    }
+    if (className === ControllerType.REPORTUSERCONTROLLER)
+      invocationCtx.args[1] = paginationFilter;
+    else if (methodName === MethodType.GETIMPORTERS)
+      invocationCtx.args[2] = paginationFilter;
+    else invocationCtx.args[0] = paginationFilter;
 
     let result = await next();
 

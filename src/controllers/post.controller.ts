@@ -253,7 +253,6 @@ export class PostController {
           originPostId,
           platform: platform as PlatformType,
         },
-        include: ['user'],
       }),
     );
   }

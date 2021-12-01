@@ -2,7 +2,11 @@ import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
 import {Post, PostWithRelations} from '../models';
-import {PeopleRepository, PostRepository, CommentRepository} from '../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  CommentRepository,
+} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
@@ -71,6 +75,8 @@ export class PostService {
     });
 
     friendIds.push(post.createdBy);
+
+    friendIds = [...new Set(friendIds)];
 
     const posts = await this.postRepository.find({
       where: {
