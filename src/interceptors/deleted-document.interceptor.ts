@@ -5,12 +5,12 @@ import {
   InvocationContext,
   InvocationResult,
   Provider,
+  service,
   ValueOrPromise,
 } from '@loopback/core';
-import {repository} from '@loopback/repository';
 import {RestBindings} from '@loopback/rest';
 import {ControllerType, FriendStatusType} from '../enums';
-import {FriendRepository} from '../repositories';
+import {FriendService, PostService} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -21,8 +21,10 @@ export class DeletedDocument implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${DeletedDocument.name}`;
 
   constructor(
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
+    @service(FriendService)
+    protected friendService: FriendService,
+    @service(PostService)
+    protected postService: PostService,
   ) {}
 
   /**
@@ -51,7 +53,7 @@ export class DeletedDocument implements Provider<Interceptor> {
 
     if (className === ControllerType.USER) {
       if (userId) {
-        const friend = await this.friendRepository.findOne({
+        const friend = await this.friendService.friendRepository.findOne({
           where: {
             or: [
               {
@@ -70,9 +72,19 @@ export class DeletedDocument implements Provider<Interceptor> {
       }
     }
     // Add pre-invocation logic here
-    const result = await next();
+    let result = await next();
     // Add post-invocation logic here
     if (className === ControllerType.POST && result.message) return result;
+    if (className === ControllerType.POST) {
+      const postUserId = result.createdBy;
+      const friendIds = await this.friendService.getImporterIds(postUserId);
+      const detailImporters = await this.postService.getDetailImporters(
+        result,
+        friendIds,
+      );
+
+      result = Object.assign(result, detailImporters);
+    }
 
     if (result.deletedAt) {
       switch (className) {
