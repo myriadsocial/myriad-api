@@ -121,9 +121,6 @@ describe('PostApplication', function () {
         .send()
         .expect(200);
 
-      persistedPost.totalImporter = 1;
-      persistedPost.importers = [user];
-
       const expected = toJSON(persistedPost);
 
       expect(result.body).to.deepEqual(expected);
