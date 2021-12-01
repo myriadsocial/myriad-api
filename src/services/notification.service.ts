@@ -7,7 +7,6 @@ import {
   MentionUser,
   Notification,
   Transaction,
-  User,
   UserSocialMedia,
   Vote,
 } from '../models';
