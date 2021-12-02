@@ -413,6 +413,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             },
           ],
         },
+        {
+          and: [
+            {
+              tags: {
+                inq: [q.replace(/%23/gi, '').trim()],
+              },
+              visibility: VisibilityType.PUBLIC,
+            },
+          ],
+        },
       ],
     } as Where<Post>;
   }
