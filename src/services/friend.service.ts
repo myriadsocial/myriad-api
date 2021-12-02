@@ -89,7 +89,7 @@ export class FriendService {
     const friendIds = friends.map(friend => friend.requesteeId);
     const requestorIds = friends.map(friend => friend.requestorId);
 
-    const ids = [...new Set(...friendIds, ...requestorIds)].filter(
+    const ids = [...new Set([...friendIds, ...requestorIds])].filter(
       userId => userId !== id,
     );
 
