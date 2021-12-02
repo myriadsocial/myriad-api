@@ -359,6 +359,34 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               },
             ],
           },
+          {
+            and: [
+              {
+                username: {
+                  regexp: pattern,
+                },
+              },
+              {
+                id: {
+                  inq: approvedFriendIds,
+                },
+              },
+            ],
+          },
+          {
+            and: [
+              {
+                name: {
+                  regexp: pattern,
+                },
+              },
+              {
+                id: {
+                  inq: approvedFriendIds,
+                },
+              },
+            ],
+          },
         ],
       },
     });
@@ -369,7 +397,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           and: [
             {
               createdBy: {
-                inq: [...userIds, ...approvedFriendIds],
+                inq: userIds,
               },
             },
             {
@@ -381,7 +409,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           and: [
             {
               createdBy: {
-                inq: approvedFriendIds,
+                inq: userIds,
               },
             },
             {
