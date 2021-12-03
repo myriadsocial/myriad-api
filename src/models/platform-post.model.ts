@@ -1,4 +1,5 @@
 import {Model, model, property} from '@loopback/repository';
+import {VisibilityType} from '../enums';
 
 @model()
 export class PlatformPost extends Model {
@@ -20,6 +21,15 @@ export class PlatformPost extends Model {
     required: false,
   })
   tags?: string[];
+
+  @property({
+    type: 'string',
+    required: false,
+    jsonSchema: {
+      enum: Object.values(VisibilityType),
+    },
+  })
+  visibility?: VisibilityType;
 
   constructor(data?: Partial<PlatformPost>) {
     super(data);

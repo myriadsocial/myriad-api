@@ -158,12 +158,14 @@ export class Post extends Entity {
     type: 'array',
     itemType: 'object',
     required: false,
+    default: [],
   })
   importers?: User[];
 
   @property({
     type: 'number',
     required: false,
+    default: 0,
   })
   totalImporter?: number;
 

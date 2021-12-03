@@ -11,7 +11,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {PlatformType} from '../enums';
+import {PlatformType, VisibilityType} from '../enums';
 import {
   DeletedDocument,
   PaginationInterceptor,
@@ -52,7 +52,9 @@ export class PostController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Post),
+          schema: getModelSchemaRef(Post, {
+            exclude: ['importers', 'totalImporter'],
+          }),
         },
       },
     })
@@ -200,6 +202,7 @@ export class PostController {
       tags = [...tags, ...postTags];
     }
 
+    newPost.visibility = platformPost.visibility ?? VisibilityType.PUBLIC;
     newPost.tags = tags;
     newPost.createdBy = importer;
 
@@ -243,7 +246,7 @@ export class PostController {
     @param.path.string('originPostId') originPostId: string,
     @param.path.string('platform') platform: string,
     @param.filter(Post, {
-      exclude: ['limit', 'skip', 'offset', 'where', 'include'],
+      exclude: ['limit', 'skip', 'offset', 'where'],
     })
     filter?: Filter<Post>,
   ): Promise<Post[]> {
