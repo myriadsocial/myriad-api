@@ -227,7 +227,7 @@ describe('PostApplication', function () {
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(post as Post),
       totalImporter: 1,
-      importers: [toJSON(user)],
+      importers: [],
       user: toJSON(user),
       people: toJSON(people),
       comments: [toJSON(comment)],
@@ -258,7 +258,7 @@ describe('PostApplication', function () {
         include: ['people'],
       });
 
-      result.importers = [importer];
+      result.importers = [Object.assign(importer, {name: 'You'})];
       result.totalImporter = 1;
 
       expect(toJSON(result)).to.containDeep(toJSON(response.body));
