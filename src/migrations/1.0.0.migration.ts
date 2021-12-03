@@ -1,11 +1,10 @@
-import {AnyObject, repository} from '@loopback/repository';
+import {repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {
   PeopleRepository,
-  PostImporterRepository,
   PostRepository,
 } from '../repositories';
-import {People, Post, PostImporter} from '../models';
+import {People, Post} from '../models';
 import {PlatformType} from '../enums';
 import {inject} from '@loopback/core';
 import {Twitter, Reddit} from '../services';
@@ -21,8 +20,6 @@ export class MigrationScript100 implements MigrationScript {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(PostImporterRepository)
-    protected postImporterRepository: PostImporterRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
     @inject('services.Twitter')
@@ -33,24 +30,24 @@ export class MigrationScript100 implements MigrationScript {
 
   async up(): Promise<void> {
     await this.doMigratePosts();
-    // await this.doMigratePostImporter();
     await this.doMigratePeople();
   }
 
   async doMigratePosts(): Promise<void> {
-    const collection = (
-      this.postRepository.dataSource.connector as any
-    ).collection(Post.modelName);
-
-    const posts = await collection.aggregate().get();
+    const posts = await this.postRepository.find();
 
     await Promise.all(
-      posts.map(async (post: AnyObject) => {
-        if (post.importers && post.importers.length > 0) {
-          const importers = post.importers;
-          const postId = post._id;
+      posts.map(async (post: Partial<Post>) => {
+        const originPostId = post.originPostId;
+        const platform = post.platform;
 
-          delete post._id;
+        if (post.importers && post.importers.length > 0) {
+          const importers = post.importers.map(importer =>
+            JSON.stringify(importer),
+          );
+          const postId = post.id ?? '';
+
+          delete post.id;
           delete post.importers;
 
           await Promise.all(
@@ -73,65 +70,24 @@ export class MigrationScript100 implements MigrationScript {
             }),
           );
 
-          return collection.updateOne(
-            {_id: postId},
-            {
-              $unset: {
-                importers: '',
-              },
-            },
-          );
+          return this.postRepository.updateById(postId, {importers: []});
         }
+
+        const {count} = await this.postRepository.count({
+          originPostId,
+          platform,
+        });
+
+        await this.postRepository.updateAll(
+          {totalImporter: count},
+          {originPostId: originPostId, platform: platform},
+        );
 
         return null;
       }),
     );
-  }
 
-  async doMigratePostImporter(): Promise<void> {
-    const collection = (
-      this.postImporterRepository.dataSource.connector as any
-    ).collection(PostImporter.modelName);
-
-    const postImporters = await collection.aggregate().get();
-
-    await Promise.all(
-      postImporters.map(async (postImporter: AnyObject) => {
-        const postId = postImporter.postId;
-        const importerId = postImporter.importerId;
-
-        const post = (await this.postRepository.findOne({
-          where: {
-            id: postId,
-          },
-        })) as Partial<Post> | null;
-
-        if (!post) return null;
-
-        delete post.id;
-        delete post.importers;
-
-        post.createdBy = importerId;
-
-        const found = await this.postRepository.findOne({
-          where: {
-            originPostId: post.originPostId,
-            platform: post.platform,
-            createdBy: post.createdBy,
-          },
-        });
-
-        if (found) return null;
-
-        return this.postRepository.create(post);
-      }),
-    );
-
-    try {
-      await collection.drop();
-    } catch {
-      // ignore
-    }
+    await this.postRepository.updateAll({importers: []});
   }
 
   async doMigratePeople(): Promise<void> {
