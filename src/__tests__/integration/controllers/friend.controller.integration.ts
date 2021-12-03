@@ -3,18 +3,11 @@ import {FriendController} from '../../../controllers';
 import {FriendStatusType, NotificationType} from '../../../enums';
 import {Friend} from '../../../models';
 import {
-  CommentRepository,
   FriendRepository,
   NotificationRepository,
-  NotificationSettingRepository,
-  PostRepository,
-  ReportRepository,
-  UserReportRepository,
   UserRepository,
-  UserSocialMediaRepository,
 } from '../../../repositories';
 import {
-  FCMService,
   FriendService,
   MetricService,
   NotificationService,
@@ -31,51 +24,24 @@ import {
 describe('FriendControllerIntegration', () => {
   let userRepository: UserRepository;
   let friendRepository: FriendRepository;
-  let commentRepository: CommentRepository;
-  let postRepository: PostRepository;
-  let controller: FriendController;
   let notificationRepository: NotificationRepository;
   let notificationService: NotificationService;
-  let userSocialMediaRepository: UserSocialMediaRepository;
-  let reportRepository: ReportRepository;
-  let notificationSettingRepository: NotificationSettingRepository;
-  let userReportRepository: UserReportRepository;
-  let metricService: MetricService;
   let friendService: FriendService;
-  let fcmService: FCMService;
+  let metricService: MetricService;
+  let controller: FriendController;
 
   before(async () => {
     ({
       userRepository,
       friendRepository,
-      postRepository,
-      commentRepository,
       notificationRepository,
-      userSocialMediaRepository,
-      userRepository,
-      notificationSettingRepository,
-      userReportRepository,
+      notificationService,
+      friendService,
+      metricService,
     } = await givenRepositories(testdb));
   });
 
   before(async () => {
-    notificationService = new NotificationService(
-      userRepository,
-      postRepository,
-      notificationRepository,
-      userSocialMediaRepository,
-      friendRepository,
-      reportRepository,
-      commentRepository,
-      userReportRepository,
-      notificationSettingRepository,
-      fcmService,
-    );
-    friendService = new FriendService(
-      friendRepository,
-      userRepository,
-      notificationService,
-    );
     controller = new FriendController(
       notificationService,
       friendService,

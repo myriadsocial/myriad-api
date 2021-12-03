@@ -3,18 +3,14 @@ import {CommentController} from '../../../controllers';
 import {ReferenceType, NotificationType, PlatformType} from '../../../enums';
 import {
   CommentRepository,
-  FriendRepository,
   NotificationRepository,
-  NotificationSettingRepository,
   PeopleRepository,
   PostRepository,
-  ReportRepository,
   TransactionRepository,
-  UserReportRepository,
   UserRepository,
   UserSocialMediaRepository,
 } from '../../../repositories';
-import {FCMService, NotificationService} from '../../../services';
+import {NotificationService} from '../../../services';
 import {
   givenComment,
   givenCommentInstance,
@@ -39,41 +35,22 @@ describe('CommentControllerIntegration', () => {
   let userSocialMediaRepository: UserSocialMediaRepository;
   let peopleRepository: PeopleRepository;
   let notificationService: NotificationService;
-  let fcmService: FCMService;
-  let friendRepository: FriendRepository;
-  let userReportRepository: UserReportRepository;
-  let notificationSettingRepository: NotificationSettingRepository;
-  let reportRepository: ReportRepository;
 
   before(async () => {
     ({
-      userRepository,
       commentRepository,
       postRepository,
-      notificationRepository,
+      notificationService,
       transactionRepository,
-      userSocialMediaRepository,
+      userRepository,
+      notificationRepository,
       peopleRepository,
-      friendRepository,
-      reportRepository,
-      notificationSettingRepository,
-      userReportRepository,
+      notificationService,
+      userSocialMediaRepository,
     } = await givenRepositories(testdb));
   });
 
   before(async () => {
-    notificationService = new NotificationService(
-      userRepository,
-      postRepository,
-      notificationRepository,
-      userSocialMediaRepository,
-      friendRepository,
-      reportRepository,
-      commentRepository,
-      userReportRepository,
-      notificationSettingRepository,
-      fcmService,
-    );
     controller = new CommentController(
       commentRepository,
       postRepository,
