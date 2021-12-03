@@ -159,12 +159,12 @@ export class MigrationScript100 implements MigrationScript {
 
       switch (platform) {
         case PlatformType.REDDIT: {
-          newPeople = await this.fetchRedditPost(originPostId ?? '', post.id);
+          newPeople = await this.fetchRedditPost(originPostId ?? '');
           break;
         }
 
         case PlatformType.TWITTER: {
-          newPeople = await this.fetchTweet(originPostId ?? '', post.id);
+          newPeople = await this.fetchTweet(originPostId ?? '');
           break;
         }
 
@@ -182,10 +182,7 @@ export class MigrationScript100 implements MigrationScript {
     }
   }
 
-  async fetchTweet(
-    originPostId: string,
-    postId: string,
-  ): Promise<People | null> {
+  async fetchTweet(originPostId: string): Promise<People | null> {
     if (!originPostId) return null;
 
     let data = null;
@@ -204,17 +201,14 @@ export class MigrationScript100 implements MigrationScript {
 
     return new People({
       name: user.name,
-      username: user.username,
+      username: user.screen_name,
       originUserId: user.id_str,
       profilePictureURL: user.profile_image_url_https || '',
       platform: PlatformType.TWITTER,
     });
   }
 
-  async fetchRedditPost(
-    originPostId: string,
-    postId: string,
-  ): Promise<People | null> {
+  async fetchRedditPost(originPostId: string): Promise<People | null> {
     if (!originPostId) return null;
 
     let data = null;
@@ -243,10 +237,14 @@ export class MigrationScript100 implements MigrationScript {
     if (!user) return null;
 
     return new People({
-      name: user.subreddit.title ? user.subreddit.title : user.name,
+      name: user.subreddit
+        ? user.subreddit.title
+          ? user.subreddit.title
+          : user.name
+        : user.name,
       username: user.name,
       originUserId: 't2_' + user.id,
-      profilePictureURL: user.icon_img.split('?')[0],
+      profilePictureURL: user.icon_img ? user.icon_img.split('?')[0] : '',
       platform: PlatformType.REDDIT,
     });
   }
