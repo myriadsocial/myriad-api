@@ -6,6 +6,8 @@ import {
   PeopleRepository,
   PostRepository,
   CommentRepository,
+  FriendRepository,
+  UserRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope} from '@loopback/core';
@@ -22,6 +24,10 @@ export class PostService {
     protected peopleRepository: PeopleRepository,
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
   ) {}
 
   async createPost(post: Omit<ExtendedPost, 'id'>): Promise<PostWithRelations> {
@@ -68,36 +74,45 @@ export class PostService {
     });
   }
 
-  async getDetailImporters(post: Post, friendIds: string[]) {
-    const {count: totalImporter} = await this.postRepository.count({
-      platform: post.platform as PlatformType,
-      originPostId: post.originPostId,
-    });
+  async getPostImporterInfo(post: Post, userId?: string): Promise<Post> {
+    if (!userId) return post;
+    if (post.platform === PlatformType.MYRIAD) return post;
+    if (userId) {
+      let isFriend = false;
 
-    friendIds.push(post.createdBy);
+      const user = await this.userRepository.findOne({
+        where: {
+          id: post.createdBy,
+        },
+      });
 
-    friendIds = [...new Set(friendIds)];
+      if (!user) return post;
+      if (userId !== post.createdBy) {
+        const friend = await this.friendRepository.findOne({
+          where: {
+            or: [
+              {
+                requesteeId: userId,
+                requestorId: post.createdBy,
+              },
+              {
+                requestorId: userId,
+                requesteeId: post.createdBy,
+              },
+            ],
+          },
+        });
 
-    const posts = await this.postRepository.find({
-      where: {
-        platform: post.platform as PlatformType,
-        originPostId: post.originPostId,
-        or: friendIds.map(friendId => {
-          return {
-            createdBy: friendId,
-          };
-        }),
-      },
-      include: ['user'],
-      limit: 5,
-      order: ['updatedAt DESC'],
-    });
+        if (friend) isFriend = true;
+      } else {
+        user.name = 'You';
+        isFriend = true;
+      }
 
-    const postImporters = posts.map(e => e.user);
+      if (!isFriend) return post;
+      post.importers = [user];
+    }
 
-    return {
-      totalImporter: totalImporter,
-      importers: postImporters,
-    };
+    return post;
   }
 }
