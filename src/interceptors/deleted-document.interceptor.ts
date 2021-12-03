@@ -8,9 +8,11 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
+import {repository} from '@loopback/repository';
 import {RestBindings} from '@loopback/rest';
-import {ControllerType, FriendStatusType, PlatformType} from '../enums';
-import {FriendService, PostService} from '../services';
+import {ControllerType, FriendStatusType} from '../enums';
+import {FriendRepository} from '../repositories';
+import {PostService} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -21,8 +23,8 @@ export class DeletedDocument implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${DeletedDocument.name}`;
 
   constructor(
-    @service(FriendService)
-    protected friendService: FriendService,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
     @service(PostService)
     protected postService: PostService,
   ) {}
@@ -53,7 +55,7 @@ export class DeletedDocument implements Provider<Interceptor> {
 
     if (className === ControllerType.USER) {
       if (userId) {
-        const friend = await this.friendService.friendRepository.findOne({
+        const friend = await this.friendRepository.findOne({
           where: {
             or: [
               {
@@ -75,19 +77,6 @@ export class DeletedDocument implements Provider<Interceptor> {
     let result = await next();
     // Add post-invocation logic here
     if (className === ControllerType.POST && result.message) return result;
-    if (
-      className === ControllerType.POST &&
-      result.platform !== PlatformType.MYRIAD
-    ) {
-      const postUserId = result.createdBy;
-      const friendIds = await this.friendService.getImporterIds(postUserId);
-      const detailImporters = await this.postService.getDetailImporters(
-        result,
-        friendIds,
-      );
-
-      result = Object.assign(result, detailImporters);
-    }
 
     if (result.deletedAt) {
       switch (className) {
@@ -109,6 +98,13 @@ export class DeletedDocument implements Provider<Interceptor> {
         default:
           return null;
       }
+    }
+
+    if (className === ControllerType.POST && userId) {
+      result = await this.postService.getPostImporterInfo(
+        result,
+        userId.toString(),
+      );
     }
 
     return result;

@@ -7,6 +7,8 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
+import {repository} from '@loopback/repository';
+import {UserRepository} from '../repositories';
 import {FriendService, PostService, TagService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
@@ -19,6 +21,8 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${ValidatePostImportURL.name}`;
 
   constructor(
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(TagService)
     protected tagService: TagService,
     @service(FriendService)
@@ -51,19 +55,27 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     const originPostId = urlUtils.getOriginPostId();
     const username = urlUtils.getUsername();
 
+    const importer = invocationCtx.args[0].importer;
+
     invocationCtx.args[0].url = [platform, originPostId, username].join(',');
     // Add pre-invocation logic here
     const result = await next();
 
-    await this.tagService.createTags(result.tags);
+    const user = await this.userRepository.findOne({where: {id: importer}});
+    const {count} = await this.postService.postRepository.count({
+      originPostId: result.originPostId,
+      platform: result.platform,
+    });
 
-    const userId = result.createdBy;
-    const friendIds = await this.friendService.getImporterIds(userId);
-    const detailImporters = await this.postService.getDetailImporters(
-      result,
-      friendIds,
+    await this.tagService.createTags(result.tags);
+    await this.postService.postRepository.updateAll(
+      {totalImporter: count},
+      {originPostId: result.originPostId, platform: result.platform},
     );
+
+    const importerInfo = user ? [Object.assign(user, {name: 'You'})] : [];
+
     // Add post-invocation logic here
-    return Object.assign(result, detailImporters);
+    return Object.assign(result, {importers: importerInfo});
   }
 }
