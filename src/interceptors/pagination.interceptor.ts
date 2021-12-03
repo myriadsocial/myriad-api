@@ -82,7 +82,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
-    const {pageNumber, pageLimit, userId, timelineType, q, importers} = query;
+    const {pageNumber, pageLimit, userId, timelineType, q} = query;
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
     const filter =
@@ -238,24 +238,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     if (className === ControllerType.POST) {
       if (methodName === MethodType.TIMELINE) {
         result = await Promise.all(
-          result.map(async (post: Post) => {
-            if (post.platform === PlatformType.MYRIAD) return post;
-
-            let friendIds: string[] = [];
-
-            if (importers === 'true' && userId) {
-              friendIds = await this.friendService.getImporterIds(
-                userId?.toString(),
-              );
-            }
-
-            const detailImporters = await this.postService.getDetailImporters(
-              post,
-              friendIds,
-            );
-
-            return Object.assign(post, detailImporters);
-          }),
+          result.map(async (post: Post) =>
+            this.postService.getPostImporterInfo(post, userId?.toString()),
+          ),
         );
       }
 
