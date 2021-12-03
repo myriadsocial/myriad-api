@@ -106,6 +106,8 @@ describe('PostControllerIntegration', () => {
       postRepository,
       peopleRepository,
       commentRepository,
+      friendRepository,
+      userRepository,
     );
     controller = new PostController(
       socialMediaService,

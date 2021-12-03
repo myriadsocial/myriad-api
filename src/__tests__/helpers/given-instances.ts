@@ -169,6 +169,7 @@ export function givenPost(post?: Partial<Post>) {
         'Thu Apr 22 2021 12:49:17 GMT+0700 (Western Indonesia Time)',
       createdBy:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      totalImporter: 1,
     },
     post,
   );
