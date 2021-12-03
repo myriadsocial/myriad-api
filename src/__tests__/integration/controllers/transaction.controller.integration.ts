@@ -3,17 +3,12 @@ import {TransactionController} from '../../../controllers';
 import {NotificationType, ReferenceType} from '../../../enums';
 import {
   CommentRepository,
-  FriendRepository,
   NotificationRepository,
-  NotificationSettingRepository,
   PostRepository,
-  ReportRepository,
   TransactionRepository,
-  UserReportRepository,
   UserRepository,
-  UserSocialMediaRepository,
 } from '../../../repositories';
-import {FCMService, NotificationService} from '../../../services';
+import {NotificationService} from '../../../services';
 import {
   givenCommentInstance,
   givenEmptyDatabase,
@@ -30,13 +25,7 @@ describe('TransactionControllerIntegration', () => {
   let userRepository: UserRepository;
   let postRepository: PostRepository;
   let notificationRepository: NotificationRepository;
-  let userSocialMediaRepository: UserSocialMediaRepository;
-  let friendRepository: FriendRepository;
-  let reportRepository: ReportRepository;
   let commentRepository: CommentRepository;
-  let notificationSettingRepository: NotificationSettingRepository;
-  let userReportRepository: UserReportRepository;
-  let fcmService: FCMService;
   let notificationService: NotificationService;
   let controller: TransactionController;
 
@@ -46,27 +35,12 @@ describe('TransactionControllerIntegration', () => {
       userRepository,
       postRepository,
       notificationRepository,
-      userSocialMediaRepository,
-      friendRepository,
       commentRepository,
-      userReportRepository,
-      notificationSettingRepository,
+      notificationService,
     } = await givenRepositories(testdb));
   });
 
   before(async () => {
-    notificationService = new NotificationService(
-      userRepository,
-      postRepository,
-      notificationRepository,
-      userSocialMediaRepository,
-      friendRepository,
-      reportRepository,
-      commentRepository,
-      userReportRepository,
-      notificationSettingRepository,
-      fcmService,
-    );
     controller = new TransactionController(
       transactionRepository,
       notificationService,

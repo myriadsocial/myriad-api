@@ -13,9 +13,10 @@ import {
   FriendRepository,
   PeopleRepository,
   PostRepository,
-  UserRepository,
+  VoteRepository,
 } from '../../repositories';
 import {
+  MetricService,
   NotificationService,
   PostService,
   SocialMediaService,
@@ -27,10 +28,11 @@ describe('PostController', () => {
   let commentRepository: StubbedInstanceWithSinonAccessor<CommentRepository>;
   let peopleRepository: StubbedInstanceWithSinonAccessor<PeopleRepository>;
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
-  let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
+  let voteRepository: StubbedInstanceWithSinonAccessor<VoteRepository>;
   let postService: PostService;
   let socialMediaService: SocialMediaService;
   let notificationService: NotificationService;
+  let metricService: MetricService;
   let controller: PostController;
   let aPost: Post;
   let aPostWithId: Post;
@@ -99,7 +101,7 @@ describe('PostController', () => {
     postRepository = createStubInstance(PostRepository);
     commentRepository = createStubInstance(CommentRepository);
     peopleRepository = createStubInstance(PeopleRepository);
-    userRepository = createStubInstance(UserRepository);
+    voteRepository = createStubInstance(VoteRepository);
     aPost = givenMyriadPost();
     aPostWithId = givenMyriadPost({
       id: '1',
@@ -125,7 +127,8 @@ describe('PostController', () => {
       peopleRepository,
       commentRepository,
       friendRepository,
-      userRepository,
+      voteRepository,
+      metricService,
     );
     controller = new PostController(
       socialMediaService,

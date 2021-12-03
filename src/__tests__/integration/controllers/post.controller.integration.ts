@@ -11,15 +11,9 @@ import {
   TransactionRepository,
   UserRepository,
   NotificationRepository,
-  UserSocialMediaRepository,
-  FriendRepository,
-  ReportRepository,
-  NotificationSettingRepository,
-  UserReportRepository,
 } from '../../../repositories';
 import {
   Facebook,
-  FCMService,
   NotificationService,
   PostService,
   Reddit,
@@ -54,13 +48,7 @@ describe('PostControllerIntegration', () => {
   let commentRepository: CommentRepository;
   let voteRepository: VoteRepository;
   let transactionRepository: TransactionRepository;
-  let friendRepository: FriendRepository;
   let notificationRepository: NotificationRepository;
-  let reportRepository: ReportRepository;
-  let userSocialMediaRepository: UserSocialMediaRepository;
-  let notificationSettingRepository: NotificationSettingRepository;
-  let userReportRepository: UserReportRepository;
-  let fcmService: FCMService;
   let notificationService: NotificationService;
   let controller: PostController;
 
@@ -73,11 +61,8 @@ describe('PostControllerIntegration', () => {
       voteRepository,
       transactionRepository,
       notificationRepository,
-      friendRepository,
-      reportRepository,
-      notificationSettingRepository,
-      userReportRepository,
-      commentRepository,
+      notificationService,
+      postService,
     } = await givenRepositories(testdb));
   });
 
@@ -89,25 +74,6 @@ describe('PostControllerIntegration', () => {
       twitterService,
       redditService,
       facebookService,
-    );
-    notificationService = new NotificationService(
-      userRepository,
-      postRepository,
-      notificationRepository,
-      userSocialMediaRepository,
-      friendRepository,
-      reportRepository,
-      commentRepository,
-      userReportRepository,
-      notificationSettingRepository,
-      fcmService,
-    );
-    postService = new PostService(
-      postRepository,
-      peopleRepository,
-      commentRepository,
-      friendRepository,
-      userRepository,
     );
     controller = new PostController(
       socialMediaService,

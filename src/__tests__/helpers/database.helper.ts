@@ -19,7 +19,17 @@ import {
   AccountSettingRepository,
   NotificationSettingRepository,
   ExperienceUserRepository,
+  TagRepository,
 } from '../../repositories';
+import {
+  FCMService,
+  FriendService,
+  MetricService,
+  NotificationService,
+  PostService,
+  TransactionService,
+  UserSocialMediaService,
+} from '../../services';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export async function givenRepositories(testdb: any) {
@@ -112,6 +122,63 @@ export async function givenRepositories(testdb: any) {
     new AccountSettingRepository(testdb, async () => userRepository);
   const notificationSettingRepository: NotificationSettingRepository =
     new NotificationSettingRepository(testdb, async () => userRepository);
+  const tagRepository = new TagRepository(testdb);
+
+  const metricService = new MetricService(
+    voteRepository,
+    commentRepository,
+    postRepository,
+    userRepository,
+    transactionRepository,
+    friendRepository,
+    peopleRepository,
+    notificationRepository,
+    currencyRepository,
+    experienceRepository,
+    userSocialMediaRepository,
+    tagRepository,
+    userExperienceRepository,
+    activityLogRepository,
+    reportRepository,
+    userReportRepository,
+  );
+
+  const fcmService = new FCMService();
+
+  const notificationService = new NotificationService(
+    userRepository,
+    postRepository,
+    notificationRepository,
+    userSocialMediaRepository,
+    friendRepository,
+    reportRepository,
+    commentRepository,
+    userReportRepository,
+    notificationSettingRepository,
+    fcmService,
+  );
+
+  const friendService = new FriendService(
+    friendRepository,
+    userRepository,
+    notificationService,
+  );
+
+  const postService = new PostService(
+    postRepository,
+    peopleRepository,
+    commentRepository,
+    voteRepository,
+    metricService,
+  );
+
+  const transactionService = new TransactionService(transactionRepository);
+
+  const userSocialMediaService = new UserSocialMediaService(
+    userSocialMediaRepository,
+    peopleRepository,
+    notificationService,
+  );
 
   return {
     userRepository,
@@ -133,6 +200,13 @@ export async function givenRepositories(testdb: any) {
     userReportRepository,
     accountSettingRepository,
     notificationSettingRepository,
+    tagRepository,
+    metricService,
+    notificationService,
+    friendService,
+    postService,
+    transactionService,
+    userSocialMediaService,
   };
 }
 
@@ -155,8 +229,10 @@ export async function givenEmptyDatabase(testdb: any) {
     userReportRepository,
     accountSettingRepository,
     notificationSettingRepository,
+    tagRepository,
   } = await givenRepositories(testdb);
 
+  await tagRepository.deleteAll();
   await peopleRepository.deleteAll();
   await userRepository.deleteAll();
   await userCurrencyRepository.deleteAll();
