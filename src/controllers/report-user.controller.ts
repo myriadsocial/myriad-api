@@ -25,20 +25,11 @@ export class ReportUserController {
   })
   async find(
     @param.path.string('id') id: string,
-    @param.filter(UserReport, {exclude: ['include', 'where']})
+    @param.filter(UserReport, {
+      exclude: ['limit', 'skip', 'offset', 'include', 'where'],
+    })
     filter?: Filter<UserReport>,
   ): Promise<UserReport[]> {
-    return this.reportRepository.reporters(id).find(
-      Object.assign(filter ?? {}, {
-        include: [
-          {
-            relation: 'reporter',
-          },
-        ],
-        where: {
-          reportId: id,
-        },
-      }),
-    );
+    return this.reportRepository.reporters(id).find(filter);
   }
 }

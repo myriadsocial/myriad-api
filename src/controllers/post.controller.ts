@@ -243,21 +243,12 @@ export class PostController {
     },
   })
   async getImporters(
-    @param.path.string('originPostId') originPostId: string,
-    @param.path.string('platform') platform: string,
     @param.filter(Post, {
-      exclude: ['limit', 'skip', 'offset', 'where'],
+      exclude: ['limit', 'skip', 'offset', 'where', 'include'],
     })
     filter?: Filter<Post>,
   ): Promise<Post[]> {
-    return this.postService.postRepository.find(
-      Object.assign(filter ?? {}, {
-        where: {
-          originPostId,
-          platform: platform as PlatformType,
-        },
-      }),
-    );
+    return this.postService.postRepository.find(filter);
   }
 
   @intercept(DeletedDocument.BINDING_KEY)

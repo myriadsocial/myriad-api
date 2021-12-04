@@ -81,7 +81,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
+    const {query, path} = await invocationCtx.get(RestBindings.Http.REQUEST);
     const {pageNumber, pageLimit, userId, timelineType, q} = query;
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
@@ -112,9 +112,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
 
     if (className === ControllerType.REPORTUSERCONTROLLER) {
-      filter.where = {
+      filter.include = ['reporter'];
+      filter.order = this.orderSetting(query);
+      filter.where = Object.assign(filter.where, {
         reportId: invocationCtx.args[0],
-      };
+      });
     }
 
     // Set filter for blocked friend
@@ -157,9 +159,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               timelineType as TimelineType,
             );
 
-            if (whereTimeline)
+            if (whereTimeline) {
               filter.where = Object.assign(filter.where ?? {}, whereTimeline);
-            else {
+              filter.include = filter.include
+                ? [...filter.include, 'user']
+                : ['user'];
+            } else {
               return {
                 data: [],
                 meta: pageMetadata(NaN, NaN, 0),
@@ -170,16 +175,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         case MethodType.GETIMPORTERS: {
-          if (filter.include && filter.include > 0) {
-            filter.include = ['user', ...filter.include];
-          } else {
-            filter.include = ['user'];
-          }
+          const splitPath = path.split('/');
+          const originPostId = splitPath[2];
+          const platform = splitPath[4];
 
+          filter.include = ['user'];
           filter.order = this.orderSetting(query);
           filter.where = Object.assign(filter.where, {
-            originPostId: invocationCtx.args[0],
-            platform: invocationCtx.args[1],
+            originPostId: originPostId,
+            platform: platform,
           });
 
           break;
@@ -207,8 +211,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     // Reassign filter object
     if (className === ControllerType.REPORTUSERCONTROLLER)
       invocationCtx.args[1] = paginationFilter;
-    else if (methodName === MethodType.GETIMPORTERS)
-      invocationCtx.args[2] = paginationFilter;
     else invocationCtx.args[0] = paginationFilter;
 
     let result = await next();

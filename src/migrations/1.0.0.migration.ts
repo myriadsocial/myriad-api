@@ -1,9 +1,6 @@
 import {repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
-import {
-  PeopleRepository,
-  PostRepository,
-} from '../repositories';
+import {PeopleRepository, PostRepository} from '../repositories';
 import {People, Post} from '../models';
 import {PlatformType} from '../enums';
 import {inject} from '@loopback/core';
