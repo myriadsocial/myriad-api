@@ -13,7 +13,7 @@ import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
-import {PlatformType} from '../enums';
+import {PlatformType, ReferenceType} from '../enums';
 import {MetricService} from '../services';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -70,21 +70,15 @@ export class PostService {
     return Object.assign(newPost, {people: people});
   }
 
-  async deletePost(id: string, userId?: string): Promise<void> {
-    if (!userId)
-      throw new HttpErrors.UnprocessableEntity('UserId must be filled');
-
+  async deletePost(id: string): Promise<void> {
     const {createdBy} = await this.postRepository.findById(id);
-
-    if (createdBy !== userId)
-      throw new HttpErrors.UnprocessableEntity('Only post owner can delete');
 
     await this.postRepository.deleteById(id);
     await this.commentRepository.deleteAll({
       postId: id,
     });
-    await this.voteRepository.deleteAll({postId: id});
     await this.metricService.userMetric(createdBy);
+    await this.metricService.publicMetric(ReferenceType.POST, id);
   }
 
   async getPostImporterInfo(
