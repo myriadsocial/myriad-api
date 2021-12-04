@@ -46,6 +46,11 @@ export class RestrictedPostInterceptor implements Provider<Interceptor> {
   ) {
     const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
     const {userId} = query;
+    const filter = invocationCtx.args[1] ?? {};
+
+    filter.include = filter.include ? [...filter.include, 'user'] : ['user'];
+
+    invocationCtx.args[1] = filter;
 
     // Add pre-invocation logic here
     const result = await next();

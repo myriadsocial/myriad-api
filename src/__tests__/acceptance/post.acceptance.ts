@@ -1,7 +1,7 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ReferenceType} from '../../enums';
-import {Post, User} from '../../models';
+import {Post, PostWithRelations, User} from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
   CommentRepository,
@@ -107,7 +107,7 @@ describe('PostApplication', function () {
   });
 
   context('when dealing with a single persisted post', () => {
-    let persistedPost: Post;
+    let persistedPost: PostWithRelations;
 
     beforeEach(async () => {
       persistedPost = await givenMyriadPostInstance(postRepository, {
@@ -121,6 +121,7 @@ describe('PostApplication', function () {
         .send()
         .expect(200);
 
+      persistedPost.user = user;
       const expected = toJSON(persistedPost);
 
       expect(result.body).to.deepEqual(expected);

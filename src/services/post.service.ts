@@ -1,7 +1,7 @@
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
-import {Post, PostWithRelations} from '../models';
+import {Post, PostWithRelations, User} from '../models';
 import {
   PeopleRepository,
   PostRepository,
@@ -74,19 +74,19 @@ export class PostService {
     });
   }
 
-  async getPostImporterInfo(post: Post, userId?: string): Promise<Post> {
-    if (!userId) return post;
+  async getPostImporterInfo(
+    post: PostWithRelations,
+    userId?: string,
+  ): Promise<Post> {
     if (post.platform === PlatformType.MYRIAD) return post;
+    if (!post.user) return post;
+    if (!userId) return post;
+
+    const importer = new User({...post.user});
+
     if (userId) {
       let isFriend = false;
 
-      const user = await this.userRepository.findOne({
-        where: {
-          id: post.createdBy,
-        },
-      });
-
-      if (!user) return post;
       if (userId !== post.createdBy) {
         const friend = await this.friendRepository.findOne({
           where: {
@@ -105,12 +105,12 @@ export class PostService {
 
         if (friend) isFriend = true;
       } else {
-        user.name = 'You';
+        importer.name = 'You';
         isFriend = true;
       }
 
       if (!isFriend) return post;
-      post.importers = [user];
+      post.importers = [importer];
     }
 
     return post;
