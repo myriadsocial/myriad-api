@@ -168,6 +168,7 @@ export async function givenRepositories(testdb: any) {
     postRepository,
     peopleRepository,
     commentRepository,
+    friendRepository,
     voteRepository,
     metricService,
   );
