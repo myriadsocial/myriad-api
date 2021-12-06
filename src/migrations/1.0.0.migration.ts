@@ -9,6 +9,7 @@ import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {config} from '../config';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 
+// TODO: create migration for user
 @migrationScript()
 export class MigrationScript100 implements MigrationScript {
   version = '1.0.0';
