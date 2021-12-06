@@ -158,7 +158,6 @@ export class Post extends Entity {
     type: 'array',
     itemType: 'object',
     required: false,
-    default: [],
   })
   importers?: User[];
 
