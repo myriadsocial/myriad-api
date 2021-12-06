@@ -1,4 +1,4 @@
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {PeopleRepository, PostRepository} from '../repositories';
 import {People, Post} from '../models';
@@ -27,64 +27,50 @@ export class MigrationScript100 implements MigrationScript {
 
   async up(): Promise<void> {
     await this.doMigratePosts();
-    await this.doMigratePeople();
+    // await this.doMigratePeople();
   }
 
   async doMigratePosts(): Promise<void> {
-    const posts = await this.postRepository.find();
+    const collection = (
+      this.postRepository.dataSource.connector as any
+    ).collection(Post.modelName);
+
+    const posts = await collection.aggregate().get();
+
+    console.log(posts)
 
     await Promise.all(
-      posts.map(async (post: Partial<Post>) => {
+      posts.map(async (post: AnyObject) => {
         const originPostId = post.originPostId;
         const platform = post.platform;
 
-        if (post.importers && post.importers.length > 0) {
-          const importers = post.importers.map(importer =>
-            JSON.stringify(importer),
+        if (platform !== PlatformType.MYRIAD) {
+          const {count} = await this.postRepository.count({
+            originPostId,
+            platform,
+          });
+
+          await this.postRepository.updateAll(
+            {totalImporter: count},
+            {originPostId: originPostId, platform: platform},
           );
-          const postId = post.id ?? '';
-
-          delete post.id;
-          delete post.importers;
-
-          await Promise.all(
-            importers.map(async (importer: string) => {
-              if (importer === post.createdBy) return null;
-
-              post.createdBy = importer;
-
-              const found = await this.postRepository.findOne({
-                where: {
-                  originPostId: post.originPostId,
-                  platform: post.platform,
-                  createdBy: post.createdBy,
-                },
-              });
-
-              if (found) return null;
-
-              return this.postRepository.create(post);
-            }),
-          );
-
-          return this.postRepository.updateById(postId, {importers: []});
+        } else {
+          await collection.update(
+            {_id: post._id},
+            {
+              $unset: {
+                totalImporter: '',
+                importers: '',
+              }
+            }
+          )
         }
-
-        const {count} = await this.postRepository.count({
-          originPostId,
-          platform,
-        });
-
-        await this.postRepository.updateAll(
-          {totalImporter: count},
-          {originPostId: originPostId, platform: platform},
-        );
 
         return null;
       }),
     );
 
-    await this.postRepository.updateAll({importers: []});
+
   }
 
   async doMigratePeople(): Promise<void> {
