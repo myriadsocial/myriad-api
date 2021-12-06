@@ -228,7 +228,6 @@ describe('PostApplication', function () {
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(post as Post),
       totalImporter: 1,
-      importers: [],
       user: toJSON(user),
       people: toJSON(people),
       comments: [toJSON(comment)],
