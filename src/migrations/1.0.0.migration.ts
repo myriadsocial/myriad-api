@@ -9,7 +9,7 @@ import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {config} from '../config';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 
-// TODO: create migration for user
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 @migrationScript()
 export class MigrationScript100 implements MigrationScript {
   version = '1.0.0';
@@ -37,7 +37,7 @@ export class MigrationScript100 implements MigrationScript {
 
     const posts = await collection.aggregate().get();
 
-    console.log(posts)
+    console.log(posts);
 
     await Promise.all(
       posts.map(async (post: AnyObject) => {
@@ -61,16 +61,14 @@ export class MigrationScript100 implements MigrationScript {
               $unset: {
                 totalImporter: '',
                 importers: '',
-              }
-            }
-          )
+              },
+            },
+          );
         }
 
         return null;
       }),
     );
-
-
   }
 
   async doMigratePeople(): Promise<void> {
