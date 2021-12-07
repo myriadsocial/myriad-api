@@ -116,7 +116,7 @@ export class PostService {
         isFriend = true;
       }
 
-      if (!isFriend) return post;
+      if (!isFriend) return Object.assign(post, {importers: []});
       post.importers = [importer];
     }
 
