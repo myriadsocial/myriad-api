@@ -152,8 +152,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             if (!userId)
               throw new HttpErrors.UnprocessableEntity('UserId must be filled');
 
-            filter.order = this.orderSetting(query);
-
             const whereTimeline = await this.getTimeline(
               userId as string,
               timelineType as TimelineType,
@@ -180,7 +178,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           const platform = splitPath[4];
 
           filter.include = ['user'];
-          filter.order = this.orderSetting(query);
           filter.where = Object.assign(filter.where, {
             originPostId: originPostId,
             platform: platform,
@@ -189,6 +186,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           break;
         }
       }
+
+      filter.order = this.orderSetting(query);
     }
 
     // Get pageMetadata
@@ -312,6 +311,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         userId,
         FriendStatusType.APPROVED,
       );
+      approvedFriendIds = [...approvedFriendIds, userId];
     }
 
     const pattern = new RegExp(q, 'i');
@@ -414,6 +414,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             {
               visibility: VisibilityType.PUBLIC,
             },
+            {
+              createdBy: {
+                nin: blockedFriendIds,
+              },
+            },
           ],
         },
         {
@@ -426,6 +431,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             {
               visibility: VisibilityType.PUBLIC,
             },
+            {
+              createdBy: {
+                nin: blockedFriendIds,
+              },
+            },
           ],
         },
         {
@@ -434,7 +444,65 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               tags: {
                 inq: [q.replace(/%23/gi, '').trim()],
               },
+            },
+            {
               visibility: VisibilityType.PUBLIC,
+            },
+            {
+              createdBy: {
+                nin: blockedFriendIds,
+              },
+            },
+          ],
+        },
+        {
+          and: [
+            {
+              text: {
+                regexp: pattern,
+              },
+            },
+            {
+              visibility: VisibilityType.FRIEND,
+            },
+            {
+              createdBy: {
+                inq: approvedFriendIds,
+              },
+            },
+          ],
+        },
+        {
+          and: [
+            {
+              title: {
+                regexp: pattern,
+              },
+            },
+            {
+              visibility: VisibilityType.FRIEND,
+            },
+            {
+              createdBy: {
+                inq: approvedFriendIds,
+              },
+            },
+          ],
+        },
+        {
+          and: [
+            {
+              tags: {
+                inq: [q.replace(/%23/gi, '').trim()],
+              },
+            },
+            {
+              visibility: VisibilityType.FRIEND,
+            },
+            {
+              createdBy: {
+                inq: approvedFriendIds,
+              },
             },
           ],
         },
