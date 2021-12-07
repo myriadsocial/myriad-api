@@ -25,12 +25,10 @@ export class User extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: false,
+    generated: true,
     required: true,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
+    mongodb: {
+      dataType: 'ObjectId',
     },
   })
   id: string;

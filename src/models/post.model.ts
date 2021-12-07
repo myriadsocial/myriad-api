@@ -13,9 +13,8 @@ import {EmbeddedURL} from './embedded-url.model';
 import {Vote} from './vote.model';
 import {People, PeopleWithRelations} from './people.model';
 import {Transaction} from './transaction.model';
-import {User} from './user.model';
+import {User, UserWithRelations} from './user.model';
 import {MentionUser} from './mention-user.model';
-import {UserWithRelations} from './';
 
 @model({
   settings: {
@@ -146,7 +145,6 @@ export class Post extends Entity {
   @property({
     type: 'number',
     required: false,
-    default: 0,
   })
   popularCount: number;
 
@@ -176,18 +174,7 @@ export class Post extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'user'},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => User, {name: 'user'}, {required: true})
   createdBy: string;
 
   @belongsTo(() => People)

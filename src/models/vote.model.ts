@@ -61,11 +61,6 @@ export class Vote extends Entity {
   @property({
     type: 'string',
     required: false,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
-    },
   })
   toUserId: string;
 
@@ -89,18 +84,7 @@ export class Vote extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {},
-    {
-      required: true,
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-    },
-  )
+  @belongsTo(() => User, {}, {required: true})
   userId: string;
 
   constructor(data?: Partial<Vote>) {
