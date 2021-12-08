@@ -11,7 +11,6 @@ import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {
   MethodType,
-  PenaltyStatusType,
   ReferenceType,
   ReportStatusType,
 } from '../enums';
@@ -65,32 +64,36 @@ export class ReportInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const methodName = invocationCtx.methodName as MethodType;
+    const reportDetail = invocationCtx.args[1];
 
-    if (
-      methodName === MethodType.UPDATEBYID ||
-      methodName === MethodType.RESTORE
-    ) {
-      const {referenceId, referenceType, penaltyStatus} =
-        await this.reportRepository.findById(invocationCtx.args[0]);
+    let referenceId = null;
+    let referenceType = null;
 
-      if (methodName === MethodType.UPDATEBYID) {
-        const report: Report = invocationCtx.args[1];
+    if (methodName === MethodType.UPDATEBYID || methodName === MethodType.RESTORE) {
+      ({referenceId, referenceType} = await this.reportRepository.findById(invocationCtx.args[0]));
 
-        await this.updateReport(
-          report,
-          referenceId,
-          referenceType,
-          invocationCtx,
-          penaltyStatus,
-        );
-      }
+      switch (methodName) {
+        case MethodType.UPDATEBYID: {
+          const report: Report = invocationCtx.args[1];
 
-      if (methodName === MethodType.RESTORE) {
-        await this.restoreDocument(
-          invocationCtx.args[0],
-          referenceId,
-          referenceType,
-        );
+          await this.updateReport(
+            report,
+            referenceId,
+            referenceType,
+            invocationCtx,
+          );
+
+          break;
+        }
+
+        case MethodType.RESTORE: {
+          await this.restoreDocument(
+            referenceId,
+            referenceType,
+          );
+
+          break;
+        }
       }
     }
 
@@ -99,7 +102,14 @@ export class ReportInterceptor implements Provider<Interceptor> {
     // Add post-invocation logic here
 
     if (methodName === MethodType.CREATE) {
-      const reportDetail = invocationCtx.args[1];
+      const found = await this.userReportRepository.findOne({
+        where: {
+          reportId: result.id,
+          reportedBy: invocationCtx.args[0]
+        }
+      })
+
+      if (found) throw new HttpErrors.UnprocessableEntity('You have report this user/post/comment');
 
       await this.userReportRepository.create({
         referenceType: reportDetail.referenceType,
@@ -112,9 +122,16 @@ export class ReportInterceptor implements Provider<Interceptor> {
         reportId: result.id.toString(),
       });
 
-      await this.reportRepository.updateById(result.id, {totalReported: count});
+      await this.reportRepository.updateById(result.id, {totalReported: count, status: result.status});
 
       return Object.assign(result, {totalReported: count});
+    }
+
+    if (methodName === MethodType.RESTORE && referenceId && referenceType) {
+      await this.reportRepository.deleteAll({
+        referenceId,
+        referenceType,
+      });
     }
 
     return result;
@@ -122,7 +139,6 @@ export class ReportInterceptor implements Provider<Interceptor> {
 
   /* eslint-disable  @typescript-eslint/no-explicit-any */
   async restoreDocument(
-    reportId: string,
     referenceId: string,
     referenceType: ReferenceType,
   ): Promise<void> {
@@ -149,10 +165,6 @@ export class ReportInterceptor implements Provider<Interceptor> {
         throw new HttpErrors.UnprocessableEntity('ReferenceId not found!');
     }
 
-    await this.userReportRepository.deleteAll({
-      reportId: reportId,
-    });
-
     const reports = await this.reportRepository.find({
       where: {
         referenceType,
@@ -166,25 +178,9 @@ export class ReportInterceptor implements Provider<Interceptor> {
       };
     });
 
-    reportIds.push({
-      reportId: reportId,
-    });
-
     await this.userReportRepository.deleteAll({
       or: reportIds,
     });
-
-    await this.reportRepository.updateAll(
-      <any>{
-        $unset: {
-          status: '',
-        },
-      },
-      {
-        referenceId,
-        referenceType,
-      },
-    );
   }
 
   async updateReport(
@@ -192,56 +188,30 @@ export class ReportInterceptor implements Provider<Interceptor> {
     referenceId: string,
     referenceType: ReferenceType,
     invocationCtx: InvocationContext,
-    penaltyStatus?: PenaltyStatusType,
   ): Promise<void> {
-    switch (report.status) {
-      case ReportStatusType.REMOVED: {
-        if (referenceType === ReferenceType.POST) {
+    if (report.status === ReportStatusType.REMOVED) {
+      switch (referenceType) {
+        case ReferenceType.POST: {
           await this.postRepository.updateById(referenceId, {
             deletedAt: new Date().toString(),
           });
+
+          break
         }
 
-        if (referenceType === ReferenceType.COMMENT) {
+        case ReferenceType.COMMENT: {
           await this.commentRepository.updateById(referenceId, {
             deletedAt: new Date().toString(),
           });
+
+          break;
         }
 
-        break;
-      }
-
-      case ReportStatusType.APPROVED: {
-        if (referenceType === ReferenceType.USER) {
-          if (penaltyStatus === PenaltyStatusType.BANNED) {
-            throw new HttpErrors.UnprocessableEntity(
-              'This user has been banned!',
-            );
-          }
-
-          switch (penaltyStatus) {
-            case PenaltyStatusType.PENALTY1:
-              report.penaltyStatus = PenaltyStatusType.PENALTY2;
-              break;
-
-            case PenaltyStatusType.PENALTY2:
-              report.penaltyStatus = PenaltyStatusType.PENALTY3;
-              break;
-
-            case PenaltyStatusType.PENALTY3: {
-              report.penaltyStatus = PenaltyStatusType.BANNED;
-              report.status = ReportStatusType.REMOVED;
-
-              await this.userRepository.updateById(referenceId, {
-                deletedAt: new Date().toString(),
-              });
-              break;
-            }
-            default:
-              report.penaltyStatus = PenaltyStatusType.PENALTY1;
-          }
+        case ReferenceType.USER: {
+          await this.userRepository.updateById(referenceId, {
+            deletedAt: new Date().toString(),
+          });
         }
-        break;
       }
     }
 
