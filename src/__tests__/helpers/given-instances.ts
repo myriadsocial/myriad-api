@@ -6,12 +6,14 @@ import {
   PlatformType,
   SectionType,
   AccountSettingType,
+  PostStatus,
 } from '../../enums';
 import {
   AccountSetting,
   ActivityLog,
   Comment,
   Currency,
+  DraftPost,
   Experience,
   Friend,
   Notification,
@@ -156,7 +158,21 @@ export async function givenMultipleCommentInstances(
   ]);
 }
 
-export function givenPost(post?: Partial<Post>) {
+export function givenPost(post?: Partial<DraftPost>) {
+  const data = Object.assign(
+    {
+      tags: ['hello'],
+      text: 'hello world',
+      createdBy:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      status: PostStatus.PUBLISHED,
+    },
+    post,
+  );
+  return new DraftPost(data);
+}
+
+export function givenImportedPost(post?: Partial<Post>) {
   const data = Object.assign(
     {
       tags: [],
@@ -183,7 +199,6 @@ export function givenMyriadPost(post?: Partial<Post>) {
       text: 'hello world',
       createdBy:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
-      platform: PlatformType.MYRIAD,
     },
     post,
   );
@@ -205,9 +220,9 @@ export async function givenPostInstance(
   if (setMongo) {
     return (postRepository.dataSource.connector as any)
       .collection(Post.modelName)
-      .insertOne(givenPost(post));
+      .insertOne(givenImportedPost(post));
   }
-  return postRepository.create(givenPost(post));
+  return postRepository.create(givenImportedPost(post));
 }
 
 export function givenCurrency(currency?: Partial<Currency>) {

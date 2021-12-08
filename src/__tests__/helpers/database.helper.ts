@@ -20,6 +20,7 @@ import {
   NotificationSettingRepository,
   ExperienceUserRepository,
   TagRepository,
+  DraftPostRepository,
 } from '../../repositories';
 import {
   FCMService,
@@ -122,7 +123,10 @@ export async function givenRepositories(testdb: any) {
     new AccountSettingRepository(testdb, async () => userRepository);
   const notificationSettingRepository: NotificationSettingRepository =
     new NotificationSettingRepository(testdb, async () => userRepository);
-  const tagRepository: TagRepository = new TagRepository(testdb);
+  const tagRepository = new TagRepository(testdb);
+  const draftPostRepository: DraftPostRepository = new DraftPostRepository(
+    testdb,
+  );
 
   const metricService = new MetricService(
     voteRepository,
@@ -162,6 +166,7 @@ export async function givenRepositories(testdb: any) {
 
   const postService = new PostService(
     postRepository,
+    draftPostRepository,
     peopleRepository,
     commentRepository,
     friendRepository,
@@ -204,6 +209,7 @@ export async function givenRepositories(testdb: any) {
     postService,
     transactionService,
     userSocialMediaService,
+    draftPostRepository,
   };
 }
 
@@ -227,6 +233,7 @@ export async function givenEmptyDatabase(testdb: any) {
     accountSettingRepository,
     notificationSettingRepository,
     tagRepository,
+    draftPostRepository,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
@@ -247,4 +254,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await userReportRepository.deleteAll();
   await accountSettingRepository.deleteAll();
   await notificationSettingRepository.deleteAll();
+  await draftPostRepository.deleteAll();
 }

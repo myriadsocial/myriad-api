@@ -10,46 +10,31 @@ import {PlatformType} from '../../enums';
 import {Post} from '../../models';
 import {
   CommentRepository,
+  DraftPostRepository,
   FriendRepository,
   PeopleRepository,
   PostRepository,
   VoteRepository,
 } from '../../repositories';
-import {
-  MetricService,
-  NotificationService,
-  PostService,
-  SocialMediaService,
-} from '../../services';
+import {MetricService, PostService, SocialMediaService} from '../../services';
 import {givenMyriadPost} from '../helpers';
 
 describe('PostController', () => {
   let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
+  let draftPostRepository: StubbedInstanceWithSinonAccessor<DraftPostRepository>;
   let commentRepository: StubbedInstanceWithSinonAccessor<CommentRepository>;
   let peopleRepository: StubbedInstanceWithSinonAccessor<PeopleRepository>;
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
   let voteRepository: StubbedInstanceWithSinonAccessor<VoteRepository>;
   let postService: PostService;
   let socialMediaService: SocialMediaService;
-  let notificationService: NotificationService;
   let metricService: MetricService;
   let controller: PostController;
-  let aPost: Post;
   let aPostWithId: Post;
   let aChangedPost: Post;
   let aListOfPosts: Post[];
 
   beforeEach(resetRepositories);
-
-  describe('createPost', () => {
-    it('creates a Post', async () => {
-      const create = postRepository.stubs.create;
-      create.resolves(aPostWithId);
-      const result = await controller.create(aPost);
-      expect(result).to.eql(aPostWithId);
-      sinon.assert.calledWith(create, aPost);
-    });
-  });
 
   describe('findPostById', () => {
     it('returns a post if it exists', async () => {
@@ -99,10 +84,10 @@ describe('PostController', () => {
 
   function resetRepositories() {
     postRepository = createStubInstance(PostRepository);
+    draftPostRepository = createStubInstance(DraftPostRepository);
     commentRepository = createStubInstance(CommentRepository);
     peopleRepository = createStubInstance(PeopleRepository);
     voteRepository = createStubInstance(VoteRepository);
-    aPost = givenMyriadPost();
     aPostWithId = givenMyriadPost({
       id: '1',
     });
@@ -124,16 +109,13 @@ describe('PostController', () => {
 
     postService = new PostService(
       postRepository,
+      draftPostRepository,
       peopleRepository,
       commentRepository,
       friendRepository,
       voteRepository,
       metricService,
     );
-    controller = new PostController(
-      socialMediaService,
-      postService,
-      notificationService,
-    );
+    controller = new PostController(socialMediaService, postService);
   }
 });
