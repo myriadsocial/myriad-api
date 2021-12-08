@@ -13,7 +13,6 @@ import {
   getModelSchemaRef,
   param,
   patch,
-  requestBody,
   response,
 } from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
@@ -28,6 +27,7 @@ export class NotificationController {
     protected notificationRepository: NotificationRepository,
   ) {}
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/notifications')
   @response(200, {
     description: 'Array of Notification model instances',

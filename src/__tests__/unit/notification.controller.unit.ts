@@ -15,7 +15,6 @@ describe('NotificationController', () => {
   let notificationRepository: StubbedInstanceWithSinonAccessor<NotificationRepository>;
   let controller: NotificationController;
   let aNotificationWithId: Notification;
-  let aChangedNotification: Notification;
   let aListOfNotifications: Notification[];
 
   beforeEach(resetRepositories);
@@ -61,22 +60,6 @@ describe('NotificationController', () => {
     });
   });
 
-  describe('updateNotification', () => {
-    it('successfully updates existing items', async () => {
-      const updateById = notificationRepository.stubs.updateById;
-      updateById.resolves();
-      await controller.updateById(
-        aNotificationWithId.id as string,
-        aChangedNotification,
-      );
-      sinon.assert.calledWith(
-        updateById,
-        aNotificationWithId.id,
-        aChangedNotification,
-      );
-    });
-  });
-
   describe('deleteNotification', () => {
     it('successfully deletes existing items', async () => {
       const deleteById = notificationRepository.stubs.deleteById;
@@ -104,10 +87,6 @@ describe('NotificationController', () => {
         to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
       }),
     ] as Notification[];
-    aChangedNotification = givenNotification({
-      id: aNotificationWithId.id,
-      message: 'accept your friend request',
-    });
 
     controller = new NotificationController(notificationRepository);
   }
