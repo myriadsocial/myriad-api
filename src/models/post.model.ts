@@ -84,10 +84,6 @@ export class Post extends Entity {
   @property({
     type: 'object',
     required: false,
-    default: {
-      videos: [],
-      images: [],
-    },
   })
   asset?: Asset;
 
@@ -164,7 +160,6 @@ export class Post extends Entity {
   @property({
     type: 'number',
     required: false,
-    default: 0,
   })
   totalImporter?: number;
 

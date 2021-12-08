@@ -29,3 +29,4 @@ export * from './exchange-rate.model';
 export * from './account-setting.model';
 export * from './notification-setting.model';
 export * from './experience-user.model';
+export * from './draft-post.model';
