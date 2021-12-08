@@ -214,21 +214,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     let result = await next();
 
-    // Set notification has been read
-    if (
-      className === ControllerType.NOTIFICATION &&
-      methodName === MethodType.FIND
-    ) {
-      const notificationFilter = invocationCtx.args[0];
-      const toUser = notificationFilter.where
-        ? notificationFilter.where.to
-          ? notificationFilter.where.to
-          : null
-        : null;
-
-      await this.notificationService.readNotification(toUser);
-    }
-
     if (
       className === ControllerType.USEREXPERIENCE &&
       Object.prototype.hasOwnProperty.call(filter.where, 'userId')

@@ -28,7 +28,6 @@ export class NotificationController {
     protected notificationRepository: NotificationRepository,
   ) {}
 
-  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/notifications')
   @response(200, {
     description: 'Array of Notification model instances',
@@ -79,22 +78,15 @@ export class NotificationController {
     return this.notificationRepository.count(where);
   }
 
-  @patch('/notifications/{id}')
+  @patch('/notifications/{id}/read')
   @response(204, {
-    description: 'Notification PATCH success',
+    description: 'Read Notification PATCH success',
   })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Notification, {partial: true}),
-        },
-      },
-    })
-    notification: Notification,
-  ): Promise<void> {
-    await this.notificationRepository.updateById(id, notification);
+  async readNotification(@param.path.string('id') id: string): Promise<void> {
+    await this.notificationRepository.updateById(id, {
+      read: true,
+      updatedAt: new Date().toString(),
+    });
   }
 
   @del('/notifications/{id}')

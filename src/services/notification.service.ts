@@ -709,18 +709,4 @@ export class NotificationService {
 
     return true;
   }
-
-  async readNotification(to?: string): Promise<void> {
-    if (!to) return;
-
-    try {
-      const user = await this.userRepository.findById(to);
-
-      await this.notificationRepository.updateAll({read: true}, {to: user.id});
-    } catch (err) {
-      // ignore
-    }
-
-    return;
-  }
 }
