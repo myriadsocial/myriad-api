@@ -1,13 +1,14 @@
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
-import {Post, PostWithRelations, User} from '../models';
+import {DraftPost, Post, PostWithRelations, User} from '../models';
 import {
   PeopleRepository,
   PostRepository,
   CommentRepository,
   FriendRepository,
   VoteRepository,
+  DraftPostRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope, service} from '@loopback/core';
@@ -15,12 +16,18 @@ import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
 import {FriendStatusType, PlatformType, ReferenceType} from '../enums';
 import {MetricService} from '../services';
+import {UrlUtils} from '../utils/url.utils';
+
+const urlUtils = new UrlUtils();
+const {validateURL, getOpenGraph} = urlUtils;
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class PostService {
   constructor(
     @repository(PostRepository)
     public postRepository: PostRepository,
+    @repository(DraftPostRepository)
+    public draftPostRepository: DraftPostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
     @repository(CommentRepository)
@@ -122,5 +129,51 @@ export class PostService {
     }
 
     return post;
+  }
+
+  async createDraftPost(draftPost: DraftPost): Promise<DraftPost> {
+    let url = '';
+    let embeddedURL = null;
+
+    if (draftPost.text) {
+      const found = draftPost.text.match(/https:\/\/|http:\/\/|www./g);
+      if (found) {
+        const index: number = draftPost.text.indexOf(found[0]);
+
+        for (let i = index; i < draftPost.text.length; i++) {
+          const letter = draftPost.text[i];
+
+          if (letter === ' ' || letter === '"') break;
+          url += letter;
+        }
+      }
+
+      try {
+        if (url) validateURL(url);
+        embeddedURL = await getOpenGraph(url);
+      } catch {
+        // ignore
+      }
+
+      if (embeddedURL) {
+        draftPost.embeddedURL = embeddedURL;
+      }
+    }
+
+    draftPost.tags = draftPost.tags.map(tag => tag.toLowerCase());
+
+    const found = await this.draftPostRepository.findOne({
+      where: {
+        createdBy: draftPost.createdBy,
+      },
+    });
+
+    if (found) {
+      await this.draftPostRepository.updateById(found.id, draftPost);
+
+      return Object.assign(draftPost, {id: found.id});
+    }
+
+    return this.draftPostRepository.create(draftPost);
   }
 }

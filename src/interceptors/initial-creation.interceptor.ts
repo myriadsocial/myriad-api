@@ -9,11 +9,18 @@ import {
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ReferenceType, ControllerType, MethodType} from '../enums';
+import {
+  ReferenceType,
+  ControllerType,
+  MethodType,
+  PostStatus,
+  PlatformType,
+} from '../enums';
 import {User} from '../models';
 import {
   CommentRepository,
   CurrencyRepository,
+  DraftPostRepository,
   PostRepository,
   TransactionRepository,
   UserCurrencyRepository,
@@ -23,6 +30,7 @@ import {
   CurrencyService,
   FriendService,
   MetricService,
+  NotificationService,
   TagService,
 } from '../services';
 
@@ -45,6 +53,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected commentRepository: CommentRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(DraftPostRepository)
+    protected draftPostRepository: DraftPostRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -53,6 +63,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected tagService: TagService,
     @service(FriendService)
     protected friendService: FriendService,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   /**
@@ -109,10 +121,10 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       return next();
     }
 
-    const result = await next();
+    let result = await next();
 
     if (methodName === MethodType.CREATE) {
-      this.afterCreation(className, result) as Promise<void>;
+      result = await this.afterCreation(className, result);
     }
 
     return result;
@@ -205,7 +217,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
   async afterCreation(
     className: ControllerType,
     result: AnyObject,
-  ): Promise<void> {
+  ): Promise<AnyObject> {
     switch (className) {
       case ControllerType.USER: {
         await this.userRepository.accountSetting(result.id).create({});
@@ -213,19 +225,43 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         await this.friendService.defaultFriend(result.id);
         await this.currencyService.defaultCurrency(result.id);
         await this.currencyService.defaultAcalaTips(result.id); // TODO: removed default acala tips
-        return;
+        return result;
       }
 
       case ControllerType.TRANSACTION: {
         await this.currencyService.sendMyriadReward(result.from);
-        return;
+        return result;
       }
 
       case ControllerType.POST: {
-        await this.metricService.userMetric(result.createdBy);
-        if (result.tags.length === 0) return;
-        await this.tagService.createTags(result.tags);
-        return;
+        if (result.status === PostStatus.PUBLISHED) {
+          await this.draftPostRepository.deleteById(result.id);
+
+          delete result.id;
+          delete result.status;
+
+          const newPost = await this.postRepository.create(
+            Object.assign(result, {platform: PlatformType.MYRIAD}),
+          );
+          await this.metricService.userMetric(newPost.createdBy);
+
+          try {
+            await this.notificationService.sendMention(
+              newPost.createdBy,
+              newPost.id,
+              newPost.mentions ?? [],
+            );
+          } catch {
+            // ignore
+          }
+
+          if (newPost.tags.length > 0) {
+            await this.tagService.createTags(newPost.tags);
+          }
+
+          return newPost;
+        }
+        return result;
       }
 
       case ControllerType.COMMENT: {
@@ -233,7 +269,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           where: {id: result.postId},
         });
 
-        if (!post) return;
+        if (!post) return result;
 
         const metric = await this.metricService.publicMetric(
           result.type,
@@ -250,8 +286,11 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           popularCount: popularCount,
         });
 
-        return;
+        return result;
       }
+
+      default:
+        return result;
     }
   }
 

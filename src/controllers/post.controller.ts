@@ -19,18 +19,10 @@ import {
 } from '../interceptors';
 import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {ExtendedPost} from '../interfaces';
-import {People, Post, PostWithRelations, User} from '../models';
+import {DraftPost, People, Post, PostWithRelations, User} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
-import {
-  NotificationService,
-  PostService,
-  SocialMediaService,
-} from '../services';
-import {UrlUtils} from '../utils/url.utils';
+import {PostService, SocialMediaService} from '../services';
 // import {authenticate} from '@loopback/authentication';
-
-const urlUtils = new UrlUtils();
-const {validateURL, getOpenGraph} = urlUtils;
 
 // @authenticate("jwt")
 export class PostController {
@@ -39,8 +31,6 @@ export class PostController {
     protected socialMediaService: SocialMediaService,
     @service(PostService)
     protected postService: PostService,
-    @service(NotificationService)
-    protected notificationService: NotificationService,
   ) {}
 
   @post('/posts')
@@ -52,58 +42,13 @@ export class PostController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Post, {
-            exclude: ['importers', 'totalImporter'],
-          }),
+          schema: getModelSchemaRef(DraftPost),
         },
       },
     })
-    newPost: Post,
-  ): Promise<Post> {
-    if (!newPost.text)
-      throw new HttpErrors.UnprocessableEntity('Text field cannot be empty!');
-
-    let url = '';
-    let embeddedURL = null;
-
-    const found = newPost.text.match(/https:\/\/|http:\/\/|www./g);
-    if (found) {
-      const index: number = newPost.text.indexOf(found[0]);
-
-      for (let i = index; i < newPost.text.length; i++) {
-        const letter = newPost.text[i];
-
-        if (letter === ' ' || letter === '"') break;
-        url += letter;
-      }
-    }
-
-    try {
-      if (url) validateURL(url);
-      embeddedURL = await getOpenGraph(url);
-    } catch {
-      // ignore
-    }
-
-    if (embeddedURL) {
-      newPost.embeddedURL = embeddedURL;
-    }
-
-    newPost.tags = newPost.tags.map(tag => tag.toLowerCase());
-
-    const result = await this.postService.postRepository.create(newPost);
-
-    try {
-      await this.notificationService.sendMention(
-        result.createdBy,
-        result.id,
-        result.mentions ?? [],
-      );
-    } catch {
-      // ignore
-    }
-
-    return result;
+    draftPost: DraftPost,
+  ): Promise<DraftPost> {
+    return this.postService.createDraftPost(draftPost);
   }
 
   @intercept(ValidatePostImportURL.BINDING_KEY)
@@ -296,5 +241,24 @@ export class PostController {
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.postService.deletePost(id);
+  }
+
+  @get('/users/{userId}/draft')
+  @response(200, {
+    description: 'Post model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(DraftPost, {includeRelations: true}),
+      },
+    },
+  })
+  async getDraftPost(
+    @param.path.string('userId') userId: string,
+  ): Promise<DraftPost | null> {
+    return this.postService.draftPostRepository.findOne({
+      where: {
+        createdBy: userId,
+      },
+    });
   }
 }
