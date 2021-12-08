@@ -95,20 +95,6 @@ describe('NotificationApplication', function () {
       return client.get('/notifications/99999').expect(404);
     });
 
-    it('updates the notification by ID ', async () => {
-      const updatedNotification = givenNotification({
-        message: 'accept your friend request',
-      });
-      await client
-        .patch(`/notifications/${persistedNotification.id}`)
-        .send(updatedNotification)
-        .expect(204);
-      const result = await notificationRepository.findById(
-        persistedNotification.id,
-      );
-      expect(result).to.containEql(updatedNotification);
-    });
-
     it('returns 404 when updating a user that does not exist', () => {
       return client
         .patch('/notifications/99999')
