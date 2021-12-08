@@ -1,7 +1,7 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ReferenceType} from '../../enums';
-import {Post, PostWithRelations, User} from '../../models';
+import {DraftPost, Post, PostWithRelations, User} from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
   CommentRepository,
@@ -84,19 +84,12 @@ describe('PostApplication', function () {
   });
 
   it('creates a post', async () => {
-    const myriadPost: Partial<Post> = givenMyriadPost({createdBy: user.id});
-    delete myriadPost.platform;
+    const myriadPost: Partial<DraftPost> = givenPost({createdBy: user.id});
     const response = await client.post('/posts').send(myriadPost).expect(200);
+    delete myriadPost.status;
     expect(response.body).to.containDeep(myriadPost);
     const result = await postRepository.findById(response.body.id);
     expect(result).to.containDeep(myriadPost);
-  });
-
-  it('rejects requests to create a post with no text', async () => {
-    const myriadPost: Partial<Post> = givenPost();
-    delete myriadPost.text;
-
-    await client.post('/posts').send(myriadPost).expect(422);
   });
 
   it('rejects requests to create a post with no createdBy', async () => {
@@ -122,6 +115,12 @@ describe('PostApplication', function () {
         .expect(200);
 
       persistedPost.user = user;
+      persistedPost.user.metric = {
+        totalPosts: 1,
+        totalExperiences: 0,
+        totalFriends: 0,
+        totalKudos: 0,
+      };
       const expected = toJSON(persistedPost);
 
       expect(result.body).to.deepEqual(expected);
@@ -223,6 +222,13 @@ describe('PostApplication', function () {
         include: ['user', 'people', 'comments', 'votes', 'transactions'],
       },
     });
+
+    user.metric = {
+      totalPosts: 1,
+      totalExperiences: 0,
+      totalFriends: 0,
+      totalKudos: 0,
+    };
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({

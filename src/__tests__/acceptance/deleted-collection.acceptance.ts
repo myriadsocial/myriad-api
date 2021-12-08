@@ -3,7 +3,7 @@ import {MyriadApiApplication} from '../..';
 import {Post, User} from '../../models';
 import {PostRepository, UserRepository} from '../../repositories';
 import {
-  givenPost,
+  givenImportedPost,
   givenPostInstance,
   givenPostRepository,
   givenUser,
@@ -226,7 +226,7 @@ describe('DeletedCollectionApplication', () => {
       });
 
       it('recovers the deleted post by ID', async () => {
-        const recoveredPost: Partial<Post> = givenPost();
+        const recoveredPost: Partial<Post> = givenImportedPost();
 
         await client
           .patch(`/posts/${deletedPersistedPost.id}/recover`)
