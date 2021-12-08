@@ -7,7 +7,6 @@ import {
   del,
   requestBody,
   response,
-  post,
 } from '@loopback/rest';
 import {Report} from '../models';
 import {ReportRepository} from '../repositories';
@@ -89,7 +88,6 @@ export class ReportController {
               'id',
               'referenceType',
               'referenceId',
-              'penaltyStatus',
               'totalReported',
             ],
           }),
@@ -109,24 +107,11 @@ export class ReportController {
   }
 
   @intercept(ReportInterceptor.BINDING_KEY)
-  @post('/reports/{id}/restore')
-  @response(200, {
-    description: 'Restore Report success',
-  })
-  async restore(@param.path.string('id') id: string): Promise<void> {
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
-    await this.reportRepository.updateById(id, <any>{
-      $unset: {
-        status: '',
-      },
-    });
-  }
-
   @del('/reports/{id}')
   @response(204, {
     description: 'Report DELETE success',
   })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
+  async restore(@param.path.string('id') id: string): Promise<void> {
     await this.reportRepository.deleteById(id);
   }
 }
