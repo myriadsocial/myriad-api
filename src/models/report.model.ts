@@ -5,10 +5,7 @@ import {
   hasMany,
   AnyObject,
 } from '@loopback/repository';
-import {
-  ReportStatusType,
-  PenaltyStatusType,
-} from '../enums/report-status-type.enum';
+import {ReportStatusType} from '../enums/report-status-type.enum';
 import {UserReport} from './user-report.model';
 import {ReferenceType, ReportType} from '../enums';
 
@@ -70,15 +67,6 @@ export class Report extends Entity {
     },
   })
   status: ReportStatusType;
-
-  @property({
-    type: 'string',
-    required: false,
-    jsonSchema: {
-      enum: Object.values(PenaltyStatusType),
-    },
-  })
-  penaltyStatus?: PenaltyStatusType;
 
   @property({
     type: 'number',
