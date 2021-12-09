@@ -8,7 +8,7 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
-import {RestBindings} from '@loopback/rest';
+import {HttpErrors, RestBindings} from '@loopback/rest';
 import {FriendStatusType, VisibilityType} from '../enums';
 import {FriendRepository} from '../repositories';
 
@@ -63,7 +63,7 @@ export class RestrictedPostInterceptor implements Provider<Interceptor> {
 
     switch (result.visibility) {
       case VisibilityType.FRIEND: {
-        if (!userId) return {message: 'restricted post'};
+        if (!userId) throw new HttpErrors.Forbidden('Restricted post!');
         if (userId === creator) return result;
         const friend = await this.friendRepository.findOne({
           where: {
@@ -72,15 +72,15 @@ export class RestrictedPostInterceptor implements Provider<Interceptor> {
           },
         });
 
-        if (!friend) return {message: 'restricted post'};
+        if (!friend) throw new HttpErrors.Forbidden('Restricted post!');
 
         if (friend.status === FriendStatusType.APPROVED) return result;
-        return {message: 'restricted post'};
+        throw new HttpErrors.Forbidden('Restricted post!');
       }
 
       case VisibilityType.PRIVATE:
         if (userId === creator) return result;
-        return {message: 'restricted post'};
+        throw new HttpErrors.Forbidden('Restricted post!');
 
       default:
         return result;

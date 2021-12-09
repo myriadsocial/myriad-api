@@ -9,7 +9,7 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {RestBindings} from '@loopback/rest';
+import {HttpErrors, RestBindings} from '@loopback/rest';
 import {ControllerType, FriendStatusType} from '../enums';
 import {FriendRepository} from '../repositories';
 import {PostService} from '../services';
@@ -71,19 +71,19 @@ export class DeletedDocument implements Provider<Interceptor> {
           },
         });
 
-        if (blockedFriend) return null;
+        if (blockedFriend) throw new HttpErrors.Forbidden('Restricted User');
       }
     }
     // Add pre-invocation logic here
     let result = await next();
     // Add post-invocation logic here
-    if (className === ControllerType.POST && result.message) return result;
 
     if (result.deletedAt) {
       switch (className) {
         case ControllerType.USER:
           return Object.assign(result, {
             name: '[user banned]',
+            username: '[user banned]',
           });
 
         case ControllerType.POST:
