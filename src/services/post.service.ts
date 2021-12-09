@@ -92,6 +92,7 @@ export class PostService {
     post: PostWithRelations,
     userId?: string,
   ): Promise<Post> {
+    if (post.deletedAt) post.text = '[post removed]';
     if (post.platform === PlatformType.MYRIAD) return post;
     if (!post.user) return post;
     if (!userId) return post;
