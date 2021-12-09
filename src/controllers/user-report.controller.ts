@@ -231,7 +231,7 @@ export class UserReportController {
       case ReportStatusType.IGNORED: {
         await this.userReportRepository.deleteAll({
           reportId: report.id,
-        })
+        });
         report.status = ReportStatusType.PENDING;
         break;
       }
@@ -245,7 +245,7 @@ export class UserReportController {
       default: {
         await this.userReportRepository.deleteAll({
           reportId: report.id,
-        })
+        });
         report.status = ReportStatusType.PENDING;
       }
     }
