@@ -7,7 +7,7 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {AnyObject, Where, repository} from '@loopback/repository';
+import {AnyObject, Where, repository, Count} from '@loopback/repository';
 import {HttpErrors, RestBindings} from '@loopback/rest';
 import {
   ControllerType,
@@ -228,41 +228,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     if (className === ControllerType.FRIEND && mutual === 'true') {
       const where = JSON.stringify(filter.where);
 
-      if (where.match(/approved/gi)) {
-        /* eslint-disable  @typescript-eslint/no-explicit-any */
-        const collection = (
-          this.friendService.friendRepository.dataSource.connector as any
-        ).collection(Friend.modelName);
-
+      if (where.match(/approved/gi) || where.match(/pending/gi)) {
         result = await Promise.all(
           result.map(async (friend: Friend) => {
             const {requestorId, requesteeId} = friend;
-            const countMutual = await collection
-              .aggregate([
-                {
-                  $match: {
-                    $or: [
-                      {
-                        requestorId: requestorId,
-                        status: FriendStatusType.APPROVED,
-                      },
-                      {
-                        requestorId: requesteeId,
-                        status: FriendStatusType.APPROVED,
-                      },
-                    ],
-                  },
-                },
-                {$group: {_id: '$requesteeId', count: {$sum: 1}}},
-                {$match: {count: 2}},
-                {$group: {_id: null, count: {$sum: 1}}},
-                {$project: {_id: 0}},
-              ])
-              .get();
-
-            let totalMutual = 0;
-
-            if (countMutual.length > 0) totalMutual = countMutual[0].count;
+            const {count: totalMutual} = await this.countMutual(
+              requestorId,
+              requesteeId,
+            );
 
             return Object.assign(friend, {totalMutual: totalMutual});
           }),
@@ -644,6 +617,39 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         } as Where<Post>;
       }
     }
+  }
+
+  async countMutual(userId1: string, userId2: string): Promise<Count> {
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
+    const collection = (
+      this.friendService.friendRepository.dataSource.connector as any
+    ).collection(Friend.modelName);
+
+    const countMutual = await collection
+      .aggregate([
+        {
+          $match: {
+            $or: [
+              {
+                requestorId: userId1,
+                status: FriendStatusType.APPROVED,
+              },
+              {
+                requestorId: userId2,
+                status: FriendStatusType.APPROVED,
+              },
+            ],
+          },
+        },
+        {$group: {_id: '$requesteeId', count: {$sum: 1}}},
+        {$match: {count: 2}},
+        {$group: {_id: null, count: {$sum: 1}}},
+        {$project: {_id: 0}},
+      ])
+      .get();
+
+    if (countMutual.length === 0) return {count: 0};
+    return countMutual[0];
   }
 
   combinePeopleAndUser(
