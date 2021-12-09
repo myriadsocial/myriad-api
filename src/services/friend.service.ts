@@ -1,10 +1,11 @@
 import {AnyObject, repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {FriendStatusType, VisibilityType} from '../enums';
-import {Post} from '../models';
+import {Friend, Post} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {Filter} from '@loopback/repository';
 import {config} from '../config';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -133,7 +134,7 @@ export class FriendService {
   }
 
   async validateApproveFriendRequest(friendId: string): Promise<AnyObject> {
-    const {requestee, requestor} = await this.friendRepository.findById(
+    const {requestee, requestor, status} = await this.friendRepository.findById(
       friendId,
       {
         include: ['requestee', 'requestor'],
@@ -141,6 +142,12 @@ export class FriendService {
     );
 
     if (requestee && requestor) {
+      if (status === FriendStatusType.APPROVED) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You already friends with the user',
+        );
+      }
+
       await this.friendRepository.create({
         requesteeId: requestor.id,
         requestorId: requestee.id,
@@ -157,14 +164,28 @@ export class FriendService {
   }
 
   async getFriendIds(id: string, status: FriendStatusType): Promise<string[]> {
-    const friends = await this.friendRepository.find({
-      where: {
-        requestorId: id,
-        status: status,
-      },
-    });
+    const filter = {
+      or: [
+        {
+          requestorId: id,
+          status: status,
+        },
+        {
+          requesteeId: id,
+          status: status,
+        },
+      ],
+    } as Filter<Friend>;
 
-    return friends.map(friend => friend.requesteeId);
+    const friends = await this.friendRepository.find(filter);
+    const requesteeIds = friends.map(friend => friend.requesteeId);
+    const requestorIds = friends.map(friend => friend.requestorId);
+
+    const friendIds = [...new Set([...requesteeIds, ...requestorIds])].filter(
+      userId => userId !== id,
+    );
+
+    return friendIds;
   }
 
   async friendsTimeline(userId: string): Promise<Where<Post> | undefined> {
