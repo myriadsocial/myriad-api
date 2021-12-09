@@ -242,23 +242,4 @@ export class PostController {
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.postService.deletePost(id);
   }
-
-  @get('/users/{userId}/draft')
-  @response(200, {
-    description: 'Post model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(DraftPost, {includeRelations: true}),
-      },
-    },
-  })
-  async getDraftPost(
-    @param.path.string('userId') userId: string,
-  ): Promise<DraftPost | null> {
-    return this.postService.draftPostRepository.findOne({
-      where: {
-        createdBy: userId,
-      },
-    });
-  }
 }
