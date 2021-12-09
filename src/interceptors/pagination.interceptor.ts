@@ -20,11 +20,13 @@ import {
   VisibilityType,
 } from '../enums';
 import {
+  Comment,
   Experience,
   Friend,
   People,
   Post,
   PostWithRelations,
+  User,
   UserExperienceWithRelations,
 } from '../models';
 import {
@@ -158,7 +160,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 meta: pageMetadata(NaN, NaN, 0),
               };
             }
+          } else {
+            filter.where = Object.assign(filter.where ?? {}, {
+              visibility: VisibilityType.PUBLIC,
+            });
           }
+
           break;
         }
 
@@ -241,6 +248,23 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }),
         );
       }
+    }
+
+    if (className === ControllerType.COMMENT) {
+      result = result.map((comment: Comment) => {
+        if (comment.deletedAt) comment.text = '[comment removed]';
+        return comment;
+      });
+    }
+
+    if (className === ControllerType.USER) {
+      result = result.map((user: User) => {
+        if (user.deletedAt) {
+          user.name = '[user banned]';
+          user.username = '[user banned]';
+        }
+        return user;
+      });
     }
 
     return {
