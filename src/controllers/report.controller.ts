@@ -84,12 +84,7 @@ export class ReportController {
         'application/json': {
           schema: getModelSchemaRef(Report, {
             partial: true,
-            exclude: [
-              'id',
-              'referenceType',
-              'referenceId',
-              'totalReported',
-            ],
+            exclude: ['id', 'referenceType', 'referenceId', 'totalReported'],
           }),
         },
       },

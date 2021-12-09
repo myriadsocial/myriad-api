@@ -9,11 +9,7 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {
-  MethodType,
-  ReferenceType,
-  ReportStatusType,
-} from '../enums';
+import {MethodType, ReferenceType, ReportStatusType} from '../enums';
 import {Report} from '../models';
 import {
   CommentRepository,
@@ -69,8 +65,13 @@ export class ReportInterceptor implements Provider<Interceptor> {
     let referenceId = null;
     let referenceType = null;
 
-    if (methodName === MethodType.UPDATEBYID || methodName === MethodType.RESTORE) {
-      ({referenceId, referenceType} = await this.reportRepository.findById(invocationCtx.args[0]));
+    if (
+      methodName === MethodType.UPDATEBYID ||
+      methodName === MethodType.RESTORE
+    ) {
+      ({referenceId, referenceType} = await this.reportRepository.findById(
+        invocationCtx.args[0],
+      ));
 
       switch (methodName) {
         case MethodType.UPDATEBYID: {
@@ -87,10 +88,7 @@ export class ReportInterceptor implements Provider<Interceptor> {
         }
 
         case MethodType.RESTORE: {
-          await this.restoreDocument(
-            referenceId,
-            referenceType,
-          );
+          await this.restoreDocument(referenceId, referenceType);
 
           break;
         }
@@ -105,11 +103,14 @@ export class ReportInterceptor implements Provider<Interceptor> {
       const found = await this.userReportRepository.findOne({
         where: {
           reportId: result.id,
-          reportedBy: invocationCtx.args[0]
-        }
-      })
+          reportedBy: invocationCtx.args[0],
+        },
+      });
 
-      if (found) throw new HttpErrors.UnprocessableEntity('You have report this user/post/comment');
+      if (found)
+        throw new HttpErrors.UnprocessableEntity(
+          'You have report this user/post/comment',
+        );
 
       await this.userReportRepository.create({
         referenceType: reportDetail.referenceType,
@@ -122,7 +123,10 @@ export class ReportInterceptor implements Provider<Interceptor> {
         reportId: result.id.toString(),
       });
 
-      await this.reportRepository.updateById(result.id, {totalReported: count, status: result.status});
+      await this.reportRepository.updateById(result.id, {
+        totalReported: count,
+        status: result.status,
+      });
 
       return Object.assign(result, {totalReported: count});
     }
@@ -196,7 +200,7 @@ export class ReportInterceptor implements Provider<Interceptor> {
             deletedAt: new Date().toString(),
           });
 
-          break
+          break;
         }
 
         case ReferenceType.COMMENT: {

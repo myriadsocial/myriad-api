@@ -62,7 +62,7 @@ describe('ReportController', () => {
     it('successfully deletes existing items', async () => {
       const deleteById = reportRepository.stubs.deleteById;
       deleteById.resolves();
-      await controller.deleteById(aReportWithId.id as string);
+      await controller.restore(aReportWithId.id as string);
       sinon.assert.calledWith(deleteById, aReportWithId.id);
     });
   });
