@@ -31,6 +31,12 @@ export class Friend extends Entity {
   status: FriendStatusType;
 
   @property({
+    type: 'number',
+    required: false,
+  })
+  totalMutual?: number;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),

@@ -35,7 +35,7 @@ export class FriendController {
         'application/json': {
           schema: getModelSchemaRef(Friend, {
             title: 'NewFriend',
-            exclude: ['id'],
+            exclude: ['id', 'totalMutual'],
           }),
         },
       },
@@ -101,6 +101,7 @@ export class FriendController {
               'deletedAt',
               'requesteeId',
               'requestorId',
+              'totalMutual',
             ],
           }),
         },
