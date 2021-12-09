@@ -21,6 +21,7 @@ import {
 } from '../enums';
 import {
   Experience,
+  Friend,
   People,
   Post,
   PostWithRelations,
@@ -82,7 +83,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const {query, path} = await invocationCtx.get(RestBindings.Http.REQUEST);
-    const {pageNumber, pageLimit, userId, timelineType, q} = query;
+    const {pageNumber, pageLimit, userId, timelineType, mutual, q} = query;
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
     const filter =
@@ -116,17 +117,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       filter.order = this.orderSetting(query);
       filter.where = Object.assign(filter.where, {
         reportId: invocationCtx.args[0],
-      });
-    }
-
-    // Set filter for blocked friend
-    if (
-      className === ControllerType.FRIEND &&
-      methodName === MethodType.FINDBLOCKEDFRIEND
-    ) {
-      filter.where = Object.assign(filter.where, {
-        requestorId: userId ?? undefined,
-        status: FriendStatusType.BLOCKED,
       });
     }
 
@@ -232,6 +222,51 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       if (methodName === MethodType.GETIMPORTERS) {
         result = result.map((e: PostWithRelations) => e.user);
+      }
+    }
+
+    if (className === ControllerType.FRIEND && mutual === 'true') {
+      const where = JSON.stringify(filter.where);
+
+      if (where.match(/approved/gi)) {
+        /* eslint-disable  @typescript-eslint/no-explicit-any */
+        const collection = (
+          this.friendService.friendRepository.dataSource.connector as any
+        ).collection(Friend.modelName);
+
+        result = await Promise.all(
+          result.map(async (friend: Friend) => {
+            const {requestorId, requesteeId} = friend;
+            const countMutual = await collection
+              .aggregate([
+                {
+                  $match: {
+                    $or: [
+                      {
+                        requestorId: requestorId,
+                        status: FriendStatusType.APPROVED,
+                      },
+                      {
+                        requestorId: requesteeId,
+                        status: FriendStatusType.APPROVED,
+                      },
+                    ],
+                  },
+                },
+                {$group: {_id: '$requesteeId', count: {$sum: 1}}},
+                {$match: {count: 2}},
+                {$group: {_id: null, count: {$sum: 1}}},
+                {$project: {_id: 0}},
+              ])
+              .get();
+
+            let totalMutual = 0;
+
+            if (countMutual.length > 0) totalMutual = countMutual[0].count;
+
+            return Object.assign(friend, {totalMutual: totalMutual});
+          }),
+        );
       }
     }
 
