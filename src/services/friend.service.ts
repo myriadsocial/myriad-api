@@ -148,11 +148,13 @@ export class FriendService {
         );
       }
 
-      await this.friendRepository.create({
-        requesteeId: requestor.id,
-        requestorId: requestee.id,
-        status: FriendStatusType.APPROVED,
-      });
+      if (requestor.id !== this.myriadOfficialUserId()) {
+        await this.friendRepository.create({
+          requesteeId: requestor.id,
+          requestorId: requestee.id,
+          status: FriendStatusType.APPROVED,
+        });
+      }
 
       return {
         requesteeId: requestee.id,

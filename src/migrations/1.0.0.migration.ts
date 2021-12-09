@@ -7,8 +7,8 @@ import {
 } from '../repositories';
 import {People, Post} from '../models';
 import {FriendStatusType, PlatformType} from '../enums';
-import {inject} from '@loopback/core';
-import {Twitter, Reddit} from '../services';
+import {inject, service} from '@loopback/core';
+import {Twitter, Reddit, FriendService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {config} from '../config';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
@@ -25,6 +25,8 @@ export class MigrationScript100 implements MigrationScript {
     protected peopleRepository: PeopleRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
+    @service(FriendService)
+    protected friendService: FriendService,
     @inject('services.Twitter')
     protected twitterService: Twitter,
     @inject('services.Reddit')
@@ -35,6 +37,18 @@ export class MigrationScript100 implements MigrationScript {
     await this.doMigratePosts();
     await this.doMigrateFriends();
     // await this.doMigratePeople();
+    await this.doRemoveFriends();
+  }
+
+  async doRemoveFriends(): Promise<void> {
+    const myriadOfficialUserId = this.friendService.myriadOfficialUserId();
+
+    await this.friendRepository.deleteAll({
+      or: [
+        {requestorId: myriadOfficialUserId},
+        {requesteeId: myriadOfficialUserId, status: FriendStatusType.PENDING},
+      ],
+    });
   }
 
   async doMigrateFriends(): Promise<void> {
