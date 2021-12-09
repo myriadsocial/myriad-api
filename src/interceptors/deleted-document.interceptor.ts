@@ -57,16 +57,8 @@ export class DeletedDocument implements Provider<Interceptor> {
       if (userId) {
         const friend = await this.friendRepository.findOne({
           where: {
-            or: [
-              {
-                requesteeId: userId.toString(),
-                requestorId: id,
-              },
-              {
-                requesteeId: id,
-                requestorId: userId.toString(),
-              },
-            ],
+            requestorId: userId.toString(),
+            requesteeId: id,
           },
         });
 

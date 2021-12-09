@@ -67,16 +67,8 @@ export class RestrictedPostInterceptor implements Provider<Interceptor> {
         if (userId === creator) return result;
         const friend = await this.friendRepository.findOne({
           where: {
-            or: [
-              {
-                requesteeId: userId,
-                requestorId: creator,
-              },
-              {
-                requesteeId: creator,
-                requestorId: userId,
-              },
-            ],
+            requestorId: userId,
+            requesteeId: creator,
           },
         });
 

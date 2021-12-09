@@ -113,7 +113,7 @@ export class FriendService {
     if (found) {
       if (found.status === FriendStatusType.BLOCKED) {
         throw new HttpErrors.UnprocessableEntity(
-          'You already blocked/has been blocked by this friends',
+          'You already blocked/has been blocked by another user!',
         );
       } else {
         await this.friendRepository.deleteAll({
@@ -222,14 +222,7 @@ export class FriendService {
 
     const friends = await this.friendRepository.find({
       where: {
-        or: [
-          {
-            requesteeId: userId.toString(),
-          },
-          {
-            requestorId: userId.toString(),
-          },
-        ],
+        requestorId: userId.toString(),
         status: FriendStatusType.APPROVED,
       },
       limit: 5,
@@ -237,11 +230,9 @@ export class FriendService {
     });
 
     if (friends.length > 0) {
-      const requesteeIds = friends.map(friend => friend.requesteeId);
-      const requestorIds = friends.map(friend => friend.requestorId);
-      const friendIds = [...requesteeIds, ...requestorIds];
+      const friendIds = friends.map(friend => friend.requesteeId);
 
-      return friendIds;
+      return [...friendIds, userId];
     }
 
     return [];
