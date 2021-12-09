@@ -55,14 +55,23 @@ export class DeletedDocument implements Provider<Interceptor> {
 
     if (className === ControllerType.USER) {
       if (userId) {
-        const friend = await this.friendRepository.findOne({
+        const blockedFriend = await this.friendRepository.findOne({
           where: {
-            requestorId: userId.toString(),
-            requesteeId: id,
+            or: [
+              {
+                requestorId: userId.toString(),
+                requesteeId: id,
+              },
+              {
+                requesteeId: userId.toString(),
+                requestorId: id,
+              },
+            ],
+            status: FriendStatusType.BLOCKED,
           },
         });
 
-        if (friend && friend.status === FriendStatusType.BLOCKED) return null;
+        if (blockedFriend) return null;
       }
     }
     // Add pre-invocation logic here

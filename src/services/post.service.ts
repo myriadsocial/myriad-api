@@ -13,7 +13,7 @@ import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
-import {PlatformType, ReferenceType} from '../enums';
+import {FriendStatusType, PlatformType, ReferenceType} from '../enums';
 import {MetricService} from '../services';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -97,8 +97,17 @@ export class PostService {
       if (userId !== post.createdBy) {
         const friend = await this.friendRepository.findOne({
           where: {
-            requestorId: userId,
-            requesteeId: post.createdBy,
+            or: [
+              {
+                requestorId: userId,
+                requesteeId: post.createdBy,
+              },
+              {
+                requesteeId: userId,
+                requestorId: post.createdBy,
+              },
+            ],
+            status: FriendStatusType.APPROVED,
           },
         });
 
