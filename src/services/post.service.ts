@@ -97,16 +97,8 @@ export class PostService {
       if (userId !== post.createdBy) {
         const friend = await this.friendRepository.findOne({
           where: {
-            or: [
-              {
-                requesteeId: userId,
-                requestorId: post.createdBy,
-              },
-              {
-                requestorId: userId,
-                requesteeId: post.createdBy,
-              },
-            ],
+            requestorId: userId,
+            requesteeId: post.createdBy,
           },
         });
 
