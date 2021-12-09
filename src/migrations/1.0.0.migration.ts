@@ -1,11 +1,15 @@
 import {AnyObject, repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {
-  FriendRepository,
+  CommentRepository,
   PeopleRepository,
   PostRepository,
+  ReportRepository,
+  UserReportRepository,
+  UserRepository,
+  FriendRepository,
 } from '../repositories';
-import {People, Post} from '../models';
+import {Comment, People, Post, User} from '../models';
 import {FriendStatusType, PlatformType} from '../enums';
 import {inject, service} from '@loopback/core';
 import {Twitter, Reddit, FriendService} from '../services';
@@ -18,12 +22,20 @@ export class MigrationScript100 implements MigrationScript {
   version = '1.0.0';
 
   constructor(
+    @repository(ReportRepository)
+    protected reportRepository: ReportRepository,
+    @repository(UserReportRepository)
+    protected userReportRepository: UserReportRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
+    @repository(CommentRepository)
+    protected commentRepository: CommentRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(FriendService)
     protected friendService: FriendService,
     @inject('services.Twitter')
@@ -36,6 +48,8 @@ export class MigrationScript100 implements MigrationScript {
     await this.doMigratePosts();
     await this.doMigrateFriends();
     // await this.doMigratePeople();
+    await this.doRemoveDeletedAt();
+    await this.doRemoveReport();
     await this.doRemoveFriends();
     await this.doMigrateWalletAddress();
   }
@@ -78,6 +92,52 @@ export class MigrationScript100 implements MigrationScript {
         {requesteeId: myriadOfficialUserId, status: FriendStatusType.PENDING},
       ],
     });
+  }
+
+  async doRemoveReport(): Promise<void> {
+    await this.reportRepository.deleteAll();
+    await this.userReportRepository.deleteAll();
+  }
+
+  async doRemoveDeletedAt(): Promise<void> {
+    const postCollection = (
+      this.postRepository.dataSource.connector as any
+    ).collection(Post.modelName);
+
+    await postCollection.updateMany(
+      {},
+      {
+        $unset: {
+          deletedAt: '',
+        },
+      },
+    );
+
+    const userCollection = (
+      this.userRepository.dataSource.connector as any
+    ).collection(User.modelName);
+
+    await userCollection.updateMany(
+      {},
+      {
+        $unset: {
+          deletedAt: '',
+        },
+      },
+    );
+
+    const commentCollection = (
+      this.commentRepository.dataSource.connector as any
+    ).collection(Comment.modelName);
+
+    await commentCollection.updateMany(
+      {},
+      {
+        $unset: {
+          deletedAt: '',
+        },
+      },
+    );
   }
 
   async doMigrateFriends(): Promise<void> {
