@@ -1,8 +1,12 @@
 import {AnyObject, repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
-import {PeopleRepository, PostRepository} from '../repositories';
+import {
+  FriendRepository,
+  PeopleRepository,
+  PostRepository,
+} from '../repositories';
 import {People, Post} from '../models';
-import {PlatformType} from '../enums';
+import {FriendStatusType, PlatformType} from '../enums';
 import {inject} from '@loopback/core';
 import {Twitter, Reddit} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
@@ -19,6 +23,8 @@ export class MigrationScript100 implements MigrationScript {
     protected postRepository: PostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
     @inject('services.Twitter')
     protected twitterService: Twitter,
     @inject('services.Reddit')
@@ -27,7 +33,52 @@ export class MigrationScript100 implements MigrationScript {
 
   async up(): Promise<void> {
     await this.doMigratePosts();
+    await this.doMigrateFriends();
     // await this.doMigratePeople();
+  }
+
+  async doMigrateFriends(): Promise<void> {
+    const friends = await this.friendRepository.find({
+      where: {
+        status: FriendStatusType.APPROVED,
+      },
+    });
+
+    await Promise.all(
+      friends.map(async friend => {
+        const {requesteeId, requestorId} = friend;
+        const found = await this.friendRepository.find({
+          where: {
+            or: [
+              {
+                requesteeId: requesteeId,
+                requestorId: requestorId,
+              },
+              {
+                requesteeId: requestorId,
+                requestorId: requesteeId,
+              },
+            ],
+            status: FriendStatusType.APPROVED,
+          },
+        });
+
+        if (found.length === 1) {
+          const {
+            requesteeId: currentRequesteeId,
+            requestorId: currentRequestorId,
+          } = found[0];
+
+          return this.friendRepository.create({
+            requestorId: currentRequesteeId,
+            requesteeId: currentRequestorId,
+            status: FriendStatusType.APPROVED,
+          });
+        }
+
+        return null;
+      }),
+    );
   }
 
   async doMigratePosts(): Promise<void> {
@@ -36,8 +87,6 @@ export class MigrationScript100 implements MigrationScript {
     ).collection(Post.modelName);
 
     const posts = await collection.aggregate().get();
-
-    console.log(posts);
 
     await Promise.all(
       posts.map(async (post: AnyObject) => {
