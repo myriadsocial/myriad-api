@@ -207,6 +207,7 @@ export class UserExperienceController {
       .patch(experience, {id: experienceId});
   }
 
+  @intercept(ExperienceInterceptor.BINDING_KEY)
   @del('/user-experiences/{id}', {
     responses: {
       '200': {

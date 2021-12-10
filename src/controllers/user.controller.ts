@@ -1,4 +1,4 @@
-import {intercept} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   get,
@@ -14,7 +14,8 @@ import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {ActivityLogType} from '../enums';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
-import {ActivityLogRepository, UserRepository} from '../repositories';
+import {UserRepository} from '../repositories';
+import {ActivityLogService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -22,8 +23,8 @@ export class UserController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(ActivityLogRepository)
-    protected activityLogRepository: ActivityLogRepository,
+    @service(ActivityLogService)
+    protected activityLogService: ActivityLogService,
   ) {}
 
   @post('/users')
@@ -123,29 +124,34 @@ export class UserController {
     if (user.username) {
       this.validateUsername(user.username);
 
-      const {count} = await this.activityLogRepository.count({
-        userId: id,
-        type: ActivityLogType.USERNAME,
-      });
+      await this.activityLogService.userProfileActivityLog(
+        ActivityLogType.CREATEUSERNAME,
+        id,
+      );
+    }
 
-      if (count >= 1)
-        throw new HttpErrors.UnprocessableEntity(
-          'You can only updated username once',
-        );
+    if (user.profilePictureURL) {
+      await this.activityLogService.userProfileActivityLog(
+        ActivityLogType.UPLOADPROFILEPICTURE,
+        id,
+      );
+    }
 
-      await this.activityLogRepository.create({
-        userId: id,
-        type: ActivityLogType.USERNAME,
-        message: 'You updated your username',
-      });
+    if (user.bannerImageUrl) {
+      await this.activityLogService.userProfileActivityLog(
+        ActivityLogType.UPLOADBANNER,
+        id,
+      );
+    }
+
+    if (user.bio) {
+      await this.activityLogService.userProfileActivityLog(
+        ActivityLogType.FILLBIO,
+        id,
+      );
     }
 
     await this.userRepository.updateById(id, user);
-    await this.activityLogRepository.create({
-      userId: id,
-      type: ActivityLogType.PROFILE,
-      message: 'You updated your profile',
-    });
   }
 
   @post('/users/{id}/skip-username')
@@ -155,7 +161,7 @@ export class UserController {
   async skipUsername(@param.path.string('id') id: string): Promise<void> {
     const found = await this.userRepository.activityLogs(id).find({
       where: {
-        type: ActivityLogType.SKIP,
+        type: ActivityLogType.SKIPUSERNAME,
       },
     });
 
@@ -166,7 +172,7 @@ export class UserController {
     }
 
     await this.userRepository.activityLogs(id).create({
-      type: ActivityLogType.SKIP,
+      type: ActivityLogType.SKIPUSERNAME,
       message: 'You skipped updating username',
       userId: id,
     });

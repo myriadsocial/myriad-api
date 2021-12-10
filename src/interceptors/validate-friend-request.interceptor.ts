@@ -9,7 +9,12 @@ import {
 } from '@loopback/core';
 import {HttpErrors} from '@loopback/rest';
 import {FriendStatusType, MethodType} from '../enums';
-import {FriendService, MetricService, NotificationService} from '../services';
+import {
+  ActivityLogService,
+  FriendService,
+  MetricService,
+  NotificationService,
+} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -20,6 +25,8 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${ValidateFriendRequestInterceptor.name}`;
 
   constructor(
+    @service(ActivityLogService)
+    protected activityLogService: ActivityLogService,
     @service(FriendService)
     protected friendService: FriendService,
     @service(MetricService)
@@ -127,6 +134,13 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
     ) {
       await this.metricService.userMetric(requestorId);
       await this.metricService.userMetric(requesteeId);
+    }
+
+    if (result && result.status === FriendStatusType.PENDING) {
+      await this.activityLogService.userFriendRequestActivityLog(
+        requestorId,
+        requesteeId,
+      );
     }
 
     return result;

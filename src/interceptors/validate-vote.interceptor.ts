@@ -16,6 +16,7 @@ import {
   PostRepository,
 } from '../repositories';
 import {MetricService} from '../services';
+import {ActivityLogService} from '../services/activity-log.service';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -34,6 +35,8 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     protected postRepository: PostRepository,
     @service(MetricService)
     protected metricService: MetricService,
+    @service(ActivityLogService)
+    protected activityLogService: ActivityLogService,
   ) {}
 
   /**
@@ -66,16 +69,22 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     await this.afterVote(type, referenceId, toUserId);
 
     if (methodName === MethodType.CREATEVOTE) {
-      const popularCount = await this.metricService.countPopularPost(
-        result.value.postId,
-      );
+      const {
+        _id: id,
+        postId,
+        toUserId,
+        referenceId: refId,
+        type: refType,
+        userId,
+      } = result.value;
+      const popularCount = await this.metricService.countPopularPost(postId);
 
-      await this.postRepository.updateById(result.value.postId, {
-        popularCount: popularCount,
-      });
+      await this.postRepository.updateById(postId, {popularCount});
+      await this.metricService.userMetric(toUserId);
+      await this.activityLogService.userVoteActivityLog(userId, refId, refType);
 
       return Object.assign(result.value, {
-        id: result.value._id,
+        id: id,
         _id: undefined,
       });
     }

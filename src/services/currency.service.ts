@@ -2,7 +2,7 @@ import {BindingScope, service, injectable} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
-import {DefaultCurrencyType} from '../enums';
+import {ActivityLogType, DefaultCurrencyType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
 import {UserSocialMedia} from '../models';
 import {
@@ -20,6 +20,7 @@ import acala from '../data-seed/currencies.json';
 import {NotificationService} from './notification.service';
 import {HttpErrors} from '@loopback/rest';
 import {BcryptHasher} from './authentication/hash.password.service';
+import {ActivityLogService} from './activity-log.service';
 
 const BN = require('bn.js');
 
@@ -44,6 +45,8 @@ export class CurrencyService {
     protected transactionService: TransactionService,
     @service(NotificationService)
     protected notificationService: NotificationService,
+    @service(ActivityLogService)
+    protected activityLogService: ActivityLogService,
   ) {}
 
   async defaultCurrency(userId: string): Promise<void> {
@@ -396,6 +399,11 @@ export class CurrencyService {
         currencyId: id,
       });
 
+      await this.activityLogService.userTipActivityLog(
+        ActivityLogType.CLAIMTIP,
+        to,
+        transaction.id ?? '',
+      );
       await this.notificationService.sendClaimTips(transaction);
     }
 

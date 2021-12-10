@@ -9,7 +9,7 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {MethodType, PlatformType} from '../enums';
+import {ActivityLogType, MethodType, PlatformType} from '../enums';
 import {People, User} from '../models';
 import {
   ExperienceRepository,
@@ -17,7 +17,7 @@ import {
   UserExperienceRepository,
   UserRepository,
 } from '../repositories';
-import {MetricService} from '../services';
+import {ActivityLogService, MetricService} from '../services';
 /**
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
@@ -37,6 +37,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     protected experienceUserRepository: ExperienceUserRepository,
     @service(MetricService)
     protected metricService: MetricService,
+    @service(ActivityLogService)
+    protected activityLogService: ActivityLogService,
   ) {}
 
   /**
@@ -58,9 +60,11 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
+    let userId = invocationCtx.args[0];
+
     const methodName = invocationCtx.methodName;
-    const userId = invocationCtx.args[0];
     const experienceId = invocationCtx.args[1];
+    const userExperienceId = invocationCtx.args[0];
 
     let numberOfUserExperience = 0;
     let people = [];
@@ -142,6 +146,12 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
         break;
       }
+
+      case MethodType.DELETEBYID: {
+        ({userId} = await this.userExperienceRepository.findById(
+          userExperienceId,
+        ));
+      }
     }
 
     // Add pre-invocation logic here
@@ -203,6 +213,22 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
     if (methodName !== MethodType.FINDBYID) {
       await this.metricService.userMetric(userId);
+
+      if (methodName === MethodType.CREATE || methodName === MethodType.CLONE) {
+        await this.activityLogService.userExperienceActivityLog(
+          ActivityLogType.CREATEEXPERIENCE,
+          result.createdBy,
+          result.id,
+        );
+      }
+
+      if (methodName === MethodType.SUBSCRIBE) {
+        await this.activityLogService.userExperienceActivityLog(
+          ActivityLogType.SUBSCRIBEEXPERIENCE,
+          result.userId,
+          result.experienceId,
+        );
+      }
     } else {
       if (result.users) {
         users = result.users;

@@ -15,6 +15,7 @@ import {
   MethodType,
   PostStatus,
   PlatformType,
+  ActivityLogType,
 } from '../enums';
 import {User} from '../models';
 import {
@@ -27,6 +28,7 @@ import {
   UserRepository,
 } from '../repositories';
 import {
+  ActivityLogService,
   CurrencyService,
   FriendService,
   MetricService,
@@ -65,6 +67,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected friendService: FriendService,
     @service(NotificationService)
     protected notificationService: NotificationService,
+    @service(ActivityLogService)
+    protected activityLogService: ActivityLogService,
   ) {}
 
   /**
@@ -172,9 +176,9 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
             if (newUsername === found.username) {
               username =
-                newUsername.substr(0, 16 - count) +
+                newUsername.substring(0, 16 - count) +
                 this.generateRandomCharacter();
-              username = username.substr(0, 16);
+              username = username.substring(0, 16);
               count++;
             } else {
               username = newUsername;
@@ -230,6 +234,11 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
       case ControllerType.TRANSACTION: {
         await this.currencyService.sendMyriadReward(result.from);
+        await this.activityLogService.userTipActivityLog(
+          ActivityLogType.SENDTIP,
+          result.from,
+          result.id,
+        );
         return result;
       }
 
@@ -259,6 +268,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
             await this.tagService.createTags(newPost.tags);
           }
 
+          await this.activityLogService.userPostCommentActivityLog(
+            ActivityLogType.CREATEPOST,
+            newPost.createdBy,
+            newPost.id,
+          );
+
           return newPost;
         }
         return result;
@@ -285,6 +300,11 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           metric: Object.assign(post.metric, metric),
           popularCount: popularCount,
         });
+        await this.activityLogService.userPostCommentActivityLog(
+          ActivityLogType.CREATECOMMENT,
+          result.userId,
+          result.id,
+        );
 
         return result;
       }
