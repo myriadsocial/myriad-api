@@ -1,4 +1,4 @@
-import {intercept, service} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   get,
@@ -15,7 +15,6 @@ import {ActivityLogType} from '../enums';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
-import {ActivityLogService} from '../services';
 // import {authenticate} from '@loopback/authentication';
 
 // @authenticate("jwt")
@@ -23,8 +22,6 @@ export class UserController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @service(ActivityLogService)
-    protected activityLogService: ActivityLogService,
   ) {}
 
   @post('/users')
@@ -121,36 +118,6 @@ export class UserController {
     })
     user: Partial<User>,
   ): Promise<void> {
-    if (user.username) {
-      this.validateUsername(user.username);
-
-      await this.activityLogService.userProfileActivityLog(
-        ActivityLogType.CREATEUSERNAME,
-        id,
-      );
-    }
-
-    if (user.profilePictureURL) {
-      await this.activityLogService.userProfileActivityLog(
-        ActivityLogType.UPLOADPROFILEPICTURE,
-        id,
-      );
-    }
-
-    if (user.bannerImageUrl) {
-      await this.activityLogService.userProfileActivityLog(
-        ActivityLogType.UPLOADBANNER,
-        id,
-      );
-    }
-
-    if (user.bio) {
-      await this.activityLogService.userProfileActivityLog(
-        ActivityLogType.FILLBIO,
-        id,
-      );
-    }
-
     await this.userRepository.updateById(id, user);
   }
 
@@ -178,34 +145,5 @@ export class UserController {
     });
 
     return;
-  }
-
-  validateUsername(username: string): void {
-    if (
-      username[username.length - 1] === '.' ||
-      username[username.length - 1] === '_'
-    ) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Last character must be an ascii letter (a-z) or number (0-9)',
-      );
-    }
-
-    if (username[0] === '.' || username[0] === '_') {
-      throw new HttpErrors.UnprocessableEntity(
-        'Character must be start from an ascii letter (a-z) or number (0-9)',
-      );
-    }
-
-    if (username.includes('.') && username.includes('_')) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
-      );
-    }
-
-    if (!username.match('^[a-z0-9._]+$')) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
-      );
-    }
   }
 }

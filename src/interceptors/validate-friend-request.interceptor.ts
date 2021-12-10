@@ -141,6 +141,7 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
         requestorId,
         requesteeId,
       );
+      await this.metricService.userMetric(requestorId);
     }
 
     return result;

@@ -21,6 +21,7 @@ import {NotificationService} from './notification.service';
 import {HttpErrors} from '@loopback/rest';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {ActivityLogService} from './activity-log.service';
+import {MetricService} from './metric.service';
 
 const BN = require('bn.js');
 
@@ -47,6 +48,8 @@ export class CurrencyService {
     protected notificationService: NotificationService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
+    @service(MetricService)
+    protected metricService: MetricService,
   ) {}
 
   async defaultCurrency(userId: string): Promise<void> {
@@ -404,6 +407,7 @@ export class CurrencyService {
         to,
         transaction.id ?? '',
       );
+      await this.metricService.userMetric(to);
       await this.notificationService.sendClaimTips(transaction);
     }
 

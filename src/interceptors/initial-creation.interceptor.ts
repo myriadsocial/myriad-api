@@ -99,6 +99,14 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
     if (methodName === MethodType.UPDATEBYID) {
       invocationCtx.args[1].updatedAt = new Date().toString();
+
+      if (className === ControllerType.USER) {
+        await this.updateUserProfileActivityLog(
+          invocationCtx.args[0],
+          invocationCtx.args[1],
+        );
+      }
+
       return next();
     }
 
@@ -239,6 +247,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           result.from,
           result.id,
         );
+        await this.metricService.userMetric(result.from);
         return result;
       }
 
@@ -252,7 +261,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           const newPost = await this.postRepository.create(
             Object.assign(result, {platform: PlatformType.MYRIAD}),
           );
-          await this.metricService.userMetric(newPost.createdBy);
 
           try {
             await this.notificationService.sendMention(
@@ -273,6 +281,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
             newPost.createdBy,
             newPost.id,
           );
+
+          await this.metricService.userMetric(newPost.createdBy);
 
           return newPost;
         }
@@ -305,6 +315,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           result.userId,
           result.id,
         );
+        await this.metricService.userMetric(result.userId);
 
         return result;
       }
@@ -312,6 +323,43 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       default:
         return result;
     }
+  }
+
+  async updateUserProfileActivityLog(
+    userId: string,
+    user: Partial<User>,
+  ): Promise<void> {
+    if (user.username) {
+      this.validateUsername(user.username);
+
+      await this.activityLogService.userProfileActivityLog(
+        ActivityLogType.CREATEUSERNAME,
+        userId,
+      );
+    }
+
+    if (user.profilePictureURL) {
+      await this.activityLogService.userProfileActivityLog(
+        ActivityLogType.UPLOADPROFILEPICTURE,
+        userId,
+      );
+    }
+
+    if (user.bannerImageUrl) {
+      await this.activityLogService.userProfileActivityLog(
+        ActivityLogType.UPLOADBANNER,
+        userId,
+      );
+    }
+
+    if (user.bio) {
+      await this.activityLogService.userProfileActivityLog(
+        ActivityLogType.FILLBIO,
+        userId,
+      );
+    }
+
+    await this.metricService.userMetric(userId);
   }
 
   async validateComment(referenceId: string): Promise<void> {
@@ -336,9 +384,38 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
   }
 
   generateRandomCharacter(): string {
-    const randomCharOne = Math.random().toString(36).substr(2);
-    const randomCharTwo = Math.random().toString(36).substr(2);
+    const randomCharOne = Math.random().toString(36).substring(2);
+    const randomCharTwo = Math.random().toString(36).substring(2);
 
     return '.' + randomCharOne + randomCharTwo;
+  }
+
+  validateUsername(username: string): void {
+    if (
+      username[username.length - 1] === '.' ||
+      username[username.length - 1] === '_'
+    ) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Last character must be an ascii letter (a-z) or number (0-9)',
+      );
+    }
+
+    if (username[0] === '.' || username[0] === '_') {
+      throw new HttpErrors.UnprocessableEntity(
+        'Character must be start from an ascii letter (a-z) or number (0-9)',
+      );
+    }
+
+    if (username.includes('.') && username.includes('_')) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
+      );
+    }
+
+    if (!username.match('^[a-z0-9._]+$')) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
+      );
+    }
   }
 }

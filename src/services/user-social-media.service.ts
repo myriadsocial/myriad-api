@@ -10,6 +10,7 @@ import {HttpErrors} from '@loopback/rest';
 import {config} from '../config';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {ActivityLogService} from './activity-log.service';
+import {MetricService} from './metric.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
@@ -22,6 +23,8 @@ export class UserSocialMediaService {
     protected notificationService: NotificationService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
+    @service(MetricService)
+    protected metricService: MetricService,
   ) {}
 
   async createSocialMedia(people: ExtendedPeople): Promise<UserSocialMedia> {
@@ -102,6 +105,8 @@ export class UserSocialMediaService {
       publicKey,
       foundPeople.id,
     );
+
+    await this.metricService.userMetric(publicKey);
 
     return this.peopleRepository
       .userSocialMedia(foundPeople.id)

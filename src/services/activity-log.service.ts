@@ -77,7 +77,7 @@ export class ActivityLogService {
     userId: string,
     referenceId: string,
   ): Promise<void> {
-    let activityLog = new ActivityLog({
+    const activityLog = new ActivityLog({
       type: type,
       userId: userId,
       referenceId: referenceId,
@@ -123,7 +123,7 @@ export class ActivityLogService {
     userId: string,
     referenceId: string,
   ): Promise<void> {
-    let activityLog = new ActivityLog({
+    const activityLog = new ActivityLog({
       userId: userId,
       referenceId: referenceId,
       referenceType: ReferenceType.EXPERIENCE,
