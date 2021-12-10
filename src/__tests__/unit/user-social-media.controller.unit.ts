@@ -10,6 +10,8 @@ import {PlatformType} from '../../enums';
 import {UserSocialMedia} from '../../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../../repositories';
 import {
+  ActivityLogService,
+  MetricService,
   NotificationService,
   SocialMediaService,
   UserSocialMediaService,
@@ -21,6 +23,8 @@ describe('UserSocialMediaController', () => {
   let socialMediaService: SocialMediaService;
   let notificationService: NotificationService;
   let userSocialMediaService: UserSocialMediaService;
+  let metricService: MetricService;
+  let activityLogService: ActivityLogService;
   let peopleRepository: PeopleRepository;
   let controller: UserSocialMediaController;
   let aUserSocialMediaWithId: UserSocialMedia;
@@ -94,6 +98,8 @@ describe('UserSocialMediaController', () => {
       userSocialMediaRepository,
       peopleRepository,
       notificationService,
+      activityLogService,
+      metricService,
     );
     controller = new UserSocialMediaController(
       socialMediaService,

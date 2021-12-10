@@ -4,6 +4,7 @@ import {MyriadApiApplication} from '../../application';
 import {ReferenceType, NotificationType} from '../../enums';
 import {Comment, Notification, People, Post, User} from '../../models';
 import {
+  ActivityLogRepository,
   CommentRepository,
   NotificationRepository,
   NotificationSettingRepository,
@@ -14,6 +15,7 @@ import {
   UserSocialMediaRepository,
 } from '../../repositories';
 import {
+  givenActivityLogRepository,
   givenComment,
   givenCommentInstance,
   givenCommentRepository,
@@ -45,6 +47,7 @@ describe('CommentApplication', function () {
   let notificationSettingRepository: NotificationSettingRepository;
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
+  let activityLogRepository: ActivityLogRepository;
   let user: User;
   let post: Post;
   let people: People;
@@ -64,6 +67,7 @@ describe('CommentApplication', function () {
     notificationRepository = await givenNotificationRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
+    activityLogRepository = await givenActivityLogRepository(app);
     notificationSettingRepository = await givenNotificationSettingRepository(
       app,
     );
@@ -78,6 +82,7 @@ describe('CommentApplication', function () {
     await peopleRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();
     await notificationSettingRepository.deleteAll();
+    await activityLogRepository.deleteAll();
   });
 
   beforeEach(async () => {

@@ -23,7 +23,7 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('VoteApplication', function () {
-  this.timeout(10000);
+  this.timeout(30000);
   let app: MyriadApiApplication;
   let client: Client;
   let voteRepository: VoteRepository;
@@ -52,6 +52,10 @@ describe('VoteApplication', function () {
   });
 
   it('creates an upvote if not exists', async function () {
+    await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+    });
+
     const user = await givenUserInstance(userRepository);
     const postResponse = await givenPostInstance(
       postRepository,
@@ -77,7 +81,11 @@ describe('VoteApplication', function () {
     expect(result).to.containDeep(upvote);
   });
 
-  it('can downvotes post if user already comments to the post in the debate section', async function () {
+  it('can downvotes post if user already comments to the post in the debate section', async () => {
+    await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+    });
+
     const user = await givenUserInstance(userRepository);
     const postResponse = await givenPostInstance(
       postRepository,
@@ -114,7 +122,11 @@ describe('VoteApplication', function () {
     expect(result).to.containDeep(downvote);
   });
 
-  it('adds by 1 upvotes', async function () {
+  it('adds by 1 upvotes', async () => {
+    await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+    });
+
     const user = await givenUserInstance(userRepository);
     const postResponse = (
       await givenPostInstance(

@@ -53,6 +53,9 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('verifies user social media', async () => {
+      await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+      });
       const userVerification = givenUserVerification();
       const response = await client
         .post('/user-social-medias/verify')
@@ -105,6 +108,10 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('rejects user to verify social media that already been claimed', async () => {
+      await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+      });
+
       const userVerification = givenUserVerification();
 
       await client
