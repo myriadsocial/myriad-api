@@ -1,5 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {ActivityLogType} from '../enums';
+import {ActivityLogType, ReferenceType} from '../enums';
 import {User} from './user.model';
 
 @model({
@@ -34,6 +34,41 @@ export class ActivityLog extends Entity {
     required: true,
   })
   message: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  referenceId?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+    jsonSchema: {
+      enum: Object.values(ReferenceType),
+    },
+  })
+  referenceType?: ReferenceType;
+
+  @property({
+    type: 'date',
+    required: false,
+    default: () => new Date(),
+  })
+  createdAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+    default: () => new Date(),
+  })
+  updatedAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  deletedAt?: string;
 
   @belongsTo(
     () => User,

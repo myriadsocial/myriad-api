@@ -28,6 +28,7 @@ import {
   TagService,
   TransactionService,
   UserSocialMediaService,
+  ActivityLogService,
 } from './services';
 import {
   LoggingBindings,
@@ -143,6 +144,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(TagService);
     this.service(ExperienceService);
     this.service(MetricService);
+    this.service(ActivityLogService);
 
     // 3rd party service
     this.service(FCMService);
