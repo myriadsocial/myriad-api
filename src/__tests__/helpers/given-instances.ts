@@ -483,7 +483,7 @@ export function givenUserVerification(
 export function givenActivityLog(activityLog?: Partial<ActivityLog>) {
   const data = Object.assign(
     {
-      type: ActivityLogType.USERNAME,
+      type: ActivityLogType.CREATEUSERNAME,
       message: 'You updated your username',
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
@@ -506,7 +506,7 @@ export async function givenMultipleActivityLogInstances(
   return Promise.all([
     givenActivityLogInstance(activityLogRepository),
     givenActivityLogInstance(activityLogRepository, {
-      type: ActivityLogType.PROFILE,
+      type: ActivityLogType.CREATEPOST,
       message: 'You updated your profile',
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',

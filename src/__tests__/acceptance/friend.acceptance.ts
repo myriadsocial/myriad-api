@@ -4,11 +4,13 @@ import {MyriadApiApplication} from '../../application';
 import {FriendStatusType, NotificationType} from '../../enums';
 import {Friend} from '../../models';
 import {
+  ActivityLogRepository,
   FriendRepository,
   NotificationRepository,
   UserRepository,
 } from '../../repositories';
 import {
+  givenActivityLogRepository,
   givenFriend,
   givenFriendInstance,
   givenFriendRepository,
@@ -25,6 +27,7 @@ describe('FriendApplication', function () {
   let friendRepository: FriendRepository;
   let userRepository: UserRepository;
   let notificationRepository: NotificationRepository;
+  let activityLogRepository: ActivityLogRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -36,14 +39,23 @@ describe('FriendApplication', function () {
     friendRepository = await givenFriendRepository(app);
     userRepository = await givenUserRepository(app);
     notificationRepository = await givenNotificationRepository(app);
+    activityLogRepository = await givenActivityLogRepository(app);
   });
 
   beforeEach(async () => {
     await friendRepository.deleteAll();
     await userRepository.deleteAll();
+    await activityLogRepository.deleteAll();
   });
 
   it('creates a pending friend request', async function () {
+    await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+    });
+    await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+    });
+
     const friend = givenFriend({
       requesteeId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',

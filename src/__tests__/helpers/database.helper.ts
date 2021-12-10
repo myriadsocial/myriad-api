@@ -23,6 +23,7 @@ import {
   DraftPostRepository,
 } from '../../repositories';
 import {
+  ActivityLogService,
   FCMService,
   FriendService,
   MetricService,
@@ -176,10 +177,14 @@ export async function givenRepositories(testdb: any) {
 
   const transactionService = new TransactionService(transactionRepository);
 
+  const activityLogService = new ActivityLogService(activityLogRepository);
+
   const userSocialMediaService = new UserSocialMediaService(
     userSocialMediaRepository,
     peopleRepository,
     notificationService,
+    activityLogService,
+    metricService,
   );
 
   return {
@@ -210,6 +215,7 @@ export async function givenRepositories(testdb: any) {
     transactionService,
     userSocialMediaService,
     draftPostRepository,
+    activityLogService,
   };
 }
 

@@ -54,7 +54,7 @@ describe('ActivityLogApplication', function () {
       const activityLogInProgress = await givenActivityLogInstance(
         activityLogRepository,
         {
-          type: ActivityLogType.PROFILE,
+          type: ActivityLogType.CREATEPOST,
           message: 'You updated your profile',
           userId:
             '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c',
@@ -85,7 +85,7 @@ describe('ActivityLogApplication', function () {
 
     it('exploded filter conditions work', async () => {
       await givenActivityLogInstance(activityLogRepository, {
-        type: ActivityLogType.PROFILE,
+        type: ActivityLogType.CREATEPOST,
         message: 'You updated your profile',
         userId:
           '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618cc',
@@ -102,7 +102,7 @@ describe('ActivityLogApplication', function () {
     });
 
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
-      type: ActivityLogType.PROFILE,
+      type: ActivityLogType.CREATEPOST,
       message: 'You updated your profile',
       userId: user.id,
     });

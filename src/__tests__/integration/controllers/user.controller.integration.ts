@@ -1,6 +1,5 @@
-import {expect, toJSON} from '@loopback/testlab';
+import {expect} from '@loopback/testlab';
 import {UserController} from '../../../controllers';
-import {ActivityLogType} from '../../../enums';
 import {
   ActivityLogRepository,
   CurrencyRepository,
@@ -39,7 +38,7 @@ describe('UserControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new UserController(userRepository, activityLogRepository);
+    controller = new UserController(userRepository);
   });
 
   beforeEach(async () => {
@@ -230,32 +229,6 @@ describe('UserControllerIntegration', () => {
       friends: [friend],
       activityLogs: [activityLog],
     });
-  });
-
-  it('creates activity logs when user updating username', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-      username: 'abdulhakim01',
-    });
-
-    await controller.updateById(user.id, {
-      username: 'abdulhakim10',
-    });
-
-    const activityLogs = await activityLogRepository.find({
-      where: {
-        type: ActivityLogType.USERNAME,
-        userId: user.id,
-      },
-    });
-
-    delete activityLogs[0].id;
-
-    expect({
-      type: ActivityLogType.USERNAME,
-      userId: user.id,
-      message: 'You updated your username',
-    }).to.containEql(toJSON(activityLogs[0]));
   });
 
   it('creates data in UserRepository when creating user', async () => {

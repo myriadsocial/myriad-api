@@ -11,6 +11,7 @@ import {
   TagRepository,
   TransactionRepository,
   UserRepository,
+  ActivityLogRepository,
 } from '../../repositories';
 import {
   givenCommentInstance,
@@ -31,6 +32,7 @@ import {
   givenUserInstance,
   givenUserRepository,
   setupApplication,
+  givenActivityLogRepository,
 } from '../helpers';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
@@ -46,6 +48,7 @@ describe('PostApplication', function () {
   let peopleRepository: PeopleRepository;
   let transactionRepository: TransactionRepository;
   let commentRepository: CommentRepository;
+  let activityLogRepository: ActivityLogRepository;
   let user: User;
 
   before(async () => {
@@ -62,6 +65,7 @@ describe('PostApplication', function () {
     peopleRepository = await givenPeopleRepository(app);
     transactionRepository = await givenTransactionRepository(app);
     commentRepository = await givenCommentRepository(app);
+    activityLogRepository = await givenActivityLogRepository(app);
   });
 
   before(async () => {
@@ -77,10 +81,12 @@ describe('PostApplication', function () {
     await peopleRepository.deleteAll();
     await transactionRepository.deleteAll();
     await commentRepository.deleteAll();
+    await activityLogRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await postRepository.deleteAll();
+    await activityLogRepository.deleteAll();
   });
 
   it('creates a post', async () => {
@@ -120,6 +126,7 @@ describe('PostApplication', function () {
         totalExperiences: 0,
         totalFriends: 0,
         totalKudos: 0,
+        totalActivity: 1,
       };
       const expected = toJSON(persistedPost);
 
@@ -228,6 +235,7 @@ describe('PostApplication', function () {
       totalExperiences: 0,
       totalFriends: 0,
       totalKudos: 0,
+      totalActivity: 1,
     };
 
     expect(response.body.data).to.have.length(1);
