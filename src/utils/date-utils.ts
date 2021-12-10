@@ -6,6 +6,7 @@ export class DateUtils {
   public readonly year = 365 * this.day;
 
   public isToday(date: string): boolean {
+    if (!date) return false;
     return new Date().getTime() - new Date(date).getTime() > this.day;
   }
 }
