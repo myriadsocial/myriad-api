@@ -39,11 +39,7 @@ describe('UserControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new UserController(
-      userRepository,
-      activityLogRepository,
-      friendRepository,
-    );
+    controller = new UserController(userRepository, activityLogRepository);
   });
 
   beforeEach(async () => {
