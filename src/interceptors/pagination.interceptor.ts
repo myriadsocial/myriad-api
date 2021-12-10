@@ -187,6 +187,43 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       filter.order = this.orderSetting(query);
     }
 
+    if (methodName === MethodType.MUTUALDETAIL) {
+      const mutualPath = path.split('/');
+      const requestorId = mutualPath[2];
+      const requesteeId = mutualPath[4];
+      /* eslint-disable  @typescript-eslint/no-explicit-any */
+      const collection = (
+        this.friendService.friendRepository.dataSource.connector as any
+      ).collection(Friend.modelName);
+
+      const userIds = (
+        await collection
+          .aggregate([
+            {
+              $match: {
+                $or: [
+                  {
+                    requestorId: requestorId,
+                    status: FriendStatusType.APPROVED,
+                  },
+                  {
+                    requestorId: requesteeId,
+                    status: FriendStatusType.APPROVED,
+                  },
+                ],
+              },
+            },
+            {$group: {_id: '$requesteeId', count: {$sum: 1}}},
+            {$match: {count: 2}},
+            {$project: {_id: 1}},
+          ])
+          .get()
+      ).map((user: AnyObject) => user._id);
+
+      filter.order = this.orderSetting(query);
+      filter.where = Object.assign(filter.where ?? {}, {id: {inq: userIds}});
+    }
+
     // Get pageMetadata
     const {count} = await this.metricService.countData(
       className,
@@ -643,7 +680,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
   }
 
-  async countMutual(userId1: string, userId2: string): Promise<Count> {
+  async countMutual(requestorId: string, requesteeId: string): Promise<Count> {
     /* eslint-disable  @typescript-eslint/no-explicit-any */
     const collection = (
       this.friendService.friendRepository.dataSource.connector as any
@@ -655,11 +692,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           $match: {
             $or: [
               {
-                requestorId: userId1,
+                requestorId: requestorId,
                 status: FriendStatusType.APPROVED,
               },
               {
-                requestorId: userId2,
+                requestorId: requesteeId,
                 status: FriendStatusType.APPROVED,
               },
             ],

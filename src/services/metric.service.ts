@@ -178,7 +178,7 @@ export class MetricService {
         return this.userSocialMediaRepository.count(where);
 
       case ControllerType.FRIEND:
-        return this.friendRepository.count(where);
+        return this.countMutualData(methodName, where);
 
       case ControllerType.USEREXPERIENCE:
         return this.userExperienceRepository.count(where);
@@ -202,6 +202,19 @@ export class MetricService {
         return {
           count: 0,
         };
+    }
+  }
+
+  async countMutualData(
+    methodName: MethodType,
+    where: Where<AnyObject>,
+  ): Promise<Count> {
+    switch (methodName) {
+      case MethodType.MUTUALDETAIL:
+        return this.userRepository.count(where);
+
+      default:
+        return this.friendRepository.count(where);
     }
   }
 
