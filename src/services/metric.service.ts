@@ -117,6 +117,9 @@ export class MetricService {
     const {count: totalExperiences} = await this.userExperienceRepository.count(
       {userId},
     );
+    const {count: totalActivity} = await this.activityLogRepository.count({
+      userId,
+    });
     const {count: totalFriends} = await this.friendRepository.count({
       requestorId: userId,
       status: FriendStatusType.APPROVED,
@@ -140,6 +143,7 @@ export class MetricService {
       totalPosts,
       totalExperiences,
       totalFriends,
+      totalActivity,
       totalKudos: totalUpvote - totalDownvote,
     };
 
