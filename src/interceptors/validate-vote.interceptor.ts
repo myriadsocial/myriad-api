@@ -7,7 +7,7 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ReferenceType, MethodType, SectionType} from '../enums';
 import {
@@ -56,13 +56,14 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const methodName = invocationCtx.methodName as MethodType;
-    const {type, referenceId} = await this.beforeCreation(
+    const {type, referenceId, toUserId} = await this.beforeVote(
       methodName,
       invocationCtx,
     );
 
     const result = await next();
-    await this.afterCreation(type, referenceId);
+
+    await this.afterVote(type, referenceId, toUserId);
 
     if (methodName === MethodType.CREATEVOTE) {
       const popularCount = await this.metricService.countPopularPost(
@@ -73,8 +74,6 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
         popularCount: popularCount,
       });
 
-      await this.metricService.userMetric(result.value.toUserId);
-
       return Object.assign(result.value, {
         id: result.value._id,
         _id: undefined,
@@ -84,15 +83,16 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     return result;
   }
 
-  async beforeCreation(
+  async beforeVote(
     methodName: MethodType,
     invocationCtx: InvocationContext,
-  ): Promise<{referenceId: string; type: ReferenceType}> {
+  ): Promise<AnyObject> {
     if (methodName === MethodType.DELETEBYID) {
       const vote = await this.voteRepository.findById(invocationCtx.args[0]);
 
       return {
         referenceId: vote.referenceId,
+        toUserId: vote.toUserId,
         type: vote.type,
       };
     }
@@ -125,12 +125,19 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
 
     return {
       referenceId: referenceId,
+      toUserId: createdBy,
       type: type,
     };
   }
 
-  async afterCreation(type: ReferenceType, referenceId: string): Promise<void> {
+  async afterVote(
+    type: ReferenceType,
+    referenceId: string,
+    toUserId: string,
+  ): Promise<void> {
     const metric = await this.metricService.publicMetric(type, referenceId);
+
+    await this.metricService.userMetric(toUserId);
 
     switch (type) {
       case ReferenceType.POST: {
