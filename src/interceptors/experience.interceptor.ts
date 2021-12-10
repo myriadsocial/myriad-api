@@ -212,8 +212,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     }
 
     if (methodName !== MethodType.FINDBYID) {
-      await this.metricService.userMetric(userId);
-
       if (methodName === MethodType.CREATE || methodName === MethodType.CLONE) {
         await this.activityLogService.userExperienceActivityLog(
           ActivityLogType.CREATEEXPERIENCE,
@@ -229,6 +227,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
           result.experienceId,
         );
       }
+
+      await this.metricService.userMetric(userId);
     } else {
       if (result.users) {
         users = result.users;

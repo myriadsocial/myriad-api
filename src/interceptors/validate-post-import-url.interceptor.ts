@@ -13,6 +13,7 @@ import {UserRepository} from '../repositories';
 import {
   ActivityLogService,
   FriendService,
+  MetricService,
   PostService,
   TagService,
 } from '../services';
@@ -37,6 +38,8 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     protected postService: PostService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
+    @service(MetricService)
+    protected metricService: MetricService,
   ) {}
 
   /**
@@ -86,6 +89,7 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
       result.createdBy,
       result.id,
     );
+    await this.metricService.userMetric(result.createdBy);
 
     const importerInfo = user ? [Object.assign(user, {name: 'You'})] : [];
 

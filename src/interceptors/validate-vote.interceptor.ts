@@ -72,7 +72,6 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
       const {
         _id: id,
         postId,
-        toUserId,
         referenceId: refId,
         type: refType,
         userId,
@@ -80,8 +79,9 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
       const popularCount = await this.metricService.countPopularPost(postId);
 
       await this.postRepository.updateById(postId, {popularCount});
-      await this.metricService.userMetric(toUserId);
       await this.activityLogService.userVoteActivityLog(userId, refId, refType);
+      await this.metricService.userMetric(toUserId);
+      await this.metricService.userMetric(userId);
 
       return Object.assign(result.value, {
         id: id,

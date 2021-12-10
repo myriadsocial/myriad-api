@@ -11,4 +11,5 @@ export interface UserMetric {
   totalExperiences: number;
   totalKudos: number;
   totalFriends: number;
+  totalActivity: number;
 }
