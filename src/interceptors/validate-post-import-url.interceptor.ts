@@ -8,8 +8,14 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
+import {ActivityLogType} from '../enums';
 import {UserRepository} from '../repositories';
-import {FriendService, PostService, TagService} from '../services';
+import {
+  ActivityLogService,
+  FriendService,
+  PostService,
+  TagService,
+} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
 /**
@@ -29,6 +35,8 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     protected friendService: FriendService,
     @service(PostService)
     protected postService: PostService,
+    @service(ActivityLogService)
+    protected activityLogService: ActivityLogService,
   ) {}
 
   /**
@@ -71,6 +79,12 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     await this.postService.postRepository.updateAll(
       {totalImporter: count},
       {originPostId: result.originPostId, platform: result.platform},
+    );
+
+    await this.activityLogService.userPostCommentActivityLog(
+      ActivityLogType.IMPORTPOST,
+      result.createdBy,
+      result.id,
     );
 
     const importerInfo = user ? [Object.assign(user, {name: 'You'})] : [];

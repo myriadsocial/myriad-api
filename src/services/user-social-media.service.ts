@@ -9,6 +9,7 @@ import {NotificationService} from './';
 import {HttpErrors} from '@loopback/rest';
 import {config} from '../config';
 import {BcryptHasher} from './authentication/hash.password.service';
+import {ActivityLogService} from './activity-log.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
@@ -19,6 +20,8 @@ export class UserSocialMediaService {
     protected peopleRepository: PeopleRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
+    @service(ActivityLogService)
+    protected activityLogService: ActivityLogService,
   ) {}
 
   async createSocialMedia(people: ExtendedPeople): Promise<UserSocialMedia> {
@@ -94,6 +97,11 @@ export class UserSocialMediaService {
     });
 
     if (count === 0) newUserSocialMedia.primary = true;
+
+    await this.activityLogService.userUserSocialMediaActivityLog(
+      publicKey,
+      foundPeople.id,
+    );
 
     return this.peopleRepository
       .userSocialMedia(foundPeople.id)
