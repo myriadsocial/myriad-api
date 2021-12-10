@@ -112,6 +112,8 @@ export class MetricService {
   }
 
   async userMetric(userId: string): Promise<void> {
+    if (!userId) return;
+
     const {count: totalExperiences} = await this.userExperienceRepository.count(
       {userId},
     );
