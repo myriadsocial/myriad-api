@@ -13,8 +13,14 @@ import {
   patch,
   requestBody,
 } from '@loopback/rest';
+import {AccountSettingType, VisibilityType} from '../enums';
 import {AccountSetting} from '../models';
-import {UserRepository} from '../repositories';
+import {
+  PeopleRepository,
+  PostRepository,
+  UserRepository,
+  UserSocialMediaRepository,
+} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 import {inject} from '@loopback/core';
 import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
@@ -28,6 +34,12 @@ export class UserAccountSettingController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
+    @repository(UserSocialMediaRepository)
+    protected userSocialMediaRepository: UserSocialMediaRepository,
+    @repository(PeopleRepository)
+    protected peopleRepository: PeopleRepository,
   ) {}
 
   @logInvocation()
@@ -72,6 +84,47 @@ export class UserAccountSettingController {
     @param.query.object('where', getWhereSchemaFor(AccountSetting))
     where?: Where<AccountSetting>,
   ): Promise<Count> {
+    const {accountPrivacy, socialMediaPrivacy} = accountSetting;
+
+    if (accountPrivacy) {
+      await this.postRepository.updateAll(
+        {visibility: accountPrivacy as unknown as VisibilityType},
+        {createdBy: id, privacyDefault: VisibilityType.PUBLIC},
+      );
+    }
+
+    if (socialMediaPrivacy) {
+      const peopleIds = (
+        await this.userSocialMediaRepository.find({
+          where: {
+            userId: id,
+          },
+        })
+      ).map(e => {
+        return {
+          id: e.id,
+        };
+      });
+
+      if (peopleIds.length > 0) {
+        await this.peopleRepository.updateAll(
+          {
+            isPrivate:
+              socialMediaPrivacy === AccountSettingType.PRIVATE ? true : false,
+          },
+          {or: peopleIds},
+        );
+
+        await this.postRepository.updateAll(
+          {
+            ownerPrivacy:
+              socialMediaPrivacy === AccountSettingType.PRIVATE ? true : false,
+          },
+          {or: peopleIds},
+        );
+      }
+    }
+
     return this.userRepository.accountSetting(id).patch(accountSetting, where);
   }
 }
