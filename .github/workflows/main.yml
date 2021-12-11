@@ -123,3 +123,25 @@ jobs:
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+      #publish-draft-release
+      - name: Build changelog
+        if: "startsWith(github.ref, 'refs/tags/')"
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          configuration: '.github/workflows/rcb_config.json'
+      - name: Create draft pre-release
+        if: "contains(needs.compute-build-info.outputs.latest_tag, 'alpha') || contains(needs.compute-build-info.outputs.latest_tag, 'beta') || contains(needs.compute-build-info.outputs.latest_tag, 'rc')"
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.build_changelog.outputs.changelog }}
+          draft: true
+          prerelease: true
+      - name: Create draft release
+        if: "startsWith(github.ref, 'refs/tags/') && !contains(needs.compute-build-info.outputs.latest_tag, 'alpha') && !contains(needs.compute-build-info.outputs.latest_tag, 'beta') && !contains(needs.compute-build-info.outputs.latest_tag, 'rc')"
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ steps.build_changelog.outputs.changelog }}
+          draft: true
