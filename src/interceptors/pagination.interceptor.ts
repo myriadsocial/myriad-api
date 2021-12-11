@@ -373,60 +373,19 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       where: {
         or: [
           {
-            and: [
-              {
-                name: {
-                  regexp: pattern,
-                },
-              },
-              {
-                id: {
-                  nin: blockedFriendIds,
-                },
-              },
-            ],
+            and: [{name: {regexp: pattern}}, {id: {nin: blockedFriendIds}}],
+          },
+          {
+            and: [{username: {regexp: pattern}}, {id: {nin: blockedFriendIds}}],
           },
           {
             and: [
-              {
-                username: {
-                  regexp: pattern,
-                },
-              },
-              {
-                id: {
-                  nin: blockedFriendIds,
-                },
-              },
+              {username: {regexp: pattern}},
+              {id: {inq: approvedFriendIds}},
             ],
           },
           {
-            and: [
-              {
-                username: {
-                  regexp: pattern,
-                },
-              },
-              {
-                id: {
-                  inq: approvedFriendIds,
-                },
-              },
-            ],
-          },
-          {
-            and: [
-              {
-                name: {
-                  regexp: pattern,
-                },
-              },
-              {
-                id: {
-                  inq: approvedFriendIds,
-                },
-              },
-            ],
+            and: [{name: {regexp: pattern}}, {id: {inq: approvedFriendIds}}],
           },
         ],
       },
@@ -436,128 +395,56 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       or: [
         {
           and: [
-            {
-              createdBy: {
-                inq: userIds,
-              },
-            },
-            {
-              visibility: VisibilityType.PUBLIC,
-            },
+            {createdBy: {inq: userIds}},
+            {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
           and: [
-            {
-              createdBy: {
-                inq: userIds,
-              },
-            },
-            {
-              visibility: VisibilityType.FRIEND,
-            },
+            {createdBy: {inq: userIds}},
+            {visibility: VisibilityType.FRIEND},
           ],
         },
         {
           and: [
-            {
-              text: {
-                regexp: pattern,
-              },
-            },
-            {
-              visibility: VisibilityType.PUBLIC,
-            },
-            {
-              createdBy: {
-                nin: blockedFriendIds,
-              },
-            },
+            {text: {regexp: pattern}},
+            {visibility: VisibilityType.PUBLIC},
+            {createdBy: {nin: blockedFriendIds}},
           ],
         },
         {
           and: [
-            {
-              title: {
-                regexp: pattern,
-              },
-            },
-            {
-              visibility: VisibilityType.PUBLIC,
-            },
-            {
-              createdBy: {
-                nin: blockedFriendIds,
-              },
-            },
+            {title: {regexp: pattern}},
+            {visibility: VisibilityType.PUBLIC},
+            {createdBy: {nin: blockedFriendIds}},
           ],
         },
         {
           and: [
-            {
-              tags: {
-                inq: [q.replace(/%23/gi, '').trim()],
-              },
-            },
-            {
-              visibility: VisibilityType.PUBLIC,
-            },
-            {
-              createdBy: {
-                nin: blockedFriendIds,
-              },
-            },
+            {tags: {inq: [q.replace(/%23/gi, '').trim()]}},
+            {visibility: VisibilityType.PUBLIC},
+            {createdBy: {nin: blockedFriendIds}},
           ],
         },
         {
           and: [
-            {
-              text: {
-                regexp: pattern,
-              },
-            },
-            {
-              visibility: VisibilityType.FRIEND,
-            },
-            {
-              createdBy: {
-                inq: approvedFriendIds,
-              },
-            },
+            {text: {regexp: pattern}},
+            {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
           ],
         },
         {
           and: [
-            {
-              title: {
-                regexp: pattern,
-              },
-            },
-            {
-              visibility: VisibilityType.FRIEND,
-            },
-            {
-              createdBy: {
-                inq: approvedFriendIds,
-              },
-            },
+            {title: {regexp: pattern}},
+            {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
           ],
         },
         {
           and: [
-            {
-              tags: {
-                inq: [q.replace(/%23/gi, '').trim()],
-              },
-            },
-            {
-              visibility: VisibilityType.FRIEND,
-            },
-            {
-              createdBy: {
-                inq: approvedFriendIds,
-              },
-            },
+            {tags: {inq: [q.replace(/%23/gi, '').trim()]}},
+            {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
           ],
         },
       ],
@@ -573,7 +460,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return this.experienceService.experienceTimeline(userId);
 
       case TimelineType.TRENDING:
-        return this.tagService.trendingTimeline();
+        return this.tagService.trendingTimeline(userId);
 
       case TimelineType.FRIEND:
         return this.friendService.friendsTimeline(userId);
@@ -606,71 +493,30 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return {
           or: [
             {
+              and: [{tags: {inq: topics}}, {visibility: VisibilityType.PUBLIC}],
+            },
+            {
+              and: [{title: regexTopic}, {visibility: VisibilityType.PUBLIC}],
+            },
+            {
+              and: [{text: regexTopic}, {visibility: VisibilityType.PUBLIC}],
+            },
+            {
               and: [
-                {
-                  tags: {
-                    inq: topics,
-                  },
-                },
-                {
-                  visibility: VisibilityType.PUBLIC,
-                },
+                {peopleId: {inq: personIds}},
+                {visibility: VisibilityType.PUBLIC},
               ],
             },
             {
               and: [
-                {
-                  title: regexTopic,
-                },
-                {
-                  visibility: VisibilityType.PUBLIC,
-                },
+                {createdBy: {inq: [...friends, ...experienceUserIds]}},
+                {visibility: VisibilityType.PUBLIC},
               ],
             },
             {
               and: [
-                {
-                  text: regexTopic,
-                },
-                {
-                  visibility: VisibilityType.PUBLIC,
-                },
-              ],
-            },
-            {
-              and: [
-                {
-                  peopleId: {
-                    inq: personIds,
-                  },
-                },
-                {
-                  visibility: VisibilityType.PUBLIC,
-                },
-              ],
-            },
-            {
-              and: [
-                {
-                  createdBy: {
-                    inq: [...friends, ...experienceUserIds],
-                  },
-                },
-                {
-                  visibility: VisibilityType.PUBLIC,
-                },
-              ],
-            },
-            {
-              and: [
-                {
-                  createdBy: {
-                    inq: friends,
-                  },
-                },
-                {
-                  visibility: VisibilityType.FRIEND,
-                },
+                {createdBy: {inq: friends}},
+                {visibility: VisibilityType.FRIEND},
               ],
             },
             {createdBy: userId},

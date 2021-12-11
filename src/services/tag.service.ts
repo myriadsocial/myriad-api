@@ -1,7 +1,12 @@
 import {repository, Where} from '@loopback/repository';
-import {OrderFieldType, OrderType, VisibilityType} from '../enums';
+import {
+  FriendStatusType,
+  OrderFieldType,
+  OrderType,
+  VisibilityType,
+} from '../enums';
 import {Post} from '../models';
-import {PostRepository, TagRepository} from '../repositories';
+import {FriendRepository, PostRepository, TagRepository} from '../repositories';
 import {DateUtils} from '../utils/date-utils';
 import {injectable, BindingScope} from '@loopback/core';
 
@@ -12,6 +17,8 @@ export class TagService {
     protected tagRepository: TagRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
   ) {}
 
   async createTags(tags: string[]): Promise<void> {
@@ -76,33 +83,57 @@ export class TagService {
     return trendingTopic.map(tag => tag.id);
   }
 
-  async trendingTimeline(): Promise<Where<Post> | undefined> {
+  async trendingTimeline(userId: string): Promise<Where<Post> | undefined> {
     const trendingTopics = await this.trendingTopics();
 
     if (!trendingTopics.length) return;
+
+    const friendIds = (
+      await this.friendRepository.find({
+        where: {
+          requestorId: userId,
+          status: FriendStatusType.APPROVED,
+        },
+      })
+    ).map(e => e.requesteeId);
 
     const joinTopics = trendingTopics.join('|');
     const regexTopic = new RegExp(joinTopics, 'i');
 
     return {
-      and: [
+      or: [
         {
-          or: [
-            {
-              tags: {
-                inq: trendingTopics,
-              },
-            },
-            {
-              text: regexTopic,
-            },
-            {
-              title: regexTopic,
-            },
+          and: [
+            {tags: {inq: trendingTopics}},
+            {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
-          visibility: VisibilityType.PUBLIC,
+          and: [{text: regexTopic}, {visibility: VisibilityType.PUBLIC}],
+        },
+        {
+          and: [{title: regexTopic}, {visibility: VisibilityType.PUBLIC}],
+        },
+        {
+          and: [
+            {tags: {inq: trendingTopics}},
+            {createdBy: {inq: friendIds}},
+            {visibility: VisibilityType.FRIEND},
+          ],
+        },
+        {
+          and: [
+            {text: regexTopic},
+            {createdBy: {inq: friendIds}},
+            {visibility: VisibilityType.FRIEND},
+          ],
+        },
+        {
+          and: [
+            {title: regexTopic},
+            {createdBy: {inq: friendIds}},
+            {visibility: VisibilityType.FRIEND},
+          ],
         },
       ],
     } as Where<Post>;

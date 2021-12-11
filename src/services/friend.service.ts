@@ -167,16 +167,18 @@ export class FriendService {
 
   async getFriendIds(id: string, status: FriendStatusType): Promise<string[]> {
     const filter = {
-      or: [
-        {
-          requestorId: id,
-          status: status,
-        },
-        {
-          requesteeId: id,
-          status: status,
-        },
-      ],
+      where: {
+        or: [
+          {
+            requestorId: id,
+            status: status,
+          },
+          {
+            requesteeId: id,
+            status: status,
+          },
+        ],
+      },
     } as Filter<Friend>;
 
     const friends = await this.friendRepository.find(filter);
@@ -199,27 +201,8 @@ export class FriendService {
     if (!approvedFriendIds.length) return;
 
     return {
-      and: [
-        {
-          or: [
-            {
-              createdBy: {
-                inq: approvedFriendIds,
-              },
-            },
-          ],
-        },
-        {
-          or: [
-            {
-              visibility: VisibilityType.FRIEND,
-            },
-            {
-              visibility: VisibilityType.PUBLIC,
-            },
-          ],
-        },
-      ],
+      createdBy: {inq: approvedFriendIds},
+      visibility: {nlike: VisibilityType.PRIVATE},
     } as Where<Post>;
   }
 
