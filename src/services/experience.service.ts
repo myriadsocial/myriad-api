@@ -1,8 +1,9 @@
 import {repository, Where} from '@loopback/repository';
-import {PlatformType, VisibilityType} from '../enums';
+import {FriendStatusType, PlatformType, VisibilityType} from '../enums';
 import {Experience, People, Post} from '../models';
 import {
   ExperienceRepository,
+  FriendRepository,
   UserExperienceRepository,
   UserRepository,
 } from '../repositories';
@@ -17,6 +18,8 @@ export class ExperienceService {
     protected experienceRepository: ExperienceRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
   ) {}
 
   async getExperience(userId: string): Promise<Experience | null> {
@@ -60,43 +63,48 @@ export class ExperienceService {
       .filter((e: People) => e.platform !== PlatformType.MYRIAD)
       .map(e => e.id);
     const userIds = (experience.users ?? []).map(e => e.id);
+    const friendIds = (
+      await this.friendRepository.find({
+        where: {
+          requesteeId: {inq: userIds},
+          requestorId: userId,
+          status: FriendStatusType.APPROVED,
+        },
+      })
+    ).map(e => e.requesteeId);
 
     const joinTags = tags.join('|');
     const regexTag = new RegExp(joinTags, 'i');
 
     return {
-      and: [
+      or: [
         {
-          or: [
-            {
-              tags: {
-                inq: tags,
-              },
-            },
-            {
-              peopleId: {
-                inq: personIds,
-              },
-            },
-            {
-              text: regexTag,
-            },
-            {
-              title: regexTag,
-            },
-            {
-              importers: {
-                inq: userIds,
-              },
-            },
-            {
-              createdBy: {
-                inq: userIds,
-              },
-            },
+          and: [{tags: {inq: tags}}, {visibility: VisibilityType.PUBLIC}],
+        },
+        {
+          and: [
+            {peopleId: {inq: personIds}},
+            {visibility: VisibilityType.PUBLIC},
           ],
         },
-        {visibility: VisibilityType.PUBLIC},
+        {
+          and: [{text: regexTag}, {visibility: VisibilityType.PUBLIC}],
+        },
+        {
+          and: [{title: regexTag}, {visibility: VisibilityType.PUBLIC}],
+        },
+        {
+          and: [
+            {createdBy: {inq: userIds}},
+            {visibility: VisibilityType.PUBLIC},
+          ],
+        },
+        {
+          and: [
+            {createdBy: {inq: friendIds}},
+            {visibility: VisibilityType.FRIEND},
+          ],
+        },
       ],
     } as Where<Post>;
   }
