@@ -87,7 +87,7 @@ jobs:
           file: .maintain/docker/Dockerfile
           tags: |
             ${{ github.repository }}:${{ needs.compute-build-info.outputs.latest_tag }}
-            ${{ github.repository }}:latest-alpha
+            ${{ github.repository }}:latest-beta
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
       - name: Build and push pre-release
@@ -99,7 +99,7 @@ jobs:
           file: .maintain/docker/Dockerfile
           tags: |
             ${{ github.repository }}:${{ needs.compute-build-info.outputs.latest_tag }}
-            ${{ github.repository }}:latest-alpha
+            ${{ github.repository }}:latest-rc
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
       - name: Build and push release
@@ -111,7 +111,7 @@ jobs:
           file: .maintain/docker/Dockerfile
           tags: |
             ${{ github.repository }}:${{ needs.compute-build-info.outputs.latest_tag }}
-            ${{ github.repository }}:latest-alpha
+            ${{ github.repository }}:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
       # Temp fix
