@@ -57,6 +57,13 @@ export class People extends Entity {
   profilePictureURL: string;
 
   @property({
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  isPrivate?: boolean;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),

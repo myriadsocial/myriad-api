@@ -23,7 +23,7 @@ import {UserWithRelations} from './';
     mongodb: {
       collection: 'posts',
     },
-    hiddenProperties: ['popularCount'],
+    hiddenProperties: ['popularCount', 'privacyDefault', 'postHasOwner'],
   },
 })
 export class Post extends Entity {
@@ -134,6 +134,20 @@ export class Post extends Entity {
     },
   })
   visibility?: VisibilityType;
+
+  @property({
+    type: 'string',
+    required: false,
+    default: VisibilityType.PUBLIC,
+  })
+  privacyDefault?: VisibilityType;
+
+  @property({
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  ownerPrivacy?: boolean;
 
   @property({
     type: 'array',
