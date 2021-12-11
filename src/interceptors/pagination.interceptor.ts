@@ -10,6 +10,7 @@ import {
 import {AnyObject, Where, repository, Count} from '@loopback/repository';
 import {HttpErrors, RestBindings} from '@loopback/rest';
 import {
+  AccountSettingType,
   ControllerType,
   FriendStatusType,
   MethodType,
@@ -39,7 +40,7 @@ import {
   TagService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
-import {UserRepository} from '../repositories';
+import {AccountSettingRepository, UserRepository} from '../repositories';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -50,6 +51,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
 
   constructor(
+    @repository(AccountSettingRepository)
+    protected accountSettingRepository: AccountSettingRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @service(MetricService)
@@ -327,13 +330,32 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
 
     if (className === ControllerType.USER) {
-      result = result.map((user: User) => {
-        if (user.deletedAt) {
-          user.name = '[user banned]';
-          user.username = '[user banned]';
-        }
-        return user;
-      });
+      result = await Promise.all(
+        result.map(async (user: User) => {
+          const accountSetting = await this.accountSettingRepository.findOne({
+            where: {
+              userId: user.id,
+            },
+          });
+
+          if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE) {
+            return new User({
+              id: user.id,
+              name: '[private user]',
+              username: '[private user]',
+            });
+          }
+
+          if (user.deletedAt) {
+            return new User({
+              id: user.id,
+              name: '[user banned]',
+              username: '[user banned]',
+            });
+          }
+          return user;
+        }),
+      );
     }
 
     if (className === ControllerType.LEADERBOARD) {
@@ -493,6 +515,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           ],
         },
       ],
+      ownerPrivacy: false,
     } as Where<Post>;
   }
 
@@ -557,6 +580,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             },
             {createdBy: userId},
           ],
+          ownerPrivacy: false,
         } as Where<Post>;
       }
     }

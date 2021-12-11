@@ -113,6 +113,7 @@ export class TagService {
           ],
         },
       ],
+      ownerPrivacy: false,
     } as Where<Post>;
   }
 }

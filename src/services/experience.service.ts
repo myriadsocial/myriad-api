@@ -97,6 +97,7 @@ export class ExperienceService {
           ],
         },
       ],
+      ownerPrivacy: false,
     } as Where<Post>;
   }
 }
