@@ -258,6 +258,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
           await this.metricService.userMetric(newPost.createdBy);
 
+          newPost.privacyDefault = newPost.visibility;
+
           return newPost;
         }
         return result;

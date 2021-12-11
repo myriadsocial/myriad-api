@@ -171,6 +171,7 @@ export class PostController {
     }
 
     newPost.visibility = platformPost.visibility ?? VisibilityType.PUBLIC;
+    newPost.privacyDefault = newPost.visibility;
     newPost.tags = tags;
     newPost.createdBy = importer;
 
@@ -252,13 +253,17 @@ export class PostController {
         'application/json': {
           schema: getModelSchemaRef(Post, {
             partial: true,
-            exclude: ['deletedAt'],
+            exclude: ['privacyDefault', 'ownerPrivacy', 'deletedAt'],
           }),
         },
       },
     })
     updatedPost: Post,
   ): Promise<void> {
+    if (updatedPost.visibility) {
+      updatedPost.privacyDefault = updatedPost.visibility;
+    }
+
     await this.postService.postRepository.updateById(id, updatedPost);
   }
 

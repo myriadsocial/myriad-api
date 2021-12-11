@@ -9,9 +9,9 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {RestBindings} from '@loopback/rest';
-import {ControllerType, FriendStatusType} from '../enums';
-import {FriendRepository} from '../repositories';
+import {HttpErrors, RestBindings} from '@loopback/rest';
+import {AccountSettingType, ControllerType, FriendStatusType} from '../enums';
+import {AccountSettingRepository, FriendRepository} from '../repositories';
 import {PostService} from '../services';
 
 /**
@@ -23,6 +23,8 @@ export class DeletedDocument implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${DeletedDocument.name}`;
 
   constructor(
+    @repository(AccountSettingRepository)
+    protected accountSettingRepository: AccountSettingRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
     @service(PostService)
@@ -56,6 +58,14 @@ export class DeletedDocument implements Provider<Interceptor> {
     let blockDetail = null;
 
     if (className === ControllerType.USER) {
+      const accountSetting = await this.accountSettingRepository.findOne({
+        where: {userId: id},
+      });
+
+      if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE && id !== userId) {
+        throw new HttpErrors.Forbidden('Private User');
+      }
+
       if (userId) {
         const blockedFriend = await this.friendRepository.findOne({
           where: {

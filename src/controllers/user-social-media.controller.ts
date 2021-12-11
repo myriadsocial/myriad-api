@@ -171,6 +171,7 @@ export class UserSocialMediaController {
       // ignore
     }
 
+    await this.userSocialMediaService.resetPostOwnership(id);
     await this.userSocialMediaService.userSocialMediaRepository.deleteById(id);
   }
 }

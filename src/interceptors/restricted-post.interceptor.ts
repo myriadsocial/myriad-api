@@ -10,7 +10,7 @@ import {
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors, RestBindings} from '@loopback/rest';
 import {FriendStatusType, VisibilityType} from '../enums';
-import {FriendRepository} from '../repositories';
+import {FriendRepository, UserSocialMediaRepository} from '../repositories';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -23,6 +23,8 @@ export class RestrictedPostInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
+    @repository(UserSocialMediaRepository)
+    protected userSocialMediaRepository: UserSocialMediaRepository,
   ) {}
 
   /**
@@ -60,6 +62,14 @@ export class RestrictedPostInterceptor implements Provider<Interceptor> {
 
   async restrictedPost(result: AnyObject, userId?: string): Promise<AnyObject> {
     const creator = result.createdBy;
+
+    const userSocialMedia = await this.userSocialMediaRepository.findOne({
+      where: {peopleId: result.peopleId},
+    });
+
+    if (userSocialMedia?.userId !== creator && result.ownerPrifacy) {
+      throw new HttpErrors.Forbidden('Restricted post!');
+    }
 
     switch (result.visibility) {
       case VisibilityType.FRIEND: {

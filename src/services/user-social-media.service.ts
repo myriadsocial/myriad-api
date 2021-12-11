@@ -1,8 +1,18 @@
 import {repository} from '@loopback/repository';
-import {ActivityLogType, PlatformType, ReferenceType} from '../enums';
+import {
+  AccountSettingType,
+  ActivityLogType,
+  PlatformType,
+  ReferenceType
+} from '../enums';
 import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';
-import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
+import {
+  AccountSettingRepository,
+  PeopleRepository,
+  PostRepository,
+  UserSocialMediaRepository,
+} from '../repositories';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {NotificationService} from './';
 import {HttpErrors} from '@loopback/rest';
@@ -13,10 +23,14 @@ import {ActivityLogService} from './activity-log.service';
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
   constructor(
+    @repository(AccountSettingRepository)
+    protected accountSettingRepository: AccountSettingRepository,
     @repository(UserSocialMediaRepository)
     public userSocialMediaRepository: UserSocialMediaRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
     @service(ActivityLogService)
@@ -103,8 +117,28 @@ export class UserSocialMediaService {
       ReferenceType.PEOPLE,
     );
 
+    const accountSetting = await this.accountSettingRepository.findOne({
+      where: {userId: publicKey},
+    });
+
+    if (accountSetting?.socialMediaPrivacy === AccountSettingType.PRIVATE) {
+      await this.postRepository.updateAll(
+        {ownerPrivacy: true},
+        {peopleId: foundPeople.id},
+      );
+    }
+
     return this.peopleRepository
       .userSocialMedia(foundPeople.id)
       .create(newUserSocialMedia);
+  }
+
+  async resetPostOwnership(id: string): Promise<void> {
+    const {peopleId} = await this.userSocialMediaRepository.findById(id);
+
+    await this.postRepository.updateAll(
+      {ownerPrivacy: false},
+      {peopleId: peopleId},
+    );
   }
 }
