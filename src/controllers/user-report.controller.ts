@@ -22,6 +22,7 @@ import {
   CommentRepository,
   UserRepository,
   UserSocialMediaRepository,
+  UserReportRepository,
 } from '../repositories';
 import {NotificationService} from '../services';
 
@@ -37,6 +38,8 @@ export class UserReportController {
     protected userRepository: UserRepository,
     @repository(UserSocialMediaRepository)
     protected userSocialMediaRepository: UserSocialMediaRepository,
+    @repository(UserReportRepository)
+    protected userReportRepository: UserReportRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -220,13 +223,15 @@ export class UserReportController {
     };
   }
 
-  updateReportStatus(report: Report): Report {
+  async updateReportStatus(report: Report): Promise<Report> {
     switch (report.status) {
       case ReportStatusType.PENDING:
         break;
 
-      case ReportStatusType.IGNORED:
-      case ReportStatusType.APPROVED: {
+      case ReportStatusType.IGNORED: {
+        await this.userReportRepository.deleteAll({
+          reportId: report.id,
+        });
         report.status = ReportStatusType.PENDING;
         break;
       }
@@ -238,10 +243,10 @@ export class UserReportController {
       }
 
       default: {
+        await this.userReportRepository.deleteAll({
+          reportId: report.id,
+        });
         report.status = ReportStatusType.PENDING;
-        if (report.referenceType === ReferenceType.USER) {
-          report.penaltyStatus = undefined;
-        }
       }
     }
 
