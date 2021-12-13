@@ -10,7 +10,6 @@ import {
   VoteRepository,
   DraftPostRepository,
 } from '../repositories';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
@@ -42,7 +41,6 @@ export class PostService {
 
   async createPost(post: Omit<ExtendedPost, 'id'>): Promise<PostWithRelations> {
     const {platformUser, platform} = post;
-    const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
     if (!platformUser)
       throw new HttpErrors.NotFound('Platform user not found!');
@@ -61,10 +59,9 @@ export class PostService {
       const hashPeopleId = await hasher.hashPassword(
         people.id + config.ESCROW_SECRET_KEY,
       );
-      const newKey = getKeyring().addFromUri('//' + hashPeopleId);
 
       await this.peopleRepository.updateById(people.id, {
-        walletAddress: getHexPublicKey(newKey),
+        walletAddressPassword: hashPeopleId,
       });
     }
 

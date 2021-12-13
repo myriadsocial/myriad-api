@@ -15,7 +15,7 @@ import {People, PeopleWithRelations} from './people.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
 import {MentionUser} from './mention-user.model';
-import {UserWithRelations} from '.';
+import {UserWithRelations} from './';
 
 @model({
   settings: {

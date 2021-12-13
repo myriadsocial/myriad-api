@@ -1,4 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {PeopleWithRelations} from './';
 import {PlatformType} from '../enums';
 import {People} from './people.model';
 import {User} from './user.model';
@@ -76,6 +77,7 @@ export class UserSocialMedia extends Entity {
 
 export interface UserSocialMediaRelations {
   // describe navigational properties here
+  people?: PeopleWithRelations;
 }
 
 export type UserSocialMediaWithRelations = UserSocialMedia &
