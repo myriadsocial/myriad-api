@@ -97,6 +97,7 @@ export class UserSocialMediaService {
 
     const {count} = await this.userSocialMediaRepository.count({
       userId: publicKey,
+      platform: platform as PlatformType,
     });
 
     if (count === 0) newUserSocialMedia.primary = true;
