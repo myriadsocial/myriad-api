@@ -92,6 +92,8 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /etc/google/sa_credentials.json
             {{- end }}
+            - name: FIREBAE_STORAGE_BUCKET
+              value: {{ .Values.config.firebase.storageBucket }}
             {{- if .Values.config.sentry.dns }}
             - name: SENTRY_DSN
               valueFrom:
