@@ -12,6 +12,7 @@ import {
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
 import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
+import {config} from './config';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
 import {MongoDataSource} from './datasources';
@@ -42,6 +43,10 @@ import {format} from 'winston';
 import {extensionFor} from '@loopback/core';
 import {UpdateExchangeRateJob, UpdateTrendingTopicJob} from './jobs';
 import {CronComponent} from '@loopback/cron';
+import multer from 'multer';
+import {v4 as uuid} from 'uuid';
+import {FILE_UPLOAD_SERVICE} from './keys';
+import {FCSService} from './services/fcs.service';
 
 export {ApplicationConfig};
 
@@ -131,6 +136,9 @@ export class MyriadApiApplication extends BootMixin(
     this.bind('logging.winston.transports.console')
       .to(consoleTransport)
       .apply(extensionFor(WINSTON_TRANSPORT));
+
+    // Configure file upload with multer options
+    this.configureFileUpload();
   }
 
   bindService() {
@@ -148,6 +156,7 @@ export class MyriadApiApplication extends BootMixin(
 
     // 3rd party service
     this.service(FCMService);
+    this.service(FCSService);
   }
 
   bindJob() {
@@ -157,6 +166,23 @@ export class MyriadApiApplication extends BootMixin(
 
   firebaseInit() {
     if (this.options.test) return;
-    firebaseAdmin.initializeApp();
+    firebaseAdmin.initializeApp({
+      storageBucket: config.FIREBAE_STORAGE_BUCKET,
+    });
+  }
+
+  /**
+   * Configure `multer` options for file upload
+   */
+  protected configureFileUpload() {
+    const multerOptions: multer.Options = {
+      storage: multer.diskStorage({
+        filename: (req, file, cb) => {
+          cb(null, `${uuid()}${path.extname(file.originalname)}`);
+        },
+      }),
+    };
+    // Configure the file upload service with multer options
+    this.configure(FILE_UPLOAD_SERVICE).to(multerOptions);
   }
 }

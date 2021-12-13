@@ -26,6 +26,7 @@ config:
     database: myriad
   firebase:
     serviceAccountBase64: ''
+    storageBucket: ''
   sentry:
     dns: ''
   twitter:

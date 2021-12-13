@@ -5,6 +5,7 @@ import {RefreshTokenService} from './interfaces';
 import {Authentication} from './models';
 import {Credentials} from './repositories/authentication.repository';
 import {PasswordHasher} from './services/authentication/hash.password.service';
+import {FileUploadHandler} from './types';
 
 export namespace TokenServiceConstants {
   export const TOKEN_SECRET_VALUE = config.TOKEN_SECRET_KEY;
@@ -72,3 +73,7 @@ export namespace AuthServiceBindings {
   export const AUTH_CREDENTIAL_REPOSITORY =
     'repositories.AuthCredentialRepository';
 }
+
+export const FILE_UPLOAD_SERVICE = BindingKey.create<FileUploadHandler>(
+  'services.FileUpload',
+);
