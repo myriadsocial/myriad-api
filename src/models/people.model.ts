@@ -1,4 +1,5 @@
 import {Entity, hasMany, hasOne, model, property} from '@loopback/repository';
+import {PlatformType} from '../enums';
 import {Post} from './post.model';
 import {UserSocialMedia} from './user-social-media.model';
 
@@ -8,7 +9,7 @@ import {UserSocialMedia} from './user-social-media.model';
     mongodb: {
       collection: 'people',
     },
-    hiddenProperties: ['walletAddress'],
+    hiddenProperties: ['walletAddressPassword'],
   },
 })
 export class People extends Entity {
@@ -36,13 +37,16 @@ export class People extends Entity {
 
   @property({
     type: 'string',
-    required: false,
+    required: true,
+    jsonSchema: {
+      enum: Object.values(PlatformType),
+    },
   })
-  platform: string;
+  platform: PlatformType;
 
   @property({
     type: 'string',
-    required: false,
+    required: true,
   })
   originUserId: string;
 
@@ -75,7 +79,7 @@ export class People extends Entity {
   @property({
     type: 'string',
   })
-  walletAddress?: string;
+  walletAddressPassword?: string;
 
   @hasOne(() => UserSocialMedia)
   userSocialMedia: UserSocialMedia;

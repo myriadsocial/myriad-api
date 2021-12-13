@@ -1,3 +1,4 @@
+import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {
   get,
@@ -6,9 +7,14 @@ import {
   param,
   response,
 } from '@loopback/rest';
+import {config} from '../config';
 import {PlatformType} from '../enums';
+import {TokenServiceBindings} from '../keys';
 import {Wallet} from '../models';
 import {PeopleRepository, PostRepository} from '../repositories';
+import {JWTService} from '../services';
+import {BcryptHasher} from '../services/authentication/hash.password.service';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
 
 export class PostWalletAddress {
   constructor(
@@ -16,6 +22,8 @@ export class PostWalletAddress {
     protected postRepository: PostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
+    @inject(TokenServiceBindings.TOKEN_SERVICE)
+    protected jwtService: JWTService,
   ) {}
 
   @get('/posts/{id}/walletaddress')
@@ -31,6 +39,7 @@ export class PostWalletAddress {
     const post = await this.postRepository.findById(id);
 
     const wallet = new Wallet();
+    const hasher = new BcryptHasher();
 
     if (!post.peopleId) {
       if (post.platform === PlatformType.MYRIAD) {
@@ -49,10 +58,28 @@ export class PostWalletAddress {
     if (people.userSocialMedia) {
       wallet.walletAddress = people.userSocialMedia.userId;
     } else {
-      if (!people.walletAddress)
-        throw new HttpErrors.NotFound('Walletaddress Not Found!');
+      if (!people.walletAddressPassword)
+        throw new HttpErrors.Unauthorized('Not Authorized');
 
-      wallet.walletAddress = people.walletAddress;
+      const password = people.id + config.ESCROW_SECRET_KEY;
+      const match = await hasher.comparePassword(
+        password,
+        people.walletAddressPassword,
+      );
+
+      if (!match) throw new HttpErrors.Unauthorized('Not Authorized');
+
+      const token = await this.jwtService.generateAnyToken({
+        id: people.id,
+        originUserId: people.originUserId,
+        platform: people.platform,
+        iat: new Date(people.createdAt ?? '').getTime(),
+      });
+
+      const {getKeyring, getHexPublicKey} = new PolkadotJs();
+      const newKey = getKeyring().addFromUri('//' + token);
+
+      wallet.walletAddress = getHexPublicKey(newKey);
     }
 
     return wallet;

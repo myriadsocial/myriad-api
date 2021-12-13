@@ -3,7 +3,6 @@ import {PlatformType} from '../enums';
 import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {NotificationService} from './';
 import {HttpErrors} from '@loopback/rest';
@@ -59,14 +58,12 @@ export class UserSocialMediaService {
         profilePictureURL,
       });
 
-      const {getKeyring, getHexPublicKey} = new PolkadotJs();
       const hasher = new BcryptHasher();
       const hashPeopleId = await hasher.hashPassword(
         foundPeople.id + config.ESCROW_SECRET_KEY,
       );
-      const newKey = getKeyring().addFromUri('//' + hashPeopleId);
       await this.peopleRepository.updateById(foundPeople.id, {
-        walletAddress: getHexPublicKey(newKey),
+        walletAddressPassword: hashPeopleId,
       });
     }
 

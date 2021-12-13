@@ -1,4 +1,4 @@
-import {BindingScope, service, injectable} from '@loopback/core';
+import {BindingScope, service, injectable, inject} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
@@ -15,13 +15,17 @@ import {
   UserSocialMediaRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
-import {TransactionService} from './transaction.service';
 import acala from '../data-seed/currencies.json';
-import {NotificationService} from './notification.service';
 import {HttpErrors} from '@loopback/rest';
 import {BcryptHasher} from './authentication/hash.password.service';
-import {ActivityLogService} from './activity-log.service';
-import {MetricService} from './metric.service';
+import {
+  JWTService,
+  MetricService,
+  ActivityLogService,
+  TransactionService,
+  NotificationService,
+} from './';
+import {TokenServiceBindings} from '../keys';
 
 const BN = require('bn.js');
 
@@ -50,6 +54,8 @@ export class CurrencyService {
     protected activityLogService: ActivityLogService,
     @service(MetricService)
     protected metricService: MetricService,
+    @inject(TokenServiceBindings.TOKEN_SERVICE)
+    protected jwtService: JWTService,
   ) {}
 
   async defaultCurrency(userId: string): Promise<void> {
@@ -334,10 +340,12 @@ export class CurrencyService {
     const {id, decimal, rpcURL, native, types} =
       await this.currencyRepository.findById(currencyId);
     const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
+    const hasher = new BcryptHasher();
     const userSocialMedias = await this.userSocialMediaRepository.find({
       where: {userId: userId},
+      include: ['people'],
     });
-    const peopleIds = userSocialMedias.map(e => e.peopleId);
+    const people = userSocialMedias.map(e => e.people);
     const to = userId;
 
     let api: ApiPromise;
@@ -349,12 +357,31 @@ export class CurrencyService {
       throw new HttpErrors.UnprocessableEntity('Unable to claim!');
     }
 
-    for (const peopleId of peopleIds) {
-      const hasher = new BcryptHasher();
-      const hashPeopleId = await hasher.hashPassword(
-        peopleId + config.ESCROW_SECRET_KEY,
-      );
-      const from = getKeyring().addFromUri('//' + hashPeopleId);
+    for (const person of people) {
+      if (!person) continue;
+
+      const {
+        id: peopleId,
+        originUserId,
+        platform,
+        createdAt,
+        walletAddressPassword: storedPassword,
+      } = person;
+
+      if (!storedPassword) continue;
+
+      const password = peopleId + config.ESCROW_SECRET_KEY;
+      const match = await hasher.comparePassword(password, storedPassword);
+
+      if (!match) continue;
+      const token = await this.jwtService.generateAnyToken({
+        id: peopleId,
+        originUserId: originUserId,
+        platform: platform,
+        iat: new Date(createdAt ?? '').getTime(),
+      });
+
+      const from = getKeyring().addFromUri('//' + token);
 
       if (native) {
         const nativeBalance = await api.query.system.account(from.publicKey);
@@ -420,10 +447,12 @@ export class CurrencyService {
     const {id, rpcURL, native, types, decimal} =
       await this.currencyRepository.findById(currencyId);
     const {polkadotApi, getKeyring} = new PolkadotJs();
+    const hasher = new BcryptHasher();
     const userSocialMedias = await this.userSocialMediaRepository.find({
       where: {userId: userId},
+      include: ['people'],
     });
-    const peopleIds = userSocialMedias.map(e => e.peopleId);
+    const people = userSocialMedias.map(e => e.people);
 
     let api: ApiPromise;
 
@@ -435,12 +464,31 @@ export class CurrencyService {
 
     let totalBalance = 0;
 
-    for (const peopleId of peopleIds) {
-      const hasher = new BcryptHasher();
-      const hashPeopleId = await hasher.hashPassword(
-        peopleId + config.ESCROW_SECRET_KEY,
-      );
-      const address = getKeyring().addFromUri('//' + hashPeopleId);
+    for (const person of people) {
+      if (!person) continue;
+
+      const {
+        id: peopleId,
+        originUserId,
+        platform,
+        createdAt,
+        walletAddressPassword: storedPassword,
+      } = person;
+
+      if (!storedPassword) continue;
+
+      const password = peopleId + config.ESCROW_SECRET_KEY;
+      const match = await hasher.comparePassword(password, storedPassword);
+
+      if (!match) continue;
+      const token = await this.jwtService.generateAnyToken({
+        id: peopleId,
+        originUserId: originUserId,
+        platform: platform,
+        iat: new Date(createdAt ?? '').getTime(),
+      });
+
+      const address = getKeyring().addFromUri('//' + token);
 
       if (native) {
         const nativeBalance = await api.query.system.account(address.address);
