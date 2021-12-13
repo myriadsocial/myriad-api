@@ -6,6 +6,7 @@ import {
   toJSON,
 } from '@loopback/testlab';
 import {PeopleController} from '../../controllers';
+import {PlatformType} from '../../enums';
 import {People} from '../../models';
 import {PeopleRepository, UserRepository} from '../../repositories';
 import {givenPeople} from '../helpers';
@@ -77,7 +78,7 @@ describe('PeopleController', () => {
         id: '2',
         name: 'Gavin Wood',
         username: 'gavofyork',
-        platform: 'twitter',
+        platform: PlatformType.TWITTER,
         originUserId: '33962758',
         profilePictureURL:
           'https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg',
