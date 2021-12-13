@@ -11,7 +11,6 @@ import {inject, service} from '@loopback/core';
 import {Twitter, Reddit, FriendService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {config} from '../config';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 @migrationScript()
@@ -38,6 +37,36 @@ export class MigrationScript100 implements MigrationScript {
     await this.doMigrateFriends();
     // await this.doMigratePeople();
     await this.doRemoveFriends();
+    await this.doMigrateWalletAddress();
+  }
+
+  async doMigrateWalletAddress(): Promise<void> {
+    const collection = (
+      this.peopleRepository.dataSource.connector as any
+    ).collection(People.modelName);
+
+    const people = await collection.aggregate().get();
+    const hasher = new BcryptHasher();
+
+    await Promise.all(
+      people.map(async (e: AnyObject) => {
+        const hashPeopleId = await hasher.hashPassword(
+          e._id + config.ESCROW_SECRET_KEY,
+        );
+
+        return collection.update(
+          {_id: e._id},
+          {
+            $unset: {
+              walletAddress: '',
+            },
+            $set: {
+              walletAddressPassword: hashPeopleId,
+            },
+          },
+        );
+      }),
+    );
   }
 
   async doRemoveFriends(): Promise<void> {
@@ -113,23 +142,21 @@ export class MigrationScript100 implements MigrationScript {
             platform,
           });
 
-          await this.postRepository.updateAll(
+          return this.postRepository.updateAll(
             {totalImporter: count},
             {originPostId: originPostId, platform: platform},
           );
-        } else {
-          await collection.update(
-            {_id: post._id},
-            {
-              $unset: {
-                totalImporter: '',
-                importers: '',
-              },
-            },
-          );
         }
 
-        return null;
+        return collection.update(
+          {_id: post._id},
+          {
+            $unset: {
+              totalImporter: '',
+              importers: '',
+            },
+          },
+        );
       }),
     );
   }
@@ -250,8 +277,6 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async createOrFindPeople(people: People): Promise<People> {
-    const {getKeyring, getHexPublicKey} = new PolkadotJs();
-
     let newPeople = await this.peopleRepository.findOne({
       where: {
         originUserId: people.originUserId,
@@ -266,10 +291,9 @@ export class MigrationScript100 implements MigrationScript {
       const hashPeopleId = await hasher.hashPassword(
         newPeople.id + config.ESCROW_SECRET_KEY,
       );
-      const newKey = getKeyring().addFromUri('//' + hashPeopleId);
 
       await this.peopleRepository.updateById(newPeople.id, {
-        walletAddress: getHexPublicKey(newKey),
+        walletAddressPassword: hashPeopleId,
       });
     }
 

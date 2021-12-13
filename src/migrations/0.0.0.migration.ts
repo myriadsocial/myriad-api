@@ -97,7 +97,7 @@ export class MigrationScript000 implements MigrationScript {
   }
 
   async createPeople(people: People[]): Promise<void> {
-    const {getKeyring, getHexPublicKey} = new PolkadotJs();
+    const hasher = new BcryptHasher();
 
     const filterPeople = (
       await Promise.all(
@@ -132,16 +132,13 @@ export class MigrationScript000 implements MigrationScript {
 
       await Promise.all(
         newPeople.map(async person => {
-          const hasher = new BcryptHasher();
           const hashPeopleId = await hasher.hashPassword(
             person.id + config.ESCROW_SECRET_KEY,
           );
-          const newKey = getKeyring().addFromUri('//' + hashPeopleId);
-          const walletAddress = getHexPublicKey(newKey);
           return this.peopleRepository.updateById(person.id, {
             createdAt: new Date().toString(),
             updatedAt: new Date().toString(),
-            walletAddress: walletAddress,
+            walletAddressPassword: hashPeopleId,
           });
         }),
       );
