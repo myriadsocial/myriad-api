@@ -18,13 +18,11 @@ import {PolkadotJs} from '../utils/polkadotJs-utils';
 import acala from '../data-seed/currencies.json';
 import {HttpErrors} from '@loopback/rest';
 import {BcryptHasher} from './authentication/hash.password.service';
-import {
-  JWTService,
-  MetricService,
-  ActivityLogService,
-  TransactionService,
-  NotificationService,
-} from './';
+import {NotificationService} from './notification.service';
+import {TransactionService} from './transaction.service';
+import {ActivityLogService} from './activity-log.service';
+import {MetricService} from './metric.service';
+import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
 
 const BN = require('bn.js');
