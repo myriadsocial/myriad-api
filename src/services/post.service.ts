@@ -158,7 +158,9 @@ export class PostService {
       }
     }
 
-    draftPost.tags = draftPost.tags.map(tag => tag.toLowerCase());
+    if (draftPost.tags && draftPost.tags.length > 0) {
+      draftPost.tags = draftPost.tags.map(tag => tag.toLowerCase());
+    }
 
     const found = await this.draftPostRepository.findOne({
       where: {
