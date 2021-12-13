@@ -72,6 +72,7 @@ jobs:
             MONGO_USER_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_USER_API
             MONGO_PASSWORD_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.DEV_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
+            FIREBAE_STORAGE_BUCKET:${{ secrets.DEV_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.DEV_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_BEARER_TOKEN:${{ secrets.DEV_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
             COIN_MARKET_CAP_API_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
@@ -105,6 +106,7 @@ jobs:
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
+              --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
@@ -156,6 +158,7 @@ jobs:
             MONGO_USER_API:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_USER_API
             MONGO_PASSWORD_API:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.STG_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
+            FIREBAE_STORAGE_BUCKET:${{ secrets.STG_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.STG_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_BEARER_TOKEN:${{ secrets.STG_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
             COIN_MARKET_CAP_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
@@ -191,6 +194,7 @@ jobs:
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
+              --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
@@ -243,6 +247,7 @@ jobs:
             MONGO_USER_API:${{ secrets.TESTNET_GCP_PROJECT_ID }}/MONGO_USER_API
             MONGO_PASSWORD_API:${{ secrets.TESTNET_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
+            FIREBAE_STORAGE_BUCKET:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_BEARER_TOKEN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
             COIN_MARKET_CAP_API_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
@@ -277,6 +282,7 @@ jobs:
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
+              --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
@@ -329,6 +335,7 @@ jobs:
             MONGO_USER_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_USER_API
             MONGO_PASSWORD_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
+            FIREBAE_STORAGE_BUCKET:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_BEARER_TOKEN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
@@ -363,6 +370,7 @@ jobs:
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
+              --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
@@ -415,6 +423,7 @@ jobs:
             MONGO_USER_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_USER_API
             MONGO_PASSWORD_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
+            FIREBAE_STORAGE_BUCKET:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_BEARER_TOKEN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
@@ -449,6 +458,7 @@ jobs:
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
+              --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dns=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.bearerToken=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
