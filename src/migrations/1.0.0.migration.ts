@@ -1,14 +1,16 @@
 import {AnyObject, repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {
+  ActivityLogRepository,
   FriendRepository,
   PeopleRepository,
   PostRepository,
+  UserRepository,
 } from '../repositories';
 import {People, Post} from '../models';
 import {FriendStatusType, PlatformType} from '../enums';
 import {inject, service} from '@loopback/core';
-import {Twitter, Reddit, FriendService} from '../services';
+import {Twitter, Reddit, FriendService, MetricService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {config} from '../config';
 
@@ -18,14 +20,20 @@ export class MigrationScript100 implements MigrationScript {
   version = '1.0.0';
 
   constructor(
+    @repository(ActivityLogRepository)
+    protected activityLogRepository: ActivityLogRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(FriendService)
     protected friendService: FriendService,
+    @service(MetricService)
+    protected metricService: MetricService,
     @inject('services.Twitter')
     protected twitterService: Twitter,
     @inject('services.Reddit')
@@ -35,6 +43,7 @@ export class MigrationScript100 implements MigrationScript {
   async up(): Promise<void> {
     await this.doMigratePosts();
     await this.doMigrateFriends();
+    await this.doMigrateActivityLog();
     // await this.doMigratePeople();
     await this.doRemoveFriends();
     await this.doMigrateWalletAddress();
@@ -65,6 +74,16 @@ export class MigrationScript100 implements MigrationScript {
             },
           },
         );
+      }),
+    );
+  }
+
+  async doMigrateActivityLog(): Promise<void> {
+    const users = await this.userRepository.find();
+
+    await Promise.all(
+      users.map(user => {
+        return this.metricService.userMetric(user.id);
       }),
     );
   }
