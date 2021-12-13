@@ -1,6 +1,7 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
+import {PlatformType} from '../../enums';
 import {People} from '../../models';
 import {
   PeopleRepository,
@@ -95,7 +96,7 @@ describe('PeopleApplication', function () {
       const peopleInProgress = await givenPeopleInstance(peopleRepository, {
         name: 'W3F_Bill',
         username: 'W3F_Bill',
-        platform: 'reddit',
+        platform: PlatformType.REDDIT,
         originUserId: 't2_5turjfiq',
         profilePictureURL:
           'https://styles.redditmedia.com/t5_2gskf7/styles/profileIcon_snoof1dc48fa-83bd-4ed3-8ef3-56f2469da2ce-headshot.png',
@@ -119,7 +120,7 @@ describe('PeopleApplication', function () {
       await givenPeopleInstance(peopleRepository, {
         name: 'CryptoChief',
         username: 'CryptoChief',
-        platform: 'reddit',
+        platform: PlatformType.REDDIT,
         originUserId: 't2_e0t5q',
         profilePictureURL:
           'https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png',

@@ -117,7 +117,7 @@ export async function givenMultiplePeopleInstances(
     givenPeopleInstance(peopleRepository, {
       name: 'Gavin Wood',
       username: 'gavofyork',
-      platform: 'twitter',
+      platform: PlatformType.TWITTER,
       originUserId: '33962758',
       profilePictureURL:
         'https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg',
@@ -559,7 +559,7 @@ export async function givenMultipleExperienceInstances(
           id: '60efac8c565ab8004ed28ba7',
           name: 'Gavin Wood',
           username: 'gavofyork',
-          platform: 'twitter',
+          platform: PlatformType.TWITTER,
           originUserId: '33962758',
           profilePictureURL:
             'https://pbs.twimg.com/profile_images/981390758870683656/RxA_8cyN_400x400.jpg',

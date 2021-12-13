@@ -17,6 +17,13 @@ import {
   givenUserSocialMediaRepository,
   setupApplication,
 } from '../helpers';
+import {promisify} from 'util';
+import {genSalt, hash} from 'bcryptjs';
+import {config} from '../../config';
+import {PolkadotJs} from '../../utils/polkadotJs-utils';
+
+const jwt = require('jsonwebtoken');
+const signAsync = promisify(jwt.sign);
 
 describe('PostWalletAddressApplication', function () {
   let app: MyriadApiApplication;
@@ -54,19 +61,34 @@ describe('PostWalletAddressApplication', function () {
   });
 
   it('gets a post wallet address from people', async () => {
+    const password = people.id + config.ESCROW_SECRET_KEY;
+    const salt = await genSalt(10);
+    const hashPassword = await hash(password, salt);
+
     await postRepository.updateById(post.id, {peopleId: people.id});
     await peopleRepository.updateById(people.id, {
-      walletAddress:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
+      walletAddressPassword: hashPassword,
     });
     const result = await client
       .get(`/posts/${post.id}/walletaddress`)
       .send()
       .expect(200);
 
+    const token = await signAsync(
+      {
+        id: people.id,
+        originUserId: people.originUserId,
+        platform: people.platform,
+        iat: new Date(people.createdAt ?? '').getTime(),
+      },
+      config.ESCROW_SECRET_KEY,
+    );
+
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
+    const newKey = getKeyring().addFromUri('//' + token);
+
     expect(result.body).to.deepEqual({
-      walletAddress:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
+      walletAddress: getHexPublicKey(newKey),
     });
   });
 
@@ -92,9 +114,9 @@ describe('PostWalletAddressApplication', function () {
     expect(result.body).to.deepEqual({walletAddress: myriadPost.createdBy});
   });
 
-  it('returns 404 when wallet address not found', async () => {
+  it('returns 401 and 404 when wallet address not found', async () => {
     await client.get(`/posts/${post.id}/walletaddress`).send().expect(404);
     await postRepository.updateById(post.id, {peopleId: people.id});
-    await client.get(`/posts/${post.id}/walletaddress`).send().expect(404);
+    await client.get(`/posts/${post.id}/walletaddress`).send().expect(401);
   });
 });
