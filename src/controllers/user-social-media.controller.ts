@@ -134,12 +134,12 @@ export class UserSocialMediaController {
     description: 'Set primary social media',
   })
   async updatePrimary(@param.path.string('id') id: string): Promise<void> {
-    const {userId: userId} =
+    const {userId, platform} =
       await this.userSocialMediaService.userSocialMediaRepository.findById(id);
 
     await this.userSocialMediaService.userSocialMediaRepository.updateAll(
       {primary: false},
-      {userId: userId},
+      {userId: userId, platform},
     );
 
     await this.userSocialMediaService.userSocialMediaRepository.updateById(id, {
