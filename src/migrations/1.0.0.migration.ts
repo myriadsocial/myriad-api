@@ -7,8 +7,13 @@ import {
   PostRepository,
   UserRepository,
 } from '../repositories';
-import {People, Post} from '../models';
-import {FriendStatusType, PlatformType} from '../enums';
+import {ActivityLog, People, Post} from '../models';
+import {
+  ActivityLogType,
+  FriendStatusType,
+  PlatformType,
+  ReferenceType,
+} from '../enums';
 import {inject, service} from '@loopback/core';
 import {Twitter, Reddit, FriendService, MetricService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
@@ -79,6 +84,29 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigrateActivityLog(): Promise<void> {
+    const collection = (
+      this.activityLogRepository.dataSource.connector as any
+    ).collection(ActivityLog.modelName);
+
+    await collection.deleteMany({type: 'profile'});
+
+    const activityLogs = await this.activityLogRepository.find({
+      where: {
+        type: ActivityLogType.SKIPUSERNAME,
+      },
+    });
+
+    await Promise.all(
+      activityLogs.map(e => {
+        return this.activityLogRepository.updateById(e.id, {
+          referenceId: e.userId,
+          referenceType: ReferenceType.USER,
+          createdAt: new Date().toString(),
+          updatedAt: new Date().toString(),
+        });
+      }),
+    );
+
     const users = await this.userRepository.find();
 
     await Promise.all(
