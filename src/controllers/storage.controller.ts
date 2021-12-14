@@ -10,8 +10,8 @@ import {
 import {FCSService} from '../services/fcs.service';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler} from '../types';
-import {unlinkSync} from 'fs';
 import {config} from '../config';
+import {UploadType} from '../enums';
 
 export class StorageController {
   constructor(
@@ -45,40 +45,36 @@ export class StorageController {
       this.handler(request, response, (err: unknown) => {
         if (err) reject(err);
         else {
-          resolve(this.getFilesAndFields(userId, kind, request));
+          const targetDir = `users/${userId}/${kind}`;
+          resolve(this.getFilesAndFields(targetDir, request));
         }
       });
     });
   }
 
-  /**
-   * Get files and fields for the request
-   * @param request - Http request
-   */
-  private async getFilesAndFields(
-    userId: string,
-    kind: string,
-    request: Request,
-  ) {
+  private async getFilesAndFields(targetDir: string, request: Request) {
     const uploadedFiles = request.files;
-    const mapper = async (f: globalThis.Express.Multer.File) => {
-      let downloadURL: String = '';
+    const mapper = async (file: globalThis.Express.Multer.File) => {
+      let fileURL: String = '';
       if (config.FIREBAE_STORAGE_BUCKET) {
-        if (f.mimetype.toLowerCase().startsWith('image')) {
-          downloadURL = await this.fcsService.uploadImage(userId, kind, f.path);
-        } else {
-          downloadURL = await this.fcsService.uploadVideo(userId, kind, f.path);
+        let uploadType = UploadType.IMAGE;
+        if (file.mimetype.toLowerCase().startsWith('video')) {
+          uploadType = UploadType.VIDEO;
         }
 
-        unlinkSync(f.path);
+        fileURL = await this.fcsService.upload(
+          uploadType,
+          targetDir,
+          file.path,
+        );
       }
 
       return {
-        fieldname: f.fieldname,
-        originalname: f.originalname,
-        mimetype: f.mimetype,
-        size: f.size,
-        url: downloadURL,
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        url: fileURL,
       };
     };
     let files: object[] = [];

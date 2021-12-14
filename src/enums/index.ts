@@ -12,3 +12,4 @@ export * from './reference-type.enum';
 export * from './report-type.enum';
 export * from './account-setting-type.enum';
 export * from './post-status-type.enum';
+export * from './upload-type.enum';
