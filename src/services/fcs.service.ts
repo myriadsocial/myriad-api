@@ -1,10 +1,12 @@
 import {BindingScope, injectable} from '@loopback/core';
 import * as firebaseAdmin from 'firebase-admin';
-import sharp from 'sharp';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffmpeg from 'fluent-ffmpeg';
+import fs from 'fs';
+import os from 'os';
 import path from 'path';
-import {unlinkSync} from 'fs';
+import sharp from 'sharp';
+import {UploadType} from '../enums';
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
@@ -12,99 +14,95 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 export class FCSService {
   constructor() {}
 
-  async uploadImage(
-    userId: string,
-    kind: string,
+  async upload(
+    type: UploadType,
+    targetDir: string,
     filePath: string,
   ): Promise<String> {
-    const parsed = path.parse(filePath);
-    const format = 'jpg';
-    const mutations = [
+    const bucket = firebaseAdmin.storage().bucket();
+    const tempDir = os.tmpdir();
+    const baseName = path.basename(filePath);
+    let format = 'jpg';
+    let mutations = [
       {
         type: 'thumbnail',
+        suffix: '_thumbnail',
         width: 200,
-        height: 200,
       },
       {
         type: 'small',
+        suffix: '_small',
         width: 400,
-        height: 400,
       },
       {
         type: 'medium',
+        suffix: '_medium',
         width: 600,
-        height: 600,
+      },
+      {
+        type: 'origin',
+        suffix: '',
+        width: 0,
       },
     ];
 
-    const bucket = firebaseAdmin.storage().bucket();
-    const options = {resumable: false, metadata: {contentType: 'image/jpg'}};
-
-    const buffer = await sharp(filePath).toBuffer();
-
-    for (const mutation of mutations) {
-      const file = bucket.file(
-        `${userId}/${kind}/${parsed.name}_${mutation.type}.${format}`,
-      );
-
-      const resized = await sharp(buffer)
-        .resize({width: mutation.width})
-        .toFormat(format)
-        .toBuffer({resolveWithObject: true});
-
-      await file.save(resized.data, options);
-      await file.makePublic();
+    if (type === UploadType.VIDEO) {
+      format = 'mp4';
+      mutations = [
+        {
+          type: 'origin',
+          suffix: '',
+          width: 0,
+        },
+      ];
     }
 
-    const file = bucket.file(`${userId}/${kind}/${parsed.name}.${format}`);
-    const resized = await sharp(buffer)
-      .toFormat(format)
-      .toBuffer({resolveWithObject: true});
+    let result = '';
+    for (const mutation of mutations) {
+      const formattedFilePath = `${tempDir}/${baseName}${mutation.suffix}_formatted.${format}`;
+      const uploadFilePath = `${targetDir}/${baseName}${mutation.suffix}.${format}`;
 
-    await file.save(resized.data, options);
+      if (mutation.type === 'origin') {
+        if (type === UploadType.IMAGE) {
+          await sharp(filePath)
+            .toFormat(sharp.format.jpg)
+            .toFile(formattedFilePath);
+        } else {
+          await new Promise((resolve, reject) => {
+            ffmpeg(filePath)
+              .videoCodec('libx264')
+              .audioCodec('libmp3lame')
+              .format(format)
+              .on('error', err => {
+                reject(err);
+              })
+              .on('end', () => {
+                resolve(formattedFilePath);
+              })
+              .saveToFile(formattedFilePath);
+          });
+        }
+      } else {
+        if (type === UploadType.IMAGE) {
+          await sharp(filePath)
+            .resize({width: mutation.width})
+            .toFormat(sharp.format.jpg)
+            .toFile(formattedFilePath);
+        }
+      }
 
-    await file.makePublic();
+      const [file] = await bucket.upload(formattedFilePath, {
+        resumable: false,
+        public: true,
+        destination: uploadFilePath,
+      });
+      result = file.publicUrl();
 
-    return file.publicUrl();
-  }
+      fs.unlinkSync(formattedFilePath);
+    }
 
-  async uploadVideo(
-    userId: string,
-    kind: string,
-    filePath: string,
-  ): Promise<String> {
-    const parsed = path.parse(filePath);
-    const format = 'mp4';
+    fs.unlinkSync(filePath);
 
-    const bucket = firebaseAdmin.storage().bucket();
-    const options = {
-      destination: `${userId}/${kind}/${parsed.name}.${format}`,
-      resumable: false,
-      metadata: {contentType: 'video/mp4'},
-    };
-
-    const convertedFilePath = `/tmp/convert_${parsed.name}.${format}`;
-
-    const result: string = await new Promise((resolve, reject) => {
-      ffmpeg(filePath)
-        .videoCodec('libx264')
-        .audioCodec('libmp3lame')
-        .format('mp4')
-        .on('error', err => {
-          reject(err);
-        })
-        .on('end', () => {
-          resolve(convertedFilePath);
-        })
-        .saveToFile(convertedFilePath);
-    });
-
-    const [file] = await bucket.upload(result, options);
-
-    unlinkSync(result);
-
-    await file.makePublic();
-
-    return file.publicUrl();
+    return result;
   }
 }
