@@ -126,7 +126,6 @@ describe('PostApplication', function () {
         totalExperiences: 0,
         totalFriends: 0,
         totalKudos: 0,
-        totalActivity: 1,
       };
       const expected = toJSON(persistedPost);
 
@@ -235,7 +234,6 @@ describe('PostApplication', function () {
       totalExperiences: 0,
       totalFriends: 0,
       totalKudos: 0,
-      totalActivity: 1,
     };
 
     expect(response.body.data).to.have.length(1);

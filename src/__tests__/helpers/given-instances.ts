@@ -484,7 +484,6 @@ export function givenActivityLog(activityLog?: Partial<ActivityLog>) {
   const data = Object.assign(
     {
       type: ActivityLogType.CREATEUSERNAME,
-      message: 'You updated your username',
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
     },
@@ -507,7 +506,6 @@ export async function givenMultipleActivityLogInstances(
     givenActivityLogInstance(activityLogRepository),
     givenActivityLogInstance(activityLogRepository, {
       type: ActivityLogType.CREATEPOST,
-      message: 'You updated your profile',
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
     }),
