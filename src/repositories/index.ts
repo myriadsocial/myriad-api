@@ -25,3 +25,4 @@ export * from './account-setting.repository';
 export * from './notification-setting.repository';
 export * from './experience-user.repository';
 export * from './draft-post.repository';
+export * from './leader-board.repository';
