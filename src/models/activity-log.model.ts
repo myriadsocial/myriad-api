@@ -31,12 +31,6 @@ export class ActivityLog extends Entity {
 
   @property({
     type: 'string',
-    required: true,
-  })
-  message: string;
-
-  @property({
-    type: 'string',
     required: false,
   })
   referenceId?: string;

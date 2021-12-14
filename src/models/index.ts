@@ -30,3 +30,4 @@ export * from './account-setting.model';
 export * from './notification-setting.model';
 export * from './experience-user.model';
 export * from './draft-post.model';
+export * from './leader-board.model';
