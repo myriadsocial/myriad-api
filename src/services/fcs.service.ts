@@ -17,6 +17,8 @@ export class FCSService {
     kind: string,
     filePath: string,
   ): Promise<String> {
+    const parsed = path.parse(filePath);
+    const format = 'jpg';
     const mutations = [
       {
         type: 'thumbnail',
@@ -37,9 +39,6 @@ export class FCSService {
 
     const bucket = firebaseAdmin.storage().bucket();
     const options = {resumable: false, metadata: {contentType: 'image/jpg'}};
-
-    const parsed = path.parse(filePath);
-    const format = 'jpg';
 
     const buffer = await sharp(filePath).toBuffer();
 
@@ -74,15 +73,15 @@ export class FCSService {
     kind: string,
     filePath: string,
   ): Promise<String> {
+    const parsed = path.parse(filePath);
+    const format = 'mp4';
+
     const bucket = firebaseAdmin.storage().bucket();
     const options = {
-      destination: `${userId}/${kind}`,
+      destination: `${userId}/${kind}/${parsed.name}.${format}`,
       resumable: false,
       metadata: {contentType: 'video/mp4'},
     };
-
-    const parsed = path.parse(filePath);
-    const format = 'mp4';
 
     const convertedFilePath = `/tmp/convert_${parsed.name}.${format}`;
 
