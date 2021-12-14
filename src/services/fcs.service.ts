@@ -54,6 +54,7 @@ export class FCSService {
         .toBuffer({resolveWithObject: true});
 
       await file.save(resized.data, options);
+      await file.makePublic();
     }
 
     const file = bucket.file(`${userId}/${kind}/${parsed.name}.${format}`);
