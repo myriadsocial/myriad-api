@@ -2,7 +2,7 @@ import {BindingScope, service, injectable, inject} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
-import {ActivityLogType, DefaultCurrencyType} from '../enums';
+import {ActivityLogType, DefaultCurrencyType, ReferenceType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
 import {UserSocialMedia} from '../models';
 import {
@@ -21,7 +21,6 @@ import {BcryptHasher} from './authentication/hash.password.service';
 import {NotificationService} from './notification.service';
 import {TransactionService} from './transaction.service';
 import {ActivityLogService} from './activity-log.service';
-import {MetricService} from './metric.service';
 import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
 
@@ -50,8 +49,6 @@ export class CurrencyService {
     protected notificationService: NotificationService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
-    @service(MetricService)
-    protected metricService: MetricService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
   ) {}
@@ -427,12 +424,12 @@ export class CurrencyService {
         currencyId: id,
       });
 
-      await this.activityLogService.userTipActivityLog(
+      await this.activityLogService.createLog(
         ActivityLogType.CLAIMTIP,
         to,
         transaction.id ?? '',
+        ReferenceType.TRANSACTION,
       );
-      await this.metricService.userMetric(to);
       await this.notificationService.sendClaimTips(transaction);
     }
 

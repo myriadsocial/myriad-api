@@ -8,7 +8,12 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {HttpErrors} from '@loopback/rest';
-import {FriendStatusType, MethodType} from '../enums';
+import {
+  ActivityLogType,
+  FriendStatusType,
+  MethodType,
+  ReferenceType,
+} from '../enums';
 import {
   ActivityLogService,
   FriendService,
@@ -137,11 +142,12 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
     }
 
     if (result && result.status === FriendStatusType.PENDING) {
-      await this.activityLogService.userFriendRequestActivityLog(
+      await this.activityLogService.createLog(
+        ActivityLogType.FRIENDREQUEST,
         requestorId,
         requesteeId,
+        ReferenceType.USER,
       );
-      await this.metricService.userMetric(requestorId);
     }
 
     return result;

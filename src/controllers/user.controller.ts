@@ -11,7 +11,7 @@ import {
   response,
 } from '@loopback/rest';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
-import {ActivityLogType} from '../enums';
+import {ActivityLogType, ReferenceType} from '../enums';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
@@ -140,8 +140,9 @@ export class UserController {
 
     await this.userRepository.activityLogs(id).create({
       type: ActivityLogType.SKIPUSERNAME,
-      message: 'You skipped updating username',
       userId: id,
+      referenceType: ReferenceType.USER,
+      referenceId: id,
     });
 
     return;

@@ -23,6 +23,7 @@ import {
   Comment,
   Experience,
   Friend,
+  LeaderBoardWithRelations,
   People,
   Post,
   PostWithRelations,
@@ -95,7 +96,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     filter.where = filter.where ?? {};
 
-    if (className === ControllerType.DELETEDCOLLECTIONCONTROLLER) {
+    if (className === ControllerType.DELETEDCOLLECTION) {
       filter.where = Object.assign(filter.where, {deletedAt: {$exists: true}});
     }
 
@@ -114,12 +115,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       });
     }
 
-    if (className === ControllerType.REPORTUSERCONTROLLER) {
+    if (className === ControllerType.REPORTUSER) {
       filter.include = ['reporter'];
       filter.order = this.orderSetting(query);
       filter.where = Object.assign(filter.where, {
         reportId: invocationCtx.args[0],
       });
+    }
+
+    if (className === ControllerType.LEADERBOARD) {
+      filter.include = ['user'];
     }
 
     // Set where filter when using timeline
@@ -242,7 +247,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     });
 
     // Reassign filter object
-    if (className === ControllerType.REPORTUSERCONTROLLER)
+    if (className === ControllerType.REPORTUSER)
       invocationCtx.args[1] = paginationFilter;
     else invocationCtx.args[0] = paginationFilter;
 
@@ -301,6 +306,18 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           user.username = '[user banned]';
         }
         return user;
+      });
+    }
+
+    if (className === ControllerType.LEADERBOARD) {
+      result = result.map((e: LeaderBoardWithRelations) => {
+        const totalActivity = e.totalActivity;
+
+        if (e.user?.metric) {
+          e.user.metric.totalActivity = totalActivity;
+        }
+
+        return e.user;
       });
     }
 

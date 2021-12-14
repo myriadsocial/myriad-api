@@ -8,12 +8,11 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {ActivityLogType} from '../enums';
+import {ActivityLogType, ReferenceType} from '../enums';
 import {UserRepository} from '../repositories';
 import {
   ActivityLogService,
   FriendService,
-  MetricService,
   PostService,
   TagService,
 } from '../services';
@@ -38,8 +37,6 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     protected postService: PostService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
-    @service(MetricService)
-    protected metricService: MetricService,
   ) {}
 
   /**
@@ -84,12 +81,12 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
       {originPostId: result.originPostId, platform: result.platform},
     );
 
-    await this.activityLogService.userPostCommentActivityLog(
+    await this.activityLogService.createLog(
       ActivityLogType.IMPORTPOST,
       result.createdBy,
       result.id,
+      ReferenceType.POST,
     );
-    await this.metricService.userMetric(result.createdBy);
 
     const importerInfo = user ? [Object.assign(user, {name: 'You'})] : [];
 

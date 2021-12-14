@@ -9,7 +9,12 @@ import {
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ReferenceType, MethodType, SectionType} from '../enums';
+import {
+  ReferenceType,
+  MethodType,
+  SectionType,
+  ActivityLogType,
+} from '../enums';
 import {
   CommentRepository,
   VoteRepository,
@@ -79,9 +84,12 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
       const popularCount = await this.metricService.countPopularPost(postId);
 
       await this.postRepository.updateById(postId, {popularCount});
-      await this.activityLogService.userVoteActivityLog(userId, refId, refType);
-      await this.metricService.userMetric(toUserId);
-      await this.metricService.userMetric(userId);
+      await this.activityLogService.createLog(
+        ActivityLogType.GIVEVOTE,
+        userId,
+        refId,
+        refType,
+      );
 
       return Object.assign(result.value, {
         id: id,
