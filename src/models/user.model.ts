@@ -11,6 +11,7 @@ import {AccountSetting} from './account-setting.model';
 import {NotificationSetting} from './notification-setting.model';
 import {People} from './people.model';
 import {UserSocialMedia} from './user-social-media.model';
+import {LeaderBoard} from './leader-board.model';
 
 @model({
   settings: {
@@ -151,7 +152,6 @@ export class User extends Entity {
       totalPosts: 0,
       totalKudos: 0,
       totalFriends: 0,
-      totalActivity: 0,
       totalExperiences: 0,
     },
   })
@@ -209,6 +209,9 @@ export class User extends Entity {
 
   @hasMany(() => People, {through: {model: () => UserSocialMedia}})
   people: People[];
+
+  @hasOne(() => LeaderBoard)
+  leaderboard: LeaderBoard;
 
   constructor(data?: Partial<User>) {
     super(data);
