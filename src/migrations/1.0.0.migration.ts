@@ -3,6 +3,7 @@ import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {
   ActivityLogRepository,
   FriendRepository,
+  LeaderBoardRepository,
   PeopleRepository,
   PostRepository,
   UserRepository,
@@ -35,6 +36,8 @@ export class MigrationScript100 implements MigrationScript {
     protected friendRepository: FriendRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(LeaderBoardRepository)
+    protected leaderboardRepository: LeaderBoardRepository,
     @service(FriendService)
     protected friendService: FriendService,
     @service(MetricService)
@@ -46,12 +49,35 @@ export class MigrationScript100 implements MigrationScript {
   ) {}
 
   async up(): Promise<void> {
+    await this.doMigrateActivityLog();
+    await this.doMigrateUser();
     await this.doMigratePosts();
     await this.doMigrateFriends();
-    await this.doMigrateActivityLog();
     // await this.doMigratePeople();
     await this.doRemoveFriends();
     await this.doMigrateWalletAddress();
+  }
+
+  async doMigrateUser(): Promise<void> {
+    const users = await this.userRepository.find();
+
+    await Promise.all(
+      users.map(async user => {
+        const {count} = await this.activityLogRepository.count({
+          userId: user.id,
+          type: {
+            nin: [ActivityLogType.CREATEUSERNAME, ActivityLogType.SKIPUSERNAME],
+          },
+        });
+
+        await this.leaderboardRepository.create({
+          userId: user.id,
+          totalActivity: count,
+        });
+
+        return this.metricService.userMetric(user.id);
+      }),
+    );
   }
 
   async doMigrateWalletAddress(): Promise<void> {
@@ -88,11 +114,22 @@ export class MigrationScript100 implements MigrationScript {
       this.activityLogRepository.dataSource.connector as any
     ).collection(ActivityLog.modelName);
 
+    await collection.updateMany(
+      {},
+      {
+        $unset: {
+          message: '',
+        },
+      },
+    );
     await collection.deleteMany({type: 'profile'});
 
     const activityLogs = await this.activityLogRepository.find({
       where: {
-        type: ActivityLogType.SKIPUSERNAME,
+        or: [
+          {type: ActivityLogType.SKIPUSERNAME},
+          {type: ActivityLogType.CREATEUSERNAME},
+        ],
       },
     });
 
@@ -104,14 +141,6 @@ export class MigrationScript100 implements MigrationScript {
           createdAt: new Date().toString(),
           updatedAt: new Date().toString(),
         });
-      }),
-    );
-
-    const users = await this.userRepository.find();
-
-    await Promise.all(
-      users.map(user => {
-        return this.metricService.userMetric(user.id);
       }),
     );
   }
