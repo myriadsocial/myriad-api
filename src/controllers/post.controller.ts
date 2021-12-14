@@ -85,11 +85,27 @@ export class PostController {
             platform: platform as PlatformType,
             createdBy: importer,
           },
+          /* eslint-disable  @typescript-eslint/no-explicit-any */
+          <any>{
+            originPostId,
+            platform: platform as PlatformType,
+            deletedAt: {
+              $exists: true,
+            },
+          },
         ],
       },
       include: ['people'],
       limit: 5,
     });
+
+    const hasBeenDeleted = posts.find(e => e.deletedAt);
+
+    if (hasBeenDeleted) {
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot import deleted post',
+      );
+    }
 
     let newPost: ExtendedPost;
     let tags: string[] = newTags;
