@@ -1,6 +1,5 @@
-import {expect, toJSON} from '@loopback/testlab';
+import {expect} from '@loopback/testlab';
 import {PostController} from '../../../controllers';
-import {RedditDataSource} from '../../../datasources';
 import {ReferenceType} from '../../../enums';
 import {
   CommentRepository,
@@ -10,21 +9,12 @@ import {
   TransactionRepository,
   UserRepository,
 } from '../../../repositories';
-import {
-  Facebook,
-  PostService,
-  Reddit,
-  RedditProvider,
-  SocialMediaService,
-  Twitter,
-} from '../../../services';
-import {UrlUtils} from '../../../utils/url.utils';
+import {PostService, SocialMediaService} from '../../../services';
 import {
   givenCommentInstance,
   givenEmptyDatabase,
   givenVoteInstance,
   givenPeopleInstance,
-  givenPlatformPost,
   givenPostInstance,
   givenRepositories,
   givenTransactionInstance,
@@ -35,9 +25,6 @@ import {
 describe('PostControllerIntegration', () => {
   let postRepository: PostRepository;
   let socialMediaService: SocialMediaService;
-  let redditService: Reddit;
-  let twitterService: Twitter;
-  let facebookService: Facebook;
   let postService: PostService;
   let peopleRepository: PeopleRepository;
   let userRepository: UserRepository;
@@ -58,15 +45,7 @@ describe('PostControllerIntegration', () => {
     } = await givenRepositories(testdb));
   });
 
-  before(givenRedditService);
-
   before(async () => {
-    socialMediaService = new SocialMediaService(
-      peopleRepository,
-      twitterService,
-      redditService,
-      facebookService,
-    );
     controller = new PostController(socialMediaService, postService);
   });
 
@@ -317,35 +296,4 @@ describe('PostControllerIntegration', () => {
       comments: [comment],
     });
   });
-
-  /* eslint-disable  @typescript-eslint/no-invalid-this */
-  /* eslint-disable  @typescript-eslint/no-explicit-any */
-  it('imports a Post from reddit social media', async function () {
-    this.timeout(15000);
-    const redditPost: any = await socialMediaService.fetchRedditPost('p7qrle');
-    redditPost.originCreatedAt = new Date(redditPost.originCreatedAt);
-    const platformPost = givenPlatformPost();
-    const urlUtils = new UrlUtils(platformPost.url);
-    const platform = urlUtils.getPlatform();
-    const originPostId = urlUtils.getOriginPostId();
-    const username = urlUtils.getUsername();
-
-    platformPost.url = [platform, originPostId, username].join(',');
-
-    const response: any = await controller.import(platformPost);
-
-    expect(toJSON(response.people)).to.containEql(
-      toJSON(redditPost.platformUser),
-    );
-
-    delete response.people;
-    delete redditPost.platformUser;
-
-    expect(toJSON(response)).to.containEql(toJSON(redditPost));
-  });
-
-  async function givenRedditService() {
-    const dataSource = new RedditDataSource();
-    redditService = await new RedditProvider(dataSource).value();
-  }
 });
