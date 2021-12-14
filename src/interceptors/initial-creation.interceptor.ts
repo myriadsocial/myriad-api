@@ -234,6 +234,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       case ControllerType.USER: {
         await this.userRepository.accountSetting(result.id).create({});
         await this.userRepository.notificationSetting(result.id).create({});
+        await this.userRepository.leaderboard(result.id).create({});
         await this.friendService.defaultFriend(result.id);
         await this.currencyService.defaultCurrency(result.id);
         await this.currencyService.defaultAcalaTips(result.id); // TODO: removed default acala tips
@@ -242,12 +243,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
       case ControllerType.TRANSACTION: {
         await this.currencyService.sendMyriadReward(result.from);
-        await this.activityLogService.userTipActivityLog(
+        await this.activityLogService.createLog(
           ActivityLogType.SENDTIP,
           result.from,
           result.id,
+          ReferenceType.TRANSACTION,
         );
-        await this.metricService.userMetric(result.from);
         return result;
       }
 
@@ -276,10 +277,11 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
             await this.tagService.createTags(newPost.tags);
           }
 
-          await this.activityLogService.userPostCommentActivityLog(
+          await this.activityLogService.createLog(
             ActivityLogType.CREATEPOST,
             newPost.createdBy,
             newPost.id,
+            ReferenceType.POST,
           );
 
           await this.metricService.userMetric(newPost.createdBy);
@@ -310,12 +312,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           metric: Object.assign(post.metric, metric),
           popularCount: popularCount,
         });
-        await this.activityLogService.userPostCommentActivityLog(
+        await this.activityLogService.createLog(
           ActivityLogType.CREATECOMMENT,
           result.userId,
           result.id,
+          ReferenceType.COMMENT,
         );
-        await this.metricService.userMetric(result.userId);
 
         return result;
       }
@@ -332,34 +334,40 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     if (user.username) {
       this.validateUsername(user.username);
 
-      await this.activityLogService.userProfileActivityLog(
+      await this.activityLogService.createLog(
         ActivityLogType.CREATEUSERNAME,
         userId,
+        userId,
+        ReferenceType.USER,
       );
     }
 
     if (user.profilePictureURL) {
-      await this.activityLogService.userProfileActivityLog(
+      await this.activityLogService.createLog(
         ActivityLogType.UPLOADPROFILEPICTURE,
         userId,
+        userId,
+        ReferenceType.USER,
       );
     }
 
     if (user.bannerImageUrl) {
-      await this.activityLogService.userProfileActivityLog(
+      await this.activityLogService.createLog(
         ActivityLogType.UPLOADBANNER,
         userId,
+        userId,
+        ReferenceType.USER,
       );
     }
 
     if (user.bio) {
-      await this.activityLogService.userProfileActivityLog(
+      await this.activityLogService.createLog(
         ActivityLogType.FILLBIO,
         userId,
+        userId,
+        ReferenceType.USER,
       );
     }
-
-    await this.metricService.userMetric(userId);
   }
 
   async validateComment(referenceId: string): Promise<void> {

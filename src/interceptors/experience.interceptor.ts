@@ -9,7 +9,12 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ActivityLogType, MethodType, PlatformType} from '../enums';
+import {
+  ActivityLogType,
+  MethodType,
+  PlatformType,
+  ReferenceType,
+} from '../enums';
 import {People, User} from '../models';
 import {
   ExperienceRepository,
@@ -213,18 +218,20 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
     if (methodName !== MethodType.FINDBYID) {
       if (methodName === MethodType.CREATE || methodName === MethodType.CLONE) {
-        await this.activityLogService.userExperienceActivityLog(
+        await this.activityLogService.createLog(
           ActivityLogType.CREATEEXPERIENCE,
           result.createdBy,
           result.id,
+          ReferenceType.EXPERIENCE,
         );
       }
 
       if (methodName === MethodType.SUBSCRIBE) {
-        await this.activityLogService.userExperienceActivityLog(
+        await this.activityLogService.createLog(
           ActivityLogType.SUBSCRIBEEXPERIENCE,
           result.userId,
           result.experienceId,
+          ReferenceType.EXPERIENCE,
         );
       }
 

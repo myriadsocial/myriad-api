@@ -27,3 +27,4 @@ export * from './user-account-setting.controller';
 export * from './user-notification-setting.controller';
 export * from './user-draft-post.controller';
 export * from './storage.controller';
+export * from './leader-board.controller';

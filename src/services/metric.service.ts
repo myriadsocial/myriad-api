@@ -25,6 +25,7 @@ import {
   UserSocialMediaRepository,
   ReportRepository,
   UserReportRepository,
+  LeaderBoardRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 
@@ -63,6 +64,8 @@ export class MetricService {
     protected reportRepository: ReportRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
+    @repository(LeaderBoardRepository)
+    protected leaderboardRepository: LeaderBoardRepository,
   ) {}
 
   async publicMetric(
@@ -117,9 +120,6 @@ export class MetricService {
     const {count: totalExperiences} = await this.userExperienceRepository.count(
       {userId},
     );
-    const {count: totalActivity} = await this.activityLogRepository.count({
-      userId,
-    });
     const {count: totalFriends} = await this.friendRepository.count({
       requestorId: userId,
       status: FriendStatusType.APPROVED,
@@ -143,7 +143,6 @@ export class MetricService {
       totalPosts,
       totalExperiences,
       totalFriends,
-      totalActivity,
       totalKudos: totalUpvote - totalDownvote,
     };
 
@@ -198,11 +197,14 @@ export class MetricService {
       case ControllerType.REPORT:
         return this.reportRepository.count(where);
 
-      case ControllerType.DELETEDCOLLECTIONCONTROLLER:
+      case ControllerType.DELETEDCOLLECTION:
         return this.countDeletedData(methodName, where);
 
-      case ControllerType.REPORTUSERCONTROLLER:
+      case ControllerType.REPORTUSER:
         return this.userReportRepository.count(where);
+
+      case ControllerType.LEADERBOARD:
+        return this.leaderboardRepository.count(where);
 
       default:
         return {

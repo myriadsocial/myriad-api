@@ -1,5 +1,5 @@
 import {repository} from '@loopback/repository';
-import {PlatformType} from '../enums';
+import {ActivityLogType, PlatformType, ReferenceType} from '../enums';
 import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
@@ -9,7 +9,6 @@ import {HttpErrors} from '@loopback/rest';
 import {config} from '../config';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {ActivityLogService} from './activity-log.service';
-import {MetricService} from './metric.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
@@ -22,8 +21,6 @@ export class UserSocialMediaService {
     protected notificationService: NotificationService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
-    @service(MetricService)
-    protected metricService: MetricService,
   ) {}
 
   async createSocialMedia(people: ExtendedPeople): Promise<UserSocialMedia> {
@@ -99,12 +96,12 @@ export class UserSocialMediaService {
 
     if (count === 0) newUserSocialMedia.primary = true;
 
-    await this.activityLogService.userUserSocialMediaActivityLog(
+    await this.activityLogService.createLog(
+      ActivityLogType.CLAIMSOCIAL,
       publicKey,
       foundPeople.id,
+      ReferenceType.PEOPLE,
     );
-
-    await this.metricService.userMetric(publicKey);
 
     return this.peopleRepository
       .userSocialMedia(foundPeople.id)
