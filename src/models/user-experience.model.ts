@@ -25,7 +25,7 @@ export class UserExperience extends Entity {
     type: 'boolean',
     default: false,
   })
-  subscribed?: boolean;
+  subscribed: boolean;
 
   @property({
     type: 'date',
