@@ -208,7 +208,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           ActivityLogType.NEWUSER,
           result.id,
           result.id,
-          ReferenceType.USER
+          ReferenceType.USER,
         );
 
         return result;
