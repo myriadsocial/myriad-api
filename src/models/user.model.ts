@@ -85,7 +85,7 @@ export class User extends Entity {
 
   @property({
     type: 'string',
-    required: false,
+    required: true,
     index: {
       unique: true,
     },
@@ -135,7 +135,7 @@ export class User extends Entity {
   @property({
     type: 'string',
     required: false,
-    default: DefaultCurrencyType.AUSD,
+    default: DefaultCurrencyType.MYRIA,
   })
   defaultCurrency?: string;
 
