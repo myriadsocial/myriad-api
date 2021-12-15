@@ -1,6 +1,5 @@
 import {BindingScope, injectable} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {HttpErrors} from '@loopback/rest';
 import {ActivityLogType, ReferenceType} from '../enums';
 import {ActivityLog} from '../models';
 import {ActivityLogRepository, LeaderBoardRepository} from '../repositories';
@@ -34,15 +33,8 @@ export class ActivityLogService {
       referenceType,
     });
 
-    if (count >= 1 && type === ActivityLogType.CREATEUSERNAME) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You can only updated username once',
-      );
-    }
-
     await this.activityLogRepository.create(activityLog);
 
-    if (type === ActivityLogType.CREATEUSERNAME) return;
     if (count === 0) {
       // count activity
       const found = await this.leaderboardRepository.findOne({
