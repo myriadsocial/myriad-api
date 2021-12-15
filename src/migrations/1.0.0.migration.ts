@@ -1,6 +1,7 @@
 import {AnyObject, repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {
+  AccountSettingRepository,
   ActivityLogRepository,
   FriendRepository,
   LeaderBoardRepository,
@@ -38,6 +39,8 @@ export class MigrationScript100 implements MigrationScript {
     protected userRepository: UserRepository,
     @repository(LeaderBoardRepository)
     protected leaderboardRepository: LeaderBoardRepository,
+    @repository(AccountSettingRepository)
+    protected accountSettingRepository: AccountSettingRepository,
     @service(FriendService)
     protected friendService: FriendService,
     @service(MetricService)
@@ -59,10 +62,20 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doMigrateUser(): Promise<void> {
-    const users = await this.userRepository.find();
+    const users = await this.userRepository.find({include: ['accountSetting']});
 
     await Promise.all(
       users.map(async user => {
+        if (!user.accountSetting) {
+          await this.userRepository.accountSetting(user.id).create({});
+        }
+
+        const found = await this.leaderboardRepository.findOne({
+          where: {userId: user.id},
+        });
+
+        if (found) return;
+
         const {count} = await this.activityLogRepository.count({
           userId: user.id,
           type: {
