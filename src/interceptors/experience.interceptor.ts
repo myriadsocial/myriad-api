@@ -65,15 +65,15 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    let userId = invocationCtx.args[0];
+    const userId = invocationCtx.args[0];
 
-    const methodName = invocationCtx.methodName;
     const experienceId = invocationCtx.args[1];
-    const userExperienceId = invocationCtx.args[0];
+    const methodName = invocationCtx.methodName;
 
     let numberOfUserExperience = 0;
     let people = [];
     let users = [];
+    let isBelongToUser = false;
 
     switch (methodName) {
       case MethodType.CREATE: {
@@ -99,6 +99,24 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
 
       case MethodType.SUBSCRIBE: {
+        const {createdBy} = await this.experienceRepository.findById(
+          experienceId,
+        );
+        const found = await this.userExperienceRepository.findOne({
+          where: {
+            userId: userId,
+            experienceId: experienceId,
+          },
+        });
+
+        if (found && userId === createdBy) {
+          throw new HttpErrors.UnprocessableEntity(
+            'You already belong this experience!',
+          );
+        }
+
+        if (userId === createdBy) isBelongToUser = true;
+
         numberOfUserExperience = await this.validateCloneExperience(
           userId,
           experienceId,
@@ -150,12 +168,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         });
 
         break;
-      }
-
-      case MethodType.DELETEBYID: {
-        ({userId} = await this.userExperienceRepository.findById(
-          userExperienceId,
-        ));
       }
     }
 
@@ -227,12 +239,18 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
 
       if (methodName === MethodType.SUBSCRIBE) {
-        await this.activityLogService.createLog(
-          ActivityLogType.SUBSCRIBEEXPERIENCE,
-          result.userId,
-          result.experienceId,
-          ReferenceType.EXPERIENCE,
-        );
+        if (isBelongToUser) {
+          await this.userExperienceRepository.updateById(result.id, {
+            subscribed: false,
+          });
+        } else {
+          await this.activityLogService.createLog(
+            ActivityLogType.SUBSCRIBEEXPERIENCE,
+            result.userId,
+            result.experienceId,
+            ReferenceType.EXPERIENCE,
+          );
+        }
       }
 
       await this.metricService.userMetric(userId);
@@ -265,14 +283,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     userId: string,
     experienceId: string,
   ): Promise<number> {
-    // Check if experience not belong to user
-    const experience = await this.experienceRepository.findById(experienceId);
-
-    if (userId === experience.createdBy)
-      throw new HttpErrors.UnprocessableEntity(
-        'Experience already belong to you!',
-      );
-
     // Check if user has been subscribed this experience
     const subscribed = await this.userExperienceRepository.findOne({
       where: {userId, experienceId, subscribed: true},
