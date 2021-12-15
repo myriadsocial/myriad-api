@@ -64,9 +64,7 @@ export class FCSService {
 
       if (mutation.type === 'origin') {
         if (type === UploadType.IMAGE) {
-          await sharp(filePath)
-            .toFormat('jpg')
-            .toFile(formattedFilePath);
+          await sharp(filePath).toFormat('jpg').toFile(formattedFilePath);
         } else {
           await new Promise((resolve, reject) => {
             ffmpeg(filePath)
