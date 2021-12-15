@@ -3,7 +3,6 @@ import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   get,
   getModelSchemaRef,
-  HttpErrors,
   param,
   patch,
   post,
@@ -11,7 +10,6 @@ import {
   response,
 } from '@loopback/rest';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
-import {ActivityLogType, ReferenceType} from '../enums';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
@@ -119,32 +117,5 @@ export class UserController {
     user: Partial<User>,
   ): Promise<void> {
     await this.userRepository.updateById(id, user);
-  }
-
-  @post('/users/{id}/skip-username')
-  @response(200, {
-    description: 'Skip username success',
-  })
-  async skipUsername(@param.path.string('id') id: string): Promise<void> {
-    const found = await this.userRepository.activityLogs(id).find({
-      where: {
-        type: ActivityLogType.SKIPUSERNAME,
-      },
-    });
-
-    if (found.length >= 1) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You have already skip updating username',
-      );
-    }
-
-    await this.userRepository.activityLogs(id).create({
-      type: ActivityLogType.SKIPUSERNAME,
-      userId: id,
-      referenceType: ReferenceType.USER,
-      referenceId: id,
-    });
-
-    return;
   }
 }
