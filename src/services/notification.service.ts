@@ -464,7 +464,7 @@ export class NotificationService {
     return true;
   }
 
-  async sendIntitalAUSD(transaction: Transaction): Promise<boolean> {
+  async sendIntitalTips(transaction: Transaction): Promise<boolean> {
     const {from, to} = transaction;
 
     const notification = new Notification({
@@ -474,7 +474,7 @@ export class NotificationService {
       message: transaction.amount + ' ' + transaction.currencyId,
     });
 
-    const title = 'Send Initial AUSD Success';
+    const title = `Send Initial ${transaction.currencyId} Success`;
     const body = 'Myriad Official' + ' ' + notification.message;
 
     await this.sendNotificationToUser(notification, to, title, body);
