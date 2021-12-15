@@ -170,6 +170,7 @@ describe('UserApplication', function () {
       });
 
       delete updatedUser.id;
+      delete updatedUser.username;
 
       await client
         .patch(`/users/${persistedUser.id}`)
@@ -179,17 +180,13 @@ describe('UserApplication', function () {
       expect(result).to.containEql(updatedUser);
     });
 
-    it('returns 422 when updating a user username more than once', async () => {
+    it('returns 422 when updating a username', async () => {
       const updatedUser: Partial<User> = givenUser({
         username: 'abdulhakim',
       });
 
       delete updatedUser.id;
 
-      await client
-        .patch(`/users/${persistedUser.id}`)
-        .send(updatedUser)
-        .expect(204);
       await client
         .patch(`/users/${persistedUser.id}`)
         .send(updatedUser)
@@ -200,6 +197,7 @@ describe('UserApplication', function () {
       const updatedUser: Partial<User> = givenUser();
 
       delete updatedUser.id;
+      delete updatedUser.username;
 
       return client.patch('/users/99999').send(updatedUser).expect(404);
     });

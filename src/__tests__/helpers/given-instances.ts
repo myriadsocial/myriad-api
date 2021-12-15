@@ -62,6 +62,7 @@ export function givenUser(user?: Partial<User>) {
     {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
       name: 'Abdul Hakim',
+      username: 'abdulhakim',
     },
     user,
   );
@@ -83,6 +84,7 @@ export async function givenMultipleUserInstances(
     givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       name: 'irman',
+      username: 'irman',
     }),
   ]);
 }
