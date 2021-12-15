@@ -60,12 +60,6 @@ export class MigrationScript000 implements MigrationScript {
         user.createdAt = new Date().toString();
         user.updatedAt = new Date().toString();
 
-        user.username =
-          user.username ??
-          user.name.replace(/\s+/g, '').toLowerCase() +
-            '.' +
-            Math.random().toString(36).substr(2, 9);
-
         return this.userRepository.create(user);
       }),
     );
