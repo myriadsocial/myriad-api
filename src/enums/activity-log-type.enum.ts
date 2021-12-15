@@ -1,9 +1,10 @@
 export enum ActivityLogType {
   CREATEUSERNAME = 'username',
+  SKIPUSERNAME = 'skip_new_user_username',
+  NEWUSER = 'new_user',
   UPLOADPROFILEPICTURE = 'upload_profile_picture',
   FILLBIO = 'fill_in_bio',
   UPLOADBANNER = 'upload_banner',
-  SKIPUSERNAME = 'skip_new_user_username',
   SENDTIP = 'send_tip',
   IMPORTPOST = 'import_post',
   CLAIMSOCIAL = 'claim_social_media',
