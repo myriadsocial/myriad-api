@@ -203,7 +203,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         await this.userRepository.leaderboard(result.id).create({});
         await this.friendService.defaultFriend(result.id);
         await this.currencyService.defaultCurrency(result.id);
-        await this.currencyService.defaultAcalaTips(result.id); // TODO: removed default acala tips
+        await this.currencyService.sendMyriadReward(result.id);
         await this.activityLogService.createLog(
           ActivityLogType.NEWUSER,
           result.id,
@@ -215,7 +215,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.TRANSACTION: {
-        await this.currencyService.sendMyriadReward(result.from);
         await this.activityLogService.createLog(
           ActivityLogType.SENDTIP,
           result.from,

@@ -23,6 +23,7 @@ import {TransactionService} from './transaction.service';
 import {ActivityLogService} from './activity-log.service';
 import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
+import user from '../data-seed/users.json';
 
 const BN = require('bn.js');
 
@@ -54,26 +55,22 @@ export class CurrencyService {
   ) {}
 
   async defaultCurrency(userId: string): Promise<void> {
-    const currencies = [
-      {
-        id: DefaultCurrencyType.MYRIA,
-        decimal: 12,
-        image:
-          'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
-        rpcURL: config.MYRIAD_WS_RPC,
-        native: true,
-      },
-      acala[0],
-    ];
-    for (const currency of currencies) {
-      try {
-        await this.userRepository.currencies(userId).create(currency);
-      } catch {
-        await this.userCurrencyRepository.create({
-          userId: userId,
-          currencyId: currency.id,
-        });
-      }
+    const currency = {
+      id: DefaultCurrencyType.MYRIA,
+      decimal: 18,
+      image:
+        'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
+      rpcURL: config.MYRIAD_WS_RPC,
+      native: true,
+    };
+
+    try {
+      await this.userRepository.currencies(userId).create(currency);
+    } catch {
+      await this.userCurrencyRepository.create({
+        userId: userId,
+        currencyId: currency.id,
+      });
     }
   }
 
@@ -108,7 +105,7 @@ export class CurrencyService {
       if (!myriadUser)
         await this.userRepository.create({
           id: getHexPublicKey(from),
-          name: 'Myriad',
+          ...user[0],
         });
 
       const transaction = await this.transactionRepository.create({
@@ -119,7 +116,7 @@ export class CurrencyService {
         currencyId: DefaultCurrencyType.AUSD,
       });
 
-      await this.notificationService.sendIntitalAUSD(transaction);
+      await this.notificationService.sendIntitalTips(transaction);
 
       await api.disconnect();
     } catch {
@@ -129,7 +126,6 @@ export class CurrencyService {
 
   async sendMyriadReward(userId: string): Promise<void> {
     if (config.MYRIAD_REWARD_AMOUNT === 0) return;
-
     try {
       const {rpcURL: myriadRpc, decimal: myriadDecimal} =
         await this.currencyRepository.findById(DefaultCurrencyType.MYRIA);
@@ -161,7 +157,7 @@ export class CurrencyService {
       if (!myriadUser)
         await this.userRepository.create({
           id: getHexPublicKey(from),
-          name: 'Myriad',
+          ...user[0],
         });
 
       const transaction = await this.transactionRepository.create({
@@ -172,10 +168,11 @@ export class CurrencyService {
         currencyId: DefaultCurrencyType.MYRIA,
       });
 
-      await this.notificationService.sendRewardSuccess(transaction);
+      // await this.notificationService.sendRewardSuccess(transaction);
+      await this.notificationService.sendIntitalTips(transaction);
 
       await api.disconnect();
-    } catch (error) {
+    } catch {
       // ignore
     }
   }
