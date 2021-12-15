@@ -148,56 +148,22 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
   ): Promise<void> {
     switch (className) {
       case ControllerType.USER: {
-        const newUser = new User(invocationCtx.args[0]);
-        const user = await this.userRepository.findOne({
-          where: {
-            id: newUser.id,
-          },
-        });
+        const {id, username} = invocationCtx.args[0];
+
+        this.validateUsername(username);
+
+        let user = await this.userRepository.findOne({where: {id}});
 
         if (user)
           throw new HttpErrors.UnprocessableEntity('User already exist!');
 
-        const flag = true;
-        const name = newUser.name.substring(0, 22);
-        const usernameBase = newUser.name
-          .replace(/[^A-Za-z0-9]/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .split(' ')[0]
-          .toLowerCase();
+        user = new User(invocationCtx.args[0]);
 
-        let username = usernameBase.substring(0, 16);
+        const name = user.name.substring(0, 22);
 
-        while (flag) {
-          const found = await this.userRepository.findOne({
-            where: {
-              username: username,
-            },
-          });
+        user.name = name;
 
-          let count = 2;
-
-          if (found) {
-            let newUsername = usernameBase + this.generateRandomCharacter();
-            newUsername = newUsername.substring(0, 16);
-
-            if (newUsername === found.username) {
-              username =
-                newUsername.substring(0, 16 - count) +
-                this.generateRandomCharacter();
-              username = username.substring(0, 16);
-              count++;
-            } else {
-              username = newUsername;
-            }
-          } else break;
-        }
-
-        newUser.name = name;
-        newUser.username = username;
-
-        invocationCtx.args[0] = newUser;
+        invocationCtx.args[0] = user;
         return;
       }
 
@@ -238,6 +204,13 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         await this.friendService.defaultFriend(result.id);
         await this.currencyService.defaultCurrency(result.id);
         await this.currencyService.defaultAcalaTips(result.id); // TODO: removed default acala tips
+        await this.activityLogService.createLog(
+          ActivityLogType.NEWUSER,
+          result.id,
+          result.id,
+          ReferenceType.USER
+        );
+
         return result;
       }
 
@@ -332,14 +305,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     user: Partial<User>,
   ): Promise<void> {
     if (user.username) {
-      this.validateUsername(user.username);
-
-      await this.activityLogService.createLog(
-        ActivityLogType.CREATEUSERNAME,
-        userId,
-        userId,
-        ReferenceType.USER,
-      );
+      throw new HttpErrors.UnprocessableEntity('Cannot update username');
     }
 
     if (user.profilePictureURL) {
@@ -389,13 +355,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
 
     if (!comment) return;
     throw new HttpErrors.UnprocessableEntity('Cannot added comment anymore');
-  }
-
-  generateRandomCharacter(): string {
-    const randomCharOne = Math.random().toString(36).substring(2);
-    const randomCharTwo = Math.random().toString(36).substring(2);
-
-    return '.' + randomCharOne + randomCharTwo;
   }
 
   validateUsername(username: string): void {
