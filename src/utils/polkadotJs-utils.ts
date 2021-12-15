@@ -8,15 +8,22 @@ import {KeypairType} from '@polkadot/util-crypto/types';
 export class PolkadotJs {
   async polkadotApi(
     wssProvider: string,
-    typesBundle = {},
+    typesBundle?: AnyObject,
   ): Promise<ApiPromise> {
     try {
       const provider = new WsProvider(wssProvider, false);
 
       provider.connect() as Promise<void>;
 
-      const api = await new ApiPromise({provider, typesBundle: typesBundle})
-        .isReadyOrError;
+      let api: ApiPromise;
+
+      if (!typesBundle) {
+        api = new ApiPromise({provider});
+      } else {
+        api = new ApiPromise({provider, typesBundle: typesBundle});
+      }
+
+      await api.isReadyOrError;
 
       return api;
     } catch (e) {
