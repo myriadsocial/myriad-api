@@ -185,6 +185,12 @@ describe('UserExperienceApplication', function () {
         createdBy: user.id,
       });
 
+      await givenUserExperienceInstance(userExperienceRepository, {
+        userId: user.id,
+        experienceId: experience.id,
+        subscribed: false,
+      });
+
       await client
         .post(`/users/${user.id}/subscribe/${experience.id}`)
         .send()
