@@ -21,7 +21,7 @@ export class FCSService {
   ): Promise<String> {
     const bucket = firebaseAdmin.storage().bucket();
     const tempDir = os.tmpdir();
-    const baseName = path.basename(filePath);
+    const baseName = path.parse(filePath).name;
     let format = 'jpg';
     let mutations = [
       {
@@ -65,14 +65,14 @@ export class FCSService {
       if (mutation.type === 'origin') {
         if (type === UploadType.IMAGE) {
           await sharp(filePath)
-            .toFormat(sharp.format.jpg)
+            .toFormat('jpg')
             .toFile(formattedFilePath);
         } else {
           await new Promise((resolve, reject) => {
             ffmpeg(filePath)
               .videoCodec('libx264')
               .audioCodec('libmp3lame')
-              .format(format)
+              .format('mp4')
               .on('error', err => {
                 reject(err);
               })
@@ -86,7 +86,7 @@ export class FCSService {
         if (type === UploadType.IMAGE) {
           await sharp(filePath)
             .resize({width: mutation.width})
-            .toFormat(sharp.format.jpg)
+            .toFormat('jpg')
             .toFile(formattedFilePath);
         }
       }
