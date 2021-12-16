@@ -10,6 +10,10 @@ export type TokenObject = {
   refreshToken?: string | undefined;
 };
 
+export type Token = {
+  accessToken: string;
+};
+
 /**
  * The token refresh service. An access token expires in limited time. Therefore
  * token refresh service is needed to keep replacing the old access token with
