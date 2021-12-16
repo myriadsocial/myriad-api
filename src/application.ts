@@ -1,6 +1,10 @@
 import {AuthenticationComponent} from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
+import {
+  ApplicationConfig,
+  createBindingFromClass,
+  inject,
+} from '@loopback/core';
 import {HealthComponent} from '@loopback/health';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
@@ -9,7 +13,7 @@ import {
   RestExplorerBindings,
   RestExplorerComponent,
 } from '@loopback/rest-explorer';
-import {ServiceMixin} from '@loopback/service-proxy';
+import {getService, ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
 import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
 import {config} from './config';
