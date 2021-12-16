@@ -10,7 +10,7 @@ import {Currency} from '../../models';
 import {CurrencyRepository} from '../../repositories';
 import {givenCurrency} from '../helpers';
 
-describe('CurrencyController', () => {
+describe('CurrencyControllers', () => {
   let currencyRepository: StubbedInstanceWithSinonAccessor<CurrencyRepository>;
   let controller: CurrencyController;
   let aCurrency: Currency;
