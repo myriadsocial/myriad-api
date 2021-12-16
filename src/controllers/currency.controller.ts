@@ -8,6 +8,7 @@ import {
   post,
   requestBody,
   response,
+  patch,
 } from '@loopback/rest';
 import {
   PaginationInterceptor,
@@ -80,6 +81,28 @@ export class CurrencyController {
     filter?: FilterExcludingWhere<Currency>,
   ): Promise<Currency> {
     return this.currencyRepository.findById(id.toUpperCase(), filter);
+  }
+
+  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @patch('/currencies/{id}')
+  @response(204, {
+    description: 'Currency PATCH success',
+  })
+  async updateById(
+    @param.path.string('id') id: string,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Currency, {
+            partial: true,
+            exclude: ['id'],
+          }),
+        },
+      },
+    })
+    currency: Partial<Currency>,
+  ): Promise<void> {
+    await this.currencyRepository.updateById(id, currency);
   }
 
   @del('/currencies/{id}')

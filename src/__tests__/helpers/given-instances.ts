@@ -236,6 +236,7 @@ export function givenCurrency(currency?: Partial<Currency>) {
       native: false,
       rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
       types: acala[0].types,
+      networkType: 'substrate',
     },
     currency,
   );
@@ -260,6 +261,7 @@ export async function givenMultipleCurrencyInstances(
       image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
       native: true,
       rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
+      networkType: 'substrate',
     }),
   ]);
 }

@@ -49,6 +49,19 @@ export class Currency extends Entity {
   types: AnyObject;
 
   @property({
+    type: 'boolean',
+    required: false,
+  })
+  exchangeRate?: boolean;
+
+  // TODO: create enum
+  @property({
+    type: 'string',
+    required: true,
+  })
+  networkType: string;
+
+  @property({
     type: 'string',
     required: false,
   })

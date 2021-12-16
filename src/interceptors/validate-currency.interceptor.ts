@@ -1,4 +1,5 @@
 import {
+  inject,
   injectable,
   Interceptor,
   InvocationContext,
@@ -10,11 +11,13 @@ import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ApiPromise} from '@polkadot/api';
 import {ControllerType, MethodType} from '../enums';
+import {Currency} from '../models';
 import {
   CurrencyRepository,
   UserCurrencyRepository,
   UserRepository,
 } from '../repositories';
+import {CoinMarketCap} from '../services';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 
 /**
@@ -32,6 +35,8 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
     protected userCurrencyRepository: UserCurrencyRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @inject('services.CoinMarketCap')
+    protected coinMarketCapService: CoinMarketCap,
   ) {}
 
   /**
@@ -93,42 +98,36 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.CURRENCY: {
-        invocationCtx.args[0].id = invocationCtx.args[0].id.toUpperCase();
+        if (methodName === MethodType.CREATE) {
+          invocationCtx.args[0].id = invocationCtx.args[0].id.toUpperCase();
 
-        const currency = await this.currencyRepository.findOne({
-          where: {id: invocationCtx.args[0].id},
-        });
+          const currency = await this.currencyRepository.findOne({
+            where: {id: invocationCtx.args[0].id},
+          });
 
-        if (currency)
-          throw new HttpErrors.UnprocessableEntity('Currency already exists!');
+          if (currency)
+            throw new HttpErrors.UnprocessableEntity(
+              'Currency already exists!',
+            );
 
-        let native = false;
-        let api: ApiPromise;
-
-        const {id, rpcURL, types} = invocationCtx.args[0];
-
-        const {polkadotApi, getSystemParameters} = new PolkadotJs();
-
-        try {
-          api = await polkadotApi(rpcURL, types);
-        } catch (err) {
-          throw new HttpErrors.UnprocessableEntity('Connection failed!');
+          invocationCtx.args[0] = await this.verifyRpcAddressConnection(
+            invocationCtx.args[0],
+          );
         }
 
-        const {symbols, symbolsDecimals} = await getSystemParameters(api);
-        const currencyId = symbols.find(e => e === id.toUpperCase());
+        if (methodName === MethodType.UPDATEBYID) {
+          const currentCurrency = await this.currencyRepository.findById(
+            invocationCtx.args[0],
+          );
+          const updatedCurrency = Object.assign(
+            currentCurrency,
+            invocationCtx.args[1],
+          );
 
-        if (!currencyId) throw new HttpErrors.NotFound('Currency not found!');
-
-        if (currencyId === symbols[0]) native = true;
-
-        invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
-          id: currencyId,
-          decimal: symbolsDecimals[currencyId],
-          native,
-        });
-
-        await api.disconnect();
+          invocationCtx.args[1] = await this.verifyRpcAddressConnection(
+            updatedCurrency,
+          );
+        }
 
         break;
       }
@@ -138,5 +137,57 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
     const result = await next();
     // Add post-invocation logic here
     return result;
+  }
+
+  async verifyRpcAddressConnection(
+    currency: Currency,
+  ): Promise<Omit<Currency, 'id'>> {
+    let native = false;
+    let api: ApiPromise;
+    let exchangeRate = false;
+
+    const {id, rpcURL, types} = currency;
+
+    const {polkadotApi, getSystemParameters} = new PolkadotJs();
+
+    try {
+      api = await polkadotApi(rpcURL, types);
+    } catch (err) {
+      throw new HttpErrors.UnprocessableEntity('Connection failed!');
+    }
+
+    const {symbols, symbolsDecimals} = await getSystemParameters(api);
+    const currencyId = symbols.find(e => e === id.toUpperCase());
+
+    if (!currencyId) throw new HttpErrors.NotFound('Currency not found!');
+
+    if (currencyId === symbols[0]) native = true;
+
+    try {
+      const {data} = await this.coinMarketCapService.getActions(
+        `cryptocurrency/quotes/latest?symbol=${currencyId}`,
+      );
+
+      const currencyInfo = data[currencyId];
+
+      if (
+        currency.networkType === 'substrate' &&
+        currencyInfo.tags.find((tag: string) => tag === 'substrate') &&
+        !currencyInfo.platform
+      ) {
+        exchangeRate = true;
+      }
+    } catch {
+      // ignore
+    }
+
+    await api.disconnect();
+
+    return Object.assign(currency, {
+      id: currencyId,
+      decimal: symbolsDecimals[currencyId],
+      native,
+      exchangeRate,
+    });
   }
 }
