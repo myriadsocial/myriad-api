@@ -4,7 +4,7 @@ import {HttpErrors, post, requestBody} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
 import {LoggingBindings, WinstonLogger} from '@loopback/logging';
 import * as _ from 'lodash';
-import {NewAuthRequest, RefreshGrant, TokenObject} from '../interfaces';
+import {NewAuthRequest, RefreshGrant, TokenObject, Token} from '../interfaces';
 import {
   AuthServiceBindings,
   PasswordHasherBindings,
@@ -17,6 +17,7 @@ import {RefreshtokenService, validateCredentials} from '../services';
 import {MyAuthService} from '../services/authentication/authentication.service';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {JWTService} from '../services/authentication/jwt.service';
+import {config} from '../config';
 
 export class AuthenticationController {
   // Inject a winston logger
@@ -100,6 +101,10 @@ export class AuthenticationController {
       throw new HttpErrors.UnprocessableEntity('Email Already Exist');
     }
 
+    if (config.MYRIAD_EMAIL !== newAuthRequest.email) {
+      throw new HttpErrors.UnprocessableEntity('Only admin can register!');
+    }
+
     validateCredentials(_.pick(newAuthRequest, ['email', 'password']));
     const password = await this.hasher.hashPassword(newAuthRequest.password);
     const savedUser = await this.authenticationRepository.create(
@@ -166,19 +171,25 @@ export class AuthenticationController {
       },
     })
     credentials: Credentials,
-  ): Promise<TokenObject> {
+  ): Promise<Token> {
     this.logger.log('info', credentials.email + ' is logging in...');
     // ensure the user exists, and the password is correct
     const user = await this.authService.verifyCredentials(credentials);
     // convert a User object into a UserProfile object (reduced set of properties)
     const userProfile: UserProfile =
       this.authService.convertToUserProfile(user);
+
     const accessToken = await this.jwtService.generateToken(userProfile);
-    const tokens = await this.refreshService.generateToken(
-      userProfile,
-      accessToken,
-    );
-    return tokens;
+
+    // TODO: if refresh token needed
+    // const tokens = await this.refreshService.generateToken(
+    //   userProfile,
+    //   accessToken,
+    // );
+
+    return {
+      accessToken: accessToken,
+    };
   }
 
   @post('/refresh', {
