@@ -11,6 +11,7 @@ export const config = {
   MYRIAD_WS_RPC: process.env.MYRIAD_WS_RPC ?? 'ws://127.0.0.1:9944',
   MYRIAD_MNEMONIC: process.env.MYRIAD_FAUCET_MNEMONIC ?? generateSeed(),
   MYRIAD_REWARD_AMOUNT: +(process.env.MYRIAD_REWARD_AMOUNT ?? 0),
+  MYRIAD_EMAIL: process.env.MYRIAD_EMAIL ?? '',
 
   MYRIAD_OFFICIAL_ACCOUNT:
     process.env.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY ??
