@@ -25,7 +25,9 @@ import {
   UserReportRepository,
 } from '../repositories';
 import {NotificationService} from '../services';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class UserReportController {
   constructor(
     @repository(ReportRepository)

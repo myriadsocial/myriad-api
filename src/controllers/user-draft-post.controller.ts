@@ -2,9 +2,9 @@ import {Count, CountSchema, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {DraftPost} from '../models';
 import {DraftPostRepository} from '../repositories';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class UserDraftPostController {
   constructor(
     @repository(DraftPostRepository)

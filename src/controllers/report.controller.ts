@@ -15,7 +15,9 @@ import {PaginationInterceptor} from '../interceptors';
 import {ReportInterceptor} from '../interceptors/report.interceptor';
 import {service} from '@loopback/core';
 import {NotificationService} from '../services';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class ReportController {
   constructor(
     @repository(ReportRepository)

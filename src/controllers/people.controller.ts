@@ -5,9 +5,9 @@ import {PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {People} from '../models';
 import {PeopleRepository, UserRepository} from '../repositories';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class PeopleController {
   constructor(
     @repository(PeopleRepository)

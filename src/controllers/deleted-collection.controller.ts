@@ -17,8 +17,10 @@ import {
   ReportRepository,
   UserRepository,
 } from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
+@authenticate('jwt')
 export class DeletedCollectionController {
   constructor(
     @repository(UserRepository)
