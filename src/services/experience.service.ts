@@ -73,8 +73,11 @@ export class ExperienceService {
       })
     ).map(e => e.requesteeId);
 
-    const joinTags = tags.join('|');
-    const regexTag = new RegExp(joinTags, 'i');
+    // TODO: ignore html tag in query
+    const spaceTags = tags
+      .map(tag => ` ${tag}"|"${tag} |"${tag}"| ${tag} `)
+      .join('|');
+    const regexSpaceTags = new RegExp(spaceTags, 'i');
 
     return {
       or: [
@@ -88,10 +91,10 @@ export class ExperienceService {
           ],
         },
         {
-          and: [{text: regexTag}, {visibility: VisibilityType.PUBLIC}],
+          and: [{text: regexSpaceTags}, {visibility: VisibilityType.PUBLIC}],
         },
         {
-          and: [{title: regexTag}, {visibility: VisibilityType.PUBLIC}],
+          and: [{title: regexSpaceTags}, {visibility: VisibilityType.PUBLIC}],
         },
         {
           and: [
