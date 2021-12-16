@@ -229,25 +229,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       filter.where = Object.assign(filter.where ?? {}, {id: {inq: userIds}});
     }
 
-    if (
-      className === ControllerType.USEREXPERIENCE &&
-      Object.prototype.hasOwnProperty.call(filter.where, 'userId')
-    ) {
-      const include = {
-        relation: 'experience',
-        scope: {
-          include: [
-            {
-              relation: 'users',
-            },
-          ],
-        },
-      };
-
-      if (!filter.include) filter.include = [include];
-      else filter.include.push(include);
-    }
-
     // Get pageMetadata
     const {count} = await this.metricService.countData(
       className,
