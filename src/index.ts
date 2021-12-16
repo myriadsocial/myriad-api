@@ -8,6 +8,7 @@ export async function main(options: ApplicationConfig = {}) {
   const app = new MyriadApiApplication(options);
   await app.boot();
   await app.initialExchangeRates();
+  await app.initialPeopleProfile();
   await app.start();
 
   const url = app.restServer.url;

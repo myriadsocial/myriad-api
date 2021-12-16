@@ -15,7 +15,12 @@ import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
 import {config} from './config';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
-import {CoinMarketCapDataSource, MongoDataSource} from './datasources';
+import {
+  CoinMarketCapDataSource,
+  MongoDataSource,
+  RedditDataSource,
+  TwitterDataSource,
+} from './datasources';
 import {MyriadSequence} from './sequence';
 import {
   CurrencyService,
@@ -31,6 +36,8 @@ import {
   UserSocialMediaService,
   ActivityLogService,
   CoinMarketCapProvider,
+  RedditProvider,
+  TwitterProvider,
 } from './services';
 import {
   LoggingBindings,
@@ -42,13 +49,23 @@ import {
 } from '@loopback/logging';
 import {format} from 'winston';
 import {extensionFor} from '@loopback/core';
-import {UpdateExchangeRateJob, UpdateTrendingTopicJob} from './jobs';
+import {
+  UpdateExchangeRateJob,
+  UpdateTrendingTopicJob,
+  UpdatePeopleProfileJob,
+} from './jobs';
 import {CronComponent} from '@loopback/cron';
 import multer from 'multer';
 import {v4 as uuid} from 'uuid';
 import {FILE_UPLOAD_SERVICE} from './keys';
 import {FCSService} from './services/fcs.service';
-import {CurrencyRepository, ExchangeRateRepository} from './repositories';
+import {
+  CurrencyRepository,
+  ExchangeRateRepository,
+  PeopleRepository,
+} from './repositories';
+import {PlatformType} from './enums';
+import {People} from './models';
 
 export {ApplicationConfig};
 
@@ -164,6 +181,7 @@ export class MyriadApiApplication extends BootMixin(
   bindJob() {
     this.add(createBindingFromClass(UpdateExchangeRateJob));
     this.add(createBindingFromClass(UpdateTrendingTopicJob));
+    this.add(createBindingFromClass(UpdatePeopleProfileJob));
   }
 
   firebaseInit() {
@@ -171,6 +189,61 @@ export class MyriadApiApplication extends BootMixin(
     firebaseAdmin.initializeApp({
       storageBucket: config.FIREBAE_STORAGE_BUCKET,
     });
+  }
+
+  async initialPeopleProfile(): Promise<void> {
+    const peopleRepository = await this.getRepository(PeopleRepository);
+    const redditDataSource = new RedditDataSource();
+    const twitterDataSource = new TwitterDataSource();
+
+    const redditService = await new RedditProvider(redditDataSource).value();
+    const twitterService = await new TwitterProvider(twitterDataSource).value();
+
+    const people = await peopleRepository.find();
+
+    await Promise.all(
+      people.map(async person => {
+        const platform = person.platform;
+
+        if (platform === PlatformType.REDDIT) {
+          try {
+            const {data: user} = await redditService.getActions(
+              'user/' + person.username + '/about.json',
+            );
+
+            const updatedPeople = new People({
+              name: user.subreddit.title ? user.subreddit.title : user.name,
+              username: user.name,
+              originUserId: 't2_' + user.id,
+              profilePictureURL: user.icon_img.split('?')[0],
+            });
+
+            return await peopleRepository.updateById(person.id, updatedPeople);
+          } catch {
+            // ignore
+          }
+        }
+
+        if (platform === PlatformType.TWITTER) {
+          try {
+            const {user} = await twitterService.getActions(
+              `1.1/statuses/show.json?id=${person.originUserId}&include_entities=true&tweet_mode=extended`,
+            );
+
+            const updatedPeople = new People({
+              name: user.name,
+              username: user.screen_name,
+              originUserId: user.id_str,
+              profilePictureURL: user.profile_image_url_https || '',
+            });
+
+            return await peopleRepository.updateById(person.id, updatedPeople);
+          } catch {
+            // ignore
+          }
+        }
+      }),
+    );
   }
 
   async initialExchangeRates(): Promise<void> {
