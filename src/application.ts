@@ -1,6 +1,10 @@
 import {AuthenticationComponent} from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
+import {
+  ApplicationConfig,
+  createBindingFromClass,
+  inject,
+} from '@loopback/core';
 import {HealthComponent} from '@loopback/health';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
@@ -9,13 +13,13 @@ import {
   RestExplorerBindings,
   RestExplorerComponent,
 } from '@loopback/rest-explorer';
-import {ServiceMixin} from '@loopback/service-proxy';
+import {getService, ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
 import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
 import {config} from './config';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
-import {MongoDataSource} from './datasources';
+import {CoinMarketCapDataSource, MongoDataSource} from './datasources';
 import {MyriadSequence} from './sequence';
 import {
   CurrencyService,
@@ -30,6 +34,8 @@ import {
   TransactionService,
   UserSocialMediaService,
   ActivityLogService,
+  CoinMarketCap,
+  CoinMarketCapProvider,
 } from './services';
 import {
   LoggingBindings,
@@ -47,6 +53,7 @@ import multer from 'multer';
 import {v4 as uuid} from 'uuid';
 import {FILE_UPLOAD_SERVICE} from './keys';
 import {FCSService} from './services/fcs.service';
+import {CurrencyRepository, ExchangeRateRepository} from './repositories';
 
 export {ApplicationConfig};
 
@@ -169,6 +176,57 @@ export class MyriadApiApplication extends BootMixin(
     firebaseAdmin.initializeApp({
       storageBucket: config.FIREBAE_STORAGE_BUCKET,
     });
+  }
+
+  async initialExchangeRates(): Promise<void> {
+    const currencyRepository = await this.getRepository(CurrencyRepository);
+    const exchangeRateRepository = await this.getRepository(
+      ExchangeRateRepository,
+    );
+
+    const dataSource = new CoinMarketCapDataSource();
+    const coinMarketCapService = await new CoinMarketCapProvider(
+      dataSource,
+    ).value();
+
+    const currencies = await currencyRepository.find({
+      where: {
+        exchangeRate: true,
+      },
+    });
+
+    const currencyIds = currencies.map(currency => currency.id);
+
+    if (currencyIds.length === 0) return;
+
+    try {
+      const {data} = await coinMarketCapService.getActions(
+        `cryptocurrency/quotes/latest?symbol=${currencyIds.join(',')}`,
+      );
+
+      for (const currencyId of currencyIds) {
+        const price = data[currencyId].quote.USD.price;
+        const found = await exchangeRateRepository.findOne({
+          where: {
+            id: currencyId,
+          },
+        });
+
+        if (found) {
+          await exchangeRateRepository.updateById(currencyId, {
+            price: price,
+            updatedAt: new Date().toString(),
+          });
+        } else {
+          await exchangeRateRepository.create({
+            id: currencyId,
+            price: price,
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 
   /**
