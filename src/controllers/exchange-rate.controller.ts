@@ -2,7 +2,9 @@ import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {param, get, getModelSchemaRef, response} from '@loopback/rest';
 import {ExchangeRate} from '../models';
 import {ExchangeRateRepository} from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class ExchangeRateController {
   constructor(
     @repository(ExchangeRateRepository)

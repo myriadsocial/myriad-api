@@ -15,7 +15,9 @@ import {PeopleRepository, PostRepository} from '../repositories';
 import {JWTService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class PostWalletAddress {
   constructor(
     @repository(PostRepository)

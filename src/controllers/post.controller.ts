@@ -22,9 +22,9 @@ import {ExtendedPost} from '../interfaces';
 import {DraftPost, People, Post, PostWithRelations, User} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {PostService, SocialMediaService} from '../services';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class PostController {
   constructor(
     @service(SocialMediaService)

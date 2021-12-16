@@ -19,9 +19,9 @@ import {
   SocialMediaService,
   UserSocialMediaService,
 } from '../services';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class UserSocialMediaController {
   constructor(
     @service(SocialMediaService)

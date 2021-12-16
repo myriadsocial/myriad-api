@@ -15,7 +15,9 @@ import {
 } from '@loopback/rest';
 import {AccountSetting} from '../models';
 import {UserRepository} from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class UserAccountSettingController {
   constructor(
     @repository(UserRepository) protected userRepository: UserRepository,

@@ -4,7 +4,9 @@ import {param, get, getModelSchemaRef, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {LeaderBoard} from '../models';
 import {LeaderBoardRepository} from '../repositories';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class LeaderBoardController {
   constructor(
     @repository(LeaderBoardRepository)

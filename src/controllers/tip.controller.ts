@@ -2,7 +2,9 @@ import {AnyObject} from '@loopback/repository';
 import {post, response, param, get} from '@loopback/rest';
 import {CurrencyService} from '../services';
 import {service} from '@loopback/core';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class TipController {
   constructor(
     @service(CurrencyService)

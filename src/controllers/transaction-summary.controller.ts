@@ -6,7 +6,9 @@ import {
   UserTransactionSummary,
 } from '../interfaces';
 import {TransactionService} from '../services';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class TransactionSummaryController {
   constructor(
     @service(TransactionService)

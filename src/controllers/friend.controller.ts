@@ -21,9 +21,9 @@ import {PaginationInterceptor} from '../interceptors';
 import {ValidateFriendRequestInterceptor} from '../interceptors/validate-friend-request.interceptor';
 import {Friend, User} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class FriendController {
   constructor(
     @repository(FriendRepository)

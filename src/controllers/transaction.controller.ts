@@ -13,9 +13,9 @@ import {PaginationInterceptor} from '../interceptors';
 import {Transaction} from '../models';
 import {TransactionRepository} from '../repositories';
 import {NotificationService} from '../services';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class TransactionController {
   constructor(
     @repository(TransactionRepository)

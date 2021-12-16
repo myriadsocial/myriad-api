@@ -14,9 +14,9 @@ import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {Comment, Post} from '../models';
 import {CommentRepository, PostRepository} from '../repositories';
 import {NotificationService} from '../services';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class CommentController {
   constructor(
     @repository(CommentRepository)

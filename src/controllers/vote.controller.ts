@@ -5,9 +5,9 @@ import {ValidateVoteInterceptor} from '../interceptors';
 import {Vote} from '../models';
 import {VoteRepository} from '../repositories';
 import {NotificationService} from '../services';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 @intercept(ValidateVoteInterceptor.BINDING_KEY)
 export class VoteController {
   constructor(
