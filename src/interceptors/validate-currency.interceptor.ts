@@ -177,8 +177,15 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
       ) {
         exchangeRate = true;
       }
-    } catch {
-      // ignore
+    } catch (error) {
+      const err = JSON.parse(error.message);
+
+      // Testing will pass this error
+      if (err.status && currency.networkType !== 'substrate-test') {
+        if (err.status.error_code === 1002 || err.status.error_code === 1008) {
+          throw new HttpErrors.UnprocessableEntity(err.status.error_message);
+        }
+      }
     }
 
     await api.disconnect();
