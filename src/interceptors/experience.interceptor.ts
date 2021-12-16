@@ -65,10 +65,11 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    const userId = invocationCtx.args[0];
+    let userId = invocationCtx.args[0];
 
     const experienceId = invocationCtx.args[1];
     const methodName = invocationCtx.methodName;
+    const userExperienceId = invocationCtx.args[0];
 
     let numberOfUserExperience = 0;
     let people = [];
@@ -169,6 +170,13 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
         break;
       }
+
+      case MethodType.DELETEBYID: {
+        // Reassign userId to recounting userMetric
+        ({userId} = await this.userExperienceRepository.findById(
+          userExperienceId,
+        ));
+      }
     }
 
     // Add pre-invocation logic here
@@ -253,6 +261,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         }
       }
 
+      // Recounting userMetric after create, clone, and subscribe
       await this.metricService.userMetric(userId);
     } else {
       if (result.users) {
