@@ -3,7 +3,6 @@ import {inject} from '@loopback/core';
 import {CoinMarketCap} from '../services';
 import {repository} from '@loopback/repository';
 import {CurrencyRepository, ExchangeRateRepository} from '../repositories';
-import {DefaultCurrencyType} from '../enums';
 
 @cronJob()
 export class UpdateExchangeRateJob extends CronJob {
@@ -26,10 +25,14 @@ export class UpdateExchangeRateJob extends CronJob {
   }
 
   async performJob() {
-    const currencies = await this.currencyRepository.find();
-    const currencyIds = currencies
-      .map(currency => currency.id)
-      .filter(currencyId => currencyId !== DefaultCurrencyType.MYRIA);
+    const currencies = await this.currencyRepository.find({
+      where: {
+        exchangeRate: true,
+      },
+    });
+    const currencyIds = currencies.map(currency => currency.id);
+
+    if (currencyIds.length === 0) return;
 
     try {
       const {data} = await this.coinMarketCapService.getActions(
