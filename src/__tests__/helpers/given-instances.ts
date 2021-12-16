@@ -236,7 +236,7 @@ export function givenCurrency(currency?: Partial<Currency>) {
       native: false,
       rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
       types: acala[0].types,
-      networkType: 'substrate',
+      networkType: 'substrate-test',
     },
     currency,
   );

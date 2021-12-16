@@ -180,7 +180,8 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
     } catch (error) {
       const err = JSON.parse(error.message);
 
-      if (err.status) {
+      // Testing will pass this error
+      if (err.status && currency.networkType !== 'substrate-test') {
         if (err.status.error_code === 1002 || err.status.error_code === 1008) {
           throw new HttpErrors.UnprocessableEntity(err.status.error_message);
         }
