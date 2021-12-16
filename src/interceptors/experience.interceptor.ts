@@ -176,6 +176,17 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         ({userId} = await this.userExperienceRepository.findById(
           userExperienceId,
         ));
+        break;
+      }
+
+      case MethodType.FINDBYID: {
+        const filter = invocationCtx.args[1] ?? {};
+
+        if (!filter.include) filter.include = ['users'];
+        else filter.include.push('users');
+
+        invocationCtx.args[1] = filter;
+        break;
       }
     }
 

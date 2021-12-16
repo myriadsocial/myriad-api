@@ -229,6 +229,25 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       filter.where = Object.assign(filter.where ?? {}, {id: {inq: userIds}});
     }
 
+    if (
+      className === ControllerType.USEREXPERIENCE &&
+      Object.prototype.hasOwnProperty.call(filter.where, 'userId')
+    ) {
+      const include = {
+        relation: 'experience',
+        scope: {
+          include: [
+            {
+              relation: 'users',
+            },
+          ],
+        },
+      };
+
+      if (!filter.include) filter.include = [include];
+      else filter.include.push(include);
+    }
+
     // Get pageMetadata
     const {count} = await this.metricService.countData(
       className,
@@ -504,8 +523,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
         if (!friends.length && !topics.length && !personIds.length) return;
 
-        const joinTopics = topics.join('|');
-        const regexTopic = new RegExp(joinTopics, 'i');
+        // TODO: ignore html tag in query
+        const spaceTopics = topics
+          .map(tag => ` ${tag}"|"${tag} |"${tag}"| ${tag} `)
+          .join('|');
+        const regexSpaceTopics = new RegExp(spaceTopics, 'i');
 
         return {
           or: [
@@ -513,10 +535,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               and: [{tags: {inq: topics}}, {visibility: VisibilityType.PUBLIC}],
             },
             {
-              and: [{title: regexTopic}, {visibility: VisibilityType.PUBLIC}],
+              and: [
+                {title: regexSpaceTopics},
+                {visibility: VisibilityType.PUBLIC},
+              ],
             },
             {
-              and: [{text: regexTopic}, {visibility: VisibilityType.PUBLIC}],
+              and: [
+                {text: regexSpaceTopics},
+                {visibility: VisibilityType.PUBLIC},
+              ],
             },
             {
               and: [
