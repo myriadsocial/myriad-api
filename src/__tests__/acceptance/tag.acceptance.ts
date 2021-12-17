@@ -2,19 +2,27 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {Tag} from '../../models';
-import {TagRepository} from '../../repositories';
+import {TagRepository, AuthenticationRepository} from '../../repositories';
 import {
   givenMultipleTagInstances,
   givenTag,
   givenTagInstance,
   givenTagRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 
 describe('TagApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let tagRepository: TagRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -23,17 +31,34 @@ describe('TagApplication', function () {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     tagRepository = await givenTagRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await tagRepository.deleteAll();
   });
 
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
+  });
+
   it('creates a tag', async function () {
     const tag: Partial<Tag> = givenTag();
     delete tag.count;
-    const response = await client.post('/tags').send(tag);
+    const response = await client
+      .post('/tags')
+      .set('Authorization', `Bearer ${token}`)
+      .send(tag);
     expect(response.body).to.containDeep(tag);
     const result = await tagRepository.findById(response.body.id);
     expect(result).to.containDeep(tag);
@@ -43,7 +68,11 @@ describe('TagApplication', function () {
     const tag: Partial<Tag> = givenTag();
     delete tag.id;
     delete tag.count;
-    await client.post('/tags').send(tag).expect(422);
+    await client
+      .post('/tags')
+      .set('Authorization', `Bearer ${token}`)
+      .send(tag)
+      .expect(422);
   });
 
   context('when dealing with a single persisted tag', () => {
@@ -56,6 +85,7 @@ describe('TagApplication', function () {
     it('gets a tag by ID', async () => {
       const result = await client
         .get(`/tags/${persistedTag.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedTag);
@@ -64,18 +94,28 @@ describe('TagApplication', function () {
     });
 
     it('returns 404 when getting a tag that does not exist', () => {
-      return client.get('/tags/99999').expect(404);
+      return client
+        .get('/tags/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('deletes the tag', async () => {
-      await client.del(`/tags/${persistedTag.id}`).send().expect(204);
+      await client
+        .del(`/tags/${persistedTag.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(204);
       await expect(tagRepository.findById(persistedTag.id)).to.be.rejectedWith(
         EntityNotFoundError,
       );
     });
 
     it('returns 404 when deleting a tag that does not exist', async () => {
-      await client.del(`/tags/99999`).expect(404);
+      await client
+        .del(`/tags/99999`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -87,7 +127,11 @@ describe('TagApplication', function () {
     });
 
     it('finds all tags', async () => {
-      const response = await client.get('/tags').send().expect(200);
+      const response = await client
+        .get('/tags')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedTags));
     });
 
@@ -99,6 +143,7 @@ describe('TagApplication', function () {
 
       await client
         .get('/tags')
+        .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {id: 'technology'}}))
         .expect(200, {
           data: [toJSON(tagInProgress)],
@@ -117,7 +162,10 @@ describe('TagApplication', function () {
         count: 1,
       });
 
-      const response = await client.get('/tags').query('pageLimit=2');
+      const response = await client
+        .get('/tags')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });

@@ -5,6 +5,7 @@ import {
   CurrencyRepository,
   UserCurrencyRepository,
   UserRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenCurrencyInstance,
@@ -14,15 +15,23 @@ import {
   givenUserCurrencyRepository,
   givenUserInstance,
   givenUserRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 
 describe('UserCurrencyApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let userCurrencyRepository: UserCurrencyRepository;
   let currencyRepository: CurrencyRepository;
   let userRepository: UserRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -31,6 +40,7 @@ describe('UserCurrencyApplication', function () {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     userCurrencyRepository = await givenUserCurrencyRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     userRepository = await givenUserRepository(app);
@@ -44,12 +54,23 @@ describe('UserCurrencyApplication', function () {
     await userCurrencyRepository.deleteAll();
     await currencyRepository.deleteAll();
     await userRepository.deleteAll();
+    await authenticationRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   it('creates a user currency', async function () {
     const userCurrency = givenUserCurrency();
     const response = await client
       .post('/user-currencies')
+      .set('Authorization', `Bearer ${token}`)
       .send(userCurrency)
       .expect(200);
     expect(response.body).to.containDeep(userCurrency);
@@ -70,6 +91,7 @@ describe('UserCurrencyApplication', function () {
 
     await client
       .patch(`/users/${user.id}/select-currency/${DefaultCurrencyType.MYRIA}`)
+      .set('Authorization', `Bearer ${token}`)
       .expect(204);
 
     const result = await userRepository.findById(user.id);
@@ -80,12 +102,20 @@ describe('UserCurrencyApplication', function () {
     const userCurrency = givenUserCurrency({
       currencyId: 'DOT',
     });
-    await client.post('/user-currencies').send(userCurrency).expect(404);
+    await client
+      .post('/user-currencies')
+      .set('Authorization', `Bearer ${token}`)
+      .send(userCurrency)
+      .expect(404);
   });
 
   it('returns 422 when user already has specific currency', async () => {
     const userCurrency = givenUserCurrency();
-    await client.post('/user-currencies').send(userCurrency).expect(422);
+    await client
+      .post('/user-currencies')
+      .set('Authorization', `Bearer ${token}`)
+      .send(userCurrency)
+      .expect(422);
   });
 
   it('deletes the user currency', async () => {
@@ -103,6 +133,7 @@ describe('UserCurrencyApplication', function () {
 
     await client
       .del(`/user-currencies`)
+      .set('Authorization', `Bearer ${token}`)
       .send({userId: userCurrency.userId, currencyId: userCurrency.currencyId})
       .expect(200, {count: 1});
 

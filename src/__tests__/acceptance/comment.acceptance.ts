@@ -5,6 +5,7 @@ import {ReferenceType, NotificationType} from '../../enums';
 import {Comment, Notification, People, Post, User} from '../../models';
 import {
   ActivityLogRepository,
+  AuthenticationRepository,
   CommentRepository,
   NotificationRepository,
   NotificationSettingRepository,
@@ -16,6 +17,7 @@ import {
 } from '../../repositories';
 import {
   givenActivityLogRepository,
+  givenAuthenticationRepository,
   givenComment,
   givenCommentInstance,
   givenCommentRepository,
@@ -38,6 +40,7 @@ import {
 
 describe('CommentApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let userRepository: UserRepository;
   let commentRepository: CommentRepository;
@@ -48,10 +51,16 @@ describe('CommentApplication', function () {
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let activityLogRepository: ActivityLogRepository;
+  let authenticationRepository: AuthenticationRepository;
   let user: User;
   let post: Post;
   let people: People;
   let otherUser: User;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -68,9 +77,14 @@ describe('CommentApplication', function () {
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
     activityLogRepository = await givenActivityLogRepository(app);
+    authenticationRepository = await givenAuthenticationRepository(app);
     notificationSettingRepository = await givenNotificationSettingRepository(
       app,
     );
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -101,6 +115,15 @@ describe('CommentApplication', function () {
     });
   });
 
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
+  });
+
   it('creates a comment', async () => {
     const comment = givenComment({
       userId: user.id,
@@ -109,7 +132,11 @@ describe('CommentApplication', function () {
       type: ReferenceType.POST,
     });
 
-    const response = await client.post('/comments').send(comment).expect(200);
+    const response = await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(200);
     expect(response.body).to.containDeep(comment);
     const result = await commentRepository.findById(response.body.id);
     expect(result).to.containDeep(comment);
@@ -123,7 +150,11 @@ describe('CommentApplication', function () {
       type: ReferenceType.POST,
     });
 
-    const response = await client.post('/comments').send(comment).expect(200);
+    const response = await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(200);
     const notification = await notificationRepository.findOne({
       where: {referenceId: response.body.id},
     });
@@ -160,7 +191,11 @@ describe('CommentApplication', function () {
       type: ReferenceType.POST,
     });
 
-    const response = await client.post('/comments').send(comment).expect(200);
+    const response = await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(200);
     const notification = await notificationRepository.findOne({
       where: {referenceId: response.body.id},
     });
@@ -176,7 +211,11 @@ describe('CommentApplication', function () {
       type: ReferenceType.POST,
     });
 
-    await client.post('/comments').send(comment).expect(200);
+    await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(200);
     const resultPost = await postRepository.findById(post.id);
     post.metric.discussions = (
       await commentRepository.count({postId: post.id})
@@ -194,7 +233,11 @@ describe('CommentApplication', function () {
       type: ReferenceType.POST,
     });
 
-    await client.post('/comments').send(comment).expect(422);
+    await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(422);
   });
 
   it('returns 422 when created a comment with no referenceId and no type', async () => {
@@ -205,7 +248,11 @@ describe('CommentApplication', function () {
       type: undefined,
     });
 
-    await client.post('/comments').send(comment).expect(422);
+    await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(422);
   });
 
   it('rejects requests to create a comment with no postId', async () => {
@@ -215,7 +262,11 @@ describe('CommentApplication', function () {
       type: ReferenceType.POST,
     });
 
-    await client.post('/comments').send(comment).expect(422);
+    await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(422);
   });
 
   it('rejects request to create a comments more than three levels comment', async () => {
@@ -226,7 +277,11 @@ describe('CommentApplication', function () {
       referenceId: post.id,
       type: ReferenceType.POST,
     });
-    const response = await client.post('/comments').send(comment).expect(200);
+    const response = await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(200);
     const newComment = response.body;
 
     // Second level
@@ -238,6 +293,7 @@ describe('CommentApplication', function () {
     });
     const otherResponse = await client
       .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
       .send(otherComment)
       .expect(200);
     const otherNewComment = otherResponse.body;
@@ -251,6 +307,7 @@ describe('CommentApplication', function () {
     });
     const anotherResponse = await client
       .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
       .send(anotherComment)
       .expect(200);
     const anotherNewComment = anotherResponse.body;
@@ -262,7 +319,11 @@ describe('CommentApplication', function () {
       referenceId: anotherNewComment.id,
       type: ReferenceType.COMMENT,
     });
-    await client.post('/comments').send(rejectedComment).expect(422);
+    await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(rejectedComment)
+      .expect(422);
   });
 
   context('when dealing with a single persisted comment', () => {
@@ -280,6 +341,7 @@ describe('CommentApplication', function () {
     it('gets a comment by ID', async () => {
       const result = await client
         .get(`/comments/${persistedComment.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedComment);
@@ -288,7 +350,10 @@ describe('CommentApplication', function () {
     });
 
     it('returns 404 when getting a comment that does not exist', () => {
-      return client.get('/comments/99999').expect(404);
+      return client
+        .get('/comments/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('updates the comments by ID ', async () => {
@@ -298,6 +363,7 @@ describe('CommentApplication', function () {
 
       await client
         .patch(`/comments/${persistedComment.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send(updatedComment)
         .expect(204);
 
@@ -306,18 +372,29 @@ describe('CommentApplication', function () {
     });
 
     it('returns 404 when updating a comment that does not exist', () => {
-      return client.patch('/comments/99999').send(givenComment()).expect(404);
+      return client
+        .patch('/comments/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .send(givenComment())
+        .expect(404);
     });
 
     it('deletes the comment', async () => {
-      await client.del(`/comments/${persistedComment.id}`).send().expect(204);
+      await client
+        .del(`/comments/${persistedComment.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(204);
       await expect(
         commentRepository.findById(persistedComment.id),
       ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a comment that does not exist', async () => {
-      await client.del(`/comments/99999`).expect(404);
+      await client
+        .del(`/comments/99999`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -337,7 +414,11 @@ describe('CommentApplication', function () {
     });
 
     it('finds all comments', async () => {
-      const response = await client.get('/comments').send().expect(200);
+      const response = await client
+        .get('/comments')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedComments));
     });
 
@@ -360,6 +441,7 @@ describe('CommentApplication', function () {
 
       await client
         .get('/comments')
+        .set('Authorization', `Bearer ${token}`)
         .query(filter)
         .expect(200, {
           data: [toJSON(commentInProgress)],
@@ -381,7 +463,10 @@ describe('CommentApplication', function () {
         type: ReferenceType.POST,
       });
 
-      const response = await client.get('/comments').query('pageLimit=2');
+      const response = await client
+        .get('/comments')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });
@@ -401,7 +486,10 @@ describe('CommentApplication', function () {
       filter: {include: ['user', 'transactions']},
     };
 
-    const response = await client.get('/comments/').query(filter);
+    const response = await client
+      .get('/comments/')
+      .set('Authorization', `Bearer ${token}`)
+      .query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({

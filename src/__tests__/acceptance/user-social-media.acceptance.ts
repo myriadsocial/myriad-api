@@ -7,6 +7,7 @@ import {
   PeopleRepository,
   UserRepository,
   UserSocialMediaRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenPeopleInstance,
@@ -15,6 +16,7 @@ import {
   givenUserRepository,
   givenUserSocialMediaInstance,
   givenUserSocialMediaRepository,
+  givenAuthenticationRepository,
   givenUserVerification,
   setupApplication,
 } from '../helpers';
@@ -22,10 +24,17 @@ import {
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserSocialMediaApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let userRepository: UserRepository;
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -34,15 +43,29 @@ describe('UserSocialMediaApplication', function () {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     userRepository = await givenUserRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await userRepository.deleteAll();
     await peopleRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   context('when claiming social medias', function () {
@@ -59,6 +82,7 @@ describe('UserSocialMediaApplication', function () {
       const userVerification = givenUserVerification();
       const response = await client
         .post('/user-social-medias/verify')
+        .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
         .expect(200);
       const result = await userSocialMediaRepository.findById(response.body.id);
@@ -80,6 +104,7 @@ describe('UserSocialMediaApplication', function () {
 
       await client
         .post('/user-social-medias/verify')
+        .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
         .expect(422);
     });
@@ -91,6 +116,7 @@ describe('UserSocialMediaApplication', function () {
 
       await client
         .post('/user-social-medias/verify')
+        .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
         .expect(404);
     });
@@ -103,6 +129,7 @@ describe('UserSocialMediaApplication', function () {
 
       await client
         .post('/user-social-medias/verify')
+        .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
         .expect(404);
     });
@@ -116,10 +143,12 @@ describe('UserSocialMediaApplication', function () {
 
       await client
         .post('/user-social-medias/verify')
+        .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
         .expect(200);
       await client
         .post('/user-social-medias/verify')
+        .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
         .expect(422);
     });
@@ -137,6 +166,7 @@ describe('UserSocialMediaApplication', function () {
     it('gets a user social media by ID', async () => {
       const result = await client
         .get(`/user-social-medias/${persistedUserSocialMedia.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedUserSocialMedia);
@@ -145,12 +175,16 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('returns 404 when getting a user social media that does not exist', () => {
-      return client.get('/user-social-medias/99999').expect(404);
+      return client
+        .get('/user-social-medias/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('deletes the user social media', async () => {
       await client
         .del(`/user-social-medias/${persistedUserSocialMedia.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(204);
       await expect(
@@ -159,7 +193,10 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('returns 404 when deleting a user social media that does not exist', async () => {
-      await client.del(`/user-social-medias/99999`).expect(404);
+      await client
+        .del(`/user-social-medias/99999`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -179,6 +216,7 @@ describe('UserSocialMediaApplication', function () {
     it('finds all user social medias', async () => {
       const response = await client
         .get('/user-social-medias')
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       expect(response.body.data).to.containDeep(
@@ -197,6 +235,7 @@ describe('UserSocialMediaApplication', function () {
 
       await client
         .get('/user-social-medias')
+        .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {peopleId: '3'}}))
         .expect(200, {
           data: [toJSON(userSocialMediaInProgress)],
@@ -219,6 +258,7 @@ describe('UserSocialMediaApplication', function () {
 
       const response = await client
         .get('/user-social-medias')
+        .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
@@ -243,7 +283,10 @@ describe('UserSocialMediaApplication', function () {
         include: ['user', 'people'],
       });
 
-    const response = await client.get('/user-social-medias').query(filter);
+    const response = await client
+      .get('/user-social-medias')
+      .set('Authorization', `Bearer ${token}`)
+      .query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({

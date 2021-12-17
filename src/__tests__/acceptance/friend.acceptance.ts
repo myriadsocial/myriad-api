@@ -8,6 +8,7 @@ import {
   FriendRepository,
   NotificationRepository,
   UserRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenActivityLogRepository,
@@ -18,16 +19,24 @@ import {
   givenNotificationRepository,
   givenUserInstance,
   givenUserRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 
 describe('FriendApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let friendRepository: FriendRepository;
   let userRepository: UserRepository;
   let notificationRepository: NotificationRepository;
   let activityLogRepository: ActivityLogRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -40,12 +49,26 @@ describe('FriendApplication', function () {
     userRepository = await givenUserRepository(app);
     notificationRepository = await givenNotificationRepository(app);
     activityLogRepository = await givenActivityLogRepository(app);
+    authenticationRepository = await givenAuthenticationRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await friendRepository.deleteAll();
     await userRepository.deleteAll();
     await activityLogRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   it('creates a pending friend request', async function () {
@@ -63,7 +86,11 @@ describe('FriendApplication', function () {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
     });
 
-    const response = await client.post('/friends').send(friend).expect(200);
+    const response = await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friend)
+      .expect(200);
     expect(response.body).to.containDeep(friend);
     const result = await friendRepository.findById(response.body.id);
     expect(result).to.containDeep(friend);
@@ -75,14 +102,22 @@ describe('FriendApplication', function () {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
     });
 
-    await client.post('/friends').send(friendWithNoRequesteeId).expect(422);
+    await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friendWithNoRequesteeId)
+      .expect(422);
 
     const friendWithNoRequestorId = givenFriend({
       requestorId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
     });
 
-    await client.post('/friends').send(friendWithNoRequestorId).expect(422);
+    await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friendWithNoRequestorId)
+      .expect(422);
   });
 
   it('rejects requests to create a pending friend request with requesteeId/requestorId length less/more than 66', async () => {
@@ -96,6 +131,7 @@ describe('FriendApplication', function () {
 
     await client
       .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
       .send(friendWithRequestorAndRequesteeLengthLessThan66)
       .expect(422);
 
@@ -109,6 +145,7 @@ describe('FriendApplication', function () {
 
     await client
       .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
       .send(friendWithRequestorAndRequesteeLengthMoreThan66)
       .expect(422);
   });
@@ -121,7 +158,11 @@ describe('FriendApplication', function () {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
     });
 
-    await client.post('/friends').send(friend).expect(422);
+    await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friend)
+      .expect(422);
   });
 
   it('rejects requests to create a double pending friend request', async () => {
@@ -138,7 +179,11 @@ describe('FriendApplication', function () {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
     });
 
-    await client.post('/friends').send(friend).expect(422);
+    await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friend)
+      .expect(422);
   });
 
   it('rejects requests to create a pending friend request when already friend', async () => {
@@ -156,7 +201,11 @@ describe('FriendApplication', function () {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
     });
 
-    await client.post('/friends').send(friend).expect(422);
+    await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friend)
+      .expect(422);
   });
 
   it('rejects requests to create a pending friend request when requesteeId and requestorId not in hex', async () => {
@@ -167,7 +216,11 @@ describe('FriendApplication', function () {
         '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
     });
 
-    await client.post('/friends').send(friend).expect(422);
+    await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friend)
+      .expect(422);
   });
 
   it('rejects requests to create a pending friend request more than 20', async () => {
@@ -196,7 +249,11 @@ describe('FriendApplication', function () {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
     });
 
-    await client.post('/friends').send(friend).expect(422);
+    await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friend)
+      .expect(422);
   });
 
   context('when dealing with a single persisted friend', () => {
@@ -214,6 +271,7 @@ describe('FriendApplication', function () {
     it('gets a friends by ID', async () => {
       const result = await client
         .get(`/friends/${persistedFriend.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedFriend);
@@ -222,7 +280,10 @@ describe('FriendApplication', function () {
     });
 
     it('returns 404 when getting a friend that does not exist', () => {
-      return client.get('/friends/99999').expect(404);
+      return client
+        .get('/friends/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('updates the friend by ID ', async () => {
@@ -244,6 +305,7 @@ describe('FriendApplication', function () {
 
       await client
         .patch(`/friends/${friend.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send(updatedFriend)
         .expect(204);
 
@@ -254,6 +316,7 @@ describe('FriendApplication', function () {
     it('returns 404 when updating a friend that does not exist', () => {
       return client
         .patch('/friends/99999')
+        .set('Authorization', `Bearer ${token}`)
         .send(
           givenFriend({
             status: FriendStatusType.APPROVED,
@@ -275,14 +338,21 @@ describe('FriendApplication', function () {
         requesteeId: requestee.id,
       });
 
-      await client.del(`/friends/${friend.id}`).send().expect(204);
+      await client
+        .del(`/friends/${friend.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(204);
       await expect(friendRepository.findById(friend.id)).to.be.rejectedWith(
         EntityNotFoundError,
       );
     });
 
     it('returns 404 when deleting a friend that does not exist', async () => {
-      await client.del(`/friends/99999`).expect(404);
+      await client
+        .del(`/friends/99999`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -294,7 +364,11 @@ describe('FriendApplication', function () {
     });
 
     it('finds all friends', async () => {
-      const response = await client.get('/friends').send().expect(200);
+      const response = await client
+        .get('/friends')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedFriends));
     });
 
@@ -312,6 +386,7 @@ describe('FriendApplication', function () {
       });
       const response = await client
         .get('/friends?filter[where][status]=blocked')
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       expect(response.body.data).to.containDeep(toJSON([blockedFriends]));
@@ -328,6 +403,7 @@ describe('FriendApplication', function () {
 
       await client
         .get('/friends')
+        .set('Authorization', `Bearer ${token}`)
         .query(
           'filter=' +
             JSON.stringify({where: {status: FriendStatusType.APPROVED}}),
@@ -351,7 +427,10 @@ describe('FriendApplication', function () {
           '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61867',
       });
 
-      const response = await client.get('/friends').query('pageLimit=2');
+      const response = await client
+        .get('/friends')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });
@@ -372,7 +451,10 @@ describe('FriendApplication', function () {
     const filter =
       'filter=' + JSON.stringify({include: ['requestor', 'requestee']});
 
-    const response = await client.get('/friends').query(filter);
+    const response = await client
+      .get('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
@@ -395,7 +477,11 @@ describe('FriendApplication', function () {
       requesteeId: otherUser.id,
     });
 
-    await client.post('/friends').send(friend).expect(200);
+    await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friend)
+      .expect(200);
 
     const notifications = await notificationRepository.find({
       where: {
@@ -437,7 +523,11 @@ describe('FriendApplication', function () {
       status: FriendStatusType.APPROVED,
     });
 
-    await client.patch(`/friends/${friend.id}`).send(updatedFriend).expect(204);
+    await client
+      .patch(`/friends/${friend.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(updatedFriend)
+      .expect(204);
 
     const notifications = await notificationRepository.find({
       where: {

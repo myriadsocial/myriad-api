@@ -3,7 +3,11 @@ import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {NotificationType} from '../../enums';
 import {Notification} from '../../models';
-import {NotificationRepository, UserRepository} from '../../repositories';
+import {
+  NotificationRepository,
+  UserRepository,
+  AuthenticationRepository,
+} from '../../repositories';
 import {
   givenMultipleNotificationInstances,
   givenNotification,
@@ -11,14 +15,22 @@ import {
   givenNotificationRepository,
   givenUserInstance,
   givenUserRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 
 describe('NotificationApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let notificationRepository: NotificationRepository;
   let userRepository: UserRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -27,13 +39,27 @@ describe('NotificationApplication', function () {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     notificationRepository = await givenNotificationRepository(app);
     userRepository = await givenUserRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await notificationRepository.deleteAll();
     await userRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted notification', () => {
@@ -48,6 +74,7 @@ describe('NotificationApplication', function () {
     it('gets a notification by ID', async () => {
       const result = await client
         .get(`/notifications/${persistedNotification.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedNotification);
@@ -65,7 +92,10 @@ describe('NotificationApplication', function () {
         from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61862',
         to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
       });
-      await client.get('/notifications/count').expect(200, {count: 2});
+      await client
+        .get('/notifications/count')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200, {count: 2});
     });
 
     it('count notifications with a filter', async () => {
@@ -81,6 +111,7 @@ describe('NotificationApplication', function () {
 
       await client
         .get('/notifications/count')
+        .set('Authorization', `Bearer ${token}`)
         .query({
           where: {
             from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
@@ -92,12 +123,16 @@ describe('NotificationApplication', function () {
     });
 
     it('returns 404 when getting a notification that does not exist', () => {
-      return client.get('/notifications/99999').expect(404);
+      return client
+        .get('/notifications/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('returns 404 when updating a user that does not exist', () => {
       return client
         .patch('/notifications/99999')
+        .set('Authorization', `Bearer ${token}`)
         .send(givenNotification())
         .expect(404);
     });
@@ -105,6 +140,7 @@ describe('NotificationApplication', function () {
     it('deletes the user', async () => {
       await client
         .del(`/notifications/${persistedNotification.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(204);
       await expect(
@@ -113,7 +149,10 @@ describe('NotificationApplication', function () {
     });
 
     it('returns 404 when deleting a user that does not exist', async () => {
-      await client.del(`/notifications/99999`).expect(404);
+      await client
+        .del(`/notifications/99999`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -127,7 +166,11 @@ describe('NotificationApplication', function () {
     });
 
     it('finds all notifications', async () => {
-      const response = await client.get('/notifications').send().expect(200);
+      const response = await client
+        .get('/notifications')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedNotifications));
     });
 
@@ -147,6 +190,7 @@ describe('NotificationApplication', function () {
 
       await client
         .get('/notifications')
+        .set('Authorization', `Bearer ${token}`)
         .query(
           'filter=' +
             JSON.stringify({
@@ -177,7 +221,10 @@ describe('NotificationApplication', function () {
         to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       });
 
-      const response = await client.get('/notifications').query('pageLimit=2');
+      const response = await client
+        .get('/notifications')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
 
@@ -210,7 +257,10 @@ describe('NotificationApplication', function () {
           where: {id: notification.id},
         });
 
-      const response = await client.get('/notifications').query(filter);
+      const response = await client
+        .get('/notifications')
+        .set('Authorization', `Bearer ${token}`)
+        .query(filter);
 
       expect(response.body.data).to.have.length(1);
       expect(response.body.data[0]).to.deepEqual({
