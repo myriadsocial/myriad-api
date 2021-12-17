@@ -1,21 +1,33 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {Experience} from '../../models';
-import {ExperienceRepository, UserRepository} from '../../repositories';
+import {
+  ExperienceRepository,
+  UserRepository,
+  AuthenticationRepository,
+} from '../../repositories';
 import {
   givenExperienceInstance,
   givenExperienceRepository,
   givenMultipleExperienceInstances,
   givenUserInstance,
   givenUserRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 
 describe('ExperienceApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let experienceRepository: ExperienceRepository;
+  let authenticationRepository: AuthenticationRepository;
   let userRepository: UserRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -26,11 +38,25 @@ describe('ExperienceApplication', function () {
   before(async () => {
     userRepository = await givenUserRepository(app);
     experienceRepository = await givenExperienceRepository(app);
+    authenticationRepository = await givenAuthenticationRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await userRepository.deleteAll();
     await experienceRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted experience', () => {
@@ -43,6 +69,7 @@ describe('ExperienceApplication', function () {
     it('gets a experience by ID', async () => {
       const result = await client
         .get(`/experiences/${persistedExperience.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedExperience);
@@ -51,7 +78,10 @@ describe('ExperienceApplication', function () {
     });
 
     it('returns 404 when getting a user that does not exist', () => {
-      return client.get('/experiences/99999').expect(404);
+      return client
+        .get('/experiences/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -65,7 +95,11 @@ describe('ExperienceApplication', function () {
     });
 
     it('finds all experiences', async () => {
-      const response = await client.get('/experiences').send().expect(200);
+      const response = await client
+        .get('/experiences')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(toJSON(response.body.data)).to.containDeep(
         toJSON(persistedExperiences),
       );
@@ -82,6 +116,7 @@ describe('ExperienceApplication', function () {
 
       await client
         .get('/experiences')
+        .set('Authorization', `Bearer ${token}`)
         .query(
           'filter=' +
             JSON.stringify({
@@ -105,7 +140,10 @@ describe('ExperienceApplication', function () {
     it('exploded filter conditions work', async () => {
       await givenExperienceInstance(experienceRepository);
 
-      const response = await client.get('/experiences').query('pageLimit=2');
+      const response = await client
+        .get('/experiences')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });
@@ -122,7 +160,10 @@ describe('ExperienceApplication', function () {
         include: ['user'],
       });
 
-    const response = await client.get('/experiences').query(filter);
+    const response = await client
+      .get('/experiences')
+      .set('Authorization', `Bearer ${token}`)
+      .query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({

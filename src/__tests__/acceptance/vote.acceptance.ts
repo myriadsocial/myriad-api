@@ -7,6 +7,7 @@ import {
   VoteRepository,
   PostRepository,
   UserRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenComment,
@@ -18,6 +19,7 @@ import {
   givenVote,
   givenVoteInstance,
   givenUserRepository,
+  givenAuthenticationRepository,
   givenUserInstance,
 } from '../helpers';
 
@@ -25,11 +27,18 @@ import {
 describe('VoteApplication', function () {
   this.timeout(30000);
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let voteRepository: VoteRepository;
   let postRepository: PostRepository;
   let commentRepository: CommentRepository;
   let userRepository: UserRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -38,10 +47,15 @@ describe('VoteApplication', function () {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     voteRepository = await givenVoteRepository(app);
     postRepository = await givenPostRepository(app);
     commentRepository = await givenCommentRepository(app);
     userRepository = await givenUserRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -49,6 +63,15 @@ describe('VoteApplication', function () {
     await postRepository.deleteAll();
     await commentRepository.deleteAll();
     await userRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   it('creates an upvote if not exists', async function () {
@@ -75,7 +98,11 @@ describe('VoteApplication', function () {
       referenceId: post._id.toString(),
       postId: post._id.toString(),
     });
-    const response = await client.post('/votes').send(upvote).expect(200);
+    const response = await client
+      .post('/votes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(upvote)
+      .expect(200);
     expect(response.body).to.containDeep(upvote);
     const result = await voteRepository.findById(response.body.id);
     expect(result).to.containDeep(upvote);
@@ -108,7 +135,11 @@ describe('VoteApplication', function () {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
       section: SectionType.DEBATE,
     });
-    await client.post('/comments').send(comment).expect(200);
+    await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(200);
     const downvote = givenVote({
       referenceId: post._id.toString(),
       state: false,
@@ -116,7 +147,11 @@ describe('VoteApplication', function () {
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
       postId: post._id.toString(),
     });
-    const response = await client.post('/votes').send(downvote).expect(200);
+    const response = await client
+      .post('/votes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(downvote)
+      .expect(200);
     expect(response.body).to.containDeep(downvote);
     const result = await voteRepository.findById(response.body.id);
     expect(result).to.containDeep(downvote);
@@ -149,7 +184,10 @@ describe('VoteApplication', function () {
     });
 
     const upvote = givenVote({referenceId: post.id, postId: post.id});
-    const response = await client.post('/votes').send(upvote);
+    const response = await client
+      .post('/votes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(upvote);
 
     const resultPost = await postRepository.findById(response.body.referenceId);
     post.metric.upvotes = post.metric.upvotes + 1;
@@ -183,7 +221,11 @@ describe('VoteApplication', function () {
       state: false,
       postId: post.id,
     });
-    await client.post('/votes').send(downvote).expect(422);
+    await client
+      .post('/votes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(downvote)
+      .expect(422);
   });
 
   it('deletes the upvotes and post metric upvotes reduces by 1', async function () {
@@ -207,7 +249,11 @@ describe('VoteApplication', function () {
       postId: post._id.toString(),
     });
 
-    await client.del(`/votes/${vote.id}`).send().expect(204);
+    await client
+      .del(`/votes/${vote.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send()
+      .expect(204);
     await expect(voteRepository.findById(vote.id)).to.be.rejectedWith(
       EntityNotFoundError,
     );

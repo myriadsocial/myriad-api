@@ -6,6 +6,7 @@ import {
   PeopleRepository,
   PostRepository,
   UserSocialMediaRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenMyriadPostInstance,
@@ -15,6 +16,7 @@ import {
   givenPostRepository,
   givenUserSocialMediaInstance,
   givenUserSocialMediaRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 import {promisify} from 'util';
@@ -27,14 +29,21 @@ const signAsync = promisify(jwt.sign);
 
 describe('PostWalletAddressApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let postRepository: PostRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
+  let authenticationRepository: AuthenticationRepository;
   let peopleRepository: PeopleRepository;
   let people: People;
   let post: Post;
   let userSocialMedia: UserSocialMedia;
   let myriadPost: Post;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -43,9 +52,14 @@ describe('PostWalletAddressApplication', function () {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     postRepository = await givenPostRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
     peopleRepository = await givenPeopleRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -60,6 +74,15 @@ describe('PostWalletAddressApplication', function () {
     });
   });
 
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
+  });
+
   it('gets a post wallet address from people', async () => {
     const password = people.id + config.ESCROW_SECRET_KEY;
     const salt = await genSalt(10);
@@ -71,10 +94,11 @@ describe('PostWalletAddressApplication', function () {
     });
     const result = await client
       .get(`/posts/${post.id}/walletaddress`)
+      .set('Authorization', `Bearer ${token}`)
       .send()
       .expect(200);
 
-    const token = await signAsync(
+    const token1 = await signAsync(
       {
         id: people.id,
         originUserId: people.originUserId,
@@ -85,7 +109,7 @@ describe('PostWalletAddressApplication', function () {
     );
 
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
-    const newKey = getKeyring().addFromUri('//' + token);
+    const newKey = getKeyring().addFromUri('//' + token1);
 
     expect(result.body).to.deepEqual({
       walletAddress: getHexPublicKey(newKey),
@@ -99,6 +123,7 @@ describe('PostWalletAddressApplication', function () {
     });
     const result = await client
       .get(`/posts/${post.id}/walletaddress`)
+      .set('Authorization', `Bearer ${token}`)
       .send()
       .expect(200);
 
@@ -108,6 +133,7 @@ describe('PostWalletAddressApplication', function () {
   it('gets a post wallet address if post platform myriad', async () => {
     const result = await client
       .get(`/posts/${myriadPost.id}/walletaddress`)
+      .set('Authorization', `Bearer ${token}`)
       .send()
       .expect(200);
 
@@ -115,8 +141,16 @@ describe('PostWalletAddressApplication', function () {
   });
 
   it('returns 401 and 404 when wallet address not found', async () => {
-    await client.get(`/posts/${post.id}/walletaddress`).send().expect(404);
+    await client
+      .get(`/posts/${post.id}/walletaddress`)
+      .set('Authorization', `Bearer ${token}`)
+      .send()
+      .expect(404);
     await postRepository.updateById(post.id, {peopleId: people.id});
-    await client.get(`/posts/${post.id}/walletaddress`).send().expect(401);
+    await client
+      .get(`/posts/${post.id}/walletaddress`)
+      .set('Authorization', `Bearer ${token}`)
+      .send()
+      .expect(401);
   });
 });

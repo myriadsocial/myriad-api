@@ -7,6 +7,7 @@ import {
   CurrencyRepository,
   TransactionRepository,
   UserRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenCurrencyInstance,
@@ -16,16 +17,24 @@ import {
   givenTransactionRepository,
   givenUserInstance,
   givenUserRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 
 describe('TransactionApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let userRepository: UserRepository;
   let currencyRepository: CurrencyRepository;
   let transactionRepository: TransactionRepository;
+  let authenticationRepository: AuthenticationRepository;
   let currency: Currency;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -34,9 +43,14 @@ describe('TransactionApplication', function () {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     userRepository = await givenUserRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     transactionRepository = await givenTransactionRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   before(async () => {
@@ -53,6 +67,15 @@ describe('TransactionApplication', function () {
     await userRepository.deleteAll();
   });
 
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
+  });
+
   it('creates a transaction', async function () {
     const user = await givenUserInstance(userRepository);
     const transaction = givenTransaction({
@@ -61,6 +84,7 @@ describe('TransactionApplication', function () {
     });
     const response = await client
       .post('/transactions')
+      .set('Authorization', `Bearer ${token}`)
       .send(transaction)
       .expect(200);
     expect(response.body).to.containDeep(transaction);
@@ -74,7 +98,11 @@ describe('TransactionApplication', function () {
       currencyId: currency.id,
     });
 
-    await client.post('/transactions').send(transaction).expect(404);
+    await client
+      .post('/transactions')
+      .set('Authorization', `Bearer ${token}`)
+      .send(transaction)
+      .expect(404);
   });
 
   it('returns 422 when create transactions but "currency" not exist', async () => {
@@ -84,7 +112,11 @@ describe('TransactionApplication', function () {
       currencyId: DefaultCurrencyType.MYRIA,
     });
 
-    await client.post('/transactions').send(transaction).expect(404);
+    await client
+      .post('/transactions')
+      .set('Authorization', `Bearer ${token}`)
+      .send(transaction)
+      .expect(404);
   });
 
   context('when dealing with a single persisted transaction', () => {
@@ -99,6 +131,7 @@ describe('TransactionApplication', function () {
     it('gets a transaction by ID', async () => {
       const result = await client
         .get(`/transactions/${persistedTransaction.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedTransaction);
@@ -107,12 +140,16 @@ describe('TransactionApplication', function () {
     });
 
     it('returns 404 when getting a transaction that does not exist', () => {
-      return client.get('/transaction/99999').expect(404);
+      return client
+        .get('/transaction/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('deletes the transaction', async () => {
       await client
         .del(`/transactions/${persistedTransaction.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(204);
       await expect(
@@ -121,7 +158,10 @@ describe('TransactionApplication', function () {
     });
 
     it('returns 404 when deleting a transaction that does not exist', async () => {
-      await client.del(`/transactions/99999`).expect(404);
+      await client
+        .del(`/transactions/99999`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -148,7 +188,11 @@ describe('TransactionApplication', function () {
     });
 
     it('finds all transactions', async () => {
-      const response = await client.get('/transactions').send().expect(200);
+      const response = await client
+        .get('/transactions')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedTransactions));
     });
 
@@ -163,6 +207,7 @@ describe('TransactionApplication', function () {
 
       const response = await client
         .get('/transactions')
+        .set('Authorization', `Bearer ${token}`)
         .query(
           JSON.stringify({
             filter: {
@@ -183,7 +228,10 @@ describe('TransactionApplication', function () {
     it('exploded filter conditions work', async () => {
       await givenTransactionInstance(transactionRepository);
 
-      const response = await client.get('/transactions').query('pageLimit=2');
+      const response = await client
+        .get('/transactions')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
 
       expect(response.body.data).to.have.length(2);
     });
@@ -205,6 +253,7 @@ describe('TransactionApplication', function () {
 
     const response = await client
       .get('/transactions')
+      .set('Authorization', `Bearer ${token}`)
       .query({
         filter: {
           include: ['fromUser', 'toUser', 'currency'],

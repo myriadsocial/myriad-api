@@ -9,11 +9,13 @@ import {
   UserRepository,
   AccountSettingRepository,
   NotificationSettingRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenAccountSettingRepository,
   givenActivityLogInstance,
   givenActivityLogRepository,
+  givenAuthenticationRepository,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenFriendInstance,
@@ -33,6 +35,7 @@ describe('UserApplication', function () {
   this.timeout(20000);
 
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let userRepository: UserRepository;
   let userCurrencyRepository: UserCurrencyRepository;
@@ -41,6 +44,12 @@ describe('UserApplication', function () {
   let activityLogRepository: ActivityLogRepository;
   let notificationSettingRepository: NotificationSettingRepository;
   let accountSettingRepository: AccountSettingRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -58,6 +67,11 @@ describe('UserApplication', function () {
       app,
     );
     accountSettingRepository = await givenAccountSettingRepository(app);
+    authenticationRepository = await givenAuthenticationRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -70,9 +84,22 @@ describe('UserApplication', function () {
     await accountSettingRepository.deleteAll();
   });
 
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
+  });
+
   it('creates a user', async () => {
     const user = givenUser();
-    const response = await client.post('/users').send(user);
+    const response = await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(user);
+
     expect(response.body).to.containDeep(user);
     const result = await userRepository.findById(response.body.id);
     expect(result).to.containDeep(user);
@@ -80,7 +107,10 @@ describe('UserApplication', function () {
 
   it('creates a user with default settings', async () => {
     const user = givenUser();
-    const response = await client.post('/users').send(user);
+    const response = await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(user);
     const createdUser = await userRepository.findById(response.body.id, {
       include: ['notificationSetting', 'accountSetting'],
     });
@@ -98,13 +128,21 @@ describe('UserApplication', function () {
     await givenUserInstance(userRepository);
     const user = givenUser();
 
-    await client.post('/users').send(user).expect(422);
+    await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(user)
+      .expect(422);
   });
 
   it('rejects requests to create a user with no id', async () => {
     const user: Partial<User> = givenUser();
     delete user.id;
-    await client.post('/users').send(user).expect(422);
+    await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(user)
+      .expect(422);
   });
 
   it('rejects requests to create a user with id type is not a hex', async () => {
@@ -112,7 +150,11 @@ describe('UserApplication', function () {
       id: '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       name: 'Hakim',
     });
-    await client.post('/users').send(user).expect(422);
+    await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(user)
+      .expect(422);
   });
 
   it('rejects requests to create a user with id length less than 66', async () => {
@@ -121,7 +163,11 @@ describe('UserApplication', function () {
       name: 'Hakim',
     });
 
-    await client.post('/users').send(user).expect(422);
+    await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(user)
+      .expect(422);
   });
 
   it('rejects requests to create a user with id length more than 66', async () => {
@@ -129,7 +175,11 @@ describe('UserApplication', function () {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618601',
       name: 'Hakim',
     });
-    await client.post('/users').send(user).expect(422);
+    await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(user)
+      .expect(422);
   });
 
   it('rejects requests to create a user with name length less than 2', async () => {
@@ -137,7 +187,11 @@ describe('UserApplication', function () {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       name: 'H',
     });
-    await client.post('/users').send(user).expect(422);
+    await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(user)
+      .expect(422);
   });
 
   context('when dealing with a single persisted user', () => {
@@ -152,6 +206,8 @@ describe('UserApplication', function () {
     it('gets a user by ID', async () => {
       const result = await client
         .get(`/users/${persistedUser.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedUser);
@@ -160,7 +216,10 @@ describe('UserApplication', function () {
     });
 
     it('returns 404 when getting a user that does not exist', () => {
-      return client.get('/users/99999').expect(404);
+      return client
+        .get('/users/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('updates the user by ID ', async () => {
@@ -174,6 +233,8 @@ describe('UserApplication', function () {
 
       await client
         .patch(`/users/${persistedUser.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${token}`)
         .send(updatedUser)
         .expect(204);
       const result = await userRepository.findById(persistedUser.id);
@@ -189,6 +250,8 @@ describe('UserApplication', function () {
 
       await client
         .patch(`/users/${persistedUser.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${token}`)
         .send(updatedUser)
         .expect(422);
     });
@@ -199,7 +262,12 @@ describe('UserApplication', function () {
       delete updatedUser.id;
       delete updatedUser.username;
 
-      return client.patch('/users/99999').send(updatedUser).expect(404);
+      return client
+        .patch('/users/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(updatedUser)
+        .expect(404);
     });
   });
 
@@ -211,7 +279,12 @@ describe('UserApplication', function () {
     });
 
     it('finds all users', async () => {
-      const response = await client.get('/users').send().expect(200);
+      const response = await client
+        .get('/users')
+        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(toJSON(response.body.data)).to.containDeep(toJSON(persistedUsers));
     });
 
@@ -225,6 +298,8 @@ describe('UserApplication', function () {
 
       await client
         .get('/users')
+        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {name: 'husni'}}))
         .expect(200, {
           data: [toJSON(userInProgress)],
@@ -243,7 +318,11 @@ describe('UserApplication', function () {
         name: 'imam',
       });
 
-      const response = await client.get('/users').query('pageLimit=2');
+      const response = await client
+        .get('/users')
+        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });
@@ -270,7 +349,10 @@ describe('UserApplication', function () {
         include: ['friends', 'currencies', 'activityLogs'],
       });
 
-    const response = await client.get('/users').query(filter);
+    const response = await client
+      .get('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
