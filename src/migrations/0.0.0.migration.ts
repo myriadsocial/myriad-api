@@ -2,27 +2,20 @@ import {repository} from '@loopback/repository';
 import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {config} from '../config';
 import {DefaultCurrencyType} from '../enums';
-import {Currency} from '../models';
-import {CurrencyRepository, UserRepository} from '../repositories';
-import currenciesSeed from '../data-seed/currencies.json';
+import {UserRepository} from '../repositories';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-/* eslint-disable  @typescript-eslint/naming-convention */
 @migrationScript()
 export class MigrationScript000 implements MigrationScript {
   version = '0.0.0';
 
   constructor(
-    @repository(CurrencyRepository)
-    protected currencyRepository: CurrencyRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
   ) {}
 
   async up(): Promise<void> {
     await this.createUsers();
-    await this.createCurrencies(currenciesSeed as unknown as Currency[]);
   }
 
   async createUsers(): Promise<void> {
@@ -64,9 +57,5 @@ export class MigrationScript000 implements MigrationScript {
       networkType: 'substrate',
       exchangeRate: false,
     });
-  }
-
-  async createCurrencies(currencies: Currency[]): Promise<void> {
-    await this.currencyRepository.createAll(currencies);
   }
 }
