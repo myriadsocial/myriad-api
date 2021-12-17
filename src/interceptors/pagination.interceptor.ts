@@ -535,28 +535,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
         if (!friends.length && !topics.length && !personIds.length) return;
 
-        // TODO: ignore html tag in query
-        const spaceTopics = topics
-          .map(tag => ` ${tag}"|"${tag} |"${tag}"| ${tag} `)
-          .join('|');
-        const regexSpaceTopics = new RegExp(spaceTopics, 'i');
-
         return {
           or: [
             {
               and: [{tags: {inq: topics}}, {visibility: VisibilityType.PUBLIC}],
-            },
-            {
-              and: [
-                {title: regexSpaceTopics},
-                {visibility: VisibilityType.PUBLIC},
-              ],
-            },
-            {
-              and: [
-                {text: regexSpaceTopics},
-                {visibility: VisibilityType.PUBLIC},
-              ],
             },
             {
               and: [

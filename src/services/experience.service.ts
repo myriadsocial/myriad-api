@@ -73,12 +73,6 @@ export class ExperienceService {
       })
     ).map(e => e.requesteeId);
 
-    // TODO: ignore html tag in query
-    const spaceTags = tags
-      .map(tag => ` ${tag}"|"${tag} |"${tag}"| ${tag} `)
-      .join('|');
-    const regexSpaceTags = new RegExp(spaceTags, 'i');
-
     return {
       or: [
         {
@@ -89,12 +83,6 @@ export class ExperienceService {
             {peopleId: {inq: personIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
-        },
-        {
-          and: [{text: regexSpaceTags}, {visibility: VisibilityType.PUBLIC}],
-        },
-        {
-          and: [{title: regexSpaceTags}, {visibility: VisibilityType.PUBLIC}],
         },
         {
           and: [
