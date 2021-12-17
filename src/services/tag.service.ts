@@ -97,9 +97,6 @@ export class TagService {
       })
     ).map(e => e.requesteeId);
 
-    const joinTopics = trendingTopics.join('|');
-    const regexTopic = new RegExp(joinTopics, 'i');
-
     return {
       or: [
         {
@@ -109,28 +106,8 @@ export class TagService {
           ],
         },
         {
-          and: [{text: regexTopic}, {visibility: VisibilityType.PUBLIC}],
-        },
-        {
-          and: [{title: regexTopic}, {visibility: VisibilityType.PUBLIC}],
-        },
-        {
           and: [
             {tags: {inq: trendingTopics}},
-            {createdBy: {inq: friendIds}},
-            {visibility: VisibilityType.FRIEND},
-          ],
-        },
-        {
-          and: [
-            {text: regexTopic},
-            {createdBy: {inq: friendIds}},
-            {visibility: VisibilityType.FRIEND},
-          ],
-        },
-        {
-          and: [
-            {title: regexTopic},
             {createdBy: {inq: friendIds}},
             {visibility: VisibilityType.FRIEND},
           ],
