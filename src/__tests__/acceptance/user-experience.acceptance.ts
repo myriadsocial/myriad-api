@@ -1,4 +1,3 @@
-import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {UserExperience} from '../../models';
@@ -244,7 +243,7 @@ describe('UserExperienceApplication', function () {
       const user = await givenUserInstance(userRepository);
       const experience = givenExperience({createdBy: user.id});
       const response = await client
-        .post(`/users/${user.id}/new-experiences`)
+        .post(`/users/${user.id}/experiences`)
         .send(experience)
         .expect(200);
 
@@ -272,7 +271,7 @@ describe('UserExperienceApplication', function () {
       const user = await givenUserInstance(userRepository);
       const experience = givenExperience();
       const response = await client
-        .post(`/users/${user.id}/new-experiences`)
+        .post(`/users/${user.id}/experiences`)
         .send(experience)
         .expect(200);
 
@@ -306,56 +305,9 @@ describe('UserExperienceApplication', function () {
       const experience = givenExperience();
 
       await client
-        .post(`/users/${user.id}/new-experiences`)
+        .post(`/users/${user.id}/experiences`)
         .send(experience)
         .expect(422);
-    });
-  });
-
-  context('when user clone an experience', () => {
-    beforeEach(async () => {
-      await userRepository.deleteAll();
-      await experienceRepository.deleteAll();
-      await userExperienceRepository.deleteAll();
-    });
-
-    it('clones from other user experience', async () => {
-      const otherUser = await givenUserInstance(userRepository);
-      const prepareExperience = givenExperience({createdBy: otherUser.id});
-      const experience = await givenExperienceInstance(
-        experienceRepository,
-        prepareExperience,
-      );
-
-      const user = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618r9',
-      });
-      const userExperience = await givenUserExperienceInstance(
-        userExperienceRepository,
-        {
-          userId: user.id,
-          experienceId: experience.id,
-          subscribed: true,
-        },
-      );
-
-      prepareExperience.name = 'my experience';
-      prepareExperience.createdBy = user.id;
-      const updatedExperience = prepareExperience;
-
-      const response = await client
-        .post(`/users/${user.id}/clone/${experience.id}`)
-        .send(updatedExperience)
-        .expect(200);
-
-      expect(response.body).to.containDeep(updatedExperience);
-
-      const result = await experienceRepository.findById(response.body.id);
-      expect(result).to.containDeep(updatedExperience);
-
-      await expect(
-        userExperienceRepository.findById(userExperience.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
     });
   });
 
