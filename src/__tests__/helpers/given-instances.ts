@@ -54,7 +54,6 @@ import {
   UserSocialMediaRepository,
   VoteRepository,
 } from '../../repositories';
-import acala from '../../data-seed/currencies.json';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export function givenUser(user?: Partial<User>) {
@@ -230,13 +229,13 @@ export async function givenPostInstance(
 export function givenCurrency(currency?: Partial<Currency>) {
   const data = Object.assign(
     {
-      id: 'AUSD',
+      id: 'ROC',
       decimal: 12,
-      image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
-      native: false,
-      rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
-      types: acala[0].types,
+      image: 'https://polkadot.js.org/apps/static/rococo.afea08ac.svg',
+      native: true,
+      rpcURL: 'wss://rococo-rpc.polkadot.io',
       networkType: 'substrate-test',
+      exchangeRate: false,
     },
     currency,
   );
@@ -261,7 +260,7 @@ export async function givenMultipleCurrencyInstances(
       image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
       native: true,
       rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
-      networkType: 'substrate',
+      networkType: 'substrate-test',
     }),
   ]);
 }
@@ -398,7 +397,7 @@ export function givenTransaction(transaction?: Partial<Transaction>) {
       amount: 1,
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
       to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
-      currencyId: 'AUSD',
+      currencyId: 'ROC',
     },
     transaction,
   );
@@ -417,7 +416,7 @@ export function givenUserCurrency(userCurrency?: Partial<UserCurrency>) {
     {
       userId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
-      currencyId: 'AUSD',
+      currencyId: 'ROC',
     },
     userCurrency,
   );

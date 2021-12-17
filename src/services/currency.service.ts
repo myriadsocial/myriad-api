@@ -15,7 +15,6 @@ import {
   UserSocialMediaRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
-import acala from '../data-seed/currencies.json';
 import {HttpErrors} from '@loopback/rest';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {NotificationService} from './notification.service';
@@ -77,14 +76,19 @@ export class CurrencyService {
 
   async defaultAcalaTips(userId: string): Promise<void> {
     try {
+      const {
+        rpcURL: acalaRpc,
+        decimal: acalaDecimal,
+        types,
+      } = await this.currencyRepository.findById(DefaultCurrencyType.AUSD);
+
       const {polkadotApi, getKeyring} = new PolkadotJs();
-      const api = await polkadotApi(acala[0].rpcURL, acala[0].types);
+      const api = await polkadotApi(acalaRpc, types);
 
       const mnemonic = config.MYRIAD_MNEMONIC;
       const from = getKeyring().addFromMnemonic(mnemonic);
       const to = userId;
 
-      const acalaDecimal = 12;
       const value = config.ACALA_AUSD_REWARD_AMOUNT * 10 ** acalaDecimal;
 
       const {nonce} = await api.query.system.account(from.address);
