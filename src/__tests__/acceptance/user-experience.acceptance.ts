@@ -281,7 +281,7 @@ describe('UserExperienceApplication', function () {
       const user = await givenUserInstance(userRepository);
       const experience = givenExperience({createdBy: user.id});
       const response = await client
-        .post(`/users/${user.id}/new-experiences`)
+        .post(`/users/${user.id}/experiences`)
         .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(200);
@@ -310,7 +310,7 @@ describe('UserExperienceApplication', function () {
       const user = await givenUserInstance(userRepository);
       const experience = givenExperience();
       const response = await client
-        .post(`/users/${user.id}/new-experiences`)
+        .post(`/users/${user.id}/experiences`)
         .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(200);
@@ -345,7 +345,7 @@ describe('UserExperienceApplication', function () {
       const experience = givenExperience();
 
       await client
-        .post(`/users/${user.id}/new-experiences`)
+        .post(`/users/${user.id}/experiences`)
         .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(422);
