@@ -2,9 +2,11 @@
   {
     "id": "AUSD",
     "decimal": 12,
-    "image": "https://apps.acala.network/static/media/AUSD.439bc3f2.png",
+    "image": "https://polkadot.js.org/apps/static/acala.db93212d.svg",
     "native": false,
     "rpcURL": "wss://acala-mandala.api.onfinality.io/public-ws",
+    "networkType": "substrate",
+    "exchangeRate": false,
     "types": {
       "spec": {
         "acala": {
@@ -6765,6 +6767,8 @@
     "decimal": 12,
     "image": "https://polkadot.js.org/apps/static/rococo.afea08ac.svg",
     "native": true,
-    "rpcURL": "wss://rococo-rpc.polkadot.io"
+    "rpcURL": "wss://rococo-rpc.polkadot.io",
+    "networkType": "substrate",
+    "exchangeRate": false
   }
 ]
