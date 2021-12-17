@@ -57,7 +57,7 @@ export class UserSocialMediaService {
 
       const hasher = new BcryptHasher();
       const hashPeopleId = await hasher.hashPassword(
-        foundPeople.id + config.ESCROW_SECRET_KEY,
+        foundPeople.id + config.MYRIAD_ESCROW_SECRET_KEY,
       );
       await this.peopleRepository.updateById(foundPeople.id, {
         walletAddressPassword: hashPeopleId,

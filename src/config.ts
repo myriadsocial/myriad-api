@@ -11,19 +11,14 @@ export const config = {
   MYRIAD_WS_RPC: process.env.MYRIAD_WS_RPC ?? 'ws://127.0.0.1:9944',
   MYRIAD_MNEMONIC: process.env.MYRIAD_FAUCET_MNEMONIC ?? generateSeed(),
   MYRIAD_REWARD_AMOUNT: +(process.env.MYRIAD_REWARD_AMOUNT ?? 0),
-  MYRIAD_EMAIL: !process.env.MYRIAD_EMAIL
-    ? 'admin@mail.com'
-    : process.env.MYRIAD_EMAIL,
 
   MYRIAD_OFFICIAL_ACCOUNT:
     process.env.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY ??
     '0x06cc7ed22ebd12ccc28fb9c0d14a5c1220a331d89a5fef48b915e8449ee61859',
 
-  ESCROW_SECRET_KEY: !process.env.ESCROW_SECRET_KEY
+  MYRIAD_ESCROW_SECRET_KEY: !process.env.MYRIAD_ESCROW_SECRET_KEY
     ? 's3cr3+<3y'
-    : process.env.ESCROW_SECRET_KEY,
-
-  ACALA_AUSD_REWARD_AMOUNT: +(process.env.ACALA_AUSD_REWARD_AMOUNT ?? 0),
+    : process.env.MYRIAD_ESCROW_SECRET_KEY,
 
   MONGO_HOST: process.env.MONGO_HOST,
   MONGO_PORT: parseInt(process.env.MONGO_PORT ?? ''),
@@ -31,12 +26,14 @@ export const config = {
   MONGO_PASSWORD: process.env.MONGO_PASSWORD ?? 'passw0rd',
   MONGO_DATABASE: process.env.MONGO_DATABASE,
 
-  REFRESH_SECRET_KEY: process.env.REFRESH_TOKEN_SECRET_KEY ?? 'r3fr35htok3n',
-  REFRESH_EXPIRES_IN: process.env.REFRESH_TOKEN_EXPIRES_IN ?? '216000',
-  TOKEN_EXPIRES_IN: process.env.TOKEN_EXPIRES_IN ?? '36000',
-  TOKEN_SECRET_KEY: !process.env.TOKEN_SECRET_KEY
+  JWT_REFRESH_SECRET_KEY: process.env.JWT_REFRESH_TOKEN_SECRET_KEY ?? 'r3fr35htok3n',
+  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN ?? '216000',
+  JWT_TOKEN_EXPIRES_IN: process.env.JWT_TOKEN_EXPIRES_IN ?? '36000',
+  JWT_TOKEN_SECRET_KEY: !process.env.JWT_TOKEN_SECRET_KEY
     ? 'tok3n'
-    : process.env.TOKEN_SECRET_KEY,
+    : process.env.JWT_TOKEN_SECRET_KEY,
+
+  JWT_EMAIL: !process.env.JWT_EMAIL ? 'admin@mail.com' : process.env.JWT_EMAIL,
 
   FIREBAE_STORAGE_BUCKET: process.env.FIREBAE_STORAGE_BUCKET ?? '',
 

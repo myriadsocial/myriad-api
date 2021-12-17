@@ -71,7 +71,7 @@ export class JWTService implements TokenService {
     }
     let token: string;
     try {
-      token = await signAsync(payload, config.ESCROW_SECRET_KEY);
+      token = await signAsync(payload, config.MYRIAD_ESCROW_SECRET_KEY);
     } catch (err) {
       throw new HttpErrors.Unauthorized(`error generating token ${err}`);
     }

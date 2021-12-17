@@ -101,7 +101,7 @@ export class AuthenticationController {
       throw new HttpErrors.UnprocessableEntity('Email Already Exist');
     }
 
-    if (config.MYRIAD_EMAIL !== newAuthRequest.email) {
+    if (config.JWT_EMAIL !== newAuthRequest.email) {
       throw new HttpErrors.UnprocessableEntity('Only admin can register!');
     }
 

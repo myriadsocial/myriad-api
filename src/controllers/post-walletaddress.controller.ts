@@ -63,7 +63,7 @@ export class PostWalletAddress {
       if (!people.walletAddressPassword)
         throw new HttpErrors.Unauthorized('Not Authorized');
 
-      const password = people.id + config.ESCROW_SECRET_KEY;
+      const password = people.id + config.MYRIAD_ESCROW_SECRET_KEY;
       const match = await hasher.comparePassword(
         password,
         people.walletAddressPassword,

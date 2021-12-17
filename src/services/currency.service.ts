@@ -74,52 +74,6 @@ export class CurrencyService {
     }
   }
 
-  async defaultAcalaTips(userId: string): Promise<void> {
-    try {
-      const {
-        rpcURL: acalaRpc,
-        decimal: acalaDecimal,
-        types,
-      } = await this.currencyRepository.findById(DefaultCurrencyType.AUSD);
-
-      const {polkadotApi, getKeyring} = new PolkadotJs();
-      const api = await polkadotApi(acalaRpc, types);
-
-      const mnemonic = config.MYRIAD_MNEMONIC;
-      const from = getKeyring().addFromMnemonic(mnemonic);
-      const to = userId;
-
-      const value = config.ACALA_AUSD_REWARD_AMOUNT * 10 ** acalaDecimal;
-
-      const {nonce} = await api.query.system.account(from.address);
-      const getNonce = await this.getQueueNumber(
-        nonce.toJSON(),
-        DefaultCurrencyType.AUSD,
-      );
-
-      const transfer = api.tx.currencies.transfer(
-        to,
-        {Token: DefaultCurrencyType.AUSD},
-        value,
-      );
-      const txHash = await transfer.signAndSend(from, {nonce: getNonce});
-
-      const transaction = await this.transactionRepository.create({
-        hash: txHash.toString(),
-        amount: value / 10 ** acalaDecimal,
-        to: to,
-        from: config.MYRIAD_OFFICIAL_ACCOUNT,
-        currencyId: DefaultCurrencyType.AUSD,
-      });
-
-      await this.notificationService.sendIntitalTips(transaction);
-
-      await api.disconnect();
-    } catch {
-      // ignore
-    }
-  }
-
   async sendMyriadReward(userId: string): Promise<void> {
     if (config.MYRIAD_REWARD_AMOUNT === 0) return;
     try {
@@ -171,7 +125,7 @@ export class CurrencyService {
 
     const hasher = new BcryptHasher();
     const hashPeopleId = await hasher.hashPassword(
-      peopleId + config.ESCROW_SECRET_KEY,
+      peopleId + config.MYRIAD_ESCROW_SECRET_KEY,
     );
     const from = getKeyring().addFromUri('//' + hashPeopleId);
     const to = userId;
@@ -349,7 +303,7 @@ export class CurrencyService {
 
       if (!storedPassword) continue;
 
-      const password = peopleId + config.ESCROW_SECRET_KEY;
+      const password = peopleId + config.MYRIAD_ESCROW_SECRET_KEY;
       const match = await hasher.comparePassword(password, storedPassword);
 
       if (!match) continue;
@@ -456,7 +410,7 @@ export class CurrencyService {
 
       if (!storedPassword) continue;
 
-      const password = peopleId + config.ESCROW_SECRET_KEY;
+      const password = peopleId + config.MYRIAD_ESCROW_SECRET_KEY;
       const match = await hasher.comparePassword(password, storedPassword);
 
       if (!match) continue;

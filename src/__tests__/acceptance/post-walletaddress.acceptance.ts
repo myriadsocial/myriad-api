@@ -84,7 +84,7 @@ describe('PostWalletAddressApplication', function () {
   });
 
   it('gets a post wallet address from people', async () => {
-    const password = people.id + config.ESCROW_SECRET_KEY;
+    const password = people.id + config.MYRIAD_ESCROW_SECRET_KEY;
     const salt = await genSalt(10);
     const hashPassword = await hash(password, salt);
 
@@ -105,7 +105,7 @@ describe('PostWalletAddressApplication', function () {
         platform: people.platform,
         iat: new Date(people.createdAt ?? '').getTime(),
       },
-      config.ESCROW_SECRET_KEY,
+      config.MYRIAD_ESCROW_SECRET_KEY,
     );
 
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
