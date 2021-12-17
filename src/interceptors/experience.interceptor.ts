@@ -66,8 +66,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     let userId = invocationCtx.args[0];
+    let experienceId = invocationCtx.args[1];
 
-    const experienceId = invocationCtx.args[1];
     const methodName = invocationCtx.methodName;
     const userExperienceId = invocationCtx.args[0];
 
@@ -118,32 +118,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
         if (userId === createdBy) isBelongToUser = true;
 
-        numberOfUserExperience = await this.validateCloneExperience(
+        numberOfUserExperience = await this.validateSubscribeExperience(
           userId,
           experienceId,
         );
-        break;
-      }
-
-      case MethodType.CLONE: {
-        if (invocationCtx.args[2].people.length === 0) {
-          throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
-        }
-
-        people = invocationCtx.args[2].people.filter(
-          (e: People) => e.platform !== PlatformType.MYRIAD,
-        );
-        users = invocationCtx.args[2].people.filter(
-          (e: People) => e.platform === PlatformType.MYRIAD,
-        );
-
-        invocationCtx.args[2] = Object.assign(invocationCtx.args[2], {
-          createdBy: userId,
-          subscribedCount: 0,
-          people: people,
-          createdAt: new Date().toString(),
-          updatedAt: new Date().toString(),
-        });
         break;
       }
 
@@ -173,7 +151,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
       case MethodType.DELETEBYID: {
         // Reassign userId to recounting userMetric
-        ({userId} = await this.userExperienceRepository.findById(
+        ({userId, experienceId} = await this.userExperienceRepository.findById(
           userExperienceId,
         ));
         break;
@@ -191,7 +169,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     }
 
     // Add pre-invocation logic here
-    const result = await next();
+    let result = await next();
     // Add post-invocation logic here
 
     if (
@@ -201,14 +179,11 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     ) {
       await this.userRepository.updateById(userId, {
         onTimeline:
-          methodName === MethodType.CREATE ? result.id : result.experienceId,
+          methodName === MethodType.SUBSCRIBE ? result.experienceId : result.id,
       });
     }
 
-    if (
-      methodName === MethodType.SUBSCRIBE ||
-      methodName === MethodType.CLONE
-    ) {
+    if (methodName === MethodType.SUBSCRIBE && !isBelongToUser) {
       const {count: currentNumberOfUserExperience} =
         await this.userExperienceRepository.count({
           experienceId,
@@ -222,7 +197,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
     if (
       (methodName === MethodType.CREATE ||
-        methodName === MethodType.CLONE ||
         methodName === MethodType.UPDATEEXPERIENCE) &&
       users.length > 0
     ) {
@@ -239,16 +213,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       );
     }
 
-    if (methodName === MethodType.CLONE) {
-      const user = await this.userRepository.findById(userId);
-
-      if (user.onTimeline === experienceId) {
-        await this.userRepository.updateById(userId, {onTimeline: result.id});
-      }
-    }
-
     if (methodName !== MethodType.FINDBYID) {
-      if (methodName === MethodType.CREATE || methodName === MethodType.CLONE) {
+      if (methodName === MethodType.CREATE) {
         await this.activityLogService.createLog(
           ActivityLogType.CREATEEXPERIENCE,
           result.createdBy,
@@ -262,6 +228,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
           await this.userExperienceRepository.updateById(result.id, {
             subscribed: false,
           });
+
+          result = Object.assign(result, {subscribed: false});
         } else {
           await this.activityLogService.createLog(
             ActivityLogType.SUBSCRIBEEXPERIENCE,
@@ -272,34 +240,59 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         }
       }
 
-      // Recounting userMetric after create, clone, and subscribe
-      await this.metricService.userMetric(userId);
-    } else {
-      if (result.users) {
-        users = result.users;
-        delete result.users;
+      if (methodName === MethodType.DELETEBYID) {
+        const {count} = await this.userExperienceRepository.count({
+          or: [
+            {
+              experienceId,
+              subscribed: true,
+            },
+            {
+              experienceId,
+              subscribed: false,
+            },
+          ],
+        });
+
+        if (count === 0) {
+          await this.experienceRepository.deleteById(experienceId);
+        } else {
+          await this.experienceRepository.updateById(experienceId, {
+            subscribedCount: count,
+          });
+        }
       }
 
-      const userToPeople = users.map((user: User) => {
-        return new People({
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          platform: PlatformType.MYRIAD,
-          originUserId: user.id,
-          profilePictureURL: user.profilePictureURL,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        });
-      });
+      // Recounting userMetric after create, clone, and subscribe
+      await this.metricService.userMetric(userId);
 
-      result.people = [...result.people, ...userToPeople];
+      return result;
     }
+
+    if (result.users) {
+      users = result.users;
+      delete result.users;
+    }
+
+    const userToPeople = users.map((user: User) => {
+      return new People({
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        platform: PlatformType.MYRIAD,
+        originUserId: user.id,
+        profilePictureURL: user.profilePictureURL,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      });
+    });
+
+    result.people = [...result.people, ...userToPeople];
 
     return result;
   }
 
-  async validateCloneExperience(
+  async validateSubscribeExperience(
     userId: string,
     experienceId: string,
   ): Promise<number> {

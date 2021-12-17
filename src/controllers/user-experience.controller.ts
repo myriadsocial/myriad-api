@@ -102,43 +102,9 @@ export class UserExperienceController {
     );
   }
 
-  @intercept(ExperienceInterceptor.BINDING_KEY)
-  @post('/users/{userId}/clone/{experienceId}', {
-    responses: {
-      '200': {
-        description: 'clone an Experience model instance',
-        content: {
-          'application/json': {schema: getModelSchemaRef(UserExperience)},
-        },
-      },
-    },
-  })
-  async clone(
-    @param.path.string('userId') userId: string,
-    @param.path.string('experienceId') experienceId: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Experience, {
-            title: 'NewExperienceInUser',
-            optional: ['createdBy'],
-          }),
-        },
-      },
-    })
-    experience: Omit<Experience, 'id'>,
-  ): Promise<Experience> {
-    await this.userExperienceRepository.deleteAll({
-      userId,
-      experienceId,
-      subscribed: true,
-    });
-    return this.userRepository.experiences(userId).create(experience);
-  }
-
   // Create new experience
   @intercept(ExperienceInterceptor.BINDING_KEY)
-  @post('/users/{id}/new-experiences', {
+  @post('/users/{id}/experiences', {
     responses: {
       '200': {
         description: 'create an Experience model instance',
