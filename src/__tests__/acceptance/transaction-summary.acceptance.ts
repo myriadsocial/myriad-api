@@ -1,6 +1,6 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {DefaultCurrencyType, ReferenceType} from '../../enums';
+import {ReferenceType} from '../../enums';
 import {Transaction, User} from '../../models';
 import {TransactionRepository, UserRepository} from '../../repositories';
 import {
@@ -98,7 +98,7 @@ describe('TransactionSummaryApplication', function () {
     expect(response.body).to.deepEqual({
       sent: [
         {
-          currencyId: DefaultCurrencyType.AUSD,
+          currencyId: 'ROC',
           amount:
             transactionSentInstance1.amount +
             transactionSentInstance2.amount +
@@ -107,7 +107,7 @@ describe('TransactionSummaryApplication', function () {
       ],
       received: [
         {
-          currencyId: DefaultCurrencyType.AUSD,
+          currencyId: 'ROC',
           amount:
             transactionReceivedInstance1.amount +
             transactionReceivedInstance2.amount +
@@ -125,7 +125,7 @@ describe('TransactionSummaryApplication', function () {
 
     expect(response.body).to.containDeep([
       {
-        currencyId: DefaultCurrencyType.AUSD,
+        currencyId: 'ROC',
         amount:
           transactionSentInstance1.amount + transactionSentInstance2.amount,
       },
@@ -140,7 +140,7 @@ describe('TransactionSummaryApplication', function () {
 
     expect(response.body).to.containDeep([
       {
-        currencyId: DefaultCurrencyType.AUSD,
+        currencyId: 'ROC',
         amount: transactionSentInstance3.amount,
       },
     ]);

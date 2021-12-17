@@ -96,12 +96,7 @@ describe('UserCurrencyApplication', function () {
 
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,
-      currencyId: DefaultCurrencyType.MYRIA,
-    });
-
-    await givenUserCurrencyInstance(userCurrencyRepository, {
-      userId: user.id,
-      currencyId: DefaultCurrencyType.AUSD,
+      currencyId: 'ROC',
     });
 
     const userCurrency = givenUserCurrency({userId: user.id});

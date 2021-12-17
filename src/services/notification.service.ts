@@ -21,7 +21,6 @@ import {
   UserRepository,
   UserSocialMediaRepository,
 } from '../repositories';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {FCMService} from './fcm.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -190,13 +189,8 @@ export class NotificationService {
 
     if (reporters.length === 0) return false;
 
-    const {getKeyring, getHexPublicKey} = new PolkadotJs();
-
-    const mnemonic = config.MYRIAD_MNEMONIC;
-    const pair = getKeyring().addFromMnemonic(mnemonic);
-
     const notification = new Notification({
-      from: getHexPublicKey(pair),
+      from: config.MYRIAD_OFFICIAL_ACCOUNT,
       message: 'approved your report',
     });
 
@@ -245,13 +239,8 @@ export class NotificationService {
 
     if (status !== ReportStatusType.REMOVED) return false;
 
-    const {getKeyring, getHexPublicKey} = new PolkadotJs();
-
-    const mnemonic = config.MYRIAD_MNEMONIC;
-    const pair = getKeyring().addFromMnemonic(mnemonic);
-
     const notification = new Notification({
-      from: getHexPublicKey(pair),
+      from: config.MYRIAD_OFFICIAL_ACCOUNT,
     });
 
     switch (referenceType) {
@@ -491,14 +480,9 @@ export class NotificationService {
     );
     if (!tipsActive) return false;
 
-    const {getKeyring, getHexPublicKey} = new PolkadotJs();
-
-    const mnemonic = config.MYRIAD_MNEMONIC;
-    const pair = getKeyring().addFromMnemonic(mnemonic);
-
     const notification = new Notification({
       type: NotificationType.USER_CLAIM_TIPS,
-      from: getHexPublicKey(pair),
+      from: config.MYRIAD_OFFICIAL_ACCOUNT,
       referenceId: transaction.id,
       message: transaction.amount + ' ' + transaction.currencyId,
     });

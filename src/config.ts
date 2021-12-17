@@ -12,6 +12,10 @@ export const config = {
   MYRIAD_MNEMONIC: process.env.MYRIAD_FAUCET_MNEMONIC ?? generateSeed(),
   MYRIAD_REWARD_AMOUNT: +(process.env.MYRIAD_REWARD_AMOUNT ?? 0),
 
+  MYRIAD_OFFICIAL_ACCOUNT:
+    process.env.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY ??
+    '0x06cc7ed22ebd12ccc28fb9c0d14a5c1220a331d89a5fef48b915e8449ee61859',
+
   ESCROW_SECRET_KEY: process.env.ESCROW_SECRET_KEY ?? 's3cr3+<3y',
 
   ACALA_AUSD_REWARD_AMOUNT: +(process.env.ACALA_AUSD_REWARD_AMOUNT ?? 0),

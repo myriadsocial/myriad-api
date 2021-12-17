@@ -15,7 +15,6 @@ import {
   UserSocialMediaRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
-import acala from '../data-seed/currencies.json';
 import {HttpErrors} from '@loopback/rest';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {NotificationService} from './notification.service';
@@ -23,7 +22,6 @@ import {TransactionService} from './transaction.service';
 import {ActivityLogService} from './activity-log.service';
 import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
-import user from '../data-seed/users.json';
 
 const BN = require('bn.js');
 
@@ -62,6 +60,8 @@ export class CurrencyService {
         'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
       rpcURL: config.MYRIAD_WS_RPC,
       native: true,
+      networkType: 'substrate',
+      exchangeRate: false,
     };
 
     try {
@@ -76,14 +76,19 @@ export class CurrencyService {
 
   async defaultAcalaTips(userId: string): Promise<void> {
     try {
-      const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
-      const api = await polkadotApi(acala[0].rpcURL, acala[0].types);
+      const {
+        rpcURL: acalaRpc,
+        decimal: acalaDecimal,
+        types,
+      } = await this.currencyRepository.findById(DefaultCurrencyType.AUSD);
+
+      const {polkadotApi, getKeyring} = new PolkadotJs();
+      const api = await polkadotApi(acalaRpc, types);
 
       const mnemonic = config.MYRIAD_MNEMONIC;
       const from = getKeyring().addFromMnemonic(mnemonic);
       const to = userId;
 
-      const acalaDecimal = 12;
       const value = config.ACALA_AUSD_REWARD_AMOUNT * 10 ** acalaDecimal;
 
       const {nonce} = await api.query.system.account(from.address);
@@ -99,20 +104,11 @@ export class CurrencyService {
       );
       const txHash = await transfer.signAndSend(from, {nonce: getNonce});
 
-      const myriadUser = await this.userRepository.findOne({
-        where: {id: getHexPublicKey(from)},
-      });
-      if (!myriadUser)
-        await this.userRepository.create({
-          id: getHexPublicKey(from),
-          ...user[0],
-        });
-
       const transaction = await this.transactionRepository.create({
         hash: txHash.toString(),
         amount: value / 10 ** acalaDecimal,
         to: to,
-        from: getHexPublicKey(from),
+        from: config.MYRIAD_OFFICIAL_ACCOUNT,
         currencyId: DefaultCurrencyType.AUSD,
       });
 
@@ -130,7 +126,7 @@ export class CurrencyService {
       const {rpcURL: myriadRpc, decimal: myriadDecimal} =
         await this.currencyRepository.findById(DefaultCurrencyType.MYRIA);
 
-      const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
+      const {polkadotApi, getKeyring} = new PolkadotJs();
       const api = await polkadotApi(myriadRpc);
 
       const mnemonic = config.MYRIAD_MNEMONIC;
@@ -151,20 +147,11 @@ export class CurrencyService {
       );
       const txHash = await transfer.signAndSend(from, {nonce: getNonce});
 
-      const myriadUser = await this.userRepository.findOne({
-        where: {id: getHexPublicKey(from)},
-      });
-      if (!myriadUser)
-        await this.userRepository.create({
-          id: getHexPublicKey(from),
-          ...user[0],
-        });
-
       const transaction = await this.transactionRepository.create({
         hash: txHash.toString(),
         amount: rewardAmount / 10 ** myriadDecimal,
         to: to,
-        from: getHexPublicKey(from),
+        from: config.MYRIAD_OFFICIAL_ACCOUNT,
         currencyId: DefaultCurrencyType.MYRIA,
       });
 

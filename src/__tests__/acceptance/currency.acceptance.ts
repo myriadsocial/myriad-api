@@ -10,7 +10,6 @@ import {
   givenMultipleCurrencyInstances,
   setupApplication,
 } from '../helpers';
-import acala from '../../data-seed/currencies.json';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('CurrencyApplication', () => {
@@ -112,16 +111,16 @@ describe('CurrencyApplication', () => {
       const currencyInProgress = await givenCurrencyInstance(
         currencyRepository,
         {
-          id: 'DOT',
-          decimal: 10,
+          id: 'AUSD',
+          decimal: 13,
           image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
-          native: false,
+          native: true,
           rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
-          types: acala[0].types,
+          networkType: 'substrate-test',
         },
       );
 
-      const filter = 'filter=' + JSON.stringify({where: {id: 'DOT'}});
+      const filter = 'filter=' + JSON.stringify({where: {id: 'AUSD'}});
 
       await client
         .get('/currencies')

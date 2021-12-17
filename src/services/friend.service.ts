@@ -4,7 +4,6 @@ import {FriendStatusType, VisibilityType} from '../enums';
 import {Friend, Post} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {Filter} from '@loopback/repository';
 import {config} from '../config';
 
@@ -90,7 +89,7 @@ export class FriendService {
       );
     }
 
-    if (requesteeId === this.myriadOfficialUserId()) {
+    if (requesteeId === config.MYRIAD_OFFICIAL_ACCOUNT) {
       throw new HttpErrors.UnprocessableEntity(
         'You cannot blocked myriad official',
       );
@@ -148,7 +147,7 @@ export class FriendService {
         );
       }
 
-      if (requestor.id !== this.myriadOfficialUserId()) {
+      if (requestor.id !== config.MYRIAD_OFFICIAL_ACCOUNT) {
         await this.friendRepository.create({
           requesteeId: requestor.id,
           requestorId: requestee.id,
@@ -210,17 +209,8 @@ export class FriendService {
     await this.friendRepository.create({
       status: FriendStatusType.APPROVED,
       requestorId: userId,
-      requesteeId: this.myriadOfficialUserId(),
+      requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT,
     });
-  }
-
-  myriadOfficialUserId(): string {
-    const {getKeyring, getHexPublicKey} = new PolkadotJs();
-
-    const mnemonic = config.MYRIAD_MNEMONIC;
-    const pair = getKeyring().addFromMnemonic(mnemonic);
-
-    return getHexPublicKey(pair);
   }
 
   async getImporterIds(userId?: string): Promise<string[]> {
@@ -249,7 +239,7 @@ export class FriendService {
       friendId,
     );
 
-    if (requesteeId === this.myriadOfficialUserId()) {
+    if (requesteeId === config.MYRIAD_OFFICIAL_ACCOUNT) {
       throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
     }
 

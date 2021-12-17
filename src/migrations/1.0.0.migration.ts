@@ -159,12 +159,13 @@ export class MigrationScript100 implements MigrationScript {
   }
 
   async doRemoveFriends(): Promise<void> {
-    const myriadOfficialUserId = this.friendService.myriadOfficialUserId();
-
     await this.friendRepository.deleteAll({
       or: [
-        {requestorId: myriadOfficialUserId},
-        {requesteeId: myriadOfficialUserId, status: FriendStatusType.PENDING},
+        {requestorId: config.MYRIAD_OFFICIAL_ACCOUNT},
+        {
+          requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT,
+          status: FriendStatusType.PENDING,
+        },
       ],
     });
   }
