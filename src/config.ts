@@ -40,7 +40,7 @@ export const config = {
 
   SENTRY_DSN: process.env.SENTRY_DSN ?? '',
 
-  TWITTER_BEARER_TOKEN: 'Bearer ' + process.env.TWITTER_BEARER_TOKEN ?? '',
+  TWITTER_API_KEY: process.env.TWITTER_API_KEY ?? '',
 
   COIN_MARKET_CAP_API_KEY: process.env.COIN_MARKET_CAP_API_KEY ?? '',
 };
