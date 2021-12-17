@@ -270,7 +270,38 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       if (methodName === MethodType.GETIMPORTERS) {
-        result = result.map((e: PostWithRelations) => e.user);
+        result = await Promise.all(
+          result.map(async (e: PostWithRelations) => {
+            if (e.visibility === VisibilityType.PRIVATE) {
+              return Object.assign(e.user, {
+                name: 'Unknown Myrian',
+                username: 'Unknown Myrian',
+              });
+            }
+
+            if (e.visibility === VisibilityType.FRIEND) {
+              if (userId) {
+                if (userId === e.createdBy) return e.user;
+                const friend =
+                  await this.friendService.friendRepository.findOne({
+                    where: {
+                      requestorId: userId.toString(),
+                      requesteeId: e.createdBy,
+                    },
+                  });
+
+                if (friend) return e.user;
+              }
+
+              return Object.assign(e.user, {
+                name: 'Unknown Myrian',
+                username: 'Unknown Myrian',
+              });
+            }
+
+            return e.user;
+          }),
+        );
       }
     }
 
