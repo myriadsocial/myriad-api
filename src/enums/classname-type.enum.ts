@@ -30,7 +30,6 @@ export enum MethodType {
   TIMELINE = 'getTimeline',
   VERIFY = 'verify',
   SUBSCRIBE = 'subscribe',
-  CLONE = 'clone',
   CREATENEW = 'createNew',
   RESTORE = 'restore',
   DELETE = 'delete',
