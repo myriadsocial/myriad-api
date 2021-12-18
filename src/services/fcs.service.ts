@@ -1,14 +1,10 @@
 import {BindingScope, injectable} from '@loopback/core';
 import * as firebaseAdmin from 'firebase-admin';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
-import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import sharp from 'sharp';
 import {UploadType} from '../enums';
-
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class FCSService {
@@ -22,6 +18,7 @@ export class FCSService {
     const bucket = firebaseAdmin.storage().bucket();
     const tempDir = os.tmpdir();
     const baseName = path.parse(filePath).name;
+    const extension = path.parse(filePath).ext;
     let format = 'jpg';
     let mutations = [
       {
@@ -59,29 +56,16 @@ export class FCSService {
 
     let result = '';
     for (const mutation of mutations) {
-      const formattedFilePath = `${tempDir}/${baseName}${mutation.suffix}_formatted.${format}`;
-      const uploadFilePath = `${targetDir}/${baseName}${mutation.suffix}.${format}`;
+      let formattedFilePath = `${tempDir}/${baseName}${extension}`;
+      let uploadFilePath = `${targetDir}/${baseName}${extension}`;
 
-      if (mutation.type === 'origin') {
-        if (type === UploadType.IMAGE) {
+      if (type === UploadType.IMAGE) {
+        formattedFilePath = `${tempDir}/${baseName}${mutation.suffix}_formatted.${format}`;
+        uploadFilePath = `${targetDir}/${baseName}${mutation.suffix}.${format}`;
+
+        if (mutation.type === 'origin') {
           await sharp(filePath).toFormat('jpg').toFile(formattedFilePath);
         } else {
-          await new Promise((resolve, reject) => {
-            ffmpeg(filePath)
-              .videoCodec('libx264')
-              .audioCodec('libmp3lame')
-              .format('mp4')
-              .on('error', err => {
-                reject(err);
-              })
-              .on('end', () => {
-                resolve(formattedFilePath);
-              })
-              .saveToFile(formattedFilePath);
-          });
-        }
-      } else {
-        if (type === UploadType.IMAGE) {
           await sharp(filePath)
             .resize({width: mutation.width})
             .toFormat('jpg')
@@ -96,7 +80,7 @@ export class FCSService {
       });
       result = file.publicUrl();
 
-      fs.unlinkSync(formattedFilePath);
+      if (type === UploadType.IMAGE) fs.unlinkSync(formattedFilePath);
     }
 
     fs.unlinkSync(filePath);
