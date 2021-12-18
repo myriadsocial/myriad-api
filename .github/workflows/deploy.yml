@@ -188,11 +188,7 @@ jobs:
             API_SENTRY_DSN:${{ secrets.STG_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-<<<<<<< HEAD
             API_DNS:${{ secrets.STG_GCP_PROJECT_ID }}/API_DNS
-=======
-            DNS_API:${{ secrets.STG_GCP_PROJECT_ID }}/DNS_API
->>>>>>> 44430b4 (MYR-000: remove unused env)
             SSH_HOST:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_KEY
@@ -299,11 +295,7 @@ jobs:
             API_SENTRY_DSN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-<<<<<<< HEAD
             API_DNS:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_DNS
-=======
-            DNS_API:${{ secrets.TESTNET_GCP_PROJECT_ID }}/DNS_API
->>>>>>> 44430b4 (MYR-000: remove unused env)
             SSH_HOST:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_KEY
@@ -410,11 +402,7 @@ jobs:
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-<<<<<<< HEAD
             API_DNS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_DNS
-=======
-            DNS_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/DNS_API
->>>>>>> 44430b4 (MYR-000: remove unused env)
             SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
@@ -521,11 +509,7 @@ jobs:
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-<<<<<<< HEAD
             API_DNS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_DNS
-=======
-            DNS_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/DNS_API
->>>>>>> 44430b4 (MYR-000: remove unused env)
             SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
