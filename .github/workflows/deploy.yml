@@ -338,7 +338,7 @@ jobs:
               --set-string ingress.hosts[0].paths[0].path=/ \
               --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
               --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=api.dev.myriad.social \
+              --set-string ingress.tls[0].hosts[0]=api.testnet.myriad.social \
               --set-string resources.requests.cpu=300m \
               --set-string resources.requests.memory=512Mi \
               --set-string resources.limits.cpu=500m \
