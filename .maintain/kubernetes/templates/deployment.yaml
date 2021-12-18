@@ -57,7 +57,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: MYRIAD_WS_RPC
+            - name: MYRIAD_RPC_WS_URL
               value: {{ .Values.config.rpcWSURL }}
             {{- if .Values.config.faucetMnemonic }}
             - name: MYRIAD_FAUCET_MNEMONIC

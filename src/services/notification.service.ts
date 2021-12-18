@@ -190,7 +190,7 @@ export class NotificationService {
     if (reporters.length === 0) return false;
 
     const notification = new Notification({
-      from: config.MYRIAD_OFFICIAL_ACCOUNT,
+      from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
       message: 'approved your report',
     });
 
@@ -240,7 +240,7 @@ export class NotificationService {
     if (status !== ReportStatusType.REMOVED) return false;
 
     const notification = new Notification({
-      from: config.MYRIAD_OFFICIAL_ACCOUNT,
+      from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
     });
 
     switch (referenceType) {
@@ -482,7 +482,7 @@ export class NotificationService {
 
     const notification = new Notification({
       type: NotificationType.USER_CLAIM_TIPS,
-      from: config.MYRIAD_OFFICIAL_ACCOUNT,
+      from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
       referenceId: transaction.id,
       message: transaction.amount + ' ' + transaction.currencyId,
     });
