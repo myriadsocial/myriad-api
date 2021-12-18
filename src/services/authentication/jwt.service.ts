@@ -15,8 +15,6 @@ export class JWTService implements TokenService {
   constructor(
     @inject(TokenServiceBindings.TOKEN_SECRET)
     private jwtSecret: string,
-    @inject(TokenServiceBindings.TOKEN_EXPIRES_IN)
-    private jwtExpiresIn: string,
   ) {}
 
   async generateToken(authProfile: UserProfile): Promise<string> {
@@ -30,11 +28,10 @@ export class JWTService implements TokenService {
       name: authProfile.name,
       email: authProfile.email,
     };
+
     let token: string;
     try {
-      token = await signAsync(authInfoForToken, this.jwtSecret, {
-        expiresIn: Number(this.jwtExpiresIn),
-      });
+      token = await signAsync(authInfoForToken, this.jwtSecret);
     } catch (err) {
       throw new HttpErrors.Unauthorized(`error generating token ${err}`);
     }
@@ -74,7 +71,7 @@ export class JWTService implements TokenService {
     }
     let token: string;
     try {
-      token = await signAsync(payload, config.ESCROW_SECRET_KEY);
+      token = await signAsync(payload, config.MYRIAD_ESCROW_SECRET_KEY);
     } catch (err) {
       throw new HttpErrors.Unauthorized(`error generating token ${err}`);
     }

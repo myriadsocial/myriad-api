@@ -104,7 +104,7 @@ export class MigrationScript100 implements MigrationScript {
     await Promise.all(
       people.map(async (e: AnyObject) => {
         const hashPeopleId = await hasher.hashPassword(
-          e._id + config.ESCROW_SECRET_KEY,
+          e._id + config.MYRIAD_ESCROW_SECRET_KEY,
         );
 
         return collection.update(
@@ -379,7 +379,7 @@ export class MigrationScript100 implements MigrationScript {
 
       const hasher = new BcryptHasher();
       const hashPeopleId = await hasher.hashPassword(
-        newPeople.id + config.ESCROW_SECRET_KEY,
+        newPeople.id + config.MYRIAD_ESCROW_SECRET_KEY,
       );
 
       await this.peopleRepository.updateById(newPeople.id, {

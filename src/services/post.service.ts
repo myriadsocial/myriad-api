@@ -57,7 +57,7 @@ export class PostService {
 
       const hasher = new BcryptHasher();
       const hashPeopleId = await hasher.hashPassword(
-        people.id + config.ESCROW_SECRET_KEY,
+        people.id + config.MYRIAD_ESCROW_SECRET_KEY,
       );
 
       await this.peopleRepository.updateById(people.id, {

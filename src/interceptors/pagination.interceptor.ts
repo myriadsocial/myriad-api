@@ -439,6 +439,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       },
     });
     const userIds = users.map(user => user.id);
+    const regexTopic = new RegExp(` ${q}"|"${q} |"${q}"| ${q} `, 'i');
     return {
       or: [
         {
@@ -455,14 +456,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
         {
           and: [
-            {text: {regexp: pattern}},
+            {text: {regexp: regexTopic}},
             {visibility: VisibilityType.PUBLIC},
             {createdBy: {nin: blockedFriendIds}},
           ],
         },
         {
           and: [
-            {title: {regexp: pattern}},
+            {title: {regexp: regexTopic}},
             {visibility: VisibilityType.PUBLIC},
             {createdBy: {nin: blockedFriendIds}},
           ],
@@ -476,14 +477,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
         {
           and: [
-            {text: {regexp: pattern}},
+            {text: {regexp: regexTopic}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
           ],
         },
         {
           and: [
-            {title: {regexp: pattern}},
+            {title: {regexp: regexTopic}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
           ],

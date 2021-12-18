@@ -13,9 +13,9 @@ import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class UserController {
   constructor(
     @repository(UserRepository)

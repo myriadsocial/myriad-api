@@ -18,9 +18,9 @@ import {
 import {PaginationInterceptor} from '../interceptors';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class NotificationController {
   constructor(
     @repository(NotificationRepository)

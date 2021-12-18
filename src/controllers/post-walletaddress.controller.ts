@@ -15,7 +15,9 @@ import {PeopleRepository, PostRepository} from '../repositories';
 import {JWTService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class PostWalletAddress {
   constructor(
     @repository(PostRepository)
@@ -61,7 +63,7 @@ export class PostWalletAddress {
       if (!people.walletAddressPassword)
         throw new HttpErrors.Unauthorized('Not Authorized');
 
-      const password = people.id + config.ESCROW_SECRET_KEY;
+      const password = people.id + config.MYRIAD_ESCROW_SECRET_KEY;
       const match = await hasher.comparePassword(
         password,
         people.walletAddressPassword,

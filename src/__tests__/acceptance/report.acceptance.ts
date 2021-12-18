@@ -7,6 +7,7 @@ import {
   PostRepository,
   ReportRepository,
   UserRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenPostInstance,
@@ -15,15 +16,23 @@ import {
   givenReportRepository,
   givenUserInstance,
   givenUserRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 
 describe('ReportApplication', () => {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let reportRepository: ReportRepository;
   let userRepository: UserRepository;
   let postRepository: PostRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -35,12 +44,26 @@ describe('ReportApplication', () => {
     reportRepository = await givenReportRepository(app);
     userRepository = await givenUserRepository(app);
     postRepository = await givenPostRepository(app);
+    authenticationRepository = await givenAuthenticationRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await reportRepository.deleteAll();
     await userRepository.deleteAll();
     await postRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted report', () => {
@@ -59,6 +82,7 @@ describe('ReportApplication', () => {
     it('gets a report by ID', async () => {
       const result = await client
         .get(`/reports/${persistedReport.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedReport);
@@ -68,7 +92,10 @@ describe('ReportApplication', () => {
     });
 
     it('returns 404 when getting a report that does not exist', () => {
-      return client.get('/reports/99999').expect(404);
+      return client
+        .get('/reports/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('updates the reports by ID ', async () => {
@@ -78,6 +105,7 @@ describe('ReportApplication', () => {
 
       await client
         .patch(`/reports/${persistedReport.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send(updatedReport)
         .expect(204);
       const result = await reportRepository.findById(persistedReport.id ?? '');
@@ -85,14 +113,21 @@ describe('ReportApplication', () => {
     });
 
     it('deletes the report', async () => {
-      await client.del(`/reports/${persistedReport.id}`).send().expect(204);
+      await client
+        .del(`/reports/${persistedReport.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(204);
       await expect(
         reportRepository.findById(persistedReport.id),
       ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a report that does not exist', async () => {
-      await client.del(`/reports/99999`).expect(404);
+      await client
+        .del(`/reports/99999`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -121,7 +156,11 @@ describe('ReportApplication', () => {
     });
 
     it('finds all reports', async () => {
-      const response = await client.get('/reports').send().expect(200);
+      const response = await client
+        .get('/reports')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedReports));
     });
 
@@ -137,6 +176,7 @@ describe('ReportApplication', () => {
 
       await client
         .get('/reports')
+        .set('Authorization', `Bearer ${token}`)
         .query(
           'filter=' +
             JSON.stringify({where: {type: ReportType.CHILDEXPLOITATION}}),
@@ -153,7 +193,10 @@ describe('ReportApplication', () => {
     });
 
     it('exploded filter conditions work', async () => {
-      const response = await client.get('/reports').query('pageLimit=2');
+      const response = await client
+        .get('/reports')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });

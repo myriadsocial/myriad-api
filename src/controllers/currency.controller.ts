@@ -16,9 +16,9 @@ import {
 } from '../interceptors';
 import {Currency} from '../models';
 import {CurrencyRepository} from '../repositories';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class CurrencyController {
   constructor(
     @repository(CurrencyRepository)

@@ -9,7 +9,7 @@ const twitterConfig = {
   crud: false,
   options: {
     headers: {
-      Authorization: config.TWITTER_BEARER_TOKEN,
+      Authorization: `Bearer ${config.TWITTER_API_KEY}`,
     },
   },
   operations: [

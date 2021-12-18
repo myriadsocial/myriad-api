@@ -8,15 +8,15 @@ import {PasswordHasher} from './services/authentication/hash.password.service';
 import {FileUploadHandler} from './types';
 
 export namespace TokenServiceConstants {
-  export const TOKEN_SECRET_VALUE = config.TOKEN_SECRET_KEY;
-  export const TOKEN_EXPIRES_IN_VALUE = config.TOKEN_EXPIRES_IN;
+  export const TOKEN_SECRET_VALUE = config.JWT_TOKEN_SECRET_KEY;
+  export const TOKEN_EXPIRES_IN_VALUE = config.JWT_TOKEN_EXPIRES_IN;
 }
 
 export namespace TokenServiceBindings {
   export const TOKEN_SECRET = BindingKey.create<string>(
     'authentication.jwt.secret',
   );
-  export const TOKEN_EXPIRES_IN = BindingKey.create<string>(
+  export const JWT_TOKEN_EXPIRES_IN = BindingKey.create<string>(
     'authentication.jwt.expires.in.seconds',
   );
   export const TOKEN_SERVICE = BindingKey.create<TokenService>(
@@ -31,11 +31,11 @@ export namespace RefreshTokenConstants {
   /**
    * The default secret used when generating refresh token.
    */
-  export const REFRESH_SECRET_VALUE = config.REFRESH_SECRET_KEY;
+  export const REFRESH_SECRET_VALUE = config.JWT_REFRESH_SECRET_KEY;
   /**
    * The default expiration time for refresh token.
    */
-  export const REFRESH_EXPIRES_IN_VALUE = config.REFRESH_EXPIRES_IN;
+  export const REFRESH_EXPIRES_IN_VALUE = config.JWT_REFRESH_EXPIRES_IN;
   /**
    * The default issuer used when generating refresh token.
    */
@@ -49,7 +49,7 @@ export namespace RefreshTokenServiceBindings {
   export const REFRESH_SECRET = BindingKey.create<string>(
     'authentication.jwt.refresh.secret',
   );
-  export const REFRESH_EXPIRES_IN = BindingKey.create<string>(
+  export const JWT_REFRESH_EXPIRES_IN = BindingKey.create<string>(
     'authentication.jwt.refresh.expires.in.seconds',
   );
   export const REFRESH_ISSUER = BindingKey.create<string>(

@@ -12,9 +12,9 @@ import {
 import {PaginationInterceptor} from '../interceptors';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
-// import {authenticate} from '@loopback/authentication';
+import {authenticate} from '@loopback/authentication';
 
-// @authenticate("jwt")
+@authenticate('jwt')
 export class TagController {
   constructor(
     @repository(TagRepository)

@@ -2,20 +2,31 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {Currency} from '../../models/';
-import {CurrencyRepository} from '../../repositories/';
+import {
+  CurrencyRepository,
+  AuthenticationRepository,
+} from '../../repositories/';
 import {
   givenCurrency,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenMultipleCurrencyInstances,
   setupApplication,
+  givenAuthenticationRepository,
 } from '../helpers';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('CurrencyApplication', () => {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let currencyRepository: CurrencyRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -23,11 +34,25 @@ describe('CurrencyApplication', () => {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await currencyRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   it('creates a currency', async function () {
@@ -35,6 +60,7 @@ describe('CurrencyApplication', () => {
     const currency = givenCurrency();
     const response = await client
       .post('/currencies')
+      .set('Authorization', `Bearer ${token}`)
       .send(currency)
       .expect(200);
     expect(response.body).to.containDeep(currency);
@@ -45,19 +71,31 @@ describe('CurrencyApplication', () => {
   it('rejects requests to create a currency with no id', async () => {
     const currency: Partial<Currency> = givenCurrency();
     delete currency.id;
-    await client.post('/currencies').send(currency).expect(422);
+    await client
+      .post('/currencies')
+      .set('Authorization', `Bearer ${token}`)
+      .send(currency)
+      .expect(422);
   });
 
   it('rejects requests to create a currency with no image', async () => {
     const currency: Partial<Currency> = givenCurrency();
     delete currency.image;
-    await client.post('/currencies').send(currency).expect(422);
+    await client
+      .post('/currencies')
+      .set('Authorization', `Bearer ${token}`)
+      .send(currency)
+      .expect(422);
   });
 
   it('rejects requests to create a currency with no rpcURL', async () => {
     const currency: Partial<Currency> = givenCurrency();
     delete currency.rpcURL;
-    await client.post('/currencies').send(currency).expect(422);
+    await client
+      .post('/currencies')
+      .set('Authorization', `Bearer ${token}`)
+      .send(currency)
+      .expect(422);
   });
 
   context('when dealing with a single persisted currency', () => {
@@ -70,17 +108,22 @@ describe('CurrencyApplication', () => {
     it('gets a currency by ID', () => {
       return client
         .get(`/currencies/${persistedCurrency.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200, toJSON(persistedCurrency));
     });
 
     it('returns 404 when getting a currency that does not exist', () => {
-      return client.get('/currencies/99999').expect(404);
+      return client
+        .get('/currencies/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('deletes the currency', async () => {
       await client
         .del(`/currencies/${persistedCurrency.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(204);
       await expect(
@@ -89,7 +132,10 @@ describe('CurrencyApplication', () => {
     });
 
     it('returns 404 when deleting a currency that does not exist', async () => {
-      await client.del(`/currencies/99999`).expect(404);
+      await client
+        .del(`/currencies/99999`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -103,7 +149,11 @@ describe('CurrencyApplication', () => {
     });
 
     it('finds all currencies', async () => {
-      const response = await client.get('/currencies').send().expect(200);
+      const response = await client
+        .get('/currencies')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedCurrencies));
     });
 
@@ -124,6 +174,7 @@ describe('CurrencyApplication', () => {
 
       await client
         .get('/currencies')
+        .set('Authorization', `Bearer ${token}`)
         .query(filter)
         .expect(200, {
           data: [toJSON(currencyInProgress)],
@@ -145,7 +196,10 @@ describe('CurrencyApplication', () => {
         rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
       });
 
-      const response = await client.get('/currencies').query('pageLimit=2');
+      const response = await client
+        .get('/currencies')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });

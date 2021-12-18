@@ -7,6 +7,7 @@ import {
   PeopleRepository,
   PostRepository,
   UserSocialMediaRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenMultiplePeopleInstances,
@@ -16,15 +17,23 @@ import {
   givenPostRepository,
   givenUserSocialMediaInstance,
   givenUserSocialMediaRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 
 describe('PeopleApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let peopleRepository: PeopleRepository;
   let postRepository: PostRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -33,6 +42,7 @@ describe('PeopleApplication', function () {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     postRepository = await givenPostRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
@@ -41,10 +51,20 @@ describe('PeopleApplication', function () {
   after(async () => {
     await postRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await peopleRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted people', () => {
@@ -57,6 +77,7 @@ describe('PeopleApplication', function () {
     it('gets a people by ID', async () => {
       const result = await client
         .get(`/people/${persistedPeople.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedPeople);
@@ -65,18 +86,28 @@ describe('PeopleApplication', function () {
     });
 
     it('returns 404 when getting a people that does not exist', () => {
-      return client.get('/people/99999').expect(404);
+      return client
+        .get('/people/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
 
     it('deletes the people', async () => {
-      await client.del(`/people/${persistedPeople.id}`).send().expect(204);
+      await client
+        .del(`/people/${persistedPeople.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(204);
       await expect(
         peopleRepository.findById(persistedPeople.id),
       ).to.be.rejectedWith(EntityNotFoundError);
     });
 
     it('returns 404 when deleting a people that does not exist', async () => {
-      await client.del(`/people/99999`).expect(404);
+      await client
+        .del(`/people/99999`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -88,7 +119,11 @@ describe('PeopleApplication', function () {
     });
 
     it('finds all users', async () => {
-      const response = await client.get('/people').send().expect(200);
+      const response = await client
+        .get('/people')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedPeople));
     });
 
@@ -104,6 +139,7 @@ describe('PeopleApplication', function () {
 
       await client
         .get('/people')
+        .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {name: 'W3F_Bill'}}))
         .expect(200, {
           data: [toJSON(peopleInProgress)],
@@ -126,7 +162,10 @@ describe('PeopleApplication', function () {
           'https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png',
       });
 
-      const response = await client.get('/people').query('pageLimit=2');
+      const response = await client
+        .get('/people')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });
@@ -142,7 +181,10 @@ describe('PeopleApplication', function () {
     const post = await givenPostInstance(postRepository, {peopleId: people.id});
     const filter = JSON.stringify({include: ['posts', 'userSocialMedia']});
 
-    const response = await client.get('/people').query({filter: filter});
+    const response = await client
+      .get('/people')
+      .set('Authorization', `Bearer ${token}`)
+      .query({filter: filter});
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({

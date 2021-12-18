@@ -5,6 +5,7 @@ import {
   ExperienceRepository,
   UserExperienceRepository,
   UserRepository,
+  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenExperience,
@@ -16,15 +17,23 @@ import {
   givenUserExperienceRepository,
   givenUserInstance,
   givenUserRepository,
+  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
 
 describe('UserExperienceApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let experienceRepository: ExperienceRepository;
   let userRepository: UserRepository;
   let userExperienceRepository: UserExperienceRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -33,15 +42,29 @@ describe('UserExperienceApplication', function () {
   after(() => app.stop());
 
   before(async () => {
+    authenticationRepository = await givenAuthenticationRepository(app);
     userRepository = await givenUserRepository(app);
     experienceRepository = await givenExperienceRepository(app);
     userExperienceRepository = await givenUserExperienceRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await userRepository.deleteAll();
     await experienceRepository.deleteAll();
     await userExperienceRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted userExperience', () => {
@@ -56,6 +79,7 @@ describe('UserExperienceApplication', function () {
     it('gets a userExperience by ID', async () => {
       const result = await client
         .get(`/user-experiences/${persistedUserExperience.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       const expected = toJSON(persistedUserExperience);
@@ -64,7 +88,10 @@ describe('UserExperienceApplication', function () {
     });
 
     it('returns 404 when getting a user that does not exist', () => {
-      return client.get('/user-experiences/99999').expect(404);
+      return client
+        .get('/user-experiences/99999')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
     });
   });
 
@@ -78,7 +105,11 @@ describe('UserExperienceApplication', function () {
     });
 
     it('finds all userExperiences', async () => {
-      const response = await client.get('/user-experiences').send().expect(200);
+      const response = await client
+        .get('/user-experiences')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(toJSON(response.body.data)).to.containDeep(
         toJSON(persistedUserExperiences),
       );
@@ -97,6 +128,7 @@ describe('UserExperienceApplication', function () {
 
       await client
         .get('/user-experiences')
+        .set('Authorization', `Bearer ${token}`)
         .query(
           'filter=' +
             JSON.stringify({
@@ -124,6 +156,7 @@ describe('UserExperienceApplication', function () {
 
       const response = await client
         .get('/user-experiences')
+        .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
@@ -146,6 +179,7 @@ describe('UserExperienceApplication', function () {
       });
       const response = await client
         .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       expect(response.body).to.containDeep(userExperience);
@@ -159,6 +193,7 @@ describe('UserExperienceApplication', function () {
       const experience = await givenExperienceInstance(experienceRepository);
       const response = await client
         .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
 
@@ -192,6 +227,7 @@ describe('UserExperienceApplication', function () {
 
       await client
         .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(422);
     });
@@ -208,6 +244,7 @@ describe('UserExperienceApplication', function () {
 
       await client
         .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(422);
     });
@@ -227,6 +264,7 @@ describe('UserExperienceApplication', function () {
 
       await client
         .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(422);
     });
@@ -244,6 +282,7 @@ describe('UserExperienceApplication', function () {
       const experience = givenExperience({createdBy: user.id});
       const response = await client
         .post(`/users/${user.id}/experiences`)
+        .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(200);
 
@@ -272,6 +311,7 @@ describe('UserExperienceApplication', function () {
       const experience = givenExperience();
       const response = await client
         .post(`/users/${user.id}/experiences`)
+        .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(200);
 
@@ -306,6 +346,7 @@ describe('UserExperienceApplication', function () {
 
       await client
         .post(`/users/${user.id}/experiences`)
+        .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(422);
     });
@@ -331,7 +372,10 @@ describe('UserExperienceApplication', function () {
         include: ['user', 'experience'],
       });
 
-    const response = await client.get('/user-experiences').query(filter);
+    const response = await client
+      .get('/user-experiences')
+      .set('Authorization', `Bearer ${token}`)
+      .query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({

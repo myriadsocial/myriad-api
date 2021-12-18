@@ -12,7 +12,9 @@ import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler} from '../types';
 import {config} from '../config';
 import {UploadType} from '../enums';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class StorageController {
   constructor(
     @inject(FILE_UPLOAD_SERVICE)

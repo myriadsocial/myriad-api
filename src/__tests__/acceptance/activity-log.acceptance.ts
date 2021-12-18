@@ -2,10 +2,15 @@ import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ActivityLogType} from '../../enums';
 import {ActivityLog} from '../../models';
-import {ActivityLogRepository, UserRepository} from '../../repositories';
+import {
+  ActivityLogRepository,
+  AuthenticationRepository,
+  UserRepository,
+} from '../../repositories';
 import {
   givenActivityLogInstance,
   givenActivityLogRepository,
+  givenAuthenticationRepository,
   givenMultipleActivityLogInstances,
   givenUserInstance,
   givenUserRepository,
@@ -14,9 +19,16 @@ import {
 
 describe('ActivityLogApplication', function () {
   let app: MyriadApiApplication;
+  let token: string;
   let client: Client;
   let userRepository: UserRepository;
   let activityLogRepository: ActivityLogRepository;
+  let authenticationRepository: AuthenticationRepository;
+
+  const userCredential = {
+    email: 'admin@mail.com',
+    password: '123456',
+  };
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -27,11 +39,25 @@ describe('ActivityLogApplication', function () {
   before(async () => {
     userRepository = await givenUserRepository(app);
     activityLogRepository = await givenActivityLogRepository(app);
+    authenticationRepository = await givenAuthenticationRepository(app);
+  });
+
+  after(async () => {
+    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await userRepository.deleteAll();
     await activityLogRepository.deleteAll();
+  });
+
+  it('sign up successfully', async () => {
+    await client.post('/signup').send(userCredential).expect(200);
+  });
+
+  it('user login successfully', async () => {
+    const res = await client.post('/login').send(userCredential).expect(200);
+    token = res.body.accessToken;
   });
 
   context('when dealing with multiple persisted activityLogs', () => {
@@ -44,7 +70,11 @@ describe('ActivityLogApplication', function () {
     });
 
     it('finds all activitiyLogs', async () => {
-      const response = await client.get('/activity-logs').send().expect(200);
+      const response = await client
+        .get('/activity-logs')
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
       expect(toJSON(response.body.data)).to.containDeep(
         toJSON(persistedActivityLogs),
       );
@@ -62,6 +92,7 @@ describe('ActivityLogApplication', function () {
 
       await client
         .get('/activity-logs')
+        .set('Authorization', `Bearer ${token}`)
         .query(
           'filter=' +
             JSON.stringify({
@@ -89,7 +120,10 @@ describe('ActivityLogApplication', function () {
           '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618cc',
       });
 
-      const response = await client.get('/activity-logs').query('pageLimit=2');
+      const response = await client
+        .get('/activity-logs')
+        .set('Authorization', `Bearer ${token}`)
+        .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
     });
   });
@@ -110,7 +144,10 @@ describe('ActivityLogApplication', function () {
         include: ['user'],
       });
 
-    const response = await client.get('/activity-logs').query(filter);
+    const response = await client
+      .get('/activity-logs')
+      .set('Authorization', `Bearer ${token}`)
+      .query(filter);
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({

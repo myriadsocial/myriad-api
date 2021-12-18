@@ -4,7 +4,9 @@ import {UserReport} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/core';
 import {PaginationInterceptor} from '../interceptors';
+import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
 export class ReportUserController {
   constructor(
     @repository(ReportRepository) protected reportRepository: ReportRepository,
