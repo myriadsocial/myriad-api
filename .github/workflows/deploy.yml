@@ -65,10 +65,12 @@ jobs:
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             REWARD_AMOUNT:${{ secrets.DEV_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.DEV_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
             ESCROW_SECRET_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
             JWT_TOKEN_SECRET_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
+            JWT_TOKEN_EXPIRES_IN:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
+            JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
+            JWT_EMAIL:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_HOST:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PORT
             MONGO_USER_API:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_USER_API
@@ -77,9 +79,9 @@ jobs:
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.DEV_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBAE_STORAGE_BUCKET:${{ secrets.DEV_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.DEV_GCP_PROJECT_ID }}/API_SENTRY_DSN
-            TWITTER_BEARER_TOKEN:${{ secrets.DEV_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
+            TWITTER_API_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            DNS_API:${{ secrets.DEV_GCP_PROJECT_ID }}/DNS_API
+            API_DNS:${{ secrets.DEV_GCP_PROJECT_ID }}/API_DNS
             SSH_HOST:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_KEY
@@ -105,7 +107,10 @@ jobs:
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
               --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
+              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
@@ -114,18 +119,18 @@ jobs:
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
-              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
+              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
-              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
               --set-string ingress.hosts[0].paths[0].path=/ \
               --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
               --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
               --set-string resources.requests.cpu=300m \
               --set-string resources.requests.memory=512Mi \
               --set-string resources.limits.cpu=500m \
@@ -165,10 +170,12 @@ jobs:
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.STG_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             REWARD_AMOUNT:${{ secrets.STG_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.STG_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
             ESCROW_SECRET_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
             JWT_TOKEN_SECRET_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
+            JWT_TOKEN_EXPIRES_IN:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
+            JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
+            JWT_EMAIL:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_HOST:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_PORT
             MONGO_USER_API:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_USER_API
@@ -177,9 +184,9 @@ jobs:
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.STG_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBAE_STORAGE_BUCKET:${{ secrets.STG_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.STG_GCP_PROJECT_ID }}/API_SENTRY_DSN
-            TWITTER_BEARER_TOKEN:${{ secrets.STG_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
+            TWITTER_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            DNS_API:${{ secrets.STG_GCP_PROJECT_ID }}/DNS_API
+            API_DNS:${{ secrets.STG_GCP_PROJECT_ID }}/API_DNS
             SSH_HOST:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_KEY
@@ -199,14 +206,16 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string image.pullPolicy=Always \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
               --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
+              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
@@ -215,18 +224,18 @@ jobs:
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
-              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
+              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
-              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
               --set-string ingress.hosts[0].paths[0].path=/ \
               --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
               --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
               --set-string resources.requests.cpu=300m \
               --set-string resources.requests.memory=512Mi \
               --set-string resources.limits.cpu=500m \
@@ -266,10 +275,12 @@ jobs:
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             REWARD_AMOUNT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.TESTNET_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
             ESCROW_SECRET_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
             JWT_TOKEN_SECRET_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
+            JWT_TOKEN_EXPIRES_IN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
+            JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
+            JWT_EMAIL:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_HOST:${{ secrets.TESTNET_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/MONGO_PORT
             MONGO_USER_API:${{ secrets.TESTNET_GCP_PROJECT_ID }}/MONGO_USER_API
@@ -278,9 +289,9 @@ jobs:
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBAE_STORAGE_BUCKET:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
-            TWITTER_BEARER_TOKEN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
+            TWITTER_API_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            DNS_API:${{ secrets.TESTNET_GCP_PROJECT_ID }}/DNS_API
+            API_DNS:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_DNS
             SSH_HOST:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_KEY
@@ -306,7 +317,10 @@ jobs:
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
               --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
+              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
@@ -315,18 +329,18 @@ jobs:
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
-              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
+              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
-              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
               --set-string ingress.hosts[0].paths[0].path=/ \
               --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
               --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
               --set-string resources.requests.cpu=300m \
               --set-string resources.requests.memory=512Mi \
               --set-string resources.limits.cpu=500m \
@@ -366,10 +380,12 @@ jobs:
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             REWARD_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
             ESCROW_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
             JWT_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
+            JWT_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
+            JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
+            JWT_EMAIL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_PORT
             MONGO_USER_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_USER_API
@@ -378,9 +394,9 @@ jobs:
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBAE_STORAGE_BUCKET:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
-            TWITTER_BEARER_TOKEN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
+            TWITTER_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            DNS_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/DNS_API
+            API_DNS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_DNS
             SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
@@ -406,7 +422,10 @@ jobs:
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
               --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
+              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
@@ -415,18 +434,18 @@ jobs:
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
-              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
+              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
-              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
               --set-string ingress.hosts[0].paths[0].path=/ \
               --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
               --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
               --set-string resources.requests.cpu=300m \
               --set-string resources.requests.memory=512Mi \
               --set-string resources.limits.cpu=500m \
@@ -466,10 +485,12 @@ jobs:
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             REWARD_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            REWARD_AMOUNT_ACALA_AUSD:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REWARD_AMOUNT_ACALA_AUSD
             ESCROW_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
             JWT_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
+            JWT_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
+            JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
+            JWT_EMAIL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_PORT
             MONGO_USER_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_USER_API
@@ -478,9 +499,9 @@ jobs:
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBAE_STORAGE_BUCKET:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBAE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
-            TWITTER_BEARER_TOKEN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_BEARER_TOKEN
+            TWITTER_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            DNS_API:${{ secrets.MAINNET_GCP_PROJECT_ID }}/DNS_API
+            API_DNS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_DNS
             SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
@@ -506,7 +527,10 @@ jobs:
               --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
               --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
+              --set-string config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
+              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
@@ -515,18 +539,18 @@ jobs:
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBAE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
-              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_BEARER_TOKEN }} \
+              --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
-              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
               --set-string ingress.hosts[0].paths[0].path=/ \
               --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
               --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.DNS_API }} \
+              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
               --set-string resources.requests.cpu=300m \
               --set-string resources.requests.memory=512Mi \
               --set-string resources.limits.cpu=500m \
