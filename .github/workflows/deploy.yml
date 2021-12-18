@@ -119,7 +119,6 @@ jobs:
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/limit-rps"="500" \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
               --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
@@ -222,7 +221,6 @@ jobs:
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/limit-rps"="500" \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
               --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
@@ -324,7 +322,6 @@ jobs:
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/limit-rps"="500" \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
               --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
@@ -426,7 +423,6 @@ jobs:
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/limit-rps"="500" \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
               --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
@@ -528,7 +524,6 @@ jobs:
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/limit-rps"="500" \
               --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
               --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
               --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.DNS_API }} \
