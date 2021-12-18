@@ -91,9 +91,9 @@ jobs:
           port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
-            helm repo add myriad https://charts.myriad.systems
+            helm repo add myriadsocial https://charts.myriad.social
             helm repo update
-            helm upgrade myriad-api myriad/myriad-api \
+            helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }}-${{ needs.compute-build-info.outputs.date }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
@@ -188,9 +188,9 @@ jobs:
           port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
-            helm repo add myriad https://charts.myriad.systems
+            helm repo add myriadsocial https://charts.myriad.social
             helm repo update
-            helm upgrade myriad-api myriad/myriad-api \
+            helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string image.pullPolicy=Always \
@@ -287,9 +287,9 @@ jobs:
           port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
-            helm repo add myriad https://charts.myriad.systems
+            helm repo add myriadsocial https://charts.myriad.social
             helm repo update
-            helm upgrade myriad-api myriad/myriad-api \
+            helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
@@ -385,9 +385,9 @@ jobs:
           port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
-            helm repo add myriad https://charts.myriad.systems
+            helm repo add myriadsocial https://charts.myriad.social
             helm repo update
-            helm upgrade myriad-api myriad/myriad-api \
+            helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
@@ -483,9 +483,9 @@ jobs:
           port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
-            helm repo add myriad https://charts.myriad.systems
+            helm repo add myriadsocial https://charts.myriad.social
             helm repo update
-            helm upgrade myriad-api myriad/myriad-api \
+            helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
