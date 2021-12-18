@@ -33,7 +33,7 @@ export const config = {
   MONGO_PASSWORD: process.env.MONGO_PASSWORD ?? 'passw0rd',
   MONGO_DATABASE: process.env.MONGO_DATABASE ?? 'myriad',
 
-  FIREBAE_STORAGE_BUCKET: process.env.FIREBAE_STORAGE_BUCKET ?? '',
+  FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ?? '',
 
   SENTRY_DSN: process.env.SENTRY_DSN ?? '',
 
