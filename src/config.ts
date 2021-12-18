@@ -1,20 +1,19 @@
 import dotenv from 'dotenv';
-import {PolkadotJs} from './utils/polkadotJs-utils';
 dotenv.config();
-
-const {generateSeed} = new PolkadotJs();
 
 export const config = {
   APPLICATION_HOST: process.env.HOST ?? 'localhost',
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
 
   MYRIAD_WS_RPC: process.env.MYRIAD_WS_RPC ?? 'ws://127.0.0.1:9944',
-  MYRIAD_MNEMONIC: process.env.MYRIAD_FAUCET_MNEMONIC ?? generateSeed(),
+  MYRIAD_MNEMONIC:
+    process.env.MYRIAD_FAUCET_MNEMONIC ??
+    'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
   MYRIAD_REWARD_AMOUNT: +(process.env.MYRIAD_REWARD_AMOUNT ?? 0),
 
   MYRIAD_OFFICIAL_ACCOUNT:
     process.env.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY ??
-    '0x06cc7ed22ebd12ccc28fb9c0d14a5c1220a331d89a5fef48b915e8449ee61859',
+    '0xa19be5cc8982772e277c259aeb21877c8ac38afe7e4a004f0f05589c255a9b9e',
 
   MYRIAD_ESCROW_SECRET_KEY: !process.env.MYRIAD_ESCROW_SECRET_KEY
     ? 's3cr3+<3y'
@@ -24,7 +23,7 @@ export const config = {
   MONGO_PORT: parseInt(process.env.MONGO_PORT ?? ''),
   MONGO_USER: process.env.MONGO_USER ?? 'api',
   MONGO_PASSWORD: process.env.MONGO_PASSWORD ?? 'passw0rd',
-  MONGO_DATABASE: process.env.MONGO_DATABASE,
+  MONGO_DATABASE: process.env.MONGO_DATABASE ?? 'myriad',
 
   JWT_REFRESH_SECRET_KEY:
     process.env.JWT_REFRESH_TOKEN_SECRET_KEY ?? 'r3fr35htok3n',
