@@ -55,7 +55,7 @@ export class JWTAuthenticationComponent implements Component {
     Binding.bind(RefreshTokenServiceBindings.REFRESH_SECRET).to(
       RefreshTokenConstants.REFRESH_SECRET_VALUE,
     ),
-    Binding.bind(RefreshTokenServiceBindings.JWT_REFRESH_EXPIRES_IN).to(
+    Binding.bind(RefreshTokenServiceBindings.JWT_REFRESH_TOKEN_EXPIRES_IN).to(
       RefreshTokenConstants.REFRESH_EXPIRES_IN_VALUE,
     ),
     Binding.bind(RefreshTokenServiceBindings.REFRESH_ISSUER).to(

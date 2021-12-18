@@ -58,7 +58,7 @@ export class CurrencyService {
       decimal: 18,
       image:
         'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
-      rpcURL: config.MYRIAD_WS_RPC,
+      rpcURL: config.MYRIAD_RPC_WS_URL,
       native: true,
       networkType: 'substrate',
       exchangeRate: false,
@@ -83,7 +83,7 @@ export class CurrencyService {
       const {polkadotApi, getKeyring} = new PolkadotJs();
       const api = await polkadotApi(myriadRpc);
 
-      const mnemonic = config.MYRIAD_MNEMONIC;
+      const mnemonic = config.MYRIAD_FAUCET_MNEMONIC;
       const from = getKeyring().addFromMnemonic(mnemonic);
       const to = userId;
 
@@ -105,7 +105,7 @@ export class CurrencyService {
         hash: txHash.toString(),
         amount: rewardAmount / 10 ** myriadDecimal,
         to: to,
-        from: config.MYRIAD_OFFICIAL_ACCOUNT,
+        from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
         currencyId: DefaultCurrencyType.MYRIA,
       });
 

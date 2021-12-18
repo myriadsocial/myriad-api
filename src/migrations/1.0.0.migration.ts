@@ -161,9 +161,9 @@ export class MigrationScript100 implements MigrationScript {
   async doRemoveFriends(): Promise<void> {
     await this.friendRepository.deleteAll({
       or: [
-        {requestorId: config.MYRIAD_OFFICIAL_ACCOUNT},
+        {requestorId: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY},
         {
-          requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT,
+          requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
           status: FriendStatusType.PENDING,
         },
       ],

@@ -28,7 +28,7 @@ export class RefreshtokenService {
   constructor(
     @inject(RefreshTokenServiceBindings.REFRESH_SECRET)
     private refreshSecret: string,
-    @inject(RefreshTokenServiceBindings.JWT_REFRESH_EXPIRES_IN)
+    @inject(RefreshTokenServiceBindings.JWT_REFRESH_TOKEN_EXPIRES_IN)
     private refreshExpiresIn: string,
     @inject(RefreshTokenServiceBindings.REFRESH_ISSUER)
     private refreshIssure: string,

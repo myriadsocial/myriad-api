@@ -12,6 +12,7 @@ Starting with Myriad.Social, we are creating a platform where social app, metave
 <br>
 
 [![Medium](https://img.shields.io/badge/Medium-Myriad-brightgreen?logo=medium)](https://medium.com/@myriadsocial.blog)
+
 </div>
 
 ---

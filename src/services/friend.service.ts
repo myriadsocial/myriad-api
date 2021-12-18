@@ -89,7 +89,7 @@ export class FriendService {
       );
     }
 
-    if (requesteeId === config.MYRIAD_OFFICIAL_ACCOUNT) {
+    if (requesteeId === config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY) {
       throw new HttpErrors.UnprocessableEntity(
         'You cannot blocked myriad official',
       );
@@ -147,7 +147,7 @@ export class FriendService {
         );
       }
 
-      if (requestor.id !== config.MYRIAD_OFFICIAL_ACCOUNT) {
+      if (requestor.id !== config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY) {
         await this.friendRepository.create({
           requesteeId: requestor.id,
           requestorId: requestee.id,
@@ -209,7 +209,7 @@ export class FriendService {
     await this.friendRepository.create({
       status: FriendStatusType.APPROVED,
       requestorId: userId,
-      requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT,
+      requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
     });
   }
 
@@ -239,7 +239,7 @@ export class FriendService {
       friendId,
     );
 
-    if (requesteeId === config.MYRIAD_OFFICIAL_ACCOUNT) {
+    if (requesteeId === config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY) {
       throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
     }
 

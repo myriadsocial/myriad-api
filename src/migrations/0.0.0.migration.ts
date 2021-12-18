@@ -29,10 +29,12 @@ export class MigrationScript000 implements MigrationScript {
     });
 
     const hasher = new BcryptHasher();
-    const password = await hasher.hashPassword(config.MYRIAD_OFFICIAL_ACCOUNT);
+    const password = await hasher.hashPassword(
+      config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+    );
 
     const user = await this.userRepository.create({
-      id: config.MYRIAD_OFFICIAL_ACCOUNT,
+      id: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
       password: password,
       name: 'Myriad Official',
       username: 'myriad_official',
@@ -47,12 +49,15 @@ export class MigrationScript000 implements MigrationScript {
     await this.userRepository.accountSetting(user.id).create({});
     await this.userRepository.notificationSetting(user.id).create({});
     await this.userRepository.leaderboard(user.id).create({});
+    await this.userRepository.currencies(user.id).delete({
+      id: DefaultCurrencyType.MYRIA,
+    });
     await this.userRepository.currencies(user.id).create({
       id: DefaultCurrencyType.MYRIA,
       decimal: 18,
       image:
         'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
-      rpcURL: config.MYRIAD_WS_RPC,
+      rpcURL: config.MYRIAD_RPC_WS_URL,
       native: true,
       networkType: 'substrate',
       exchangeRate: false,
