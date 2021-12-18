@@ -187,7 +187,7 @@ export class MyriadApiApplication extends BootMixin(
   firebaseInit() {
     if (this.options.test) return;
     firebaseAdmin.initializeApp({
-      storageBucket: config.FIREBAE_STORAGE_BUCKET,
+      storageBucket: config.FIREBASE_STORAGE_BUCKET,
     });
   }
 

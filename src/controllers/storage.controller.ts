@@ -58,7 +58,7 @@ export class StorageController {
     const uploadedFiles = request.files;
     const mapper = async (file: globalThis.Express.Multer.File) => {
       let fileURL: String = '';
-      if (config.FIREBAE_STORAGE_BUCKET) {
+      if (config.FIREBASE_STORAGE_BUCKET) {
         let uploadType = UploadType.IMAGE;
         if (file.mimetype.toLowerCase().startsWith('video')) {
           uploadType = UploadType.VIDEO;
