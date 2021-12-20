@@ -100,8 +100,7 @@ jobs:
             helm repo update
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
-              --set-string image.tag=latest-pre-alpha \
-              --set-string image.pullPolicy=Always \
+              --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
