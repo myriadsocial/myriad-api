@@ -151,7 +151,7 @@ export class User extends Entity {
     default: {
       totalPosts: 0,
       totalKudos: 0,
-      totalFriends: 0,
+      totalFriends: 1,
       totalExperiences: 0,
     },
   })
