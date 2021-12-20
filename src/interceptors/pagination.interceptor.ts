@@ -165,10 +165,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 meta: pageMetadata(NaN, NaN, 0),
               };
             }
-          } else {
-            filter.where = Object.assign(filter.where ?? {}, {
-              visibility: VisibilityType.PUBLIC,
-            });
           }
 
           break;
