@@ -151,13 +151,6 @@ export class Post extends Entity {
   popularCount: number;
 
   @property({
-    type: 'array',
-    itemType: 'object',
-    required: false,
-  })
-  importers?: User[];
-
-  @property({
     type: 'number',
     required: false,
   })

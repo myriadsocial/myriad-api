@@ -1,7 +1,7 @@
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
-import {DraftPost, Post, PostWithRelations, User} from '../models';
+import {DraftPost, PostWithRelations, User} from '../models';
 import {
   PeopleRepository,
   PostRepository,
@@ -86,9 +86,9 @@ export class PostService {
   }
 
   async getPostImporterInfo(
-    post: PostWithRelations,
+    post: AnyObject,
     userId?: string,
-  ): Promise<Post> {
+  ): Promise<AnyObject> {
     if (post.deletedAt) post.text = '[post removed]';
     if (post.platform === PlatformType.MYRIAD) return post;
     if (!post.user) return post;
@@ -122,8 +122,8 @@ export class PostService {
         isFriend = true;
       }
 
-      if (!isFriend) return Object.assign(post, {importers: []});
-      post.importers = [importer];
+      if (!isFriend) return {...post, importers: []};
+      return {...post, importers: [importer]};
     }
 
     return post;

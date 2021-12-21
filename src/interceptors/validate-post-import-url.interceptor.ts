@@ -91,9 +91,10 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     const importerInfo = user ? [Object.assign(user, {name: 'You'})] : [];
 
     // Add post-invocation logic here
-    return Object.assign(result, {
+    return {
+      ...result,
       importers: importerInfo,
       totalImporter: count,
-    });
+    };
   }
 }
