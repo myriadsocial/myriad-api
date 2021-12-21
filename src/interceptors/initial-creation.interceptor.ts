@@ -17,7 +17,7 @@ import {
   PlatformType,
   ActivityLogType,
 } from '../enums';
-import {User} from '../models';
+import {User, Wallet} from '../models';
 import {
   CommentRepository,
   CurrencyRepository,
@@ -26,6 +26,7 @@ import {
   TransactionRepository,
   UserCurrencyRepository,
   UserRepository,
+  WalletRepository,
 } from '../repositories';
 import {
   ActivityLogService,
@@ -35,6 +36,7 @@ import {
   NotificationService,
   TagService,
 } from '../services';
+import {BcryptHasher} from '../services/authentication/hash.password.service';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -57,6 +59,8 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     protected userCurrencyRepository: UserCurrencyRepository,
     @repository(DraftPostRepository)
     protected draftPostRepository: DraftPostRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -93,8 +97,10 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName;
     const className = invocationCtx.targetClass.name as ControllerType;
 
+    let wallet = null;
+
     if (methodName === MethodType.CREATE) {
-      await this.beforeCreation(className, invocationCtx);
+      wallet = await this.beforeCreation(className, invocationCtx);
     }
 
     if (methodName === MethodType.UPDATEBYID) {
@@ -136,7 +142,7 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
     let result = await next();
 
     if (methodName === MethodType.CREATE) {
-      result = await this.afterCreation(className, result);
+      result = await this.afterCreation(className, result, wallet);
     }
 
     return result;
@@ -145,26 +151,32 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
   async beforeCreation(
     className: ControllerType,
     invocationCtx: InvocationContext,
-  ): Promise<void> {
+  ): Promise<Wallet | null> {
     switch (className) {
       case ControllerType.USER: {
-        const {id, username} = invocationCtx.args[0];
+        const {name, username, ...wallet} = invocationCtx.args[0];
 
         this.validateUsername(username);
 
-        let user = await this.userRepository.findOne({where: {id}});
+        const found = await this.walletRepository.findOne({
+          where: {id: wallet.walletAddress},
+        });
 
-        if (user)
-          throw new HttpErrors.UnprocessableEntity('User already exist!');
+        if (found)
+          throw new HttpErrors.UnprocessableEntity('Address already exist!');
 
-        user = new User(invocationCtx.args[0]);
+        invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+          name: name.substring(0, 22),
+        });
 
-        const name = user.name.substring(0, 22);
+        const {walletName, walletAddress, walletType, walletPlatform} = wallet;
 
-        user.name = name;
-
-        invocationCtx.args[0] = user;
-        return;
+        return new Wallet({
+          id: walletAddress,
+          name: walletName,
+          type: walletType,
+          platform: walletPlatform,
+        });
       }
 
       case ControllerType.TRANSACTION: {
@@ -178,26 +190,47 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           invocationCtx.args[0].currencyId,
         );
         await this.userRepository.findById(invocationCtx.args[0].from);
-        return;
+        return null;
       }
 
       case ControllerType.COMMENT: {
         const {referenceId} = invocationCtx.args[0];
         await this.validateComment(referenceId);
-        return;
+        return null;
+      }
+
+      case ControllerType.USERWALLET: {
+        await this.userRepository.findById(invocationCtx.args[0]);
+
+        const {id} = invocationCtx.args[1];
+        const found = await this.walletRepository.findOne({where: {id}});
+
+        if (found) {
+          throw new HttpErrors.UnprocessableEntity('Wallet already exists!');
+        }
+        return null;
       }
 
       default:
-        return;
+        return null;
     }
   }
 
   async afterCreation(
     className: ControllerType,
     result: AnyObject,
+    wallet?: Wallet | null,
   ): Promise<AnyObject> {
     switch (className) {
       case ControllerType.USER: {
+        //TODO: override the default create() method and move password auto-generation there
+        if (!wallet) return result;
+
+        const hasher = new BcryptHasher();
+        const password = await hasher.hashPassword(result.id + wallet.id);
+
+        await this.userRepository.updateById(result.id, {password});
+        await this.userRepository.wallets(result.id).create(wallet);
         await this.userRepository.accountSetting(result.id).create({});
         await this.userRepository.notificationSetting(result.id).create({});
         await this.userRepository.leaderboard(result.id).create({});

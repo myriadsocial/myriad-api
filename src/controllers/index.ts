@@ -28,3 +28,5 @@ export * from './user-notification-setting.controller';
 export * from './user-draft-post.controller';
 export * from './storage.controller';
 export * from './leader-board.controller';
+export * from './user-wallet.controller';
+export * from './wallet-user.controller';

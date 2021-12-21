@@ -21,6 +21,7 @@ import {
   People,
   UserSocialMedia,
   LeaderBoard,
+  Wallet,
 } from '../models';
 import {ActivityLogRepository} from './activity-log.repository';
 import {CurrencyRepository} from './currency.repository';
@@ -33,6 +34,7 @@ import {AccountSettingRepository} from './account-setting.repository';
 import {NotificationSettingRepository} from './notification-setting.repository';
 import {PeopleRepository} from './people.repository';
 import {LeaderBoardRepository} from './leader-board.repository';
+import {WalletRepository} from './wallet.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<
@@ -86,6 +88,11 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
+  public readonly wallets: HasManyRepositoryFactory<
+    Wallet,
+    typeof User.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
@@ -110,6 +117,8 @@ export class UserRepository extends DefaultCrudRepository<
     protected peopleRepositoryGetter: Getter<PeopleRepository>,
     @repository.getter('LeaderBoardRepository')
     protected leaderBoardRepositoryGetter: Getter<LeaderBoardRepository>,
+    @repository.getter('WalletRepository')
+    protected walletRepositoryGetter: Getter<WalletRepository>,
   ) {
     super(User, dataSource);
     this.leaderboard = this.createHasOneRepositoryFactoryFor(
@@ -120,6 +129,11 @@ export class UserRepository extends DefaultCrudRepository<
       'leaderboard',
       this.leaderboard.inclusionResolver,
     );
+    this.wallets = this.createHasManyRepositoryFactoryFor(
+      'wallets',
+      walletRepositoryGetter,
+    );
+    this.registerInclusionResolver('wallets', this.wallets.inclusionResolver);
     this.people = this.createHasManyThroughRepositoryFactoryFor(
       'people',
       peopleRepositoryGetter,

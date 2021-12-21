@@ -12,6 +12,8 @@ import {NotificationSetting} from './notification-setting.model';
 import {People} from './people.model';
 import {UserSocialMedia} from './user-social-media.model';
 import {LeaderBoard} from './leader-board.model';
+import {Wallet} from './wallet.model';
+import {WalletWithRelations} from '.';
 
 @model({
   settings: {
@@ -26,7 +28,6 @@ export class User extends Entity {
     type: 'string',
     id: true,
     generated: true,
-    required: true,
     mongodb: {
       dataType: 'ObjectId',
     },
@@ -211,6 +212,9 @@ export class User extends Entity {
   @hasOne(() => LeaderBoard)
   leaderboard: LeaderBoard;
 
+  @hasMany(() => Wallet)
+  wallets: Wallet[];
+
   constructor(data?: Partial<User>) {
     super(data);
   }
@@ -218,6 +222,7 @@ export class User extends Entity {
 
 export interface UserRelations {
   // describe navigational properties here
+  wallets?: WalletWithRelations[];
 }
 
 export type UserWithRelations = User & UserRelations;
