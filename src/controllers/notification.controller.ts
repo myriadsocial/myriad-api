@@ -13,6 +13,7 @@ import {
   getModelSchemaRef,
   param,
   patch,
+  requestBody,
   response,
 } from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
@@ -87,6 +88,38 @@ export class NotificationController {
       read: true,
       updatedAt: new Date().toString(),
     });
+  }
+
+  @patch('/notifications/read')
+  @response(204, {
+    description: 'Read multiple Notification PATCH success',
+  })
+  async readMultipleNotification(
+    @requestBody({
+      description: 'The input of multiple read notification',
+      required: true,
+      content: {
+        'application/json': {
+          schema: {
+            type: 'array',
+            items: {
+              title: 'NotificationId',
+              type: 'string',
+            },
+          },
+        },
+      },
+    })
+    notificationIds: string[],
+  ): Promise<Count> {
+    return this.notificationRepository.updateAll(
+      {read: true},
+      {
+        id: {
+          inq: notificationIds,
+        },
+      },
+    );
   }
 
   @del('/notifications/{id}')
