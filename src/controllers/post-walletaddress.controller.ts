@@ -10,7 +10,7 @@ import {
 import {config} from '../config';
 import {PlatformType} from '../enums';
 import {TokenServiceBindings} from '../keys';
-import {Wallet} from '../models';
+import {WalletAddress} from '../models';
 import {PeopleRepository, PostRepository} from '../repositories';
 import {JWTService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
@@ -39,14 +39,16 @@ export class PostWalletAddress {
     description: 'Post model wallet address',
     content: {
       'application/json': {
-        schema: getModelSchemaRef(Wallet),
+        schema: getModelSchemaRef(WalletAddress),
       },
     },
   })
-  async getWalletAddress(@param.path.string('id') id: string): Promise<Wallet> {
+  async getWalletAddress(
+    @param.path.string('id') id: string,
+  ): Promise<WalletAddress> {
     const post = await this.postRepository.findById(id);
 
-    const wallet = new Wallet();
+    const wallet = new WalletAddress();
     const hasher = new BcryptHasher();
 
     if (!post.peopleId) {
