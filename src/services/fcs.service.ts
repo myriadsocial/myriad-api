@@ -64,10 +64,14 @@ export class FCSService {
         uploadFilePath = `${targetDir}/${baseName}${mutation.suffix}.${format}`;
 
         if (mutation.type === 'origin') {
-          await sharp(filePath).toFormat('jpg').toFile(formattedFilePath);
+          await sharp(filePath)
+            .withMetadata()
+            .toFormat('jpg')
+            .toFile(formattedFilePath);
         } else {
           await sharp(filePath)
             .resize({width: mutation.width})
+            .withMetadata()
             .toFormat('jpg')
             .toFile(formattedFilePath);
         }
