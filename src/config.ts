@@ -4,6 +4,8 @@ dotenv.config();
 export const config = {
   APPLICATION_HOST: process.env.HOST ?? 'localhost',
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
+  APPLICATION_OPEN_API_ENABLED: process.env.APP_OPEN_API_DISABLED === 'true',
+  APPLICATION_EXPLORER_ENABLED: process.env.APP_EXPLORER_DISABLED === 'true',
 
   MYRIAD_RPC_WS_URL: process.env.MYRIAD_RPC_WS_URL ?? 'ws://127.0.0.1:9944',
   MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY:

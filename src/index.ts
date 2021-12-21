@@ -1,6 +1,5 @@
 import {ApplicationConfig, MyriadApiApplication} from './application';
 import {config} from './config';
-import * as Sentry from '@sentry/node';
 
 export * from './application';
 
@@ -17,13 +16,6 @@ export async function main(options: ApplicationConfig = {}) {
 }
 
 if (require.main === module) {
-  if (config.SENTRY_DSN) {
-    Sentry.init({
-      dsn: process.env.SENTRY_DSN,
-      tracesSampleRate: 1.0,
-    });
-  }
-
   // Run the application
   const appConfig = {
     rest: {
@@ -38,6 +30,10 @@ if (require.main === module) {
       openApiSpec: {
         // useful when used with OpenAPI-to-GraphQL to locate your application
         setServersFromRequest: true,
+        disabled: config.APPLICATION_OPEN_API_ENABLED,
+      },
+      apiExplorer: {
+        disabled: config.APPLICATION_EXPLORER_ENABLED,
       },
     },
   };
