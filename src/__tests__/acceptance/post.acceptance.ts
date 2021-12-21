@@ -319,10 +319,14 @@ describe('PostApplication', function () {
         include: ['people'],
       });
 
-      result.importers = [Object.assign(importer, {name: 'You'})];
       result.totalImporter = 1;
 
-      expect(toJSON(result)).to.containDeep(toJSON(response.body));
+      expect(
+        toJSON({
+          ...result,
+          importers: [Object.assign(importer, {name: 'You'})],
+        }),
+      ).to.containDeep(toJSON(response.body));
 
       peopleId = response.body.peopleId;
     });
