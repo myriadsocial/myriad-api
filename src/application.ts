@@ -55,6 +55,7 @@ import {
   UpdatePeopleProfileJob,
 } from './jobs';
 import {CronComponent} from '@loopback/cron';
+import * as Sentry from '@sentry/node';
 import multer from 'multer';
 import {v4 as uuid} from 'uuid';
 import {FILE_UPLOAD_SERVICE} from './keys';
@@ -107,6 +108,9 @@ export class MyriadApiApplication extends BootMixin(
 
     // Firebase initialization
     this.firebaseInit();
+
+    // Sentry initialization
+    this.sentryInit();
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here
@@ -188,6 +192,15 @@ export class MyriadApiApplication extends BootMixin(
     if (this.options.test) return;
     firebaseAdmin.initializeApp({
       storageBucket: config.FIREBASE_STORAGE_BUCKET,
+    });
+  }
+
+  sentryInit() {
+    if (!config.SENTRY_DSN) return;
+
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      tracesSampleRate: 1.0,
     });
   }
 
