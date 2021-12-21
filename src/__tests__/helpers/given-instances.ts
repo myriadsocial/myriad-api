@@ -7,6 +7,8 @@ import {
   SectionType,
   AccountSettingType,
   PostStatus,
+  WalletType,
+  BlockchainPlatform,
 } from '../../enums';
 import {
   AccountSetting,
@@ -31,8 +33,10 @@ import {
   UserSocialMedia,
   UserVerification,
   Vote,
+  Wallet,
 } from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
+import {UserWallet} from '../../models/user-wallet.model';
 import {
   AccountSettingRepository,
   ActivityLogRepository,
@@ -53,13 +57,13 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   VoteRepository,
+  WalletRepository,
 } from '../../repositories';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export function givenUser(user?: Partial<User>) {
   const data = Object.assign(
     {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
       name: 'Abdul Hakim',
       username: 'abdulhakim',
     },
@@ -81,11 +85,26 @@ export async function givenMultipleUserInstances(
   return Promise.all([
     givenUserInstance(userRepository),
     givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       name: 'irman',
       username: 'irman',
     }),
   ]);
+}
+
+export function givenUserWallet(userWallet?: Partial<UserWallet>) {
+  const data = Object.assign(
+    {
+      name: 'Abdul Hakim',
+      username: 'abdulhakim',
+      walletAddress:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+      walletName: 'Abdul Hakim',
+      walletType: WalletType.POLKADOT,
+      walletPlatform: BlockchainPlatform.SUBSTRATE,
+    },
+    userWallet,
+  );
+  return new UserWallet(data);
 }
 
 export function givenPeople(people?: Partial<People>) {
@@ -717,4 +736,24 @@ export async function givenAccountSettingInstance(
   accountSetting?: Partial<AccountSetting>,
 ) {
   return accountSettingRepository.create(givenAccountSetting(accountSetting));
+}
+
+export function givenWallet(wallet?: Partial<Wallet>) {
+  const data = Object.assign(
+    {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+      name: 'Abdul Hakim',
+      type: WalletType.POLKADOT,
+      platform: BlockchainPlatform.SUBSTRATE,
+    },
+    wallet,
+  );
+  return new Wallet(data);
+}
+
+export async function givenWalletInstance(
+  walletRepository: WalletRepository,
+  wallet?: Partial<Wallet>,
+) {
+  return walletRepository.create(givenWallet(wallet));
 }

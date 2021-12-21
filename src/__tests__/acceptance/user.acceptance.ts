@@ -1,6 +1,7 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {User} from '../../models';
+import {UserWallet} from '../../models/user-wallet.model';
 import {
   ActivityLogRepository,
   CurrencyRepository,
@@ -10,6 +11,7 @@ import {
   AccountSettingRepository,
   NotificationSettingRepository,
   AuthenticationRepository,
+  WalletRepository,
 } from '../../repositories';
 import {
   givenAccountSettingRepository,
@@ -27,6 +29,9 @@ import {
   givenUserCurrencyRepository,
   givenUserInstance,
   givenUserRepository,
+  givenUserWallet,
+  givenWalletInstance,
+  givenWalletRepository,
   setupApplication,
 } from '../helpers';
 
@@ -45,6 +50,7 @@ describe('UserApplication', function () {
   let notificationSettingRepository: NotificationSettingRepository;
   let accountSettingRepository: AccountSettingRepository;
   let authenticationRepository: AuthenticationRepository;
+  let walletRepository: WalletRepository;
 
   const userCredential = {
     email: 'admin@mail.com',
@@ -68,6 +74,7 @@ describe('UserApplication', function () {
     );
     accountSettingRepository = await givenAccountSettingRepository(app);
     authenticationRepository = await givenAuthenticationRepository(app);
+    walletRepository = await givenWalletRepository(app);
   });
 
   after(async () => {
@@ -82,6 +89,7 @@ describe('UserApplication', function () {
     await activityLogRepository.deleteAll();
     await notificationSettingRepository.deleteAll();
     await accountSettingRepository.deleteAll();
+    await walletRepository.deleteAll();
   });
 
   it('sign up successfully', async () => {
@@ -95,22 +103,33 @@ describe('UserApplication', function () {
 
   it('creates a user', async () => {
     const user = givenUser();
+    const userWallet = givenUserWallet();
     const response = await client
       .post('/users')
       .set('Authorization', `Bearer ${token}`)
-      .send(user);
+      .send(userWallet);
 
     expect(response.body).to.containDeep(user);
-    const result = await userRepository.findById(response.body.id);
+    const result = await userRepository.findById(response.body.id, {
+      include: ['wallets'],
+    });
+    const wallet = result.wallets[0];
     expect(result).to.containDeep(user);
+    expect(wallet).to.containDeep({
+      id: userWallet.walletAddress,
+      name: userWallet.name,
+      type: userWallet.walletType,
+      platform: userWallet.walletPlatform,
+    });
   });
 
   it('creates a user with default settings', async () => {
-    const user = givenUser();
+    const userWallet = givenUserWallet();
     const response = await client
       .post('/users')
       .set('Authorization', `Bearer ${token}`)
-      .send(user);
+      .send(userWallet);
+
     const createdUser = await userRepository.findById(response.body.id, {
       include: ['notificationSetting', 'accountSetting'],
     });
@@ -124,73 +143,76 @@ describe('UserApplication', function () {
     expect(createdUser.notificationSetting).to.containDeep(notificationSetting);
   });
 
-  it('returns 422 when creates a user with same id', async () => {
-    await givenUserInstance(userRepository);
-    const user = givenUser();
-
-    await client
-      .post('/users')
-      .set('Authorization', `Bearer ${token}`)
-      .send(user)
-      .expect(422);
-  });
-
-  it('rejects requests to create a user with no id', async () => {
-    const user: Partial<User> = givenUser();
-    delete user.id;
-    await client
-      .post('/users')
-      .set('Authorization', `Bearer ${token}`)
-      .send(user)
-      .expect(422);
-  });
-
-  it('rejects requests to create a user with id type is not a hex', async () => {
-    const user: Partial<User> = givenUser({
-      id: '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-      name: 'Hakim',
-    });
-    await client
-      .post('/users')
-      .set('Authorization', `Bearer ${token}`)
-      .send(user)
-      .expect(422);
-  });
-
-  it('rejects requests to create a user with id length less than 66', async () => {
-    const user: Partial<User> = givenUser({
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-      name: 'Hakim',
+  it('returns 422 when creates a user with same wallet', async () => {
+    await givenWalletInstance(walletRepository);
+    const userWallet = givenUserWallet({
+      walletAddress:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
     });
 
     await client
       .post('/users')
       .set('Authorization', `Bearer ${token}`)
-      .send(user)
+      .send(userWallet)
       .expect(422);
   });
 
-  it('rejects requests to create a user with id length more than 66', async () => {
-    const user: Partial<User> = givenUser({
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618601',
+  it('rejects requests to create a user with no address', async () => {
+    const userWallet: Partial<UserWallet> = givenUserWallet();
+    delete userWallet.walletAddress;
+    await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(userWallet)
+      .expect(422);
+  });
+
+  it('rejects requests to create a user with address type is not a hex', async () => {
+    const userWallet: Partial<UserWallet> = givenUserWallet({
+      walletAddress:
+        '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       name: 'Hakim',
     });
     await client
       .post('/users')
       .set('Authorization', `Bearer ${token}`)
-      .send(user)
+      .send(userWallet)
+      .expect(422);
+  });
+
+  it('rejects requests to create a user with address length less than 66', async () => {
+    const userWallet: Partial<UserWallet> = givenUserWallet({
+      walletAddress:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      name: 'Hakim',
+    });
+
+    await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(userWallet)
+      .expect(422);
+  });
+
+  it('rejects requests to create a user with address length more than 66', async () => {
+    const userWallet: Partial<UserWallet> = givenUserWallet({
+      walletAddress:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618601',
+      name: 'Hakim',
+    });
+    await client
+      .post('/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send(userWallet)
       .expect(422);
   });
 
   it('rejects requests to create a user with name length less than 2', async () => {
-    const user: Partial<User> = givenUser({
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-      name: 'H',
-    });
+    const userWallet = givenUserWallet({name: 'H'});
     await client
       .post('/users')
       .set('Authorization', `Bearer ${token}`)
-      .send(user)
+      .send(userWallet)
       .expect(422);
   });
 
@@ -198,15 +220,12 @@ describe('UserApplication', function () {
     let persistedUser: User;
 
     beforeEach(async () => {
-      persistedUser = await givenUserInstance(userRepository, {
-        username: 'qwerty123',
-      });
+      persistedUser = await givenUserInstance(userRepository);
     });
 
     it('gets a user by ID', async () => {
       const result = await client
         .get(`/users/${persistedUser.id}`)
-        .set('Authorization', `Bearer ${token}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -228,12 +247,10 @@ describe('UserApplication', function () {
         bio: 'Hello, my name is Abdul Hakim',
       });
 
-      delete updatedUser.id;
       delete updatedUser.username;
 
       await client
         .patch(`/users/${persistedUser.id}`)
-        .set('Authorization', `Bearer ${token}`)
         .set('Authorization', `Bearer ${token}`)
         .send(updatedUser)
         .expect(204);
@@ -251,7 +268,6 @@ describe('UserApplication', function () {
       await client
         .patch(`/users/${persistedUser.id}`)
         .set('Authorization', `Bearer ${token}`)
-        .set('Authorization', `Bearer ${token}`)
         .send(updatedUser)
         .expect(422);
     });
@@ -259,12 +275,10 @@ describe('UserApplication', function () {
     it('returns 404 when updating a user that does not exist', () => {
       const updatedUser: Partial<User> = givenUser();
 
-      delete updatedUser.id;
       delete updatedUser.username;
 
       return client
         .patch('/users/99999')
-        .set('Authorization', `Bearer ${token}`)
         .set('Authorization', `Bearer ${token}`)
         .send(updatedUser)
         .expect(404);
@@ -282,7 +296,6 @@ describe('UserApplication', function () {
       const response = await client
         .get('/users')
         .set('Authorization', `Bearer ${token}`)
-        .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       expect(toJSON(response.body.data)).to.containDeep(toJSON(persistedUsers));
@@ -290,7 +303,6 @@ describe('UserApplication', function () {
 
     it('queries users with a filter', async () => {
       const userInProgress = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
         name: 'husni',
         bannerImageUrl: '',
         fcmTokens: [],
@@ -298,7 +310,6 @@ describe('UserApplication', function () {
 
       await client
         .get('/users')
-        .set('Authorization', `Bearer ${token}`)
         .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {name: 'husni'}}))
         .expect(200, {
@@ -313,14 +324,10 @@ describe('UserApplication', function () {
     });
 
     it('exploded filter conditions work', async () => {
-      await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
-        name: 'imam',
-      });
+      await givenUserInstance(userRepository, {name: 'imam'});
 
       const response = await client
         .get('/users')
-        .set('Authorization', `Bearer ${token}`)
         .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
@@ -335,8 +342,7 @@ describe('UserApplication', function () {
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      requesteeId: '10',
     });
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,

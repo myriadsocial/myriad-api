@@ -6,8 +6,8 @@ import {
   FriendRepository,
   UserCurrencyRepository,
   UserRepository,
+  WalletRepository,
 } from '../../../repositories';
-import {User} from '../../../models';
 import {
   givenActivityLogInstance,
   givenCurrencyInstance,
@@ -16,6 +16,7 @@ import {
   givenRepositories,
   givenUserCurrencyInstance,
   givenUserInstance,
+  givenWalletInstance,
   testdb,
 } from '../../helpers';
 
@@ -25,6 +26,7 @@ describe('UserControllerIntegration', () => {
   let activityLogRepository: ActivityLogRepository;
   let currencyRepository: CurrencyRepository;
   let friendRepository: FriendRepository;
+  let walletRepository: WalletRepository;
   let controller: UserController;
 
   before(async () => {
@@ -34,6 +36,7 @@ describe('UserControllerIntegration', () => {
       currencyRepository,
       friendRepository,
       activityLogRepository,
+      walletRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -47,9 +50,7 @@ describe('UserControllerIntegration', () => {
 
   it('includes Currencies in find method result', async () => {
     const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,
@@ -67,12 +68,8 @@ describe('UserControllerIntegration', () => {
   });
 
   it('includes Friends in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
-    });
+    const user = await givenUserInstance(userRepository);
+    const otherUser = await givenUserInstance(userRepository);
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
       requesteeId: otherUser.id,
@@ -88,9 +85,7 @@ describe('UserControllerIntegration', () => {
   });
 
   it('includes Activity Log in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,
     });
@@ -104,20 +99,34 @@ describe('UserControllerIntegration', () => {
     ]);
   });
 
+  it('includes Wallet in find method result', async () => {
+    const user = await givenUserInstance(userRepository);
+    const wallet = await givenWalletInstance(walletRepository, {
+      userId: user.id,
+    });
+    const response = await controller.find({include: ['wallets']});
+
+    expect(response).to.containDeep([
+      {
+        ...user,
+        wallets: [wallet],
+      },
+    ]);
+  });
+
   it('includes Currencies, ActivityLogs and Friends in find method result', async () => {
     const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
-    });
+    const user = await givenUserInstance(userRepository);
+    const otherUser = await givenUserInstance(userRepository);
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
       requesteeId: otherUser.id,
+    });
+    const wallet = await givenWalletInstance(walletRepository, {
+      userId: user.id,
     });
 
     await givenUserCurrencyInstance(userCurrencyRepository, {
@@ -126,7 +135,7 @@ describe('UserControllerIntegration', () => {
     });
 
     const response = await controller.find({
-      include: ['currencies', 'friends', 'activityLogs'],
+      include: ['currencies', 'friends', 'activityLogs', 'wallets'],
     });
 
     expect(response).to.containDeep([
@@ -135,15 +144,14 @@ describe('UserControllerIntegration', () => {
         currencies: [currency],
         friends: [friend],
         activityLogs: [activityLog],
+        wallets: [wallet],
       },
     ]);
   });
 
   it('includes Currencies in findById method result', async () => {
     const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,
@@ -161,12 +169,8 @@ describe('UserControllerIntegration', () => {
   });
 
   it('includes Friends in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
-    });
+    const user = await givenUserInstance(userRepository);
+    const otherUser = await givenUserInstance(userRepository);
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
       requesteeId: otherUser.id,
@@ -180,9 +184,7 @@ describe('UserControllerIntegration', () => {
   });
 
   it('includes ActivityLog in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,
@@ -198,19 +200,35 @@ describe('UserControllerIntegration', () => {
     });
   });
 
+  it('includes Wallet in findById method result', async () => {
+    const user = await givenUserInstance(userRepository);
+
+    const wallet = await givenWalletInstance(walletRepository, {
+      userId: user.id,
+    });
+
+    const response = await controller.findById(user.id, {
+      include: ['wallets'],
+    });
+
+    expect(response).to.containDeep({
+      ...user,
+      wallets: [wallet],
+    });
+  });
+
   it('includes Currencies, ActivityLogs, and Friends in findById method result', async () => {
     const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
-    });
+    const user = await givenUserInstance(userRepository);
+    const otherUser = await givenUserInstance(userRepository);
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
       requesteeId: otherUser.id,
     });
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
+      userId: user.id,
+    });
+    const wallet = await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
 
@@ -220,7 +238,7 @@ describe('UserControllerIntegration', () => {
     });
 
     const response = await controller.findById(user.id, {
-      include: ['currencies', 'friends', 'activityLogs'],
+      include: ['currencies', 'friends', 'activityLogs', 'wallets'],
     });
 
     expect(response).to.containDeep({
@@ -228,29 +246,7 @@ describe('UserControllerIntegration', () => {
       currencies: [currency],
       friends: [friend],
       activityLogs: [activityLog],
+      wallets: [wallet],
     });
-  });
-
-  it('creates data in UserRepository when creating user', async () => {
-    const user = new User({
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bd',
-      name: 'ex irure',
-      username: 'dolor nostrud id laborum',
-      bio: 'mollit Duis est Excepteur',
-    });
-
-    const response = await controller.create(user);
-
-    const savedUser = await userRepository.findOne({
-      where: {
-        id: user.id,
-      },
-    });
-
-    //check that a password has been generated
-    expect(savedUser).to.have.property('password');
-    expect(savedUser?.password).not.equal(null);
-    expect(response).to.have.property('password');
-    expect(response?.password).not.equal(null);
   });
 });

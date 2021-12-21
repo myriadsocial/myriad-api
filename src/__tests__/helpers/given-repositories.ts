@@ -22,6 +22,7 @@ import {
   AccountSettingRepository,
   AuthenticationRepository,
   AuthCredentialRepository,
+  WalletRepository,
 } from '../../repositories';
 
 export async function givenUserRepository(app: MyriadApiApplication) {
@@ -114,4 +115,8 @@ export async function givenAuthenticationRepository(app: MyriadApiApplication) {
 
 export async function givenAuthCredentialRepository(app: MyriadApiApplication) {
   return app.getRepository(AuthCredentialRepository);
+}
+
+export async function givenWalletRepository(app: MyriadApiApplication) {
+  return app.getRepository(WalletRepository);
 }

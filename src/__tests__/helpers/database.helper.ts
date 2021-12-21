@@ -22,6 +22,7 @@ import {
   TagRepository,
   DraftPostRepository,
   LeaderBoardRepository,
+  WalletRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -49,6 +50,11 @@ export async function givenRepositories(testdb: any) {
     async () => notificationSettingRepository,
     async () => peopleRepository,
     async () => leaderboardRepository,
+    async () => walletRepository,
+  );
+  const walletRepository: WalletRepository = new WalletRepository(
+    testdb,
+    async () => userRepository,
   );
   const userExperienceRepository: UserExperienceRepository =
     new UserExperienceRepository(
@@ -216,6 +222,7 @@ export async function givenRepositories(testdb: any) {
     notificationSettingRepository,
     tagRepository,
     leaderboardRepository,
+    walletRepository,
     metricService,
     notificationService,
     friendService,
@@ -249,6 +256,7 @@ export async function givenEmptyDatabase(testdb: any) {
     tagRepository,
     draftPostRepository,
     leaderboardRepository,
+    walletRepository,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
@@ -271,4 +279,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await notificationSettingRepository.deleteAll();
   await draftPostRepository.deleteAll();
   await leaderboardRepository.deleteAll();
+  await walletRepository.deleteAll();
 }
