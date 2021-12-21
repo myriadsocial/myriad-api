@@ -7,6 +7,7 @@ import {
   LeaderBoardRepository,
   PeopleRepository,
   PostRepository,
+  TransactionRepository,
   UserRepository,
 } from '../repositories';
 import {ActivityLog, People, Post} from '../models';
@@ -41,6 +42,8 @@ export class MigrationScript100 implements MigrationScript {
     protected leaderboardRepository: LeaderBoardRepository,
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
+    @repository(TransactionRepository)
+    protected transactionRepository: TransactionRepository,
     @service(FriendService)
     protected friendService: FriendService,
     @service(MetricService)
@@ -58,7 +61,12 @@ export class MigrationScript100 implements MigrationScript {
     await this.doMigrateFriends();
     // await this.doMigratePeople();
     await this.doRemoveFriends();
+    await this.doRemoveTransaction();
     await this.doMigrateWalletAddress();
+  }
+
+  async doRemoveTransaction(): Promise<void> {
+    await this.transactionRepository.deleteAll({currencyId: 'DOT'});
   }
 
   async doMigrateUser(): Promise<void> {
