@@ -9,7 +9,7 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {HttpErrors, RestBindings} from '@loopback/rest';
+import {RestBindings} from '@loopback/rest';
 import {ControllerType, FriendStatusType} from '../enums';
 import {FriendRepository} from '../repositories';
 import {PostService} from '../services';
@@ -53,6 +53,8 @@ export class DeletedDocument implements Provider<Interceptor> {
     const id = invocationCtx.args[0];
     const className = invocationCtx.targetClass.name as ControllerType;
 
+    let blockDetail = null;
+
     if (className === ControllerType.USER) {
       if (userId) {
         const blockedFriend = await this.friendRepository.findOne({
@@ -71,12 +73,24 @@ export class DeletedDocument implements Provider<Interceptor> {
           },
         });
 
-        if (blockedFriend) throw new HttpErrors.Forbidden('Restricted User');
+        if (blockedFriend) {
+          blockDetail = {
+            status: 'blocked',
+            blocker: blockedFriend.requestorId,
+          };
+        }
       }
     }
     // Add pre-invocation logic here
     let result = await next();
     // Add post-invocation logic here
+
+    if (blockDetail) {
+      return {
+        ...result,
+        ...blockDetail,
+      };
+    }
 
     if (result.deletedAt) {
       switch (className) {
