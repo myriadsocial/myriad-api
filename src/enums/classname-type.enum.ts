@@ -18,6 +18,7 @@ export enum ControllerType {
   USERREPORTCONTROLLER = 'UserReportController',
   REPORTUSER = 'ReportUserController',
   LEADERBOARD = 'LeaderBoardController',
+  USERWALLET = 'UserWalletController',
 }
 
 export enum MethodType {
