@@ -3,7 +3,7 @@ import {
   AccountSettingType,
   ActivityLogType,
   PlatformType,
-  ReferenceType
+  ReferenceType,
 } from '../enums';
 import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';

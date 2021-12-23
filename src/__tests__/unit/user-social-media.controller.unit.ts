@@ -8,7 +8,12 @@ import {
 import {UserSocialMediaController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {UserSocialMedia} from '../../models';
-import {PeopleRepository, UserSocialMediaRepository} from '../../repositories';
+import {
+  AccountSettingRepository,
+  PeopleRepository,
+  PostRepository,
+  UserSocialMediaRepository,
+} from '../../repositories';
 import {
   ActivityLogService,
   NotificationService,
@@ -18,7 +23,9 @@ import {
 import {givenUserSocialMedia} from '../helpers';
 
 describe('UserSocialMediaController', () => {
+  let accountSettingRepository: StubbedInstanceWithSinonAccessor<AccountSettingRepository>;
   let userSocialMediaRepository: StubbedInstanceWithSinonAccessor<UserSocialMediaRepository>;
+  let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
   let socialMediaService: SocialMediaService;
   let notificationService: NotificationService;
   let userSocialMediaService: UserSocialMediaService;
@@ -78,6 +85,8 @@ describe('UserSocialMediaController', () => {
 
   function resetRepositories() {
     userSocialMediaRepository = createStubInstance(UserSocialMediaRepository);
+    accountSettingRepository = createStubInstance(AccountSettingRepository);
+    postRepository = createStubInstance(PostRepository);
     aUserSocialMediaWithId = givenUserSocialMedia({
       id: '1',
     });
@@ -93,8 +102,10 @@ describe('UserSocialMediaController', () => {
     ] as UserSocialMedia[];
 
     userSocialMediaService = new UserSocialMediaService(
+      accountSettingRepository,
       userSocialMediaRepository,
       peopleRepository,
+      postRepository,
       notificationService,
       activityLogService,
     );

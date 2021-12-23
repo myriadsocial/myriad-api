@@ -62,7 +62,10 @@ export class DeletedDocument implements Provider<Interceptor> {
         where: {userId: id},
       });
 
-      if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE && id !== userId) {
+      if (
+        accountSetting?.accountPrivacy === AccountSettingType.PRIVATE &&
+        id !== userId
+      ) {
         throw new HttpErrors.Forbidden('Private User');
       }
 

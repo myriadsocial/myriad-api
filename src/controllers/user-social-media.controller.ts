@@ -167,11 +167,11 @@ export class UserSocialMediaController {
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     try {
       await this.notificationService.sendDisconnectedSocialMedia(id);
+      await this.userSocialMediaService.resetPostOwnership(id);
     } catch {
       // ignore
     }
 
-    await this.userSocialMediaService.resetPostOwnership(id);
     await this.userSocialMediaService.userSocialMediaRepository.deleteById(id);
   }
 }

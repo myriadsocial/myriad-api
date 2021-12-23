@@ -188,8 +188,10 @@ export async function givenRepositories(testdb: any) {
   );
 
   const userSocialMediaService = new UserSocialMediaService(
+    accountSettingRepository,
     userSocialMediaRepository,
     peopleRepository,
+    postRepository,
     notificationService,
     activityLogService,
   );
