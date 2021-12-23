@@ -11,7 +11,7 @@ import {Friend} from '../../models';
 import {FriendRepository, UserRepository} from '../../repositories';
 import {givenFriend} from '../helpers';
 
-describe('FriendControllers', () => {
+describe('FriendController', () => {
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
   let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
   let controller: FriendController;

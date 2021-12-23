@@ -84,9 +84,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('includes User in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: '1',
@@ -103,9 +101,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('includes two levels Comments in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: '9999',
@@ -158,9 +154,7 @@ describe('CommentControllerIntegration', () => {
 
   it('includes Transaction, User, and two levels Comments in find method result', async () => {
     const post = await givenPostInstance(postRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: post.id,
@@ -227,8 +221,7 @@ describe('CommentControllerIntegration', () => {
 
   it('includes Transactions in findById method result', async () => {
     const comment = await givenCommentInstance(commentRepository, {
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId: '1',
       postId: '1',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
@@ -247,9 +240,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('includes User in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: '1',
@@ -266,9 +257,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('includes two levels Comments in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: '9999',
@@ -319,9 +308,7 @@ describe('CommentControllerIntegration', () => {
 
   it('includes Transaction, User, and two levels Comments in findById method result', async () => {
     const post = await givenPostInstance(postRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
       userId: user.id,
       postId: post.id,
@@ -385,9 +372,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('creates a notification when a user comment on a myriad post', async () => {
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccckcfb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const otherUser = await givenUserInstance(userRepository);
     const post = await givenMyriadPostInstance(postRepository, {
       createdBy: otherUser.id,
       platform: PlatformType.MYRIAD,
@@ -427,9 +412,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('creates a notification when a user comment on a post from other social media and the post belong to user', async () => {
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccckcfb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const otherUser = await givenUserInstance(userRepository);
     const people = await givenPeopleInstance(peopleRepository);
     await givenUserSocialMediaInstance(userSocialMediaRepository, {
       userId: otherUser.id,
@@ -474,9 +457,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('creates a notification when a user comment on a comment', async () => {
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccckcfb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const otherUser = await givenUserInstance(userRepository);
     const post = await givenMyriadPostInstance(postRepository, {
       createdBy: otherUser.id,
       platform: PlatformType.MYRIAD,

@@ -8,7 +8,11 @@ import {
 import {UserSocialMediaController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {UserSocialMedia} from '../../models';
-import {PeopleRepository, UserSocialMediaRepository} from '../../repositories';
+import {
+  PeopleRepository,
+  UserSocialMediaRepository,
+  WalletRepository,
+} from '../../repositories';
 import {
   ActivityLogService,
   NotificationService,
@@ -19,6 +23,7 @@ import {givenUserSocialMedia} from '../helpers';
 
 describe('UserSocialMediaController', () => {
   let userSocialMediaRepository: StubbedInstanceWithSinonAccessor<UserSocialMediaRepository>;
+  let walletRepository: WalletRepository;
   let socialMediaService: SocialMediaService;
   let notificationService: NotificationService;
   let userSocialMediaService: UserSocialMediaService;
@@ -95,6 +100,7 @@ describe('UserSocialMediaController', () => {
     userSocialMediaService = new UserSocialMediaService(
       userSocialMediaRepository,
       peopleRepository,
+      walletRepository,
       notificationService,
       activityLogService,
     );

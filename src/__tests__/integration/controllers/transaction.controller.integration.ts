@@ -52,13 +52,11 @@ describe('TransactionControllerIntegration', () => {
   });
 
   it('includes fromUser in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: user.id,
-      to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      to: '2',
     });
 
     const response = await controller.find({include: ['fromUser']});
@@ -72,12 +70,10 @@ describe('TransactionControllerIntegration', () => {
   });
 
   it('includes toUser in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
       to: user.id,
-      from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      from: '2',
     });
     const response = await controller.find({include: ['toUser']});
 
@@ -90,11 +86,10 @@ describe('TransactionControllerIntegration', () => {
   });
 
   it('includes both fromUser and toUser in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      name: 'Kirania',
+      username: 'kirania',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: user.id,
@@ -112,13 +107,11 @@ describe('TransactionControllerIntegration', () => {
   });
 
   it('includes fromUser in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: user.id,
-      to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      to: '2',
     });
 
     const response = await controller.findById(transaction.id ?? '', {
@@ -132,12 +125,10 @@ describe('TransactionControllerIntegration', () => {
   });
 
   it('includes toUser in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
       to: user.id,
-      from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      from: '2',
     });
 
     const response = await controller.findById(transaction.id ?? '', {
@@ -151,11 +142,10 @@ describe('TransactionControllerIntegration', () => {
   });
 
   it('includes both fromUser and toUser in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      name: 'Kirania',
+      username: 'kirania',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: user.id,
@@ -176,7 +166,8 @@ describe('TransactionControllerIntegration', () => {
   it('creates a notification when user send tips to another user from post', async () => {
     const user = await givenUserInstance(userRepository);
     const anotherUser = await givenUserInstance(userRepository, {
-      id: '0x06ccffd22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+      name: 'Kirania',
+      username: 'kirania',
     });
     const post = await givenPostInstance(postRepository);
     const transaction = givenTransaction({
@@ -211,7 +202,8 @@ describe('TransactionControllerIntegration', () => {
   it('creates a notification when user send tips to another user from comment', async () => {
     const user = await givenUserInstance(userRepository);
     const anotherUser = await givenUserInstance(userRepository, {
-      id: '0x06ccffd22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+      name: 'Kirania',
+      username: 'kirania',
     });
     const post = await givenPostInstance(postRepository);
     const comment = await givenCommentInstance(commentRepository, {

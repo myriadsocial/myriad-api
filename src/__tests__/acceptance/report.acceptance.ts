@@ -138,9 +138,7 @@ describe('ReportApplication', () => {
 
     beforeEach(async () => {
       post = await givenPostInstance(postRepository);
-      user = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccd88fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
-      });
+      user = await givenUserInstance(userRepository);
 
       persistedReports = await Promise.all([
         givenReportInstance(reportRepository, {

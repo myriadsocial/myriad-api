@@ -33,14 +33,11 @@ describe('FriendControllerIntegration', () => {
   });
 
   it('includes Requestee in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     const friend = await givenFriendInstance(friendRepository, {
       requesteeId: user.id,
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      requestorId: '2',
     });
 
     const response = await controller.find({include: ['requestee']});
@@ -54,13 +51,10 @@ describe('FriendControllerIntegration', () => {
   });
 
   it('includes Requestor in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      requesteeId: '2',
     });
     const response = await controller.find({include: ['requestor']});
 
@@ -73,11 +67,10 @@ describe('FriendControllerIntegration', () => {
   });
 
   it('includes both Requestor and Requestee in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      name: 'Kirania Maryam',
+      username: 'kiraniamaryam',
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
@@ -97,14 +90,11 @@ describe('FriendControllerIntegration', () => {
   });
 
   it('includes Requestee in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     const friend = await givenFriendInstance(friendRepository, {
       requesteeId: user.id,
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      requestorId: '2',
     });
 
     const response = await controller.findById(friend.id ?? '', {
@@ -118,13 +108,10 @@ describe('FriendControllerIntegration', () => {
   });
 
   it('includes Requestor in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      requesteeId: '2',
     });
 
     const response = await controller.findById(friend.id ?? '', {
@@ -138,11 +125,10 @@ describe('FriendControllerIntegration', () => {
   });
 
   it('includes both Requestor and Requestee in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      name: 'Kirania Maryam',
+      username: 'kiraniamaryam',
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,

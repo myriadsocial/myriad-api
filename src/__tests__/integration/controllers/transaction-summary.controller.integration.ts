@@ -51,31 +51,34 @@ describe('TransactionSummaryControllerIntegration', function () {
   });
 
   it('gets transaction summary of users', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618mm',
+      name: 'Kirania',
+      username: 'kirania',
     });
     const currency = await givenCurrencyInstance(currencyRepository);
     const transactionSent = await givenTransactionInstance(
       transactionRepository,
       {
-        from: user.id,
-        to: otherUser.id,
+        from: user.id.toString(),
+        to: otherUser.id.toString(),
         currencyId: currency.id,
       },
     );
     const transactionReceived = await givenTransactionInstance(
       transactionRepository,
       {
-        from: otherUser.id,
-        to: user.id,
+        from: otherUser.id.toString(),
+        to: user.id.toString(),
         currencyId: currency.id,
       },
     );
 
-    const response = await controller.userTransactionSummary(user.id);
+    console.log(transactionReceived);
+
+    const response = await controller.userTransactionSummary(
+      user.id.toString(),
+    );
 
     expect(response).to.containDeep({
       sent: [
@@ -94,9 +97,7 @@ describe('TransactionSummaryControllerIntegration', function () {
   });
 
   it('gets transaction summary of posts', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const post = await givenPostInstance(postRepository);
     const currency = await givenCurrencyInstance(currencyRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
@@ -119,11 +120,10 @@ describe('TransactionSummaryControllerIntegration', function () {
   });
 
   it('gets transaction summary of comments', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618mm',
+      name: 'Kirania',
+      username: 'kirania',
     });
     const post = await givenPostInstance(postRepository);
     const comment = await givenCommentInstance(commentRepository, {

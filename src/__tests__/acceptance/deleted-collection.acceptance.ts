@@ -69,7 +69,8 @@ describe('DeletedCollectionApplication', function () {
         deletedPersistedUsers = await Promise.all([
           givenUserInstance(userRepository, {deletedAt: new Date().toString()}),
           givenUserInstance(userRepository, {
-            id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d12a5fef48b915e8449ee61863',
+            name: 'Zahrani Alisha',
+            username: 'zahranialisha',
             deletedAt: new Date().toString(),
           }),
         ]);
@@ -100,7 +101,6 @@ describe('DeletedCollectionApplication', function () {
 
       it('queries deleted users with a filter', async () => {
         const deletedUserInProgress = await givenUserInstance(userRepository, {
-          id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d12a5fef48b915e7649ee61863',
           deletedAt: new Date().toString(),
         });
 
@@ -123,7 +123,6 @@ describe('DeletedCollectionApplication', function () {
 
       it('exploded filter condition work', async () => {
         await givenUserInstance(userRepository, {
-          id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d12a5fef48b915e7649ee618s2',
           deletedAt: new Date().toString(),
         });
 
@@ -191,9 +190,7 @@ describe('DeletedCollectionApplication', function () {
       });
 
       it('soft deleted the user', async () => {
-        const user = await givenUserInstance(userRepository, {
-          id: '0x06cc7ed22ebd12ccc28gb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
-        });
+        const user = await givenUserInstance(userRepository);
         await client
           .del(`/users/${user.id}/delete`)
           .set('Authorization', `Bearer ${token}`)

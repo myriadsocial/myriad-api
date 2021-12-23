@@ -75,10 +75,6 @@ describe('VoteApplication', function () {
   });
 
   it('creates an upvote if not exists', async function () {
-    await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
-    });
-
     const user = await givenUserInstance(userRepository);
     const postResponse = await givenPostInstance(
       postRepository,
@@ -109,8 +105,9 @@ describe('VoteApplication', function () {
   });
 
   it('can downvotes post if user already comments to the post in the debate section', async () => {
-    await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+    const otherUser = await givenUserInstance(userRepository, {
+      name: 'Kirania Maryam',
+      username: 'kiraniamaryam',
     });
 
     const user = await givenUserInstance(userRepository);
@@ -131,8 +128,7 @@ describe('VoteApplication', function () {
     const comment = givenComment({
       postId: post._id.toString(),
       referenceId: post._id.toString(),
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+      userId: otherUser.id.toString(),
       section: SectionType.DEBATE,
     });
     await client
@@ -143,8 +139,7 @@ describe('VoteApplication', function () {
     const downvote = givenVote({
       referenceId: post._id.toString(),
       state: false,
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+      userId: otherUser.id.toString(),
       postId: post._id.toString(),
     });
     const response = await client
@@ -158,10 +153,6 @@ describe('VoteApplication', function () {
   });
 
   it('adds by 1 upvotes', async () => {
-    await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
-    });
-
     const user = await givenUserInstance(userRepository);
     const postResponse = (
       await givenPostInstance(

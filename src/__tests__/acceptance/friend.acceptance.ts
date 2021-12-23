@@ -72,18 +72,15 @@ describe('FriendApplication', function () {
   });
 
   it('creates a pending friend request', async function () {
-    await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-    });
-    await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+    const user = await givenUserInstance(userRepository);
+    const otherUser = await givenUserInstance(userRepository, {
+      name: 'Kirania Maryam',
+      username: 'kiraniamaryam',
     });
 
     const friend = givenFriend({
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+      requesteeId: user.id,
+      requestorId: otherUser.id,
     });
 
     const response = await client
@@ -98,8 +95,7 @@ describe('FriendApplication', function () {
 
   it('returns 422 when creates a pending friend request with no requesteeId/no requestorId', async () => {
     const friendWithNoRequesteeId = givenFriend({
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      requesteeId: '1',
     });
 
     await client
@@ -109,8 +105,7 @@ describe('FriendApplication', function () {
       .expect(422);
 
     const friendWithNoRequestorId = givenFriend({
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+      requestorId: '1',
     });
 
     await client
@@ -120,42 +115,10 @@ describe('FriendApplication', function () {
       .expect(422);
   });
 
-  it('rejects requests to create a pending friend request with requesteeId/requestorId length less/more than 66', async () => {
-    const friendWithRequestorAndRequesteeLengthLessThan66: Partial<Friend> =
-      givenFriend({
-        requesteeId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-        requestorId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-      });
-
-    await client
-      .post('/friends')
-      .set('Authorization', `Bearer ${token}`)
-      .send(friendWithRequestorAndRequesteeLengthLessThan66)
-      .expect(422);
-
-    const friendWithRequestorAndRequesteeLengthMoreThan66: Partial<Friend> =
-      givenFriend({
-        requesteeId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618612',
-        requestorId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618532',
-      });
-
-    await client
-      .post('/friends')
-      .set('Authorization', `Bearer ${token}`)
-      .send(friendWithRequestorAndRequesteeLengthMoreThan66)
-      .expect(422);
-  });
-
   it('rejects requests to create a pending friend request with requesteeId equal requestorId', async () => {
     const friend: Partial<Friend> = givenFriend({
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requesteeId: '1',
+      requestorId: '1',
     });
 
     await client
@@ -167,16 +130,12 @@ describe('FriendApplication', function () {
 
   it('rejects requests to create a double pending friend request', async () => {
     const friend = givenFriend({
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requesteeId: '1',
+      requestorId: '2',
     });
     await givenFriendInstance(friendRepository, {
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+      requesteeId: '1',
+      requestorId: '2',
     });
 
     await client
@@ -188,65 +147,13 @@ describe('FriendApplication', function () {
 
   it('rejects requests to create a pending friend request when already friend', async () => {
     const friend = givenFriend({
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requesteeId: '1',
+      requestorId: '2',
     });
     await givenFriendInstance(friendRepository, {
       status: FriendStatusType.APPROVED,
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-    });
-
-    await client
-      .post('/friends')
-      .set('Authorization', `Bearer ${token}`)
-      .send(friend)
-      .expect(422);
-  });
-
-  it('rejects requests to create a pending friend request when requesteeId and requestorId not in hex', async () => {
-    const friend = givenFriend({
-      requesteeId:
-        '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-      requestorId:
-        '0006cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-    });
-
-    await client
-      .post('/friends')
-      .set('Authorization', `Bearer ${token}`)
-      .send(friend)
-      .expect(422);
-  });
-
-  it('rejects requests to create a pending friend request more than 20', async () => {
-    const multiplePendingRequest = [];
-
-    for (let i = 11; i < 31; i++) {
-      const requesteeId =
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee60' + i;
-      const requestorId =
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61' + i;
-
-      multiplePendingRequest.push(
-        givenFriendInstance(friendRepository, {
-          requesteeId,
-          requestorId,
-        }),
-      );
-    }
-
-    await Promise.all(multiplePendingRequest);
-
-    const friend = givenFriend({
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
+      requesteeId: '1',
+      requestorId: '2',
     });
 
     await client
@@ -261,10 +168,8 @@ describe('FriendApplication', function () {
 
     beforeEach(async () => {
       persistedFriend = await givenFriendInstance(friendRepository, {
-        requesteeId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6186',
-        requestorId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185',
+        requesteeId: '1',
+        requestorId: '2',
       });
     });
 
@@ -287,11 +192,10 @@ describe('FriendApplication', function () {
     });
 
     it('updates the friend by ID ', async () => {
-      const requestee = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6111',
-      });
+      const requestee = await givenUserInstance(userRepository);
       const requestor = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6112',
+        name: 'Kirania Maryam',
+        username: 'kiraniamaryam',
       });
 
       const friend = await givenFriendInstance(friendRepository, {
@@ -326,11 +230,10 @@ describe('FriendApplication', function () {
     });
 
     it('deletes the friend', async () => {
-      const requestee = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6111',
-      });
+      const requestee = await givenUserInstance(userRepository);
       const requestor = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6112',
+        name: 'Kirania Maryam',
+        username: 'kiraniamaryam',
       });
 
       const friend = await givenFriendInstance(friendRepository, {
@@ -373,11 +276,10 @@ describe('FriendApplication', function () {
     });
 
     it('finds all blocked friends', async () => {
-      const requestee = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48w115e8449ee61859',
-      });
+      const requestee = await givenUserInstance(userRepository);
       const requestor = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fli48b915e8449ee61859',
+        name: 'Kirania Maryam',
+        username: 'kiraniamaryam',
       });
       const blockedFriends = await givenFriendInstance(friendRepository, {
         requesteeId: requestee.id,
@@ -395,10 +297,8 @@ describe('FriendApplication', function () {
     it('queries friends with a filter', async () => {
       const friendInProgress = await givenFriendInstance(friendRepository, {
         status: FriendStatusType.APPROVED,
-        requesteeId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
-        requestorId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
+        requesteeId: '1',
+        requestorId: '2',
       });
 
       await client
@@ -421,10 +321,8 @@ describe('FriendApplication', function () {
 
     it('exploded filter conditions work', async () => {
       await givenFriendInstance(friendRepository, {
-        requesteeId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866',
-        requestorId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61867',
+        requesteeId: '1',
+        requestorId: '2',
       });
 
       const response = await client
@@ -437,12 +335,12 @@ describe('FriendApplication', function () {
 
   it('includes requestee and requestor in query result', async () => {
     const requestor = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
       name: 'imam',
+      username: 'imam',
     });
     const requestee = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
       name: 'muchtar',
+      username: 'muchtar',
     });
     const friend = await givenFriendInstance(friendRepository, {
       requesteeId: requestee.id,
@@ -465,11 +363,10 @@ describe('FriendApplication', function () {
   });
 
   it('creates notification when sending a pending friend request', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      name: 'Kirania Maryam',
+      username: 'kiraniamaryam',
     });
 
     const friend = givenFriend({
@@ -507,11 +404,10 @@ describe('FriendApplication', function () {
   });
 
   it('creates notification when approving a pending friend request', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      name: 'Kirania Maryam',
+      username: 'kiraniamaryam',
     });
 
     const friend = await givenFriendInstance(friendRepository, {

@@ -102,7 +102,8 @@ describe('CommentApplication', function () {
   beforeEach(async () => {
     user = await givenUserInstance(userRepository);
     otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+      name: 'Kirania Maryam',
+      username: 'kiraniamaryam',
     });
     people = await givenPeopleInstance(peopleRepository);
     post = await givenPostInstance(postRepository, {

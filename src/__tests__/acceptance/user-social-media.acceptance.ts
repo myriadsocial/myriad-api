@@ -8,6 +8,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   AuthenticationRepository,
+  WalletRepository,
 } from '../../repositories';
 import {
   givenPeopleInstance,
@@ -19,6 +20,8 @@ import {
   givenAuthenticationRepository,
   givenUserVerification,
   setupApplication,
+  givenWalletInstance,
+  givenWalletRepository,
 } from '../helpers';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
@@ -30,6 +33,7 @@ describe('UserSocialMediaApplication', function () {
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let authenticationRepository: AuthenticationRepository;
+  let walletRepository: WalletRepository;
 
   const userCredential = {
     email: 'admin@mail.com',
@@ -47,6 +51,7 @@ describe('UserSocialMediaApplication', function () {
     userRepository = await givenUserRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
+    walletRepository = await givenWalletRepository(app);
   });
 
   after(async () => {
@@ -57,6 +62,7 @@ describe('UserSocialMediaApplication', function () {
     await userRepository.deleteAll();
     await peopleRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();
+    await walletRepository.deleteAll();
   });
 
   it('sign up successfully', async () => {
@@ -76,10 +82,12 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('verifies user social media', async () => {
-      await givenUserInstance(userRepository, {
+      const user = await givenUserInstance(userRepository);
+      const wallet = await givenWalletInstance(walletRepository, {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+        userId: user.id,
       });
-      const userVerification = givenUserVerification();
+      const userVerification = givenUserVerification({publicKey: wallet.id});
       const response = await client
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
@@ -135,11 +143,12 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('rejects user to verify social media that already been claimed', async () => {
-      await givenUserInstance(userRepository, {
+      const user = await givenUserInstance(userRepository);
+      const wallet = await givenWalletInstance(walletRepository, {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+        userId: user.id,
       });
-
-      const userVerification = givenUserVerification();
+      const userVerification = givenUserVerification({publicKey: wallet.id});
 
       await client
         .post('/user-social-medias/verify')
@@ -266,9 +275,7 @@ describe('UserSocialMediaApplication', function () {
 
   it('includes friends and currencies in query result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185g',
-    });
+    const user = await givenUserInstance(userRepository);
     const userSocialMedia = await givenUserSocialMediaInstance(
       userSocialMediaRepository,
       {

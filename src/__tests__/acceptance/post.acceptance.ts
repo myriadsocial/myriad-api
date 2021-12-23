@@ -79,9 +79,7 @@ describe('PostApplication', function () {
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed14ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
-    });
+    user = await givenUserInstance(userRepository);
   });
 
   after(async () => {
@@ -110,7 +108,9 @@ describe('PostApplication', function () {
   });
 
   it('creates a post', async () => {
-    const myriadPost: Partial<DraftPost> = givenPost({createdBy: user.id});
+    const myriadPost: Partial<DraftPost> = givenPost({
+      createdBy: user.id.toString(),
+    });
     const response = await client
       .post('/posts')
       .set('Authorization', `Bearer ${token}`)
@@ -138,7 +138,7 @@ describe('PostApplication', function () {
 
     beforeEach(async () => {
       persistedPost = await givenMyriadPostInstance(postRepository, {
-        createdBy: user.id,
+        createdBy: user.id.toString(),
       });
     });
 
@@ -195,10 +195,12 @@ describe('PostApplication', function () {
 
     beforeEach(async () => {
       persistedPosts = [
-        await givenMyriadPostInstance(postRepository, {createdBy: user.id}),
+        await givenMyriadPostInstance(postRepository, {
+          createdBy: user.id.toString(),
+        }),
         await givenMyriadPostInstance(postRepository, {
           text: 'hello',
-          createdBy: user.id,
+          createdBy: user.id.toString(),
         }),
       ];
     });
@@ -215,7 +217,7 @@ describe('PostApplication', function () {
     it('queries posts with a filter', async () => {
       const postInProgress = await givenMyriadPostInstance(postRepository, {
         text: "what's up, docs!",
-        createdBy: user.id,
+        createdBy: user.id.toString(),
       });
 
       await client
@@ -236,7 +238,7 @@ describe('PostApplication', function () {
     it('exploded filter conditions work', async () => {
       await givenMyriadPostInstance(postRepository, {
         text: 'this is it',
-        createdBy: user.id,
+        createdBy: user.id.toString(),
       });
 
       const response = await client
@@ -251,7 +253,7 @@ describe('PostApplication', function () {
     const people = await givenPeopleInstance(peopleRepository);
     const post = await givenPostInstance(postRepository, {
       peopleId: people.id,
-      createdBy: user.id,
+      createdBy: user.id.toString(),
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
@@ -264,7 +266,7 @@ describe('PostApplication', function () {
     const comment = await givenCommentInstance(commentRepository, {
       type: ReferenceType.POST,
       referenceId: post.id,
-      userId: user.id,
+      userId: user.id.toString(),
       postId: post.id,
     });
 
@@ -306,10 +308,11 @@ describe('PostApplication', function () {
 
     it('creates a post from reddit', async function () {
       const importer = await givenUserInstance(userRepository, {
-        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
+        name: 'Kirania Maryam',
+        username: 'kiraniamaryam',
       });
 
-      const platformPost = givenPlatformPost();
+      const platformPost = givenPlatformPost({importer: importer.id});
       const response = await client
         .post('/posts/import')
         .set('Authorization', `Bearer ${token}`)
@@ -339,13 +342,13 @@ describe('PostApplication', function () {
       expect(toJSON(result)).to.containDeep(toJSON(response.body));
     });
 
-    it('rejects request to create a post from social media if importer alreay imported', async () => {
-      await givenUserInstance(userRepository, {
-        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
+    it('rejects request to create a post from social media if importer already imported', async () => {
+      const importer = await givenUserInstance(userRepository, {
+        name: 'Zahrani Alisha',
+        username: 'zahranialisha',
       });
       const platformPost: Partial<PlatformPost> = givenPlatformPost({
-        importer:
-          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
+        importer: importer.id,
       });
       await client
         .post('/posts/import')

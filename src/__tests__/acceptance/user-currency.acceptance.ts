@@ -120,7 +120,6 @@ describe('UserCurrencyApplication', function () {
 
   it('deletes the user currency', async () => {
     const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee62164',
       defaultCurrency: DefaultCurrencyType.MYRIA,
     });
 

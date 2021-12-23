@@ -230,12 +230,12 @@ describe('NotificationApplication', function () {
 
     it('includes fromUserId and toUserId in query result', async () => {
       const from = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61802',
         name: 'imam',
+        username: 'imam',
       });
       const to = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
         name: 'muchtar',
+        username: 'muchtar',
       });
       const notification = await givenNotificationInstance(
         notificationRepository,
@@ -243,10 +243,9 @@ describe('NotificationApplication', function () {
           type: NotificationType.FRIEND_REQUEST,
           read: false,
           message: 'sent you friend request',
-          referenceId:
-            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
-          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61802',
-          to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
+          referenceId: to.id,
+          from: from.id,
+          to: to.id,
         },
       );
 

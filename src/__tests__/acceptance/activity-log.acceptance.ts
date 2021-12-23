@@ -85,8 +85,7 @@ describe('ActivityLogApplication', function () {
         activityLogRepository,
         {
           type: ActivityLogType.CREATEPOST,
-          userId:
-            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c',
+          userId: '1',
         },
       );
 
@@ -97,8 +96,7 @@ describe('ActivityLogApplication', function () {
           'filter=' +
             JSON.stringify({
               where: {
-                userId:
-                  '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c',
+                userId: '1',
               },
             }),
         )
@@ -116,8 +114,7 @@ describe('ActivityLogApplication', function () {
     it('exploded filter conditions work', async () => {
       await givenActivityLogInstance(activityLogRepository, {
         type: ActivityLogType.CREATEPOST,
-        userId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618cc',
+        userId: '1',
       });
 
       const response = await client
@@ -129,9 +126,7 @@ describe('ActivityLogApplication', function () {
   });
 
   it('includes user in query result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618dc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       type: ActivityLogType.CREATEPOST,

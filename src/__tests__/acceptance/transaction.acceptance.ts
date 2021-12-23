@@ -173,8 +173,8 @@ describe('TransactionApplication', function () {
     before(async () => {
       user = await givenUserInstance(userRepository);
       otherUser = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
         name: 'irman',
+        username: 'irman',
       });
     });
 
@@ -239,12 +239,12 @@ describe('TransactionApplication', function () {
 
   it('includes fromUser, toUser, and currency in query result', async () => {
     const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618aa',
       name: 'irman',
+      username: 'irman',
     });
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61851',
-      name: 'irman',
+      name: 'zahrani',
+      username: 'zahrani',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: user.id,
