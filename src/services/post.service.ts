@@ -13,7 +13,7 @@ import {
 import {injectable, BindingScope, service} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
-import {FriendStatusType, PlatformType, ReferenceType} from '../enums';
+import {PlatformType, ReferenceType} from '../enums';
 import {MetricService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
@@ -96,37 +96,11 @@ export class PostService {
 
     const importer = new User({...post.user});
 
-    if (userId) {
-      let isFriend = false;
-
-      if (userId !== post.createdBy) {
-        const friend = await this.friendRepository.findOne({
-          where: {
-            or: [
-              {
-                requestorId: userId,
-                requesteeId: post.createdBy,
-              },
-              {
-                requesteeId: userId,
-                requestorId: post.createdBy,
-              },
-            ],
-            status: FriendStatusType.APPROVED,
-          },
-        });
-
-        if (friend) isFriend = true;
-      } else {
-        importer.name = 'You';
-        isFriend = true;
-      }
-
-      if (!isFriend) return {...post, importers: []};
-      return {...post, importers: [importer]};
+    if (userId === post.createdBy) {
+      importer.name = 'You';
     }
 
-    return post;
+    return {...post, importers: [importer]};
   }
 
   async createDraftPost(draftPost: DraftPost): Promise<DraftPost> {
