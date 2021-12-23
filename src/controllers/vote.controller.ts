@@ -54,17 +54,6 @@ export class VoteController {
 
     const result = await collection.findOneAndUpdate(query, update, options);
 
-    try {
-      await this.notificationService.sendPostVote(
-        vote.userId,
-        Object.assign(result.value, {
-          id: result.value._id,
-        }),
-      );
-    } catch {
-      // ignore
-    }
-
     return result;
   }
 
