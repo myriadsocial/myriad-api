@@ -81,7 +81,10 @@ export class UserSocialMediaController {
     );
 
     try {
-      await this.notificationService.sendConnectedSocialMedia(userSocialMedia);
+      await this.notificationService.sendConnectedSocialMedia(
+        userSocialMedia,
+        platformUser,
+      );
     } catch {
       // ignore
     }

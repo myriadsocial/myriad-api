@@ -2,6 +2,7 @@ import {BindingScope, injectable, service} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {config} from '../config';
 import {NotificationType, ReferenceType, ReportStatusType} from '../enums';
+import {ExtendedPeople} from '../interfaces';
 import {
   Comment,
   MentionUser,
@@ -495,15 +496,26 @@ export class NotificationService {
     return true;
   }
 
-  async sendConnectedSocialMedia(userSocialMedia: UserSocialMedia) {
+  async sendConnectedSocialMedia(
+    userSocialMedia: UserSocialMedia,
+    people: ExtendedPeople,
+  ) {
     const {userId, platform, peopleId} = userSocialMedia;
+    const {name, username} = people;
 
     const notification = new Notification({
       type: NotificationType.CONNECTED_SOCIAL_MEDIA,
       from: userId,
       referenceId: userId,
       message: `connected your ${platform} social media`,
-      additionalReferenceId: [{peopleId: peopleId}],
+      additionalReferenceId: [
+        {
+          peopleId: peopleId,
+          peopleName: name,
+          peopleUsername: username,
+          peoplePlatform: platform,
+        },
+      ],
     });
 
     const title = `Connected ${
@@ -517,8 +529,10 @@ export class NotificationService {
   }
 
   async sendDisconnectedSocialMedia(id: string, fromUserId?: string) {
-    const userSocialMedia = await this.userSocialMediaRepository.findById(id);
-    const {userId, platform, peopleId} = userSocialMedia;
+    const userSocialMedia = await this.userSocialMediaRepository.findById(id, {
+      include: ['people'],
+    });
+    const {userId, platform, peopleId, people} = userSocialMedia;
 
     if (!fromUserId) fromUserId = userId;
     else await this.userRepository.findById(fromUserId);
@@ -528,7 +542,14 @@ export class NotificationService {
       from: fromUserId,
       referenceId: fromUserId,
       message: `disconnected your ${platform} social media`,
-      additionalReferenceId: [{peopleId: peopleId}],
+      additionalReferenceId: [
+        {
+          peopleId: peopleId,
+          peopleName: people?.name,
+          peopleUsername: people?.username,
+          peoplePlatform: people?.platform,
+        },
+      ],
     });
 
     const title = `Disconnected ${
