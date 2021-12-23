@@ -1,4 +1,4 @@
-import {intercept} from '@loopback/core';
+import {inject, intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -17,15 +17,21 @@ import {
 import {Currency} from '../models';
 import {CurrencyRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class CurrencyController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
   ) {}
 
   @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @logInvocation()
   @post('/currencies')
   @response(200, {
     description: 'Currency model instance',
@@ -47,6 +53,7 @@ export class CurrencyController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
   @get('/currencies')
   @response(200, {
     description: 'Array of Currency model instances',
@@ -67,6 +74,7 @@ export class CurrencyController {
   }
 
   @get('/currencies/{id}')
+  @logInvocation()
   @response(200, {
     description: 'Currency model instance',
     content: {
@@ -84,6 +92,7 @@ export class CurrencyController {
   }
 
   @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @logInvocation()
   @patch('/currencies/{id}')
   @response(204, {
     description: 'Currency PATCH success',
@@ -106,6 +115,7 @@ export class CurrencyController {
   }
 
   @del('/currencies/{id}')
+  @logInvocation()
   @response(204, {
     description: 'Currency DELETE success',
   })

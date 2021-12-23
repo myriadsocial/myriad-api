@@ -2,7 +2,7 @@ import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors, post, requestBody} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
-import {LoggingBindings, WinstonLogger} from '@loopback/logging';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 import * as _ from 'lodash';
 import {NewAuthRequest, RefreshGrant, TokenObject, Token} from '../interfaces';
 import {
@@ -23,26 +23,21 @@ export class AuthenticationController {
   // Inject a winston logger
   @inject(LoggingBindings.WINSTON_LOGGER)
   private logger: WinstonLogger;
+
   constructor(
     @repository(AuthenticationRepository)
     protected authenticationRepository: AuthenticationRepository,
-
-    // @inject('service.hasher')
     @inject(PasswordHasherBindings.PASSWORD_HASHER)
     protected hasher: BcryptHasher,
-
-    // @inject('service.user.service')
     @inject(AuthServiceBindings.AUTH_SERVICE)
     protected authService: MyAuthService,
-
-    // @inject('service.jwt.service')
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
-
     @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
     protected refreshService: RefreshtokenService,
   ) {}
 
+  @logInvocation()
   @post('/signup', {
     responses: {
       '200': {
@@ -90,7 +85,6 @@ export class AuthenticationController {
     })
     newAuthRequest: NewAuthRequest,
   ): Promise<Authentication> {
-    this.logger.log('info', newAuthRequest.email + ' is registering...');
     const foundAuth = await this.authenticationRepository.findOne({
       where: {
         email: newAuthRequest.email,
@@ -119,6 +113,7 @@ export class AuthenticationController {
     return savedUser;
   }
 
+  @logInvocation()
   @post('/login', {
     responses: {
       '200': {
@@ -172,7 +167,6 @@ export class AuthenticationController {
     })
     credentials: Credentials,
   ): Promise<Token> {
-    this.logger.log('info', credentials.email + ' is logging in...');
     // ensure the user exists, and the password is correct
     const user = await this.authService.verifyCredentials(credentials);
     // convert a User object into a UserProfile object (reduced set of properties)
@@ -192,6 +186,7 @@ export class AuthenticationController {
     };
   }
 
+  @logInvocation()
   @post('/refresh', {
     responses: {
       '200': {
@@ -231,10 +226,6 @@ export class AuthenticationController {
     })
     refreshGrant: RefreshGrant,
   ): Promise<TokenObject> {
-    this.logger.log(
-      'info',
-      'token ' + refreshGrant.refreshToken + ' is getting refreshed',
-    );
     return this.refreshService.refreshToken(refreshGrant.refreshToken);
   }
 }

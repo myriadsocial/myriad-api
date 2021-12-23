@@ -1,4 +1,4 @@
-import {intercept} from '@loopback/core';
+import {inject, intercept} from '@loopback/core';
 import {Count, CountSchema, repository} from '@loopback/repository';
 import {
   del,
@@ -13,9 +13,14 @@ import {ValidateCurrencyInterceptor} from '../interceptors';
 import {UserCurrency} from '../models';
 import {UserCurrencyRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class UserCurrencyController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
@@ -24,6 +29,7 @@ export class UserCurrencyController {
   ) {}
 
   @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @logInvocation()
   @post('/user-currencies', {
     responses: {
       '200': {
@@ -51,6 +57,7 @@ export class UserCurrencyController {
   }
 
   @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @logInvocation()
   @del('/user-currencies', {
     responses: {
       '200': {
@@ -78,6 +85,7 @@ export class UserCurrencyController {
     });
   }
 
+  @logInvocation()
   @patch('/users/{userId}/select-currency/{currencyId}')
   @response(204, {
     description: 'User PATCH default Currency success',

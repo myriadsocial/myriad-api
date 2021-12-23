@@ -13,9 +13,14 @@ import {FileUploadHandler} from '../types';
 import {config} from '../config';
 import {UploadType} from '../enums';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class StorageController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @inject(FILE_UPLOAD_SERVICE)
     private handler: FileUploadHandler,
@@ -23,6 +28,7 @@ export class StorageController {
     private fcsService: FCSService,
   ) {}
 
+  @logInvocation()
   @post('/buckets/{userId}/{kind}', {
     responses: {
       200: {

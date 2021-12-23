@@ -1,19 +1,25 @@
-import {intercept} from '@loopback/core';
+import {inject, intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
 import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class ExperienceController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
   @get('/experiences')
   @response(200, {
     description: 'Array of Experience model instances',
@@ -34,6 +40,7 @@ export class ExperienceController {
   }
 
   @intercept(ExperienceInterceptor.BINDING_KEY)
+  @logInvocation()
   @get('/experiences/{id}')
   @response(200, {
     description: 'Experience model instance',

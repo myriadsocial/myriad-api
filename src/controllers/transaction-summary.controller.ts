@@ -1,4 +1,4 @@
-import {service} from '@loopback/core';
+import {inject, service} from '@loopback/core';
 import {get, param, response} from '@loopback/rest';
 import {
   CommentTransactionSummary,
@@ -7,14 +7,20 @@ import {
 } from '../interfaces';
 import {TransactionService} from '../services';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class TransactionSummaryController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @service(TransactionService)
     protected transactionService: TransactionService,
   ) {}
 
+  @logInvocation()
   @get('/users/{id}/transaction-summary')
   @response(200, {
     description: 'Transaction Summary of User model instances',
@@ -78,6 +84,7 @@ export class TransactionSummaryController {
     };
   }
 
+  @logInvocation()
   @get('/posts/{id}/transaction-summary')
   @response(200, {
     description: 'Transaction Summary of Post model instances',
@@ -110,6 +117,7 @@ export class TransactionSummaryController {
     );
   }
 
+  @logInvocation()
   @get('/comments/{id}/transaction-summary')
   @response(200, {
     description: 'Transaction Summary of Comment model instances',
