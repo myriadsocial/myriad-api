@@ -62,14 +62,60 @@ export class MigrationScript100 implements MigrationScript {
     await this.doMigrateUser();
     await this.doMigratePosts();
     await this.doMigrateFriends();
+    await this.doMigrateNotifications();
     // await this.doMigratePeople();
     await this.doRemoveFriends();
     await this.doRemoveTransaction();
-    await this.doRemoveNotification();
     await this.doMigrateWalletAddress();
   }
 
-  async doRemoveNotification(): Promise<void> {
+  async doMigrateNotifications(): Promise<void> {
+    const notifications = await this.notificationRepository.find({
+      where: {
+        or: [
+          {type: NotificationType.CONNECTED_SOCIAL_MEDIA},
+          {type: NotificationType.DISCONNECTED_SOCIAL_MEDIA},
+        ],
+      },
+    });
+
+    await Promise.all(
+      notifications.map(async notification => {
+        const additionalReferenceId = notification.additionalReferenceId;
+
+        if (additionalReferenceId.length === 0) {
+          return this.notificationRepository.deleteById(notification.id);
+        }
+
+        const peopleId = (additionalReferenceId[0] as AnyObject).peopleId;
+
+        if (!peopleId) {
+          return this.notificationRepository.deleteById(notification.id);
+        }
+
+        const people = await this.peopleRepository.findOne({
+          where: {
+            id: peopleId,
+          },
+        });
+
+        if (!people) {
+          return this.notificationRepository.deleteById(notification.id);
+        }
+
+        const peopleInfo = {
+          peopleId: people.id,
+          peopleName: people.name,
+          peopleUsername: people.username,
+          peoplePlatform: people.platform,
+        };
+
+        return this.notificationRepository.updateById(notification.id, {
+          additionalReferenceId: [peopleInfo],
+        });
+      }),
+    );
+
     await this.notificationRepository.deleteAll({
       or: [
         {type: NotificationType.POST_VOTE},
