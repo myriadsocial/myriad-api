@@ -5,6 +5,7 @@ import {
   ActivityLogRepository,
   FriendRepository,
   LeaderBoardRepository,
+  NotificationRepository,
   PeopleRepository,
   PostRepository,
   TransactionRepository,
@@ -14,8 +15,8 @@ import {ActivityLog, People, Post} from '../models';
 import {
   ActivityLogType,
   FriendStatusType,
+  NotificationType,
   PlatformType,
-  ReferenceType,
 } from '../enums';
 import {inject, service} from '@loopback/core';
 import {Twitter, Reddit, FriendService, MetricService} from '../services';
@@ -44,6 +45,8 @@ export class MigrationScript100 implements MigrationScript {
     protected accountSettingRepository: AccountSettingRepository,
     @repository(TransactionRepository)
     protected transactionRepository: TransactionRepository,
+    @repository(NotificationRepository)
+    protected notificationRepository: NotificationRepository,
     @service(FriendService)
     protected friendService: FriendService,
     @service(MetricService)
@@ -62,7 +65,17 @@ export class MigrationScript100 implements MigrationScript {
     // await this.doMigratePeople();
     await this.doRemoveFriends();
     await this.doRemoveTransaction();
+    await this.doRemoveNotification();
     await this.doMigrateWalletAddress();
+  }
+
+  async doRemoveNotification(): Promise<void> {
+    await this.notificationRepository.deleteAll({
+      or: [
+        {type: NotificationType.POST_VOTE},
+        {type: NotificationType.COMMENT_VOTE},
+      ],
+    });
   }
 
   async doRemoveTransaction(): Promise<void> {
@@ -144,26 +157,12 @@ export class MigrationScript100 implements MigrationScript {
       },
     );
     await collection.deleteMany({type: 'profile'});
-
-    const activityLogs = await this.activityLogRepository.find({
-      where: {
-        or: [
-          {type: ActivityLogType.SKIPUSERNAME},
-          {type: ActivityLogType.CREATEUSERNAME},
-        ],
-      },
+    await this.activityLogRepository.deleteAll({
+      or: [
+        {type: ActivityLogType.SKIPUSERNAME},
+        {type: ActivityLogType.CREATEUSERNAME},
+      ],
     });
-
-    await Promise.all(
-      activityLogs.map(e => {
-        return this.activityLogRepository.updateById(e.id, {
-          referenceId: e.userId,
-          referenceType: ReferenceType.USER,
-          createdAt: new Date().toString(),
-          updatedAt: new Date().toString(),
-        });
-      }),
-    );
   }
 
   async doRemoveFriends(): Promise<void> {
@@ -173,6 +172,10 @@ export class MigrationScript100 implements MigrationScript {
         {
           requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
           status: FriendStatusType.PENDING,
+        },
+        {
+          requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+          status: FriendStatusType.BLOCKED,
         },
       ],
     });
