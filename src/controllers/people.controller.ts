@@ -1,4 +1,4 @@
-import {intercept} from '@loopback/core';
+import {inject, intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {PlatformType} from '../enums';
@@ -6,9 +6,14 @@ import {PaginationInterceptor} from '../interceptors';
 import {People} from '../models';
 import {PeopleRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class PeopleController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
@@ -17,6 +22,7 @@ export class PeopleController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
   @get('/people')
   @response(200, {
     description: 'Array of People model instances',
@@ -36,6 +42,7 @@ export class PeopleController {
     return this.peopleRepository.find(filter);
   }
 
+  @logInvocation()
   @get('/people/search')
   @response(200, {
     description: 'Array of People model instance',
@@ -107,6 +114,7 @@ export class PeopleController {
     return [...userToPeople, ...people];
   }
 
+  @logInvocation()
   @get('/people/{id}')
   @response(200, {
     description: 'People model instance',
@@ -124,6 +132,7 @@ export class PeopleController {
     return this.peopleRepository.findById(id, filter);
   }
 
+  @logInvocation()
   @del('/people/{id}')
   @response(204, {
     description: 'People DELETE success',

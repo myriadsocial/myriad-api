@@ -1,4 +1,4 @@
-import {intercept, service} from '@loopback/core';
+import {inject, intercept, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {del, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
 import {ValidateVoteInterceptor} from '../interceptors';
@@ -6,10 +6,15 @@ import {Vote} from '../models';
 import {VoteRepository} from '../repositories';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 @intercept(ValidateVoteInterceptor.BINDING_KEY)
 export class VoteController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
@@ -17,6 +22,7 @@ export class VoteController {
     protected notificationService: NotificationService,
   ) {}
 
+  @logInvocation()
   @post('/votes', {
     responses: {
       '200': {
@@ -57,6 +63,7 @@ export class VoteController {
     return result;
   }
 
+  @logInvocation()
   @del('/votes/{id}', {
     responses: {
       '200': {

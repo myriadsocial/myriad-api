@@ -18,10 +18,16 @@ import {
   UserRepository,
 } from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {inject} from '@loopback/core';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 @authenticate('jwt')
 export class DeletedCollectionController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @repository(UserRepository)
     public userRepository: UserRepository,
@@ -32,6 +38,7 @@ export class DeletedCollectionController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
   @get('/posts/deleted')
   async deletedPostList(
     @param.filter(Post, {exclude: ['limit', 'skip', 'offset']})
@@ -40,6 +47,7 @@ export class DeletedCollectionController {
     return this.postRepository.find(filter);
   }
 
+  @logInvocation()
   @get('/posts/{id}/deleted')
   @response(200, {
     description: 'Deleted Post model instance',
@@ -56,6 +64,7 @@ export class DeletedCollectionController {
     return this.postRepository.findById(id, filter);
   }
 
+  @logInvocation()
   @patch('/posts/{id}/recover')
   @response(204, {
     description: 'Post RECOVER success',
@@ -68,6 +77,7 @@ export class DeletedCollectionController {
     });
   }
 
+  @logInvocation()
   @del('/posts/{id}/delete')
   @response(204, {
     description: 'Post DELETE success',
@@ -83,6 +93,7 @@ export class DeletedCollectionController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
   @get('/users/deleted')
   @response(200, {
     description: 'Array of Deleted User model instances',
@@ -102,6 +113,7 @@ export class DeletedCollectionController {
     return this.userRepository.find(filter);
   }
 
+  @logInvocation()
   @get('/users/{id}/deleted')
   @response(200, {
     description: 'Deleted User model instance',
@@ -118,6 +130,7 @@ export class DeletedCollectionController {
     return this.userRepository.findById(id, filter);
   }
 
+  @logInvocation()
   @patch('/users/{id}/recover')
   @response(204, {
     description: 'User RECOVER success',
@@ -130,6 +143,7 @@ export class DeletedCollectionController {
     });
   }
 
+  @logInvocation()
   @del('/users/{id}/delete')
   @response(204, {
     description: 'User DELETE success',

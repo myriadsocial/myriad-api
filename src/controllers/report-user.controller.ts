@@ -2,17 +2,24 @@ import {Filter, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param} from '@loopback/rest';
 import {UserReport} from '../models';
 import {ReportRepository} from '../repositories';
-import {intercept} from '@loopback/core';
+import {inject, intercept} from '@loopback/core';
 import {PaginationInterceptor} from '../interceptors';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class ReportUserController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
-    @repository(ReportRepository) protected reportRepository: ReportRepository,
+    @repository(ReportRepository)
+    protected reportRepository: ReportRepository,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
   @get('/reports/{id}/users', {
     responses: {
       '200': {

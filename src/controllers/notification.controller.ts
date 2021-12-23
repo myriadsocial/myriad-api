@@ -1,4 +1,4 @@
-import {intercept} from '@loopback/core';
+import {inject, intercept} from '@loopback/core';
 import {
   Count,
   CountSchema,
@@ -20,15 +20,21 @@ import {PaginationInterceptor} from '../interceptors';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class NotificationController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @repository(NotificationRepository)
     protected notificationRepository: NotificationRepository,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
   @get('/notifications')
   @response(200, {
     description: 'Array of Notification model instances',
@@ -48,6 +54,7 @@ export class NotificationController {
     return this.notificationRepository.find(filter);
   }
 
+  @logInvocation()
   @get('/notifications/{id}')
   @response(200, {
     description: 'Notification model instance',
@@ -65,6 +72,7 @@ export class NotificationController {
     return this.notificationRepository.findById(id, filter);
   }
 
+  @logInvocation()
   @get('/notifications/count', {
     responses: {
       '200': {
@@ -79,6 +87,7 @@ export class NotificationController {
     return this.notificationRepository.count(where);
   }
 
+  @logInvocation()
   @patch('/notifications/{id}/read')
   @response(204, {
     description: 'Read Notification PATCH success',
@@ -90,6 +99,7 @@ export class NotificationController {
     });
   }
 
+  @logInvocation()
   @patch('/notifications/read')
   @response(204, {
     description: 'Read multiple Notification PATCH success',
@@ -122,6 +132,7 @@ export class NotificationController {
     );
   }
 
+  @logInvocation()
   @del('/notifications/{id}')
   @response(204, {
     description: 'Notification DELETE success',

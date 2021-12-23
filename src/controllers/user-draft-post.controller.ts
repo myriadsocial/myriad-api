@@ -3,14 +3,21 @@ import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {DraftPost} from '../models';
 import {DraftPostRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {inject} from '@loopback/core';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class UserDraftPostController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @repository(DraftPostRepository)
     protected draftPostRepository: DraftPostRepository,
   ) {}
 
+  @logInvocation()
   @get('/users/{userId}/draft')
   @response(200, {
     description: 'Draft Post model instance',
@@ -30,6 +37,7 @@ export class UserDraftPostController {
     });
   }
 
+  @logInvocation()
   @del('/users/{userId}/draft')
   @response(200, {
     description: 'Delete Draft Post model instance',

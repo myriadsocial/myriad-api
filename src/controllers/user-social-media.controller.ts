@@ -1,4 +1,4 @@
-import {intercept, service} from '@loopback/core';
+import {inject, intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
@@ -20,9 +20,14 @@ import {
   UserSocialMediaService,
 } from '../services';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class UserSocialMediaController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @service(SocialMediaService)
     protected socialMediaService: SocialMediaService,
@@ -32,6 +37,7 @@ export class UserSocialMediaController {
     protected notificationService: NotificationService,
   ) {}
 
+  @logInvocation()
   @post('/user-social-medias/verify')
   @response(200, {
     description: 'Verify User Social Media',
@@ -93,6 +99,7 @@ export class UserSocialMediaController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
   @get('/user-social-medias')
   @response(200, {
     description: 'Array of UserSocialMedia model instances',
@@ -112,6 +119,7 @@ export class UserSocialMediaController {
     return this.userSocialMediaService.userSocialMediaRepository.find(filter);
   }
 
+  @logInvocation()
   @get('/user-social-medias/{id}')
   @response(200, {
     description: 'UserSocialMedia model instance',
@@ -132,6 +140,7 @@ export class UserSocialMediaController {
     );
   }
 
+  @logInvocation()
   @patch('/user-social-medias/{id}/primary')
   @response(204, {
     description: 'Set primary social media',
@@ -150,6 +159,7 @@ export class UserSocialMediaController {
     });
   }
 
+  @logInvocation()
   @del('/user-social-medias/{id}')
   @response(204, {
     description: 'UserSocialMedia DELETE success',

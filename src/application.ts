@@ -76,44 +76,21 @@ export class MyriadApiApplication extends BootMixin(
   constructor(options: ApplicationConfig = {}) {
     super(options);
 
-    // Set up the custom sequence
-    this.sequence(MyriadSequence);
-
     // Set up default home page
     this.static('/', path.join(__dirname, '../public'));
-
-    // Customize @loopback/rest-explorer configuration here
-    this.configure(RestExplorerBindings.COMPONENT).to({
-      path: '/explorer',
-    });
-    this.configure(LoggingBindings.COMPONENT).to({
-      enableFluent: false,
-      enableHttpAccessLog: true,
-    });
-
-    this.configure<WinstonLoggerOptions>(LoggingBindings.WINSTON_LOGGER).to({
-      level: 'info',
-      format: format.json(),
-      defaultMeta: {framework: 'LoopBack'},
-    });
-
-    // Bind component
-    this.bindComponent();
-
-    // Bind services
-    this.bindService();
-
-    // Bind job
-    this.bindJob();
-
-    // Firebase initialization
-    this.firebaseInit();
-
-    // Sentry initialization
-    this.sentryInit();
+    // Set up the custom sequence
+    this.sequence(MyriadSequence);
+    this.configureFileUpload();
+    this.configureFirebase();
+    this.configureSentry();
+    // Register component
+    this.registerComponent();
+    // Register services
+    this.registerService();
+    // Register job
+    this.registerJob();
 
     this.projectRoot = __dirname;
-    // Customize @loopback/boot Booter Conventions here
     this.bootOptions = {
       controllers: {
         // Customize ControllerBooter Conventions here
@@ -124,29 +101,39 @@ export class MyriadApiApplication extends BootMixin(
     };
   }
 
-  bindComponent() {
+  registerComponent() {
+    this.component(HealthComponent);
     this.component(CronComponent);
-    this.component(RestExplorerComponent);
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
-    this.component(HealthComponent);
+
+    this.configure(RestExplorerBindings.COMPONENT).to({
+      path: '/explorer',
+    });
+    this.component(RestExplorerComponent);
+
+    this.configure(LoggingBindings.COMPONENT).to({
+      enableFluent: false,
+      enableHttpAccessLog: true,
+    });
+    this.configure(LoggingBindings.WINSTON_HTTP_ACCESS_LOGGER).to({
+      format: 'combined',
+    });
     this.component(LoggingComponent);
 
-    if (this.options.test) return;
-
-    this.component(MigrationComponent);
-    this.bind(MigrationBindings.CONFIG).to({
-      dataSourceName: MongoDataSource.dataSourceName,
-      modelName: 'db_migrations',
+    this.configure<WinstonLoggerOptions>(LoggingBindings.WINSTON_LOGGER).to({
+      level: 'info',
+      format: format.json(),
+      defaultMeta: {framework: 'LoopBack'},
     });
 
-    const myFormat: WinstonFormat = format((info, opts) => {
+    const myriadFormat: WinstonFormat = format((info, opts) => {
       console.log(info);
       return false;
     })();
 
-    this.bind('logging.winston.formats.myFormat')
-      .to(myFormat)
+    this.bind('logging.winston.formats.myriadFormat')
+      .to(myriadFormat)
       .apply(extensionFor(WINSTON_FORMAT));
     this.bind('logging.winston.formats.colorize')
       .to(format.colorize())
@@ -160,11 +147,16 @@ export class MyriadApiApplication extends BootMixin(
       .to(consoleTransport)
       .apply(extensionFor(WINSTON_TRANSPORT));
 
-    // Configure file upload with multer options
-    this.configureFileUpload();
+    if (this.options.test) return;
+
+    this.component(MigrationComponent);
+    this.bind(MigrationBindings.CONFIG).to({
+      dataSourceName: MongoDataSource.dataSourceName,
+      modelName: 'db_migrations',
+    });
   }
 
-  bindService() {
+  registerService() {
     this.service(NotificationService);
     this.service(FriendService);
     this.service(UserSocialMediaService);
@@ -182,22 +174,34 @@ export class MyriadApiApplication extends BootMixin(
     this.service(FCSService);
   }
 
-  bindJob() {
+  registerJob() {
     this.add(createBindingFromClass(UpdateExchangeRateJob));
     this.add(createBindingFromClass(UpdateTrendingTopicJob));
     this.add(createBindingFromClass(UpdatePeopleProfileJob));
   }
 
-  firebaseInit() {
+  configureFileUpload() {
+    if (this.options.test) return;
+    const multerOptions: multer.Options = {
+      storage: multer.diskStorage({
+        filename: (req, file, cb) => {
+          cb(null, `${uuid()}${path.extname(file.originalname)}`);
+        },
+      }),
+    };
+    // Configure the file upload service with multer options
+    this.configure(FILE_UPLOAD_SERVICE).to(multerOptions);
+  }
+
+  configureFirebase() {
     if (this.options.test) return;
     firebaseAdmin.initializeApp({
       storageBucket: config.FIREBASE_STORAGE_BUCKET,
     });
   }
 
-  sentryInit() {
-    if (!config.SENTRY_DSN) return;
-
+  configureSentry() {
+    if (this.options.test || !config.SENTRY_DSN) return;
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
       tracesSampleRate: 1.0,
@@ -308,20 +312,5 @@ export class MyriadApiApplication extends BootMixin(
     } catch {
       // ignore
     }
-  }
-
-  /**
-   * Configure `multer` options for file upload
-   */
-  protected configureFileUpload() {
-    const multerOptions: multer.Options = {
-      storage: multer.diskStorage({
-        filename: (req, file, cb) => {
-          cb(null, `${uuid()}${path.extname(file.originalname)}`);
-        },
-      }),
-    };
-    // Configure the file upload service with multer options
-    this.configure(FILE_UPLOAD_SERVICE).to(multerOptions);
   }
 }

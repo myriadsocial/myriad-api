@@ -16,13 +16,21 @@ import {
 import {NotificationSetting} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {inject} from '@loopback/core';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class UserNotificationSettingController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
-    @repository(UserRepository) protected userRepository: UserRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
   ) {}
 
+  @logInvocation()
   @get('/users/{id}/notification-setting', {
     responses: {
       '200': {
@@ -42,6 +50,7 @@ export class UserNotificationSettingController {
     return this.userRepository.notificationSetting(id).get(filter);
   }
 
+  @logInvocation()
   @patch('/users/{id}/notification-setting', {
     responses: {
       '200': {

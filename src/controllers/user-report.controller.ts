@@ -1,4 +1,4 @@
-import {service, intercept} from '@loopback/core';
+import {service, intercept, inject} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {
   response,
@@ -26,9 +26,14 @@ import {
 } from '../repositories';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
+import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class UserReportController {
+  // Inject a winston logger
+  @inject(LoggingBindings.WINSTON_LOGGER)
+  private logger: WinstonLogger;
+
   constructor(
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
@@ -47,6 +52,7 @@ export class UserReportController {
   ) {}
 
   @intercept(ReportInterceptor.BINDING_KEY)
+  @logInvocation()
   @post('/users/{id}/reports')
   @response(200, {
     description: 'Report model instance',
