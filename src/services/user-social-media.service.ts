@@ -2,7 +2,11 @@ import {repository} from '@loopback/repository';
 import {ActivityLogType, PlatformType, ReferenceType} from '../enums';
 import {ExtendedPeople} from '../interfaces';
 import {UserSocialMedia} from '../models';
-import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
+import {
+  PeopleRepository,
+  UserSocialMediaRepository,
+  WalletRepository,
+} from '../repositories';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {NotificationService} from './';
 import {HttpErrors} from '@loopback/rest';
@@ -17,6 +21,8 @@ export class UserSocialMediaService {
     public userSocialMediaRepository: UserSocialMediaRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
     @service(ActivityLogService)
@@ -33,8 +39,10 @@ export class UserSocialMediaService {
       publicKey,
     } = people;
 
+    const user = await this.walletRepository.user(publicKey);
+
     const newUserSocialMedia: Partial<UserSocialMedia> = {
-      userId: publicKey,
+      userId: user.id,
       platform: platform as PlatformType,
       verified: true,
     };
@@ -72,11 +80,11 @@ export class UserSocialMediaService {
     });
 
     if (userSocialMedia) {
-      if (userSocialMedia.userId !== publicKey) {
+      if (userSocialMedia.userId !== user.id) {
         try {
           await this.notificationService.sendDisconnectedSocialMedia(
             userSocialMedia.id,
-            publicKey,
+            user.id,
           );
         } catch {
           // ignore
@@ -90,7 +98,7 @@ export class UserSocialMediaService {
     }
 
     const {count} = await this.userSocialMediaRepository.count({
-      userId: publicKey,
+      userId: user.id,
       platform: platform as PlatformType,
     });
 
@@ -98,7 +106,7 @@ export class UserSocialMediaService {
 
     await this.activityLogService.createLog(
       ActivityLogType.CLAIMSOCIAL,
-      publicKey,
+      user.id,
       foundPeople.id,
       ReferenceType.PEOPLE,
     );
