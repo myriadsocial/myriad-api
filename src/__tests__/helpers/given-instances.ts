@@ -203,8 +203,7 @@ export function givenImportedPost(post?: Partial<Post>) {
       url: 'https://twitter.com/44196397/status/1385108424761872387',
       originCreatedAt:
         'Thu Apr 22 2021 12:49:17 GMT+0700 (Western Indonesia Time)',
-      createdBy:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      createdBy: '1',
       totalImporter: 1,
     },
     post,
@@ -217,8 +216,7 @@ export function givenMyriadPost(post?: Partial<Post>) {
     {
       tags: ['hello'],
       text: 'hello world',
-      createdBy:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      createdBy: '1',
     },
     post,
   );

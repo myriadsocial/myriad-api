@@ -7,6 +7,7 @@ import {
   PostRepository,
   TransactionRepository,
   UserRepository,
+  WalletRepository,
 } from '../../../repositories';
 import {NotificationService} from '../../../services';
 import {
@@ -17,6 +18,7 @@ import {
   givenTransaction,
   givenTransactionInstance,
   givenUserInstance,
+  givenWalletInstance,
   testdb,
 } from '../../helpers';
 
@@ -26,6 +28,7 @@ describe('TransactionControllerIntegration', () => {
   let postRepository: PostRepository;
   let notificationRepository: NotificationRepository;
   let commentRepository: CommentRepository;
+  let walletRepository: WalletRepository;
   let notificationService: NotificationService;
   let controller: TransactionController;
 
@@ -35,6 +38,7 @@ describe('TransactionControllerIntegration', () => {
       userRepository,
       postRepository,
       notificationRepository,
+      walletRepository,
       notificationService,
       commentRepository,
     } = await givenRepositories(testdb));
@@ -51,135 +55,143 @@ describe('TransactionControllerIntegration', () => {
     await givenEmptyDatabase(testdb);
   });
 
-  it('includes fromUser in find method result', async () => {
-    const user = await givenUserInstance(userRepository);
+  it('includes fromWallet in find method result', async () => {
+    const wallet = await givenWalletInstance(walletRepository);
+    const transaction = await givenTransactionInstance(transactionRepository, {
+      from: wallet.id,
+      to: '2',
+    });
+    const response = await controller.find({include: ['fromWallet']});
+
+    expect(response).to.containDeep([
+      {
+        ...transaction,
+        fromWallet: wallet,
+      },
+    ]);
+  });
+
+  it('includes toWallet in find method result', async () => {
+    const wallet = await givenWalletInstance(walletRepository);
+    const transaction = await givenTransactionInstance(transactionRepository, {
+      to: wallet.id,
+      from: '2',
+    });
+    const response = await controller.find({include: ['toWallet']});
+
+    expect(response).to.containDeep([
+      {
+        ...transaction,
+        toWallet: wallet,
+      },
+    ]);
+  });
+
+  it('includes both fromWallet and toWallet in find method result', async () => {
+    const wallet = await givenWalletInstance(walletRepository);
+    const otherWallet = await givenWalletInstance(walletRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61888',
+    });
+    const transaction = await givenTransactionInstance(transactionRepository, {
+      from: wallet.id,
+      to: otherWallet.id,
+    });
+    const response = await controller.find({
+      include: ['fromWallet', 'toWallet'],
+    });
+
+    expect(response).to.containDeep([
+      {
+        ...transaction,
+        fromWallet: wallet,
+        toWallet: otherWallet,
+      },
+    ]);
+  });
+
+  it('includes fromWallet in findById method result', async () => {
+    const wallet = await givenWalletInstance(walletRepository);
 
     const transaction = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
+      from: wallet.id,
       to: '2',
     });
 
-    const response = await controller.find({include: ['fromUser']});
-
-    expect(response).to.containDeep([
-      {
-        ...transaction,
-        fromUser: user,
-      },
-    ]);
-  });
-
-  it('includes toUser in find method result', async () => {
-    const user = await givenUserInstance(userRepository);
-    const transaction = await givenTransactionInstance(transactionRepository, {
-      to: user.id,
-      from: '2',
-    });
-    const response = await controller.find({include: ['toUser']});
-
-    expect(response).to.containDeep([
-      {
-        ...transaction,
-        toUser: user,
-      },
-    ]);
-  });
-
-  it('includes both fromUser and toUser in find method result', async () => {
-    const user = await givenUserInstance(userRepository);
-    const otherUser = await givenUserInstance(userRepository, {
-      name: 'Kirania',
-      username: 'kirania',
-    });
-    const transaction = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
-      to: otherUser.id,
-    });
-    const response = await controller.find({include: ['fromUser', 'toUser']});
-
-    expect(response).to.containDeep([
-      {
-        ...transaction,
-        fromUser: user,
-        toUser: otherUser,
-      },
-    ]);
-  });
-
-  it('includes fromUser in findById method result', async () => {
-    const user = await givenUserInstance(userRepository);
-
-    const transaction = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
-      to: '2',
-    });
-
     const response = await controller.findById(transaction.id ?? '', {
-      include: ['fromUser'],
+      include: ['fromWallet'],
     });
 
     expect(response).to.containDeep({
       ...transaction,
-      fromUser: user,
+      fromWallet: wallet,
     });
   });
 
-  it('includes toUser in findById method result', async () => {
-    const user = await givenUserInstance(userRepository);
+  it('includes toWallet in findById method result', async () => {
+    const wallet = await givenWalletInstance(walletRepository);
+
     const transaction = await givenTransactionInstance(transactionRepository, {
-      to: user.id,
+      to: wallet.id,
       from: '2',
     });
 
     const response = await controller.findById(transaction.id ?? '', {
-      include: ['toUser'],
+      include: ['toWallet'],
     });
 
     expect(response).to.containDeep({
       ...transaction,
-      toUser: user,
+      toWallet: wallet,
     });
   });
 
-  it('includes both fromUser and toUser in findById method result', async () => {
-    const user = await givenUserInstance(userRepository);
-    const otherUser = await givenUserInstance(userRepository, {
-      name: 'Kirania',
-      username: 'kirania',
+  it('includes both fromWallet and toWallet in findById method result', async () => {
+    const wallet = await givenWalletInstance(walletRepository);
+    const otherWallet = await givenWalletInstance(walletRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61888',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
-      to: otherUser.id,
+      from: wallet.id,
+      to: otherWallet.id,
     });
 
     const response = await controller.findById(transaction.id ?? '', {
-      include: ['fromUser', 'toUser'],
+      include: ['fromWallet', 'toWallet'],
     });
 
     expect(response).to.containDeep({
       ...transaction,
-      fromUser: user,
-      toUser: otherUser,
+      fromWallet: wallet,
+      toWallet: otherWallet,
     });
   });
 
   it('creates a notification when user send tips to another user from post', async () => {
     const user = await givenUserInstance(userRepository);
+    const wallet = await givenWalletInstance(walletRepository, {
+      userId: user.id,
+    });
     const anotherUser = await givenUserInstance(userRepository, {
       name: 'Kirania',
       username: 'kirania',
     });
-    const post = await givenPostInstance(postRepository);
+    const otherWallet = await givenWalletInstance(walletRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61888',
+      userId: anotherUser.id,
+    });
+    const post = await givenPostInstance(postRepository, {
+      createdBy: anotherUser.id,
+    });
     const transaction = givenTransaction({
-      from: user.id,
-      to: anotherUser.id,
+      from: wallet.id,
+      to: otherWallet.id,
       referenceId: post.id,
       type: ReferenceType.POST,
     });
     const response = await controller.create(transaction);
     const notification = await notificationRepository.findOne({
       where: {
-        from: response.from,
+        from: user.id,
       },
     });
 
@@ -190,22 +202,31 @@ describe('TransactionControllerIntegration', () => {
 
     expect(toJSON(notification)).to.deepEqual({
       type: NotificationType.POST_TIPS,
-      from: response.from,
+      from: user.id,
       referenceId: response.id,
       message: response.amount + ' ' + response.currencyId,
       additionalReferenceId: [{postId: post.id}],
-      to: response.to,
+      to: anotherUser.id,
       read: false,
     });
   });
 
   it('creates a notification when user send tips to another user from comment', async () => {
     const user = await givenUserInstance(userRepository);
+    const wallet = await givenWalletInstance(walletRepository, {
+      userId: user.id,
+    });
     const anotherUser = await givenUserInstance(userRepository, {
       name: 'Kirania',
       username: 'kirania',
     });
-    const post = await givenPostInstance(postRepository);
+    const otherWallet = await givenWalletInstance(walletRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61888',
+      userId: anotherUser.id,
+    });
+    const post = await givenPostInstance(postRepository, {
+      createdBy: anotherUser.id,
+    });
     const comment = await givenCommentInstance(commentRepository, {
       referenceId: post.id,
       postId: post.id,
@@ -213,15 +234,15 @@ describe('TransactionControllerIntegration', () => {
       userId: anotherUser.id,
     });
     const transaction = givenTransaction({
-      from: user.id,
-      to: anotherUser.id,
+      from: wallet.id,
+      to: otherWallet.id,
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
     });
     const response = await controller.create(transaction);
     const notification = await notificationRepository.findOne({
       where: {
-        from: response.from,
+        from: user.id,
       },
     });
 
@@ -232,11 +253,11 @@ describe('TransactionControllerIntegration', () => {
 
     expect(toJSON(notification)).to.deepEqual({
       type: NotificationType.COMMENT_TIPS,
-      from: response.from,
+      from: user.id,
       referenceId: response.id,
       message: response.amount + ' ' + response.currencyId,
       additionalReferenceId: [{postId: post.id}],
-      to: response.to,
+      to: anotherUser.id,
       read: false,
     });
   });

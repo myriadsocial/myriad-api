@@ -2,12 +2,13 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
-import {Currency, Transaction, User} from '../../models';
+import {Currency, Transaction, Wallet} from '../../models';
 import {
   CurrencyRepository,
   TransactionRepository,
   UserRepository,
   AuthenticationRepository,
+  WalletRepository,
 } from '../../repositories';
 import {
   givenCurrencyInstance,
@@ -19,6 +20,8 @@ import {
   givenUserRepository,
   givenAuthenticationRepository,
   setupApplication,
+  givenWalletRepository,
+  givenWalletInstance,
 } from '../helpers';
 
 describe('TransactionApplication', function () {
@@ -26,6 +29,7 @@ describe('TransactionApplication', function () {
   let token: string;
   let client: Client;
   let userRepository: UserRepository;
+  let walletRepository: WalletRepository;
   let currencyRepository: CurrencyRepository;
   let transactionRepository: TransactionRepository;
   let authenticationRepository: AuthenticationRepository;
@@ -47,6 +51,7 @@ describe('TransactionApplication', function () {
     userRepository = await givenUserRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     transactionRepository = await givenTransactionRepository(app);
+    walletRepository = await givenWalletRepository(app);
   });
 
   after(async () => {
@@ -58,13 +63,13 @@ describe('TransactionApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
     await currencyRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await transactionRepository.deleteAll();
     await userRepository.deleteAll();
+    await walletRepository.deleteAll();
   });
 
   it('sign up successfully', async () => {
@@ -78,8 +83,11 @@ describe('TransactionApplication', function () {
 
   it('creates a transaction', async function () {
     const user = await givenUserInstance(userRepository);
+    const wallet = await givenWalletInstance(walletRepository, {
+      userId: user.id,
+    });
     const transaction = givenTransaction({
-      from: user.id,
+      from: wallet.id,
       currencyId: currency.id,
     });
     const response = await client
@@ -106,9 +114,9 @@ describe('TransactionApplication', function () {
   });
 
   it('returns 422 when create transactions but "currency" not exist', async () => {
-    const user = await givenUserInstance(userRepository);
+    const wallet = await givenWalletInstance(walletRepository);
     const transaction = givenTransaction({
-      from: user.id,
+      from: wallet.id,
       currencyId: DefaultCurrencyType.MYRIA,
     });
 
@@ -167,22 +175,23 @@ describe('TransactionApplication', function () {
 
   context('when dealing with multiple persisted transactions', () => {
     let persistedTransactions: Transaction[];
-    let otherUser: User;
-    let user: User;
+    let otherWallet: Wallet;
+    let wallet: Wallet;
 
     before(async () => {
-      user = await givenUserInstance(userRepository);
-      otherUser = await givenUserInstance(userRepository, {
-        name: 'irman',
-        username: 'irman',
+      wallet = await givenWalletInstance(walletRepository);
+      otherWallet = await givenWalletInstance(walletRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       });
     });
 
     beforeEach(async () => {
       persistedTransactions = [
-        await givenTransactionInstance(transactionRepository, {from: user.id}),
         await givenTransactionInstance(transactionRepository, {
-          from: otherUser.id,
+          from: wallet.id,
+        }),
+        await givenTransactionInstance(transactionRepository, {
+          from: otherWallet.id,
         }),
       ];
     });
@@ -237,18 +246,14 @@ describe('TransactionApplication', function () {
     });
   });
 
-  it('includes fromUser, toUser, and currency in query result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      name: 'irman',
-      username: 'irman',
-    });
-    const otherUser = await givenUserInstance(userRepository, {
-      name: 'zahrani',
-      username: 'zahrani',
+  it('includes fromWallet, toWallet, and currency in query result', async () => {
+    const wallet = await givenWalletInstance(walletRepository);
+    const otherWallet = await givenWalletInstance(walletRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61888',
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
-      to: otherUser.id,
+      from: wallet.id,
+      to: otherWallet.id,
     });
 
     const response = await client
@@ -256,7 +261,7 @@ describe('TransactionApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .query({
         filter: {
-          include: ['fromUser', 'toUser', 'currency'],
+          include: ['fromWallet', 'toWallet', 'currency'],
         },
       })
       .expect(200);
@@ -264,8 +269,8 @@ describe('TransactionApplication', function () {
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(transaction),
-      fromUser: toJSON(user),
-      toUser: toJSON(otherUser),
+      fromWallet: toJSON(wallet),
+      toWallet: toJSON(otherWallet),
       currency: toJSON(currency),
     });
   });

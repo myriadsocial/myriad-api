@@ -74,8 +74,6 @@ describe('TransactionSummaryControllerIntegration', function () {
       },
     );
 
-    console.log(transactionReceived);
-
     const response = await controller.userTransactionSummary(
       user.id.toString(),
     );

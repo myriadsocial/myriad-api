@@ -11,7 +11,7 @@ import {TransactionRepository} from '../../repositories';
 import {NotificationService} from '../../services';
 import {givenTransaction} from '../helpers';
 
-describe('TransactionController', () => {
+describe('TransactionControllers', () => {
   let transactionRepository: StubbedInstanceWithSinonAccessor<TransactionRepository>;
   let notificationService: NotificationService;
   let controller: TransactionController;
