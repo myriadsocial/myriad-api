@@ -21,6 +21,7 @@ import {
   UserReportRepository,
   UserRepository,
   UserSocialMediaRepository,
+  WalletRepository,
 } from '../repositories';
 import {FCMService} from './fcm.service';
 
@@ -45,6 +46,8 @@ export class NotificationService {
     public userReportReportRepository: UserReportRepository,
     @repository(NotificationSettingRepository)
     public notificationSettingRepository: NotificationSettingRepository,
+    @repository(WalletRepository)
+    public walletRepository: WalletRepository,
     @service(FCMService)
     public fcmService: FCMService,
   ) {}
@@ -405,10 +408,18 @@ export class NotificationService {
 
   async sendTipsSuccess(transaction: Transaction): Promise<boolean> {
     const {from, to, type, referenceId} = transaction;
-    const fromUser = await this.userRepository.findById(from);
+    const {user: fromUser} = await this.walletRepository.findById(from, {
+      include: ['user'],
+    });
+    const {user: toUser} = await this.walletRepository.findById(to, {
+      include: ['user'],
+    });
+
+    if (!toUser) return false;
+    if (!fromUser) return false;
 
     const tipsActive = await this.checkNotificationSetting(
-      to,
+      toUser.id,
       NotificationType.POST_TIPS,
     );
     if (!tipsActive) return false;
@@ -431,17 +442,26 @@ export class NotificationService {
     const title = 'Send Tips Success';
     const body = fromUser.name + ' ' + notification.message;
 
-    await this.sendNotificationToUser(notification, to, title, body);
+    await this.sendNotificationToUser(notification, toUser.id, title, body);
 
     return true;
   }
 
   async sendRewardSuccess(transaction: Transaction): Promise<boolean> {
     const {from, to} = transaction;
+    const {user: fromUser} = await this.walletRepository.findById(from, {
+      include: ['user'],
+    });
+    const {user: toUser} = await this.walletRepository.findById(to, {
+      include: ['user'],
+    });
+
+    if (!toUser) return false;
+    if (!fromUser) return false;
 
     const notification = new Notification({
       type: NotificationType.USER_REWARD,
-      from: from,
+      from: fromUser.id,
       referenceId: transaction.id,
       message: transaction.amount + ' ' + transaction.currencyId,
     });
@@ -449,17 +469,26 @@ export class NotificationService {
     const title = 'Send Reward Success';
     const body = 'Myriad Official' + ' ' + notification.message;
 
-    await this.sendNotificationToUser(notification, to, title, body);
+    await this.sendNotificationToUser(notification, toUser.id, title, body);
 
     return true;
   }
 
   async sendIntitalTips(transaction: Transaction): Promise<boolean> {
     const {from, to} = transaction;
+    const {user: fromUser} = await this.walletRepository.findById(from, {
+      include: ['user'],
+    });
+    const {user: toUser} = await this.walletRepository.findById(to, {
+      include: ['user'],
+    });
+
+    if (!toUser) return false;
+    if (!fromUser) return false;
 
     const notification = new Notification({
       type: NotificationType.USER_INITIAL_TIPS,
-      from: from,
+      from: fromUser.id,
       referenceId: transaction.id,
       message: transaction.amount + ' ' + transaction.currencyId,
     });
@@ -467,16 +496,21 @@ export class NotificationService {
     const title = `Send Initial ${transaction.currencyId} Success`;
     const body = 'Myriad Official' + ' ' + notification.message;
 
-    await this.sendNotificationToUser(notification, to, title, body);
+    await this.sendNotificationToUser(notification, toUser.id, title, body);
 
     return true;
   }
 
   async sendClaimTips(transaction: Transaction): Promise<boolean> {
     const {to} = transaction;
+    const {user: toUser} = await this.walletRepository.findById(to, {
+      include: ['user'],
+    });
+
+    if (!toUser) return false;
 
     const tipsActive = await this.checkNotificationSetting(
-      to,
+      toUser.id,
       NotificationType.POST_TIPS,
     );
     if (!tipsActive) return false;
@@ -491,7 +525,7 @@ export class NotificationService {
     const title = 'Send Claim Tips Success';
     const body = 'You ' + notification.message;
 
-    await this.sendNotificationToUser(notification, to, title, body);
+    await this.sendNotificationToUser(notification, toUser.id, title, body);
 
     return true;
   }

@@ -189,7 +189,11 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
         await this.currencyRepository.findById(
           invocationCtx.args[0].currencyId,
         );
-        await this.userRepository.findById(invocationCtx.args[0].from);
+
+        const wallet = await this.walletRepository.findById(
+          invocationCtx.args[0].from,
+        );
+        await this.userRepository.findById(wallet.userId);
         return null;
       }
 

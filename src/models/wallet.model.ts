@@ -1,4 +1,5 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {UserWithRelations} from '.';
 import {BlockchainPlatform, WalletType} from '../enums';
 import {User} from './user.model';
 
@@ -78,6 +79,7 @@ export class Wallet extends Entity {
 
 export interface WalletRelations {
   // describe navigational properties here
+  user?: UserWithRelations;
 }
 
 export type WalletWithRelations = Wallet & WalletRelations;

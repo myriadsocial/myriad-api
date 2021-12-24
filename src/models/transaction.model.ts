@@ -1,7 +1,7 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {Wallet} from './wallet.model';
 import {ReferenceType} from '../enums/reference-type.enum';
 import {Currency} from './currency.model';
-import {User} from './user.model';
 
 @model({
   settings: {
@@ -69,14 +69,14 @@ export class Transaction extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User, {name: 'fromUser'}, {required: true})
-  from: string;
-
-  @belongsTo(() => User, {name: 'toUser'}, {required: true})
-  to: string;
-
   @belongsTo(() => Currency, {}, {required: true})
   currencyId: string;
+
+  @belongsTo(() => Wallet, {name: 'fromWallet'})
+  from: string;
+
+  @belongsTo(() => Wallet, {name: 'toWallet'})
+  to: string;
 
   constructor(data?: Partial<Transaction>) {
     super(data);
