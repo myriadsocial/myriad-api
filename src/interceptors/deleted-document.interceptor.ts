@@ -81,9 +81,8 @@ export class DeletedDocument implements Provider<Interceptor> {
         }
       }
     }
-    // Add pre-invocation logic here
+
     let result = await next();
-    // Add post-invocation logic here
 
     if (blockDetail) {
       return {

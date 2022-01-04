@@ -60,7 +60,6 @@ export class ReportInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const methodName = invocationCtx.methodName as MethodType;
-    const reportDetail = invocationCtx.args[1];
 
     let referenceId = null;
     let referenceType = null;
@@ -95,41 +94,7 @@ export class ReportInterceptor implements Provider<Interceptor> {
       }
     }
 
-    // Add pre-invocation logic here
     const result = await next();
-    // Add post-invocation logic here
-
-    if (methodName === MethodType.CREATE) {
-      const found = await this.userReportRepository.findOne({
-        where: {
-          reportId: result.id,
-          reportedBy: invocationCtx.args[0],
-        },
-      });
-
-      if (found)
-        throw new HttpErrors.UnprocessableEntity(
-          'You have report this user/post/comment',
-        );
-
-      await this.userReportRepository.create({
-        referenceType: reportDetail.referenceType,
-        description: reportDetail.description,
-        reportedBy: invocationCtx.args[0],
-        reportId: result.id,
-      });
-
-      const {count} = await this.userReportRepository.count({
-        reportId: result.id.toString(),
-      });
-
-      await this.reportRepository.updateById(result.id, {
-        totalReported: count,
-        status: result.status,
-      });
-
-      return Object.assign(result, {totalReported: count});
-    }
 
     if (methodName === MethodType.RESTORE && referenceId && referenceType) {
       await this.reportRepository.deleteAll({

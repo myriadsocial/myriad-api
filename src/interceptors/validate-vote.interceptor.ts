@@ -64,10 +64,7 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const methodName = invocationCtx.methodName as MethodType;
-    const {type, referenceId, toUserId} = await this.beforeVote(
-      methodName,
-      invocationCtx,
-    );
+    const {type, referenceId, toUserId} = await this.beforeVote(invocationCtx);
 
     const result = await next();
 
@@ -100,10 +97,9 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     return result;
   }
 
-  async beforeVote(
-    methodName: MethodType,
-    invocationCtx: InvocationContext,
-  ): Promise<AnyObject> {
+  async beforeVote(invocationCtx: InvocationContext): Promise<AnyObject> {
+    const methodName = invocationCtx.methodName as MethodType;
+
     if (methodName === MethodType.DELETEBYID) {
       const vote = await this.voteRepository.findById(invocationCtx.args[0]);
 
