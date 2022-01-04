@@ -9,7 +9,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {PaginationInterceptor} from '../interceptors';
+import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
@@ -21,6 +21,7 @@ export class TagController {
     protected tagRepository: TagRepository,
   ) {}
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/tags')
   @response(200, {
     description: 'Tag model instance',

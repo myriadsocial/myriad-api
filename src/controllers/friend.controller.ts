@@ -17,7 +17,11 @@ import {
   response,
 } from '@loopback/rest';
 import {FriendStatusType} from '../enums';
-import {PaginationInterceptor} from '../interceptors';
+import {
+  CreateInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {ValidateFriendRequestInterceptor} from '../interceptors/validate-friend-request.interceptor';
 import {Friend, User} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
@@ -32,13 +36,14 @@ export class FriendController {
     protected userRepository: UserRepository,
   ) {}
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
   @post('/friends')
   @response(200, {
     description: 'Friend model instance',
     content: {'application/json': {schema: getModelSchemaRef(Friend)}},
   })
-  async add(
+  async create(
     @requestBody({
       content: {
         'application/json': {
@@ -91,6 +96,7 @@ export class FriendController {
     return this.friendRepository.findById(id, filter);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
   @patch('/friends/{id}')
   @response(204, {

@@ -9,7 +9,7 @@ import {
 } from '@loopback/rest';
 import {repository} from '@loopback/repository';
 import {ReferenceType, ReportStatusType} from '../enums';
-import {PaginationInterceptor} from '../interceptors';
+import {PaginationInterceptor, UpdateInterceptor} from '../interceptors';
 import {Post, User} from '../models';
 import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
@@ -56,6 +56,7 @@ export class DeletedCollectionController {
     return this.postRepository.findById(id, filter);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/posts/{id}/recover')
   @response(204, {
     description: 'Post RECOVER success',

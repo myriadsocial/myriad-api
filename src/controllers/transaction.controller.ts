@@ -9,7 +9,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {PaginationInterceptor} from '../interceptors';
+import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {Transaction} from '../models';
 import {TransactionRepository} from '../repositories';
 import {NotificationService} from '../services';
@@ -24,6 +24,7 @@ export class TransactionController {
     protected notificationService: NotificationService,
   ) {}
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/transactions')
   @response(200, {
     description: 'Transaction model instance',

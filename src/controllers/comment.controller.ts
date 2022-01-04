@@ -10,7 +10,12 @@ import {
   requestBody,
 } from '@loopback/rest';
 import {ReferenceType} from '../enums';
-import {DeletedDocument, PaginationInterceptor} from '../interceptors';
+import {
+  CreateInterceptor,
+  DeletedDocument,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {Comment, Post} from '../models';
 import {CommentRepository, PostRepository} from '../repositories';
 import {NotificationService} from '../services';
@@ -71,6 +76,7 @@ export class CommentController {
     return this.commentRepository.findById(id, filter);
   }
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/comments', {
     responses: {
       '200': {
@@ -114,6 +120,7 @@ export class CommentController {
     return newComment;
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/comments/{id}', {
     responses: {
       '204': {
@@ -126,7 +133,18 @@ export class CommentController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Comment, {partial: true}),
+          schema: getModelSchemaRef(Comment, {
+            partial: true,
+            exclude: [
+              'id',
+              'type',
+              'section',
+              'referenceId',
+              'userId',
+              'postId',
+              'metric',
+            ],
+          }),
         },
       },
     })

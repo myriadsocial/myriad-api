@@ -16,7 +16,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {PaginationInterceptor} from '../interceptors';
+import {PaginationInterceptor, UpdateInterceptor} from '../interceptors';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
@@ -79,6 +79,7 @@ export class NotificationController {
     return this.notificationRepository.count(where);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/notifications/{id}/read')
   @response(204, {
     description: 'Read Notification PATCH success',
@@ -90,6 +91,7 @@ export class NotificationController {
     });
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/notifications/read')
   @response(204, {
     description: 'Read multiple Notification PATCH success',
@@ -113,7 +115,7 @@ export class NotificationController {
     notificationIds: string[],
   ): Promise<Count> {
     return this.notificationRepository.updateAll(
-      {read: true},
+      {read: true, updatedAt: new Date().toString()},
       {
         id: {
           inq: notificationIds,

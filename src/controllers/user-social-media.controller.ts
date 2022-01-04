@@ -12,7 +12,11 @@ import {
   patch,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {PaginationInterceptor} from '../interceptors';
+import {
+  CreateInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {UserSocialMedia, UserVerification} from '../models';
 import {
   NotificationService,
@@ -32,6 +36,7 @@ export class UserSocialMediaController {
     protected notificationService: NotificationService,
   ) {}
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/user-social-medias/verify')
   @response(200, {
     description: 'Verify User Social Media',
@@ -41,7 +46,7 @@ export class UserSocialMediaController {
       },
     },
   })
-  async verify(
+  async create(
     @requestBody({
       content: {
         'application/json': {
@@ -132,6 +137,7 @@ export class UserSocialMediaController {
     );
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/user-social-medias/{id}/primary')
   @response(204, {
     description: 'Set primary social media',

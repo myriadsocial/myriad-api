@@ -11,7 +11,7 @@ import {
 import {Report} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
-import {PaginationInterceptor} from '../interceptors';
+import {PaginationInterceptor, UpdateInterceptor} from '../interceptors';
 import {ReportInterceptor} from '../interceptors/report.interceptor';
 import {service} from '@loopback/core';
 import {NotificationService} from '../services';
@@ -74,6 +74,7 @@ export class ReportController {
     return this.reportRepository.findById(id, filter);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @intercept(ReportInterceptor.BINDING_KEY)
   @patch('/reports/{id}')
   @response(204, {

@@ -8,8 +8,12 @@ import {
   requestBody,
   HttpErrors,
 } from '@loopback/rest';
-import {ReferenceType, ReportStatusType, ReportType} from '../enums';
-import {ReportInterceptor} from '../interceptors';
+import {
+  ReferenceType,
+  ReportStatusType,
+  ReportType,
+} from '../enums';
+import {CreateInterceptor} from '../interceptors';
 import {Report, ReportDetail} from '../models';
 import {
   ReportRepository,
@@ -41,7 +45,7 @@ export class UserReportController {
     protected notificationService: NotificationService,
   ) {}
 
-  @intercept(ReportInterceptor.BINDING_KEY)
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/users/{id}/reports')
   @response(200, {
     description: 'Report model instance',

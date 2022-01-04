@@ -13,9 +13,11 @@ import {
 } from '@loopback/rest';
 import {PlatformType, VisibilityType} from '../enums';
 import {
+  CreateInterceptor,
   DeletedDocument,
   PaginationInterceptor,
   RestrictedPostInterceptor,
+  UpdateInterceptor,
 } from '../interceptors';
 import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {ExtendedPost} from '../interfaces';
@@ -33,6 +35,7 @@ export class PostController {
     protected postService: PostService,
   ) {}
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/posts')
   @response(200, {
     description: 'Post model instance',
@@ -51,6 +54,7 @@ export class PostController {
     return this.postService.createDraftPost(draftPost);
   }
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @intercept(ValidatePostImportURL.BINDING_KEY)
   @post('/posts/import')
   @response(200, {
@@ -232,6 +236,7 @@ export class PostController {
     return this.postService.postRepository.findById(id, filter);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/posts/{id}')
   @response(204, {
     description: 'Post PATCH success',
@@ -243,7 +248,23 @@ export class PostController {
         'application/json': {
           schema: getModelSchemaRef(Post, {
             partial: true,
-            exclude: ['deletedAt'],
+            exclude: [
+              'id',
+              'metric',
+              'embeddedURL',
+              'deletedAt',
+              'createdBy',
+              'peopleId',
+              'totalImporter',
+              'popularCount',
+              'originCreatedAt',
+              'url',
+              'originPostId',
+              'platform',
+              'title',
+              'asset',
+              'createdAt',
+            ],
           }),
         },
       },

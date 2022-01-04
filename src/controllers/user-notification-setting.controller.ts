@@ -16,6 +16,8 @@ import {
 import {NotificationSetting} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {inject, intercept} from '@loopback/core';
+import {UpdateInterceptor} from '../interceptors';
 
 @authenticate('jwt')
 export class UserNotificationSettingController {
@@ -43,6 +45,7 @@ export class UserNotificationSettingController {
     return this.userRepository.notificationSetting(id).get(filter);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/users/{id}/notification-setting', {
     responses: {
       '200': {
@@ -56,7 +59,10 @@ export class UserNotificationSettingController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(NotificationSetting, {partial: true}),
+          schema: getModelSchemaRef(NotificationSetting, {
+            partial: true,
+            exclude: ['id', 'userId'],
+          }),
         },
       },
     })

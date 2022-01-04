@@ -5,11 +5,10 @@ import {
   getModelSchemaRef,
   param,
   patch,
-  post,
   requestBody,
   response,
 } from '@loopback/rest';
-import {DeletedDocument, PaginationInterceptor} from '../interceptors';
+import {DeletedDocument, PaginationInterceptor, UpdateInterceptor} from '../interceptors';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
@@ -20,39 +19,6 @@ export class UserController {
     @repository(UserRepository)
     protected userRepository: UserRepository,
   ) {}
-
-  @post('/users')
-  @response(200, {
-    description: 'User model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(User),
-      },
-    },
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(User, {
-            title: 'NewUser',
-            exclude: [
-              'profilePictureURL',
-              'bannerImageUrl',
-              'fcmTokens',
-              'onTimeline',
-              'createdAt',
-              'updatedAt',
-              'deletedAt',
-            ],
-          }),
-        },
-      },
-    })
-    user: User,
-  ): Promise<User> {
-    return this.userRepository.create(user);
-  }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/users')
@@ -68,6 +34,26 @@ export class UserController {
     },
   })
   async find(
+    @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<User>,
+  ): Promise<User[]> {
+    return this.userRepository.find(filter);
+  }
+
+  @intercept(PaginationInterceptor.BINDING_KEY)
+  @get('/users/leaderboard')
+  @response(200, {
+    description: 'Array of User model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(User, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async leaderboard(
     @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<User>,
   ): Promise<User[]> {
@@ -92,6 +78,7 @@ export class UserController {
     return this.userRepository.findById(id, filter);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/users/{id}')
   @response(204, {
     description: 'User PATCH success',
@@ -103,7 +90,13 @@ export class UserController {
         'application/json': {
           schema: getModelSchemaRef(User, {
             partial: true,
-            exclude: ['id', 'defaultCurrency', 'onTimeline', 'deletedAt'],
+            exclude: [
+              'id',
+              'defaultCurrency',
+              'onTimeline',
+              'nonce',
+              'deletedAt',
+            ],
           }),
         },
       },

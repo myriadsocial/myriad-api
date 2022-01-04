@@ -16,7 +16,12 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
+import {
+  CreateInterceptor,
+  ExperienceInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {Experience, UserExperience} from '../models';
 import {
   ExperienceRepository,
@@ -78,6 +83,7 @@ export class UserExperienceController {
     return this.userExperienceRepository.findById(id, filter);
   }
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @intercept(ExperienceInterceptor.BINDING_KEY)
   @post('/users/{userId}/subscribe/{experienceId}', {
     responses: {
@@ -103,6 +109,7 @@ export class UserExperienceController {
   }
 
   // Create new experience
+  @intercept(CreateInterceptor.BINDING_KEY)
   @intercept(ExperienceInterceptor.BINDING_KEY)
   @post('/users/{id}/experiences', {
     responses: {
@@ -129,6 +136,7 @@ export class UserExperienceController {
     return this.userRepository.experiences(id).create(experience);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @intercept(ExperienceInterceptor.BINDING_KEY)
   @patch('/users/{userId}/experiences/{experienceId}', {
     responses: {

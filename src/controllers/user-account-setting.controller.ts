@@ -16,6 +16,8 @@ import {
 import {AccountSetting} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {inject, intercept} from '@loopback/core';
+import {UpdateInterceptor} from '../interceptors';
 
 @authenticate('jwt')
 export class UserAccountSettingController {
@@ -43,6 +45,7 @@ export class UserAccountSettingController {
     return this.userRepository.accountSetting(id).get(filter);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/users/{id}/account-setting', {
     responses: {
       '200': {
@@ -56,7 +59,10 @@ export class UserAccountSettingController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(AccountSetting, {partial: true}),
+          schema: getModelSchemaRef(AccountSetting, {
+            partial: true,
+            exclude: ['id', 'userId'],
+          }),
         },
       },
     })

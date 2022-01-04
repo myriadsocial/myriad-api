@@ -11,8 +11,9 @@ import {
   patch,
 } from '@loopback/rest';
 import {
+  CreateInterceptor,
   PaginationInterceptor,
-  ValidateCurrencyInterceptor,
+  UpdateInterceptor,
 } from '../interceptors';
 import {Currency} from '../models';
 import {CurrencyRepository} from '../repositories';
@@ -25,7 +26,7 @@ export class CurrencyController {
     protected currencyRepository: CurrencyRepository,
   ) {}
 
-  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/currencies')
   @response(200, {
     description: 'Currency model instance',
@@ -83,7 +84,7 @@ export class CurrencyController {
     return this.currencyRepository.findById(id.toUpperCase(), filter);
   }
 
-  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/currencies/{id}')
   @response(204, {
     description: 'Currency PATCH success',

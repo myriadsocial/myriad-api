@@ -4,6 +4,7 @@ import {
   del,
   get,
   getModelSchemaRef,
+  HttpErrors,
   param,
   patch,
   post,
@@ -12,7 +13,7 @@ import {
 } from '@loopback/rest';
 import {
   PaginationInterceptor,
-  ValidateCurrencyInterceptor,
+  CreateInterceptor,
 } from '../interceptors';
 import {UserCurrency} from '../models';
 import {UserCurrencyRepository, UserRepository} from '../repositories';
@@ -52,7 +53,7 @@ export class UserCurrencyController {
     return this.userCurrencyRepository.find(filter);
   }
 
-  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/user-currencies', {
     responses: {
       '200': {
@@ -140,7 +141,6 @@ export class UserCurrencyController {
     });
   }
 
-  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
   @del('/user-currencies', {
     responses: {
       '200': {
@@ -162,6 +162,20 @@ export class UserCurrencyController {
     })
     userCurrency: UserCurrency,
   ): Promise<Count> {
+    const user = await this.userRepository.findById(userCurrency.userId);
+
+    if (user.defaultCurrency === userCurrency.currencyId) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Please changed your default currency, before deleting it',
+      );
+    }
+
+    const {count} = await this.userCurrencyRepository.count({userId: user.id});
+
+    if (count === 1) {
+      throw new HttpErrors.UnprocessableEntity('You cannot delete your only currency');
+    }
+
     return this.userCurrencyRepository.deleteAll({
       userId: userCurrency.userId,
       currencyId: userCurrency.currencyId,
