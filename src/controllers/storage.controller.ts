@@ -6,6 +6,7 @@ import {
   Response,
   RestBindings,
   param,
+  HttpErrors,
 } from '@loopback/rest';
 import {FCSService} from '../services/fcs.service';
 import {FILE_UPLOAD_SERVICE} from '../keys';
