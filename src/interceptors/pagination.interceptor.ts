@@ -1,3 +1,4 @@
+import {AuthenticationBindings} from '@loopback/authentication';
 import {
   inject,
   injectable,
@@ -40,7 +41,6 @@ import {pageMetadata} from '../utils/page-metadata.utils';
 import {UserRepository} from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
-import {AuthenticationBindings} from '@loopback/authentication';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -66,7 +66,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     @service(PostService)
     protected postService: PostService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    public currentUser: UserProfile,
+    protected currentUser: UserProfile,
   ) {}
 
   /**
@@ -159,7 +159,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const {query, path} = request;
     const {userId, experienceId, timelineType, q} = query;
 
-    const currentUser = this.currentUser;
     const methodName = invocationCtx.methodName as MethodType;
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
@@ -185,7 +184,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         const blockedFriendIds = await this.friendService.getFriendIds(
-          currentUser[securityId],
+          this.currentUser[securityId],
           FriendStatusType.BLOCKED,
         );
 
@@ -216,7 +215,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           if (q) {
             const whereByQuery = await this.getPostByQuery(
               q.toString(),
-              currentUser[securityId],
+              this.currentUser[securityId],
             );
             filter.where = Object.assign(filter.where ?? {}, whereByQuery);
 
