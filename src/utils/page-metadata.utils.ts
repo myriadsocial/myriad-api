@@ -1,10 +1,8 @@
 import {MetaPagination} from '../interfaces';
 
-export function pageMetadata(
-  pageIndex: number,
-  pageSize: number,
-  totalData: number,
-): MetaPagination {
+export function pageMetadata(pageDetail: number[]): MetaPagination {
+  const [pageNumber, pageLimit, totalData] = pageDetail;
+
   if (!totalData) {
     return {
       totalItemCount: 0,
@@ -12,6 +10,12 @@ export function pageMetadata(
       itemsPerPage: 0,
     };
   }
+
+  let pageIndex = 1;
+  let pageSize = 5;
+
+  if (!isNaN(pageNumber) && pageNumber > 0) pageIndex = pageNumber;
+  if (!isNaN(pageLimit) && pageLimit > 0) pageSize = pageLimit;
 
   const totalItemCount = totalData;
   const itemsPerPage = pageSize > totalData ? totalData : pageSize;

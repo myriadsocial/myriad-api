@@ -4,7 +4,7 @@ import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
 import {ActivityLogType, DefaultCurrencyType, ReferenceType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
-import {UserSocialMedia} from '../models';
+import {Currency, UserSocialMedia} from '../models';
 import {
   CurrencyRepository,
   PeopleRepository,
@@ -23,14 +23,15 @@ import {ActivityLogService} from './activity-log.service';
 import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
 import {BN} from '@polkadot/util';
+import {CoinMarketCap} from './coin-market-cap.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class CurrencyService {
   constructor(
     @repository(CurrencyRepository)
-    protected currencyRepository: CurrencyRepository,
+    public currencyRepository: CurrencyRepository,
     @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
+    public userCurrencyRepository: UserCurrencyRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(UserSocialMediaRepository)
@@ -49,6 +50,8 @@ export class CurrencyService {
     protected activityLogService: ActivityLogService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
+    @inject('services.CoinMarketCap')
+    protected coinMarketCapService: CoinMarketCap,
   ) {}
 
   async defaultCurrency(userId: string): Promise<void> {
@@ -489,5 +492,64 @@ export class CurrencyService {
     }
 
     return priority;
+  }
+
+  async verifyRpcAddressConnection(
+    currency: Currency,
+  ): Promise<Omit<Currency, 'id'>> {
+    let native = false;
+    let api: ApiPromise;
+    let exchangeRate = false;
+
+    const {id, rpcURL, types} = currency;
+
+    const {polkadotApi, getSystemParameters} = new PolkadotJs();
+
+    try {
+      api = await polkadotApi(rpcURL, types);
+    } catch (err) {
+      throw new HttpErrors.UnprocessableEntity('Connection failed!');
+    }
+
+    const {symbols, symbolsDecimals} = await getSystemParameters(api);
+    const currencyId = symbols.find(e => e === id.toUpperCase());
+
+    if (!currencyId) throw new HttpErrors.NotFound('Currency not found!');
+
+    if (currencyId === symbols[0]) native = true;
+
+    try {
+      const {data} = await this.coinMarketCapService.getActions(
+        `cryptocurrency/quotes/latest?symbol=${currencyId}`,
+      );
+
+      const currencyInfo = data[currencyId];
+
+      if (
+        currency.networkType === 'substrate' &&
+        currencyInfo.tags.find((tag: string) => tag === 'substrate') &&
+        !currencyInfo.platform
+      ) {
+        exchangeRate = true;
+      }
+    } catch (error) {
+      const err = JSON.parse(error.message);
+
+      // Testing will pass this error
+      if (err.status && currency.networkType !== 'substrate-test') {
+        if (err.status.error_code === 1002 || err.status.error_code === 1008) {
+          throw new HttpErrors.UnprocessableEntity(err.status.error_message);
+        }
+      }
+    }
+
+    await api.disconnect();
+
+    return Object.assign(currency, {
+      id: currencyId,
+      decimal: symbolsDecimals[currencyId],
+      native,
+      exchangeRate,
+    });
   }
 }

@@ -1,6 +1,6 @@
 import {repository, Where} from '@loopback/repository';
 import {FriendStatusType, PlatformType, VisibilityType} from '../enums';
-import {Experience, People, Post} from '../models';
+import {Experience, People, Post, UserExperienceWithRelations} from '../models';
 import {
   ExperienceRepository,
   UserExperienceRepository,
@@ -126,5 +126,41 @@ export class ExperienceService {
         },
       ],
     } as Where<Post>;
+  }
+
+  combinePeopleAndUser(
+    result: UserExperienceWithRelations[],
+  ): UserExperienceWithRelations[] {
+    return result.map((userExperience: UserExperienceWithRelations) => {
+      const users = userExperience.experience?.users;
+
+      if (!users) return userExperience;
+
+      const newExperience: Partial<Experience> = {
+        ...userExperience.experience,
+      };
+
+      delete newExperience.users;
+
+      const userToPeople = users.map(user => {
+        return new People({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          platform: PlatformType.MYRIAD,
+          originUserId: user.id,
+          profilePictureURL: user.profilePictureURL,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        });
+      });
+
+      const people = userExperience.experience?.people ?? [];
+
+      newExperience.people = [...userToPeople, ...people];
+      userExperience.experience = newExperience as Experience;
+
+      return userExperience;
+    });
   }
 }

@@ -1,4 +1,4 @@
-import {AnyObject, repository, Where} from '@loopback/repository';
+import {AnyObject, Count, repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {FriendStatusType, VisibilityType} from '../enums';
 import {Friend, Post} from '../models';
@@ -252,5 +252,38 @@ export class FriendService {
       requesteeId: requesteeId,
       requestorId: requestorId,
     };
+  }
+
+  async countMutual(requestorId: string, requesteeId: string): Promise<Count> {
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
+    const collection = (
+      this.friendRepository.dataSource.connector as any
+    ).collection(Friend.modelName);
+
+    const countMutual = await collection
+      .aggregate([
+        {
+          $match: {
+            $or: [
+              {
+                requestorId: requestorId,
+                status: FriendStatusType.APPROVED,
+              },
+              {
+                requestorId: requesteeId,
+                status: FriendStatusType.APPROVED,
+              },
+            ],
+          },
+        },
+        {$group: {_id: '$requesteeId', count: {$sum: 1}}},
+        {$match: {count: 2}},
+        {$group: {_id: null, count: {$sum: 1}}},
+        {$project: {_id: 0}},
+      ])
+      .get();
+
+    if (countMutual.length === 0) return {count: 0};
+    return countMutual[0];
   }
 }
