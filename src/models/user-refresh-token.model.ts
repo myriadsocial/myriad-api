@@ -4,11 +4,11 @@ import {Entity, model, property} from '@loopback/repository';
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'authCredentials',
+      collection: 'userRefreshTokens',
     },
   },
 })
-export class AuthCredential extends Entity {
+export class UserRefreshToken extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -23,22 +23,27 @@ export class AuthCredential extends Entity {
     type: 'string',
     required: true,
   })
-  password: string;
+  refreshToken: string;
 
   @property({
     type: 'string',
     required: true,
+    jsonSchema: {
+      maxLength: 66,
+      minLength: 66,
+      pattern: '^0x',
+    },
   })
-  authenticationId: string;
+  userId: string;
 
-  constructor(data?: Partial<AuthCredential>) {
+  constructor(data?: Partial<UserRefreshToken>) {
     super(data);
   }
 }
 
-export interface AuthCredentialRelations {
+export interface UserRefreshTokenRelations {
   // describe navigational properties here
 }
 
-export type AuthCredentialWithRelations = AuthCredential &
-  AuthCredentialRelations;
+export type UserRefereshTokenWithRelations = UserRefreshToken &
+  UserRefreshTokenRelations;

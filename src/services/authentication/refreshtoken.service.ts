@@ -10,14 +10,9 @@ import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {promisify} from 'util';
 import {TokenObject} from '../../interfaces';
-import {
-  AuthServiceBindings,
-  RefreshTokenServiceBindings,
-  TokenServiceBindings,
-} from '../../keys';
-import {AuthRefreshToken, AuthRefreshTokenRelations} from '../../models';
-import {AuthRefreshTokenRepository} from '../../repositories';
-import {MyAuthService} from './authentication.service';
+import {RefreshTokenServiceBindings, TokenServiceBindings} from '../../keys';
+import {UserRefreshToken, UserRefreshTokenRelations} from '../../models';
+import {UserRefreshTokenRepository, UserRepository} from '../../repositories';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -26,23 +21,25 @@ const verifyAsync = promisify(jwt.verify);
 @injectable({scope: BindingScope.TRANSIENT})
 export class RefreshtokenService {
   constructor(
+    @repository(UserRepository)
+    public userRepository: UserRepository,
+    @repository(UserRefreshTokenRepository)
+    public userRefreshTokenRepository: UserRefreshTokenRepository,
     @inject(RefreshTokenServiceBindings.REFRESH_SECRET)
     private refreshSecret: string,
     @inject(RefreshTokenServiceBindings.JWT_REFRESH_TOKEN_EXPIRES_IN)
     private refreshExpiresIn: string,
     @inject(RefreshTokenServiceBindings.REFRESH_ISSUER)
     private refreshIssure: string,
-    @repository(AuthRefreshTokenRepository)
-    public authRefreshTokenRepository: AuthRefreshTokenRepository,
-    @inject(AuthServiceBindings.AUTH_SERVICE) public authService: MyAuthService,
-    @inject(TokenServiceBindings.TOKEN_SERVICE) public jwtService: TokenService,
+    @inject(TokenServiceBindings.TOKEN_SERVICE)
+    public jwtService: TokenService,
   ) {}
   /**
    * Generate a refresh token, bind it with the given user profile + access
    * token, then store them in backend.
    */
   async generateToken(
-    authProfile: UserProfile,
+    userProfile: UserProfile,
     token: string,
   ): Promise<TokenObject> {
     const data = {
@@ -58,10 +55,7 @@ export class RefreshtokenService {
       expiresIn: `${this.refreshExpiresIn} seconds`,
       refreshToken: refreshToken,
     };
-    await this.authRefreshTokenRepository.create({
-      authenticationId: authProfile[securityId],
-      refreshToken: result.refreshToken,
-    });
+
     return result;
   }
 
@@ -76,18 +70,17 @@ export class RefreshtokenService {
         );
       }
 
-      const authRefreshData = await this.verifyToken(refreshToken);
-      const authentication = await this.authService.findAuthById(
-        authRefreshData.authenticationId.toString(),
-      );
-      const authProfile: UserProfile =
-        this.authService.convertToUserProfile(authentication);
-      // create a JSON Web Token based on the user profile
-      const token = await this.jwtService.generateToken(authProfile);
-
-      return {
-        accessToken: token,
+      const userRefreshData = await this.verifyToken(refreshToken);
+      const user = await this.userRepository.findById(userRefreshData.userId);
+      const userProfile: UserProfile = {
+        [securityId]: user.id!.toString(),
+        id: user.id,
+        name: user.name,
+        username: user.username,
       };
+      const token = await this.jwtService.generateToken(userProfile);
+
+      return {accessToken: token, refreshToken: refreshToken};
     } catch (error) {
       throw new HttpErrors.Unauthorized(
         `Error verifying token : ${error.message}`,
@@ -100,8 +93,8 @@ export class RefreshtokenService {
    */
   async revokeToken(refreshToken: string) {
     try {
-      await this.authRefreshTokenRepository.delete(
-        new AuthRefreshToken({refreshToken: refreshToken}),
+      await this.userRefreshTokenRepository.delete(
+        new UserRefreshToken({refreshToken: refreshToken}),
       );
     } catch (e) {
       // ignore
@@ -114,10 +107,10 @@ export class RefreshtokenService {
    */
   async verifyToken(
     refreshToken: string,
-  ): Promise<AuthRefreshToken & AuthRefreshTokenRelations> {
+  ): Promise<UserRefreshToken & UserRefreshTokenRelations> {
     try {
       await verifyAsync(refreshToken, this.refreshSecret);
-      const authRefreshData = await this.authRefreshTokenRepository.findOne({
+      const authRefreshData = await this.userRefreshTokenRepository.findOne({
         where: {refreshToken: refreshToken},
       });
 

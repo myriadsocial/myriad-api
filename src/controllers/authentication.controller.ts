@@ -1,111 +1,96 @@
-import {inject} from '@loopback/core';
+import {inject, intercept} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {HttpErrors, post, requestBody} from '@loopback/rest';
-import {UserProfile} from '@loopback/security';
-
-import * as _ from 'lodash';
-import {NewAuthRequest, RefreshGrant, TokenObject, Token} from '../interfaces';
 import {
-  AuthServiceBindings,
-  PasswordHasherBindings,
-  RefreshTokenServiceBindings,
-  TokenServiceBindings,
-} from '../keys';
-import {Authentication} from '../models';
-import {AuthenticationRepository, Credentials} from '../repositories';
-import {RefreshtokenService, validateCredentials} from '../services';
-import {MyAuthService} from '../services/authentication/authentication.service';
-import {BcryptHasher} from '../services/authentication/hash.password.service';
+  getModelSchemaRef,
+  HttpErrors,
+  param,
+  post,
+  response,
+  requestBody,
+  get,
+} from '@loopback/rest';
+import {securityId, UserProfile} from '@loopback/security';
+import {RefreshGrant, TokenObject} from '../interfaces';
+import {RefreshTokenServiceBindings, TokenServiceBindings} from '../keys';
+import {Credential, User} from '../models';
+import {UserRepository} from '../repositories';
+import {RefreshtokenService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
-import {config} from '../config';
+import {numberToHex} from '@polkadot/util';
+import {signatureVerify} from '@polkadot/util-crypto';
+import NonceGenerator from 'a-nonce-generator';
 
 export class AuthenticationController {
   constructor(
-    @repository(AuthenticationRepository)
-    protected authenticationRepository: AuthenticationRepository,
-    @inject(PasswordHasherBindings.PASSWORD_HASHER)
-    protected hasher: BcryptHasher,
-    @inject(AuthServiceBindings.AUTH_SERVICE)
-    protected authService: MyAuthService,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
     @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
     protected refreshService: RefreshtokenService,
   ) {}
 
-  @post('/signup', {
+  @get('/users/{id}/nonce', {
     responses: {
       '200': {
-        description: 'Authentication',
+        desciption: 'User nonce',
         content: {
           'application/json': {
             schema: {
-              type: 'object',
-              properties: {
-                id: {
-                  type: 'string',
-                },
-                email: {
-                  type: 'string',
-                },
-              },
+              type: 'number',
             },
           },
         },
       },
     },
   })
-  async signup(
+  async getNonce(@param.path.string('id') id: string): Promise<number | null> {
+    let result = null;
+
+    try {
+      ({nonce: result} = await this.userRepository.findById(id));
+    } catch {
+      // ignore
+    }
+
+    return result;
+  }
+
+  @intercept(CreateInterceptor.BINDING_KEY)
+  @post('/signup')
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {
+          exclude: ['nonce'],
+        }),
+      },
+    },
+  })
+  async create(
     @requestBody({
-      description: 'The input of signup function',
-      required: true,
       content: {
         'application/json': {
-          schema: {
-            type: 'object',
-            required: ['email', 'password'],
-            properties: {
-              email: {
-                type: 'string',
-                format: 'email',
-              },
-              password: {
-                type: 'string',
-                minLength: 6,
-              },
-            },
-          },
+          schema: getModelSchemaRef(User, {
+            title: 'NewUser',
+            exclude: [
+              'profilePictureURL',
+              'bannerImageUrl',
+              'fcmTokens',
+              'onTimeline',
+              'createdAt',
+              'updatedAt',
+              'nonce',
+              'deletedAt',
+            ],
+          }),
         },
       },
     })
-    newAuthRequest: NewAuthRequest,
-  ): Promise<Authentication> {
-    const foundAuth = await this.authenticationRepository.findOne({
-      where: {
-        email: newAuthRequest.email,
-      },
-    });
-
-    if (foundAuth) {
-      throw new HttpErrors.UnprocessableEntity('Email Already Exist');
-    }
-
-    if (config.JWT_EMAIL !== newAuthRequest.email) {
-      throw new HttpErrors.UnprocessableEntity('Only admin can register!');
-    }
-
-    validateCredentials(_.pick(newAuthRequest, ['email', 'password']));
-    const password = await this.hasher.hashPassword(newAuthRequest.password);
-    const savedUser = await this.authenticationRepository.create(
-      _.omit(newAuthRequest, 'password'),
-    );
-    // delete savedUser.password;
-
-    await this.authenticationRepository
-      .authCredential(savedUser.id)
-      .create({password});
-
-    return savedUser;
+    user: User,
+  ): Promise<User> {
+    return this.userRepository.create(user);
   }
 
   @post('/login', {
@@ -120,13 +105,13 @@ export class AuthenticationController {
                 accessToken: {
                   type: 'string',
                 },
-                tokenType: {
-                  type: 'string',
-                },
-                expiresIn: {
-                  type: 'string',
-                },
                 refreshToken: {
+                  type: 'string',
+                },
+                expiresId: {
+                  type: 'string',
+                },
+                tokenType: {
                   type: 'string',
                 },
               },
@@ -142,42 +127,49 @@ export class AuthenticationController {
       required: true,
       content: {
         'application/json': {
-          schema: {
-            type: 'object',
-            required: ['email', 'password'],
-            properties: {
-              email: {
-                type: 'string',
-                format: 'email',
-              },
-              password: {
-                type: 'string',
-                minLength: 6,
-              },
-            },
-          },
+          schema: getModelSchemaRef(Credential),
         },
       },
     })
-    credentials: Credentials,
-  ): Promise<Token> {
-    // ensure the user exists, and the password is correct
-    const user = await this.authService.verifyCredentials(credentials);
-    // convert a User object into a UserProfile object (reduced set of properties)
-    const userProfile: UserProfile =
-      this.authService.convertToUserProfile(user);
+    credential: Credential,
+  ): Promise<TokenObject> {
+    const {nonce, signature, publicAddress} = credential;
+
+    const {isValid} = signatureVerify(
+      numberToHex(nonce),
+      signature,
+      publicAddress,
+    );
+
+    if (!isValid) {
+      throw new HttpErrors.UnprocessableEntity('Invalid user!');
+    }
+
+    const user = await this.userRepository.findById(publicAddress);
+
+    if (user.nonce !== nonce) {
+      throw new HttpErrors.UnprocessableEntity('Invalid user!');
+    }
+
+    const userProfile: UserProfile = {
+      [securityId]: user.id!.toString(),
+      id: user.id,
+      name: user.name,
+      username: user.username,
+    };
 
     const accessToken = await this.jwtService.generateToken(userProfile);
+    const token = await this.refreshService.generateToken(
+      userProfile,
+      accessToken,
+    );
 
-    // TODO: if refresh token needed
-    // const tokens = await this.refreshService.generateToken(
-    //   userProfile,
-    //   accessToken,
-    // );
+    const ng = new NonceGenerator();
+    const newNonce = ng.generate();
 
-    return {
-      accessToken: accessToken,
-    };
+    await this.userRepository.updateById(publicAddress, {nonce: newNonce});
+
+    return token;
   }
 
   @post('/refresh', {
