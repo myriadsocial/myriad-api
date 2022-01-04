@@ -300,7 +300,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
           filter.where = await this.getExperienceByQuery(experienceQuery);
         }
-        break;
+        break
       }
 
       case ControllerType.FRIEND: {
@@ -308,10 +308,34 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           const mutualPath = request.path.split('/');
           const requestorId = mutualPath[2];
           const requesteeId = mutualPath[4];
-          const userIds = this.friendService.getMutualUserIds(
-            requestorId,
-            requesteeId,
-          );
+          /* eslint-disable  @typescript-eslint/no-explicit-any */
+          const collection = (
+            this.friendService.friendRepository.dataSource.connector as any
+          ).collection(Friend.modelName);
+
+          const userIds = (
+            await collection
+              .aggregate([
+                {
+                  $match: {
+                    $or: [
+                      {
+                        requestorId: requestorId,
+                        status: FriendStatusType.APPROVED,
+                      },
+                      {
+                        requestorId: requesteeId,
+                        status: FriendStatusType.APPROVED,
+                      },
+                    ],
+                  },
+                },
+                {$group: {_id: '$requesteeId', count: {$sum: 1}}},
+                {$match: {count: 2}},
+                {$project: {_id: 1}},
+              ])
+              .get()
+          ).map((user: AnyObject) => user._id);
 
           filter.order = this.orderSetting(request.query);
           filter.where = Object.assign(filter.where ?? {}, {
