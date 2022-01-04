@@ -8,7 +8,7 @@ export const config = {
   MYRIAD_RPC_WS_URL: process.env.MYRIAD_RPC_WS_URL ?? 'ws://127.0.0.1:9944',
   MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY:
     process.env.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY ??
-    '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d',
+    '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
   MYRIAD_FAUCET_MNEMONIC:
     process.env.MYRIAD_FAUCET_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
@@ -25,7 +25,6 @@ export const config = {
     process.env.JWT_REFRESH_TOKEN_SECRET_KEY ?? 'r3fr35htok3n',
   JWT_REFRESH_TOKEN_EXPIRES_IN:
     process.env.JWT_REFRESH_TOKEN_EXPIRES_IN ?? '216000',
-  JWT_EMAIL: !process.env.JWT_EMAIL ? 'admin@mail.com' : process.env.JWT_EMAIL,
 
   MONGO_PROTOCOL: process.env.MONGO_PROTOCOL ?? 'mongodb',
   MONGO_HOST: process.env.MONGO_HOST ?? '',

@@ -1,9 +1,7 @@
-import {TokenService, UserService} from '@loopback/authentication';
+import {TokenService} from '@loopback/authentication';
 import {BindingKey} from '@loopback/core';
 import {config} from './config';
 import {RefreshTokenService} from './interfaces';
-import {Authentication} from './models';
-import {Credentials} from './repositories/authentication.repository';
 import {PasswordHasher} from './services/authentication/hash.password.service';
 import {FileUploadHandler} from './types';
 
@@ -16,7 +14,7 @@ export namespace TokenServiceBindings {
   export const TOKEN_SECRET = BindingKey.create<string>(
     'authentication.jwt.secret',
   );
-  export const JWT_TOKEN_EXPIRES_IN = BindingKey.create<string>(
+  export const TOKEN_EXPIRES_IN = BindingKey.create<string>(
     'authentication.jwt.expires.in.seconds',
   );
   export const TOKEN_SERVICE = BindingKey.create<TokenService>(
@@ -63,15 +61,6 @@ export namespace PasswordHasherBindings {
   export const PASSWORD_HASHER =
     BindingKey.create<PasswordHasher>('services.hasher');
   export const ROUNDS = BindingKey.create<number>('services.hasher.rounds');
-}
-
-export namespace AuthServiceBindings {
-  export const AUTH_SERVICE = BindingKey.create<
-    UserService<Authentication, Credentials>
-  >('services.user.service');
-  export const AUTH_REPOSITORY = 'repositories.AuthenticationRepository';
-  export const AUTH_CREDENTIAL_REPOSITORY =
-    'repositories.AuthCredentialRepository';
 }
 
 export const FILE_UPLOAD_SERVICE = BindingKey.create<FileUploadHandler>(

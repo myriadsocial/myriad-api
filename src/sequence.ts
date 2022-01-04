@@ -11,6 +11,7 @@ import {
   Send,
   SequenceHandler,
 } from '@loopback/rest';
+
 const SequenceActions = RestBindings.SequenceActions;
 
 export class MyriadSequence implements SequenceHandler {
