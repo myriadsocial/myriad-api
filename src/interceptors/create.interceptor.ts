@@ -201,7 +201,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
           result.id,
           ReferenceType.TRANSACTION,
         );
-
         return result;
       }
 
