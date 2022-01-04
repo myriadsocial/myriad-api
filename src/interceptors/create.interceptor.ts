@@ -278,23 +278,12 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.Forbidden('Forbidden user!');
         }
 
-        await this.currencyRepository.findById(currencyId.toUpperCase());
+        await this.currencyRepository.findById(currencyId);
 
-        // Check if user already has the crypto
-        const userCurrency = await this.userCurrencyRepository.findOne({
-          where: {
-            userId,
-            currencyId: currencyId.toUpperCase(),
-          },
-        });
+        const {count} = await this.userCurrencyRepository.count({userId});
 
-        if (userCurrency) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You already have this currency',
-          );
-        }
-
-        invocationCtx.args[0].currencyId = currencyId.toUpperCase();
+        invocationCtx.args[0].currencyId = currencyId;
+        invocationCtx.args[0].priority = count + 1;
 
         return;
       }
@@ -347,7 +336,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case ControllerType.AUTHENTICATION: {
         await this.userRepository.accountSetting(result.id).create({});
         await this.userRepository.notificationSetting(result.id).create({});
-        await this.userRepository.leaderboard(result.id).create({});
+        await this.userRepository.languageSetting(result.id).create({});
         await this.friendService.defaultFriend(result.id);
         await this.currencyService.defaultCurrency(result.id);
         await this.currencyService.sendMyriadReward(result.id);
