@@ -22,7 +22,6 @@ import {
   ReportRepository,
   UserCurrencyRepository,
   UserReportRepository,
-  UserRepository,
 } from '../repositories';
 import {
   ActivityLogService,
