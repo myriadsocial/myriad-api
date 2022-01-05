@@ -173,13 +173,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     filter.where = filter.where ?? {};
 
     switch (controllerName) {
-      case ControllerType.DELETEDCOLLECTION: {
-        filter.where = Object.assign(filter.where, {
-          deletedAt: {$exists: true},
-        });
-        break;
-      }
-
       // Use for search unblock user
       case ControllerType.USER: {
         if (methodName === MethodType.LEADERBOARD) {
