@@ -79,7 +79,6 @@ export class ReportController {
     return this.reportRepository.findById(id, filter);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
   @intercept(ReportInterceptor.BINDING_KEY)
   @patch('/reports/{id}')
   @response(204, {
