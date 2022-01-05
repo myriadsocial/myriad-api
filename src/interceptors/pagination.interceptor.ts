@@ -1,3 +1,4 @@
+
 import {AuthenticationBindings} from '@loopback/authentication';
 import {
   inject,
@@ -306,7 +307,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     request: Request,
     result: AnyObject,
   ): Promise<AnyObject> {
-    const currentUser = this.currentUser;
     const controllerName = invocationCtx.targetClass.name as ControllerType;
     const methodName = invocationCtx.methodName as MethodType;
 
@@ -352,11 +352,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               }
 
               if (e.visibility === VisibilityType.FRIEND) {
-                if (currentUser[securityId] === e.createdBy) return e.user;
+                if (this.currentUser[securityId] === e.createdBy) return e.user;
                 const friend =
                   await this.friendService.friendRepository.findOne({
                     where: {
-                      requestorId: currentUser[securityId],
+                      requestorId: this.currentUser[securityId],
                       requesteeId: e.createdBy,
                     },
                   });
