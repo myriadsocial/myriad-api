@@ -1,7 +1,6 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
-  del,
   get,
   getModelSchemaRef,
   param,
@@ -77,13 +76,5 @@ export class TagController {
     @param.filter(Tag, {exclude: 'where'}) filter?: FilterExcludingWhere<Tag>,
   ): Promise<Tag> {
     return this.tagRepository.findById(id, filter);
-  }
-
-  @del('/tags/{id}')
-  @response(204, {
-    description: 'Tag DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.tagRepository.deleteById(id);
   }
 }

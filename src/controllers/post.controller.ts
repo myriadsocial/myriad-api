@@ -15,6 +15,7 @@ import {PlatformType, VisibilityType} from '../enums';
 import {
   CreateInterceptor,
   DeletedDocument,
+  DeleteInterceptor,
   PaginationInterceptor,
   RestrictedPostInterceptor,
   UpdateInterceptor,
@@ -274,6 +275,7 @@ export class PostController {
     await this.postService.postRepository.updateById(id, updatedPost);
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/posts/{id}')
   @response(204, {
     description: 'Post DELETE success',

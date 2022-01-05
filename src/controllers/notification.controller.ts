@@ -8,7 +8,6 @@ import {
   Where,
 } from '@loopback/repository';
 import {
-  del,
   get,
   getModelSchemaRef,
   param,
@@ -122,13 +121,5 @@ export class NotificationController {
         },
       },
     );
-  }
-
-  @del('/notifications/{id}')
-  @response(204, {
-    description: 'Notification DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.notificationRepository.deleteById(id);
   }
 }

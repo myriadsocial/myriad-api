@@ -11,7 +11,11 @@ import {
 import {Report} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
-import {PaginationInterceptor, UpdateInterceptor} from '../interceptors';
+import {
+  DeleteInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {ReportInterceptor} from '../interceptors/report.interceptor';
 import {service} from '@loopback/core';
 import {NotificationService} from '../services';
@@ -104,6 +108,7 @@ export class ReportController {
     }
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @intercept(ReportInterceptor.BINDING_KEY)
   @del('/reports/{id}')
   @response(204, {

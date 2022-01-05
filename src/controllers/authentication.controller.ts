@@ -15,7 +15,6 @@ import {Credential, User} from '../models';
 import {UserRepository} from '../repositories';
 import {RefreshtokenService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
-import NonceGenerator from 'a-nonce-generator';
 import {AuthenticationInterceptor} from '../interceptors';
 
 export class AuthenticationController {

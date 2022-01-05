@@ -1,25 +1,17 @@
 import {intercept} from '@loopback/context';
+import {param, response, get, getModelSchemaRef} from '@loopback/rest';
+import {AnyObject, repository} from '@loopback/repository';
+import {PaginationInterceptor} from '../interceptors';
+import {Comment, Post, User} from '../models';
+import {Filter} from '@loopback/repository';
 import {
-  del,
-  param,
-  response,
-  patch,
-  get,
-  getModelSchemaRef,
-} from '@loopback/rest';
-import {repository} from '@loopback/repository';
-import {ReferenceType, ReportStatusType} from '../enums';
-import {PaginationInterceptor, UpdateInterceptor} from '../interceptors';
-import {Post, User} from '../models';
-import {Filter, FilterExcludingWhere} from '@loopback/repository';
-import {
+  CommentRepository,
   PostRepository,
   ReportRepository,
   UserRepository,
 } from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
-/* eslint-disable  @typescript-eslint/no-explicit-any */
 @authenticate('jwt')
 export class DeletedCollectionController {
   constructor(
@@ -27,6 +19,8 @@ export class DeletedCollectionController {
     public userRepository: UserRepository,
     @repository(PostRepository)
     public postRepository: PostRepository,
+    @repository(CommentRepository)
+    public commentRepository: CommentRepository,
     @repository(ReportRepository)
     public reportRepository: ReportRepository,
   ) {}
@@ -37,49 +31,18 @@ export class DeletedCollectionController {
     @param.filter(Post, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<Post>,
   ): Promise<Post[]> {
-    return this.postRepository.find(filter);
+    return this.postRepository.find(this.updatedFilter(filter) as Filter<Post>);
   }
 
-  @get('/posts/{id}/deleted')
-  @response(200, {
-    description: 'Deleted Post model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Post, {includeRelations: true}),
-      },
-    },
-  })
-  async findDeletedPostById(
-    @param.path.string('id') id: string,
-    @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
-  ): Promise<Post> {
-    return this.postRepository.findById(id, filter);
-  }
-
-  @intercept(UpdateInterceptor.BINDING_KEY)
-  @patch('/posts/{id}/recover')
-  @response(204, {
-    description: 'Post RECOVER success',
-  })
-  async recoverPost(@param.path.string('id') id: string): Promise<void> {
-    await this.postRepository.updateById(id, <any>{
-      $unset: {
-        deletedAt: '',
-      },
-    });
-  }
-
-  @del('/posts/{id}/delete')
-  @response(204, {
-    description: 'Post DELETE success',
-  })
-  async deletePostById(@param.path.string('id') id: string): Promise<void> {
-    await this.postRepository.updateById(id, {
-      deletedAt: new Date().toString(),
-    });
-    await this.reportRepository.updateAll(
-      {status: ReportStatusType.REMOVED},
-      {referenceId: id, referenceType: ReferenceType.POST},
+  @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
+  @get('/comments/deleted')
+  async deletedCommentList(
+    @param.filter(Comment, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Comment>,
+  ): Promise<Comment[]> {
+    return this.commentRepository.find(
+      this.updatedFilter(filter) as Filter<Comment>,
     );
   }
 
@@ -129,19 +92,7 @@ export class DeletedCollectionController {
         deletedAt: '',
       },
     });
-  }
 
-  @del('/users/{id}/delete')
-  @response(204, {
-    description: 'User DELETE success',
-  })
-  async deleteUserById(@param.path.string('id') id: string): Promise<void> {
-    await this.userRepository.updateById(id, {
-      deletedAt: new Date().toString(),
-    });
-    await this.reportRepository.updateAll(
-      {status: ReportStatusType.REMOVED},
-      {referenceId: id, referenceType: ReferenceType.USER},
-    );
+    return Object.assign(filter ?? {}, {where});
   }
 }

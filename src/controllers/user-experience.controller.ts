@@ -18,6 +18,7 @@ import {
 } from '@loopback/rest';
 import {
   CreateInterceptor,
+  DeleteInterceptor,
   ExperienceInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
@@ -163,6 +164,7 @@ export class UserExperienceController {
       .patch(experience, {id: experienceId});
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @intercept(ExperienceInterceptor.BINDING_KEY)
   @del('/user-experiences/{id}', {
     responses: {

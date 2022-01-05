@@ -13,6 +13,7 @@ import {ReferenceType} from '../enums';
 import {
   CreateInterceptor,
   DeletedDocument,
+  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -153,6 +154,7 @@ export class CommentController {
     return this.commentRepository.updateById(id, comment);
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/comments/{id}', {
     responses: {
       '204': {

@@ -12,6 +12,7 @@ import {
 } from '@loopback/rest';
 import {
   CreateInterceptor,
+  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -106,6 +107,7 @@ export class CurrencyController {
     await this.currencyRepository.updateById(id, currency);
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/currencies/{id}')
   @response(204, {
     description: 'Currency DELETE success',

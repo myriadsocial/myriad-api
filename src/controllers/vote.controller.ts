@@ -1,7 +1,10 @@
 import {intercept, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {del, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
-import {CreateInterceptor} from '../interceptors';
+import {
+  CreateInterceptor,
+  DeleteInterceptor,
+} from '../interceptors';
 import {Vote} from '../models';
 import {VoteRepository} from '../repositories';
 import {NotificationService} from '../services';
@@ -57,6 +60,7 @@ export class VoteController {
     return result;
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/votes/{id}', {
     responses: {
       '200': {

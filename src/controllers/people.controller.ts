@@ -1,8 +1,8 @@
 import {inject, intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
-import {FriendStatusType, PlatformType} from '../enums';
-import {PaginationInterceptor} from '../interceptors';
+import {PlatformType, FriendStatusType} from '../enums';
+import {DeleteInterceptor, PaginationInterceptor} from '../interceptors';
 import {People} from '../models';
 import {
   FriendRepository,
@@ -161,6 +161,7 @@ export class PeopleController {
     return this.peopleRepository.findById(id, filter);
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/people/{id}')
   @response(204, {
     description: 'People DELETE success',

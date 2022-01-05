@@ -14,6 +14,7 @@ import {
 import {PlatformType} from '../enums';
 import {
   CreateInterceptor,
+  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -156,6 +157,7 @@ export class UserSocialMediaController {
     });
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/user-social-medias/{id}')
   @response(204, {
     description: 'UserSocialMedia DELETE success',

@@ -19,6 +19,7 @@ import {
 import {FriendStatusType} from '../enums';
 import {
   CreateInterceptor,
+  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -192,6 +193,7 @@ export class FriendController {
     return this.userRepository.find(filter);
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
   @del('/friends/{id}')
   @response(204, {
