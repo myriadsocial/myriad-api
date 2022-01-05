@@ -6,13 +6,14 @@ import {
   FriendRepository,
   NotificationRepository,
   PostRepository,
+  UserExperienceRepository,
   UserRepository,
   UserSocialMediaRepository,
   VoteRepository,
 } from '../repositories';
 import {UserProfile, securityId} from '@loopback/security';
 import {HttpErrors} from '@loopback/rest';
-import {ControllerType} from '../enums';
+import {ControllerType, FriendStatusType} from '../enums';
 import {config} from '../config';
 import {Post} from '../models';
 
@@ -29,6 +30,8 @@ export class UserService {
     protected notificationRepository: NotificationRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(UserExperienceRepository)
+    protected userExperienceRepository: UserExperienceRepository,
     @repository(UserSocialMediaRepository)
     protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(VoteRepository)
@@ -76,6 +79,7 @@ export class UserService {
         break;
       }
 
+      case ControllerType.PEOPLE:
       case ControllerType.TAG:
       case ControllerType.CURRENCY:
       case ControllerType.DELETEDCOLLECTION:
@@ -89,7 +93,15 @@ export class UserService {
           break;
         }
 
-        ({requesteeId: userId} = await this.friendRepository.findById(ids[0]));
+        const {requesteeId, requestorId, status} =
+          await this.friendRepository.findById(ids[0]);
+
+        if (status === FriendStatusType.PENDING) {
+          userId = requesteeId;
+        } else {
+          userId = requestorId;
+        }
+
         break;
       }
 
@@ -144,7 +156,12 @@ export class UserService {
           break;
         }
 
-        userId = ids[0];
+        if (ids[0].length === 66) {
+          userId = ids[0];
+        } else {
+          ({userId} = await this.userExperienceRepository.findById(ids[0]));
+        }
+
         break;
       }
 
@@ -162,14 +179,15 @@ export class UserService {
         userId = data;
         break;
 
-      case ControllerType.VOTE:
+      case ControllerType.VOTE: {
         if (data) {
           userId = data.userId;
           break;
         }
 
-        ({userId} = await this.voteRepository.findById(ids[0]))
+        ({userId} = await this.voteRepository.findById(ids[0]));
         break;
+      }
 
       default:
         userId = ids[0];
