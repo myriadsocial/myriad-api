@@ -117,10 +117,14 @@ export class MyriadApiApplication extends BootMixin(
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
 
-    this.configure(RestExplorerBindings.COMPONENT).to({
-      path: '/explorer',
-    });
-    this.component(RestExplorerComponent);
+    if (this.options.test) return;
+    if (!this.options.rest.apiExplorer.disabled) {
+      this.configure(RestExplorerBindings.COMPONENT).to({
+        path: '/explorer',
+        useSelfHostedSpec: true,
+      });
+      this.component(RestExplorerComponent);
+    }
   }
 
   registerService() {
