@@ -118,10 +118,7 @@ export class MyriadApiApplication extends BootMixin(
     this.component(JWTAuthenticationComponent);
 
     if (this.options.test) return;
-    if (
-      Object.values(this.options).length === 0 ||
-      !this.options.rest.apiExplorer.disabled
-    ) {
+    if (!this.options.rest?.apiExplorer.disabled) {
       this.configure(RestExplorerBindings.COMPONENT).to({
         path: '/explorer',
         useSelfHostedSpec: true,
