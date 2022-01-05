@@ -1,6 +1,4 @@
-import {AuthenticationBindings} from '@loopback/authentication';
 import {
-  inject,
   injectable,
   Interceptor,
   InvocationContext,
@@ -16,23 +14,13 @@ import {
   PlatformType,
   ReferenceType,
 } from '../enums';
-import {UserProfile, securityId} from '@loopback/security';
-import {config} from '../config';
 import {repository} from '@loopback/repository';
-import {
-  CommentRepository,
-  ExperienceRepository,
-  FriendRepository,
-  NotificationRepository,
-  PostRepository,
-  UserExperienceRepository,
-  UserRepository,
-  UserSocialMediaRepository,
-} from '../repositories';
+import {ExperienceRepository, UserExperienceRepository} from '../repositories';
 import {HttpErrors} from '@loopback/rest';
 import {Post, User} from '../models';
 import {ActivityLogService, CurrencyService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
+import {UserService} from '../services/user.service';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -46,28 +34,16 @@ export class UpdateInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${UpdateInterceptor.name}`;
 
   constructor(
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
-    @repository(CommentRepository)
-    protected commentRepository: CommentRepository,
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
-    @repository(NotificationRepository)
-    protected notificationRepository: NotificationRepository,
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
-    @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
-    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    @service(UserService)
+    protected userService: UserService,
   ) {}
 
   /**
@@ -89,21 +65,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    if (this.skipUpdate(invocationCtx)) return next();
-
-    let error = false;
-
-    if (!this.currentUser) error = true;
-
-    const isUser = await this.userRepository.findOne({
-      where: {id: this.currentUser[securityId]},
-    });
-
-    if (!isUser) error = true;
-    if (error) {
-      throw new HttpErrors.Forbidden('Forbidden user!');
-    }
-
+    await this.userService.verifyUser();
     await this.beforeUpdate(invocationCtx);
 
     const result = await next();
@@ -123,28 +85,14 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       invocationCtx.args[1].updatedAt = new Date();
     }
 
-    let error = false;
+    const currentPost = await this.userService.verifyUserId(
+      controllerName,
+      null,
+      [invocationCtx.args[0]],
+    );
 
     switch (controllerName) {
-      case ControllerType.COMMENT: {
-        const {userId} = await this.commentRepository.findById(
-          invocationCtx.args[0],
-        );
-
-        if (userId !== this.currentUser[securityId]) error = true;
-        break;
-      }
-
       case ControllerType.CURRENCY: {
-        const currency =
-          this.currentUser[securityId] ===
-          config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
-
-        if (!currency) {
-          error = true;
-          break;
-        }
-
         const currentCurrency =
           await this.currencyService.currencyRepository.findById(
             invocationCtx.args[0],
@@ -162,26 +110,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.DELETEDCOLLECTION: {
-        const admin =
-          this.currentUser[securityId] ===
-          config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
-
-        if (!admin) error = true;
-        break;
-      }
-
       case ControllerType.USER: {
-        const user = invocationCtx.args[0] === this.currentUser[securityId];
-
-        console.log(invocationCtx.args[0]);
-        console.log(this.currentUser[securityId]);
-
-        if (!user) {
-          error = true;
-          break;
-        }
-
         await this.updateUserProfileActivityLog(
           invocationCtx.args[0],
           invocationCtx.args[1],
@@ -190,55 +119,14 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.NOTIFICATION: {
-        if (methodName === MethodType.READNOTIFICATION) {
-          const {to} = await this.notificationRepository.findById(
-            invocationCtx.args[0],
-          );
-
-          if (this.currentUser[securityId] !== to) {
-            error = true;
-            break;
-          }
-        }
-
-        if (methodName === MethodType.READMULTIPLENOTIFICATION) {
-          const notificationIds = invocationCtx.args[0];
-
-          for (const notificationId of notificationIds) {
-            try {
-              const {to} = await this.notificationRepository.findById(
-                notificationId,
-              );
-
-              if (this.currentUser[securityId] !== to) {
-                error = true;
-                break;
-              }
-            } catch {
-              error = true;
-              break;
-            }
-          }
-
-          break;
-        }
-
-        break;
-      }
-
       case ControllerType.POST: {
-        const currentPost = await this.postRepository.findById(
-          invocationCtx.args[0],
-        );
         const payload = invocationCtx.args[1] as Partial<Post>;
 
-        const {createdBy, platform} = currentPost;
-
-        if (createdBy !== this.currentUser[securityId]) {
-          error = true;
-          break;
+        if (!currentPost) {
+          throw new HttpErrors.Forbidden('Forbidden user!');
         }
+
+        const {platform} = currentPost;
 
         if (
           platform === PlatformType.TWITTER ||
@@ -293,33 +181,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.REPORT: {
-        const adminReport =
-          this.currentUser[securityId] ===
-          config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
-
-        if (!adminReport) error = true;
-        break;
-      }
-
-      case ControllerType.USERNOTIFICATIONSETTING:
-      case ControllerType.USERACCOUNTSETTING: {
-        const userSetting =
-          this.currentUser[securityId] === invocationCtx.args[0];
-
-        if (!userSetting) error = true;
-        break;
-      }
-
       case ControllerType.USERCURRENCY: {
-        const isUserCurrency =
-          this.currentUser[securityId] === invocationCtx.args[0];
-
-        if (!isUserCurrency) {
-          error = true;
-          break;
-        }
-
         const userId = invocationCtx.args[0];
         const currencyId = invocationCtx.args[1];
 
@@ -340,14 +202,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USEREXPERIENCE: {
-        const isUserExperience =
-          this.currentUser[securityId] === invocationCtx.args[0];
-
-        if (!isUserExperience) {
-          error = true;
-          break;
-        }
-
         if (methodName === MethodType.SELECTEXPERIENCE) {
           const userId = invocationCtx.args[0];
           const experienceId = invocationCtx.args[1];
@@ -367,54 +221,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
         break;
       }
-
-      case ControllerType.USERSOCIALMEDIA: {
-        const {userId} = await this.userSocialMediaRepository.findById(
-          invocationCtx.args[0],
-        );
-
-        if (this.currentUser[securityId] !== userId) error = true;
-        break;
-      }
-
-      case ControllerType.FRIEND: {
-        const {requesteeId} = await this.friendRepository.findById(
-          invocationCtx.args[0],
-        );
-
-        if (this.currentUser[securityId] !== requesteeId) error = true;
-        break;
-      }
     }
-
-    if (error) {
-      throw new HttpErrors.Forbidden('Forbidden user!');
-    }
-  }
-
-  skipUpdate(invocationCtx: InvocationContext): boolean {
-    let skip = true;
-
-    const methodName = invocationCtx.methodName;
-
-    switch (methodName) {
-      case MethodType.UPDATEEXPERIENCE:
-      case MethodType.SELECTCURRENCY:
-      case MethodType.SELECTEXPERIENCE:
-      case MethodType.READNOTIFICATION:
-      case MethodType.READMULTIPLENOTIFICATION:
-      case MethodType.RECOVERPOST:
-      case MethodType.RECOVERUSER:
-      case MethodType.UPDATEPRIMARY:
-      case MethodType.UPDATEBYID:
-        skip = false;
-        break;
-
-      default:
-        skip = true;
-    }
-
-    return skip;
   }
 
   async updateUserProfileActivityLog(

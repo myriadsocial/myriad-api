@@ -1,6 +1,4 @@
-import {AuthenticationBindings} from '@loopback/authentication';
 import {
-  inject,
   injectable,
   Interceptor,
   InvocationContext,
@@ -37,11 +35,12 @@ import {
   NotificationService,
   PostService,
   TagService,
+  UserService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
 import {UserRepository} from '../repositories';
 import {MetaPagination} from '../interfaces';
-import {UserProfile, securityId} from '@loopback/security';
+import {securityId} from '@loopback/security';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -66,8 +65,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected notificationService: NotificationService,
     @service(PostService)
     protected postService: PostService,
-    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    @service(UserService)
+    protected userService: UserService,
   ) {}
 
   /**
@@ -89,15 +88,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    if (!this.currentUser) throw new HttpErrors.Forbidden('Forbidden user!');
-
-    const isUser = await this.userRepository.findOne({
-      where: {id: this.currentUser[securityId]},
-    });
-
-    if (!isUser) {
-      throw new HttpErrors.Forbidden('Forbidden user!');
-    }
+    await this.userService.verifyUser();
 
     const request = await invocationCtx.get(RestBindings.Http.REQUEST);
     const {pageNumber, pageLimit} = request.query;
@@ -170,6 +161,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const {query, path} = request;
     const {userId, experienceId, timelineType, q} = query;
 
+    const currentUser = this.userService.currentUser;
     const methodName = invocationCtx.methodName as MethodType;
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
@@ -202,7 +194,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         const blockedFriendIds = await this.friendService.getFriendIds(
-          this.currentUser[securityId],
+          currentUser[securityId],
           FriendStatusType.BLOCKED,
         );
 
@@ -233,7 +225,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           if (q) {
             const whereByQuery = await this.getPostByQuery(
               q.toString(),
-              this.currentUser[securityId],
+              currentUser[securityId],
             );
             filter.where = Object.assign(filter.where ?? {}, whereByQuery);
 
@@ -348,6 +340,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     request: Request,
     result: AnyObject,
   ): Promise<AnyObject> {
+    const currentUser = this.userService.currentUser;
     const controllerName = invocationCtx.targetClass.name as ControllerType;
     const methodName = invocationCtx.methodName as MethodType;
 
@@ -393,11 +386,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               }
 
               if (e.visibility === VisibilityType.FRIEND) {
-                if (this.currentUser[securityId] === e.createdBy) return e.user;
+                if (currentUser[securityId] === e.createdBy) return e.user;
                 const friend =
                   await this.friendService.friendRepository.findOne({
                     where: {
-                      requestorId: this.currentUser[securityId],
+                      requestorId: currentUser[securityId],
                       requesteeId: e.createdBy,
                     },
                   });
