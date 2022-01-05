@@ -51,8 +51,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
 
   constructor(
-    @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(UserRepository)
     @service(MetricService)
     protected metricService: MetricService,
     @service(ExperienceService)
