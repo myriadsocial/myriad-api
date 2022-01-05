@@ -1,4 +1,4 @@
-import {Model, model, property} from '@loopback/repository';
+import {AnyObject, Model, model, property} from '@loopback/repository';
 
 @model()
 export class Credential extends Model {
@@ -24,6 +24,12 @@ export class Credential extends Model {
     required: true,
   })
   signature: string;
+
+  @property({
+    type: 'object',
+    required: false,
+  })
+  data?: AnyObject;
 
   constructor(data?: Partial<Credential>) {
     super(data);

@@ -2,23 +2,21 @@ import {inject, intercept} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {
   getModelSchemaRef,
-  HttpErrors,
   param,
   post,
   response,
   requestBody,
   get,
 } from '@loopback/rest';
-import {securityId, UserProfile} from '@loopback/security';
+import {UserProfile} from '@loopback/security';
 import {RefreshGrant, TokenObject} from '../interfaces';
 import {RefreshTokenServiceBindings, TokenServiceBindings} from '../keys';
 import {Credential, User} from '../models';
 import {UserRepository} from '../repositories';
 import {RefreshtokenService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
-import {numberToHex} from '@polkadot/util';
-import {signatureVerify} from '@polkadot/util-crypto';
 import NonceGenerator from 'a-nonce-generator';
+import {AuthenticationInterceptor} from '../interceptors';
 
 export class AuthenticationController {
   constructor(
@@ -56,7 +54,7 @@ export class AuthenticationController {
     return result;
   }
 
-  @intercept(CreateInterceptor.BINDING_KEY)
+  @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/signup')
   @response(200, {
     description: 'User model instance',
@@ -68,7 +66,7 @@ export class AuthenticationController {
       },
     },
   })
-  async create(
+  async signup(
     @requestBody({
       content: {
         'application/json': {
@@ -93,6 +91,7 @@ export class AuthenticationController {
     return this.userRepository.create(user);
   }
 
+  @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/login', {
     responses: {
       '200': {
@@ -127,49 +126,17 @@ export class AuthenticationController {
       required: true,
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Credential),
+          schema: getModelSchemaRef(Credential, {exclude: ['data']}),
         },
       },
     })
     credential: Credential,
   ): Promise<TokenObject> {
-    const {nonce, signature, publicAddress} = credential;
-
-    const {isValid} = signatureVerify(
-      numberToHex(nonce),
-      signature,
-      publicAddress,
+    const accessToken = await this.jwtService.generateToken(
+      credential.data as UserProfile,
     );
 
-    if (!isValid) {
-      throw new HttpErrors.UnprocessableEntity('Invalid user!');
-    }
-
-    const user = await this.userRepository.findById(publicAddress);
-
-    if (user.nonce !== nonce) {
-      throw new HttpErrors.UnprocessableEntity('Invalid user!');
-    }
-
-    const userProfile: UserProfile = {
-      [securityId]: user.id!.toString(),
-      id: user.id,
-      name: user.name,
-      username: user.username,
-    };
-
-    const accessToken = await this.jwtService.generateToken(userProfile);
-    const token = await this.refreshService.generateToken(
-      userProfile,
-      accessToken,
-    );
-
-    const ng = new NonceGenerator();
-    const newNonce = ng.generate();
-
-    await this.userRepository.updateById(publicAddress, {nonce: newNonce});
-
-    return token;
+    return {accessToken};
   }
 
   @post('/refresh', {
