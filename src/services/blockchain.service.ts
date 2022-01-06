@@ -8,7 +8,7 @@ export class BlockchainService {
 
   async createPolkadotProvider(rpcAddress: string): Promise<ApiPromise> {
     const wsProvider = new WsProvider(rpcAddress);
-    return ApiPromise.create({ provider: wsProvider });
+    return ApiPromise.create({provider: wsProvider});
   }
 
   async createWeb3Provider(rpcAddress: string): Promise<Web3> {
