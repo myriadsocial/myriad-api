@@ -12,6 +12,7 @@ import {
   AccountSetting,
   ActivityLog,
   Comment,
+  Credential,
   Currency,
   DraftPost,
   Experience,
@@ -100,6 +101,19 @@ export async function givenMultipleUserInstances(
 
 export function givenAddress(): KeyringPair {
   return getKeyring().addFromMnemonic(mnemonic);
+}
+
+export function givenCredential(credential?: Partial<Credential>) {
+  const publicKey = getKeyring().addFromMnemonic(mnemonic);
+  const id = getHexPublicKey(publicKey);
+
+  const data = Object.assign(
+    {
+      publicAddress: id,
+    },
+    credential,
+  );
+  return new Credential(data);
 }
 
 export function givenPeople(people?: Partial<People>) {
