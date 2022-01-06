@@ -41,16 +41,11 @@ export class AuthenticationController {
       },
     },
   })
-  async getNonce(@param.path.string('id') id: string): Promise<number | null> {
-    let result = null;
+  async getNonce(@param.path.string('id') id: string): Promise<number> {
+    const user = await this.userRepository.findOne({where: {id}});
 
-    try {
-      ({nonce: result} = await this.userRepository.findById(id));
-    } catch {
-      // ignore
-    }
-
-    return result;
+    if (!user) return 0;
+    return user.nonce;
   }
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
@@ -74,11 +69,15 @@ export class AuthenticationController {
             exclude: [
               'profilePictureURL',
               'bannerImageUrl',
+              'bio',
+              'defaultCurrency',
+              'websiteURL',
+              'metric',
               'fcmTokens',
               'onTimeline',
+              'nonce',
               'createdAt',
               'updatedAt',
-              'nonce',
               'deletedAt',
             ],
           }),

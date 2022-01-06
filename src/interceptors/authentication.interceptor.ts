@@ -88,37 +88,43 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       return;
     }
 
-    // Verify login process
-    const {nonce, signature, publicAddress} = invocationCtx
-      .args[0] as Credential;
+    try {
+      // Verify login process
+      const {nonce, signature, publicAddress} = invocationCtx
+        .args[0] as Credential;
 
-    const {isValid} = signatureVerify(
-      numberToHex(nonce),
-      signature,
-      publicAddress,
-    );
+      if (nonce === 0 || !nonce) throw new Error('Invalid user!');
 
-    if (!isValid) {
-      throw new HttpErrors.UnprocessableEntity('Invalid user!');
+      const {isValid} = signatureVerify(
+        numberToHex(nonce),
+        signature,
+        publicAddress,
+      );
+
+      if (!isValid) {
+        throw new Error('Invalid user!');
+      }
+
+      const user = await this.userRepository.findById(publicAddress);
+
+      if (user.nonce !== nonce) {
+        throw new Error('Invalid user!');
+      }
+
+      const userProfile: UserProfile = {
+        [securityId]: user.id!.toString(),
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        createdAt: user.createdAt,
+      };
+
+      invocationCtx.args[0].data = userProfile;
+
+      return;
+    } catch (err) {
+      throw new HttpErrors.Unauthorized(err.message);
     }
-
-    const user = await this.userRepository.findById(publicAddress);
-
-    if (user.nonce !== nonce) {
-      throw new HttpErrors.UnprocessableEntity('Invalid user!');
-    }
-
-    const userProfile: UserProfile = {
-      [securityId]: user.id!.toString(),
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      createdAt: user.createdAt,
-    };
-
-    invocationCtx.args[0].data = userProfile;
-
-    return;
   }
 
   async afterAuthenticate(
