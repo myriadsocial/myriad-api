@@ -161,7 +161,6 @@ describe('AuthenticationApplication', function () {
 
     await client.post('/login').send(credential).expect(401);
   });
-
   it('changes user nonce after login', async () => {
     const user = await givenUserInstance(userRepository);
     const credential = givenCredential({
