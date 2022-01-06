@@ -189,7 +189,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
           try {
             await this.notificationService.sendMention(
-              newPost.createdBy,
               newPost.id,
               newPost.mentions ?? [],
             );

@@ -110,10 +110,7 @@ export class CommentController {
     }
 
     try {
-      await this.notificationService.sendPostComment(
-        comment.userId,
-        newComment,
-      );
+      await this.notificationService.sendPostComment(newComment);
     } catch (error) {
       // ignored
     }

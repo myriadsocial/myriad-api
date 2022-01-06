@@ -1,4 +1,3 @@
-import {AuthenticationBindings} from '@loopback/authentication';
 import {inject, service} from '@loopback/core';
 import {
   post,
@@ -7,7 +6,6 @@ import {
   Response,
   RestBindings,
   param,
-  HttpErrors,
 } from '@loopback/rest';
 import {FCSService} from '../services/fcs.service';
 import {FILE_UPLOAD_SERVICE} from '../keys';
@@ -15,7 +13,6 @@ import {FileUploadHandler} from '../types';
 import {config} from '../config';
 import {UploadType} from '../enums';
 import {authenticate} from '@loopback/authentication';
-import {UserProfile, securityId} from '@loopback/security';
 import {repository} from '@loopback/repository';
 import {UserRepository} from '../repositories';
 
@@ -28,8 +25,6 @@ export class StorageController {
     private handler: FileUploadHandler,
     @service(FCSService)
     private fcsService: FCSService,
-    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
   ) {}
 
   @post('/buckets/{userId}/{kind}', {
@@ -52,21 +47,6 @@ export class StorageController {
     @requestBody.file() request: Request,
     @inject(RestBindings.Http.RESPONSE) response: Response,
   ): Promise<object> {
-    let error = false;
-
-    if (!this.currentUser) error = true;
-    if (userId !== this.currentUser[securityId]) error = true;
-
-    const isUser = await this.userRepository.findOne({
-      where: {id: this.currentUser[securityId]},
-    });
-
-    if (!isUser) error = true;
-
-    if (error) {
-      throw new HttpErrors.Forbidden('Forbidden user!');
-    }
-
     return new Promise<object>((resolve, reject) => {
       this.handler(request, response, (err: unknown) => {
         if (err) reject(err);

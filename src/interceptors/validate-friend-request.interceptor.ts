@@ -160,18 +160,12 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
   ): Promise<void> {
     try {
       if (status === FriendStatusType.PENDING) {
-        await this.notificationService.sendFriendRequest(
-          requestorId,
-          requesteeId,
-        );
+        await this.notificationService.sendFriendRequest(requesteeId);
         return;
       }
 
       if (status === FriendStatusType.APPROVED) {
-        await this.notificationService.sendFriendAccept(
-          requesteeId,
-          requestorId,
-        );
+        await this.notificationService.sendFriendAccept(requestorId);
         return;
       }
 
