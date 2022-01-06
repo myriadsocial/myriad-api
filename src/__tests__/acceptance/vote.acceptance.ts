@@ -7,7 +7,6 @@ import {
   VoteRepository,
   PostRepository,
   UserRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenComment,
@@ -19,9 +18,12 @@ import {
   givenVote,
   givenVoteInstance,
   givenUserRepository,
-  givenAuthenticationRepository,
   givenUserInstance,
+  givenAddress,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
+import {Credential, User} from '../../models';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('VoteApplication', function () {
@@ -33,12 +35,9 @@ describe('VoteApplication', function () {
   let postRepository: PostRepository;
   let commentRepository: CommentRepository;
   let userRepository: UserRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -47,39 +46,48 @@ describe('VoteApplication', function () {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     voteRepository = await givenVoteRepository(app);
     postRepository = await givenPostRepository(app);
     commentRepository = await givenCommentRepository(app);
     userRepository = await givenUserRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   beforeEach(async () => {
     await voteRepository.deleteAll();
     await postRepository.deleteAll();
     await commentRepository.deleteAll();
+  });
+
+  after(async () => {
     await userRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
   it('creates an upvote if not exists', async function () {
-    await givenUserInstance(userRepository, {
+    const userPost = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
     });
-
-    const user = await givenUserInstance(userRepository);
     const postResponse = await givenPostInstance(
       postRepository,
       {
@@ -89,7 +97,7 @@ describe('VoteApplication', function () {
           downvotes: 0,
           debates: 0,
         },
-        createdBy: user.id,
+        createdBy: userPost.id,
       },
       true,
     );
@@ -97,6 +105,7 @@ describe('VoteApplication', function () {
     const upvote = givenVote({
       referenceId: post._id.toString(),
       postId: post._id.toString(),
+      userId: user.id,
     });
     const response = await client
       .post('/votes')
@@ -109,11 +118,6 @@ describe('VoteApplication', function () {
   });
 
   it('can downvotes post if user already comments to the post in the debate section', async () => {
-    await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
-    });
-
-    const user = await givenUserInstance(userRepository);
     const postResponse = await givenPostInstance(
       postRepository,
       {
@@ -131,8 +135,7 @@ describe('VoteApplication', function () {
     const comment = givenComment({
       postId: post._id.toString(),
       referenceId: post._id.toString(),
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+      userId: user.id,
       section: SectionType.DEBATE,
     });
     await client
@@ -143,8 +146,7 @@ describe('VoteApplication', function () {
     const downvote = givenVote({
       referenceId: post._id.toString(),
       state: false,
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+      userId: user.id,
       postId: post._id.toString(),
     });
     const response = await client
@@ -158,11 +160,10 @@ describe('VoteApplication', function () {
   });
 
   it('adds by 1 upvotes', async () => {
-    await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+    const userPost = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee64f63',
     });
 
-    const user = await givenUserInstance(userRepository);
     const postResponse = (
       await givenPostInstance(
         postRepository,
@@ -173,7 +174,7 @@ describe('VoteApplication', function () {
             downvotes: 0,
             debates: 0,
           },
-          createdBy: user.id,
+          createdBy: userPost.id,
         },
         true,
       )
@@ -183,7 +184,11 @@ describe('VoteApplication', function () {
       _id: undefined,
     });
 
-    const upvote = givenVote({referenceId: post.id, postId: post.id});
+    const upvote = givenVote({
+      referenceId: post.id,
+      postId: post.id,
+      userId: user.id,
+    });
     const response = await client
       .post('/votes')
       .set('Authorization', `Bearer ${token}`)
@@ -195,7 +200,9 @@ describe('VoteApplication', function () {
   });
 
   it('rejects to downvote the post if user has not comment in debate section', async () => {
-    const user = await givenUserInstance(userRepository);
+    const userPost = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14xjc4420a331d89a5fef48b915e8449ee64f63',
+    });
     const postResponse = (
       await givenPostInstance(
         postRepository,
@@ -206,7 +213,7 @@ describe('VoteApplication', function () {
             downvotes: 0,
             debates: 0,
           },
-          createdBy: user.id,
+          createdBy: userPost.id,
         },
         true,
       )
@@ -220,6 +227,7 @@ describe('VoteApplication', function () {
       referenceId: post.id,
       state: false,
       postId: post.id,
+      userId: user.id,
     });
     await client
       .post('/votes')
@@ -229,7 +237,6 @@ describe('VoteApplication', function () {
   });
 
   it('deletes the upvotes and post metric upvotes reduces by 1', async function () {
-    const user = await givenUserInstance(userRepository);
     const postResponse = await givenPostInstance(
       postRepository,
       {
@@ -247,6 +254,7 @@ describe('VoteApplication', function () {
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post._id.toString(),
       postId: post._id.toString(),
+      userId: user.id,
     });
 
     await client

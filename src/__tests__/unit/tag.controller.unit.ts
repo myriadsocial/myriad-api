@@ -66,15 +66,6 @@ describe('TagController', () => {
     });
   });
 
-  describe('deleteTag', () => {
-    it('successfully deletes existing items', async () => {
-      const deleteById = tagRepository.stubs.deleteById;
-      deleteById.resolves();
-      await controller.deleteById(aTagWithId.id as string);
-      sinon.assert.calledWith(deleteById, aTagWithId.id);
-    });
-  });
-
   function resetRepositories() {
     tagRepository = createStubInstance(TagRepository);
     aTag = givenTag();

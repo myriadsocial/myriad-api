@@ -54,14 +54,24 @@ import {
   UserSocialMediaRepository,
   VoteRepository,
 } from '../../repositories';
+import {PolkadotJs} from '../../utils/polkadotJs-utils';
+import {KeyringPair} from '@polkadot/keyring/types';
+
+const {getKeyring, getHexPublicKey} = new PolkadotJs();
+const mnemonic =
+  'account custom bind hero sleep ugly century tooth seed potato curious always';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export function givenUser(user?: Partial<User>) {
+  const publicKey = getKeyring().addFromMnemonic(mnemonic);
+  const id = getHexPublicKey(publicKey);
+
   const data = Object.assign(
     {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+      id: id,
       name: 'Abdul Hakim',
       username: 'abdulhakim',
+      nonce: 99999999999,
     },
     user,
   );
@@ -86,6 +96,10 @@ export async function givenMultipleUserInstances(
       username: 'irman',
     }),
   ]);
+}
+
+export function givenAddress(): KeyringPair {
+  return getKeyring().addFromMnemonic(mnemonic);
 }
 
 export function givenPeople(people?: Partial<People>) {

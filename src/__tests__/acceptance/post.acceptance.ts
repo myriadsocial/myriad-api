@@ -1,7 +1,13 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ReferenceType} from '../../enums';
-import {DraftPost, Post, PostWithRelations, User} from '../../models';
+import {
+  Credential,
+  DraftPost,
+  Post,
+  PostWithRelations,
+  User,
+} from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
   CommentRepository,
@@ -12,7 +18,6 @@ import {
   TransactionRepository,
   UserRepository,
   ActivityLogRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenCommentInstance,
@@ -34,8 +39,10 @@ import {
   givenUserRepository,
   setupApplication,
   givenActivityLogRepository,
-  givenAuthenticationRepository,
+  givenAddress,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('PostApplication', function () {
@@ -52,13 +59,9 @@ describe('PostApplication', function () {
   let transactionRepository: TransactionRepository;
   let commentRepository: CommentRepository;
   let activityLogRepository: ActivityLogRepository;
-  let authenticationRepository: AuthenticationRepository;
   let user: User;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -75,13 +78,11 @@ describe('PostApplication', function () {
     transactionRepository = await givenTransactionRepository(app);
     commentRepository = await givenCommentRepository(app);
     activityLogRepository = await givenActivityLogRepository(app);
-    authenticationRepository = await givenAuthenticationRepository(app);
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed14ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
-    });
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   after(async () => {
@@ -92,7 +93,6 @@ describe('PostApplication', function () {
     await transactionRepository.deleteAll();
     await commentRepository.deleteAll();
     await activityLogRepository.deleteAll();
-    await authenticationRepository.deleteAll();
   });
 
   beforeEach(async () => {
@@ -100,12 +100,20 @@ describe('PostApplication', function () {
     await activityLogRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -169,23 +177,33 @@ describe('PostApplication', function () {
     });
 
     it('updates the post by ID ', async () => {
-      const updatedPost = givenMyriadPost({
+      const updatedPost: Partial<Post> = givenMyriadPost({
         text: 'Hello world',
       });
+
+      delete updatedPost.createdBy;
+
       await client
         .patch(`/posts/${persistedPost.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send(updatedPost)
         .expect(204);
+
       const result = await postRepository.findById(persistedPost.id);
       expect(result).to.containEql(updatedPost);
     });
 
     it('returns 404 when updating a post that does not exist', () => {
+      const updatedPost: Partial<Post> = givenMyriadPost({
+        text: 'Hello world',
+      });
+
+      delete updatedPost.createdBy;
+
       return client
         .patch('/posts/99999')
         .set('Authorization', `Bearer ${token}`)
-        .send(givenMyriadPost())
+        .send(updatedPost)
         .expect(404);
     });
   });
@@ -205,7 +223,7 @@ describe('PostApplication', function () {
 
     it('finds all posts', async () => {
       const response = await client
-        .get('/posts')
+        .get('/posts?userId=' + user.id)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -219,7 +237,7 @@ describe('PostApplication', function () {
       });
 
       await client
-        .get('/posts')
+        .get('/posts?userId=' + user.id)
         .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {text: "what's up, docs!"}}))
         .expect(200, {
@@ -240,7 +258,7 @@ describe('PostApplication', function () {
       });
 
       const response = await client
-        .get('/posts')
+        .get('/posts?userId=' + user.id)
         .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
@@ -253,13 +271,16 @@ describe('PostApplication', function () {
       peopleId: people.id,
       createdBy: user.id,
     });
+
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
+      from: user.id,
     });
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
       postId: post.id,
+      userId: user.id,
     });
     const comment = await givenCommentInstance(commentRepository, {
       type: ReferenceType.POST,
@@ -269,7 +290,7 @@ describe('PostApplication', function () {
     });
 
     const response = await client
-      .get('/posts')
+      .get('/posts?userId=' + user.id)
       .set('Authorization', `Bearer ${token}`)
       .query({
         filter: {
@@ -288,11 +309,18 @@ describe('PostApplication', function () {
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(post as Post),
       totalImporter: 1,
+      popularCount: 0,
       user: toJSON(user),
       people: toJSON(people),
       comments: [toJSON(comment)],
       votes: [toJSON(vote)],
       transactions: [toJSON(transaction)],
+      importers: [
+        {
+          ...toJSON(user),
+          name: 'You',
+        },
+      ],
     });
   });
 
@@ -301,15 +329,10 @@ describe('PostApplication', function () {
 
     beforeEach(async () => {
       await postRepository.deleteAll();
-      await userRepository.deleteAll();
     });
 
     it('creates a post from reddit', async function () {
-      const importer = await givenUserInstance(userRepository, {
-        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
-      });
-
-      const platformPost = givenPlatformPost();
+      const platformPost = givenPlatformPost({importer: user.id});
       const response = await client
         .post('/posts/import')
         .set('Authorization', `Bearer ${token}`)
@@ -324,7 +347,7 @@ describe('PostApplication', function () {
       expect(
         toJSON({
           ...result,
-          importers: [Object.assign(importer, {name: 'You'})],
+          importers: [Object.assign(user, {name: 'You'})],
         }),
       ).to.containDeep(toJSON(response.body));
 
@@ -340,12 +363,8 @@ describe('PostApplication', function () {
     });
 
     it('rejects request to create a post from social media if importer alreay imported', async () => {
-      await givenUserInstance(userRepository, {
-        id: '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
-      });
       const platformPost: Partial<PlatformPost> = givenPlatformPost({
-        importer:
-          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d98e',
+        importer: user.id,
       });
       await client
         .post('/posts/import')

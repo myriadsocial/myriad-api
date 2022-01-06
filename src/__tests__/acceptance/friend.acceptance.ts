@@ -2,16 +2,16 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {FriendStatusType, NotificationType} from '../../enums';
-import {Friend} from '../../models';
+import {Credential, Friend, User} from '../../models';
 import {
   ActivityLogRepository,
   FriendRepository,
   NotificationRepository,
   UserRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenActivityLogRepository,
+  givenAddress,
   givenFriend,
   givenFriendInstance,
   givenFriendRepository,
@@ -19,9 +19,10 @@ import {
   givenNotificationRepository,
   givenUserInstance,
   givenUserRepository,
-  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('FriendApplication', function () {
   let app: MyriadApiApplication;
@@ -31,12 +32,9 @@ describe('FriendApplication', function () {
   let userRepository: UserRepository;
   let notificationRepository: NotificationRepository;
   let activityLogRepository: ActivityLogRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -49,32 +47,40 @@ describe('FriendApplication', function () {
     userRepository = await givenUserRepository(app);
     notificationRepository = await givenNotificationRepository(app);
     activityLogRepository = await givenActivityLogRepository(app);
-    authenticationRepository = await givenAuthenticationRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   beforeEach(async () => {
     await friendRepository.deleteAll();
-    await userRepository.deleteAll();
     await activityLogRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  after(async () => {
+    await userRepository.deleteAll();
+  });
+
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
   it('creates a pending friend request', async function () {
-    await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-    });
     await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
     });
@@ -82,8 +88,7 @@ describe('FriendApplication', function () {
     const friend = givenFriend({
       requesteeId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+      requestorId: user.id,
     });
 
     const response = await client
@@ -287,16 +292,13 @@ describe('FriendApplication', function () {
     });
 
     it('updates the friend by ID ', async () => {
-      const requestee = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6111',
-      });
       const requestor = await givenUserInstance(userRepository, {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6112',
       });
 
       const friend = await givenFriendInstance(friendRepository, {
         requestorId: requestor.id,
-        requesteeId: requestee.id,
+        requesteeId: user.id,
       });
 
       const updatedFriend = givenFriend({
@@ -327,15 +329,13 @@ describe('FriendApplication', function () {
 
     it('deletes the friend', async () => {
       const requestee = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6111',
-      });
-      const requestor = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6112',
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d33a5fef48b915e8449ee6112',
       });
 
       const friend = await givenFriendInstance(friendRepository, {
-        requestorId: requestor.id,
+        requestorId: user.id,
         requesteeId: requestee.id,
+        status: FriendStatusType.APPROVED,
       });
 
       await client
@@ -465,9 +465,6 @@ describe('FriendApplication', function () {
   });
 
   it('creates notification when sending a pending friend request', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
     const otherUser = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
     });
@@ -507,16 +504,14 @@ describe('FriendApplication', function () {
   });
 
   it('creates notification when approving a pending friend request', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+    await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915hh449ee618bc',
     });
 
     const friend = await givenFriendInstance(friendRepository, {
-      requestorId: user.id,
-      requesteeId: otherUser.id,
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915hh449ee618bc',
+      requesteeId: user.id,
     });
 
     const updatedFriend = givenFriend({
@@ -531,8 +526,8 @@ describe('FriendApplication', function () {
 
     const notifications = await notificationRepository.find({
       where: {
-        from: friend.requesteeId,
-        to: friend.requestorId,
+        from: user.id,
+        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915hh449ee618bc',
         referenceId: friend.requesteeId,
       },
     });

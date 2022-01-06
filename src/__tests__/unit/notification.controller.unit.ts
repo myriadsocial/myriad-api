@@ -60,15 +60,6 @@ describe('NotificationController', () => {
     });
   });
 
-  describe('deleteNotification', () => {
-    it('successfully deletes existing items', async () => {
-      const deleteById = notificationRepository.stubs.deleteById;
-      deleteById.resolves();
-      await controller.deleteById(aNotificationWithId.id as string);
-      sinon.assert.calledWith(deleteById, aNotificationWithId.id);
-    });
-  });
-
   function resetRepositories() {
     notificationRepository = createStubInstance(NotificationRepository);
     aNotificationWithId = givenNotification({

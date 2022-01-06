@@ -1,15 +1,14 @@
-import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
-import {Currency, Transaction, User} from '../../models';
+import {Credential, Currency, Transaction, User} from '../../models';
 import {
   CurrencyRepository,
   TransactionRepository,
   UserRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
+  givenAddress,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenTransaction,
@@ -17,9 +16,10 @@ import {
   givenTransactionRepository,
   givenUserInstance,
   givenUserRepository,
-  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('TransactionApplication', function () {
   let app: MyriadApiApplication;
@@ -28,13 +28,10 @@ describe('TransactionApplication', function () {
   let userRepository: UserRepository;
   let currencyRepository: CurrencyRepository;
   let transactionRepository: TransactionRepository;
-  let authenticationRepository: AuthenticationRepository;
   let currency: Currency;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -43,14 +40,14 @@ describe('TransactionApplication', function () {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     userRepository = await givenUserRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     transactionRepository = await givenTransactionRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   before(async () => {
@@ -64,20 +61,26 @@ describe('TransactionApplication', function () {
 
   beforeEach(async () => {
     await transactionRepository.deleteAll();
-    await userRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
   it('creates a transaction', async function () {
-    const user = await givenUserInstance(userRepository);
     const transaction = givenTransaction({
       from: user.id,
       currencyId: currency.id,
@@ -92,7 +95,7 @@ describe('TransactionApplication', function () {
     expect(result).to.containDeep(transaction);
   });
 
-  it('returns 404 when creates transactions but "from user" not exist', async () => {
+  it('returns 403 when creates transactions but "from user" not exist', async () => {
     const transaction = givenTransaction({
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       currencyId: currency.id,
@@ -102,11 +105,10 @@ describe('TransactionApplication', function () {
       .post('/transactions')
       .set('Authorization', `Bearer ${token}`)
       .send(transaction)
-      .expect(404);
+      .expect(403);
   });
 
   it('returns 422 when create transactions but "currency" not exist', async () => {
-    const user = await givenUserInstance(userRepository);
     const transaction = givenTransaction({
       from: user.id,
       currencyId: DefaultCurrencyType.MYRIA,
@@ -145,33 +147,13 @@ describe('TransactionApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .expect(404);
     });
-
-    it('deletes the transaction', async () => {
-      await client
-        .del(`/transactions/${persistedTransaction.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(204);
-      await expect(
-        transactionRepository.findById(persistedTransaction.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
-    });
-
-    it('returns 404 when deleting a transaction that does not exist', async () => {
-      await client
-        .del(`/transactions/99999`)
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
-    });
   });
 
   context('when dealing with multiple persisted transactions', () => {
     let persistedTransactions: Transaction[];
     let otherUser: User;
-    let user: User;
 
     before(async () => {
-      user = await givenUserInstance(userRepository);
       otherUser = await givenUserInstance(userRepository, {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
         name: 'irman',
@@ -238,10 +220,6 @@ describe('TransactionApplication', function () {
   });
 
   it('includes fromUser, toUser, and currency in query result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618aa',
-      name: 'irman',
-    });
     const otherUser = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61851',
       name: 'irman',

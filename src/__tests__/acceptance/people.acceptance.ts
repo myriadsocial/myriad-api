@@ -2,24 +2,28 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType} from '../../enums';
-import {People} from '../../models';
+import {Credential, People, User} from '../../models';
 import {
   PeopleRepository,
   PostRepository,
+  UserRepository,
   UserSocialMediaRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
+  givenAddress,
   givenMultiplePeopleInstances,
   givenPeopleInstance,
   givenPeopleRepository,
   givenPostInstance,
   givenPostRepository,
+  givenUserInstance,
+  givenUserRepository,
   givenUserSocialMediaInstance,
   givenUserSocialMediaRepository,
-  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('PeopleApplication', function () {
   let app: MyriadApiApplication;
@@ -28,12 +32,10 @@ describe('PeopleApplication', function () {
   let peopleRepository: PeopleRepository;
   let postRepository: PostRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let userRepository: UserRepository;
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -42,28 +44,41 @@ describe('PeopleApplication', function () {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     postRepository = await givenPostRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
+    userRepository = await givenUserRepository(app);
+  });
+
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   after(async () => {
     await postRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();
-    await authenticationRepository.deleteAll();
+    await userRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await peopleRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 

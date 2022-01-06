@@ -1,23 +1,22 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {DefaultCurrencyType} from '../../enums';
 import {
   CurrencyRepository,
   UserCurrencyRepository,
   UserRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
   givenCurrencyRepository,
   givenUserCurrency,
-  givenUserCurrencyInstance,
   givenUserCurrencyRepository,
   givenUserInstance,
   givenUserRepository,
-  givenAuthenticationRepository,
   setupApplication,
   givenMultipleCurrencyInstances,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
+import {Credential, User} from '../../models';
 
 describe('UserCurrencyApplication', function () {
   let app: MyriadApiApplication;
@@ -26,12 +25,9 @@ describe('UserCurrencyApplication', function () {
   let userCurrencyRepository: UserCurrencyRepository;
   let currencyRepository: CurrencyRepository;
   let userRepository: UserRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -40,7 +36,6 @@ describe('UserCurrencyApplication', function () {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     userCurrencyRepository = await givenUserCurrencyRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     userRepository = await givenUserRepository(app);
@@ -54,20 +49,27 @@ describe('UserCurrencyApplication', function () {
     await userCurrencyRepository.deleteAll();
     await currencyRepository.deleteAll();
     await userRepository.deleteAll();
-    await authenticationRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
   it('creates a user currency', async function () {
-    const userCurrency = givenUserCurrency();
+    const userCurrency = givenUserCurrency({userId: user.id});
     const response = await client
       .post('/user-currencies')
       .set('Authorization', `Bearer ${token}`)
@@ -129,6 +131,7 @@ describe('UserCurrencyApplication', function () {
 
   it('returns 404 when creates user currency but the currency not exist', async () => {
     const userCurrency = givenUserCurrency({
+      userId: user.id,
       currencyId: 'DOT',
     });
     await client
@@ -139,16 +142,6 @@ describe('UserCurrencyApplication', function () {
   });
 
   it('deletes the user currency', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee62164',
-      defaultCurrency: DefaultCurrencyType.MYRIA,
-    });
-
-    await givenUserCurrencyInstance(userCurrencyRepository, {
-      userId: user.id,
-      currencyId: 'ROC',
-    });
-
     const userCurrency = givenUserCurrency({userId: user.id});
 
     await client

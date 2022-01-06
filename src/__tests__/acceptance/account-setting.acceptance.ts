@@ -1,21 +1,19 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
 import {AccountSettingType} from '../../enums';
-import {AccountSetting} from '../../models';
-import {
-  AccountSettingRepository,
-  AuthenticationRepository,
-  UserRepository,
-} from '../../repositories';
+import {AccountSetting, Credential, User} from '../../models';
+import {AccountSettingRepository, UserRepository} from '../../repositories';
 import {
   givenAccountSetting,
   givenAccountSettingInstance,
   givenAccountSettingRepository,
-  givenAuthenticationRepository,
+  givenAddress,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('AccountSettingApplication', () => {
   let app: MyriadApiApplication;
@@ -23,12 +21,9 @@ describe('AccountSettingApplication', () => {
   let client: Client;
   let accountSettingRepository: AccountSettingRepository;
   let userRepository: UserRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -39,29 +34,39 @@ describe('AccountSettingApplication', () => {
   before(async () => {
     accountSettingRepository = await givenAccountSettingRepository(app);
     userRepository = await givenUserRepository(app);
-    authenticationRepository = await givenAuthenticationRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   beforeEach(async () => {
     await accountSettingRepository.deleteAll();
+  });
+
+  after(async () => {
     await userRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
   it('updates the accountSetting by ID', async () => {
-    const user = await givenUserInstance(userRepository);
     const accountSetting = await givenAccountSettingInstance(
       accountSettingRepository,
       {

@@ -5,17 +5,19 @@ import {
   ReportRepository,
   UserReportRepository,
   UserRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
+  givenAddress,
   givenReportDetail,
   givenReportRepository,
   givenUserInstance,
   givenUserReportRepository,
   givenUserRepository,
-  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
+import {Credential, User} from '../../models';
 
 describe('UserReportApplication', () => {
   let app: MyriadApiApplication;
@@ -24,12 +26,9 @@ describe('UserReportApplication', () => {
   let reportRepository: ReportRepository;
   let userReportRepository: UserReportRepository;
   let userRepository: UserRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -38,33 +37,43 @@ describe('UserReportApplication', () => {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     reportRepository = await givenReportRepository(app);
     userReportRepository = await givenUserReportRepository(app);
     userRepository = await givenUserRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   beforeEach(async () => {
     await reportRepository.deleteAll();
     await userReportRepository.deleteAll();
+  });
+
+  after(async () => {
     await userRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
   it('creates a report', async () => {
-    const user = await givenUserInstance(userRepository);
     const reportedUser = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
     });
@@ -94,7 +103,7 @@ describe('UserReportApplication', () => {
 
   it('rejects reporting a post when type is empty', async () => {
     const reportDetail = givenReportDetail({referenceType: ReferenceType.POST});
-    const user = await givenUserInstance(userRepository);
+
     await client
       .post(`/users/${user.id}/reports`)
       .set('Authorization', `Bearer ${token}`)

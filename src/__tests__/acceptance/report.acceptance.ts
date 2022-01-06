@@ -2,23 +2,24 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
 import {ReferenceType, ReportStatusType, ReportType} from '../../enums';
-import {Post, Report, User} from '../../models';
+import {Credential, Post, Report, User} from '../../models';
 import {
   PostRepository,
   ReportRepository,
   UserRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
+  givenAddress,
   givenPostInstance,
   givenPostRepository,
   givenReportInstance,
   givenReportRepository,
   givenUserInstance,
   givenUserRepository,
-  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('ReportApplication', () => {
   let app: MyriadApiApplication;
@@ -27,12 +28,9 @@ describe('ReportApplication', () => {
   let reportRepository: ReportRepository;
   let userRepository: UserRepository;
   let postRepository: PostRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -44,25 +42,36 @@ describe('ReportApplication', () => {
     reportRepository = await givenReportRepository(app);
     userRepository = await givenUserRepository(app);
     postRepository = await givenPostRepository(app);
-    authenticationRepository = await givenAuthenticationRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   beforeEach(async () => {
     await reportRepository.deleteAll();
-    await userRepository.deleteAll();
     await postRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  after(async () => {
+    await userRepository.deleteAll();
+  });
+
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -134,13 +143,9 @@ describe('ReportApplication', () => {
   context('when dealing with multiple persisted reports', () => {
     let persistedReports: Report[];
     let post: Post;
-    let user: User;
 
     beforeEach(async () => {
       post = await givenPostInstance(postRepository);
-      user = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccd88fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
-      });
 
       persistedReports = await Promise.all([
         givenReportInstance(reportRepository, {

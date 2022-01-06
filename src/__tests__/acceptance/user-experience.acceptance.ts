@@ -1,13 +1,13 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {UserExperience} from '../../models';
+import {Credential, User, UserExperience} from '../../models';
 import {
   ExperienceRepository,
   UserExperienceRepository,
   UserRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
+  givenAddress,
   givenExperience,
   givenExperienceInstance,
   givenExperienceRepository,
@@ -17,9 +17,10 @@ import {
   givenUserExperienceRepository,
   givenUserInstance,
   givenUserRepository,
-  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('UserExperienceApplication', function () {
   let app: MyriadApiApplication;
@@ -28,12 +29,9 @@ describe('UserExperienceApplication', function () {
   let experienceRepository: ExperienceRepository;
   let userRepository: UserRepository;
   let userExperienceRepository: UserExperienceRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -42,28 +40,39 @@ describe('UserExperienceApplication', function () {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     userRepository = await givenUserRepository(app);
     experienceRepository = await givenExperienceRepository(app);
     userExperienceRepository = await givenUserExperienceRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   beforeEach(async () => {
-    await userRepository.deleteAll();
     await experienceRepository.deleteAll();
     await userExperienceRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  after(async () => {
+    await userRepository.deleteAll();
+  });
+
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -164,13 +173,11 @@ describe('UserExperienceApplication', function () {
 
   context('when user subscribed an experience', () => {
     beforeEach(async () => {
-      await userRepository.deleteAll();
       await experienceRepository.deleteAll();
       await userExperienceRepository.deleteAll();
     });
 
     it('subscribes other user experience', async () => {
-      const user = await givenUserInstance(userRepository);
       const experience = await givenExperienceInstance(experienceRepository);
       const userExperience = givenUserExperience({
         userId: user.id,
@@ -189,8 +196,9 @@ describe('UserExperienceApplication', function () {
     });
 
     it('sets subscribed experience as user default timeline when user experience list is empty', async () => {
-      const user = await givenUserInstance(userRepository);
-      const experience = await givenExperienceInstance(experienceRepository);
+      const experience = await givenExperienceInstance(experienceRepository, {
+        createdBy: user.id,
+      });
       const response = await client
         .post(`/users/${user.id}/subscribe/${experience.id}`)
         .set('Authorization', `Bearer ${token}`)
@@ -209,12 +217,12 @@ describe('UserExperienceApplication', function () {
       };
 
       const result = await userRepository.findById(user.id);
+      result.nonce = user.nonce;
 
       expect(result).to.containDeep(expected);
     });
 
     it('rejects subscribe other user experience when experience already belong to user', async () => {
-      const user = await givenUserInstance(userRepository);
       const experience = await givenExperienceInstance(experienceRepository, {
         createdBy: user.id,
       });
@@ -233,7 +241,6 @@ describe('UserExperienceApplication', function () {
     });
 
     it('rejects subscribe other user experience when experience has been subscribed', async () => {
-      const user = await givenUserInstance(userRepository);
       const experience = await givenExperienceInstance(experienceRepository);
 
       await givenUserExperienceInstance(userExperienceRepository, {
@@ -250,8 +257,6 @@ describe('UserExperienceApplication', function () {
     });
 
     it('rejects subscribe other user experience when user has experience more than 10', async () => {
-      const user = await givenUserInstance(userRepository);
-
       for (let i = 0; i < 10; i++) {
         await givenUserExperienceInstance(userExperienceRepository, {
           userId: user.id,
@@ -272,13 +277,11 @@ describe('UserExperienceApplication', function () {
 
   context('when user create a new experience', () => {
     beforeEach(async () => {
-      await userRepository.deleteAll();
       await experienceRepository.deleteAll();
       await userExperienceRepository.deleteAll();
     });
 
     it('creates an experience and store it in userExperience list', async () => {
-      const user = await givenUserInstance(userRepository);
       const experience = givenExperience({createdBy: user.id});
       const response = await client
         .post(`/users/${user.id}/experiences`)
@@ -307,7 +310,6 @@ describe('UserExperienceApplication', function () {
     });
 
     it('sets new experience as user default timeline when user experience list is empty', async () => {
-      const user = await givenUserInstance(userRepository);
       const experience = givenExperience();
       const response = await client
         .post(`/users/${user.id}/experiences`)
@@ -327,13 +329,12 @@ describe('UserExperienceApplication', function () {
       };
 
       const result = await userRepository.findById(user.id);
+      result.nonce = user.nonce;
 
       expect(result).to.containDeep(expected);
     });
 
     it('rejects creates new experience when user has experience more than 10', async () => {
-      const user = await givenUserInstance(userRepository);
-
       for (let i = 0; i < 10; i++) {
         await givenUserExperienceInstance(userExperienceRepository, {
           userId: user.id,
@@ -353,7 +354,6 @@ describe('UserExperienceApplication', function () {
   });
 
   it('includes both user and experience in query result', async () => {
-    const user = await givenUserInstance(userRepository);
     const experience = await givenExperienceInstance(experienceRepository, {
       createdBy: user.id,
     });

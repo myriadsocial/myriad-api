@@ -1,19 +1,20 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {Currency} from '../../models/';
+import {Currency, Credential, User} from '../../models/';
+import {CurrencyRepository, UserRepository} from '../../repositories/';
 import {
-  CurrencyRepository,
-  AuthenticationRepository,
-} from '../../repositories/';
-import {
+  givenAddress,
   givenCurrency,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenMultipleCurrencyInstances,
+  givenUserInstance,
+  givenUserRepository,
   setupApplication,
-  givenAuthenticationRepository,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('CurrencyApplication', () => {
@@ -21,12 +22,10 @@ describe('CurrencyApplication', () => {
   let token: string;
   let client: Client;
   let currencyRepository: CurrencyRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let userRepository: UserRepository;
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -34,24 +33,33 @@ describe('CurrencyApplication', () => {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
+    userRepository = await givenUserRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   beforeEach(async () => {
     await currencyRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 

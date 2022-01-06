@@ -28,6 +28,7 @@ import {
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserSocialMediaControllerIntegration', function () {
   this.timeout(10000);
+
   let userSocialMediaRepository: UserSocialMediaRepository;
   let userSocialMediaService: UserSocialMediaService;
   let socialMediaService: SocialMediaService;
@@ -215,7 +216,10 @@ describe('UserSocialMediaControllerIntegration', function () {
       id: '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
     });
 
-    const userVerification = givenUserVerification();
+    const userVerification = givenUserVerification({
+      publicKey:
+        '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
+    });
     const platformUser = await socialMediaService.verifyToReddit(
       userVerification.username,
       userVerification.publicKey,

@@ -2,10 +2,16 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ReferenceType, NotificationType} from '../../enums';
-import {Comment, Notification, People, Post, User} from '../../models';
+import {
+  Comment,
+  Credential,
+  Notification,
+  People,
+  Post,
+  User,
+} from '../../models';
 import {
   ActivityLogRepository,
-  AuthenticationRepository,
   CommentRepository,
   NotificationRepository,
   NotificationSettingRepository,
@@ -17,7 +23,7 @@ import {
 } from '../../repositories';
 import {
   givenActivityLogRepository,
-  givenAuthenticationRepository,
+  givenAddress,
   givenComment,
   givenCommentInstance,
   givenCommentRepository,
@@ -37,6 +43,8 @@ import {
   givenUserSocialMediaRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('CommentApplication', function () {
   let app: MyriadApiApplication;
@@ -51,16 +59,12 @@ describe('CommentApplication', function () {
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let activityLogRepository: ActivityLogRepository;
-  let authenticationRepository: AuthenticationRepository;
   let user: User;
   let post: Post;
   let people: People;
   let otherUser: User;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -77,14 +81,11 @@ describe('CommentApplication', function () {
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
     activityLogRepository = await givenActivityLogRepository(app);
-    authenticationRepository = await givenAuthenticationRepository(app);
     notificationSettingRepository = await givenNotificationSettingRepository(
       app,
     );
-  });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+    address = givenAddress();
   });
 
   beforeEach(async () => {
@@ -115,12 +116,20 @@ describe('CommentApplication', function () {
     });
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -357,9 +366,14 @@ describe('CommentApplication', function () {
     });
 
     it('updates the comments by ID ', async () => {
-      const updatedComment = givenComment({
+      const updatedComment: Partial<Comment> = givenComment({
         text: 'Apa kabar dunia',
       });
+
+      delete updatedComment.referenceId;
+      delete updatedComment.section;
+      delete updatedComment.referenceId;
+      delete updatedComment.type;
 
       await client
         .patch(`/comments/${persistedComment.id}`)
@@ -372,10 +386,19 @@ describe('CommentApplication', function () {
     });
 
     it('returns 404 when updating a comment that does not exist', () => {
+      const updatedComment: Partial<Comment> = givenComment({
+        text: 'Apa kabar dunia',
+      });
+
+      delete updatedComment.referenceId;
+      delete updatedComment.section;
+      delete updatedComment.referenceId;
+      delete updatedComment.type;
+
       return client
         .patch('/comments/99999')
         .set('Authorization', `Bearer ${token}`)
-        .send(givenComment())
+        .send(updatedComment)
         .expect(404);
     });
 
