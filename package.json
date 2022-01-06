@@ -70,7 +70,8 @@
     "sharp": "^0.29.3",
     "tslib": "^2.0.0",
     "uuid": "^8.3.2",
-    "validator": "^13.7.0"
+    "validator": "^13.7.0",
+    "web3": "^1.6.1"
   },
   "devDependencies": {
     "@loopback/build": "^8.0.0",
@@ -86,6 +87,7 @@
     "@types/twitter": "^1.7.0",
     "@types/uuid": "^8.3.3",
     "@types/validator": "^13.6.6",
+    "@types/web3": "^1.2.2",
     "eslint": "^7.32.0",
     "husky": "^7.0.4",
     "lint-staged": ">=11.2.6",
