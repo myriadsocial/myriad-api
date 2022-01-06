@@ -149,6 +149,11 @@ export class PostController {
 
       delete existingPost.id;
       delete existingPost.people;
+      delete existingPost.metric;
+      delete existingPost.createdAt;
+      delete existingPost.updatedAt;
+      delete existingPost.deletedAt;
+
       delete platformUser?.id;
 
       newPost = Object.assign(existingPost as ExtendedPost, {
@@ -173,6 +178,7 @@ export class PostController {
     newPost.createdBy = importer;
     newPost.isNSFW = Boolean(platformPost.NSFWTag);
     newPost.NSFWTag = platformPost.NSFWTag;
+    newPost.popularCount = 0;
 
     return this.postService.createPost(newPost);
   }
