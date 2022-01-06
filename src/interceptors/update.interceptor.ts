@@ -31,7 +31,6 @@ import {
   NotificationService,
 } from '../services';
 import {UrlUtils} from '../utils/url.utils';
-import {UserService} from '../services/user.service';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
