@@ -55,14 +55,11 @@ export class DeleteInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.USERCURRENCY:
-        await this.userService.verifyUserId(
-          controllerName,
-          invocationCtx.args[0],
-        );
+        await this.userService.authorize(controllerName, invocationCtx.args[0]);
         break;
 
       default:
-        await this.userService.verifyUserId(controllerName, null, [
+        await this.userService.authorize(controllerName, null, [
           invocationCtx.args[0],
         ]);
     }

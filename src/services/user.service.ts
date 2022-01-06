@@ -48,6 +48,8 @@ export class UserService {
     const isUser = await this.userRepository.findOne({
       where: {
         id: this.currentUser[securityId],
+        username: this.currentUser.username,
+        createdAt: this.currentUser.createdAt,
       },
     });
 
@@ -59,7 +61,7 @@ export class UserService {
   }
 
   /* eslint-disable  @typescript-eslint/no-explicit-any */
-  async verifyUserId(
+  async authorize(
     controllerName: ControllerType,
     data: any,
     ids = [''],
@@ -197,7 +199,7 @@ export class UserService {
     if (userId !== this.currentUser[securityId]) error = true;
 
     if (error) {
-      throw new HttpErrors.Forbidden('Forbidden user!');
+      throw new HttpErrors.Unauthorized('Unauthorized user!');
     }
 
     if (additionalData) return additionalData;

@@ -29,6 +29,7 @@ export class JWTService implements TokenService {
       id: userProfile[securityId],
       name: userProfile.name,
       username: userProfile.username,
+      createdAt: userProfile.createdAt,
     };
 
     try {

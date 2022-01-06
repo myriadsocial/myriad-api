@@ -113,6 +113,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       id: user.id,
       name: user.name,
       username: user.username,
+      createdAt: user.createdAt,
     };
 
     invocationCtx.args[0].data = userProfile;

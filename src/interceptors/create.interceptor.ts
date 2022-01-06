@@ -100,7 +100,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
   async beforeCreate(invocationCtx: InvocationContext): Promise<void> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
-    await this.userService.verifyUserId(controllerName, invocationCtx.args[0]);
+    await this.userService.authorize(controllerName, invocationCtx.args[0]);
 
     switch (controllerName) {
       case ControllerType.TRANSACTION: {

@@ -95,6 +95,7 @@ export class UserController {
               'defaultCurrency',
               'onTimeline',
               'nonce',
+              'createdAt',
               'deletedAt',
             ],
           }),
