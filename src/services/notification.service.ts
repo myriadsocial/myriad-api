@@ -1,5 +1,6 @@
 import {BindingScope, inject, injectable, service} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
+import {UserService} from './user.service';
 import {config} from '../config';
 import {NotificationType, ReferenceType, ReportStatusType} from '../enums';
 import {ExtendedPeople} from '../interfaces';
