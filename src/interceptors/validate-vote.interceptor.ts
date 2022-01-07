@@ -159,7 +159,7 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     referenceId: string,
     toUserId: string,
   ): Promise<void> {
-    const metric = await this.metricService.publicMetric(type, referenceId);
+    const metric = await this.metricService.postMetric(type, referenceId);
 
     await this.metricService.userMetric(toUserId);
 
