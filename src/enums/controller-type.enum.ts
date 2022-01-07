@@ -20,6 +20,6 @@ export enum ControllerType {
   AUTHENTICATION = 'AuthenticationController',
   USERACCOUNTSETTING = 'UserAccountSettingController',
   USERNOTIFICATIONSETTING = 'UserNotificationSettingController',
-  USERDRAFTPOSTCONTROLLER = 'UserDraftPostController',
+  USERDRAFTPOST = 'UserDraftPostController',
   VOTE = 'VoteController',
 }
