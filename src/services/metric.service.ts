@@ -68,7 +68,7 @@ export class MetricService {
     protected userCurrencyRepository: UserCurrencyRepository,
   ) {}
 
-  async publicMetric(
+  async postMetric(
     type: ReferenceType,
     referenceId: string,
     postId?: string,

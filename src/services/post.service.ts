@@ -82,7 +82,7 @@ export class PostService {
       postId: id,
     });
     await this.metricService.userMetric(createdBy);
-    await this.metricService.publicMetric(ReferenceType.POST, id);
+    await this.metricService.postMetric(ReferenceType.POST, id);
   }
 
   async getPostImporterInfo(

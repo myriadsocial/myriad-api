@@ -16,6 +16,7 @@ import {
   PlatformType,
   ActivityLogType,
 } from '../enums';
+import {Comment} from '../models';
 import {
   CommentRepository,
   DraftPostRepository,
@@ -117,26 +118,19 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.COMMENT: {
-        const {referenceId} = invocationCtx.args[0];
+        const {referenceId, postId} = invocationCtx.args[0] as Comment;
 
+        await this.postRepository.findById(postId);
         await this.validateComment(referenceId);
+
         return;
       }
 
       case ControllerType.CURRENCY: {
-        invocationCtx.args[0].id = invocationCtx.args[0].id.toUpperCase();
+        const data = invocationCtx.args[0];
+        const {verifyRpcAddressConnection} = this.currencyService;
 
-        const currency = await this.currencyService.currencyRepository.findOne({
-          where: {id: invocationCtx.args[0].id},
-        });
-
-        if (currency)
-          throw new HttpErrors.UnprocessableEntity('Currency already exists!');
-
-        invocationCtx.args[0] =
-          await this.currencyService.verifyRpcAddressConnection(
-            invocationCtx.args[0],
-          );
+        invocationCtx.args[0] = await verifyRpcAddressConnection(data);
 
         return;
       }
@@ -215,13 +209,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.COMMENT: {
-        const post = await this.postRepository.findOne({
-          where: {id: result.postId},
-        });
-
-        if (!post) return result;
-
-        const metric = await this.metricService.publicMetric(
+        const metric = await this.metricService.postMetric(
           result.type,
           result.referenceId,
           result.postId,
@@ -232,7 +220,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           result.postId,
         );
         await this.postRepository.updateById(result.postId, {
-          metric: Object.assign(post.metric, metric),
+          metric: metric,
           popularCount: popularCount,
         });
         await this.activityLogService.createLog(
