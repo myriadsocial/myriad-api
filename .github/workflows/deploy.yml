@@ -123,8 +123,6 @@ jobs:
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
-              --set-string config.openApiDisable=false \
-              --set-string config.explorerDisable=false \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
@@ -232,8 +230,6 @@ jobs:
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
-              --set-string config.openApiDisable=true \
-              --set-string config.explorerDisable=true \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
@@ -341,8 +337,6 @@ jobs:
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
-              --set-string config.openApiDisable=true \
-              --set-string config.explorerDisable=true \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
@@ -450,8 +444,6 @@ jobs:
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
-              --set-string config.openApiDisable=true \
-              --set-string config.explorerDisable=true \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
@@ -559,8 +551,6 @@ jobs:
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
-              --set-string config.openApiDisable=true \
-              --set-string config.explorerDisable=true \
               --set ingress.enabled=true \
               --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
               --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
