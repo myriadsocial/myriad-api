@@ -62,6 +62,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     await this.afterAuthenticate(invocationCtx, result);
 
+    if (result.nonce) return {nonce: result.nonce};
     return result;
   }
 
@@ -161,30 +162,21 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
   }
 
   validateUsername(username: string): void {
-    if (
-      username[username.length - 1] === '.' ||
-      username[username.length - 1] === '_'
-    ) {
+    if (username[username.length - 1] === '_') {
       throw new HttpErrors.UnprocessableEntity(
         'Last character must be an ascii letter (a-z) or number (0-9)',
       );
     }
 
-    if (username[0] === '.' || username[0] === '_') {
+    if (username[0] === '_') {
       throw new HttpErrors.UnprocessableEntity(
         'Character must be start from an ascii letter (a-z) or number (0-9)',
       );
     }
 
-    if (username.includes('.') && username.includes('_')) {
+    if (!username.match('^[a-z0-9_]+$')) {
       throw new HttpErrors.UnprocessableEntity(
-        'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
-      );
-    }
-
-    if (!username.match('^[a-z0-9._]+$')) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Only allowed ascii letter (a-z), number (0-9), and periods(.)/underscore(_)',
+        'Only allowed ascii letter (a-z), number (0-9), and underscore(_)',
       );
     }
   }

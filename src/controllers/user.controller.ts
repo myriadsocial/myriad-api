@@ -66,7 +66,6 @@ export class UserController {
     description: 'User model instance',
     content: {
       'application/json': {
-        //TODO: hide password from response
         schema: getModelSchemaRef(User, {includeRelations: true}),
       },
     },

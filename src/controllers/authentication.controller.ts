@@ -34,18 +34,25 @@ export class AuthenticationController {
         content: {
           'application/json': {
             schema: {
-              type: 'number',
+              type: 'object',
+              properties: {
+                nonce: {
+                  type: 'number',
+                },
+              },
             },
           },
         },
       },
     },
   })
-  async getNonce(@param.path.string('id') id: string): Promise<number> {
+  async getNonce(
+    @param.path.string('id') id: string,
+  ): Promise<{nonce: number}> {
     const user = await this.userRepository.findOne({where: {id}});
 
-    if (!user) return 0;
-    return user.nonce;
+    if (!user) return {nonce: 0};
+    return {nonce: user.nonce};
   }
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
@@ -54,9 +61,14 @@ export class AuthenticationController {
     description: 'User model instance',
     content: {
       'application/json': {
-        schema: getModelSchemaRef(User, {
-          exclude: ['nonce'],
-        }),
+        schema: {
+          type: 'object',
+          properties: {
+            nonce: {
+              type: 'number',
+            },
+          },
+        },
       },
     },
   })
