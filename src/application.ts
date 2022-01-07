@@ -118,7 +118,10 @@ export class MyriadApiApplication extends BootMixin(
     this.component(JWTAuthenticationComponent);
 
     if (this.options.test) return;
-    if (!this.options.rest.apiExplorer.disabled) {
+    if (
+      Object.values(this.options).length === 0 ||
+      !this.options.rest.apiExplorer.disabled
+    ) {
       this.configure(RestExplorerBindings.COMPONENT).to({
         path: '/explorer',
         useSelfHostedSpec: true,
@@ -540,51 +543,54 @@ export class MyriadApiApplication extends BootMixin(
     const redditService = await new RedditProvider(redditDataSource).value();
     const twitterService = await new TwitterProvider(twitterDataSource).value();
 
-    const people = await peopleRepository.find();
+    const {count} = await peopleRepository.count();
 
-    await Promise.all(
-      people.map(async person => {
-        const platform = person.platform;
+    for (let i = 0; i < count; i++) {
+      const [people] = await peopleRepository.find({
+        limit: 1,
+        skip: i,
+      });
 
-        if (platform === PlatformType.REDDIT) {
-          try {
-            const {data: user} = await redditService.getActions(
-              'user/' + person.username + '/about.json',
-            );
+      const platform = people.platform;
 
-            const updatedPeople = new People({
-              name: user.subreddit.title ? user.subreddit.title : user.name,
-              username: user.name,
-              originUserId: 't2_' + user.id,
-              profilePictureURL: user.icon_img.split('?')[0],
-            });
+      if (platform === PlatformType.REDDIT) {
+        try {
+          const {data: user} = await redditService.getActions(
+            'user/' + people.username + '/about.json',
+          );
 
-            return await peopleRepository.updateById(person.id, updatedPeople);
-          } catch {
-            // ignore
-          }
+          const updatedPeople = new People({
+            name: user.subreddit.title ? user.subreddit.title : user.name,
+            username: user.name,
+            originUserId: 't2_' + user.id,
+            profilePictureURL: user.icon_img.split('?')[0],
+          });
+
+          return await peopleRepository.updateById(people.id, updatedPeople);
+        } catch {
+          // ignore
         }
+      }
 
-        if (platform === PlatformType.TWITTER) {
-          try {
-            const {user} = await twitterService.getActions(
-              `1.1/statuses/show.json?id=${person.originUserId}&include_entities=true&tweet_mode=extended`,
-            );
+      if (platform === PlatformType.TWITTER) {
+        try {
+          const {user} = await twitterService.getActions(
+            `1.1/statuses/show.json?id=${people.originUserId}&include_entities=true&tweet_mode=extended`,
+          );
 
-            const updatedPeople = new People({
-              name: user.name,
-              username: user.screen_name,
-              originUserId: user.id_str,
-              profilePictureURL: user.profile_image_url_https || '',
-            });
+          const updatedPeople = new People({
+            name: user.name,
+            username: user.screen_name,
+            originUserId: user.id_str,
+            profilePictureURL: user.profile_image_url_https || '',
+          });
 
-            return await peopleRepository.updateById(person.id, updatedPeople);
-          } catch {
-            // ignore
-          }
+          return await peopleRepository.updateById(people.id, updatedPeople);
+        } catch {
+          // ignore
         }
-      }),
-    );
+      }
+    }
   }
 
   async initialExchangeRates(): Promise<void> {
