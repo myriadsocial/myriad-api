@@ -1,9 +1,8 @@
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {Transaction} from '../models';
 import {TransactionRepository} from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 
-/* eslint-disable  @typescript-eslint/no-explicit-any */
 @injectable({scope: BindingScope.TRANSIENT})
 export class TransactionService {
   constructor(
@@ -14,7 +13,7 @@ export class TransactionService {
   // ignore
   async totalTransactionAmount(field: string, id: string, groupBy: string) {
     const collections = (
-      this.transactionRepository.dataSource.connector as any
+      this.transactionRepository.dataSource.connector as AnyObject
     ).collection(Transaction.modelName);
 
     return collections

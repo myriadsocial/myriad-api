@@ -1,5 +1,5 @@
 import {intercept, service} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {del, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
 import {
   CreateInterceptor,
@@ -41,9 +41,8 @@ export class VoteController {
     })
     vote: Omit<Vote, 'id'>,
   ): Promise<Vote> {
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
     const collection = (
-      this.voteRepository.dataSource.connector as any
+      this.voteRepository.dataSource.connector as AnyObject
     ).collection(Vote.modelName);
     const query = {
       userId: vote.userId,

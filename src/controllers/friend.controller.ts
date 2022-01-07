@@ -1,5 +1,6 @@
 import {intercept} from '@loopback/core';
 import {
+  AnyObject,
   Count,
   CountSchema,
   Filter,
@@ -141,9 +142,8 @@ export class FriendController {
     @param.path.string('requestorId') requestorId: string,
     @param.path.string('requesteeId') requesteeId: string,
   ): Promise<Count> {
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
     const collection = (
-      this.friendRepository.dataSource.connector as any
+      this.friendRepository.dataSource.connector as AnyObject
     ).collection(Friend.modelName);
 
     const countMutual = await collection

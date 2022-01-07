@@ -85,9 +85,11 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       invocationCtx.args[1].updatedAt = new Date();
     }
 
-    const currentPost = await this.userService.authorize(controllerName, null, [
-      invocationCtx.args[0],
-    ]);
+    const currentPost = await this.userService.authorize(
+      controllerName,
+      undefined,
+      [invocationCtx.args[0]],
+    );
 
     switch (controllerName) {
       case ControllerType.CURRENCY: {

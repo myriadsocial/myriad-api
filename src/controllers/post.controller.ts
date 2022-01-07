@@ -1,5 +1,5 @@
 import {intercept, service} from '@loopback/core';
-import {Filter, FilterExcludingWhere} from '@loopback/repository';
+import {AnyObject, Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
@@ -90,8 +90,8 @@ export class PostController {
             platform: platform as PlatformType,
             createdBy: importer,
           },
-          /* eslint-disable  @typescript-eslint/no-explicit-any */
-          <any>{
+
+          <AnyObject>{
             originPostId,
             platform: platform as PlatformType,
             deletedAt: {

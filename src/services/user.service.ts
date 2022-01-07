@@ -1,6 +1,6 @@
 import {AuthenticationBindings} from '@loopback/authentication';
 import {BindingScope, inject, injectable} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {
   CommentRepository,
   FriendRepository,
@@ -60,10 +60,9 @@ export class UserService {
     }
   }
 
-  /* eslint-disable  @typescript-eslint/no-explicit-any */
   async authorize(
     controllerName: ControllerType,
-    data: any,
+    data?: AnyObject,
     ids = [''],
   ): Promise<Post | void> {
     let error = false;
@@ -143,7 +142,7 @@ export class UserService {
       }
 
       case ControllerType.TRANSACTION:
-        userId = data.from;
+        if (data) userId = data.from;
         break;
 
       case ControllerType.USERSOCIALMEDIA: {

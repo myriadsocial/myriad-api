@@ -285,9 +285,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           const mutualPath = path.split('/');
           const requestorId = mutualPath[2];
           const requesteeId = mutualPath[4];
-          /* eslint-disable  @typescript-eslint/no-explicit-any */
+
           const collection = (
-            this.friendService.friendRepository.dataSource.connector as any
+            this.friendService.friendRepository.dataSource
+              .connector as AnyObject
           ).collection(Friend.modelName);
 
           const userIds = (

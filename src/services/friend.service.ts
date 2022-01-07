@@ -255,9 +255,8 @@ export class FriendService {
   }
 
   async countMutual(requestorId: string, requesteeId: string): Promise<Count> {
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
     const collection = (
-      this.friendRepository.dataSource.connector as any
+      this.friendRepository.dataSource.connector as AnyObject
     ).collection(Friend.modelName);
 
     const countMutual = await collection
