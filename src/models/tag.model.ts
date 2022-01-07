@@ -2,7 +2,6 @@ import {Entity, model, property} from '@loopback/repository';
 
 @model({
   settings: {
-    strictObjectIDCoercion: true,
     mongodb: {
       collection: 'tags',
     },

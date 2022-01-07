@@ -50,14 +50,10 @@ export class VoteController {
       type: vote.type,
       referenceId: vote.referenceId,
     };
-    const update = {
-      $set: vote,
-    };
+    const update = {$set: vote};
     const options = {upsert: true, returnDocument: 'after'};
 
-    const result = await collection.findOneAndUpdate(query, update, options);
-
-    return result;
+    return collection.findOneAndUpdate(query, update, options);
   }
 
   @intercept(DeleteInterceptor.BINDING_KEY)

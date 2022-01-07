@@ -98,9 +98,13 @@ export class UserService {
         const {requesteeId, requestorId, status} =
           await this.friendRepository.findById(ids[0]);
 
+        if (status === FriendStatusType.APPROVED && !ids[1]) return;
+
         if (status === FriendStatusType.PENDING) {
           userId = requesteeId;
-        } else {
+        }
+
+        if (ids[1] === 'delete') {
           userId = requestorId;
         }
 

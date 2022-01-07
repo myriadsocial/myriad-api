@@ -61,6 +61,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
       default:
         await this.userService.authorize(controllerName, null, [
           invocationCtx.args[0],
+          'delete',
         ]);
     }
   }
