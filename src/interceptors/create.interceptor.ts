@@ -128,9 +128,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.CURRENCY: {
         const data = invocationCtx.args[0];
-        const {verifyRpcAddressConnection} = this.currencyService;
 
-        invocationCtx.args[0] = await verifyRpcAddressConnection(data);
+        invocationCtx.args[0] =
+          await this.currencyService.verifyRpcAddressConnection(data);
 
         return;
       }
@@ -230,7 +230,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
           ReferenceType.COMMENT,
         );
 
-        return result;
+        console.log(metric);
+
+        return Object.assign(result, {metric});
       }
 
       case ControllerType.USERREPORT: {

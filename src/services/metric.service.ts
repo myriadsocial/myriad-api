@@ -91,23 +91,20 @@ export class MetricService {
     };
 
     if (!section) return metric;
-    if (section === SectionType.DEBATE) {
-      metric.debates = (
-        await this.commentRepository.count({
-          postId,
-          section: SectionType.DEBATE,
-        })
-      ).count;
-    }
 
-    if (section === SectionType.DISCUSSION) {
-      metric.discussions = (
-        await this.commentRepository.count({
-          postId,
-          section: SectionType.DISCUSSION,
-        })
-      ).count;
-    }
+    metric.debates = (
+      await this.commentRepository.count({
+        postId,
+        section: SectionType.DEBATE,
+      })
+    ).count;
+
+    metric.discussions = (
+      await this.commentRepository.count({
+        postId,
+        section: SectionType.DISCUSSION,
+      })
+    ).count;
 
     metric.comments = (metric.discussions ?? 0) + (metric.debates ?? 0);
 

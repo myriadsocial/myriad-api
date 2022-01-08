@@ -78,6 +78,7 @@ export class CurrencyService {
 
   async sendMyriadReward(userId: string): Promise<void> {
     if (config.MYRIAD_REWARD_AMOUNT === 0) return;
+
     try {
       const {rpcURL: myriadRpc, decimal: myriadDecimal} =
         await this.currencyRepository.findById(DefaultCurrencyType.MYRIA);
@@ -91,28 +92,43 @@ export class CurrencyService {
 
       const rewardAmount = config.MYRIAD_REWARD_AMOUNT * 10 ** myriadDecimal;
 
-      const {nonce} = await api.query.system.account(from.address);
-      const getNonce = await this.getQueueNumber(
-        nonce.toJSON(),
-        DefaultCurrencyType.MYRIA,
-      );
-
       const transfer = api.tx.balances.transfer(
         to,
         new BN(rewardAmount.toString()),
       );
-      const txHash = await transfer.signAndSend(from, {nonce: getNonce});
 
-      const transaction = await this.transactionRepository.create({
-        hash: txHash.toString(),
-        amount: rewardAmount / 10 ** myriadDecimal,
-        to: to,
-        from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-        currencyId: DefaultCurrencyType.MYRIA,
+      await transfer.signAndSend(from, async ({status, events}) => {
+        if (status.isInBlock || status.isFinalized) {
+          let transactionStatus = null;
+          let hash = null;
+
+          if (status.isInBlock) hash = status.asInBlock;
+
+          events
+            .filter(({event}) => event.section === 'system')
+            .forEach(event => {
+              const method = event.event.method;
+
+              if (method === 'ExtrinsicSuccess') {
+                transactionStatus = 'success';
+              }
+            });
+
+          if (status.isFinalized) {
+            if (transactionStatus === 'success') {
+              const transaction = await this.transactionRepository.create({
+                hash: hash as unknown as string,
+                amount: rewardAmount / 10 ** myriadDecimal,
+                to: to,
+                from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+                currencyId: DefaultCurrencyType.MYRIA,
+              });
+
+              await this.notificationService.sendInitialTips(transaction);
+            }
+          }
+        }
       });
-
-      // await this.notificationService.sendRewardSuccess(transaction);
-      await this.notificationService.sendIntitalTips(transaction);
 
       await api.disconnect();
     } catch {

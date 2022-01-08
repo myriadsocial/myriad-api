@@ -452,7 +452,7 @@ export class NotificationService {
     return true;
   }
 
-  async sendIntitalTips(transaction: Transaction): Promise<boolean> {
+  async sendInitialTips(transaction: Transaction): Promise<boolean> {
     const {from, to} = transaction;
 
     const notification = new Notification({

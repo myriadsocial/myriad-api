@@ -10,7 +10,7 @@ import {
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ActivityLogType, MethodType, ReferenceType} from '../enums';
-import {Credential, User} from '../models';
+import {Credential} from '../models';
 import {UserRepository} from '../repositories';
 import {ActivityLogService, CurrencyService, FriendService} from '../services';
 import {numberToHex} from '@polkadot/util';
@@ -70,21 +70,13 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
-      const {id, username} = invocationCtx.args[0];
+      const {name, username} = invocationCtx.args[0];
 
       this.validateUsername(username);
 
-      let user = await this.userRepository.findOne({where: {id}});
-
-      if (user) throw new HttpErrors.UnprocessableEntity('User already exist!');
-
-      user = new User(invocationCtx.args[0]);
-
-      const name = user.name.substring(0, 22);
-
-      user.name = name;
-
-      invocationCtx.args[0] = user;
+      invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+        name: name.substring(0, 22),
+      });
 
       return;
     }
