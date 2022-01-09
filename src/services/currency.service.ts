@@ -63,6 +63,7 @@ export class CurrencyService {
       rpcURL: config.MYRIAD_RPC_WS_URL,
       native: true,
       networkType: 'substrate',
+
       exchangeRate: false,
     };
 
@@ -77,6 +78,7 @@ export class CurrencyService {
   }
 
   async sendMyriadReward(userId: string): Promise<void> {
+    if (!config.MYRIAD_REWARD_AMOUNT) return;
     if (config.MYRIAD_REWARD_AMOUNT === 0) return;
 
     try {
@@ -96,41 +98,55 @@ export class CurrencyService {
         to,
         new BN(rewardAmount.toString()),
       );
+      const {nonce} = await api.query.system.account(from.address);
+      const getNonce = await this.getQueueNumber(
+        nonce.toJSON(),
+        DefaultCurrencyType.MYRIA,
+      );
 
-      await transfer.signAndSend(from, async ({status, events}) => {
-        if (status.isInBlock || status.isFinalized) {
-          let transactionStatus = null;
-          let hash = null;
+      let hash: string | null = null;
 
-          if (status.isInBlock) hash = status.asInBlock;
+      await transfer.signAndSend(
+        from,
+        {nonce: getNonce},
+        async ({status, events}) => {
+          if (status.isInBlock || status.isFinalized) {
+            let transactionStatus = null;
 
-          events
-            .filter(({event}) => event.section === 'system')
-            .forEach(event => {
-              const method = event.event.method;
+            if (status.isInBlock) hash = status.asInBlock.toString();
 
-              if (method === 'ExtrinsicSuccess') {
-                transactionStatus = 'success';
-              }
-            });
+            events
+              .filter(({event}) => event.section === 'system')
+              .forEach(event => {
+                const method = event.event.method;
 
-          if (status.isFinalized) {
-            if (transactionStatus === 'success') {
-              const transaction = await this.transactionRepository.create({
-                hash: hash as unknown as string,
-                amount: rewardAmount / 10 ** myriadDecimal,
-                to: to,
-                from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-                currencyId: DefaultCurrencyType.MYRIA,
+                if (method === 'ExtrinsicSuccess') {
+                  transactionStatus = 'success';
+                }
               });
 
-              await this.notificationService.sendInitialTips(transaction);
+            if (status.isFinalized) {
+              if (transactionStatus === 'success' && hash) {
+                try {
+                  const transaction = await this.transactionRepository.create({
+                    hash: hash,
+                    amount: rewardAmount / 10 ** myriadDecimal,
+                    to: to,
+                    from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+                    currencyId: DefaultCurrencyType.MYRIA,
+                  });
+
+                  await this.notificationService.sendInitialTips(transaction);
+                } catch {
+                  // ignore
+                }
+              }
+
+              await api.disconnect();
             }
           }
-        }
-      });
-
-      await api.disconnect();
+        },
+      );
     } catch {
       // ignore
     }
