@@ -63,38 +63,11 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    const methodName = invocationCtx.methodName as MethodType;
-    const {type, referenceId, toUserId} = await this.beforeVote(invocationCtx);
+    const voteDetail = await this.beforeVote(invocationCtx);
 
     const result = await next();
 
-    await this.afterVote(type, referenceId, toUserId);
-
-    if (methodName === MethodType.CREATEVOTE) {
-      const {
-        _id: id,
-        postId,
-        referenceId: refId,
-        type: refType,
-        userId,
-      } = result.value;
-      const popularCount = await this.metricService.countPopularPost(postId);
-
-      await this.postRepository.updateById(postId, {popularCount});
-      await this.activityLogService.createLog(
-        ActivityLogType.GIVEVOTE,
-        userId,
-        refId,
-        refType,
-      );
-
-      return Object.assign(result.value, {
-        id: id,
-        _id: undefined,
-      });
-    }
-
-    return result;
+    return this.afterVote(invocationCtx, voteDetail, result);
   }
 
   async beforeVote(invocationCtx: InvocationContext): Promise<AnyObject> {
@@ -155,10 +128,37 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
   }
 
   async afterVote(
-    type: ReferenceType,
-    referenceId: string,
-    toUserId: string,
-  ): Promise<void> {
+    invocationCtx: InvocationContext,
+    voteDetail: AnyObject,
+    result: AnyObject,
+  ): Promise<AnyObject> {
+    const methodName = invocationCtx.methodName as MethodType;
+
+    if (methodName === MethodType.CREATEVOTE) {
+      const {
+        _id: id,
+        postId,
+        referenceId: refId,
+        type: refType,
+        userId,
+      } = result.value;
+      const popularCount = await this.metricService.countPopularPost(postId);
+
+      await this.postRepository.updateById(postId, {popularCount});
+      await this.activityLogService.createLog(
+        ActivityLogType.GIVEVOTE,
+        userId,
+        refId,
+        refType,
+      );
+
+      return Object.assign(result.value, {
+        id: id,
+        _id: undefined,
+      });
+    }
+
+    const {type, referenceId, toUserId} = voteDetail;
     const metric = await this.metricService.postMetric(type, referenceId);
 
     await this.metricService.userMetric(toUserId);
@@ -168,20 +168,21 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
         const post = await this.postRepository.findOne({
           where: {id: referenceId},
         });
-        if (!post) return;
+        if (!post) break;
 
-        return this.postRepository.updateById(referenceId, {
+        await this.postRepository.updateById(referenceId, {
           metric: Object.assign(post.metric, metric),
         });
+        break;
       }
 
       case ReferenceType.COMMENT:
-        return this.commentRepository.updateById(referenceId, {
+        await this.commentRepository.updateById(referenceId, {
           metric: metric,
         });
-
-      default:
-        return;
+        break;
     }
+
+    return result;
   }
 }

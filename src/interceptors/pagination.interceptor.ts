@@ -88,8 +88,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    await this.userService.verifyUser();
-
     const request = await invocationCtx.get(RestBindings.Http.REQUEST);
     const {pageNumber, pageLimit} = request.query;
 

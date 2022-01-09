@@ -7,7 +7,7 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {
   ActivityLogType,
@@ -65,6 +65,14 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
+    const experienceDetail = await this.beforeExperience(invocationCtx);
+
+    const result = await next();
+
+    return this.afterExperience(invocationCtx, experienceDetail, result);
+  }
+
+  async beforeExperience(invocationCtx: InvocationContext): Promise<AnyObject> {
     let userId = invocationCtx.args[0];
     let experienceId = invocationCtx.args[1];
 
@@ -168,9 +176,25 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
     }
 
-    // Add pre-invocation logic here
-    let result = await next();
-    // Add post-invocation logic here
+    return {
+      userId,
+      experienceId,
+      numberOfUserExperience,
+      users,
+      isBelongToUser,
+    };
+  }
+
+  async afterExperience(
+    invocationCtx: InvocationContext,
+    experienceDetail: AnyObject,
+    result: AnyObject,
+  ): Promise<AnyObject> {
+    const methodName = invocationCtx.methodName;
+    const {userId, experienceId, numberOfUserExperience, isBelongToUser} =
+      experienceDetail;
+
+    let users = experienceDetail.users;
 
     if (
       (methodName === MethodType.CREATE ||

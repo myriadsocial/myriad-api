@@ -20,7 +20,6 @@ import {HttpErrors} from '@loopback/rest';
 import {Post, User} from '../models';
 import {ActivityLogService, CurrencyService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
-import {UserService} from '../services/user.service';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -42,8 +41,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected activityLogService: ActivityLogService,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
-    @service(UserService)
-    protected userService: UserService,
   ) {}
 
   /**
@@ -65,12 +62,9 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    await this.userService.verifyUser();
     await this.beforeUpdate(invocationCtx);
 
-    const result = await next();
-
-    return result;
+    return next();
   }
 
   async beforeUpdate(invocationCtx: InvocationContext): Promise<void> {
@@ -84,12 +78,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     if (methodName === MethodType.UPDATEBYID) {
       invocationCtx.args[1].updatedAt = new Date();
     }
-
-    const currentPost = await this.userService.authorize(
-      controllerName,
-      undefined,
-      [invocationCtx.args[0]],
-    );
 
     switch (controllerName) {
       case ControllerType.CURRENCY: {
@@ -121,6 +109,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.POST: {
         const payload = invocationCtx.args[1] as Partial<Post>;
+        const currentPost = invocationCtx.args[2] as Post;
 
         if (!currentPost) {
           throw new HttpErrors.Forbidden('Forbidden user!');

@@ -52,9 +52,8 @@ export class RestrictedPostInterceptor implements Provider<Interceptor> {
 
     invocationCtx.args[1] = filter;
 
-    // Add pre-invocation logic here
     const result = await next();
-    // Add post-invocation logic here
+
     return this.restrictedPost(result, userId?.toString());
   }
 

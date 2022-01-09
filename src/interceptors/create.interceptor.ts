@@ -31,7 +31,6 @@ import {
   MetricService,
   NotificationService,
   TagService,
-  UserService,
 } from '../services';
 
 /**
@@ -65,8 +64,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected notificationService: NotificationService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
-    @service(UserService)
-    protected userService: UserService,
   ) {}
 
   /**
@@ -88,20 +85,15 @@ export class CreateInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    await this.userService.verifyUser();
     await this.beforeCreate(invocationCtx);
 
-    let result = await next();
+    const result = await next();
 
-    result = await this.afterCreate(invocationCtx, result);
-
-    return result;
+    return this.afterCreate(invocationCtx, result);
   }
 
   async beforeCreate(invocationCtx: InvocationContext): Promise<void> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
-
-    await this.userService.authorize(controllerName, invocationCtx.args[0]);
 
     switch (controllerName) {
       case ControllerType.TRANSACTION: {

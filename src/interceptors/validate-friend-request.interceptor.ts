@@ -7,6 +7,7 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
+import {AnyObject} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {
   ActivityLogType,
@@ -59,6 +60,18 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
+    const friendDetail = await this.beforeFriendRequest(invocationCtx);
+
+    const result = await next();
+
+    await this.afterFriendRequest(invocationCtx, friendDetail, result);
+
+    return result;
+  }
+
+  async beforeFriendRequest(
+    invocationCtx: InvocationContext,
+  ): Promise<AnyObject> {
     const methodName = invocationCtx.methodName as MethodType;
 
     let friendId = null;
@@ -129,9 +142,19 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
         await this.createNotification(requesteeId, requestorId);
     }
 
-    // Add pre-invocation logic here
-    const result = await next();
-    // Add post-invocation logic here
+    return {
+      requesteeId,
+      requestorId,
+    };
+  }
+
+  async afterFriendRequest(
+    invocationCtx: InvocationContext,
+    friendDetail: AnyObject,
+    result: AnyObject,
+  ) {
+    const methodName = invocationCtx.methodName as MethodType;
+    const {requestorId, requesteeId} = friendDetail;
 
     if (
       methodName === MethodType.UPDATEBYID ||
@@ -149,8 +172,6 @@ export class ValidateFriendRequestInterceptor implements Provider<Interceptor> {
         ReferenceType.USER,
       );
     }
-
-    return result;
   }
 
   async createNotification(
