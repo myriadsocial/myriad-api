@@ -2,7 +2,7 @@ import {inject, intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {PlatformType, FriendStatusType} from '../enums';
-import {DeleteInterceptor, PaginationInterceptor} from '../interceptors';
+import {AuthorizeInterceptor, PaginationInterceptor} from '../interceptors';
 import {People} from '../models';
 import {
   FriendRepository,
@@ -14,6 +14,7 @@ import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class PeopleController {
   constructor(
     @repository(PeopleRepository)
@@ -161,7 +162,6 @@ export class PeopleController {
     return this.peopleRepository.findById(id, filter);
   }
 
-  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/people/{id}')
   @response(204, {
     description: 'People DELETE success',

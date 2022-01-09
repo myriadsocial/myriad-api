@@ -12,7 +12,7 @@ import {Report} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
 import {
-  DeleteInterceptor,
+  AuthorizeInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -22,6 +22,7 @@ import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class ReportController {
   constructor(
     @repository(ReportRepository)
@@ -108,7 +109,6 @@ export class ReportController {
     }
   }
 
-  @intercept(DeleteInterceptor.BINDING_KEY)
   @intercept(ReportInterceptor.BINDING_KEY)
   @del('/reports/{id}')
   @response(204, {

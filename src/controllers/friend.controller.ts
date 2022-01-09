@@ -19,8 +19,8 @@ import {
 } from '@loopback/rest';
 import {FriendStatusType} from '../enums';
 import {
+  AuthorizeInterceptor,
   CreateInterceptor,
-  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -30,6 +30,7 @@ import {FriendRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class FriendController {
   constructor(
     @repository(FriendRepository)
@@ -193,7 +194,6 @@ export class FriendController {
     return this.userRepository.find(filter);
   }
 
-  @intercept(DeleteInterceptor.BINDING_KEY)
   @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
   @del('/friends/{id}')
   @response(204, {

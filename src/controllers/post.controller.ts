@@ -13,9 +13,9 @@ import {
 } from '@loopback/rest';
 import {PlatformType, VisibilityType} from '../enums';
 import {
+  AuthorizeInterceptor,
   CreateInterceptor,
   DeletedDocument,
-  DeleteInterceptor,
   PaginationInterceptor,
   RestrictedPostInterceptor,
   UpdateInterceptor,
@@ -28,6 +28,7 @@ import {PostService, SocialMediaService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class PostController {
   constructor(
     @service(SocialMediaService)
@@ -281,7 +282,6 @@ export class PostController {
     await this.postService.postRepository.updateById(id, updatedPost);
   }
 
-  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/posts/{id}')
   @response(204, {
     description: 'Post DELETE success',

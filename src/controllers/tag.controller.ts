@@ -8,12 +8,17 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
+import {
+  AuthorizeInterceptor,
+  CreateInterceptor,
+  PaginationInterceptor,
+} from '../interceptors';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class TagController {
   constructor(
     @repository(TagRepository)

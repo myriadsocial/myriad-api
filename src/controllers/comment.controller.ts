@@ -11,9 +11,9 @@ import {
 } from '@loopback/rest';
 import {ReferenceType} from '../enums';
 import {
+  AuthorizeInterceptor,
   CreateInterceptor,
   DeletedDocument,
-  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -23,6 +23,7 @@ import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class CommentController {
   constructor(
     @repository(CommentRepository)
@@ -151,7 +152,6 @@ export class CommentController {
     return this.commentRepository.updateById(id, comment);
   }
 
-  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/comments/{id}', {
     responses: {
       '204': {

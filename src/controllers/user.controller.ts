@@ -8,12 +8,13 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {DeletedDocument, PaginationInterceptor, UpdateInterceptor} from '../interceptors';
+import {AuthorizeInterceptor, DeletedDocument, PaginationInterceptor, UpdateInterceptor} from '../interceptors';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserController {
   constructor(
     @repository(UserRepository)

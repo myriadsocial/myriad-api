@@ -11,8 +11,8 @@ import {
   patch,
 } from '@loopback/rest';
 import {
+  AuthorizeInterceptor,
   CreateInterceptor,
-  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -21,6 +21,7 @@ import {CurrencyRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class CurrencyController {
   constructor(
     @repository(CurrencyRepository)
@@ -107,7 +108,6 @@ export class CurrencyController {
     await this.currencyRepository.updateById(id, currency);
   }
 
-  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/currencies/{id}')
   @response(204, {
     description: 'Currency DELETE success',

@@ -15,12 +15,17 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {PaginationInterceptor, UpdateInterceptor} from '../interceptors';
+import {
+  AuthorizeInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class NotificationController {
   constructor(
     @repository(NotificationRepository)

@@ -13,8 +13,8 @@ import {
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {
+  AuthorizeInterceptor,
   CreateInterceptor,
-  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -27,6 +27,7 @@ import {
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserSocialMediaController {
   constructor(
     @service(SocialMediaService)
@@ -157,7 +158,6 @@ export class UserSocialMediaController {
     });
   }
 
-  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/user-social-medias/{id}')
   @response(204, {
     description: 'UserSocialMedia DELETE success',

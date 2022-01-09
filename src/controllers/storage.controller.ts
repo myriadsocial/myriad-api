@@ -1,4 +1,4 @@
-import {inject, service} from '@loopback/core';
+import {inject, intercept, service} from '@loopback/core';
 import {
   post,
   requestBody,
@@ -15,8 +15,10 @@ import {UploadType} from '../enums';
 import {authenticate} from '@loopback/authentication';
 import {repository} from '@loopback/repository';
 import {UserRepository} from '../repositories';
+import {AuthorizeInterceptor} from '../interceptors';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class StorageController {
   constructor(
     @repository(UserRepository)
