@@ -205,7 +205,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
           result.type,
           result.referenceId,
           result.postId,
-          result.section,
         );
 
         const popularCount = await this.metricService.countPopularPost(
@@ -221,8 +220,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
           result.id,
           ReferenceType.COMMENT,
         );
-
-        console.log(metric);
 
         return Object.assign(result, {metric});
       }

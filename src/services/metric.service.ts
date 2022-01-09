@@ -72,7 +72,6 @@ export class MetricService {
     type: ReferenceType,
     referenceId: string,
     postId?: string,
-    section?: SectionType,
   ): Promise<Metric> {
     const upvote = await this.voteRepository.count({
       type,
@@ -90,23 +89,23 @@ export class MetricService {
       downvotes: downvote.count,
     };
 
-    if (!section) return metric;
+    if (postId) {
+      metric.debates = (
+        await this.commentRepository.count({
+          referenceId,
+          section: SectionType.DEBATE,
+        })
+      ).count;
 
-    metric.debates = (
-      await this.commentRepository.count({
-        postId,
-        section: SectionType.DEBATE,
-      })
-    ).count;
+      metric.discussions = (
+        await this.commentRepository.count({
+          referenceId,
+          section: SectionType.DISCUSSION,
+        })
+      ).count;
 
-    metric.discussions = (
-      await this.commentRepository.count({
-        postId,
-        section: SectionType.DISCUSSION,
-      })
-    ).count;
-
-    metric.comments = (metric.discussions ?? 0) + (metric.debates ?? 0);
+      metric.comments = (metric.discussions ?? 0) + (metric.debates ?? 0);
+    }
 
     return metric;
   }
@@ -242,15 +241,12 @@ export class MetricService {
   }
 
   async countPopularPost(postId: string): Promise<number> {
-    const post = await this.postRepository.findOne({where: {id: postId}});
-    if (!post) return 0;
-
     const {count: voteCount} = await this.voteRepository.count({
-      postId: post.id,
+      postId: postId,
       state: true,
     });
     const {count: commentCount} = await this.commentRepository.count({
-      postId: post.id,
+      postId: postId,
     });
 
     return commentCount + voteCount;

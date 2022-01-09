@@ -13,7 +13,7 @@ import {
 import {injectable, BindingScope, service} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
-import {PlatformType, ReferenceType} from '../enums';
+import {PlatformType} from '../enums';
 import {MetricService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
@@ -82,7 +82,6 @@ export class PostService {
       postId: id,
     });
     await this.metricService.userMetric(createdBy);
-    await this.metricService.postMetric(ReferenceType.POST, id);
   }
 
   async getPostImporterInfo(

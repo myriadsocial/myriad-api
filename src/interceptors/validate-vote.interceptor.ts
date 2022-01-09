@@ -133,18 +133,43 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
     result: AnyObject,
   ): Promise<AnyObject> {
     const methodName = invocationCtx.methodName as MethodType;
+    const {type, referenceId, toUserId} = voteDetail;
+    const metric = await this.metricService.postMetric(
+      type,
+      referenceId,
+      type === ReferenceType.POST ? referenceId : undefined,
+    );
+
+    await this.metricService.userMetric(toUserId);
+
+    switch (type) {
+      case ReferenceType.POST: {
+        try {
+          const popularCount = await this.metricService.countPopularPost(
+            referenceId,
+          );
+
+          await this.postRepository.updateById(referenceId, {
+            metric: metric,
+            popularCount: popularCount,
+          });
+        } catch {
+          // ignore
+        }
+
+        break;
+      }
+
+      case ReferenceType.COMMENT:
+        await this.commentRepository.updateById(referenceId, {
+          metric: metric,
+        });
+        break;
+    }
 
     if (methodName === MethodType.CREATEVOTE) {
-      const {
-        _id: id,
-        postId,
-        referenceId: refId,
-        type: refType,
-        userId,
-      } = result.value;
-      const popularCount = await this.metricService.countPopularPost(postId);
+      const {_id: id, referenceId: refId, type: refType, userId} = result.value;
 
-      await this.postRepository.updateById(postId, {popularCount});
       await this.activityLogService.createLog(
         ActivityLogType.GIVEVOTE,
         userId,
@@ -156,31 +181,6 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
         id: id,
         _id: undefined,
       });
-    }
-
-    const {type, referenceId, toUserId} = voteDetail;
-    const metric = await this.metricService.postMetric(type, referenceId);
-
-    await this.metricService.userMetric(toUserId);
-
-    switch (type) {
-      case ReferenceType.POST: {
-        const post = await this.postRepository.findOne({
-          where: {id: referenceId},
-        });
-        if (!post) break;
-
-        await this.postRepository.updateById(referenceId, {
-          metric: Object.assign(post.metric, metric),
-        });
-        break;
-      }
-
-      case ReferenceType.COMMENT:
-        await this.commentRepository.updateById(referenceId, {
-          metric: metric,
-        });
-        break;
     }
 
     return result;

@@ -1,4 +1,5 @@
 import {
+  inject,
   injectable,
   Interceptor,
   InvocationContext,
@@ -35,12 +36,12 @@ import {
   NotificationService,
   PostService,
   TagService,
-  UserService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
 import {UserRepository} from '../repositories';
 import {MetaPagination} from '../interfaces';
-import {securityId} from '@loopback/security';
+import {UserProfile, securityId} from '@loopback/security';
+import {AuthenticationBindings} from '@loopback/authentication';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -65,8 +66,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected notificationService: NotificationService,
     @service(PostService)
     protected postService: PostService,
-    @service(UserService)
-    protected userService: UserService,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    public currentUser: UserProfile,
   ) {}
 
   /**
@@ -159,7 +160,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const {query, path} = request;
     const {userId, experienceId, timelineType, q} = query;
 
-    const currentUser = this.userService.currentUser;
+    const currentUser = this.currentUser;
     const methodName = invocationCtx.methodName as MethodType;
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
@@ -332,7 +333,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     request: Request,
     result: AnyObject,
   ): Promise<AnyObject> {
-    const currentUser = this.userService.currentUser;
+    const currentUser = this.currentUser;
     const controllerName = invocationCtx.targetClass.name as ControllerType;
     const methodName = invocationCtx.methodName as MethodType;
 

@@ -159,12 +159,8 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
 
       case ControllerType.POST:
         if (typeof data === 'object') {
-          if (data.importer) {
-            userId = data.importer;
-            console.log(userId);
-          } else {
-            userId = data.createdBy;
-          }
+          if (data.importer) userId = data.importer;
+          else userId = data.createdBy;
         } else {
           const post = await this.postRepository.findById(data);
 
