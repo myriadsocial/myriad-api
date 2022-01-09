@@ -9,3 +9,4 @@ export * from './report.interceptor';
 export * from './restricted-post.interceptor';
 export * from './update.interceptor';
 export * from './authentication.interceptor';
+export * from './authorize.interceptor';
