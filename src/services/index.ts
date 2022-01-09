@@ -14,4 +14,3 @@ export * from './user-social-media.service';
 export * from './coin-market-cap.service';
 export * from './activity-log.service';
 export * from './file-upload.service';
-export * from './user.service';

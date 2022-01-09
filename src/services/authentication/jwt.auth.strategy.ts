@@ -1,13 +1,17 @@
 import {AuthenticationStrategy, TokenService} from '@loopback/authentication';
 import {inject} from '@loopback/core';
+import {repository} from '@loopback/repository';
 import {HttpErrors, Request} from '@loopback/rest';
-import {UserProfile} from '@loopback/security';
+import {UserProfile, securityId} from '@loopback/security';
 import {TokenServiceBindings} from '../../keys';
+import {UserRepository} from '../../repositories';
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   name = 'jwt';
 
   constructor(
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     public tokenService: TokenService,
   ) {}
@@ -15,6 +19,15 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   async authenticate(request: Request): Promise<UserProfile | undefined> {
     const token: string = this.extractCredentials(request);
     const userProfile: UserProfile = await this.tokenService.verifyToken(token);
+    const user = await this.userRepository.findOne({
+      where: {
+        id: userProfile[securityId],
+        username: userProfile.username,
+        createdAt: userProfile.createdAt,
+      },
+    });
+
+    if (!user) throw new HttpErrors.Unauthorized('Forbidden user!');
 
     return userProfile;
   }
