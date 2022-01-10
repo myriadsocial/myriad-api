@@ -20,7 +20,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
-import {Credential, User} from '../../models';
+import {Credential, Currency, User} from '../../models';
 
 describe('UserCurrencyApplication', function () {
   let app: MyriadApiApplication;
@@ -33,6 +33,7 @@ describe('UserCurrencyApplication', function () {
   let user: User;
   let otherUser: User;
   let address: KeyringPair;
+  let currency: Currency;
 
   before(async () => {
     ({app, client} = await setupApplication());
