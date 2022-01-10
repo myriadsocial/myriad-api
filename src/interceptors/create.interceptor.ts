@@ -16,7 +16,7 @@ import {
   PlatformType,
   ActivityLogType,
 } from '../enums';
-import {Comment} from '../models';
+import {Comment, UserSocialMedia} from '../models';
 import {
   CommentRepository,
   DraftPostRepository,
@@ -256,6 +256,12 @@ export class CreateInterceptor implements Provider<Interceptor> {
         });
 
         return Object.assign(result, {totalReported: count});
+      }
+
+      case ControllerType.USERSOCIALMEDIA: {
+        await this.currencyService.autoClaimTips(result as UserSocialMedia);
+
+        return result;
       }
 
       default:
