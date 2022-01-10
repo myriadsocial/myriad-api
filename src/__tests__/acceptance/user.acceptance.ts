@@ -11,6 +11,7 @@ import {
   NotificationSettingRepository,
 } from '../../repositories';
 import {
+  givenAccesToken,
   givenAccountSettingRepository,
   givenActivityLogInstance,
   givenActivityLogRepository,
@@ -20,6 +21,7 @@ import {
   givenFriendInstance,
   givenFriendRepository,
   givenNotificationSettingRepository,
+  givenOtherUser,
   givenUser,
   givenUserCurrencyInstance,
   givenUserCurrencyRepository,
@@ -46,6 +48,7 @@ describe('UserApplication', function () {
   let accountSettingRepository: AccountSettingRepository;
   let nonce: number;
   let user: User;
+  let otherUser: User;
   let address: KeyringPair;
 
   before(async () => {
@@ -69,6 +72,7 @@ describe('UserApplication', function () {
   before(async () => {
     user = await givenUserInstance(userRepository);
     address = givenAddress();
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
   });
 
   beforeEach(async () => {
@@ -87,7 +91,7 @@ describe('UserApplication', function () {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -118,6 +122,26 @@ describe('UserApplication', function () {
         .get('/users/99999')
         .set('Authorization', `Bearer ${token}`)
         .expect(404);
+    });
+
+    it('return 401 when updating the user by ID not as login user', async () => {
+      const accesToken = await givenAccesToken(otherUser);
+      const updatedUser: Partial<User> = givenUser({
+        name: 'Abdul Hakim',
+        bio: 'Hello, my name is Abdul Hakim',
+      });
+
+      delete updatedUser.id;
+      delete updatedUser.username;
+      delete updatedUser.nonce;
+
+      user.bio = updatedUser.bio;
+
+      await client
+        .patch(`/users/${user.id}`)
+        .set('Authorization', `Bearer ${accesToken}`)
+        .send(updatedUser)
+        .expect(401);
     });
 
     it('updates the user by ID ', async () => {
@@ -157,7 +181,7 @@ describe('UserApplication', function () {
         .expect(422);
     });
 
-    it('returns 403 when updating a user that does not belong to user', async () => {
+    it('returns 401 when updating a user that does not belong to user', async () => {
       const updatedUser: Partial<User> = givenUser();
 
       delete updatedUser.id;
@@ -168,7 +192,7 @@ describe('UserApplication', function () {
         .patch(`/users/999999`)
         .set('Authorization', `Bearer ${token}`)
         .send(updatedUser)
-        .expect(403);
+        .expect(401);
     });
   });
 
@@ -176,12 +200,12 @@ describe('UserApplication', function () {
     let persistedUsers: User[];
 
     before(async () => {
-      const otherUser = await givenUserInstance(userRepository, {
+      const otherUserr = await givenUserInstance(userRepository, {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
         name: 'imam',
       });
 
-      persistedUsers = [user, otherUser];
+      persistedUsers = [user, otherUserr];
     });
 
     it('finds all users', async () => {
@@ -243,6 +267,7 @@ describe('UserApplication', function () {
   });
 
   it('includes friends, activityLogs, and currencies in query result', async () => {
+    await userRepository.deleteById(otherUser.id);
     const currency = await givenCurrencyInstance(currencyRepository);
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,

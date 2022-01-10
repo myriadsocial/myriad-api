@@ -20,6 +20,8 @@ import {
   givenUserRepository,
   givenUserInstance,
   givenAddress,
+  givenOtherUser,
+  givenAccesToken,
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
@@ -37,6 +39,7 @@ describe('VoteApplication', function () {
   let userRepository: UserRepository;
   let nonce: number;
   let user: User;
+  let otherUser: User;
   let address: KeyringPair;
 
   before(async () => {
@@ -54,6 +57,7 @@ describe('VoteApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
     address = givenAddress();
   });
 
@@ -70,7 +74,7 @@ describe('VoteApplication', function () {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -194,7 +198,7 @@ describe('VoteApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .send(upvote);
 
-    const resultPost = await postRepository.findById(response.body.referenceId);
+    const resultPost = await postRepository.findById(response.body.postId);
     post.metric.upvotes = post.metric.upvotes + 1;
     expect(resultPost).to.containDeep(post);
   });
@@ -234,6 +238,35 @@ describe('VoteApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .send(downvote)
       .expect(422);
+  });
+
+  it('returns 401 when deleting the upvotes not as login user', async function () {
+    const accesToken = await givenAccesToken(otherUser);
+    const postResponse = await givenPostInstance(
+      postRepository,
+      {
+        metric: {
+          discussions: 0,
+          upvotes: 1,
+          downvotes: 0,
+          debates: 0,
+        },
+        createdBy: user.id,
+      },
+      true,
+    );
+    const post = postResponse.ops[0];
+    const vote = await givenVoteInstance(voteRepository, {
+      referenceId: post._id.toString(),
+      postId: post._id.toString(),
+      userId: user.id,
+    });
+
+    await client
+      .del(`/votes/${vote.id}`)
+      .set('Authorization', `Bearer ${accesToken}`)
+      .send()
+      .expect(401);
   });
 
   it('deletes the upvotes and post metric upvotes reduces by 1', async function () {

@@ -7,7 +7,9 @@ import {
   UserRepository,
 } from '../../repositories';
 import {
+  givenAccesToken,
   givenAddress,
+  givenOtherUser,
   givenReportDetail,
   givenReportRepository,
   givenUserInstance,
@@ -28,6 +30,7 @@ describe('UserReportApplication', () => {
   let userRepository: UserRepository;
   let nonce: number;
   let user: User;
+  let otherUser: User;
   let address: KeyringPair;
 
   before(async () => {
@@ -45,6 +48,7 @@ describe('UserReportApplication', () => {
   before(async () => {
     user = await givenUserInstance(userRepository);
     address = givenAddress();
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
   });
 
   beforeEach(async () => {
@@ -59,7 +63,7 @@ describe('UserReportApplication', () => {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -71,6 +75,19 @@ describe('UserReportApplication', () => {
 
     const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
+  });
+
+  it('returns when creating a report not as login user', async () => {
+    const accessToken = await givenAccesToken(otherUser);
+    const reportedUser = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b245e8449ee61861',
+    });
+    const reportDetail = givenReportDetail({referenceId: reportedUser.id});
+    await client
+      .post(`/users/${user.id}/reports`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(reportDetail)
+      .expect(401);
   });
 
   it('creates a report', async () => {

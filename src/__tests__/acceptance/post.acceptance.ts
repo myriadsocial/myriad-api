@@ -43,10 +43,11 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
+import {EntityNotFoundError} from '@loopback/repository';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('PostApplication', function () {
-  this.timeout(20000);
+  this.timeout(100000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -103,7 +104,7 @@ describe('PostApplication', function () {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -128,6 +129,16 @@ describe('PostApplication', function () {
     expect(response.body).to.containDeep(myriadPost);
     const result = await postRepository.findById(response.body.id);
     expect(result).to.containDeep(myriadPost);
+  });
+
+  it('returns 401 when creating a post not as login user', async () => {
+    const myriadPost: Partial<DraftPost> = givenPost();
+
+    await client
+      .post('/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send(myriadPost)
+      .expect(401);
   });
 
   it('rejects requests to create a post with no createdBy', async () => {
@@ -193,6 +204,21 @@ describe('PostApplication', function () {
       expect(result).to.containEql(updatedPost);
     });
 
+    it('returns 401 when updating the post by ID not as login user ', async () => {
+      const newPost = await givenMyriadPostInstance(postRepository);
+      const updatedPost: Partial<Post> = givenMyriadPost({
+        text: 'Hello world',
+      });
+
+      delete updatedPost.createdBy;
+
+      await client
+        .patch(`/posts/${newPost.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(updatedPost)
+        .expect(401);
+    });
+
     it('returns 404 when updating a post that does not exist', () => {
       const updatedPost: Partial<Post> = givenMyriadPost({
         text: 'Hello world',
@@ -204,6 +230,33 @@ describe('PostApplication', function () {
         .patch('/posts/99999')
         .set('Authorization', `Bearer ${token}`)
         .send(updatedPost)
+        .expect(404);
+    });
+
+    it('deletes the post', async () => {
+      await client
+        .del(`/posts/${persistedPost.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(204);
+      await expect(
+        postRepository.findById(persistedPost.id),
+      ).to.be.rejectedWith(EntityNotFoundError);
+    });
+
+    it('returns 401 when deletes the comment not belong to user', async () => {
+      const post = await givenPostInstance(postRepository);
+      await client
+        .del(`/posts/${post.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(401);
+    });
+
+    it('returns 404 when deleting a comment that does not exist', async () => {
+      await client
+        .del(`/posts/99999`)
+        .set('Authorization', `Bearer ${token}`)
         .expect(404);
     });
   });
@@ -329,19 +382,28 @@ describe('PostApplication', function () {
 
     beforeEach(async () => {
       await postRepository.deleteAll();
+
+      user.metric = {
+        totalPosts: 0,
+        totalExperiences: 0,
+        totalFriends: 0,
+        totalKudos: 0,
+      };
     });
 
-    it('creates a post from reddit', async function () {
+    it('creates a post from reddit', async () => {
       const platformPost = givenPlatformPost({importer: user.id});
       const response = await client
         .post('/posts/import')
         .set('Authorization', `Bearer ${token}`)
         .send(platformPost)
         .expect(200);
+
       const result = await postRepository.findById(response.body.id, {
         include: ['people'],
       });
 
+      peopleId = response.body.peopleId;
       result.totalImporter = 1;
 
       expect(
@@ -350,8 +412,15 @@ describe('PostApplication', function () {
           importers: [Object.assign(user, {name: 'You'})],
         }),
       ).to.containDeep(toJSON(response.body));
+    });
 
-      peopleId = response.body.peopleId;
+    it('returns 401 when creating a post from reddit not as login user', async function () {
+      const platformPost = givenPlatformPost();
+      await client
+        .post('/posts/import')
+        .set('Authorization', `Bearer ${token}`)
+        .send(platformPost)
+        .expect(401);
     });
 
     it('creates people when creates a post from social media', async () => {

@@ -15,6 +15,7 @@ import {
   PaginationInterceptor,
   AuthorizeInterceptor,
   CreateInterceptor,
+  UpdateInterceptor,
 } from '../interceptors';
 import {UserCurrency} from '../models';
 import {UserCurrencyRepository, UserRepository} from '../repositories';
@@ -84,6 +85,7 @@ export class UserCurrencyController {
     return this.userCurrencyRepository.create(userCurrency);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/user-currencies', {
     responses: {
       '200': {

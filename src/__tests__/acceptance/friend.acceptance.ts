@@ -66,7 +66,7 @@ describe('FriendApplication', function () {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -101,6 +101,20 @@ describe('FriendApplication', function () {
     expect(result).to.containDeep(friend);
   });
 
+  it('returns 401 when creates a pending request not as login user', async () => {
+    const friend = givenFriend({
+      requestorId:
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      requesteeId: user.id,
+    });
+
+    await client
+      .post('/friends')
+      .set('Authorization', `Bearer ${token}`)
+      .send(friend)
+      .expect(401);
+  });
+
   it('returns 422 when creates a pending friend request with no requesteeId/no requestorId', async () => {
     const friendWithNoRequesteeId = givenFriend({
       requestorId:
@@ -114,7 +128,7 @@ describe('FriendApplication', function () {
       .expect(422);
 
     const friendWithNoRequestorId = givenFriend({
-      requestorId:
+      requesteeId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
     });
 
@@ -315,6 +329,30 @@ describe('FriendApplication', function () {
       expect(result).to.containEql(updatedFriend);
     });
 
+    it('returns 401 when updating the friend by ID as not login user', async () => {
+      const requestor = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5kbf48b915e8449ee6112',
+      });
+      const requestee = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449e2v112',
+      });
+
+      const friend = await givenFriendInstance(friendRepository, {
+        requestorId: requestor.id,
+        requesteeId: requestee.id,
+      });
+
+      const updatedFriend = givenFriend({
+        status: FriendStatusType.APPROVED,
+      });
+
+      await client
+        .patch(`/friends/${friend.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(updatedFriend)
+        .expect(401);
+    });
+
     it('returns 404 when updating a friend that does not exist', () => {
       return client
         .patch('/friends/99999')
@@ -346,6 +384,24 @@ describe('FriendApplication', function () {
       await expect(friendRepository.findById(friend.id)).to.be.rejectedWith(
         EntityNotFoundError,
       );
+    });
+
+    it('returns 401 when deleting friend as not login user', async () => {
+      const requestor = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a2m1d33a5fef48b915e8449ee6112',
+      });
+
+      const friend = await givenFriendInstance(friendRepository, {
+        requestorId: requestor.id,
+        requesteeId: user.id,
+        status: FriendStatusType.APPROVED,
+      });
+
+      await client
+        .del(`/friends/${friend.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(401);
     });
 
     it('returns 404 when deleting a friend that does not exist', async () => {

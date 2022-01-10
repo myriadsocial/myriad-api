@@ -4,11 +4,13 @@ import {MyriadApiApplication} from '../../application';
 import {Currency, Credential, User} from '../../models/';
 import {CurrencyRepository, UserRepository} from '../../repositories/';
 import {
+  givenAccesToken,
   givenAddress,
   givenCurrency,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenMultipleCurrencyInstances,
+  givenOtherUser,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
@@ -17,7 +19,8 @@ import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
-describe('CurrencyApplication', () => {
+describe('CurrencyApplication', function () {
+  this.timeout(100000);
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
@@ -25,6 +28,7 @@ describe('CurrencyApplication', () => {
   let userRepository: UserRepository;
   let nonce: number;
   let user: User;
+  let otherUser: User;
   let address: KeyringPair;
 
   before(async () => {
@@ -40,6 +44,7 @@ describe('CurrencyApplication', () => {
   before(async () => {
     user = await givenUserInstance(userRepository);
     address = givenAddress();
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
   });
 
   beforeEach(async () => {
@@ -49,7 +54,7 @@ describe('CurrencyApplication', () => {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -106,6 +111,17 @@ describe('CurrencyApplication', () => {
       .expect(422);
   });
 
+  it('rejects request when creates a currency not as admin myriad', async () => {
+    const currency = givenCurrency();
+    const accessToken = await givenAccesToken(otherUser);
+
+    await client
+      .post('/currencies')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(currency)
+      .expect(401);
+  });
+
   context('when dealing with a single persisted currency', () => {
     let persistedCurrency: Currency;
 
@@ -119,6 +135,32 @@ describe('CurrencyApplication', () => {
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200, toJSON(persistedCurrency));
+    });
+
+    it('updates the curency by ID', async () => {
+      const updatedCurrency: Partial<Currency> = givenCurrency();
+
+      delete updatedCurrency.id;
+
+      await client
+        .patch(`/currencies/${persistedCurrency.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(updatedCurrency)
+        .expect(204);
+    });
+
+    it('returns 401 when updating a currency not as myriad admin', async function () {
+      const updatedCurrency: Partial<Currency> = givenCurrency();
+
+      delete updatedCurrency.id;
+
+      const accessToken = await givenAccesToken(otherUser);
+
+      await client
+        .patch(`/currencies/${persistedCurrency.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(updatedCurrency)
+        .expect(401);
     });
 
     it('returns 404 when getting a currency that does not exist', () => {

@@ -58,9 +58,7 @@ describe('AuthenticationApplication', function () {
     delete user.nonce;
 
     const response = await client.post('/signup').send(user);
-    expect(response.body).to.containDeep(user);
-    const result = await userRepository.findById(response.body.id);
-    expect(result).to.containDeep(user);
+    expect(response.body).to.have.property('nonce');
   });
 
   it('creates a user with default settings', async () => {
@@ -68,28 +66,28 @@ describe('AuthenticationApplication', function () {
 
     delete user.nonce;
 
-    const response = await client.post('/signup').send(user);
-    const createdUser = await userRepository.findById(response.body.id, {
+    await client.post('/signup').send(user);
+    const createdUser = await userRepository.findById(user.id ?? '', {
       include: ['notificationSetting', 'accountSetting'],
     });
     const notificationSetting = await userRepository
-      .notificationSetting(response.body.id)
+      .notificationSetting(user.id ?? '')
       .get();
     const accountSetting = await userRepository
-      .accountSetting(response.body.id)
+      .accountSetting(user.id ?? '')
       .get();
     expect(createdUser.accountSetting).to.containDeep(accountSetting);
     expect(createdUser.notificationSetting).to.containDeep(notificationSetting);
   });
 
-  it('returns 422 when creates a user with same id', async () => {
+  it('returns 500 when creates a user with same id', async () => {
     await givenUserInstance(userRepository);
 
     const user: Partial<User> = givenUser();
 
     delete user.nonce;
 
-    await client.post('/signup').send(user).expect(422);
+    await client.post('/signup').send(user).expect(409);
   });
 
   it('rejects requests to create a user with no id', async () => {
@@ -154,6 +152,16 @@ describe('AuthenticationApplication', function () {
     expect(response.body).to.have.property('accessToken');
   });
 
+  it('rejects login when wrong signature', async () => {
+    const user = await givenUserInstance(userRepository);
+    const credential = givenCredential({
+      nonce: user.nonce + 1,
+      signature: u8aToHex(address.sign(numberToHex(user.nonce))),
+    });
+
+    await client.post('/login').send(credential).expect(401);
+  });
+
   it('changes user nonce after login', async () => {
     const user = await givenUserInstance(userRepository);
     const credential = givenCredential({
@@ -175,17 +183,17 @@ describe('AuthenticationApplication', function () {
 
     const getNonce = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    expect(getNonce.body).to.equal(null);
+    expect(getNonce.body).to.containDeep({nonce: 0});
 
-    const response = await client.post('/signup').send(user).expect(200);
+    await client.post('/signup').send(user).expect(200);
 
-    const createdUser = await userRepository.findById(response.body.id);
+    const createdUser = await userRepository.findById(user.id ?? '');
     const nonce = createdUser.nonce;
     const signature = u8aToHex(address.sign(numberToHex(nonce)));
     const credential = givenCredential({
       nonce: nonce,
       signature: signature,
-      publicAddress: response.body.id,
+      publicAddress: user.id ?? '',
     });
 
     await client.post('/login').send(credential).expect(200);

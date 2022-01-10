@@ -66,7 +66,7 @@ describe('TransactionApplication', function () {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -95,7 +95,7 @@ describe('TransactionApplication', function () {
     expect(result).to.containDeep(transaction);
   });
 
-  it('returns 403 when creates transactions but "from user" not exist', async () => {
+  it('returns 401 when creates transactions but "from user" not exist', async () => {
     const transaction = givenTransaction({
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       currencyId: currency.id,
@@ -105,7 +105,7 @@ describe('TransactionApplication', function () {
       .post('/transactions')
       .set('Authorization', `Bearer ${token}`)
       .send(transaction)
-      .expect(403);
+      .expect(401);
   });
 
   it('returns 422 when create transactions but "currency" not exist', async () => {

@@ -7,11 +7,13 @@ import {
   UserRepository,
 } from '../../repositories';
 import {
+  givenAccesToken,
   givenAddress,
   givenExperience,
   givenExperienceInstance,
   givenExperienceRepository,
   givenMultipleUserExperienceInstances,
+  givenOtherUser,
   givenUserExperience,
   givenUserExperienceInstance,
   givenUserExperienceRepository,
@@ -31,6 +33,7 @@ describe('UserExperienceApplication', function () {
   let userExperienceRepository: UserExperienceRepository;
   let nonce: number;
   let user: User;
+  let otherUser: User;
   let address: KeyringPair;
 
   before(async () => {
@@ -48,6 +51,7 @@ describe('UserExperienceApplication', function () {
   before(async () => {
     user = await givenUserInstance(userRepository);
     address = givenAddress();
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
   });
 
   beforeEach(async () => {
@@ -62,7 +66,7 @@ describe('UserExperienceApplication', function () {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -177,6 +181,17 @@ describe('UserExperienceApplication', function () {
       await userExperienceRepository.deleteAll();
     });
 
+    it('returns 401 when subscribing other user experience not as login user', async () => {
+      const accessToken = await givenAccesToken(otherUser);
+      const experience = await givenExperienceInstance(experienceRepository);
+
+      await client
+        .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send()
+        .expect(401);
+    });
+
     it('subscribes other user experience', async () => {
       const experience = await givenExperienceInstance(experienceRepository);
       const userExperience = givenUserExperience({
@@ -279,6 +294,17 @@ describe('UserExperienceApplication', function () {
     beforeEach(async () => {
       await experienceRepository.deleteAll();
       await userExperienceRepository.deleteAll();
+    });
+
+    it('returns 401 when creating an experience not as login user', async () => {
+      const accessToken = await givenAccesToken(otherUser);
+      const experience = givenExperience({createdBy: user.id});
+
+      await client
+        .post(`/users/${user.id}/experiences`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(experience)
+        .expect(401);
     });
 
     it('creates an experience and store it in userExperience list', async () => {

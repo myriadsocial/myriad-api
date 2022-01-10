@@ -119,7 +119,7 @@ describe('CommentApplication', function () {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -233,6 +233,21 @@ describe('CommentApplication', function () {
     post.popularCount = 1;
 
     expect(resultPost).to.containDeep(post);
+  });
+
+  it('returns 422 when creates a comment not as login user', async () => {
+    const comment = givenComment({
+      postId: post.id,
+      referenceId: post.id,
+      type: ReferenceType.POST,
+      userId: otherUser.id,
+    });
+
+    await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(401);
   });
 
   it('returns 422 when creates a comment with no userId', async () => {
@@ -385,6 +400,30 @@ describe('CommentApplication', function () {
       expect(result).to.containEql(updatedComment);
     });
 
+    it('return 401 when updating a comment that does not belong to user', async () => {
+      const comment = await givenCommentInstance(commentRepository, {
+        userId: otherUser.id,
+        postId: post.id,
+        referenceId: post.id,
+        type: ReferenceType.POST,
+      });
+
+      const updatedComment: Partial<Comment> = givenComment({
+        text: 'Apa kabar dunia',
+      });
+
+      delete updatedComment.referenceId;
+      delete updatedComment.section;
+      delete updatedComment.referenceId;
+      delete updatedComment.type;
+
+      await client
+        .patch(`/comments/${comment.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(updatedComment)
+        .expect(401);
+    });
+
     it('returns 404 when updating a comment that does not exist', () => {
       const updatedComment: Partial<Comment> = givenComment({
         text: 'Apa kabar dunia',
@@ -411,6 +450,20 @@ describe('CommentApplication', function () {
       await expect(
         commentRepository.findById(persistedComment.id),
       ).to.be.rejectedWith(EntityNotFoundError);
+    });
+
+    it('returns 401 when deletes the comment not belong to user', async () => {
+      const comment = await givenCommentInstance(commentRepository, {
+        userId: otherUser.id,
+        postId: post.id,
+        referenceId: post.id,
+        type: ReferenceType.POST,
+      });
+      await client
+        .del(`/comments/${comment.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(401);
     });
 
     it('returns 404 when deleting a comment that does not exist', async () => {

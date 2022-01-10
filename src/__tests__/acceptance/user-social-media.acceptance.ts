@@ -14,7 +14,9 @@ import {
   UserSocialMediaRepository,
 } from '../../repositories';
 import {
+  givenAccesToken,
   givenAddress,
+  givenOtherUser,
   givenPeopleInstance,
   givenPeopleRepository,
   givenUserInstance,
@@ -37,6 +39,7 @@ describe('UserSocialMediaApplication', function () {
   let userSocialMediaRepository: UserSocialMediaRepository;
   let nonce: number;
   let user: User;
+  let otherUser: User;
   let address: KeyringPair;
 
   before(async () => {
@@ -54,6 +57,7 @@ describe('UserSocialMediaApplication', function () {
   before(async () => {
     user = await givenUserInstance(userRepository);
     address = givenAddress();
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
   });
 
   after(async () => {
@@ -68,7 +72,7 @@ describe('UserSocialMediaApplication', function () {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -144,7 +148,7 @@ describe('UserSocialMediaApplication', function () {
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
-        .expect(403);
+        .expect(401);
     });
 
     it('rejects user to verify social media that already been claimed', async () => {
@@ -188,6 +192,22 @@ describe('UserSocialMediaApplication', function () {
         .get('/user-social-medias/99999')
         .set('Authorization', `Bearer ${token}`)
         .expect(404);
+    });
+
+    it('returns 401 when deleting the user social media not as login user', async () => {
+      const accessToken = await givenAccesToken(otherUser);
+      const userVerification = givenUserVerification({publicKey: user.id});
+      const response = await client
+        .post('/user-social-medias/verify')
+        .set('Authorization', `Bearer ${token}`)
+        .send(userVerification)
+        .expect(200);
+
+      await client
+        .del(`/user-social-medias/${response.body.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send()
+        .expect(401);
     });
 
     it('deletes the user social media', async () => {

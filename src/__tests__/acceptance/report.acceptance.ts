@@ -9,7 +9,9 @@ import {
   UserRepository,
 } from '../../repositories';
 import {
+  givenAccesToken,
   givenAddress,
+  givenOtherUser,
   givenPostInstance,
   givenPostRepository,
   givenReportInstance,
@@ -30,6 +32,7 @@ describe('ReportApplication', () => {
   let postRepository: PostRepository;
   let nonce: number;
   let user: User;
+  let otherUser: User;
   let address: KeyringPair;
 
   before(async () => {
@@ -47,6 +50,7 @@ describe('ReportApplication', () => {
   before(async () => {
     user = await givenUserInstance(userRepository);
     address = givenAddress();
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
   });
 
   beforeEach(async () => {
@@ -61,7 +65,7 @@ describe('ReportApplication', () => {
   it('gets user nonce', async () => {
     const response = await client.get(`/users/${user.id}/nonce`).expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
@@ -107,7 +111,20 @@ describe('ReportApplication', () => {
         .expect(404);
     });
 
-    it('updates the reports by ID ', async () => {
+    it('returns 401 when updating the reports by ID not as login user', async () => {
+      const accessToken = await givenAccesToken(otherUser);
+      const updatedReport: Partial<Report> = new Report({
+        status: ReportStatusType.REMOVED,
+      });
+
+      await client
+        .patch(`/reports/${persistedReport.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(updatedReport)
+        .expect(401);
+    });
+
+    it('updates the reports by ID', async () => {
       const updatedReport: Partial<Report> = new Report({
         status: ReportStatusType.REMOVED,
       });
@@ -119,6 +136,16 @@ describe('ReportApplication', () => {
         .expect(204);
       const result = await reportRepository.findById(persistedReport.id ?? '');
       expect(result).to.containEql(updatedReport);
+    });
+
+    it('returns 401 when deleting the reports by ID not as login user', async () => {
+      const accessToken = await givenAccesToken(otherUser);
+
+      await client
+        .del(`/reports/${persistedReport.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send()
+        .expect(401);
     });
 
     it('deletes the report', async () => {

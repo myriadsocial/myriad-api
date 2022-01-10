@@ -62,7 +62,7 @@ describe('ReportUserApplication', () => {
       .get(`/users/${reporter.id}/nonce`)
       .expect(200);
 
-    nonce = response.body;
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
