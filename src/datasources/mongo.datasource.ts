@@ -6,7 +6,7 @@ const config = {
   name: 'mongo',
   connector: 'mongodb',
   url: '',
-  host: 'localhost',
+  host: '',
   port: 27017,
   user: 'root',
   password: 'root',
@@ -20,7 +20,7 @@ function updateConfig(dsConfig: AnyObject) {
   dsConfig.password = mongoConfig.MONGO_PASSWORD;
   dsConfig.database = mongoConfig.MONGO_DATABASE;
   if (mongoConfig.MONGO_HOSTS) {
-    dsConfig.url = `mongodb://${dsConfig.user}:${dsConfig.password}@${mongoConfig.MONGO_HOSTS}?replicaSet=rs0`;
+    dsConfig.url = `mongodb://${dsConfig.user}:${dsConfig.password}@${mongoConfig.MONGO_HOSTS}/${dsConfig.database}`;
   }
 
   return dsConfig;
