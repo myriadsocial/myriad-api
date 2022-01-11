@@ -112,7 +112,7 @@ jobs:
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
-              --set-string config.mongo.hosts=${{ steps.secrets.outputs.MONGO_HOSTS }} \
+              --set-string config.mongo.hosts="${{ steps.secrets.outputs.MONGO_HOSTS }}" \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.mongo.database=${{ steps.secrets.outputs.MONGO_DB }} \
@@ -176,7 +176,7 @@ jobs:
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
             JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
             JWT_EMAIL:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_EMAIL
-            MONGO_HOSTSS:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_HOSTSS
+            MONGO_HOSTS:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_HOSTS
             MONGO_USER_API:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_USER_API
             MONGO_PASSWORD_API:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_PASSWORD_API
             MONGO_DB:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_DB
@@ -217,7 +217,7 @@ jobs:
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
-              --set-string config.mongo.hosts=${{ steps.secrets.outputs.MONGO_HOSTS }} \
+              --set-string config.mongo.hosts="${{ steps.secrets.outputs.MONGO_HOSTS }}" \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.mongo.database=${{ steps.secrets.outputs.MONGO_DB }} \
@@ -322,7 +322,7 @@ jobs:
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
-              --set-string config.mongo.hosts=${{ steps.secrets.outputs.MONGO_HOSTS }} \
+              --set-string config.mongo.hosts="${{ steps.secrets.outputs.MONGO_HOSTS }}" \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.mongo.database=${{ steps.secrets.outputs.MONGO_DB }} \
@@ -427,7 +427,7 @@ jobs:
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
-              --set-string config.mongo.hosts=${{ steps.secrets.outputs.MONGO_HOSTS }} \
+              --set-string config.mongo.hosts="${{ steps.secrets.outputs.MONGO_HOSTS }}" \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.mongo.database=${{ steps.secrets.outputs.MONGO_DB }} \
@@ -532,7 +532,7 @@ jobs:
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
-              --set-string config.mongo.hosts=${{ steps.secrets.outputs.MONGO_HOSTS }} \
+              --set-string config.mongo.hosts="${{ steps.secrets.outputs.MONGO_HOSTS }}" \
               --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
               --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
               --set-string config.mongo.database=${{ steps.secrets.outputs.MONGO_DB }} \
