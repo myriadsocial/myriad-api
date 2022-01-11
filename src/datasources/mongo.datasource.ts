@@ -16,22 +16,13 @@ const config = {
 
 function updateConfig(dsConfig: AnyObject) {
   if (dsConfig.test) return dsConfig;
-  if (mongoConfig.MONGO_HOST) {
-    dsConfig.host = mongoConfig.MONGO_HOST;
+  dsConfig.user = mongoConfig.MONGO_USER;
+  dsConfig.password = mongoConfig.MONGO_PASSWORD;
+  dsConfig.database = mongoConfig.MONGO_DATABASE;
+  if (mongoConfig.MONGO_HOSTS) {
+    dsConfig.url = `mongodb://${dsConfig.user}:${dsConfig.password}@${mongoConfig.MONGO_HOSTS}/${dsConfig.database}`;
   }
-  const envPort = mongoConfig.MONGO_PORT;
-  if (Number.isInteger(envPort)) {
-    dsConfig.port = envPort;
-  }
-  if (mongoConfig.MONGO_USER) {
-    dsConfig.user = mongoConfig.MONGO_USER;
-  }
-  if (mongoConfig.MONGO_PASSWORD) {
-    dsConfig.password = mongoConfig.MONGO_PASSWORD;
-  }
-  if (mongoConfig.MONGO_DATABASE) {
-    dsConfig.database = mongoConfig.MONGO_DATABASE;
-  }
+
   return dsConfig;
 }
 
