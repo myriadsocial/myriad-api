@@ -556,6 +556,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const experienceUserIds = experience
           ? (experience.users ?? []).map(e => e.id)
           : [];
+        const blockedFriendIds = await this.friendService.getFriendIds(
+          userId,
+          FriendStatusType.BLOCKED,
+        );
 
         const friends = [...approvedFriendIds, userId];
         const topics = [...trendingTopics, ...experienceTopics];
@@ -566,11 +570,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return {
           or: [
             {
-              and: [{tags: {inq: topics}}, {visibility: VisibilityType.PUBLIC}],
+              and: [
+                {tags: {inq: topics}},
+                {createdBy: {nin: blockedFriendIds}},
+                {visibility: VisibilityType.PUBLIC},
+              ],
             },
             {
               and: [
                 {peopleId: {inq: personIds}},
+                {createdBy: {nin: blockedFriendIds}},
                 {visibility: VisibilityType.PUBLIC},
               ],
             },

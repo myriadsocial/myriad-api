@@ -8,12 +8,18 @@ import {
 import {PeopleController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {People} from '../../models';
-import {PeopleRepository, UserRepository} from '../../repositories';
+import {
+  FriendRepository,
+  PeopleRepository,
+  UserRepository,
+} from '../../repositories';
 import {givenPeople} from '../helpers';
+import {securityId} from '@loopback/security';
 
 describe('PeopleController', () => {
   let peopleRepository: StubbedInstanceWithSinonAccessor<PeopleRepository>;
   let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
+  let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
   let controller: PeopleController;
   let aPeopleWithId: People;
   let aListOfPeople: People[];
@@ -69,6 +75,7 @@ describe('PeopleController', () => {
   function resetRepositories() {
     peopleRepository = createStubInstance(PeopleRepository);
     userRepository = createStubInstance(UserRepository);
+    friendRepository = createStubInstance(FriendRepository);
     aPeopleWithId = givenPeople({
       id: '1',
     });
@@ -85,6 +92,11 @@ describe('PeopleController', () => {
       }),
     ] as People[];
 
-    controller = new PeopleController(peopleRepository, userRepository);
+    controller = new PeopleController(
+      peopleRepository,
+      userRepository,
+      friendRepository,
+      {[securityId]: ''},
+    );
   }
 });
