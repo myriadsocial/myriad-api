@@ -17,7 +17,7 @@ import {
   PlatformType,
   ActivityLogType,
 } from '../enums';
-import {User} from '../models';
+import {User, UserSocialMedia} from '../models';
 import {
   CommentRepository,
   CurrencyRepository,
@@ -290,6 +290,12 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
           result.id,
           ReferenceType.COMMENT,
         );
+
+        return result;
+      }
+
+      case ControllerType.USERSOCIALMEDIA: {
+        await this.currencyService.autoClaimTips(result as UserSocialMedia);
 
         return result;
       }

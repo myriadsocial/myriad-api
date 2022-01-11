@@ -121,102 +121,121 @@ export class CurrencyService {
   // Automatic claimed
   async autoClaimTips(userSocialMedia: UserSocialMedia): Promise<void> {
     const {userId, peopleId} = userSocialMedia;
-    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
 
-    const hasher = new BcryptHasher();
-    const hashPeopleId = await hasher.hashPassword(
-      peopleId + config.MYRIAD_ESCROW_SECRET_KEY,
-    );
-    const from = getKeyring().addFromUri('//' + hashPeopleId);
-    const to = userId;
+    try {
+      const people = await this.peopleRepository.findById(peopleId);
+      const token = await this.jwtService.generateAnyToken({
+        id: people.id,
+        originUserId: people.originUserId,
+        platform: people.platform,
+        iat: new Date(people.createdAt ?? '').getTime(),
+      });
 
-    const userCurrencies = await this.userCurrencyRepository.find({
-      where: {
-        userId: userId,
-        currencyId: {
-          nlike: DefaultCurrencyType.MYRIA,
-        },
-      },
-      include: ['currency'],
-    });
+      const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
+      const from = getKeyring().addFromUri('//' + token);
+      const to = userId;
 
-    let api = null;
-    let initRpcURL = null;
+      const currencies = await this.currencyRepository.find();
 
-    for (let i = 0; i < userCurrencies.length; i++) {
-      const userCurrency = userCurrencies[i];
-      const {id, decimal, rpcURL, native, types} = userCurrency.currency;
+      for (const currency of currencies) {
+        const {id, decimal, rpcURL, native, types} = currency;
+        const api = await polkadotApi(rpcURL, types);
 
-      let balance = 0;
+        let balance = 0;
 
-      try {
-        if (!api || !initRpcURL) {
-          api = await polkadotApi(rpcURL, types);
-          initRpcURL = rpcURL;
+        try {
+          if (native) {
+            const nativeBalance = await api.query.system.account(
+              from.publicKey,
+            );
+
+            balance = nativeBalance.data.free.toJSON();
+          } else {
+            const nonNativeBalance = await api.query.tokens.accounts(
+              from.publicKey,
+              {Token: id},
+            );
+            const result = nonNativeBalance.toJSON() as unknown as Balance;
+
+            balance = result.free;
+          }
+
+          if (!balance) continue;
+
+          const paymentInfo = {
+            amount: balance,
+            to: to,
+            from: from,
+            currencyId: id as DefaultCurrencyType,
+            decimal: decimal,
+            native: native,
+          };
+
+          const txFee = await this.getTransactionFee(api, paymentInfo);
+
+          if (balance - txFee < 0) continue;
+
+          let transfer = null;
+
+          if (native)
+            transfer = api.tx.balances.transfer(
+              to,
+              new BN((balance - txFee).toString()),
+            );
+          else
+            transfer = api.tx.currencies.transfer(
+              to,
+              {Token: id},
+              new BN((balance - txFee).toString()),
+            );
+
+          let txHash: string | null = null;
+
+          await transfer.signAndSend(from, async ({status, events}) => {
+            if (status.isInBlock || status.isFinalized) {
+              let transactionStatus = null;
+
+              if (status.isInBlock) txHash = status.asInBlock.toString();
+
+              events
+                .filter(({event}) => event.section === 'system')
+                .forEach(event => {
+                  const method = event.event.method;
+
+                  if (method === 'ExtrinsicSuccess') {
+                    transactionStatus = 'success';
+                  }
+                });
+
+              if (status.isFinalized) {
+                if (transactionStatus === 'success' && txHash) {
+                  try {
+                    const transaction = await this.transactionRepository.create(
+                      {
+                        hash: txHash,
+                        amount: balance / 10 ** decimal,
+                        to: to,
+                        from: getHexPublicKey(from),
+                        currencyId: id,
+                      },
+                    );
+
+                    await this.notificationService.sendClaimTips(transaction);
+                  } catch {
+                    // ignore
+                  }
+                }
+
+                await api.disconnect();
+              }
+            }
+          });
+        } catch (err) {
+          // ignore
         }
-
-        if (api && initRpcURL !== rpcURL) {
-          await api.disconnect();
-
-          api = await polkadotApi(rpcURL, types);
-          initRpcURL = rpcURL;
-        }
-
-        if (native) {
-          const nativeBalance = await api.query.system.account(from.publicKey);
-
-          balance = nativeBalance.data.free.toJSON();
-        } else {
-          const nonNativeBalance = await api.query.tokens.accounts(
-            from.publicKey,
-            {Token: id},
-          );
-          const result = nonNativeBalance.toJSON() as unknown as Balance;
-
-          balance = result.free;
-        }
-
-        if (!balance) continue;
-
-        const paymentInfo = {
-          amount: balance,
-          to: to,
-          from: from,
-          currencyId: id as DefaultCurrencyType,
-          decimal: decimal,
-          native: native,
-        };
-
-        const txFee = await this.getTransactionFee(api, paymentInfo);
-
-        if (balance - txFee < 0) continue;
-
-        let transfer = null;
-
-        if (native) transfer = api.tx.balances.transfer(to, balance - txFee);
-        else
-          transfer = api.tx.currencies.transfer(
-            to,
-            {Token: id},
-            balance - txFee,
-          );
-
-        const txHash = await transfer.signAndSend(from);
-
-        const transaction = await this.transactionRepository.create({
-          hash: txHash.toString(),
-          amount: balance / 10 ** decimal,
-          to: to,
-          from: getHexPublicKey(from),
-          currencyId: id,
-        });
-
-        await this.notificationService.sendClaimTips(transaction);
-
-        if (api && i === userCurrencies.length - 1) await api.disconnect();
-      } catch (err) {
-        // ignore
       }
+    } catch (err) {
+      // ignore
     }
   }
 
@@ -230,7 +249,7 @@ export class CurrencyService {
     try {
       if (native) {
         const {weight, partialFee} = await blockchainApi.tx.balances
-          .transfer(to, Number(amount))
+          .transfer(to, new BN(Number(amount).toString()))
           .paymentInfo(from);
 
         txFee = Math.floor(+weight.toString() + +partialFee.toString());
@@ -253,7 +272,7 @@ export class CurrencyService {
 
         // Get transaction fee
         const {weight, partialFee} = await blockchainApi.tx.currencies
-          .transfer(to, {Token: currencyId}, Number(amount))
+          .transfer(to, {Token: currencyId}, new BN(Number(amount).toString()))
           .paymentInfo(from);
 
         const txFeeInAca =
