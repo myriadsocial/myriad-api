@@ -89,6 +89,17 @@ export class PostService {
     post: AnyObject,
     userId?: string,
   ): Promise<AnyObject> {
+    const found = await this.postRepository.findOne({
+      where: <AnyObject>{
+        originPostId: post.originPostId,
+        platform: post.platform,
+        deletedAt: {
+          $exists: true,
+        },
+      },
+    });
+
+    if (found) post.text = '[this post is unavailable]';
     if (post.deletedAt) post.text = '[post removed]';
     if (post.platform === PlatformType.MYRIAD) return post;
     if (!post.user) return post;

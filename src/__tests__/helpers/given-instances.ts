@@ -474,7 +474,7 @@ export function givenUserVerification(
   const data = Object.assign(
     {
       publicKey:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ks',
+        '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
       platform: PlatformType.REDDIT,
       username: 'NetworkMyriad',
     },

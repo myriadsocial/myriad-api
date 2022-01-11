@@ -8,12 +8,7 @@ import {
   requestBody,
   HttpErrors,
 } from '@loopback/rest';
-import {
-  PlatformType,
-  ReferenceType,
-  ReportStatusType,
-  ReportType,
-} from '../enums';
+import {ReferenceType, ReportStatusType, ReportType} from '../enums';
 import {ReportInterceptor} from '../interceptors';
 import {Report, ReportDetail} from '../models';
 import {
@@ -125,33 +120,13 @@ export class UserReportController {
         include: ['user'],
       });
 
-      if (foundPost.platform === PlatformType.MYRIAD) {
-        if (foundPost.createdBy === id) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You cannot report your own post',
-          );
-        }
-
-        return foundPost;
-      } else {
-        const userSocialMedia = await this.userSocialMediaRepository.findOne({
-          where: {
-            peopleId: foundPost.peopleId,
-          },
-        });
-
-        if (!userSocialMedia) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You cannot report this post, because this post does not belong to any user!',
-          );
-        }
-
-        foundPost.user = await this.userRepository.findById(
-          userSocialMedia.userId,
+      if (foundPost.createdBy === id) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You cannot report your own post',
         );
-
-        return foundPost;
       }
+
+      return foundPost;
     }
 
     if (referenceType === ReferenceType.COMMENT) {
