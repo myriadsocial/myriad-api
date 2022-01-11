@@ -188,6 +188,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       filter.order = this.orderSetting(query);
     }
 
+    if (className === ControllerType.EXPERIENCE) {
+      if (q) {
+        const whereExperience = await this.getExperienceByQuery(
+          q.toString(),
+          userId?.toString(),
+        );
+
+        filter.where = Object.assign(filter.where ?? {}, whereExperience);
+      }
+    }
+
     if (methodName === MethodType.MUTUALDETAIL) {
       const mutualPath = path.split('/');
       const requestorId = mutualPath[2];
@@ -494,6 +505,26 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
       ],
     } as Where<Post>;
+  }
+
+  async getExperienceByQuery(
+    q: string,
+    userId?: string,
+  ): Promise<Where<Experience>> {
+    let blockedFriendIds: string[] = [];
+
+    if (userId) {
+      blockedFriendIds = await this.friendService.getFriendIds(
+        userId,
+        FriendStatusType.BLOCKED,
+      );
+    }
+
+    const pattern = new RegExp(q, 'i');
+
+    return {
+      and: [{name: {regexp: pattern}}, {createdBy: {nin: blockedFriendIds}}],
+    } as Where<Experience>;
   }
 
   async getTimeline(
