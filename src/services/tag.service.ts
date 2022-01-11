@@ -6,9 +6,10 @@ import {
   VisibilityType,
 } from '../enums';
 import {Post} from '../models';
-import {FriendRepository, PostRepository, TagRepository} from '../repositories';
+import {PostRepository, TagRepository} from '../repositories';
 import {DateUtils} from '../utils/date-utils';
-import {injectable, BindingScope} from '@loopback/core';
+import {injectable, BindingScope, service} from '@loopback/core';
+import {FriendService} from './friend.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class TagService {
@@ -17,8 +18,8 @@ export class TagService {
     protected tagRepository: TagRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
+    @service(FriendService)
+    protected friendService: FriendService,
   ) {}
 
   async createTags(tags: string[]): Promise<void> {
@@ -88,29 +89,33 @@ export class TagService {
 
     if (!trendingTopics.length) return;
 
-    const friendIds = (
-      await this.friendRepository.find({
-        where: {
-          requestorId: userId,
-          status: FriendStatusType.APPROVED,
-        },
-      })
-    ).map(e => e.requesteeId);
+    const approvedFriendIds = await this.friendService.getFriendIds(
+      userId,
+      FriendStatusType.APPROVED,
+    );
+    const blockedFriendIds = await this.friendService.getFriendIds(
+      userId,
+      FriendStatusType.BLOCKED,
+    );
 
     return {
       or: [
         {
           and: [
             {tags: {inq: trendingTopics}},
+            {createdBy: {nin: blockedFriendIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
           and: [
             {tags: {inq: trendingTopics}},
-            {createdBy: {inq: friendIds}},
+            {createdBy: {inq: approvedFriendIds}},
             {visibility: VisibilityType.FRIEND},
           ],
+        },
+        {
+          and: [{tags: {inq: trendingTopics}}, {createdBy: userId}],
         },
       ],
     } as Where<Post>;

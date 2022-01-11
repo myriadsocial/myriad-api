@@ -3,11 +3,11 @@ import {FriendStatusType, PlatformType, VisibilityType} from '../enums';
 import {Experience, People, Post} from '../models';
 import {
   ExperienceRepository,
-  FriendRepository,
   UserExperienceRepository,
   UserRepository,
 } from '../repositories';
-import {injectable, BindingScope} from '@loopback/core';
+import {injectable, BindingScope, service} from '@loopback/core';
+import {FriendService} from './friend.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class ExperienceService {
@@ -18,8 +18,8 @@ export class ExperienceService {
     protected experienceRepository: ExperienceRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
+    @service(FriendService)
+    protected friendService: FriendService,
   ) {}
 
   async getExperience(userId: string): Promise<Experience | null> {
@@ -63,24 +63,31 @@ export class ExperienceService {
       .filter((e: People) => e.platform !== PlatformType.MYRIAD)
       .map(e => e.id);
     const userIds = (experience.users ?? []).map(e => e.id);
-    const friendIds = (
-      await this.friendRepository.find({
-        where: {
-          requesteeId: {inq: userIds},
-          requestorId: userId,
-          status: FriendStatusType.APPROVED,
-        },
-      })
-    ).map(e => e.requesteeId);
+    const blockedFriendIds = await this.friendService.getFriendIds(
+      userId,
+      FriendStatusType.BLOCKED,
+    );
+    const friendIds = await this.friendService.friendRepository.find({
+      where: {
+        requestorId: userId,
+        requesteeId: {inq: userIds},
+        status: FriendStatusType.APPROVED,
+      },
+    });
 
     return {
       or: [
         {
-          and: [{tags: {inq: tags}}, {visibility: VisibilityType.PUBLIC}],
+          and: [
+            {tags: {inq: tags}},
+            {createdBy: {nin: blockedFriendIds}},
+            {visibility: VisibilityType.PUBLIC},
+          ],
         },
         {
           and: [
             {peopleId: {inq: personIds}},
+            {createdBy: {nin: blockedFriendIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
@@ -95,6 +102,12 @@ export class ExperienceService {
             {createdBy: {inq: friendIds}},
             {visibility: VisibilityType.FRIEND},
           ],
+        },
+        {
+          and: [{tags: {inq: tags}}, {createdBy: userId}],
+        },
+        {
+          and: [{peopleId: {inq: personIds}}, {createdBy: userId}],
         },
       ],
     } as Where<Post>;

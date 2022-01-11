@@ -1,12 +1,17 @@
 import {inject, intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
-import {PlatformType} from '../enums';
+import {FriendStatusType, PlatformType} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
 import {People} from '../models';
-import {PeopleRepository, UserRepository} from '../repositories';
-import {authenticate} from '@loopback/authentication';
+import {
+  FriendRepository,
+  PeopleRepository,
+  UserRepository,
+} from '../repositories';
+import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
+import {UserProfile, securityId} from '@loopback/security';
 
 @authenticate('jwt')
 export class PeopleController {
@@ -19,6 +24,10 @@ export class PeopleController {
     protected peopleRepository: PeopleRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
+    @inject(AuthenticationBindings.CURRENT_USER)
+    protected currentUser: UserProfile,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -59,7 +68,7 @@ export class PeopleController {
     if (!q) return [];
     const pattern = new RegExp('^' + q, 'i');
 
-    const users = await this.userRepository.find({
+    let users = await this.userRepository.find({
       where: {
         or: [
           {
@@ -77,6 +86,33 @@ export class PeopleController {
       order: ['createdAt DESC'],
       limit: 5,
     });
+
+    const blockedFriends = await this.friendRepository.find({
+      where: {
+        or: [
+          {
+            requestorId: this.currentUser[securityId],
+            requesteeId: {inq: users.map(e => e.id)},
+            status: FriendStatusType.BLOCKED,
+          },
+          {
+            requestorId: {inq: users.map(e => e.id)},
+            requesteeId: this.currentUser[securityId],
+            status: FriendStatusType.BLOCKED,
+          },
+        ],
+      },
+    });
+
+    if (blockedFriends.length !== 0) {
+      const requestorId = blockedFriends.map(e => e.requestorId);
+      const requesteeId = blockedFriends.map(e => e.requesteeId);
+      const blockedFriendIds = [...requestorId, ...requesteeId].filter(
+        e => e !== this.currentUser[securityId],
+      );
+
+      users = users.filter(user => !blockedFriendIds.includes(user.id));
+    }
 
     const userToPeople = users.map(user => {
       return new People({
