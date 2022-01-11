@@ -101,8 +101,8 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }} \
-              --set-string config.openApiDisable=false \
-              --set-string config.explorerDisable=false \
+              --set-string config.openApiDisable="false" \
+              --set-string config.explorerDisable="false" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
@@ -208,8 +208,8 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.openApiDisable=true \
-              --set-string config.explorerDisable=true \
+              --set-string config.openApiDisable="true" \
+              --set-string config.explorerDisable="true" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
@@ -315,8 +315,8 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.openApiDisable=true \
-              --set-string config.explorerDisable=true \
+              --set-string config.openApiDisable="true" \
+              --set-string config.explorerDisable="true" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
@@ -422,8 +422,8 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.openApiDisable=true \
-              --set-string config.explorerDisable=true \
+              --set-string config.openApiDisable="true" \
+              --set-string config.explorerDisable="true" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
@@ -529,8 +529,8 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.openApiDisable=true \
-              --set-string config.explorerDisable=true \
+              --set-string config.openApiDisable="true" \
+              --set-string config.explorerDisable="true" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
