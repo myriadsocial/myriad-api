@@ -7,14 +7,9 @@ import {
   Provider,
   ValueOrPromise,
 } from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {
-  MethodType,
-  PlatformType,
-  ReferenceType,
-  ReportStatusType,
-} from '../enums';
+import {MethodType, ReferenceType, ReportStatusType} from '../enums';
 import {Report} from '../models';
 import {
   CommentRepository,
@@ -146,7 +141,6 @@ export class ReportInterceptor implements Provider<Interceptor> {
     return result;
   }
 
-  /* eslint-disable  @typescript-eslint/no-explicit-any */
   async restoreDocument(
     referenceId: string,
     referenceType: ReferenceType,
@@ -159,15 +153,15 @@ export class ReportInterceptor implements Provider<Interceptor> {
 
     switch (referenceType) {
       case ReferenceType.POST:
-        await this.postRepository.updateById(referenceId, <any>where);
+        await this.postRepository.updateById(referenceId, <AnyObject>where);
         break;
 
       case ReferenceType.COMMENT:
-        await this.commentRepository.updateById(referenceId, <any>where);
+        await this.commentRepository.updateById(referenceId, <AnyObject>where);
         break;
 
       case ReferenceType.USER:
-        await this.userRepository.updateById(referenceId, <any>where);
+        await this.userRepository.updateById(referenceId, <AnyObject>where);
         break;
 
       default:
@@ -201,20 +195,9 @@ export class ReportInterceptor implements Provider<Interceptor> {
     if (report.status === ReportStatusType.REMOVED) {
       switch (referenceType) {
         case ReferenceType.POST: {
-          const {originPostId, platform} = await this.postRepository.findById(
-            referenceId,
-          );
-
-          if (platform === PlatformType.MYRIAD) {
-            await this.postRepository.updateById(referenceId, {
-              deletedAt: new Date().toString(),
-            });
-          } else {
-            await this.postRepository.updateAll(
-              {deletedAt: new Date().toString()},
-              {originPostId: originPostId},
-            );
-          }
+          await this.postRepository.updateById(referenceId, {
+            deletedAt: new Date().toString(),
+          });
 
           break;
         }
@@ -231,6 +214,8 @@ export class ReportInterceptor implements Provider<Interceptor> {
           await this.userRepository.updateById(referenceId, {
             deletedAt: new Date().toString(),
           });
+
+          break;
         }
       }
     }
