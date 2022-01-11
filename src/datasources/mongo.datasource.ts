@@ -20,7 +20,7 @@ function updateConfig(dsConfig: AnyObject) {
   dsConfig.password = mongoConfig.MONGO_PASSWORD;
   dsConfig.database = mongoConfig.MONGO_DATABASE;
   if (mongoConfig.MONGO_HOSTS) {
-    dsConfig.url = `mongodb://${dsConfig.user}:${dsConfig.password}@${mongoConfig.MONGO_HOSTS}/${dsConfig.database}`;
+    dsConfig.url = `mongodb://${dsConfig.user}:${dsConfig.password}@${mongoConfig.MONGO_HOSTS}/${dsConfig.database}?replicaSet=rs0`;
   }
 
   return dsConfig;
