@@ -114,35 +114,46 @@ export class ValidateVoteInterceptor implements Provider<Interceptor> {
       };
     }
 
-    const {userId, referenceId, type, state, section, postId} =
-      invocationCtx.args[0];
+    const {userId, referenceId, type, state, section} = invocationCtx.args[0];
 
-    const {createdBy} = await this.postRepository.findById(postId);
-    invocationCtx.args[0].toUserId = createdBy;
+    let toUserId = null;
 
-    if (type === ReferenceType.POST) invocationCtx.args[0].section = undefined;
-    if (type === ReferenceType.COMMENT && !section)
-      throw new HttpErrors.UnprocessableEntity(
-        'Section cannot empty when you upvote/downvote comment',
-      );
+    if (type === ReferenceType.POST) {
+      ({createdBy: toUserId} = await this.postRepository.findById(referenceId));
 
-    if (state === false) {
-      switch (type) {
-        case ReferenceType.POST: {
-          const postComment = await this.commentRepository.findOne({
-            where: {userId, referenceId, type, section: SectionType.DEBATE},
-          });
-          if (postComment) break;
-          throw new HttpErrors.UnprocessableEntity(
-            'Please comment first in debate sections, before you downvote this post',
-          );
-        }
+      invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+        toUserId: toUserId,
+        section: undefined,
+      });
+    }
+
+    if (type === ReferenceType.COMMENT) {
+      if (!section) {
+        throw new HttpErrors.UnprocessableEntity(
+          'Section cannot empty when you upvote/downvote comment',
+        );
       }
+
+      ({userId: toUserId} = await this.commentRepository.findById(referenceId));
+
+      invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+        toUserId: toUserId,
+      });
+    }
+
+    if (state === false && type === ReferenceType.POST) {
+      const postComment = await this.commentRepository.findOne({
+        where: {userId, referenceId, type, section: SectionType.DEBATE},
+      });
+      if (!postComment)
+        throw new HttpErrors.UnprocessableEntity(
+          'Please comment first in debate sections, before you downvote this post',
+        );
     }
 
     return {
       referenceId: referenceId,
-      toUserId: createdBy,
+      toUserId: toUserId,
       type: type,
     };
   }
