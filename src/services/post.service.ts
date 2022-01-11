@@ -91,7 +91,7 @@ export class PostService {
   ): Promise<AnyObject> {
     const found = await this.postRepository.findOne({
       where: <AnyObject>{
-        originPostId: post.originPostId,
+        originPostId: post.originPostId ?? '',
         platform: post.platform,
         deletedAt: {
           $exists: true,
