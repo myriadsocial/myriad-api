@@ -300,7 +300,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
           filter.where = await this.getExperienceByQuery(experienceQuery);
         }
-        break
+        break;
       }
 
       case ControllerType.FRIEND: {
