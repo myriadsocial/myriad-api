@@ -11,13 +11,11 @@ import {
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
-import {MigrationBindings, MigrationComponent} from 'loopback4-migration';
 import {config} from './config';
 import path from 'path';
 import {JWTAuthenticationComponent} from './components';
 import {
   CoinMarketCapDataSource,
-  MongoDataSource,
   RedditDataSource,
   TwitterDataSource,
 } from './datasources';
@@ -146,14 +144,6 @@ export class MyriadApiApplication extends BootMixin(
     this.bind('logging.winston.transports.console')
       .to(consoleTransport)
       .apply(extensionFor(WINSTON_TRANSPORT));
-
-    if (this.options.test) return;
-
-    this.component(MigrationComponent);
-    this.bind(MigrationBindings.CONFIG).to({
-      dataSourceName: MongoDataSource.dataSourceName,
-      modelName: 'db_migrations',
-    });
   }
 
   registerService() {
