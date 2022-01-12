@@ -56,7 +56,7 @@ export class VoteController {
     const update = {
       $set: vote,
     };
-    const options = {upsert: true, returnOriginal: false};
+    const options = {upsert: true, returnDocument: 'after'};
 
     const result = await collection.findOneAndUpdate(query, update, options);
 

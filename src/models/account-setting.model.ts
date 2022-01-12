@@ -8,6 +8,16 @@ import {User} from './user.model';
     mongodb: {
       collection: 'accountSettings',
     },
+    indexes: {
+      uniqueUserIdIndex: {
+        keys: {
+          userId: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
   },
 })
 export class AccountSetting extends Entity {

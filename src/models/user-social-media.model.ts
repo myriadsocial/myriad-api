@@ -10,6 +10,16 @@ import {User} from './user.model';
     mongodb: {
       collection: 'userSocialMedias',
     },
+    indexes: {
+      uniquePeopleIdIndex: {
+        keys: {
+          peopleId: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
   },
 })
 export class UserSocialMedia extends Entity {

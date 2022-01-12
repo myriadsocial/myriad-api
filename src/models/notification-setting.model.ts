@@ -7,6 +7,16 @@ import {User} from './user.model';
     mongodb: {
       collection: 'notificationSettings',
     },
+    indexes: {
+      uniqueUserIdIndex: {
+        keys: {
+          userId: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
   },
 })
 export class NotificationSetting extends Entity {
