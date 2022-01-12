@@ -276,7 +276,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           );
           filter.where = Object.assign(filter.where ?? {}, whereExperience);
         }
-        break
+        break;
       }
 
       case ControllerType.FRIEND: {

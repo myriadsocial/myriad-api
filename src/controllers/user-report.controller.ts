@@ -8,11 +8,7 @@ import {
   requestBody,
   HttpErrors,
 } from '@loopback/rest';
-import {
-  ReferenceType,
-  ReportStatusType,
-  ReportType,
-} from '../enums';
+import {ReferenceType, ReportStatusType, ReportType} from '../enums';
 import {AuthorizeInterceptor, CreateInterceptor} from '../interceptors';
 import {Report, ReportDetail} from '../models';
 import {
