@@ -8,6 +8,17 @@ import {User, UserWithRelations} from './user.model';
     mongodb: {
       collection: 'friends',
     },
+    indexes: {
+      uniqueFriendIndex: {
+        keys: {
+          requesteeId: 1,
+          requestorId: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
   },
 })
 export class Friend extends Entity {

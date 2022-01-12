@@ -8,6 +8,16 @@ import {PostStatus, VisibilityType} from '../enums';
     mongodb: {
       collection: 'draftPosts',
     },
+    indexes: {
+      uniqueCreatedByIndex: {
+        keys: {
+          createdBy: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
   },
 })
 export class DraftPost extends Entity {
