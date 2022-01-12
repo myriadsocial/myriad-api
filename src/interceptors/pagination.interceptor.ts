@@ -86,7 +86,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const {query, path} = await invocationCtx.get(RestBindings.Http.REQUEST);
-    const {pageNumber, pageLimit, userId, timelineType, mutual, q} = query;
+    const {
+      pageNumber,
+      pageLimit,
+      userId,
+      experienceId,
+      timelineType,
+      mutual,
+      q,
+    } = query;
     const methodName = invocationCtx.methodName as MethodType;
     const className = invocationCtx.targetClass.name as ControllerType;
     const filter =
@@ -140,10 +148,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       switch (methodName) {
         case MethodType.TIMELINE: {
-          if (Object.keys(filter.where).length > 1 && timelineType)
+          if (Object.keys(filter.where).length > 1 && timelineType) {
             throw new HttpErrors.UnprocessableEntity(
               'Where filter and timelineType can not be used at the same time!',
             );
+          }
 
           if (timelineType) {
             if (!userId)
@@ -152,6 +161,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             const whereTimeline = await this.getTimeline(
               userId as string,
               timelineType as TimelineType,
+              experienceId?.toString(),
             );
 
             if (whereTimeline) {
@@ -309,6 +319,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             return e.user;
           }),
         );
+      }
+
+      if (experienceId) {
+        await this.userRepository.updateById(userId?.toString() ?? '', {
+          onTimeline: experienceId.toString(),
+        });
       }
     }
 
@@ -530,10 +546,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   async getTimeline(
     userId: string,
     timelineType: TimelineType,
+    experienceId?: string,
   ): Promise<Where<Post> | undefined> {
     switch (timelineType) {
       case TimelineType.EXPERIENCE:
-        return this.experienceService.experienceTimeline(userId);
+        return this.experienceService.experienceTimeline(userId, experienceId);
 
       case TimelineType.TRENDING:
         return this.tagService.trendingTimeline(userId);

@@ -53,8 +53,24 @@ export class ExperienceService {
     return experience;
   }
 
-  async experienceTimeline(userId: string): Promise<Where<Post> | undefined> {
-    const experience = await this.getExperience(userId);
+  async experienceTimeline(
+    userId: string,
+    experienceId?: string,
+  ): Promise<Where<Post> | undefined> {
+    let experience: Experience | null = null;
+
+    if (experienceId) {
+      const {count} = await this.userExperienceRepository.count({
+        userId,
+        experienceId,
+      });
+
+      if (count === 0) return;
+
+      experience = await this.experienceRepository.findById(experienceId);
+    } else {
+      experience = await this.getExperience(userId);
+    }
 
     if (!experience) return;
 
