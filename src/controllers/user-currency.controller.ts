@@ -1,7 +1,19 @@
 import {inject, intercept} from '@loopback/core';
-import {Count, CountSchema, repository} from '@loopback/repository';
-import {del, getModelSchemaRef, patch, post, requestBody} from '@loopback/rest';
-import {ValidateCurrencyInterceptor} from '../interceptors';
+import {Count, CountSchema, Filter, repository} from '@loopback/repository';
+import {
+  del,
+  get,
+  getModelSchemaRef,
+  param,
+  patch,
+  post,
+  requestBody,
+  response,
+} from '@loopback/rest';
+import {
+  PaginationInterceptor,
+  ValidateCurrencyInterceptor,
+} from '../interceptors';
 import {UserCurrency} from '../models';
 import {UserCurrencyRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
@@ -24,6 +36,27 @@ export class UserCurrencyController {
     @repository(UserRepository)
     protected userRepository: UserRepository,
   ) {}
+
+  @intercept(PaginationInterceptor.BINDING_KEY)
+  @logInvocation()
+  @get('/user-currencies')
+  @response(200, {
+    description: 'Array of User Currency model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(UserCurrency, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async find(
+    @param.filter(UserCurrency, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<UserCurrency>,
+  ): Promise<UserCurrency[]> {
+    return this.userCurrencyRepository.find(filter);
+  }
 
   @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
   @logInvocation()
