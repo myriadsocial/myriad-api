@@ -138,25 +138,6 @@ export class UserExperienceController {
     return this.userRepository.experiences(id).create(experience);
   }
 
-  // Select experience
-  @logInvocation()
-  @patch('/users/{userId}/select-experiences/{experienceId}', {
-    responses: {
-      '204': {
-        description: 'Select User Experience',
-      },
-    },
-  })
-  async select(
-    @param.path.string('userId') userId: string,
-    @param.path.string('experienceId') experienceId: string,
-  ): Promise<void> {
-    return this.userRepository.updateById(userId, {
-      onTimeline: experienceId,
-      updatedAt: new Date().toString(),
-    });
-  }
-
   @intercept(ExperienceInterceptor.BINDING_KEY)
   @logInvocation()
   @patch('/users/{userId}/experiences/{experienceId}', {

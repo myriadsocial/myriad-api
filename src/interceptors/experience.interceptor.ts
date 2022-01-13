@@ -241,25 +241,54 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
 
       if (methodName === MethodType.DELETEBYID) {
-        const {count} = await this.userExperienceRepository.count({
-          or: [
-            {
-              experienceId,
-              subscribed: true,
-            },
-            {
-              experienceId,
-              subscribed: false,
-            },
-          ],
-        });
+        const {count: countExperience} =
+          await this.userExperienceRepository.count({
+            or: [
+              {
+                experienceId,
+                subscribed: true,
+              },
+              {
+                experienceId,
+                subscribed: false,
+              },
+            ],
+          });
 
-        if (count === 0) {
+        if (countExperience === 0) {
           await this.experienceRepository.deleteById(experienceId);
         } else {
           await this.experienceRepository.updateById(experienceId, {
-            subscribedCount: count,
+            subscribedCount: countExperience,
           });
+        }
+
+        const {count: countUserExperience} =
+          await this.userExperienceRepository.count({userId});
+
+        if (countUserExperience === 0) {
+          await this.userRepository.updateById(userId, {onTimeline: undefined});
+        } else {
+          try {
+            const user = await this.userRepository.findById(userId);
+            console.log(user);
+
+            if (experienceId === user.onTimeline?.toString()) {
+              console.log(experienceId, user.onTimeline);
+              const userExperience =
+                await this.userExperienceRepository.findOne({
+                  where: {userId},
+                });
+
+              if (userExperience) {
+                await this.userRepository.updateById(userId, {
+                  onTimeline: userExperience.experienceId,
+                });
+              }
+            }
+          } catch {
+            // ignore
+          }
         }
       }
 
