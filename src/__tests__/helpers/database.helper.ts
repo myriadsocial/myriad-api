@@ -151,6 +151,7 @@ export async function givenRepositories(testdb: any) {
     reportRepository,
     userReportRepository,
     leaderboardRepository,
+    userCurrencyRepository,
   );
 
   const fcmService = new FCMService();
