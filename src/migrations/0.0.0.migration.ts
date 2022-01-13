@@ -18,15 +18,6 @@ export class MigrationScript000 implements MigrationScript {
   }
 
   async createUsers(): Promise<void> {
-    await this.userRepository.deleteAll({
-      or: [
-        {
-          name: {regexp: new RegExp('myriad', 'i')},
-          username: {regexp: new RegExp('myriad', 'i')},
-        },
-      ],
-    });
-
     const user = await this.userRepository.create({
       id: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
       name: 'Myriad Official',
