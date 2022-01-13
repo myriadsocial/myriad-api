@@ -15,6 +15,7 @@ import {
   PostStatus,
   PlatformType,
   ActivityLogType,
+  SectionType,
 } from '../enums';
 import {Comment, UserSocialMedia} from '../models';
 import {
@@ -31,6 +32,7 @@ import {
   MetricService,
   NotificationService,
   TagService,
+  VoteService,
 } from '../services';
 
 /**
@@ -64,6 +66,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected notificationService: NotificationService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
+    @service(VoteService)
+    protected voteService: VoteService,
   ) {}
 
   /**
@@ -138,6 +142,61 @@ export class CreateInterceptor implements Provider<Interceptor> {
         invocationCtx.args[0].priority = count + 1;
 
         return;
+      }
+
+      case ControllerType.VOTE: {
+        const {userId, referenceId, type, state, section} =
+          invocationCtx.args[0];
+
+        if (type === ReferenceType.POST) {
+          const post = await this.postRepository.findById(referenceId, {
+            include: [
+              {
+                relation: 'comments',
+                scope: {
+                  where: {
+                    userId,
+                    referenceId,
+                    type,
+                    section: SectionType.DEBATE,
+                  },
+                },
+              },
+            ],
+          });
+
+          if (!state) {
+            if (
+              !post.comments ||
+              (post.comments && post.comments.length === 0)
+            ) {
+              throw new HttpErrors.UnprocessableEntity(
+                'Please comment first in debate sections, before you downvote this post',
+              );
+            }
+          }
+
+          invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+            toUserId: post.createdBy,
+            section: undefined,
+          });
+        }
+
+        if (type === ReferenceType.COMMENT) {
+          if (!section) {
+            throw new HttpErrors.UnprocessableEntity(
+              'Section cannot empty when you upvote/downvote comment',
+            );
+          }
+
+          const comment = await this.commentRepository.findById(referenceId);
+
+          invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+            toUserId: comment.userId,
+          });
+        }
+
+        break;
       }
 
       default:
@@ -262,6 +321,23 @@ export class CreateInterceptor implements Provider<Interceptor> {
         await this.currencyService.autoClaimTips(result as UserSocialMedia);
 
         return result;
+      }
+
+      case ControllerType.VOTE: {
+        const {_id: id, referenceId, type, userId} = result.value;
+
+        await this.voteService.updateVoteCounter(result.value);
+        await this.activityLogService.createLog(
+          ActivityLogType.GIVEVOTE,
+          userId,
+          referenceId,
+          type,
+        );
+
+        return Object.assign(result.value, {
+          id: id,
+          _id: undefined,
+        });
       }
 
       default:

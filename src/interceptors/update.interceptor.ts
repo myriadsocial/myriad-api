@@ -15,7 +15,11 @@ import {
   ReferenceType,
 } from '../enums';
 import {repository} from '@loopback/repository';
-import {ExperienceRepository, UserExperienceRepository} from '../repositories';
+import {
+  ExperienceRepository,
+  UserExperienceRepository,
+  UserRepository,
+} from '../repositories';
 import {HttpErrors} from '@loopback/rest';
 import {Post, User} from '../models';
 import {ActivityLogService, CurrencyService} from '../services';
@@ -37,6 +41,8 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected experienceRepository: ExperienceRepository,
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
     @service(CurrencyService)
@@ -171,21 +177,11 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERCURRENCY: {
-        const userId = invocationCtx.args[0];
-        const currencyId = invocationCtx.args[1];
+        const {userId, currencies} = invocationCtx.args[0];
 
-        await this.currencyService.currencyRepository.findById(currencyId);
-
-        const userCurrency =
-          await this.currencyService.userCurrencyRepository.findOne({
-            where: {userId, currencyId},
-          });
-
-        if (!userCurrency) {
-          throw new HttpErrors.UnprocessableEntity(
-            "You don't have this currency",
-          );
-        }
+        await this.userRepository.updateById(userId, {
+          defaultCurrency: currencies[0],
+        });
 
         break;
       }
