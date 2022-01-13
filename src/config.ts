@@ -27,10 +27,13 @@ export const config = {
     process.env.JWT_REFRESH_TOKEN_EXPIRES_IN ?? '216000',
   JWT_EMAIL: !process.env.JWT_EMAIL ? 'admin@mail.com' : process.env.JWT_EMAIL,
 
-  MONGO_HOSTS: process.env.MONGO_HOSTS ?? '',
+  MONGO_PROTOCOL: process.env.MONGO_PROTOCOL ?? 'mongodb',
+  MONGO_HOST: process.env.MONGO_HOST ?? '',
+  MONGO_PORT: +(process.env.MONGO_PORT ?? 27017),
   MONGO_USER: process.env.MONGO_USER ?? 'api',
   MONGO_PASSWORD: process.env.MONGO_PASSWORD ?? 'passw0rd',
   MONGO_DATABASE: process.env.MONGO_DATABASE ?? 'myriad',
+  MONGO_URL: process.env.MONGO_URL ?? '',
 
   FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ?? '',
 
