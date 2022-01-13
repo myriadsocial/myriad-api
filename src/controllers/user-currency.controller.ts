@@ -98,7 +98,7 @@ export class UserCurrencyController {
       },
     },
   })
-  async update(
+  async patch(
     @requestBody({
       content: {
         'application/json': {

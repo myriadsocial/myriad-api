@@ -468,16 +468,18 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       filter.where as Where<AnyObject>,
     );
 
+    const meta = pageMetadata([...pageDetail, count]);
+
     const paginationFilter = Object.assign(filter, {
-      offset: (pageDetail[0] - 1) * pageDetail[1],
-      limit: pageDetail[1],
+      offset: ((meta.currentPage ?? 1) - 1) * meta.itemsPerPage,
+      limit: meta.itemsPerPage,
     });
 
     if (controllerName === ControllerType.REPORTUSER)
       invocationCtx.args[1] = paginationFilter;
     else invocationCtx.args[0] = paginationFilter;
 
-    return pageMetadata([...pageDetail, count]);
+    return meta;
   }
 
   async getPostByQuery(q: string, userId?: string): Promise<Where<Post>> {
