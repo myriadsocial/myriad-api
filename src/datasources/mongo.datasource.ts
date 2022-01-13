@@ -5,22 +5,37 @@ import {config as mongoConfig} from '../config';
 const config = {
   name: 'mongo',
   connector: 'mongodb',
-  url: '',
+  protocol: 'mongodb',
   host: '',
   port: 27017,
   user: 'root',
   password: 'root',
   database: 'myriad',
+  url: '',
   allowExtendedOperators: true,
+  enableGeoIndexing: true,
 };
 
 function updateConfig(dsConfig: AnyObject) {
   if (dsConfig.test) return dsConfig;
-  dsConfig.user = mongoConfig.MONGO_USER;
-  dsConfig.password = mongoConfig.MONGO_PASSWORD;
-  dsConfig.database = mongoConfig.MONGO_DATABASE;
-  if (mongoConfig.MONGO_HOSTS) {
-    dsConfig.url = `mongodb://${dsConfig.user}:${dsConfig.password}@${mongoConfig.MONGO_HOSTS}/${dsConfig.database}`;
+  if (mongoConfig.MONGO_PROTOCOL) {
+    dsConfig.protocol = mongoConfig.MONGO_PROTOCOL;
+  }
+  if (mongoConfig.MONGO_HOST) {
+    dsConfig.host = mongoConfig.MONGO_HOST;
+  }
+  dsConfig.port = mongoConfig.MONGO_PORT;
+  if (mongoConfig.MONGO_USER) {
+    dsConfig.user = mongoConfig.MONGO_USER;
+  }
+  if (mongoConfig.MONGO_PASSWORD) {
+    dsConfig.password = mongoConfig.MONGO_PASSWORD;
+  }
+  if (mongoConfig.MONGO_DATABASE) {
+    dsConfig.database = mongoConfig.MONGO_DATABASE;
+  }
+  if (mongoConfig.MONGO_URL) {
+    dsConfig.url = mongoConfig.MONGO_URL;
   }
 
   return dsConfig;
