@@ -271,10 +271,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         } else {
           try {
             const user = await this.userRepository.findById(userId);
-            console.log(user);
 
             if (experienceId === user.onTimeline?.toString()) {
-              console.log(experienceId, user.onTimeline);
               const userExperience =
                 await this.userExperienceRepository.findOne({
                   where: {userId},
