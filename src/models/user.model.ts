@@ -1,4 +1,11 @@
-import {Entity, hasMany, model, property, hasOne} from '@loopback/repository';
+import {
+  Entity,
+  hasMany,
+  model,
+  property,
+  hasOne,
+  belongsTo,
+} from '@loopback/repository';
 import {DefaultCurrencyType} from '../enums';
 import {UserMetric} from '../interfaces';
 import {ActivityLog} from './activity-log.model';
@@ -12,6 +19,7 @@ import {NotificationSetting} from './notification-setting.model';
 import {People} from './people.model';
 import {UserSocialMedia} from './user-social-media.model';
 import {LeaderBoard} from './leader-board.model';
+import {ExperienceWithRelations} from './experience.model';
 
 @model({
   settings: {
@@ -130,19 +138,6 @@ export class User extends Entity {
     type: 'string',
     required: false,
   })
-  onTimeline?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-    default: DefaultCurrencyType.MYRIA,
-  })
-  defaultCurrency?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
   websiteURL?: string;
 
   @property({
@@ -213,6 +208,16 @@ export class User extends Entity {
   @hasOne(() => LeaderBoard)
   leaderboard: LeaderBoard;
 
+  @belongsTo(
+    () => Currency,
+    {name: 'currency'},
+    {default: DefaultCurrencyType.MYRIA},
+  )
+  defaultCurrency: string;
+
+  @belongsTo(() => Experience, {name: 'experience'})
+  onTimeline: string;
+
   constructor(data?: Partial<User>) {
     super(data);
   }
@@ -220,6 +225,7 @@ export class User extends Entity {
 
 export interface UserRelations {
   // describe navigational properties here
+  experience?: ExperienceWithRelations;
 }
 
 export type UserWithRelations = User & UserRelations;
