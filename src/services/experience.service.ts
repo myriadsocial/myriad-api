@@ -23,32 +23,17 @@ export class ExperienceService {
   ) {}
 
   async getExperience(userId: string): Promise<Experience | null> {
-    const user = await this.userRepository.findOne({
-      where: {
-        id: userId,
-      },
-      include: [
-        {
-          relation: 'experiences',
-          scope: {
-            include: [
-              {
-                relation: 'users',
-              },
-            ],
-          },
-        },
-      ],
-    });
+    let experience = null;
 
-    if (!user) return null;
-    if (!user.experiences) return null;
+    try {
+      const user = await this.userRepository.findById(userId, {
+        include: ['experience'],
+      });
 
-    const experience = user.experiences.find(
-      e => e.id === user.onTimeline?.toString(),
-    );
-
-    if (!experience) return null;
+      if (user.experience) experience = user.experience;
+    } catch {
+      // ignore
+    }
 
     return experience;
   }

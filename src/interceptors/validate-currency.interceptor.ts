@@ -77,21 +77,10 @@ export class ValidateCurrencyInterceptor implements Provider<Interceptor> {
         if (methodName === MethodType.CREATE) {
           await this.currencyRepository.findById(currencyId.toUpperCase());
 
-          // Check if user already has the crypto
-          const userCurrency = await this.userCurrencyRepository.findOne({
-            where: {
-              userId,
-              currencyId: currencyId.toUpperCase(),
-            },
-          });
-
-          if (userCurrency) {
-            throw new HttpErrors.UnprocessableEntity(
-              'You already have this currency',
-            );
-          }
+          const {count} = await this.userCurrencyRepository.count({userId});
 
           invocationCtx.args[0].currencyId = currencyId.toUpperCase();
+          invocationCtx.args[0].priority = count + 1;
         }
 
         break;

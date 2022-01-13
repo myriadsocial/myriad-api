@@ -5,6 +5,7 @@ import {
   HasManyThroughRepositoryFactory,
   repository,
   HasOneRepositoryFactory,
+  BelongsToAccessor,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {
@@ -86,6 +87,16 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
+  public readonly currency: BelongsToAccessor<
+    Currency,
+    typeof User.prototype.id
+  >;
+
+  public readonly experience: BelongsToAccessor<
+    Experience,
+    typeof User.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
@@ -112,6 +123,19 @@ export class UserRepository extends DefaultCrudRepository<
     protected leaderBoardRepositoryGetter: Getter<LeaderBoardRepository>,
   ) {
     super(User, dataSource);
+    this.experience = this.createBelongsToAccessorFor(
+      'experience',
+      experienceRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'experience',
+      this.experience.inclusionResolver,
+    );
+    this.currency = this.createBelongsToAccessorFor(
+      'currency',
+      currencyRepositoryGetter,
+    );
+    this.registerInclusionResolver('currency', this.currency.inclusionResolver);
     this.leaderboard = this.createHasOneRepositoryFactoryFor(
       'leaderboard',
       leaderBoardRepositoryGetter,

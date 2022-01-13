@@ -1,19 +1,16 @@
 import {inject, intercept} from '@loopback/core';
 import {Count, CountSchema, repository} from '@loopback/repository';
-import {
-  del,
-  getModelSchemaRef,
-  param,
-  patch,
-  post,
-  requestBody,
-  response,
-} from '@loopback/rest';
+import {del, getModelSchemaRef, patch, post, requestBody} from '@loopback/rest';
 import {ValidateCurrencyInterceptor} from '../interceptors';
 import {UserCurrency} from '../models';
 import {UserCurrencyRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
+
+interface UserCurrencyPriority {
+  userId: string;
+  currencies: string[];
+}
 
 @authenticate('jwt')
 export class UserCurrencyController {
@@ -35,7 +32,9 @@ export class UserCurrencyController {
       '200': {
         description: 'create a UserCurrency model instance',
         content: {
-          'application/json': {schema: getModelSchemaRef(UserCurrency)},
+          'application/json': {
+            schema: getModelSchemaRef(UserCurrency, {exclude: ['priority']}),
+          },
         },
       },
     },
@@ -54,6 +53,66 @@ export class UserCurrencyController {
     userCurrency: UserCurrency,
   ): Promise<UserCurrency> {
     return this.userCurrencyRepository.create(userCurrency);
+  }
+
+  @logInvocation()
+  @patch('/user-currencies', {
+    responses: {
+      '200': {
+        description: 'create a UserCurrency model instance',
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(UserCurrency, {exclude: ['priority']}),
+          },
+        },
+      },
+    },
+  })
+  async update(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              userId: {
+                type: 'string',
+              },
+              currencies: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+    currencyPriority: UserCurrencyPriority,
+  ): Promise<void> {
+    const {userId, currencies} = currencyPriority;
+
+    await Promise.all(
+      currencies.map(async (currency, index) => {
+        return this.userCurrencyRepository.updateAll(
+          {
+            userId: userId,
+            currencyId: currency,
+            priority: index + 1,
+            updatedAt: new Date().toString(),
+          },
+          {
+            userId: userId,
+            currencyId: currency,
+          },
+        );
+      }),
+    );
+
+    await this.userRepository.updateById(userId, {
+      defaultCurrency: currencies[0],
+    });
   }
 
   @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
@@ -82,21 +141,6 @@ export class UserCurrencyController {
     return this.userCurrencyRepository.deleteAll({
       userId: userCurrency.userId,
       currencyId: userCurrency.currencyId,
-    });
-  }
-
-  @logInvocation()
-  @patch('/users/{userId}/select-currency/{currencyId}')
-  @response(204, {
-    description: 'User PATCH default Currency success',
-  })
-  async selectCurrency(
-    @param.path.string('userId') userId: string,
-    @param.path.string('currencyId') currencyId: string,
-  ): Promise<void> {
-    await this.userRepository.updateById(userId, {
-      defaultCurrency: currencyId,
-      updatedAt: new Date().toString(),
     });
   }
 }

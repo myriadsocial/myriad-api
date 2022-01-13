@@ -7,6 +7,17 @@ import {Currency} from './currency.model';
     mongodb: {
       collection: 'userCurrencies',
     },
+    indexes: {
+      uniqueUserCurrencyIndex: {
+        keys: {
+          userId: 1,
+          currencyId: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
   },
 })
 export class UserCurrency extends Entity {
@@ -19,6 +30,13 @@ export class UserCurrency extends Entity {
     },
   })
   id?: string;
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 1,
+  })
+  priority: number;
 
   @property({
     type: 'date',
