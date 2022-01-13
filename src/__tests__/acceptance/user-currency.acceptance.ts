@@ -8,7 +8,6 @@ import {
   AuthenticationRepository,
 } from '../../repositories';
 import {
-  givenCurrencyInstance,
   givenCurrencyRepository,
   givenUserCurrency,
   givenUserCurrencyInstance,
@@ -17,6 +16,7 @@ import {
   givenUserRepository,
   givenAuthenticationRepository,
   setupApplication,
+  givenMultipleCurrencyInstances,
 } from '../helpers';
 
 describe('UserCurrencyApplication', function () {
@@ -47,7 +47,7 @@ describe('UserCurrencyApplication', function () {
   });
 
   before(async () => {
-    await givenCurrencyInstance(currencyRepository);
+    await givenMultipleCurrencyInstances(currencyRepository);
   });
 
   after(async () => {
@@ -73,29 +73,58 @@ describe('UserCurrencyApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .send(userCurrency)
       .expect(200);
+
+    userCurrency.priority = 1;
+
     expect(response.body).to.containDeep(userCurrency);
     const result = await userCurrencyRepository.findById(response.body.id);
     expect(result).to.containDeep(userCurrency);
   });
 
-  it('selects a user default currency', async () => {
-    const user = await givenUserInstance(userRepository);
-    const currency = await givenCurrencyInstance(currencyRepository, {
-      id: DefaultCurrencyType.MYRIA,
-    });
+  it('update user currency priority', async function () {
+    const userId =
+      '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b3m5e8449ee61864';
+    await givenUserInstance(userRepository, {id: userId});
 
-    await givenUserCurrencyInstance(userCurrencyRepository, {
-      userId: user.id,
-      currencyId: currency.id,
-    });
+    const userCurrency1 = givenUserCurrency({userId});
+    await client
+      .post('/user-currencies')
+      .set('Authorization', `Bearer ${token}`)
+      .send(userCurrency1)
+      .expect(200);
+
+    const userCurrency2 = givenUserCurrency({currencyId: 'ACA', userId});
+    await client
+      .post('/user-currencies')
+      .set('Authorization', `Bearer ${token}`)
+      .send(userCurrency2)
+      .expect(200);
+
+    const currencyPriority = {
+      userId: userId,
+      currencies: [userCurrency2.currencyId, userCurrency1.currencyId],
+    };
 
     await client
-      .patch(`/users/${user.id}/select-currency/${DefaultCurrencyType.MYRIA}`)
+      .patch('/user-currencies')
       .set('Authorization', `Bearer ${token}`)
+      .send(currencyPriority)
       .expect(204);
 
-    const result = await userRepository.findById(user.id);
-    expect(result.defaultCurrency).to.equal(DefaultCurrencyType.MYRIA);
+    const result = await userCurrencyRepository.find({where: {userId}});
+
+    expect(result).to.containDeep([
+      {
+        userId: userId,
+        currencyId: currencyPriority.currencies[0],
+        priority: 1,
+      },
+      {
+        userId: userId,
+        currencyId: currencyPriority.currencies[1],
+        priority: 2,
+      },
+    ]);
   });
 
   it('returns 404 when creates user currency but the currency not exist', async () => {
@@ -107,15 +136,6 @@ describe('UserCurrencyApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .send(userCurrency)
       .expect(404);
-  });
-
-  it('returns 422 when user already has specific currency', async () => {
-    const userCurrency = givenUserCurrency();
-    await client
-      .post('/user-currencies')
-      .set('Authorization', `Bearer ${token}`)
-      .send(userCurrency)
-      .expect(422);
   });
 
   it('deletes the user currency', async () => {
