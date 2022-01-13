@@ -25,6 +25,7 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
         username: userProfile.username,
         createdAt: userProfile.createdAt,
       },
+      include: ['accountSetting', 'notificationSetting']
     });
 
     if (!user) throw new HttpErrors.Unauthorized('Forbidden user!');
