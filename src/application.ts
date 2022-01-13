@@ -39,6 +39,7 @@ import {
   CoinMarketCapProvider,
   RedditProvider,
   TwitterProvider,
+  VoteService,
 } from './services';
 import {
   UpdateExchangeRateJob,
@@ -141,6 +142,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(ExperienceService);
     this.service(MetricService);
     this.service(ActivityLogService);
+    this.service(VoteService);
 
     // 3rd party service
     this.service(FCMService);

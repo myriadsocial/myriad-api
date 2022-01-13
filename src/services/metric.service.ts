@@ -92,14 +92,14 @@ export class MetricService {
     if (postId) {
       metric.debates = (
         await this.commentRepository.count({
-          referenceId,
+          postId: postId,
           section: SectionType.DEBATE,
         })
       ).count;
 
       metric.discussions = (
         await this.commentRepository.count({
-          referenceId,
+          postId: postId,
           section: SectionType.DISCUSSION,
         })
       ).count;
