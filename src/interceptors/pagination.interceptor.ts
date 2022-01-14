@@ -461,12 +461,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         ],
       },
     });
-    const friendUserIds = users.filter(user =>
-      approvedFriendIds.includes(user.id),
-    );
-    const publicUserIds = users.filter(
-      user => !approvedFriendIds.includes(user.id),
-    );
+    const friendUserIds = users
+      .filter(user => approvedFriendIds.includes(user.id))
+      .map(e => e.id);
+    const publicUserIds = users
+      .filter(user => !approvedFriendIds.includes(user.id))
+      .map(e => e.id);
     const regexTopic = new RegExp(` ${q}"|"${q} |"${q}"| ${q} `, 'i');
     return {
       or: [
