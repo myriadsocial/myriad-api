@@ -8,6 +8,16 @@ import {User} from './user.model';
     mongodb: {
       collection: 'leaderboards',
     },
+    indexes: {
+      uniqueUserIdIndex: {
+        keys: {
+          userId: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
   },
 })
 export class LeaderBoard extends Entity {

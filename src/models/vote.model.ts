@@ -9,6 +9,40 @@ import {User} from './user.model';
       collection: 'votes',
     },
     hiddenProperties: ['toUserId'],
+    indexes: {
+      toUserIdIndex: {
+        keys: {
+          toUserId: 1,
+        },
+      },
+      userIdIndex: {
+        keys: {
+          userId: 1,
+        },
+      },
+      postIdIndex: {
+        keys: {
+          postId: 1,
+        },
+      },
+      voteStateIndex: {
+        keys: {
+          type: 1,
+          referenceId: 1,
+          state: 1,
+        },
+      },
+      uniqueVoteIndex: {
+        keys: {
+          userId: 1,
+          type: 1,
+          referenceId: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
   },
 })
 export class Vote extends Entity {

@@ -19,6 +19,20 @@ import {User} from './user.model';
           unique: true,
         },
       },
+      userIdIndex: {
+        keys: {
+          userId: 1,
+        },
+      },
+      unique: {
+        keys: {
+          userId: 1,
+          peopleId: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
     },
   },
 })

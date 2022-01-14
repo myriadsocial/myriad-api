@@ -9,6 +9,18 @@ import {ReferenceType} from '../enums';
     mongodb: {
       collection: 'userReports',
     },
+    indexes: {
+      reportedByIndex: {
+        keys: {
+          reportedBy: 1,
+        },
+      },
+      reportIdIndex: {
+        keys: {
+          reportId: 1,
+        },
+      },
+    },
   },
 })
 export class UserReport extends Entity {

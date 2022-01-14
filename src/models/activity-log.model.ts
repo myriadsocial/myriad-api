@@ -7,6 +7,13 @@ import {User} from './user.model';
     mongodb: {
       collection: 'activityLogs',
     },
+    indexes: {
+      userIdIndex: {
+        keys: {
+          userId: 1,
+        },
+      },
+    },
   },
 })
 export class ActivityLog extends Entity {

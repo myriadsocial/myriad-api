@@ -8,6 +8,18 @@ import {User} from './user.model';
     mongodb: {
       collection: 'notifications',
     },
+    indexes: {
+      fromIndex: {
+        keys: {
+          from: 1,
+        },
+      },
+      toIndex: {
+        keys: {
+          to: 1,
+        },
+      },
+    },
   },
 })
 export class Notification extends Entity {

@@ -18,6 +18,13 @@ import {User} from './user.model';
     mongodb: {
       collection: 'comments',
     },
+    indexes: {
+      userIdIndex: {
+        keys: {
+          userId: 1,
+        },
+      },
+    },
   },
 })
 export class Comment extends Entity {
