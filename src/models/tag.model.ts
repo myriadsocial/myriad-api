@@ -6,6 +6,14 @@ import {Entity, model, property} from '@loopback/repository';
     mongodb: {
       collection: 'tags',
     },
+    indexes: {
+      tagIndex: {
+        keys: {
+          count: 1,
+          updatedAt: 1,
+        },
+      },
+    },
   },
 })
 export class Tag extends Entity {

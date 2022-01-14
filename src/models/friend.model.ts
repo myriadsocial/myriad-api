@@ -9,13 +9,30 @@ import {User, UserWithRelations} from './user.model';
       collection: 'friends',
     },
     indexes: {
-      uniqueFriendIndex: {
+      requesteeIdIndex: {
         keys: {
           requesteeId: 1,
+        },
+      },
+      requestorIdIndex: {
+        keys: {
           requestorId: 1,
+        },
+      },
+      uniqueFriendIndex: {
+        keys: {
+          requestorId: 1,
+          requesteeId: 1,
         },
         options: {
           unique: true,
+        },
+      },
+      friendStatusIndex: {
+        keys: {
+          requestorId: 1,
+          requesteeId: 1,
+          status: 1,
         },
       },
     },

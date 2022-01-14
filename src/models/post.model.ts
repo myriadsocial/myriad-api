@@ -23,6 +23,19 @@ import {UserWithRelations} from './';
     mongodb: {
       collection: 'posts',
     },
+    indexes: {
+      postIndex: {
+        keys: {
+          visibility: 1,
+          createdBy: 1,
+        },
+      },
+      originPostIndex: {
+        keys: {
+          originPostId: 1,
+        },
+      },
+    },
     hiddenProperties: ['popularCount'],
   },
 })

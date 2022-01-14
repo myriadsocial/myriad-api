@@ -15,6 +15,13 @@ import {ExperienceUser} from './experience-user.model';
     mongodb: {
       collection: 'experiences',
     },
+    indexes: {
+      createdByIndex: {
+        keys: {
+          createdBy: 1,
+        },
+      },
+    },
   },
 })
 export class Experience extends Entity {

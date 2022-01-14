@@ -8,6 +8,27 @@ import {User} from './user.model';
     mongodb: {
       collection: 'userExperiences',
     },
+    indexes: {
+      userIdIndex: {
+        keys: {
+          userId: 1,
+        },
+      },
+      experienceIdIndex: {
+        keys: {
+          experienceId: 1,
+        },
+      },
+      uniqueUserExperienceIndex: {
+        keys: {
+          userId: 1,
+          experienceId: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
+    },
   },
 })
 export class UserExperience extends Entity {

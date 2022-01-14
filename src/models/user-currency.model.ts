@@ -8,6 +8,16 @@ import {Currency} from './currency.model';
       collection: 'userCurrencies',
     },
     indexes: {
+      currencyIdIndex: {
+        keys: {
+          currencyId: 1,
+        },
+      },
+      userIdIndex: {
+        keys: {
+          userId: 1,
+        },
+      },
       uniqueUserCurrencyIndex: {
         keys: {
           userId: 1,
@@ -27,6 +37,13 @@ export class UserCurrency extends Entity {
     generated: true,
     mongodb: {
       dataType: 'ObjectId',
+    },
+    indexes: {
+      userCurrencyIndex: {
+        keys: {
+          userId: 1,
+        },
+      },
     },
   })
   id?: string;

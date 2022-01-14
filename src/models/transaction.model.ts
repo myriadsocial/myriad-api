@@ -9,6 +9,23 @@ import {User} from './user.model';
     mongodb: {
       collection: 'transactions',
     },
+    indexes: {
+      fromIndex: {
+        keys: {
+          to: 1,
+        },
+      },
+      toIndex: {
+        keys: {
+          from: 1,
+        },
+      },
+      currencyIdIndex: {
+        keys: {
+          currencyId: 1,
+        },
+      },
+    },
   },
 })
 export class Transaction extends Entity {
