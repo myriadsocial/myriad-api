@@ -16,14 +16,9 @@ import {JWTService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class PostWalletAddress {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
@@ -33,7 +28,6 @@ export class PostWalletAddress {
     protected jwtService: JWTService,
   ) {}
 
-  @logInvocation()
   @get('/posts/{id}/walletaddress')
   @response(200, {
     description: 'Post model wallet address',

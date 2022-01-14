@@ -1,4 +1,4 @@
-import {inject, intercept, service} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -14,14 +14,9 @@ import {Transaction} from '../models';
 import {TransactionRepository} from '../repositories';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class TransactionController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(TransactionRepository)
     protected transactionRepository: TransactionRepository,
@@ -29,7 +24,6 @@ export class TransactionController {
     protected notificationService: NotificationService,
   ) {}
 
-  @logInvocation()
   @post('/transactions')
   @response(200, {
     description: 'Transaction model instance',
@@ -61,7 +55,6 @@ export class TransactionController {
     return newTransaction;
   }
 
-  @logInvocation()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/transactions')
   @response(200, {
@@ -82,7 +75,6 @@ export class TransactionController {
     return this.transactionRepository.find(filter);
   }
 
-  @logInvocation()
   @get('/transactions/{id}')
   @response(200, {
     description: 'Transaction model instance',
@@ -100,7 +92,6 @@ export class TransactionController {
     return this.transactionRepository.findById(id, filter);
   }
 
-  @logInvocation()
   @del('/transactions/{id}')
   @response(204, {
     description: 'Transaction DELETE success',

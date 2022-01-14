@@ -1,4 +1,4 @@
-import {inject, intercept, service} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -15,14 +15,9 @@ import {Comment, Post} from '../models';
 import {CommentRepository, PostRepository} from '../repositories';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class CommentController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
@@ -33,7 +28,6 @@ export class CommentController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/comments', {
     responses: {
       '200': {
@@ -57,7 +51,6 @@ export class CommentController {
   }
 
   @intercept(DeletedDocument.BINDING_KEY)
-  @logInvocation()
   @get('/comments/{id}', {
     responses: {
       '200': {
@@ -78,7 +71,6 @@ export class CommentController {
     return this.commentRepository.findById(id, filter);
   }
 
-  @logInvocation()
   @post('/comments', {
     responses: {
       '200': {
@@ -122,7 +114,6 @@ export class CommentController {
     return newComment;
   }
 
-  @logInvocation()
   @patch('/comments/{id}', {
     responses: {
       '204': {
@@ -144,7 +135,6 @@ export class CommentController {
     return this.commentRepository.updateById(id, comment);
   }
 
-  @logInvocation()
   @del('/comments/{id}', {
     responses: {
       '204': {
@@ -156,7 +146,6 @@ export class CommentController {
     await this.commentRepository.deleteById(id);
   }
 
-  @logInvocation()
   @get('/comments/{id}/posts', {
     responses: {
       '200': {

@@ -1,4 +1,4 @@
-import {inject, intercept} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   get,
@@ -14,20 +14,14 @@ import {DeletedDocument, PaginationInterceptor} from '../interceptors';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class UserController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
   ) {}
 
-  @logInvocation()
   @post('/users')
   @response(200, {
     description: 'User model instance',
@@ -67,7 +61,6 @@ export class UserController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/users')
   @response(200, {
     description: 'Array of User model instances',
@@ -88,7 +81,6 @@ export class UserController {
   }
 
   @intercept(DeletedDocument.BINDING_KEY)
-  @logInvocation()
   @get('/users/{id}')
   @response(200, {
     description: 'User model instance',
@@ -106,7 +98,6 @@ export class UserController {
     return this.userRepository.findById(id, filter);
   }
 
-  @logInvocation()
   @patch('/users/{id}')
   @response(204, {
     description: 'User PATCH success',

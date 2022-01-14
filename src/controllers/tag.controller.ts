@@ -1,4 +1,4 @@
-import {inject, intercept} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
@@ -13,20 +13,14 @@ import {PaginationInterceptor} from '../interceptors';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class TagController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(TagRepository)
     protected tagRepository: TagRepository,
   ) {}
 
-  @logInvocation()
   @post('/tags')
   @response(200, {
     description: 'Tag model instance',
@@ -49,7 +43,6 @@ export class TagController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/tags')
   @response(200, {
     description: 'Array of Tag model instances',
@@ -69,7 +62,6 @@ export class TagController {
     return this.tagRepository.find(filter);
   }
 
-  @logInvocation()
   @get('/tags/{id}')
   @response(200, {
     description: 'Tag model instance',
@@ -86,7 +78,6 @@ export class TagController {
     return this.tagRepository.findById(id, filter);
   }
 
-  @logInvocation()
   @del('/tags/{id}')
   @response(204, {
     description: 'Tag DELETE success',

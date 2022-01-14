@@ -1,4 +1,4 @@
-import {inject, intercept} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {
   Count,
   CountSchema,
@@ -24,14 +24,9 @@ import {
   UserRepository,
 } from '../repositories';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class UserExperienceController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
@@ -42,7 +37,6 @@ export class UserExperienceController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/user-experiences', {
     responses: {
       '200': {
@@ -67,7 +61,6 @@ export class UserExperienceController {
     return this.userExperienceRepository.find(filter);
   }
 
-  @logInvocation()
   @get('/user-experiences/{id}')
   @response(200, {
     description: 'UserExperience model instance',
@@ -86,7 +79,6 @@ export class UserExperienceController {
   }
 
   @intercept(ExperienceInterceptor.BINDING_KEY)
-  @logInvocation()
   @post('/users/{userId}/subscribe/{experienceId}', {
     responses: {
       '200': {
@@ -112,7 +104,6 @@ export class UserExperienceController {
 
   // Create new experience
   @intercept(ExperienceInterceptor.BINDING_KEY)
-  @logInvocation()
   @post('/users/{id}/experiences', {
     responses: {
       '200': {
@@ -139,7 +130,6 @@ export class UserExperienceController {
   }
 
   @intercept(ExperienceInterceptor.BINDING_KEY)
-  @logInvocation()
   @patch('/users/{userId}/experiences/{experienceId}', {
     responses: {
       '204': {
@@ -166,7 +156,6 @@ export class UserExperienceController {
   }
 
   @intercept(ExperienceInterceptor.BINDING_KEY)
-  @logInvocation()
   @del('/user-experiences/{id}', {
     responses: {
       '200': {

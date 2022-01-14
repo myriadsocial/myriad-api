@@ -10,21 +10,14 @@ import {
 import {Queue} from '../models';
 import {QueueRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
-import {inject} from '@loopback/core';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class QueueController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(QueueRepository)
     protected queueRepository: QueueRepository,
   ) {}
 
-  @logInvocation()
   @get('/queues')
   @response(200, {
     description: 'Array of Queue model instances',
@@ -41,7 +34,6 @@ export class QueueController {
     return this.queueRepository.find(filter);
   }
 
-  @logInvocation()
   @patch('/queues/{id}')
   @response(200, {
     description: 'Update',

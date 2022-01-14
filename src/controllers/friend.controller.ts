@@ -1,4 +1,4 @@
-import {inject, intercept} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {
   Count,
   CountSchema,
@@ -22,14 +22,9 @@ import {ValidateFriendRequestInterceptor} from '../interceptors/validate-friend-
 import {Friend, User} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class FriendController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
@@ -38,7 +33,6 @@ export class FriendController {
   ) {}
 
   @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
-  @logInvocation()
   @post('/friends')
   @response(200, {
     description: 'Friend model instance',
@@ -61,7 +55,6 @@ export class FriendController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/friends')
   @response(200, {
     description: 'Array of Friend model instances',
@@ -81,7 +74,6 @@ export class FriendController {
     return this.friendRepository.find(filter);
   }
 
-  @logInvocation()
   @get('/friends/{id}')
   @response(200, {
     description: 'Friend model instance',
@@ -100,7 +92,6 @@ export class FriendController {
   }
 
   @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
-  @logInvocation()
   @patch('/friends/{id}')
   @response(204, {
     description: 'Friend PATCH success',
@@ -130,7 +121,6 @@ export class FriendController {
     await this.friendRepository.updateById(id, friend);
   }
 
-  @logInvocation()
   @get('/friends/{requestorId}/mutual/{requesteeId}')
   @response(200, {
     description: 'Count mutual friends',
@@ -177,7 +167,6 @@ export class FriendController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/friends/{requestorId}/detail/{requesteeId}')
   @response(200, {
     description: 'Array of Detail Mutual User model instances',
@@ -198,7 +187,6 @@ export class FriendController {
   }
 
   @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
-  @logInvocation()
   @del('/friends/{id}')
   @response(204, {
     description: 'Friend DELETE success',
