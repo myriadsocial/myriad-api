@@ -461,19 +461,24 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         ],
       },
     });
-    const userIds = users.map(user => user.id);
+    const friendUserIds = users.filter(user =>
+      approvedFriendIds.includes(user.id),
+    );
+    const publicUserIds = users.filter(
+      user => !approvedFriendIds.includes(user.id),
+    );
     const regexTopic = new RegExp(` ${q}"|"${q} |"${q}"| ${q} `, 'i');
     return {
       or: [
         {
           and: [
-            {createdBy: {inq: userIds}},
+            {createdBy: {inq: publicUserIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
           and: [
-            {createdBy: {inq: userIds}},
+            {createdBy: {inq: friendUserIds}},
             {visibility: VisibilityType.FRIEND},
           ],
         },
