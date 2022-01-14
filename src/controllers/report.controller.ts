@@ -13,17 +13,12 @@ import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
 import {PaginationInterceptor} from '../interceptors';
 import {ReportInterceptor} from '../interceptors/report.interceptor';
-import {inject, service} from '@loopback/core';
+import {service} from '@loopback/core';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class ReportController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(ReportRepository)
     public reportRepository: ReportRepository,
@@ -32,7 +27,6 @@ export class ReportController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/reports')
   @response(200, {
     description: 'Array of Report model instances',
@@ -63,7 +57,6 @@ export class ReportController {
     );
   }
 
-  @logInvocation()
   @get('/reports/{id}')
   @response(200, {
     description: 'Report model instance',
@@ -82,7 +75,6 @@ export class ReportController {
   }
 
   @intercept(ReportInterceptor.BINDING_KEY)
-  @logInvocation()
   @patch('/reports/{id}')
   @response(204, {
     description: 'Report PATCH success',
@@ -112,7 +104,6 @@ export class ReportController {
   }
 
   @intercept(ReportInterceptor.BINDING_KEY)
-  @logInvocation()
   @del('/reports/{id}')
   @response(204, {
     description: 'Report DELETE success',

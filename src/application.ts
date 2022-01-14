@@ -4,7 +4,6 @@ import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
 import {HealthComponent} from '@loopback/health';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
-import {LoggingComponent} from '@loopback/logging';
 import {
   RestExplorerBindings,
   RestExplorerComponent,
@@ -37,16 +36,6 @@ import {
   RedditProvider,
   TwitterProvider,
 } from './services';
-import {
-  LoggingBindings,
-  WinstonLoggerOptions,
-  WINSTON_FORMAT,
-  WINSTON_TRANSPORT,
-  WinstonFormat,
-  WinstonTransports,
-} from '@loopback/logging';
-import {format} from 'winston';
-import {extensionFor} from '@loopback/core';
 import {
   UpdateExchangeRateJob,
   UpdateTrendingTopicJob,
@@ -109,41 +98,6 @@ export class MyriadApiApplication extends BootMixin(
       path: '/explorer',
     });
     this.component(RestExplorerComponent);
-
-    this.configure(LoggingBindings.COMPONENT).to({
-      enableFluent: false,
-      enableHttpAccessLog: true,
-    });
-    this.configure(LoggingBindings.WINSTON_HTTP_ACCESS_LOGGER).to({
-      format: 'combined',
-    });
-    this.component(LoggingComponent);
-
-    this.configure<WinstonLoggerOptions>(LoggingBindings.WINSTON_LOGGER).to({
-      level: 'info',
-      format: format.json(),
-      defaultMeta: {framework: 'LoopBack'},
-    });
-
-    const myriadFormat: WinstonFormat = format((info, opts) => {
-      console.log(info);
-      return false;
-    })();
-
-    this.bind('logging.winston.formats.myriadFormat')
-      .to(myriadFormat)
-      .apply(extensionFor(WINSTON_FORMAT));
-    this.bind('logging.winston.formats.colorize')
-      .to(format.colorize())
-      .apply(extensionFor(WINSTON_FORMAT));
-
-    const consoleTransport = new WinstonTransports.Console({
-      level: 'info',
-      format: format.combine(format.colorize(), format.simple()),
-    });
-    this.bind('logging.winston.transports.console')
-      .to(consoleTransport)
-      .apply(extensionFor(WINSTON_TRANSPORT));
   }
 
   registerService() {

@@ -49,7 +49,6 @@
     "@loopback/core": "^3.0.0",
     "@loopback/cron": "^0.7.0",
     "@loopback/health": "^0.9.0",
-    "@loopback/logging": "^0.7.0",
     "@loopback/repository": "^4.0.0",
     "@loopback/rest": "^11.0.0",
     "@loopback/rest-explorer": "^4.0.0",

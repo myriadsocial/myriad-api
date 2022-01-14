@@ -2,7 +2,7 @@ import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors, post, requestBody} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
+
 import * as _ from 'lodash';
 import {NewAuthRequest, RefreshGrant, TokenObject, Token} from '../interfaces';
 import {
@@ -20,10 +20,6 @@ import {JWTService} from '../services/authentication/jwt.service';
 import {config} from '../config';
 
 export class AuthenticationController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(AuthenticationRepository)
     protected authenticationRepository: AuthenticationRepository,
@@ -37,7 +33,6 @@ export class AuthenticationController {
     protected refreshService: RefreshtokenService,
   ) {}
 
-  @logInvocation()
   @post('/signup', {
     responses: {
       '200': {
@@ -113,7 +108,6 @@ export class AuthenticationController {
     return savedUser;
   }
 
-  @logInvocation()
   @post('/login', {
     responses: {
       '200': {
@@ -186,7 +180,6 @@ export class AuthenticationController {
     };
   }
 
-  @logInvocation()
   @post('/refresh', {
     responses: {
       '200': {

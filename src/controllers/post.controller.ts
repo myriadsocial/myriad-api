@@ -1,4 +1,4 @@
-import {inject, intercept, service} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
@@ -23,14 +23,9 @@ import {DraftPost, People, Post, PostWithRelations, User} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {PostService, SocialMediaService} from '../services';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 @authenticate('jwt')
 export class PostController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @service(SocialMediaService)
     protected socialMediaService: SocialMediaService,
@@ -38,7 +33,6 @@ export class PostController {
     protected postService: PostService,
   ) {}
 
-  @logInvocation()
   @post('/posts')
   @response(200, {
     description: 'Post model instance',
@@ -58,7 +52,6 @@ export class PostController {
   }
 
   @intercept(ValidatePostImportURL.BINDING_KEY)
-  @logInvocation()
   @post('/posts/import')
   @response(200, {
     description: 'Post',
@@ -178,7 +171,6 @@ export class PostController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/posts')
   @response(200, {
     description: 'Array of Post model instances',
@@ -199,7 +191,6 @@ export class PostController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/posts/{originPostId}/importers/{platform}')
   @response(200, {
     description: 'Array of Importer model instances',
@@ -223,7 +214,6 @@ export class PostController {
 
   @intercept(DeletedDocument.BINDING_KEY)
   @intercept(RestrictedPostInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/posts/{id}')
   @response(200, {
     description: 'Post model instance',
@@ -240,7 +230,6 @@ export class PostController {
     return this.postService.postRepository.findById(id, filter);
   }
 
-  @logInvocation()
   @patch('/posts/{id}')
   @response(204, {
     description: 'Post PATCH success',
@@ -262,7 +251,6 @@ export class PostController {
     await this.postService.postRepository.updateById(id, updatedPost);
   }
 
-  @logInvocation()
   @del('/posts/{id}')
   @response(204, {
     description: 'Post DELETE success',

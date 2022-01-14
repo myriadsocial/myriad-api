@@ -1,4 +1,4 @@
-import {inject, intercept} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {Count, CountSchema, Filter, repository} from '@loopback/repository';
 import {
   del,
@@ -17,7 +17,6 @@ import {
 import {UserCurrency} from '../models';
 import {UserCurrencyRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
-import {LoggingBindings, logInvocation, WinstonLogger} from '@loopback/logging';
 
 interface UserCurrencyPriority {
   userId: string;
@@ -26,10 +25,6 @@ interface UserCurrencyPriority {
 
 @authenticate('jwt')
 export class UserCurrencyController {
-  // Inject a winston logger
-  @inject(LoggingBindings.WINSTON_LOGGER)
-  private logger: WinstonLogger;
-
   constructor(
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
@@ -38,7 +33,6 @@ export class UserCurrencyController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @logInvocation()
   @get('/user-currencies')
   @response(200, {
     description: 'Array of User Currency model instances',
@@ -59,7 +53,6 @@ export class UserCurrencyController {
   }
 
   @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
-  @logInvocation()
   @post('/user-currencies', {
     responses: {
       '200': {
@@ -88,7 +81,6 @@ export class UserCurrencyController {
     return this.userCurrencyRepository.create(userCurrency);
   }
 
-  @logInvocation()
   @patch('/user-currencies', {
     responses: {
       '200': {
@@ -149,7 +141,6 @@ export class UserCurrencyController {
   }
 
   @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
-  @logInvocation()
   @del('/user-currencies', {
     responses: {
       '200': {
