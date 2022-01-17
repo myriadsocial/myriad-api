@@ -22,6 +22,7 @@ export enum ControllerType {
   USERDRAFTPOST = 'UserDraftPostController',
   STORAGE = 'StorageController',
   TIP = 'TipController',
+  USERWALLET = 'UserWalletController',
   VOTE = 'VoteController',
   USERLANGUAGESETTING = 'UserLanguageSettingController',
 }

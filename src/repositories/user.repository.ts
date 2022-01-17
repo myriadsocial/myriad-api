@@ -22,6 +22,7 @@ import {
   People,
   UserSocialMedia,
   LanguageSetting,
+  Wallet,
 } from '../models';
 import {ActivityLogRepository} from './activity-log.repository';
 import {CurrencyRepository} from './currency.repository';
@@ -34,6 +35,7 @@ import {AccountSettingRepository} from './account-setting.repository';
 import {NotificationSettingRepository} from './notification-setting.repository';
 import {PeopleRepository} from './people.repository';
 import {LanguageSettingRepository} from './language-setting.repository';
+import {WalletRepository} from './wallet.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<
@@ -95,6 +97,11 @@ export class UserRepository extends DefaultCrudRepository<
   public readonly languageSetting: HasOneRepositoryFactory<
     LanguageSetting,
     typeof User.prototype.id
+  >
+
+  public readonly wallets: HasManyRepositoryFactory<
+    Wallet,
+    typeof User.prototype.id
   >;
 
   constructor(
@@ -121,6 +128,8 @@ export class UserRepository extends DefaultCrudRepository<
     protected peopleRepositoryGetter: Getter<PeopleRepository>,
     @repository.getter('LanguageSettingRepository')
     protected languageSettingRepositoryGetter: Getter<LanguageSettingRepository>,
+    @repository.getter('WalletRepository')
+    protected walletRepositoryGetter: Getter<WalletRepository>,
   ) {
     super(User, dataSource);
     this.languageSetting = this.createHasOneRepositoryFactoryFor(
@@ -197,5 +206,10 @@ export class UserRepository extends DefaultCrudRepository<
       'currencies',
       this.currencies.inclusionResolver,
     );
+    this.wallets = this.createHasManyRepositoryFactoryFor(
+      'wallets',
+      walletRepositoryGetter,
+    );
+    this.registerInclusionResolver('wallets', this.wallets.inclusionResolver);
   }
 }

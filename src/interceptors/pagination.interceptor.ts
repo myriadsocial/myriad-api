@@ -164,7 +164,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     filter.where = filter.where ?? {};
 
     switch (controllerName) {
-      // Use for search unblock user
       case ControllerType.USER: {
         if (methodName === MethodType.LEADERBOARD) {
           filter.fields = [
@@ -177,6 +176,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           break;
         }
 
+        // Use for search unblock user
         const blockedFriendIds = await this.friendService.getFriendIds(
           this.currentUser[securityId],
           FriendStatusType.BLOCKED,
@@ -319,6 +319,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           });
         }
 
+        break;
+      }
+
+      case ControllerType.USERWALLET: {
+        const userWalletFilter = invocationCtx.args[1] ?? {};
+
+        filter.where = Object.assign(userWalletFilter.where ?? {}, {
+          userId: invocationCtx.args[0],
+        });
         break;
       }
     }
@@ -474,7 +483,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       limit: meta.itemsPerPage,
     });
 
-    if (controllerName === ControllerType.REPORTUSER)
+    if (
+      controllerName === ControllerType.REPORTUSER ||
+      controllerName === ControllerType.USERWALLET
+    )
       invocationCtx.args[1] = paginationFilter;
     else invocationCtx.args[0] = paginationFilter;
 
