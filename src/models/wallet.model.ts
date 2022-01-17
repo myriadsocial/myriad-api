@@ -1,14 +1,83 @@
-import {Model, model, property} from '@loopback/repository';
+import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {BlockchainPlatform, WalletType} from '../enums';
+import {User} from './user.model';
 
-@model()
-export class Wallet extends Model {
+@model({
+  settings: {
+    strictObjectIDCoercion: true,
+    mongodb: {
+      collection: 'wallets',
+    },
+  },
+})
+export class Wallet extends Entity {
+  @property({
+    type: 'string',
+    id: true,
+    generated: false,
+    required: true,
+    jsonSchema: {
+      maxLength: 66,
+      minLength: 66,
+      pattern: '^0x',
+    },
+  })
+  id: string;
+
   @property({
     type: 'string',
     required: true,
   })
-  walletAddress: string;
+  name: string;
+
+  @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      enum: Object.values(WalletType),
+    },
+  })
+  type: WalletType;
+
+  @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      enum: Object.values(BlockchainPlatform),
+    },
+  })
+  platform: BlockchainPlatform;
+
+  @property({
+    type: 'date',
+    required: false,
+    default: () => new Date(),
+  })
+  createdAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+    default: () => new Date(),
+  })
+  updatedAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  deletedAt?: string;
+
+  @belongsTo(() => User)
+  userId: string;
 
   constructor(data?: Partial<Wallet>) {
     super(data);
   }
 }
+
+export interface WalletRelations {
+  // describe navigational properties here
+}
+
+export type WalletWithRelations = Wallet & WalletRelations;

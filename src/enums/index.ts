@@ -14,3 +14,5 @@ export * from './account-setting-type.enum';
 export * from './post-status-type.enum';
 export * from './upload-type.enum';
 export * from './method-type.enum';
+export * from './blockchain-platform-type.enum';
+export * from './wallet-type.enum';
