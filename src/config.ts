@@ -42,4 +42,7 @@ export const config = {
   TWITTER_API_KEY: process.env.TWITTER_API_KEY ?? '',
 
   COIN_MARKET_CAP_API_KEY: process.env.COIN_MARKET_CAP_API_KEY ?? '',
+
+  ENVIRONMENT: process.env.ENVIRONMENT ?? 'development',
+  MIGRATE: process.env.MIGRATE === 'true' ? true : false,
 };

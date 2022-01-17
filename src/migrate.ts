@@ -1,10 +1,14 @@
 import {MyriadApiApplication} from './application';
+import {config} from './config';
 
 export async function migrate(args: string[]) {
   const existingSchema = args.includes('--rebuild') ? 'drop' : 'alter';
   console.log('Migrating schemas (%s existing schema)', existingSchema);
 
-  const app = new MyriadApiApplication();
+  const app = new MyriadApiApplication({
+    env: config.ENVIRONMENT,
+    migrate: config.MIGRATE,
+  });
   await app.boot();
   await app.migrateSchema({existingSchema});
 
