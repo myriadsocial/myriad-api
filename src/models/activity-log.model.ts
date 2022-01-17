@@ -71,18 +71,7 @@ export class ActivityLog extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {},
-    {
-      required: true,
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-    },
-  )
+  @belongsTo(() => User)
   userId: string;
 
   constructor(data?: Partial<ActivityLog>) {

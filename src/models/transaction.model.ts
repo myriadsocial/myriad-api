@@ -86,32 +86,10 @@ export class Transaction extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'fromUser'},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => User, {name: 'fromUser'})
   from: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'toUser'},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => User, {name: 'toUser'})
   to: string;
 
   @belongsTo(() => Currency, {}, {required: true})

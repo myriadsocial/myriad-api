@@ -101,18 +101,7 @@ export class Experience extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'user'},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => User, {name: 'user'})
   createdBy: string;
 
   @hasMany(() => User, {through: {model: () => ExperienceUser}})
