@@ -2,12 +2,13 @@ import {inject} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {ExtendedPeople, ExtendedPost} from '../interfaces';
+import {ExtendedPost} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
 import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import {injectable, BindingScope} from '@loopback/core';
+import {People} from '../models';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -25,10 +26,7 @@ export class SocialMediaService {
     protected facebookService: Facebook,
   ) {}
 
-  async verifyToTwitter(
-    username: string,
-    publicKey: string,
-  ): Promise<ExtendedPeople> {
+  async verifyToTwitter(username: string, publicKey: string): Promise<People> {
     let user = null;
     let tweets = null;
 
@@ -61,20 +59,16 @@ export class SocialMediaService {
 
     // await this.fetchTwitterFollowing(user.id);
 
-    return {
+    return new People({
       name: user.name,
       originUserId: user.id,
       platform: PlatformType.TWITTER,
       username: user.username,
       profilePictureURL: user.profile_image_url || '',
-      publicKey: publicKey,
-    } as ExtendedPeople;
+    });
   }
 
-  async verifyToReddit(
-    username: string,
-    publicKey: string,
-  ): Promise<ExtendedPeople> {
+  async verifyToReddit(username: string, publicKey: string): Promise<People> {
     let redditUser = null;
     let foundRedditPost = null;
 
@@ -106,7 +100,7 @@ export class SocialMediaService {
     if (!foundRedditPublicKey)
       throw new HttpErrors.NotFound('Cannot find specified post');
 
-    return {
+    return new People({
       name: redditUser.subreddit.title
         ? redditUser.subreddit.title
         : redditUser.name,
@@ -116,14 +110,10 @@ export class SocialMediaService {
       profilePictureURL: redditUser.icon_img
         ? redditUser.icon_img.split('?')[0]
         : '',
-      publicKey: publicKey,
-    } as ExtendedPeople;
+    });
   }
 
-  async verifyToFacebook(
-    username: string,
-    publicKey: string,
-  ): Promise<ExtendedPeople> {
+  async verifyToFacebook(username: string, publicKey: string): Promise<People> {
     const splitUsername = username.split('/');
     const fbUsername = splitUsername[3];
     const fbPostId = splitUsername[5];
@@ -143,14 +133,13 @@ export class SocialMediaService {
       profilePictureURL,
     } = fbPost.platformUser;
 
-    return {
+    return new People({
       name,
       username: userName,
       originUserId,
       platform: PlatformType.FACEBOOK,
       profilePictureURL,
-      publicKey: publicKey,
-    } as ExtendedPeople;
+    });
   }
 
   async fetchTwitterFollowing(platformAccountId: string): Promise<void> {

@@ -111,16 +111,17 @@ export class PeopleController {
       limit: 5,
     });
 
+    const requesteeIds = users.map(e => e.id);
     const blockedFriends = await this.friendRepository.find({
       where: {
         or: [
           {
             requestorId: this.currentUser[securityId],
-            requesteeId: {inq: users.map(e => e.id)},
+            requesteeId: {inq: requesteeIds},
             status: FriendStatusType.BLOCKED,
           },
           {
-            requestorId: {inq: users.map(e => e.id)},
+            requestorId: {inq: requesteeIds},
             requesteeId: this.currentUser[securityId],
             status: FriendStatusType.BLOCKED,
           },

@@ -10,8 +10,8 @@ import {
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ActivityLogType, MethodType, ReferenceType} from '../enums';
-import {Credential} from '../models';
-import {UserRepository} from '../repositories';
+import {Credential, Wallet} from '../models';
+import {UserRepository, WalletRepository} from '../repositories';
 import {ActivityLogService, CurrencyService, FriendService} from '../services';
 import {numberToHex} from '@polkadot/util';
 import {signatureVerify} from '@polkadot/util-crypto';
@@ -31,6 +31,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     protected activityLogService: ActivityLogService,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
     @service(FriendService)
@@ -70,12 +72,18 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
-      const {name, username} = invocationCtx.args[0];
+      const {name, username, ...wallet} = invocationCtx.args[0];
 
       this.validateUsername(username);
 
       invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
         name: name.substring(0, 22),
+      });
+      invocationCtx.args[1] = new Wallet({
+        id: wallet.walletAddress,
+        name: wallet.walletName,
+        type: wallet.walletType,
+        platform: wallet.walletPlatform,
       });
 
       return;
@@ -98,7 +106,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         throw new Error('Invalid user!');
       }
 
-      const user = await this.userRepository.findById(publicAddress);
+      const user = await this.walletRepository.user(publicAddress);
 
       if (user.nonce !== nonce) {
         throw new Error('Invalid user!');
@@ -110,6 +118,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         name: user.name,
         username: user.username,
         createdAt: user.createdAt,
+        walletAddress: publicAddress,
       };
 
       invocationCtx.args[0].data = userProfile;
@@ -127,9 +136,12 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
+      const wallet = invocationCtx.args[1];
+
       await this.userRepository.accountSetting(result.id).create({});
       await this.userRepository.notificationSetting(result.id).create({});
       await this.userRepository.languageSetting(result.id).create({});
+      await this.userRepository.wallets(result.id).create(wallet);
       await this.friendService.defaultFriend(result.id);
       await this.currencyService.defaultCurrency(result.id);
       await this.currencyService.sendMyriadReward(result.id);
@@ -144,11 +156,11 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     }
 
     // Generate random nonce after login
-    const {publicAddress} = invocationCtx.args[0];
+    const {id} = invocationCtx.args[0].data;
     const ng = new NonceGenerator();
     const newNonce = ng.generate();
 
-    await this.userRepository.updateById(publicAddress, {nonce: newNonce});
+    await this.userRepository.updateById(id, {nonce: newNonce});
 
     return;
   }

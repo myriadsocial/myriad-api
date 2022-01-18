@@ -30,6 +30,7 @@ export class JWTService implements TokenService {
       name: userProfile.name,
       username: userProfile.username,
       createdAt: userProfile.createdAt,
+      walletAddress: userProfile.walletAddress,
     };
 
     try {

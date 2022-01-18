@@ -2,11 +2,11 @@ import {BindingScope, inject, injectable, service} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {config} from '../config';
 import {NotificationType, ReferenceType, ReportStatusType} from '../enums';
-import {ExtendedPeople} from '../interfaces';
 import {
   Comment,
   MentionUser,
   Notification,
+  People,
   Transaction,
   UserSocialMedia,
   Vote,
@@ -494,7 +494,7 @@ export class NotificationService {
 
   async sendConnectedSocialMedia(
     userSocialMedia: UserSocialMedia,
-    people: ExtendedPeople,
+    people: People,
   ) {
     const {userId, platform, peopleId} = userSocialMedia;
     const {name, username} = people;

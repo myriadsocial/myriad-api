@@ -84,10 +84,10 @@ export class Friend extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User, {name: 'requestee'})
+  @belongsTo(() => User, {name: 'requestee'}, {required: true})
   requesteeId: string;
 
-  @belongsTo(() => User, {name: 'requestor'})
+  @belongsTo(() => User, {name: 'requestor'}, {required: true})
   requestorId: string;
 
   constructor(data?: Partial<Friend>) {

@@ -1,14 +1,15 @@
 import {repository} from '@loopback/repository';
 import {ActivityLogType, PlatformType, ReferenceType} from '../enums';
-import {ExtendedPeople} from '../interfaces';
-import {UserSocialMedia} from '../models';
+import {People, UserSocialMedia} from '../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
-import {injectable, BindingScope, service} from '@loopback/core';
+import {injectable, BindingScope, service, inject} from '@loopback/core';
 import {NotificationService} from './';
 import {HttpErrors} from '@loopback/rest';
 import {config} from '../config';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {ActivityLogService} from './activity-log.service';
+import {AuthenticationBindings} from '@loopback/authentication';
+import {UserProfile, securityId} from '@loopback/security';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
@@ -21,20 +22,15 @@ export class UserSocialMediaService {
     protected notificationService: NotificationService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    protected currentUser: UserProfile,
   ) {}
 
-  async createSocialMedia(people: ExtendedPeople): Promise<UserSocialMedia> {
-    const {
-      name,
-      originUserId,
-      username,
-      platform,
-      profilePictureURL,
-      publicKey,
-    } = people;
+  async createSocialMedia(people: People): Promise<UserSocialMedia> {
+    const {name, originUserId, username, platform, profilePictureURL} = people;
 
     const newUserSocialMedia: Partial<UserSocialMedia> = {
-      userId: publicKey,
+      userId: this.currentUser[securityId],
       platform: platform as PlatformType,
       verified: true,
     };
@@ -72,11 +68,11 @@ export class UserSocialMediaService {
     });
 
     if (userSocialMedia) {
-      if (userSocialMedia.userId !== publicKey) {
+      if (userSocialMedia.userId !== this.currentUser[securityId]) {
         try {
           await this.notificationService.sendDisconnectedSocialMedia(
             userSocialMedia.id,
-            publicKey,
+            this.currentUser[securityId],
           );
         } catch {
           // ignore
@@ -90,7 +86,7 @@ export class UserSocialMediaService {
     }
 
     const {count} = await this.userSocialMediaRepository.count({
-      userId: publicKey,
+      userId: this.currentUser[securityId],
       platform: platform as PlatformType,
     });
 
@@ -98,7 +94,7 @@ export class UserSocialMediaService {
 
     await this.activityLogService.createLog(
       ActivityLogType.CLAIMSOCIAL,
-      publicKey,
+      this.currentUser[securityId],
       foundPeople.id,
       ReferenceType.PEOPLE,
     );

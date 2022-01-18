@@ -1,16 +1,9 @@
 import {inject} from '@loopback/core';
-import {repository} from '@loopback/repository';
-import {
-  get,
-  getModelSchemaRef,
-  HttpErrors,
-  param,
-  response,
-} from '@loopback/rest';
+import {AnyObject, repository} from '@loopback/repository';
+import {get, HttpErrors, param, response} from '@loopback/rest';
 import {config} from '../config';
 import {PlatformType} from '../enums';
 import {TokenServiceBindings} from '../keys';
-import {Wallet} from '../models';
 import {PostRepository} from '../repositories';
 import {JWTService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
@@ -31,11 +24,20 @@ export class PostWalletAddress {
     description: 'Post model wallet address',
     content: {
       'application/json': {
-        schema: getModelSchemaRef(Wallet),
+        schema: {
+          type: 'object',
+          properties: {
+            walletAddress: {
+              type: 'string',
+            },
+          },
+        },
       },
     },
   })
-  async getWalletAddress(@param.path.string('id') id: string): Promise<Wallet> {
+  async getWalletAddress(
+    @param.path.string('id') id: string,
+  ): Promise<AnyObject> {
     const post = await this.postRepository.findById(id, {
       include: [
         {
@@ -55,12 +57,12 @@ export class PostWalletAddress {
         throw new HttpErrors.NotFound('Walletaddress Not Found!');
       }
 
-      return new Wallet({walletAddress: post.createdBy});
+      return {walletAddress: post.createdBy};
     }
 
     if (people.userSocialMedia) {
       const userId = people.userSocialMedia.userId;
-      return new Wallet({walletAddress: userId});
+      return {walletAddress: userId};
     }
 
     if (!people.walletAddressPassword) {
@@ -85,6 +87,6 @@ export class PostWalletAddress {
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
     const newKey = getKeyring().addFromUri('//' + token);
 
-    return new Wallet({walletAddress: getHexPublicKey(newKey)});
+    return {walletAddress: getHexPublicKey(newKey)};
   }
 }

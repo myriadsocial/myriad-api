@@ -17,6 +17,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   VoteRepository,
+  WalletRepository,
 } from '../repositories';
 import {UserProfile, securityId} from '@loopback/security';
 import {AuthenticationBindings} from '@loopback/authentication';
@@ -49,6 +50,8 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
     public currentUser: UserProfile,
   ) {}
@@ -123,9 +126,13 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.CURRENCY:
       case ControllerType.TAG:
       case ControllerType.REPORT:
-      case ControllerType.PEOPLE:
-        userId = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
+      case ControllerType.PEOPLE: {
+        const user = await this.walletRepository.user(
+          config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+        );
+        userId = user.id;
         break;
+      }
 
       case ControllerType.FRIEND: {
         if (typeof data === 'object') {
@@ -204,20 +211,31 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERSOCIALMEDIA: {
-        if (typeof data === 'object') userId = data.publicKey;
-        else {
+        if (typeof data === 'object') {
+          const userSocialMedia = await this.walletRepository.user(
+            data.publicKey,
+          );
+          userId = userSocialMedia.id;
+        } else {
           ({userId} = await this.userSocialMediaRepository.findById(data));
         }
         break;
       }
 
-      case ControllerType.VOTE:
+      case ControllerType.USERWALLET: {
+        if (methodName === MethodType.FIND) break;
+        userId = data;
+        break;
+      }
+
+      case ControllerType.VOTE: {
         if (typeof data === 'object') {
           userId = data.userId;
         } else {
           ({userId} = await this.voteRepository.findById(data));
         }
         break;
+      }
     }
 
     let error = false;
