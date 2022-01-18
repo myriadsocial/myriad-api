@@ -61,7 +61,6 @@ import {
   ExperienceRepository,
   ExperienceUserRepository,
   FriendRepository,
-  LeaderBoardRepository,
   NotificationRepository,
   PeopleRepository,
   PostRepository,
@@ -466,7 +465,6 @@ export class MyriadApiApplication extends BootMixin(
       experienceUserRepository,
       experienceRepository,
       friendRepository,
-      leaderBoardRepository,
       notificationRepository,
       notificationSettingRepository,
       postRepository,
@@ -492,7 +490,6 @@ export class MyriadApiApplication extends BootMixin(
     await activityLogRepository.updateAll(data, where);
     await commentRepository.updateAll(data, where);
     await experienceUserRepository.updateAll(data, where);
-    await leaderBoardRepository.updateAll(data, where);
     await notificationSettingRepository.updateAll(data, where);
     await userCurrencyRepository.updateAll(data, where);
     await userExperienceRepository.updateAll(data, where);
@@ -661,9 +658,6 @@ export class MyriadApiApplication extends BootMixin(
     );
     const experienceRepository = await this.getRepository(ExperienceRepository);
     const friendRepository = await this.getRepository(FriendRepository);
-    const leaderBoardRepository = await this.getRepository(
-      LeaderBoardRepository,
-    );
     const notificationRepository = await this.getRepository(
       NotificationRepository,
     );
@@ -697,7 +691,6 @@ export class MyriadApiApplication extends BootMixin(
       experienceUserRepository,
       experienceRepository,
       friendRepository,
-      leaderBoardRepository,
       notificationRepository,
       notificationSettingRepository,
       peopleRepository,
