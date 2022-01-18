@@ -7,7 +7,6 @@ import {
   UserCurrencyRepository,
   UserRepository,
 } from '../../../repositories';
-import {User} from '../../../models';
 import {
   givenActivityLogInstance,
   givenCurrencyInstance,
@@ -229,28 +228,5 @@ describe('UserControllerIntegration', () => {
       friends: [friend],
       activityLogs: [activityLog],
     });
-  });
-
-  it('creates data in UserRepository when creating user', async () => {
-    const user = new User({
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bd',
-      name: 'ex irure',
-      username: 'dolor nostrud id laborum',
-      bio: 'mollit Duis est Excepteur',
-    });
-
-    const response = await controller.create(user);
-
-    const savedUser = await userRepository.findOne({
-      where: {
-        id: user.id,
-      },
-    });
-
-    //check that a password has been generated
-    expect(savedUser).to.have.property('password');
-    expect(savedUser?.password).not.equal(null);
-    expect(response).to.have.property('password');
-    expect(response?.password).not.equal(null);
   });
 });
