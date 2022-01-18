@@ -1,4 +1,4 @@
-import {AuthenticationBindings} from '@loopback/authentication'
+import {AuthenticationBindings} from '@loopback/authentication';
 import {
   inject,
   injectable,
