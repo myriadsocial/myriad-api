@@ -21,7 +21,6 @@ import {
   ExperienceUserRepository,
   TagRepository,
   DraftPostRepository,
-  LeaderBoardRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -48,7 +47,6 @@ export async function givenRepositories(testdb: any) {
     async () => accountSettingRepository,
     async () => notificationSettingRepository,
     async () => peopleRepository,
-    async () => leaderboardRepository,
   );
   const userExperienceRepository: UserExperienceRepository =
     new UserExperienceRepository(
@@ -130,8 +128,6 @@ export async function givenRepositories(testdb: any) {
   const draftPostRepository: DraftPostRepository = new DraftPostRepository(
     testdb,
   );
-  const leaderboardRepository: LeaderBoardRepository =
-    new LeaderBoardRepository(testdb, async () => userRepository);
 
   const metricService = new MetricService(
     voteRepository,
@@ -150,7 +146,6 @@ export async function givenRepositories(testdb: any) {
     activityLogRepository,
     reportRepository,
     userReportRepository,
-    leaderboardRepository,
     userCurrencyRepository,
   );
 
@@ -183,10 +178,7 @@ export async function givenRepositories(testdb: any) {
 
   const transactionService = new TransactionService(transactionRepository);
 
-  const activityLogService = new ActivityLogService(
-    activityLogRepository,
-    leaderboardRepository,
-  );
+  const activityLogService = new ActivityLogService(activityLogRepository);
 
   const userSocialMediaService = new UserSocialMediaService(
     userSocialMediaRepository,
@@ -216,7 +208,6 @@ export async function givenRepositories(testdb: any) {
     accountSettingRepository,
     notificationSettingRepository,
     tagRepository,
-    leaderboardRepository,
     metricService,
     notificationService,
     friendService,
@@ -249,7 +240,6 @@ export async function givenEmptyDatabase(testdb: any) {
     notificationSettingRepository,
     tagRepository,
     draftPostRepository,
-    leaderboardRepository,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
@@ -271,5 +261,4 @@ export async function givenEmptyDatabase(testdb: any) {
   await accountSettingRepository.deleteAll();
   await notificationSettingRepository.deleteAll();
   await draftPostRepository.deleteAll();
-  await leaderboardRepository.deleteAll();
 }

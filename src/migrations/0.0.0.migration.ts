@@ -48,7 +48,6 @@ export class MigrationScript000 implements MigrationScript {
 
     await this.userRepository.accountSetting(user.id).create({});
     await this.userRepository.notificationSetting(user.id).create({});
-    await this.userRepository.leaderboard(user.id).create({});
     await this.userRepository.currencies(user.id).delete({
       id: DefaultCurrencyType.MYRIA,
     });

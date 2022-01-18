@@ -21,7 +21,6 @@ import {
   NotificationSetting,
   People,
   UserSocialMedia,
-  LeaderBoard,
 } from '../models';
 import {ActivityLogRepository} from './activity-log.repository';
 import {CurrencyRepository} from './currency.repository';
@@ -33,7 +32,6 @@ import {UserSocialMediaRepository} from './user-social-media.repository';
 import {AccountSettingRepository} from './account-setting.repository';
 import {NotificationSettingRepository} from './notification-setting.repository';
 import {PeopleRepository} from './people.repository';
-import {LeaderBoardRepository} from './leader-board.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<
@@ -82,11 +80,6 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
-  public readonly leaderboard: HasOneRepositoryFactory<
-    LeaderBoard,
-    typeof User.prototype.id
-  >;
-
   public readonly currency: BelongsToAccessor<
     Currency,
     typeof User.prototype.id
@@ -119,8 +112,6 @@ export class UserRepository extends DefaultCrudRepository<
     protected notificationSettingRepositoryGetter: Getter<NotificationSettingRepository>,
     @repository.getter('PeopleRepository')
     protected peopleRepositoryGetter: Getter<PeopleRepository>,
-    @repository.getter('LeaderBoardRepository')
-    protected leaderBoardRepositoryGetter: Getter<LeaderBoardRepository>,
   ) {
     super(User, dataSource);
     this.experience = this.createBelongsToAccessorFor(
@@ -136,14 +127,6 @@ export class UserRepository extends DefaultCrudRepository<
       currencyRepositoryGetter,
     );
     this.registerInclusionResolver('currency', this.currency.inclusionResolver);
-    this.leaderboard = this.createHasOneRepositoryFactoryFor(
-      'leaderboard',
-      leaderBoardRepositoryGetter,
-    );
-    this.registerInclusionResolver(
-      'leaderboard',
-      this.leaderboard.inclusionResolver,
-    );
     this.people = this.createHasManyThroughRepositoryFactoryFor(
       'people',
       peopleRepositoryGetter,

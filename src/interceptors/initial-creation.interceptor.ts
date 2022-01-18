@@ -200,7 +200,6 @@ export class InitialCreationInterceptor implements Provider<Interceptor> {
       case ControllerType.USER: {
         await this.userRepository.accountSetting(result.id).create({});
         await this.userRepository.notificationSetting(result.id).create({});
-        await this.userRepository.leaderboard(result.id).create({});
         await this.friendService.defaultFriend(result.id);
         await this.currencyService.defaultCurrency(result.id);
         await this.currencyService.sendMyriadReward(result.id);

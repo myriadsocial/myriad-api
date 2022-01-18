@@ -18,7 +18,6 @@ import {AccountSetting} from './account-setting.model';
 import {NotificationSetting} from './notification-setting.model';
 import {People} from './people.model';
 import {UserSocialMedia} from './user-social-media.model';
-import {LeaderBoard} from './leader-board.model';
 import {ExperienceWithRelations} from './experience.model';
 
 @model({
@@ -211,9 +210,6 @@ export class User extends Entity {
 
   @hasMany(() => People, {through: {model: () => UserSocialMedia}})
   people: People[];
-
-  @hasOne(() => LeaderBoard)
-  leaderboard: LeaderBoard;
 
   @belongsTo(
     () => Currency,

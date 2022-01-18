@@ -23,7 +23,6 @@ import {
   Comment,
   Experience,
   Friend,
-  LeaderBoardWithRelations,
   People,
   Post,
   PostWithRelations,
@@ -129,10 +128,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       filter.where = Object.assign(filter.where, {
         reportId: invocationCtx.args[0],
       });
-    }
-
-    if (className === ControllerType.LEADERBOARD) {
-      filter.include = ['user'];
     }
 
     // Set where filter when using timeline
@@ -360,18 +355,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           user.username = '[user banned]';
         }
         return user;
-      });
-    }
-
-    if (className === ControllerType.LEADERBOARD) {
-      result = result.map((e: LeaderBoardWithRelations) => {
-        const totalActivity = e.totalActivity;
-
-        if (e.user?.metric) {
-          e.user.metric.totalActivity = totalActivity;
-        }
-
-        return e.user;
       });
     }
 

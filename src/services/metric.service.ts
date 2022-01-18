@@ -25,7 +25,6 @@ import {
   UserSocialMediaRepository,
   ReportRepository,
   UserReportRepository,
-  LeaderBoardRepository,
   UserCurrencyRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
@@ -65,8 +64,6 @@ export class MetricService {
     protected reportRepository: ReportRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
-    @repository(LeaderBoardRepository)
-    protected leaderboardRepository: LeaderBoardRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
   ) {}
@@ -208,9 +205,6 @@ export class MetricService {
 
       case ControllerType.USERCURRENCY:
         return this.userCurrencyRepository.count(where);
-
-      case ControllerType.LEADERBOARD:
-        return this.leaderboardRepository.count(where);
 
       default:
         return {
