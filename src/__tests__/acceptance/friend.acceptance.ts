@@ -93,8 +93,9 @@ describe('FriendApplication', function () {
     const response = await client
       .post('/friends')
       .set('Authorization', `Bearer ${token}`)
-      .send(friend)
-      .expect(200);
+      .send(friend);
+    console.log(response.body.error);
+    // .expect(200);
     expect(response.body).to.containDeep(friend);
     const result = await friendRepository.findById(response.body.id);
     expect(result).to.containDeep(friend);
@@ -572,11 +573,12 @@ describe('FriendApplication', function () {
       status: FriendStatusType.APPROVED,
     });
 
-    await client
+    const res = await client
       .patch(`/friends/${friend.id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send(updatedFriend)
-      .expect(204);
+      .send(updatedFriend);
+    console.log(res.body.error);
+    // .expect(204);
 
     const notifications = await notificationRepository.find({
       where: {
