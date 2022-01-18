@@ -3,7 +3,6 @@ import {MigrationScript, migrationScript} from 'loopback4-migration';
 import {config} from '../config';
 import {DefaultCurrencyType} from '../enums';
 import {UserRepository} from '../repositories';
-import {BcryptHasher} from '../services/authentication/hash.password.service';
 
 @migrationScript()
 export class MigrationScript000 implements MigrationScript {
@@ -28,14 +27,8 @@ export class MigrationScript000 implements MigrationScript {
       ],
     });
 
-    const hasher = new BcryptHasher();
-    const password = await hasher.hashPassword(
-      config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-    );
-
     const user = await this.userRepository.create({
       id: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-      password: password,
       name: 'Myriad Official',
       username: 'myriad_official',
       profilePictureURL:
@@ -48,7 +41,6 @@ export class MigrationScript000 implements MigrationScript {
 
     await this.userRepository.accountSetting(user.id).create({});
     await this.userRepository.notificationSetting(user.id).create({});
-    await this.userRepository.leaderboard(user.id).create({});
     await this.userRepository.currencies(user.id).delete({
       id: DefaultCurrencyType.MYRIA,
     });

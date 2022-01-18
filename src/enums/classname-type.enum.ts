@@ -17,7 +17,6 @@ export enum ControllerType {
   DELETEDCOLLECTION = 'DeletedCollectionController',
   USERREPORTCONTROLLER = 'UserReportController',
   REPORTUSER = 'ReportUserController',
-  LEADERBOARD = 'LeaderBoardController',
 }
 
 export enum MethodType {

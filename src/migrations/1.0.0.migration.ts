@@ -4,7 +4,6 @@ import {
   AccountSettingRepository,
   ActivityLogRepository,
   FriendRepository,
-  LeaderBoardRepository,
   NotificationRepository,
   PeopleRepository,
   PostRepository,
@@ -39,8 +38,6 @@ export class MigrationScript100 implements MigrationScript {
     protected friendRepository: FriendRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(LeaderBoardRepository)
-    protected leaderboardRepository: LeaderBoardRepository,
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
     @repository(TransactionRepository)
@@ -136,24 +133,6 @@ export class MigrationScript100 implements MigrationScript {
         if (!user.accountSetting) {
           await this.userRepository.accountSetting(user.id).create({});
         }
-
-        const found = await this.leaderboardRepository.findOne({
-          where: {userId: user.id},
-        });
-
-        if (found) return;
-
-        const {count} = await this.activityLogRepository.count({
-          userId: user.id,
-          type: {
-            nin: [ActivityLogType.CREATEUSERNAME, ActivityLogType.SKIPUSERNAME],
-          },
-        });
-
-        await this.leaderboardRepository.create({
-          userId: user.id,
-          totalActivity: count,
-        });
 
         return this.metricService.userMetric(user.id);
       }),
