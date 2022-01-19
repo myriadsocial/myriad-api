@@ -27,7 +27,18 @@ export class ExperienceService {
 
     try {
       const user = await this.userRepository.findById(userId, {
-        include: ['experience'],
+        include: [
+          {
+            relation: 'experience',
+            scope: {
+              include: [
+                {
+                  relation: 'users',
+                },
+              ],
+            },
+          },
+        ],
       });
 
       if (user.experience) experience = user.experience;
@@ -52,7 +63,9 @@ export class ExperienceService {
 
       if (count === 0) return;
 
-      experience = await this.experienceRepository.findById(experienceId);
+      experience = await this.experienceRepository.findById(experienceId, {
+        include: ['users'],
+      });
     } else {
       experience = await this.getExperience(userId);
     }
@@ -68,13 +81,14 @@ export class ExperienceService {
       userId,
       FriendStatusType.BLOCKED,
     );
-    const friendIds = await this.friendService.friendRepository.find({
+    const friends = await this.friendService.friendRepository.find({
       where: {
         requestorId: userId,
         requesteeId: {inq: userIds},
         status: FriendStatusType.APPROVED,
       },
     });
+    const friendIds = friends.map(friend => friend.requesteeId);
 
     return {
       or: [
