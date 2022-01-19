@@ -1,4 +1,3 @@
-
 import {AuthenticationBindings} from '@loopback/authentication';
 import {
   inject,
@@ -34,7 +33,6 @@ import {
   ExperienceService,
   FriendService,
   MetricService,
-  NotificationService,
   PostService,
   TagService,
 } from '../services';
@@ -62,8 +60,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected tagService: TagService,
     @service(FriendService)
     protected friendService: FriendService,
-    @service(NotificationService)
-    protected notificationService: NotificationService,
     @service(PostService)
     protected postService: PostService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -157,9 +153,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     request: Request,
   ): Promise<Filter<AnyObject> | void> {
-    const {query, path} = request;
-    const {userId, experienceId, timelineType, q} = query;
-
     const methodName = invocationCtx.methodName as MethodType;
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
@@ -200,7 +193,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       case ControllerType.REPORTUSER: {
         filter.include = ['reporter'];
-        filter.order = this.orderSetting(query);
+        filter.order = this.orderSetting(request.query);
         filter.where = Object.assign(filter.where, {
           reportId: invocationCtx.args[0],
         });
@@ -212,13 +205,25 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       // Both Where filter and timeline cannot be used together
       case ControllerType.POST: {
         if (methodName === MethodType.TIMELINE) {
+          const {experienceId, timelineType, q} = request.query;
+
           // search post
+          if (!q && typeof q === 'string') return;
           if (q) {
-            const whereByQuery = await this.getPostByQuery(
-              q.toString(),
-              this.currentUser[securityId],
-            );
-            filter.where = Object.assign(filter.where ?? {}, whereByQuery);
+            let postQuery = q.toString();
+            if (postQuery.length === 1 && !postQuery.match('^[A-Za-z0-9]'))
+              return;
+            if (postQuery.length > 1) {
+              if (postQuery[0] === '@' || postQuery[0] === '#') {
+                postQuery =
+                  postQuery[0] +
+                  postQuery.replace(new RegExp('[^A-Za-z0-9]', 'gi'), '');
+              } else {
+                postQuery.replace(new RegExp('[^A-Za-z0-9]', 'gi'), '');
+              }
+            }
+
+            filter.where = await this.getPostByQuery(filter.where, postQuery);
 
             break;
           }
@@ -234,9 +239,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           if (timelineType) {
-            if (!userId) return;
             const whereTimeline = await this.getTimeline(
-              userId as string,
               timelineType as TimelineType,
               experienceId?.toString(),
             );
@@ -251,7 +254,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         if (methodName === MethodType.GETIMPORTERS) {
-          const splitPath = path.split('/');
+          const splitPath = request.path.split('/');
           const originPostId = splitPath[2];
           const platform = splitPath[4];
 
@@ -262,25 +265,41 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           });
         }
 
-        filter.order = this.orderSetting(query);
+        filter.order = this.orderSetting(request.query);
 
         break;
       }
 
       case ControllerType.EXPERIENCE: {
+        const {q} = request.query;
+
+        // search post
+        if (!q && typeof q === 'string') return;
         if (q) {
-          const whereExperience = await this.getExperienceByQuery(
-            q.toString(),
-            this.currentUser[securityId],
+          let experienceQuery = q.toString();
+          if (
+            experienceQuery.length === 1 &&
+            !experienceQuery.match('^[A-Za-z0-9]')
+          )
+            return;
+          if (experienceQuery.length > 1) {
+            experienceQuery = experienceQuery.replace(
+              new RegExp('[^A-Za-z0-9]', 'gi'),
+              '',
+            );
+          }
+
+          filter.where = await this.getExperienceByQuery(
+            filter.where,
+            experienceQuery,
           );
-          filter.where = Object.assign(filter.where ?? {}, whereExperience);
         }
         break;
       }
 
       case ControllerType.FRIEND: {
         if (methodName === MethodType.MUTUALDETAIL) {
-          const mutualPath = path.split('/');
+          const mutualPath = request.path.split('/');
           const requestorId = mutualPath[2];
           const requesteeId = mutualPath[4];
           const userIds = this.friendService.getMutualUserIds(
@@ -288,7 +307,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             requesteeId,
           );
 
-          filter.order = this.orderSetting(query);
+          filter.order = this.orderSetting(request.query);
           filter.where = Object.assign(filter.where ?? {}, {
             id: {inq: userIds},
           });
@@ -310,8 +329,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
     const methodName = invocationCtx.methodName as MethodType;
 
-    const {userId, experienceId, mutual} = request.query;
-
     switch (controllerName) {
       // include user in people field
       case ControllerType.USEREXPERIENCE: {
@@ -329,13 +346,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         if (methodName === MethodType.TIMELINE) {
           result = await Promise.all(
             result.map(async (post: Post) =>
-              this.postService.getPostImporterInfo(post, userId?.toString()),
+              this.postService.getPostImporterInfo(
+                post,
+                this.currentUser[securityId],
+              ),
             ),
           );
 
-          if (experienceId) {
-            await this.userRepository.updateById(userId?.toString() ?? '', {
-              onTimeline: experienceId.toString(),
+          if (request.query.experienceId) {
+            await this.userRepository.updateById(this.currentUser[securityId], {
+              onTimeline: request.query.experienceId.toString(),
             });
           }
         }
@@ -378,7 +398,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       // include total mutual friend in friend collection
       case ControllerType.FRIEND: {
-        if (mutual === 'true') {
+        if (request.query.mutual === 'true') {
           const where = JSON.stringify(filter.where);
 
           if (where.match(/approved/gi) || where.match(/pending/gi)) {
@@ -455,22 +475,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     return meta;
   }
 
-  async getPostByQuery(q: string, userId?: string): Promise<Where<Post>> {
-    let blockedFriendIds: string[] = [];
-    let approvedFriendIds: string[] = [];
-
-    if (userId) {
-      blockedFriendIds = await this.friendService.getFriendIds(
-        userId,
-        FriendStatusType.BLOCKED,
-      );
-
-      approvedFriendIds = await this.friendService.getFriendIds(
-        userId,
-        FriendStatusType.APPROVED,
-      );
-      approvedFriendIds = [...approvedFriendIds, userId];
-    }
+  async getPostByQuery(where: Where<Post>, q: string): Promise<Where<Post>> {
+    const blockedFriendIds: string[] = await this.friendService.getFriendIds(
+      this.currentUser[securityId],
+      FriendStatusType.BLOCKED,
+    );
+    const friendIds = await this.friendService.getFriendIds(
+      this.currentUser[securityId],
+      FriendStatusType.APPROVED,
+    );
+    const approvedFriendIds = [...friendIds, this.currentUser[securityId]];
 
     const pattern = new RegExp(q, 'i');
     const users = await this.userRepository.find({
@@ -562,30 +576,28 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   }
 
   async getExperienceByQuery(
+    where: Where<Experience>,
     q: string,
-    userId?: string,
   ): Promise<Where<Experience>> {
-    let blockedFriendIds: string[] = [];
-
-    if (userId) {
-      blockedFriendIds = await this.friendService.getFriendIds(
-        userId,
-        FriendStatusType.BLOCKED,
-      );
-    }
+    const blockedFriendIds = await this.friendService.getFriendIds(
+      this.currentUser[securityId],
+      FriendStatusType.BLOCKED,
+    );
 
     const pattern = new RegExp(q, 'i');
-
-    return {
+    const w = {
       and: [{name: {regexp: pattern}}, {createdBy: {nin: blockedFriendIds}}],
-    } as Where<Experience>;
+    };
+
+    return Object.assign(where ?? {}, {w}) as Where<Experience>;
   }
 
   async getTimeline(
-    userId: string,
     timelineType: TimelineType,
     experienceId?: string,
   ): Promise<Where<Post> | undefined> {
+    const userId = this.currentUser[securityId];
+
     switch (timelineType) {
       case TimelineType.EXPERIENCE:
         return this.experienceService.experienceTimeline(userId, experienceId);
