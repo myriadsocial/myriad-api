@@ -81,13 +81,12 @@ describe('FriendApplication', function () {
   });
 
   it('creates a pending friend request', async function () {
-    await givenUserInstance(userRepository, {
+    const requestee = await givenUserInstance(userRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
     });
 
     const friend = givenFriend({
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      requesteeId: requestee.id,
       requestorId: user.id,
     });
 
@@ -560,13 +559,12 @@ describe('FriendApplication', function () {
   });
 
   it('creates notification when approving a pending friend request', async () => {
-    await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915hh449ee618bc',
+    const requestor = await givenUserInstance(userRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915hh449ee6181c',
     });
 
     const friend = await givenFriendInstance(friendRepository, {
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915hh449ee618bc',
+      requestorId: requestor.id,
       requesteeId: user.id,
     });
 
@@ -583,7 +581,7 @@ describe('FriendApplication', function () {
     const notifications = await notificationRepository.find({
       where: {
         from: user.id,
-        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915hh449ee618bc',
+        to: requestor.id,
         referenceId: friend.requesteeId,
       },
     });

@@ -193,9 +193,6 @@ export class MetricService {
       case ControllerType.REPORT:
         return this.reportRepository.count(where);
 
-      case ControllerType.DELETEDCOLLECTION:
-        return this.countDeletedData(methodName, where);
-
       case ControllerType.REPORTUSER:
         return this.userReportRepository.count(where);
 
@@ -219,24 +216,6 @@ export class MetricService {
 
       default:
         return this.friendRepository.count(where);
-    }
-  }
-
-  async countDeletedData(
-    methodName: MethodType,
-    where: Where<AnyObject>,
-  ): Promise<Count> {
-    switch (methodName) {
-      case MethodType.DELETEDUSERLIST:
-        return this.userRepository.count(where);
-
-      case MethodType.DELETEDPOSTLIST:
-        return this.postRepository.count(where);
-
-      default:
-        return {
-          count: 0,
-        };
     }
   }
 

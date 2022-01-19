@@ -164,16 +164,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         ));
         break;
       }
-
-      case MethodType.FINDBYID: {
-        const filter = invocationCtx.args[1] ?? {};
-
-        if (!filter.include) filter.include = ['users'];
-        else filter.include.push('users');
-
-        invocationCtx.args[1] = filter;
-        break;
-      }
     }
 
     return {
@@ -194,7 +184,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     const {userId, experienceId, numberOfUserExperience, isBelongToUser} =
       experienceDetail;
 
-    let users = experienceDetail.users;
+    const users = experienceDetail.users;
 
     if (
       (methodName === MethodType.CREATE ||
@@ -237,108 +227,83 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       );
     }
 
-    if (methodName !== MethodType.FINDBYID) {
-      if (methodName === MethodType.CREATE) {
+    if (methodName === MethodType.CREATE) {
+      await this.activityLogService.createLog(
+        ActivityLogType.CREATEEXPERIENCE,
+        result.createdBy,
+        result.id,
+        ReferenceType.EXPERIENCE,
+      );
+    }
+
+    if (methodName === MethodType.SUBSCRIBE) {
+      if (isBelongToUser) {
+        await this.userExperienceRepository.updateById(result.id, {
+          subscribed: false,
+        });
+
+        result = Object.assign(result, {subscribed: false});
+      } else {
         await this.activityLogService.createLog(
-          ActivityLogType.CREATEEXPERIENCE,
-          result.createdBy,
-          result.id,
+          ActivityLogType.SUBSCRIBEEXPERIENCE,
+          result.userId,
+          result.experienceId,
           ReferenceType.EXPERIENCE,
         );
       }
+    }
 
-      if (methodName === MethodType.SUBSCRIBE) {
-        if (isBelongToUser) {
-          await this.userExperienceRepository.updateById(result.id, {
-            subscribed: false,
-          });
+    if (methodName === MethodType.DELETEBYID) {
+      const {count: countExperience} =
+        await this.userExperienceRepository.count({
+          or: [
+            {
+              experienceId,
+              subscribed: true,
+            },
+            {
+              experienceId,
+              subscribed: false,
+            },
+          ],
+        });
 
-          result = Object.assign(result, {subscribed: false});
-        } else {
-          await this.activityLogService.createLog(
-            ActivityLogType.SUBSCRIBEEXPERIENCE,
-            result.userId,
-            result.experienceId,
-            ReferenceType.EXPERIENCE,
-          );
-        }
+      if (countExperience === 0) {
+        await this.experienceRepository.deleteById(experienceId);
+      } else {
+        await this.experienceRepository.updateById(experienceId, {
+          subscribedCount: countExperience,
+        });
       }
 
-      if (methodName === MethodType.DELETEBYID) {
-        const {count: countExperience} =
-          await this.userExperienceRepository.count({
-            or: [
-              {
-                experienceId,
-                subscribed: true,
-              },
-              {
-                experienceId,
-                subscribed: false,
-              },
-            ],
-          });
+      const {count: countUserExperience} =
+        await this.userExperienceRepository.count({userId});
 
-        if (countExperience === 0) {
-          await this.experienceRepository.deleteById(experienceId);
-        } else {
-          await this.experienceRepository.updateById(experienceId, {
-            subscribedCount: countExperience,
-          });
-        }
+      if (countUserExperience === 0) {
+        await this.userRepository.updateById(userId, {onTimeline: undefined});
+      } else {
+        try {
+          const user = await this.userRepository.findById(userId);
 
-        const {count: countUserExperience} =
-          await this.userExperienceRepository.count({userId});
+          if (experienceId === user.onTimeline?.toString()) {
+            const userExperience = await this.userExperienceRepository.findOne({
+              where: {userId},
+            });
 
-        if (countUserExperience === 0) {
-          await this.userRepository.updateById(userId, {onTimeline: undefined});
-        } else {
-          try {
-            const user = await this.userRepository.findById(userId);
-
-            if (experienceId === user.onTimeline?.toString()) {
-              const userExperience =
-                await this.userExperienceRepository.findOne({
-                  where: {userId},
-                });
-
-              if (userExperience) {
-                await this.userRepository.updateById(userId, {
-                  onTimeline: userExperience.experienceId,
-                });
-              }
+            if (userExperience) {
+              await this.userRepository.updateById(userId, {
+                onTimeline: userExperience.experienceId,
+              });
             }
-          } catch {
-            // ignore
           }
+        } catch {
+          // ignore
         }
       }
-
-      // Recounting userMetric after create, clone, and subscribe
-      await this.metricService.userMetric(userId);
-
-      return result;
     }
 
-    if (result.users) {
-      users = result.users;
-      delete result.users;
-    }
-
-    const userToPeople = users.map((user: User) => {
-      return new People({
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        platform: PlatformType.MYRIAD,
-        originUserId: user.id,
-        profilePictureURL: user.profilePictureURL,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      });
-    });
-
-    result.people = [...result.people, ...userToPeople];
+    // Recounting userMetric after create, clone, and subscribe
+    await this.metricService.userMetric(userId);
 
     return result;
   }

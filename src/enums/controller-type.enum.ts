@@ -14,7 +14,6 @@ export enum ControllerType {
   COMMENT = 'CommentController',
   ACTIVITYLOG = 'ActivityLogController',
   REPORT = 'ReportController',
-  DELETEDCOLLECTION = 'DeletedCollectionController',
   USERREPORT = 'UserReportController',
   REPORTUSER = 'ReportUserController',
   AUTHENTICATION = 'AuthenticationController',

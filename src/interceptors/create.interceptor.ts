@@ -13,24 +13,25 @@ import {
   ReferenceType,
   ControllerType,
   PostStatus,
-  PlatformType,
   ActivityLogType,
-  SectionType,
+  FriendStatusType,
 } from '../enums';
-import {Comment, UserSocialMedia} from '../models';
+import {Comment, DraftPost, Transaction, UserSocialMedia} from '../models';
 import {
   CommentRepository,
   DraftPostRepository,
-  PostRepository,
   ReportRepository,
   UserCurrencyRepository,
   UserReportRepository,
+  UserRepository,
 } from '../repositories';
 import {
   ActivityLogService,
   CurrencyService,
+  FriendService,
   MetricService,
   NotificationService,
+  PostService,
   TagService,
   VoteService,
 } from '../services';
@@ -44,8 +45,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${CreateInterceptor.name}`;
 
   constructor(
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
     @repository(UserCurrencyRepository)
@@ -56,6 +55,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected userReportRepository: UserReportRepository,
     @repository(DraftPostRepository)
     protected draftPostRepository: DraftPostRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -68,6 +69,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected activityLogService: ActivityLogService,
     @service(VoteService)
     protected voteService: VoteService,
+    @service(FriendService)
+    protected friendService: FriendService,
+    @service(PostService)
+    protected postService: PostService,
   ) {}
 
   /**
@@ -116,7 +121,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case ControllerType.COMMENT: {
         const {referenceId, postId} = invocationCtx.args[0] as Comment;
 
-        await this.postRepository.findById(postId);
+        await this.postService.postRepository.findById(postId);
         await this.validateComment(referenceId);
 
         return;
@@ -127,6 +132,14 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         invocationCtx.args[0] =
           await this.currencyService.verifyRpcAddressConnection(data);
+
+        return;
+      }
+
+      case ControllerType.FRIEND: {
+        await this.friendService.handlePendingBlockedRequest(
+          invocationCtx.args[0],
+        );
 
         return;
       }
@@ -145,56 +158,25 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.VOTE: {
-        const {userId, referenceId, type, state, section} =
-          invocationCtx.args[0];
+        const type = invocationCtx.args[0].type;
+        const data: AnyObject = {};
 
         if (type === ReferenceType.POST) {
-          const post = await this.postRepository.findById(referenceId, {
-            include: [
-              {
-                relation: 'comments',
-                scope: {
-                  where: {
-                    userId,
-                    referenceId,
-                    type,
-                    section: SectionType.DEBATE,
-                  },
-                },
-              },
-            ],
-          });
+          const post = await this.voteService.validatePostVote(
+            invocationCtx.args[0],
+          );
 
-          if (!state) {
-            if (
-              !post.comments ||
-              (post.comments && post.comments.length === 0)
-            ) {
-              throw new HttpErrors.UnprocessableEntity(
-                'Please comment first in debate sections, before you downvote this post',
-              );
-            }
-          }
+          data.toUserId = post.createdBy;
+          data.section = undefined;
+        } else if (type === ReferenceType.COMMENT) {
+          const comment = await this.voteService.validateComment(
+            invocationCtx.args[0],
+          );
 
-          invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
-            toUserId: post.createdBy,
-            section: undefined,
-          });
-        }
+          data.toUserId = comment.userId;
+        } else throw new HttpErrors.UnprocessableEntity('Type not found');
 
-        if (type === ReferenceType.COMMENT) {
-          if (!section) {
-            throw new HttpErrors.UnprocessableEntity(
-              'Section cannot empty when you upvote/downvote comment',
-            );
-          }
-
-          const comment = await this.commentRepository.findById(referenceId);
-
-          invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
-            toUserId: comment.userId,
-          });
-        }
+        invocationCtx.args[0] = Object.assign(invocationCtx.args[0], data);
 
         break;
       }
@@ -212,47 +194,35 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.TRANSACTION: {
+        await this.createNotification(controllerName, result);
         await this.activityLogService.createLog(
           ActivityLogType.SENDTIP,
           result.from,
           result.id,
           ReferenceType.TRANSACTION,
         );
+
         return result;
       }
 
       case ControllerType.POST: {
         if (result.status === PostStatus.PUBLISHED) {
-          await this.draftPostRepository.deleteById(result.id);
-
-          delete result.id;
-          delete result.status;
-
-          const newPost = await this.postRepository.create(
-            Object.assign(result, {platform: PlatformType.MYRIAD}),
+          const newPost = await this.postService.createPublishPost(
+            result as DraftPost,
           );
-
-          try {
-            await this.notificationService.sendMention(
-              newPost.id,
-              newPost.mentions ?? [],
-            );
-          } catch {
-            // ignore
-          }
 
           if (newPost.tags.length > 0) {
             await this.tagService.createTags(newPost.tags);
           }
 
+          await this.createNotification(controllerName, newPost);
+          await this.metricService.userMetric(newPost.createdBy);
           await this.activityLogService.createLog(
             ActivityLogType.CREATEPOST,
             newPost.createdBy,
             newPost.id,
             ReferenceType.POST,
           );
-
-          await this.metricService.userMetric(newPost.createdBy);
 
           return newPost;
         }
@@ -269,7 +239,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
         const popularCount = await this.metricService.countPopularPost(
           result.postId,
         );
-        await this.postRepository.updateById(result.postId, {
+        await this.postService.postRepository.updateById(result.postId, {
           metric: metric,
           popularCount: popularCount,
         });
@@ -279,8 +249,23 @@ export class CreateInterceptor implements Provider<Interceptor> {
           result.id,
           ReferenceType.COMMENT,
         );
+        await this.createNotification(controllerName, result);
 
         return Object.assign(result, {metric});
+      }
+
+      case ControllerType.FRIEND: {
+        if (result && result.status === FriendStatusType.PENDING) {
+          await this.createNotification(controllerName, result);
+          await this.activityLogService.createLog(
+            ActivityLogType.FRIENDREQUEST,
+            result.requestorId,
+            result.requesteeId,
+            ReferenceType.USER,
+          );
+        }
+
+        return result;
       }
 
       case ControllerType.USERREPORT: {
@@ -364,5 +349,39 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     if (!comment) return;
     throw new HttpErrors.UnprocessableEntity('Cannot added comment anymore');
+  }
+
+  async createNotification(
+    controllerName: ControllerType,
+    result: AnyObject,
+  ): Promise<void> {
+    try {
+      switch (controllerName) {
+        case ControllerType.COMMENT: {
+          await this.notificationService.sendPostComment(result as Comment);
+          break;
+        }
+
+        case ControllerType.FRIEND: {
+          await this.notificationService.sendFriendRequest(result.requesteeId);
+          break;
+        }
+
+        case ControllerType.POST: {
+          await this.notificationService.sendMention(
+            result.id,
+            result.mentions ?? [],
+          );
+          break;
+        }
+
+        case ControllerType.TRANSACTION: {
+          await this.notificationService.sendTipsSuccess(result as Transaction);
+          break;
+        }
+      }
+    } catch {
+      // ignore
+    }
   }
 }

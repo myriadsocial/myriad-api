@@ -10,6 +10,7 @@ import {
 import {
   ActivityLogType,
   ControllerType,
+  FriendStatusType,
   MethodType,
   PlatformType,
   ReferenceType,
@@ -22,7 +23,13 @@ import {
 } from '../repositories';
 import {HttpErrors} from '@loopback/rest';
 import {Post, User} from '../models';
-import {ActivityLogService, CurrencyService} from '../services';
+import {
+  ActivityLogService,
+  CurrencyService,
+  FriendService,
+  MetricService,
+  NotificationService,
+} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 
 const urlUtils = new UrlUtils();
@@ -47,6 +54,12 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected activityLogService: ActivityLogService,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
+    @service(FriendService)
+    protected friendService: FriendService,
+    @service(MetricService)
+    protected metricService: MetricService,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
   ) {}
 
   /**
@@ -70,7 +83,11 @@ export class UpdateInterceptor implements Provider<Interceptor> {
   ) {
     await this.beforeUpdate(invocationCtx);
 
-    return next();
+    const result = await next();
+
+    await this.afterUpdate(invocationCtx);
+
+    return result;
   }
 
   async beforeUpdate(invocationCtx: InvocationContext): Promise<void> {
@@ -87,19 +104,34 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.CURRENCY: {
+        const [currencyId, currency] = invocationCtx.args;
         const currentCurrency =
-          await this.currencyService.currencyRepository.findById(
-            invocationCtx.args[0],
-          );
-        const updatedCurrency = Object.assign(
-          currentCurrency,
-          invocationCtx.args[1],
-        );
+          await this.currencyService.currencyRepository.findById(currencyId);
+        const updatedCurrency = Object.assign(currentCurrency, {
+          ...currency,
+          updatedAt: new Date().toString(),
+        });
 
         invocationCtx.args[1] =
           await this.currencyService.verifyRpcAddressConnection(
             updatedCurrency,
           );
+
+        break;
+      }
+
+      case ControllerType.FRIEND: {
+        const status = invocationCtx.args[1].status;
+
+        if (status !== FriendStatusType.APPROVED) {
+          throw new HttpErrors.UnprocessableEntity(
+            'Only accept approved friend request!',
+          );
+        }
+
+        await this.friendService.validateApproveFriendRequest(
+          invocationCtx.args[2],
+        );
 
         break;
       }
@@ -176,16 +208,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.USERCURRENCY: {
-        const {userId, currencies} = invocationCtx.args[0];
-
-        await this.userRepository.updateById(userId, {
-          defaultCurrency: currencies[0],
-        });
-
-        break;
-      }
-
       case ControllerType.USEREXPERIENCE: {
         if (methodName === MethodType.SELECTEXPERIENCE) {
           const userId = invocationCtx.args[0];
@@ -203,6 +225,30 @@ export class UpdateInterceptor implements Provider<Interceptor> {
             );
           }
         }
+
+        break;
+      }
+    }
+  }
+
+  async afterUpdate(invocationCtx: InvocationContext): Promise<void> {
+    const controllerName = invocationCtx.targetClass.name as ControllerType;
+
+    switch (controllerName) {
+      case ControllerType.FRIEND: {
+        const {requestorId, requesteeId} = invocationCtx.args[2];
+        await this.notificationService.sendFriendAccept(requestorId);
+        await this.metricService.userMetric(requestorId);
+        await this.metricService.userMetric(requesteeId);
+        break;
+      }
+
+      case ControllerType.USERCURRENCY: {
+        const {userId, currencies} = invocationCtx.args[0];
+
+        await this.userRepository.updateById(userId, {
+          defaultCurrency: currencies[0],
+        });
 
         break;
       }

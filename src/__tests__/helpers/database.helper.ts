@@ -184,6 +184,7 @@ export async function givenRepositories(testdb: any) {
     friendRepository,
     voteRepository,
     metricService,
+    currentUser,
   );
 
   const transactionService = new TransactionService(transactionRepository);

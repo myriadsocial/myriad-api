@@ -1,12 +1,5 @@
 import {intercept} from '@loopback/core';
-import {
-  AnyObject,
-  Count,
-  CountSchema,
-  Filter,
-  FilterExcludingWhere,
-  repository,
-} from '@loopback/repository';
+import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -17,14 +10,13 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {FriendStatusType} from '../enums';
 import {
   AuthorizeInterceptor,
   CreateInterceptor,
+  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
-import {ValidateFriendRequestInterceptor} from '../interceptors/validate-friend-request.interceptor';
 import {Friend, User} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
@@ -40,7 +32,6 @@ export class FriendController {
   ) {}
 
   @intercept(CreateInterceptor.BINDING_KEY)
-  @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
   @post('/friends')
   @response(200, {
     description: 'Friend model instance',
@@ -100,7 +91,6 @@ export class FriendController {
   }
 
   @intercept(UpdateInterceptor.BINDING_KEY)
-  @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
   @patch('/friends/{id}')
   @response(204, {
     description: 'Friend PATCH success',
@@ -130,50 +120,6 @@ export class FriendController {
     await this.friendRepository.updateById(id, friend);
   }
 
-  @get('/friends/{requestorId}/mutual/{requesteeId}')
-  @response(200, {
-    description: 'Count mutual friends',
-    content: {
-      'application/json': {
-        schema: CountSchema,
-      },
-    },
-  })
-  async mutualCount(
-    @param.path.string('requestorId') requestorId: string,
-    @param.path.string('requesteeId') requesteeId: string,
-  ): Promise<Count> {
-    const collection = (
-      this.friendRepository.dataSource.connector as AnyObject
-    ).collection(Friend.modelName);
-
-    const countMutual = await collection
-      .aggregate([
-        {
-          $match: {
-            $or: [
-              {
-                requestorId: requestorId,
-                status: FriendStatusType.APPROVED,
-              },
-              {
-                requestorId: requesteeId,
-                status: FriendStatusType.APPROVED,
-              },
-            ],
-          },
-        },
-        {$group: {_id: '$requesteeId', count: {$sum: 1}}},
-        {$match: {count: 2}},
-        {$group: {_id: null, count: {$sum: 1}}},
-        {$project: {_id: 0}},
-      ])
-      .get();
-
-    if (countMutual.length === 0) return {count: 0};
-    return countMutual[0];
-  }
-
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/friends/{requestorId}/detail/{requesteeId}')
   @response(200, {
@@ -194,7 +140,7 @@ export class FriendController {
     return this.userRepository.find(filter);
   }
 
-  @intercept(ValidateFriendRequestInterceptor.BINDING_KEY)
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/friends/{id}')
   @response(204, {
     description: 'Friend DELETE success',

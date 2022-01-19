@@ -3,8 +3,8 @@ import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {DraftPost} from '../models';
 import {DraftPostRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
-import { AuthorizeInterceptor } from '../interceptors';
 import {intercept} from '@loopback/core';
+import {AuthorizeInterceptor} from '../interceptors';
 
 @authenticate('jwt')
 @intercept(AuthorizeInterceptor.BINDING_KEY)

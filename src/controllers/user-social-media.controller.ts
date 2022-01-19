@@ -16,7 +16,6 @@ import {
   AuthorizeInterceptor,
   CreateInterceptor,
   PaginationInterceptor,
-  UpdateInterceptor,
 } from '../interceptors';
 import {UserSocialMedia, UserVerification} from '../models';
 import {
@@ -139,7 +138,6 @@ export class UserSocialMediaController {
     );
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/user-social-medias/{id}/primary')
   @response(204, {
     description: 'Set primary social media',

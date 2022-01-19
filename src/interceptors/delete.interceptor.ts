@@ -9,7 +9,7 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {AnyObject, repository} from '@loopback/repository';
+import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
 import {ControllerType} from '../enums';
@@ -18,7 +18,12 @@ import {
   UserCurrencyRepository,
   VoteRepository,
 } from '../repositories';
-import {VoteService} from '../services';
+import {
+  FriendService,
+  MetricService,
+  NotificationService,
+  VoteService,
+} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -35,6 +40,12 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     protected userCurrencyRepository: UserCurrencyRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
+    @service(FriendService)
+    protected friendService: FriendService,
+    @service(MetricService)
+    protected metricService: MetricService,
+    @service(NotificationService)
+    protected notificationService: NotificationService,
     @service(VoteService)
     protected voteService: VoteService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -60,21 +71,24 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    const data = await this.beforeDelete(invocationCtx);
+    await this.beforeDelete(invocationCtx);
 
     const result = await next();
 
-    await this.afterDelete(invocationCtx, data);
+    await this.afterDelete(invocationCtx);
 
     return result;
   }
 
-  async beforeDelete(
-    invocationCtx: InvocationContext,
-  ): Promise<AnyObject | void> {
+  async beforeDelete(invocationCtx: InvocationContext): Promise<void> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
     switch (controllerName) {
+      case ControllerType.FRIEND: {
+        await this.friendService.removedFriend(invocationCtx.args[1]);
+        break;
+      }
+
       case ControllerType.USERCURRENCY: {
         if (
           this.currentUser.defaultCurrency === invocationCtx.args[0].currencyId
@@ -99,27 +113,34 @@ export class DeleteInterceptor implements Provider<Interceptor> {
 
       case ControllerType.VOTE: {
         const vote = await this.voteRepository.findById(invocationCtx.args[0]);
-
-        return {
+        invocationCtx.args[1] = {
           referenceId: vote.referenceId,
           toUserId: vote.toUserId,
           type: vote.type,
           postId: vote.postId,
         };
+        break;
       }
     }
   }
 
-  async afterDelete(
-    invocationCtx: InvocationContext,
-    beforeData: AnyObject | void,
-  ): Promise<void> {
+  async afterDelete(invocationCtx: InvocationContext): Promise<void> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
     switch (controllerName) {
+      case ControllerType.FRIEND: {
+        const {requesteeId, requestorId} = invocationCtx.args[1];
+        await this.notificationService.cancelFriendRequest(
+          requestorId,
+          requesteeId,
+        );
+        await this.metricService.userMetric(requesteeId);
+        await this.metricService.userMetric(requestorId);
+        break;
+      }
+
       case ControllerType.VOTE: {
-        if (!beforeData) break;
-        await this.voteService.updateVoteCounter(beforeData);
+        await this.voteService.updateVoteCounter(invocationCtx.args[1]);
 
         break;
       }

@@ -3,7 +3,6 @@ export enum MethodType {
   FINDBYID = 'findById',
   CREATE = 'create',
   PATCH = 'patch',
-  CREATEVOTE = 'createVote',
   UPDATEBYID = 'updateById',
   UPDATEEXPERIENCE = 'updateExperience',
   TIMELINE = 'getTimeline',

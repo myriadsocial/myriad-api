@@ -23,7 +23,6 @@ import {
   Comment,
   Experience,
   Friend,
-  People,
   Post,
   PostWithRelations,
   User,
@@ -284,35 +283,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           const mutualPath = path.split('/');
           const requestorId = mutualPath[2];
           const requesteeId = mutualPath[4];
-
-          const collection = (
-            this.friendService.friendRepository.dataSource
-              .connector as AnyObject
-          ).collection(Friend.modelName);
-
-          const userIds = (
-            await collection
-              .aggregate([
-                {
-                  $match: {
-                    $or: [
-                      {
-                        requestorId: requestorId,
-                        status: FriendStatusType.APPROVED,
-                      },
-                      {
-                        requestorId: requesteeId,
-                        status: FriendStatusType.APPROVED,
-                      },
-                    ],
-                  },
-                },
-                {$group: {_id: '$requesteeId', count: {$sum: 1}}},
-                {$match: {count: 2}},
-                {$project: {_id: 1}},
-              ])
-              .get()
-          ).map((user: AnyObject) => user._id);
+          const userIds = this.friendService.getMutualUserIds(
+            requestorId,
+            requesteeId,
+          );
 
           filter.order = this.orderSetting(query);
           filter.where = Object.assign(filter.where ?? {}, {

@@ -126,12 +126,11 @@ describe('UserCurrencyApplication', function () {
       currencies: [userCurrency2.currencyId, userCurrency1.currencyId],
     };
 
-    const response = await client
+    await client
       .patch('/user-currencies')
       .set('Authorization', `Bearer ${accessToken}`)
-      .send(currencyPriority);
-    // .expect(204);
-    console.log(response.body.error);
+      .send(currencyPriority)
+      .expect(204);
     const result = await userCurrencyRepository.find({
       where: {userId: otherUser.id},
     });

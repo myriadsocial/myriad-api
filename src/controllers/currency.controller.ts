@@ -83,7 +83,7 @@ export class CurrencyController {
     @param.filter(Currency, {exclude: 'where'})
     filter?: FilterExcludingWhere<Currency>,
   ): Promise<Currency> {
-    return this.currencyRepository.findById(id.toUpperCase(), filter);
+    return this.currencyRepository.findById(id, filter);
   }
 
   @intercept(UpdateInterceptor.BINDING_KEY)
@@ -113,6 +113,6 @@ export class CurrencyController {
     description: 'Currency DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.currencyRepository.deleteById(id.toUpperCase());
+    await this.currencyRepository.deleteById(id);
   }
 }

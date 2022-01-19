@@ -17,7 +17,7 @@ import {NotificationSetting} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 import {intercept} from '@loopback/core';
-import {AuthorizeInterceptor, UpdateInterceptor} from '../interceptors';
+import {AuthorizeInterceptor} from '../interceptors';
 
 @authenticate('jwt')
 @intercept(AuthorizeInterceptor.BINDING_KEY)
@@ -46,7 +46,6 @@ export class UserNotificationSettingController {
     return this.userRepository.notificationSetting(id).get(filter);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/users/{id}/notification-setting', {
     responses: {
       '200': {

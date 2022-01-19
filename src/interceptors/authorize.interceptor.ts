@@ -87,7 +87,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case MethodType.FILEUPLOAD:
       case MethodType.CLAIMTIPS:
       case MethodType.SUBSCRIBE:
-      case MethodType.CREATEVOTE:
       case MethodType.UPDATEBYID:
       case MethodType.PATCH:
       case MethodType.READNOTIFICATION:
@@ -135,11 +134,16 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
             userId = data.requestorId;
           }
         } else {
-          const friend = await this.friendRepository.findById(data);
+          const friend = await this.friendRepository.findById(data, {
+            include: ['requestee', 'requestor'],
+          });
           if (methodName === MethodType.DELETEBYID) {
             userId = friend.requestorId;
+
+            invocationCtx.args[1] = friend;
           } else {
             userId = friend.requesteeId;
+            invocationCtx.args[2] = friend;
           }
         }
         break;

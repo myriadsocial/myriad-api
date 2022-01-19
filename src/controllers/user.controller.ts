@@ -8,7 +8,12 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {AuthorizeInterceptor, DeletedDocument, PaginationInterceptor, UpdateInterceptor} from '../interceptors';
+import {
+  AuthorizeInterceptor,
+  FindByIdInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
@@ -63,7 +68,7 @@ export class UserController {
 
   @authenticate('jwt')
   @intercept(AuthorizeInterceptor.BINDING_KEY)
-  @intercept(DeletedDocument.BINDING_KEY)
+  @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/users/{id}')
   @response(200, {
     description: 'User model instance',

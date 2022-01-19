@@ -47,17 +47,7 @@ export class TransactionController {
     })
     transaction: Omit<Transaction, 'id'>,
   ): Promise<Transaction> {
-    const newTransaction = await this.transactionRepository.create(
-      new Transaction(transaction),
-    );
-
-    try {
-      await this.notificationService.sendTipsSuccess(newTransaction);
-    } catch {
-      // ignore
-    }
-
-    return newTransaction;
+    return this.transactionRepository.create(transaction);
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)

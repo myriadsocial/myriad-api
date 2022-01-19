@@ -7,7 +7,6 @@ import {
   TransactionRepository,
   UserRepository,
 } from '../../../repositories';
-import {NotificationService} from '../../../services';
 import {
   givenComment,
   givenCommentInstance,
@@ -25,25 +24,18 @@ describe('CommentControllerIntegration', () => {
   let postRepository: PostRepository;
   let transactionRepository: TransactionRepository;
   let controller: CommentController;
-  let notificationService: NotificationService;
 
   before(async () => {
     ({
       commentRepository,
       postRepository,
-      notificationService,
       transactionRepository,
       userRepository,
-      notificationService,
     } = await givenRepositories(testdb));
   });
 
   before(async () => {
-    controller = new CommentController(
-      commentRepository,
-      postRepository,
-      notificationService,
-    );
+    controller = new CommentController(commentRepository);
   });
 
   beforeEach(async () => {

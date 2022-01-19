@@ -17,7 +17,7 @@ import {AccountSetting} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 import {intercept} from '@loopback/core';
-import {AuthorizeInterceptor, UpdateInterceptor} from '../interceptors';
+import {AuthorizeInterceptor} from '../interceptors';
 
 @authenticate('jwt')
 @intercept(AuthorizeInterceptor.BINDING_KEY)
@@ -46,7 +46,6 @@ export class UserAccountSettingController {
     return this.userRepository.accountSetting(id).get(filter);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/users/{id}/account-setting', {
     responses: {
       '200': {

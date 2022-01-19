@@ -30,7 +30,7 @@ export class VoteController {
       },
     },
   })
-  async createVote(
+  async create(
     @requestBody({
       content: {
         'application/json': {

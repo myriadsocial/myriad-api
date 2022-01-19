@@ -1,7 +1,7 @@
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
-import {DraftPost, PostWithRelations, User} from '../models';
+import {DraftPost, Post, PostWithRelations, User} from '../models';
 import {
   PeopleRepository,
   PostRepository,
@@ -10,12 +10,16 @@ import {
   VoteRepository,
   DraftPostRepository,
 } from '../repositories';
-import {injectable, BindingScope, service} from '@loopback/core';
+import {injectable, BindingScope, service, inject} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
-import {PlatformType} from '../enums';
+import {FriendStatusType, PlatformType, VisibilityType} from '../enums';
 import {MetricService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
+import _ from 'lodash';
+import {PlatformPost} from '../models/platform-post.model';
+import {AuthenticationBindings} from '@loopback/authentication';
+import {UserProfile, securityId} from '@loopback/security';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -37,6 +41,8 @@ export class PostService {
     protected voteRepository: VoteRepository,
     @service(MetricService)
     protected metricService: MetricService,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    protected currentUser: UserProfile,
   ) {}
 
   async createPost(post: Omit<ExtendedPost, 'id'>): Promise<PostWithRelations> {
@@ -159,5 +165,106 @@ export class PostService {
     }
 
     return this.draftPostRepository.create(draftPost);
+  }
+
+  async createPublishPost(draftPost: DraftPost): Promise<Post> {
+    await this.draftPostRepository.deleteById(draftPost.id);
+
+    const newPost = _.omit(draftPost, ['id', 'status']);
+    return this.postRepository.create({
+      ...newPost,
+      platform: PlatformType.MYRIAD,
+    });
+  }
+
+  async findImportedPost(
+    platformPost: PlatformPost,
+  ): Promise<ExtendedPost | undefined> {
+    const [platform, originPostId] = platformPost.url.split(',');
+    const importer = platformPost.importer;
+
+    const posts = await this.postRepository.find({
+      where: {
+        or: [
+          {
+            originPostId,
+            platform: platform as PlatformType,
+          },
+          {
+            originPostId,
+            platform: platform as PlatformType,
+            createdBy: importer,
+          },
+
+          <AnyObject>{
+            originPostId,
+            platform: platform as PlatformType,
+            deletedAt: {
+              $exists: true,
+            },
+          },
+        ],
+      },
+      include: ['people'],
+      limit: 5,
+    });
+
+    const hasBeenDeleted = posts.find(e => e.deletedAt);
+
+    if (hasBeenDeleted) {
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot import deleted post',
+      );
+    }
+
+    const hasImported = posts.find(e => e.createdBy === importer);
+
+    if (hasImported) {
+      throw new HttpErrors.UnprocessableEntity(
+        'You have already import this post',
+      );
+    }
+
+    if (posts.length === 0) return undefined;
+
+    const platformUser = _.omit(posts[0].people, ['id']);
+    const existingPost = _.omit(posts[0], [
+      'id',
+      'people',
+      'metric',
+      'createdAt',
+      'updatedAt',
+      'deletedAt',
+    ]);
+
+    return _.assign(existingPost as ExtendedPost, {platformUser: platformUser});
+  }
+
+  async restrictedPost(post: Post): Promise<Post> {
+    const creator = post.createdBy;
+    const visibility = post.visibility;
+    switch (visibility) {
+      case VisibilityType.FRIEND: {
+        if (this.currentUser[securityId] === creator) return post;
+        const friend = await this.friendRepository.findOne({
+          where: {
+            requestorId: this.currentUser[securityId],
+            requesteeId: creator,
+          },
+        });
+
+        if (!friend) throw new HttpErrors.Forbidden('Restricted post!');
+        if (friend.status === FriendStatusType.APPROVED) return post;
+        throw new HttpErrors.Forbidden('Restricted post!');
+      }
+
+      case VisibilityType.PRIVATE: {
+        if (this.currentUser[securityId] === creator) return post;
+        throw new HttpErrors.Forbidden('Restricted post!');
+      }
+
+      default:
+        return post;
+    }
   }
 }

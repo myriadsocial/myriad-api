@@ -1,8 +1,10 @@
 import {AnyObject, repository} from '@loopback/repository';
-import {ReferenceType} from '../enums';
+import {ReferenceType, SectionType} from '../enums';
 import {CommentRepository, PostRepository} from '../repositories';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {MetricService} from './metric.service';
+import {PostWithRelations, Comment} from '../models';
+import {HttpErrors} from '@loopback/rest';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class VoteService {
@@ -37,5 +39,46 @@ export class VoteService {
 
     await this.postRepository.updateById(referenceId, data);
     await this.metricService.userMetric(toUserId);
+  }
+
+  async validatePostVote(voteDetail: AnyObject): Promise<PostWithRelations> {
+    const {userId, referenceId, type, state} = voteDetail;
+    const post = await this.postRepository.findById(referenceId, {
+      include: [
+        {
+          relation: 'comments',
+          scope: {
+            where: {
+              userId,
+              referenceId,
+              type,
+              section: SectionType.DEBATE,
+            },
+          },
+        },
+      ],
+    });
+
+    if (!state) {
+      if (!post.comments || (post.comments && post.comments.length === 0)) {
+        throw new HttpErrors.UnprocessableEntity(
+          'Please comment first in debate sections, before you downvote this post',
+        );
+      }
+    }
+
+    return post;
+  }
+
+  async validateComment(voteDetail: AnyObject): Promise<Comment> {
+    const {referenceId, section} = voteDetail;
+
+    if (!section) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Section cannot empty when you upvote/downvote comment',
+      );
+    }
+
+    return this.commentRepository.findById(referenceId);
   }
 }

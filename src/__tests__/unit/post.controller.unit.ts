@@ -18,6 +18,7 @@ import {
 } from '../../repositories';
 import {MetricService, PostService, SocialMediaService} from '../../services';
 import {givenMyriadPost} from '../helpers';
+import {securityId} from '@loopback/security';
 
 describe('PostController', () => {
   let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
@@ -115,6 +116,7 @@ describe('PostController', () => {
       friendRepository,
       voteRepository,
       metricService,
+      {[securityId]: ''},
     );
     controller = new PostController(socialMediaService, postService);
   }
