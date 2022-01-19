@@ -1,4 +1,3 @@
-
 import {AuthenticationBindings} from '@loopback/authentication';
 import {
   inject,
