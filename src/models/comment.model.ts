@@ -87,6 +87,7 @@ export class Comment extends Entity {
     default: {
       upvotes: 0,
       downvotes: 0,
+      comments: 0,
     },
   })
   metric: Metric;
