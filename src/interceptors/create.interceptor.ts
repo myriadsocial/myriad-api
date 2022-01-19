@@ -23,6 +23,7 @@ import {
   ReportRepository,
   UserCurrencyRepository,
   UserReportRepository,
+  UserRepository,
 } from '../repositories';
 import {
   ActivityLogService,
@@ -54,6 +55,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected userReportRepository: UserReportRepository,
     @repository(DraftPostRepository)
     protected draftPostRepository: DraftPostRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -198,6 +201,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           result.id,
           ReferenceType.TRANSACTION,
         );
+
         return result;
       }
 

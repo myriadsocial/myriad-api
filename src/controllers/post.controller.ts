@@ -1,5 +1,5 @@
 import {intercept, service} from '@loopback/core';
-import {AnyObject, Filter, FilterExcludingWhere} from '@loopback/repository';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
