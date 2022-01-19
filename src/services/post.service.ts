@@ -107,6 +107,12 @@ export class PostService {
     if (found) post.text = '[this post is unavailable]';
     if (post.deletedAt) post.text = '[post removed]';
     if (post.platform === PlatformType.MYRIAD) return post;
+    if (post.platform === PlatformType.REDDIT) {
+      post.title = post.title.substring(1, post.text.length - 1);
+    }
+
+    post.text = post.text.substring(1, post.text.length - 1);
+
     if (!post.user) return post;
     if (!userId) return post;
 

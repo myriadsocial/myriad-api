@@ -1,6 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {ReferenceType} from '../../enums';
+import {PlatformType, ReferenceType} from '../../enums';
 import {
   Credential,
   DraftPost,
@@ -158,6 +158,7 @@ describe('PostApplication', function () {
     beforeEach(async () => {
       persistedPost = await givenMyriadPostInstance(postRepository, {
         createdBy: user.id,
+        platform: PlatformType.MYRIAD,
       });
     });
 
@@ -266,8 +267,12 @@ describe('PostApplication', function () {
 
     beforeEach(async () => {
       persistedPosts = [
-        await givenMyriadPostInstance(postRepository, {createdBy: user.id}),
         await givenMyriadPostInstance(postRepository, {
+          createdBy: user.id,
+          platform: PlatformType.MYRIAD,
+        }),
+        await givenMyriadPostInstance(postRepository, {
+          platform: PlatformType.MYRIAD,
           text: 'hello',
           createdBy: user.id,
         }),
@@ -287,6 +292,7 @@ describe('PostApplication', function () {
       const postInProgress = await givenMyriadPostInstance(postRepository, {
         text: "what's up, docs!",
         createdBy: user.id,
+        platform: PlatformType.MYRIAD,
       });
 
       await client
@@ -343,7 +349,7 @@ describe('PostApplication', function () {
     });
 
     const response = await client
-      .get('/posts?userId=' + user.id)
+      .get('/posts')
       .set('Authorization', `Bearer ${token}`)
       .query({
         filter: {
@@ -360,7 +366,11 @@ describe('PostApplication', function () {
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
-      ...toJSON(post as Post),
+      ...toJSON(
+        Object.assign(post, {
+          text: post.text.substring(1, post.text.length - 1),
+        }) as Post,
+      ),
       totalImporter: 1,
       popularCount: 0,
       user: toJSON(user),
