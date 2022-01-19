@@ -11,6 +11,10 @@ import {
   Send,
   SequenceHandler,
 } from '@loopback/rest';
+import {
+  RateLimitAction,
+  RateLimitSecurityBindings,
+} from 'loopback4-ratelimiter';
 
 const SequenceActions = RestBindings.SequenceActions;
 
@@ -30,6 +34,10 @@ export class MyriadSequence implements SequenceHandler {
     @inject(SequenceActions.REJECT) public reject: Reject,
     @inject(AuthenticationBindings.AUTH_ACTION)
     protected authenticateRequest: AuthenticateFn,
+    @inject(RateLimitSecurityBindings.RATELIMIT_SECURITY_ACTION, {
+      optional: true,
+    })
+    protected rateLimitAction: RateLimitAction,
   ) {}
 
   async handle(context: RequestContext) {
@@ -41,6 +49,10 @@ export class MyriadSequence implements SequenceHandler {
 
       // call authentication action
       await this.authenticateRequest(request);
+
+      if (this.rateLimitAction) {
+        await this.rateLimitAction(request, response);
+      }
 
       const args = await this.parseParams(request, route);
       const result = await this.invoke(route, args);

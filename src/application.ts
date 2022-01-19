@@ -78,6 +78,10 @@ import {DefaultCurrencyType, NotificationType, PlatformType} from './enums';
 import {Currency, Experience, People, Post, User} from './models';
 import {BcryptHasher} from './services/authentication/hash.password.service';
 import NonceGenerator from 'a-nonce-generator';
+import {
+  RateLimiterComponent,
+  RateLimitSecurityBindings,
+} from 'loopback4-ratelimiter';
 
 export {ApplicationConfig};
 
@@ -126,6 +130,15 @@ export class MyriadApiApplication extends BootMixin(
       });
       this.component(RestExplorerComponent);
     }
+    this.component(RateLimiterComponent);
+    this.bind(RateLimitSecurityBindings.CONFIG).to({
+      name: 'mongo',
+      type: 'MongoStore',
+      uri: `mongodb://${config.MONGO_USER}:${config.MONGO_PASSWORD}@${config.MONGO_HOST}/${config.MONGO_DATABASE}`,
+      collectionName: 'expressRateRecords',
+      windowMs: 1 * 60 * 60 * 1000,
+      max: 60,
+    });
   }
 
   registerService() {
