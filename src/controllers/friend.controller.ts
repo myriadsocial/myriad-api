@@ -13,6 +13,7 @@ import {
 import {
   AuthorizeInterceptor,
   CreateInterceptor,
+  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
   DeleteInterceptor,
