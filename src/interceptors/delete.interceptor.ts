@@ -12,9 +12,10 @@ import {
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
-import {ControllerType} from '../enums';
+import {ControllerType, ReferenceType} from '../enums';
 import {
   CommentRepository,
+  PostRepository,
   UserCurrencyRepository,
   VoteRepository,
 } from '../repositories';
@@ -36,6 +37,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
     @repository(VoteRepository)
@@ -84,6 +87,13 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
     switch (controllerName) {
+      case ControllerType.COMMENT: {
+        const commentId = invocationCtx.args[0];
+        const {postId} = await this.commentRepository.findById(commentId);
+        invocationCtx.args[1] = postId;
+        break;
+      }
+
       case ControllerType.FRIEND: {
         await this.friendService.removedFriend(invocationCtx.args[1]);
         break;
@@ -128,6 +138,18 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
     switch (controllerName) {
+      case ControllerType.COMMENT: {
+        const postId = invocationCtx.args[1];
+        const metric = await this.metricService.postMetric(
+          ReferenceType.POST,
+          postId,
+          postId,
+        );
+
+        await this.postRepository.updateById(postId, {metric});
+        break;
+      }
+
       case ControllerType.FRIEND: {
         const {requesteeId, requestorId} = invocationCtx.args[1];
         await this.notificationService.cancelFriendRequest(
