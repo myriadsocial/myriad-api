@@ -19,6 +19,7 @@ import {NotificationSetting} from './notification-setting.model';
 import {People} from './people.model';
 import {UserSocialMedia} from './user-social-media.model';
 import {ExperienceWithRelations} from './experience.model';
+import {LanguageSetting} from './language-setting.model';
 
 @model({
   settings: {
@@ -164,6 +165,9 @@ export class User extends Entity {
 
   @hasOne(() => AccountSetting)
   accountSetting: AccountSetting;
+
+  @hasOne(() => LanguageSetting)
+  languageSetting: LanguageSetting;
 
   @hasOne(() => NotificationSetting)
   notificationSetting: NotificationSetting;

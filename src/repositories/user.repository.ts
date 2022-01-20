@@ -21,6 +21,7 @@ import {
   NotificationSetting,
   People,
   UserSocialMedia,
+  LanguageSetting,
 } from '../models';
 import {ActivityLogRepository} from './activity-log.repository';
 import {CurrencyRepository} from './currency.repository';
@@ -32,6 +33,7 @@ import {UserSocialMediaRepository} from './user-social-media.repository';
 import {AccountSettingRepository} from './account-setting.repository';
 import {NotificationSettingRepository} from './notification-setting.repository';
 import {PeopleRepository} from './people.repository';
+import {LanguageSettingRepository} from './language-setting.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<
@@ -90,6 +92,11 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
+  public readonly languageSetting: HasOneRepositoryFactory<
+    LanguageSetting,
+    typeof User.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
@@ -112,8 +119,18 @@ export class UserRepository extends DefaultCrudRepository<
     protected notificationSettingRepositoryGetter: Getter<NotificationSettingRepository>,
     @repository.getter('PeopleRepository')
     protected peopleRepositoryGetter: Getter<PeopleRepository>,
+    @repository.getter('LanguageSettingRepository')
+    protected languageSettingRepositoryGetter: Getter<LanguageSettingRepository>,
   ) {
     super(User, dataSource);
+    this.languageSetting = this.createHasOneRepositoryFactoryFor(
+      'languageSetting',
+      languageSettingRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'languageSetting',
+      this.languageSetting.inclusionResolver,
+    );
     this.experience = this.createBelongsToAccessorFor(
       'experience',
       experienceRepositoryGetter,
