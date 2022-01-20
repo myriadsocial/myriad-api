@@ -7,6 +7,8 @@ import {
   SectionType,
   AccountSettingType,
   PostStatus,
+  WalletType,
+  BlockchainPlatform,
 } from '../../enums';
 import {
   AccountSetting,
@@ -31,7 +33,9 @@ import {
   UserReport,
   UserSocialMedia,
   UserVerification,
+  UserWallet,
   Vote,
+  Wallet,
 } from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
@@ -54,6 +58,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   VoteRepository,
+  WalletRepository,
 } from '../../repositories';
 import {PolkadotJs} from '../../utils/polkadotJs-utils';
 import {KeyringPair} from '@polkadot/keyring/types';
@@ -69,12 +74,8 @@ const mnemonic =
   'account custom bind hero sleep ugly century tooth seed potato curious always';
 
 export function givenUser(user?: Partial<User>) {
-  const publicKey = getKeyring().addFromMnemonic(mnemonic);
-  const id = getHexPublicKey(publicKey);
-
   const data = Object.assign(
     {
-      id: id,
       name: 'Abdul Hakim',
       username: 'abdulhakim',
       nonce: 99999999999,
@@ -85,14 +86,8 @@ export function givenUser(user?: Partial<User>) {
 }
 
 export function givenOtherUser(user?: Partial<User>) {
-  const mnemonicOtherUser =
-    'spirit suggest few confirm frequent desert tray puzzle repair photo foil trash';
-  const publicKey = getKeyring().addFromMnemonic(mnemonicOtherUser);
-  const id = getHexPublicKey(publicKey);
-
   const data = Object.assign(
     {
-      id: id,
       name: 'Abdul Hakim',
       username: 'otheruser',
       createdAt: new Date(),
@@ -128,7 +123,6 @@ export async function givenMultipleUserInstances(
   return Promise.all([
     givenUserInstance(userRepository),
     givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       name: 'irman',
       username: 'irman',
     }),
@@ -351,16 +345,12 @@ export async function givenMultipleFriendInstances(
 ) {
   return Promise.all([
     givenFriendInstance(friendRepository, {
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+      requesteeId: '1',
+      requestorId: '9997',
     }),
     givenFriendInstance(friendRepository, {
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61862',
-      requestorId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      requesteeId: '1',
+      requestorId: '9998',
     }),
   ]);
 }
@@ -478,8 +468,7 @@ export async function givenTransactionInstance(
 export function givenUserCurrency(userCurrency?: Partial<UserCurrency>) {
   const data = Object.assign(
     {
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      userId: '9999',
       currencyId: 'ROC',
     },
     userCurrency,
@@ -781,4 +770,43 @@ export async function givenAccountSettingInstance(
   accountSetting?: Partial<AccountSetting>,
 ) {
   return accountSettingRepository.create(givenAccountSetting(accountSetting));
+}
+
+export function givenWallet(wallet?: Partial<Wallet>) {
+  const publicKey = getKeyring().addFromMnemonic(mnemonic);
+  const id = getHexPublicKey(publicKey);
+  const data = Object.assign(
+    {
+      id: id,
+      name: 'Abdul Hakim',
+      type: WalletType.POLKADOT,
+      platform: BlockchainPlatform.SUBSTRATE,
+    },
+    wallet,
+  );
+  return new Wallet(data);
+}
+
+export function givenWalletInstance(
+  walletRepository: WalletRepository,
+  wallet?: Partial<Wallet>,
+) {
+  return walletRepository.create(givenWallet(wallet));
+}
+
+export function givenUserWallet(userWallet?: Partial<UserWallet>) {
+  const publicKey = getKeyring().addFromMnemonic(mnemonic);
+  const id = getHexPublicKey(publicKey);
+  const data = Object.assign(
+    {
+      name: 'Abdul Hakim',
+      username: 'abdulhakim',
+      walletName: 'abdulhakim',
+      walletAddress: id,
+      walletType: WalletType.POLKADOT,
+      walletPlatform: BlockchainPlatform.SUBSTRATE,
+    },
+    userWallet,
+  );
+  return new UserWallet(data);
 }

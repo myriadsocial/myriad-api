@@ -1,19 +1,23 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {Credential, Tag, User} from '../../models';
-import {TagRepository, UserRepository} from '../../repositories';
+import {Tag, User} from '../../models';
 import {
-  givenAddress,
+  TagRepository,
+  UserRepository,
+  WalletRepository,
+} from '../../repositories';
+import {
+  givenAccesToken,
   givenMultipleTagInstances,
   givenTag,
   givenTagInstance,
   givenTagRepository,
   givenUserInstance,
   givenUserRepository,
+  givenWalletInstance,
+  givenWalletRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('TagApplication', function () {
   let app: MyriadApiApplication;
@@ -21,9 +25,8 @@ describe('TagApplication', function () {
   let client: Client;
   let tagRepository: TagRepository;
   let userRepository: UserRepository;
-  let nonce: number;
+  let walletRepository: WalletRepository;
   let user: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -34,36 +37,23 @@ describe('TagApplication', function () {
   before(async () => {
     tagRepository = await givenTagRepository(app);
     userRepository = await givenUserRepository(app);
-  });
-
-  before(async () => {
-    user = await givenUserInstance(userRepository);
-    address = givenAddress();
+    walletRepository = await givenWalletRepository(app);
   });
 
   beforeEach(async () => {
     await tagRepository.deleteAll();
   });
 
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    token = await givenAccesToken(user);
+
+    await givenWalletInstance(walletRepository, {userId: user.id});
+  });
+
   after(async () => {
     await userRepository.deleteAll();
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
+    await walletRepository.deleteAll();
   });
 
   it('creates a tag', async function () {
@@ -72,7 +62,8 @@ describe('TagApplication', function () {
     const response = await client
       .post('/tags')
       .set('Authorization', `Bearer ${token}`)
-      .send(tag);
+      .send(tag)
+      .expect(200);
     expect(response.body).to.containDeep(tag);
     const result = await tagRepository.findById(response.body.id);
     expect(result).to.containDeep(tag);

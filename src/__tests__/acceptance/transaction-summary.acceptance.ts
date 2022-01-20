@@ -1,18 +1,22 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ReferenceType} from '../../enums';
-import {Credential, Transaction, User} from '../../models';
-import {TransactionRepository, UserRepository} from '../../repositories';
+import {Transaction, User} from '../../models';
 import {
-  givenAddress,
+  TransactionRepository,
+  UserRepository,
+  WalletRepository,
+} from '../../repositories';
+import {
+  givenAccesToken,
   givenTransactionInstance,
   givenTransactionRepository,
   givenUserInstance,
   givenUserRepository,
+  givenWalletInstance,
+  givenWalletRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('TransactionSummaryApplication', function () {
@@ -23,15 +27,14 @@ describe('TransactionSummaryApplication', function () {
   let client: Client;
   let transactionRepository: TransactionRepository;
   let userRepository: UserRepository;
+  let walletRepository: WalletRepository;
   let transactionSentInstance1: Transaction;
   let transactionReceivedInstance1: Transaction;
   let transactionSentInstance2: Transaction;
   let transactionReceivedInstance2: Transaction;
   let transactionSentInstance3: Transaction;
   let transactionReceivedInstance3: Transaction;
-  let nonce: number;
   let user: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -42,6 +45,7 @@ describe('TransactionSummaryApplication', function () {
   before(async () => {
     transactionRepository = await givenTransactionRepository(app);
     userRepository = await givenUserRepository(app);
+    walletRepository = await givenWalletRepository(app);
   });
 
   before(async () => {
@@ -89,29 +93,15 @@ describe('TransactionSummaryApplication', function () {
       },
     );
 
-    address = givenAddress();
+    token = await givenAccesToken(user);
+
+    await givenWalletInstance(walletRepository, {userId: user.id});
   });
 
   after(async () => {
     await userRepository.deleteAll();
     await transactionRepository.deleteAll();
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
+    await walletRepository.deleteAll();
   });
 
   it('gets a user transaction summary', async function () {

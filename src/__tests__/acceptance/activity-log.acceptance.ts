@@ -1,19 +1,17 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ActivityLogType} from '../../enums';
-import {ActivityLog, Credential, User} from '../../models';
+import {ActivityLog, User} from '../../models';
 import {ActivityLogRepository, UserRepository} from '../../repositories';
 import {
+  givenAccesToken,
   givenActivityLogInstance,
   givenActivityLogRepository,
-  givenAddress,
   givenMultipleActivityLogInstances,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('ActivityLogApplication', function () {
   let app: MyriadApiApplication;
@@ -21,9 +19,7 @@ describe('ActivityLogApplication', function () {
   let client: Client;
   let userRepository: UserRepository;
   let activityLogRepository: ActivityLogRepository;
-  let nonce: number;
   let user: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -38,7 +34,7 @@ describe('ActivityLogApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
+    token = await givenAccesToken(user);
   });
 
   beforeEach(async () => {
@@ -47,23 +43,6 @@ describe('ActivityLogApplication', function () {
 
   after(async () => {
     await userRepository.deleteAll();
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   context('when dealing with multiple persisted activityLogs', () => {
@@ -91,8 +70,7 @@ describe('ActivityLogApplication', function () {
         activityLogRepository,
         {
           type: ActivityLogType.CREATEPOST,
-          userId:
-            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c',
+          userId: user.id,
         },
       );
 
@@ -103,8 +81,7 @@ describe('ActivityLogApplication', function () {
           'filter=' +
             JSON.stringify({
               where: {
-                userId:
-                  '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6181c',
+                userId: user.id,
               },
             }),
         )
@@ -122,8 +99,7 @@ describe('ActivityLogApplication', function () {
     it('exploded filter conditions work', async () => {
       await givenActivityLogInstance(activityLogRepository, {
         type: ActivityLogType.CREATEPOST,
-        userId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618cc',
+        userId: user.id,
       });
 
       const response = await client
@@ -135,13 +111,9 @@ describe('ActivityLogApplication', function () {
   });
 
   it('includes user in query result', async () => {
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618dc',
-    });
-
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       type: ActivityLogType.CREATEPOST,
-      userId: otherUser.id,
+      userId: user.id,
     });
 
     const filter =
@@ -158,7 +130,7 @@ describe('ActivityLogApplication', function () {
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(activityLog),
-      user: toJSON(otherUser),
+      user: toJSON(user),
     });
   });
 });

@@ -22,7 +22,7 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('TransactionSummaryControllerIntegration', function () {
-  this.timeout(10000);
+  this.timeout(20000);
   let userRepository: UserRepository;
   let transactionRepository: TransactionRepository;
   let currencyRepository: CurrencyRepository;
@@ -51,11 +51,9 @@ describe('TransactionSummaryControllerIntegration', function () {
   });
 
   it('gets transaction summary of users', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618mm',
+      username: 'johndoe',
     });
     const currency = await givenCurrencyInstance(currencyRepository);
     const transactionSent = await givenTransactionInstance(
@@ -75,7 +73,9 @@ describe('TransactionSummaryControllerIntegration', function () {
       },
     );
 
-    const response = await controller.userTransactionSummary(user.id);
+    const response = await controller.userTransactionSummary(
+      user.id.toString(),
+    );
 
     expect(response).to.containDeep({
       sent: [
@@ -94,9 +94,7 @@ describe('TransactionSummaryControllerIntegration', function () {
   });
 
   it('gets transaction summary of posts', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const post = await givenPostInstance(postRepository);
     const currency = await givenCurrencyInstance(currencyRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
@@ -119,11 +117,9 @@ describe('TransactionSummaryControllerIntegration', function () {
   });
 
   it('gets transaction summary of comments', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618mm',
+      username: 'johndoe',
     });
     const post = await givenPostInstance(postRepository);
     const comment = await givenCommentInstance(commentRepository, {

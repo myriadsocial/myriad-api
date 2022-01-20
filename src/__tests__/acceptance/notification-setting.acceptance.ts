@@ -1,12 +1,12 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
-import {Credential, NotificationSetting, User} from '../../models';
+import {NotificationSetting, User} from '../../models';
 import {
   NotificationSettingRepository,
   UserRepository,
 } from '../../repositories';
 import {
-  givenAddress,
+  givenAccesToken,
   givenNotificationSetting,
   givenNotificationSettingInstance,
   givenNotificationSettingRepository,
@@ -14,8 +14,6 @@ import {
   givenUserRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('NotificationSettingApplication', () => {
   let app: MyriadApiApplication;
@@ -23,9 +21,7 @@ describe('NotificationSettingApplication', () => {
   let client: Client;
   let notificationSettingRepository: NotificationSettingRepository;
   let userRepository: UserRepository;
-  let nonce: number;
   let user: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -42,7 +38,7 @@ describe('NotificationSettingApplication', () => {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
+    token = await givenAccesToken(user);
   });
 
   beforeEach(async () => {
@@ -51,23 +47,6 @@ describe('NotificationSettingApplication', () => {
 
   after(async () => {
     await userRepository.deleteAll();
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   it('updates the notificationSetting by ID', async () => {

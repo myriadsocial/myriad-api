@@ -1,6 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {Credential, User, UserExperience} from '../../models';
+import {User, UserExperience} from '../../models';
 import {
   ExperienceRepository,
   UserExperienceRepository,
@@ -8,7 +8,6 @@ import {
 } from '../../repositories';
 import {
   givenAccesToken,
-  givenAddress,
   givenExperience,
   givenExperienceInstance,
   givenExperienceRepository,
@@ -21,8 +20,6 @@ import {
   givenUserRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('UserExperienceApplication', function () {
   let app: MyriadApiApplication;
@@ -31,10 +28,8 @@ describe('UserExperienceApplication', function () {
   let experienceRepository: ExperienceRepository;
   let userRepository: UserRepository;
   let userExperienceRepository: UserExperienceRepository;
-  let nonce: number;
   let user: User;
   let otherUser: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -50,8 +45,8 @@ describe('UserExperienceApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
+    token = await givenAccesToken(user);
   });
 
   beforeEach(async () => {
@@ -61,23 +56,6 @@ describe('UserExperienceApplication', function () {
 
   after(async () => {
     await userRepository.deleteAll();
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted userExperience', () => {
@@ -134,8 +112,7 @@ describe('UserExperienceApplication', function () {
         {
           subscribed: true,
           experienceId: '3',
-          userId:
-            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6184z',
+          userId: '9999',
         },
       );
 
@@ -146,8 +123,7 @@ describe('UserExperienceApplication', function () {
           'filter=' +
             JSON.stringify({
               where: {
-                userId:
-                  '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6184z',
+                userId: '9999',
               },
             }),
         )

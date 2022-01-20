@@ -72,9 +72,7 @@ describe('UserSocialMediaControllerIntegration', function () {
   });
 
   it('includes User in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const userSocialMedia = await givenUserSocialMediaInstance(
       userSocialMediaRepository,
       {
@@ -116,9 +114,7 @@ describe('UserSocialMediaControllerIntegration', function () {
   });
 
   it('includes both User and People in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const people = await givenPeopleInstance(peopleRepository);
     const userSocialMedia = await givenUserSocialMediaInstance(
       userSocialMediaRepository,
@@ -142,9 +138,7 @@ describe('UserSocialMediaControllerIntegration', function () {
   });
 
   it('includes User in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const userSocialMedia = await givenUserSocialMediaInstance(
       userSocialMediaRepository,
       {
@@ -186,9 +180,7 @@ describe('UserSocialMediaControllerIntegration', function () {
   });
 
   it('includes both User and People in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const people = await givenPeopleInstance(peopleRepository);
     const userSocialMedia = await givenUserSocialMediaInstance(
       userSocialMediaRepository,
@@ -212,9 +204,7 @@ describe('UserSocialMediaControllerIntegration', function () {
   });
 
   it('verifies reddit social media', async () => {
-    await givenUserInstance(userRepository, {
-      id: '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
-    });
+    await givenUserInstance(userRepository);
 
     const userVerification = givenUserVerification({
       publicKey:

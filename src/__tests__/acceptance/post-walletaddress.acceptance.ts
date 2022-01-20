@@ -1,7 +1,7 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType} from '../../enums';
-import {Credential, People, Post, User, UserSocialMedia} from '../../models';
+import {People, Post, User, UserSocialMedia} from '../../models';
 import {
   PeopleRepository,
   PostRepository,
@@ -9,7 +9,7 @@ import {
   UserSocialMediaRepository,
 } from '../../repositories';
 import {
-  givenAddress,
+  givenAccesToken,
   givenMyriadPostInstance,
   givenPeopleInstance,
   givenPeopleRepository,
@@ -25,8 +25,6 @@ import {promisify} from 'util';
 import {genSalt, hash} from 'bcryptjs';
 import {config} from '../../config';
 import {PolkadotJs} from '../../utils/polkadotJs-utils';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -43,9 +41,7 @@ describe('PostWalletAddressApplication', function () {
   let post: Post;
   let userSocialMedia: UserSocialMedia;
   let myriadPost: Post;
-  let nonce: number;
   let user: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -62,7 +58,7 @@ describe('PostWalletAddressApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
+    token = await givenAccesToken(user);
   });
 
   beforeEach(async () => {
@@ -79,23 +75,6 @@ describe('PostWalletAddressApplication', function () {
 
   after(async () => {
     await userRepository.deleteAll();
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   it('gets a post wallet address from people', async () => {

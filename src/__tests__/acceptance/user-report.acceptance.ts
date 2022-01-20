@@ -8,7 +8,6 @@ import {
 } from '../../repositories';
 import {
   givenAccesToken,
-  givenAddress,
   givenOtherUser,
   givenReportDetail,
   givenReportRepository,
@@ -17,9 +16,7 @@ import {
   givenUserRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
-import {Credential, User} from '../../models';
+import {User} from '../../models';
 
 describe('UserReportApplication', () => {
   let app: MyriadApiApplication;
@@ -28,10 +25,8 @@ describe('UserReportApplication', () => {
   let reportRepository: ReportRepository;
   let userReportRepository: UserReportRepository;
   let userRepository: UserRepository;
-  let nonce: number;
   let user: User;
   let otherUser: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -47,8 +42,8 @@ describe('UserReportApplication', () => {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
+    token = await givenAccesToken(user);
   });
 
   beforeEach(async () => {
@@ -60,27 +55,10 @@ describe('UserReportApplication', () => {
     await userRepository.deleteAll();
   });
 
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
-  });
-
   it('returns when creating a report not as login user', async () => {
     const accessToken = await givenAccesToken(otherUser);
     const reportedUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b245e8449ee61861',
+      username: 'helloworld',
     });
     const reportDetail = givenReportDetail({referenceId: reportedUser.id});
     await client
@@ -92,7 +70,7 @@ describe('UserReportApplication', () => {
 
   it('creates a report', async () => {
     const reportedUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+      username: 'hello',
     });
     const reportDetail = givenReportDetail({referenceId: reportedUser.id});
     const response = await client

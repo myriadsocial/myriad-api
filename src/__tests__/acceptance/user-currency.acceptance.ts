@@ -15,12 +15,9 @@ import {
   givenUserRepository,
   setupApplication,
   givenMultipleCurrencyInstances,
-  givenAddress,
   givenUserCurrencyInstance,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
-import {Credential, User} from '../../models';
+import {User} from '../../models';
 
 describe('UserCurrencyApplication', function () {
   let app: MyriadApiApplication;
@@ -29,10 +26,8 @@ describe('UserCurrencyApplication', function () {
   let userCurrencyRepository: UserCurrencyRepository;
   let currencyRepository: CurrencyRepository;
   let userRepository: UserRepository;
-  let nonce: number;
   let user: User;
   let otherUser: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -49,7 +44,7 @@ describe('UserCurrencyApplication', function () {
   before(async () => {
     user = await givenUserInstance(userRepository, {defaultCurrency: 'ROC'});
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
-    address = givenAddress();
+    token = await givenAccesToken(user);
 
     await givenMultipleCurrencyInstances(currencyRepository);
   });
@@ -58,23 +53,6 @@ describe('UserCurrencyApplication', function () {
     await userCurrencyRepository.deleteAll();
     await currencyRepository.deleteAll();
     await userRepository.deleteAll();
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   it('returns 401 whens creating a user currency not as login user', async () => {

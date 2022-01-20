@@ -22,6 +22,7 @@ import {
   TagRepository,
   DraftPostRepository,
   LanguageSettingRepository,
+  WalletRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -50,6 +51,7 @@ export async function givenRepositories(testdb: any) {
     async () => notificationSettingRepository,
     async () => peopleRepository,
     async () => languageSettingRepository,
+    async () => walletRepository,
   );
   const userExperienceRepository: UserExperienceRepository =
     new UserExperienceRepository(
@@ -134,6 +136,10 @@ export async function givenRepositories(testdb: any) {
   const languageSettingRepository: LanguageSettingRepository =
     new LanguageSettingRepository(testdb, async () => userRepository);
 
+  const walletRepository: WalletRepository = new WalletRepository(
+    testdb,
+    async () => userRepository,
+  );
   const metricService = new MetricService(
     voteRepository,
     commentRepository,
@@ -152,6 +158,7 @@ export async function givenRepositories(testdb: any) {
     reportRepository,
     userReportRepository,
     userCurrencyRepository,
+    walletRepository,
   );
 
   const currentUser: UserProfile = {
@@ -200,6 +207,7 @@ export async function givenRepositories(testdb: any) {
     peopleRepository,
     notificationService,
     activityLogService,
+    {[securityId]: ''},
   );
 
   return {

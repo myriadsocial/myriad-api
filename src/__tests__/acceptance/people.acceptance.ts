@@ -2,15 +2,16 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType} from '../../enums';
-import {Credential, People, User} from '../../models';
+import {People, User} from '../../models';
 import {
   PeopleRepository,
   PostRepository,
   UserRepository,
   UserSocialMediaRepository,
+  WalletRepository,
 } from '../../repositories';
 import {
-  givenAddress,
+  givenAccesToken,
   givenMultiplePeopleInstances,
   givenPeopleInstance,
   givenPeopleRepository,
@@ -20,10 +21,10 @@ import {
   givenUserRepository,
   givenUserSocialMediaInstance,
   givenUserSocialMediaRepository,
+  givenWalletInstance,
+  givenWalletRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('PeopleApplication', function () {
   let app: MyriadApiApplication;
@@ -33,9 +34,8 @@ describe('PeopleApplication', function () {
   let postRepository: PostRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let userRepository: UserRepository;
-  let nonce: number;
+  let walletRepository: WalletRepository;
   let user: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -48,38 +48,25 @@ describe('PeopleApplication', function () {
     postRepository = await givenPostRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
     userRepository = await givenUserRepository(app);
+    walletRepository = await givenWalletRepository(app);
   });
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
+    token = await givenAccesToken(user);
+
+    await givenWalletInstance(walletRepository, {userId: user.id});
   });
 
   after(async () => {
     await postRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();
     await userRepository.deleteAll();
+    await walletRepository.deleteAll();
   });
 
   beforeEach(async () => {
     await peopleRepository.deleteAll();
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted people', () => {
