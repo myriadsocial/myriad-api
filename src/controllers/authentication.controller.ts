@@ -55,6 +55,25 @@ export class AuthenticationController {
     return {nonce: user.nonce};
   }
 
+  @get('/username/{username}')
+  @response(200, {
+    description: 'Get username',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'boolean',
+        },
+      },
+    },
+  })
+  async username(
+    @param.path.string('username') username: string,
+  ): Promise<boolean> {
+    const user = await this.userRepository.findOne({where: {username}});
+
+    return Boolean(user);
+  }
+
   @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/signup')
   @response(200, {
