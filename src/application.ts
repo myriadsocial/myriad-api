@@ -285,7 +285,7 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   async doMigratePost(): Promise<void> {
-    if (!this.options.post) return;
+    if (this.options.alter.indexOf('post') === -1) return;
     const {postRepository} = await this.repositories();
     const {count} = await postRepository.count();
 
