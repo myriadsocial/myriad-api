@@ -166,6 +166,8 @@ export class PostController {
     newPost.visibility = platformPost.visibility ?? VisibilityType.PUBLIC;
     newPost.tags = tags;
     newPost.createdBy = importer;
+    newPost.isNSFW = Boolean(platformPost.NSFWTag);
+    newPost.NSFWTag = platformPost.NSFWTag;
 
     return this.postService.createPost(newPost);
   }

@@ -31,6 +31,12 @@ export class PlatformPost extends Model {
   })
   visibility?: VisibilityType;
 
+  @property({
+    type: 'string',
+    require: false,
+  })
+  NSFWTag?: string;
+
   constructor(data?: Partial<PlatformPost>) {
     super(data);
   }
