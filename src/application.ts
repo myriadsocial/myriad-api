@@ -181,14 +181,15 @@ export class MyriadApiApplication extends BootMixin(
       return this.doCreateIntialUser();
     }
 
+    await this.doMigrateUser();
     await this.doMigrateMyriadPublicKey();
-    await this.doRemoveCollection();
+    await this.doRemoveDocument();
     await this.doUpdatePeopleWallet();
     await this.doChangeBaseStorageURL();
   }
 
   async doCreateIntialUser(): Promise<void> {
-    if (!this.options.user) return;
+    if (this.options.alter.indexOf('user') === -1) return;
     const {userRepository} = await this.repositories();
 
     const user = await userRepository.create({
@@ -205,6 +206,7 @@ export class MyriadApiApplication extends BootMixin(
 
     await userRepository.accountSetting(user.id).create({});
     await userRepository.notificationSetting(user.id).create({});
+    await userRepository.languageSetting(user.id).create({});
     await userRepository.currencies(user.id).delete({
       id: DefaultCurrencyType.MYRIA,
     });
@@ -222,6 +224,26 @@ export class MyriadApiApplication extends BootMixin(
     console.log('initial user have been successfully created');
   }
 
+  async doMigrateUser(): Promise<void> {
+    if (this.options.alter.indexOf('user') === -1) return;
+    const {userRepository} = await this.repositories();
+    const {count} = await userRepository.count();
+
+    for (let i = 0; i < count; i++) {
+      const [user] = await userRepository.find({
+        limit: 1,
+        skip: i,
+        include: ['languangeSetting'],
+      });
+
+      if (user.languageSetting) continue;
+
+      await userRepository.languageSetting(user.id).create({});
+    }
+
+    console.log('language settings have been successfully updated');
+  }
+
   async doMigrateMyriadPublicKey(): Promise<void> {
     const userRepository = await this.getRepository(UserRepository);
     const myriad = await userRepository.findOne({
@@ -231,8 +253,8 @@ export class MyriadApiApplication extends BootMixin(
     await this.updateMyriadIdInAllCollection(myriad);
   }
 
-  async doRemoveCollection(): Promise<void> {
-    if (!this.options.remove) return;
+  async doRemoveDocument(): Promise<void> {
+    if (this.options.drop.indexOf('document') === -1) return;
     const {notificationRepository} = await this.repositories();
 
     await notificationRepository.deleteAll({
@@ -354,7 +376,7 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   async doUpdatePeopleWallet(): Promise<void> {
-    if (!this.options.wallet) return;
+    if (this.options.alter.indexOf('wallet') === -1) return;
     const {peopleRepository} = await this.repositories();
     const {count} = await peopleRepository.count();
 
