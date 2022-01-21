@@ -22,8 +22,7 @@ import {TransactionService} from './transaction.service';
 import {ActivityLogService} from './activity-log.service';
 import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
-
-const BN = require('bn.js');
+import {BN} from '@polkadot/util';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class CurrencyService {

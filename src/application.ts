@@ -74,7 +74,7 @@ import {
   VoteRepository,
 } from './repositories';
 import {DefaultCurrencyType, NotificationType, PlatformType} from './enums';
-import {People, User} from './models';
+import {Currency, Experience, People, Post, User} from './models';
 import {BcryptHasher} from './services/authentication/hash.password.service';
 
 export {ApplicationConfig};
@@ -255,7 +255,8 @@ export class MyriadApiApplication extends BootMixin(
 
   async doRemoveDocument(): Promise<void> {
     if (this.options.drop.indexOf('document') === -1) return;
-    const {notificationRepository} = await this.repositories();
+    const {currencyRepository, notificationRepository, userSocMedRepository} =
+      await this.repositories();
 
     await notificationRepository.deleteAll({
       or: [
@@ -264,12 +265,31 @@ export class MyriadApiApplication extends BootMixin(
         {type: NotificationType.USER_REWARD},
         {type: NotificationType.USER_INITIAL_TIPS},
         {type: NotificationType.USER_CLAIM_TIPS},
+        {type: NotificationType.USER_TIPS},
       ],
     });
 
     console.log(
       'notification related to tipping have been successfully removed',
     );
+
+    await currencyRepository.deleteAll();
+    await currencyRepository.create({
+      id: DefaultCurrencyType.MYRIA,
+      decimal: 18,
+      image:
+        'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
+      rpcURL: config.MYRIAD_RPC_WS_URL,
+      native: true,
+      networkType: 'substrate',
+      exchangeRate: false,
+    });
+
+    console.log('currency have been successfully removed except MYRIA');
+
+    await userSocMedRepository.deleteAll();
+
+    console.log('user social media have been successfully removed');
   }
 
   async doChangeBaseStorageURL(): Promise<void> {
@@ -294,85 +314,97 @@ export class MyriadApiApplication extends BootMixin(
         'https://storage.googleapis.com/myriad-social-mainnet.appspot.com',
     };
     const newBaseStorageURL = baseStorageURL[environment];
+
+    if (!newBaseStorageURL) return;
+
     const oldStorageURL: string[] = [];
+
+    const regexp = new RegExp(oldStorageURL.join('|'), 'i');
 
     for (const property in baseStorageURL) {
       if (property !== environment) {
-        oldStorageURL.push(baseStorageURL[property]);
+        await userRepository.dataSource.connector
+          .collection(User.modelName)
+          .updateMany(
+            {
+              $or: [
+                {profilePictureURL: {$regex: regexp}},
+                {bannerImageUrl: {$regex: regexp}},
+              ],
+            },
+            [
+              {
+                $set: {
+                  bannerImageUrl: {
+                    $replaceAll: {
+                      input: '$bannerImageUrl',
+                      find: baseStorageURL[property],
+                      replacement: newBaseStorageURL,
+                    },
+                  },
+                  profilePictureURL: {
+                    $replaceAll: {
+                      input: '$profilePictureURL',
+                      find: baseStorageURL[property],
+                      replacement: newBaseStorageURL,
+                    },
+                  },
+                },
+              },
+            ],
+          );
+
+        await currencyRepository.dataSource.connector
+          .collection(Currency.modelName)
+          .updateMany({image: {$regex: regexp}}, [
+            {
+              $set: {
+                image: {
+                  $replaceAll: {
+                    input: '$image',
+                    find: baseStorageURL[property],
+                    replacement: newBaseStorageURL,
+                  },
+                },
+              },
+            },
+          ]);
+
+        await experienceRepository.dataSource.connector
+          .collection(Experience.modelName)
+          .updateMany({experienceImageURL: {$regex: regexp}}, [
+            {
+              $set: {
+                experienceImageURL: {
+                  $replaceAll: {
+                    input: '$experienceImageURL',
+                    find: baseStorageURL[property],
+                    replacement: newBaseStorageURL,
+                  },
+                },
+              },
+            },
+          ]);
+
+        await postRepository.dataSource.connector
+          .collection(Post.modelName)
+          .updateMany({text: {$regex: regexp}}, [
+            {
+              $set: {
+                text: {
+                  $replaceAll: {
+                    input: '$text',
+                    find: baseStorageURL[property],
+                    replacement: newBaseStorageURL,
+                  },
+                },
+              },
+            },
+          ]);
       }
     }
-    const regexp = new RegExp(oldStorageURL.join('|'), 'i');
 
-    // Replace base storage url in user collection
-    const {count: countUser} = await userRepository.count();
-
-    for (let i = 0; i < countUser; i++) {
-      const [user] = await userRepository.find({
-        limit: 1,
-        skip: i,
-      });
-
-      await userRepository.updateById(user.id, {
-        profilePictureURL: user.profilePictureURL?.replace(
-          regexp,
-          newBaseStorageURL,
-        ),
-        bannerImageUrl: user.bannerImageUrl?.replace(regexp, newBaseStorageURL),
-      });
-    }
-
-    console.log('user image have been successfully updated');
-
-    // Replace base storage url in currency collection
-    const {count: countCurrency} = await currencyRepository.count();
-
-    for (let i = 0; i < countCurrency; i++) {
-      const [currency] = await currencyRepository.find({
-        limit: 1,
-        skip: i,
-      });
-
-      await currencyRepository.updateById(currency.id, {
-        image: currency.image?.replace(regexp, newBaseStorageURL),
-      });
-    }
-
-    console.log('currency image have been successfully updated');
-
-    // Replace base storage url in experience collection
-    const {count: countExperience} = await experienceRepository.count();
-
-    for (let i = 0; i < countExperience; i++) {
-      const [experience] = await experienceRepository.find({
-        limit: 1,
-        skip: i,
-      });
-
-      await experienceRepository.updateById(experience.id, {
-        experienceImageURL: experience.experienceImageURL?.replace(
-          regexp,
-          newBaseStorageURL,
-        ),
-      });
-    }
-
-    console.log('experience image have been successfully updated');
-
-    // Replace base storage url in post collection
-    const {count: countPost} = await postRepository.count();
-
-    for (let i = 0; i < countPost; i++) {
-      const [post] = await postRepository.find({
-        limit: 1,
-        skip: i,
-      });
-
-      await postRepository.updateById(post.id, {
-        text: post.text?.replace(regexp, newBaseStorageURL),
-      });
-    }
-
-    console.log('post image have been successfully updated');
+    console.log('image has been succesfully updated');
   }
 
   async doUpdatePeopleWallet(): Promise<void> {
