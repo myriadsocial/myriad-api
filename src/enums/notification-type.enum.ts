@@ -16,6 +16,6 @@ export enum NotificationType {
   CONNECTED_SOCIAL_MEDIA = 'connected_social_media',
   DISCONNECTED_SOCIAL_MEDIA = 'disconnected_social_media',
   POST_REMOVED = 'post_removed',
-  COMMENT_REMOVED = 'commen_removed',
+  COMMENT_REMOVED = 'comment_removed',
   USER_BANNED = 'user_banned',
 }
