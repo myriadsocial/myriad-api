@@ -97,7 +97,7 @@ export class UserRepository extends DefaultCrudRepository<
   public readonly languageSetting: HasOneRepositoryFactory<
     LanguageSetting,
     typeof User.prototype.id
-  >
+  >;
 
   public readonly wallets: HasManyRepositoryFactory<
     Wallet,

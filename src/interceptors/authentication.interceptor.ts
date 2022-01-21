@@ -84,6 +84,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         name: wallet.walletName,
         type: wallet.walletType,
         platform: wallet.walletPlatform,
+        primary: true,
       });
 
       return;

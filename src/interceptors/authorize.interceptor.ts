@@ -188,6 +188,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.USERNOTIFICATIONSETTING:
       case ControllerType.USERLANGUAGESETTING:
       case ControllerType.USERREPORT:
+      case ControllerType.USERWALLET:
       case ControllerType.USER:
         userId = data;
         break;
@@ -219,12 +220,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         } else {
           ({userId} = await this.userSocialMediaRepository.findById(data));
         }
-        break;
-      }
-
-      case ControllerType.USERWALLET: {
-        if (methodName === MethodType.FIND) break;
-        userId = data;
         break;
       }
 

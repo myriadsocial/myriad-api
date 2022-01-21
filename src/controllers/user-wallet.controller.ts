@@ -11,7 +11,12 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
-import {AuthorizeInterceptor, PaginationInterceptor} from '../interceptors';
+import {
+  AuthorizeInterceptor,
+  DeleteInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {User, Wallet} from '../models';
 import {UserRepository} from '../repositories';
 
@@ -59,6 +64,7 @@ export class UserWalletController {
           schema: getModelSchemaRef(Wallet, {
             title: 'NewWalletInUser',
             optional: ['userId'],
+            exclude: ['primary'],
           }),
         },
       },
@@ -68,6 +74,7 @@ export class UserWalletController {
     return this.userRepository.wallets(id).create(wallet);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/users/{userId}/wallets/{walletId}', {
     responses: {
       '200': {
@@ -84,7 +91,7 @@ export class UserWalletController {
         'application/json': {
           schema: getModelSchemaRef(Wallet, {
             partial: true,
-            exclude: ['id', 'type', 'userId', 'platform'],
+            exclude: ['type', 'userId', 'platform'],
           }),
         },
       },
@@ -96,6 +103,7 @@ export class UserWalletController {
     });
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/users/{userId}/wallets/{walletId}', {
     responses: {
       '200': {
