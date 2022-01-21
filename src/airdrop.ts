@@ -11,7 +11,7 @@ export async function airdrop() {
     appenders: {
       file: {
         type: 'file',
-        filename: 'airdrop.md',
+        filename: 'airdrop.txt',
         layout: {type: 'messagePassThrough'},
       },
       out: {type: 'stdout', layout: {type: 'messagePassThrough'}},
