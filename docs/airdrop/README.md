@@ -41,4 +41,4 @@
 
 * Result
 
-  [Leaderboard Distribution](./leaderboard-distribution.md)
+  [Leaderboard Distribution](./leaderboard-distribution.txt)
