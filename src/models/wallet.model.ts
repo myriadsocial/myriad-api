@@ -8,6 +8,13 @@ import {User} from './user.model';
     mongodb: {
       collection: 'wallets',
     },
+    indexes: {
+      userIdIndex: {
+        keys: {
+          userId: 1,
+        },
+      },
+    },
   },
 })
 export class Wallet extends Entity {
@@ -47,6 +54,20 @@ export class Wallet extends Entity {
     },
   })
   platform: BlockchainPlatform;
+
+  @property({
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  primary: boolean;
+
+  @property({
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  hide: boolean;
 
   @property({
     type: 'date',
