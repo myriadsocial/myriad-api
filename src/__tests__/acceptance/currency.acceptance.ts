@@ -65,8 +65,8 @@ describe('CurrencyApplication', function () {
     const response = await client
       .post('/currencies')
       .set('Authorization', `Bearer ${token}`)
-      .send(currency);
-    // .expect(200);
+      .send(currency)
+      .expect(200);
     expect(response.body).to.containDeep(currency);
     const result = await currencyRepository.findById(response.body.id);
     expect(result).to.containDeep(currency);

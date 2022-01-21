@@ -455,12 +455,11 @@ describe('FriendApplication', function () {
       status: FriendStatusType.APPROVED,
     });
 
-    const res = await client
+    await client
       .patch(`/friends/${friend.id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send(updatedFriend);
-    console.log(res.body.error);
-    // .expect(204);
+      .send(updatedFriend)
+      .expect(204);
 
     const notifications = await notificationRepository.find({
       where: {
