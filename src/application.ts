@@ -242,7 +242,7 @@ export class MyriadApiApplication extends BootMixin(
       const [user] = await userRepository.find({
         limit: 1,
         skip: i,
-        include: ['languangeSetting'],
+        include: ['languageSetting'],
       });
 
       if (user.languageSetting) continue;

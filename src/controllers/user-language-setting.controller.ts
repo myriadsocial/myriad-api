@@ -1,3 +1,5 @@
+import {authenticate} from '@loopback/authentication';
+import {intercept} from '@loopback/core';
 import {
   Count,
   CountSchema,
@@ -13,9 +15,12 @@ import {
   patch,
   requestBody,
 } from '@loopback/rest';
+import {AuthorizeInterceptor} from '../interceptors';
 import {LanguageSetting} from '../models';
 import {UserRepository} from '../repositories';
 
+@authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserLanguageSettingController {
   constructor(
     @repository(UserRepository) protected userRepository: UserRepository,

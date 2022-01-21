@@ -129,6 +129,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     if (methodName === MethodType.SIGNUP) {
       await this.userRepository.accountSetting(result.id).create({});
       await this.userRepository.notificationSetting(result.id).create({});
+      await this.userRepository.languageSetting(result.id).create({});
       await this.friendService.defaultFriend(result.id);
       await this.currencyService.defaultCurrency(result.id);
       await this.currencyService.sendMyriadReward(result.id);

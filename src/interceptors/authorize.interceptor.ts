@@ -174,10 +174,11 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         break;
 
       case ControllerType.USERDRAFTPOST:
-      case ControllerType.STORAGECONTROLLER:
-      case ControllerType.TIPCONTROLLER:
+      case ControllerType.STORAGE:
+      case ControllerType.TIP:
       case ControllerType.USERACCOUNTSETTING:
       case ControllerType.USERNOTIFICATIONSETTING:
+      case ControllerType.USERLANGUAGESETTING:
       case ControllerType.USERREPORT:
       case ControllerType.USER:
         userId = data;
