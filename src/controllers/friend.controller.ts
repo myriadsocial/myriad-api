@@ -20,6 +20,7 @@ import {
 import {Friend, User} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {ratelimit} from 'loopback4-ratelimiter';
 
 @authenticate('jwt')
 @intercept(AuthorizeInterceptor.BINDING_KEY)
@@ -31,6 +32,12 @@ export class FriendController {
     protected userRepository: UserRepository,
   ) {}
 
+  @ratelimit(true, {
+    windowMs: 1000,
+    max: 1,
+    statusCode: 404,
+    message: 'You have process your friend request',
+  })
   @intercept(CreateInterceptor.BINDING_KEY)
   @post('/friends')
   @response(200, {
@@ -90,6 +97,12 @@ export class FriendController {
     return this.friendRepository.findById(id, filter);
   }
 
+  @ratelimit(true, {
+    windowMs: 1000,
+    max: 1,
+    statusCode: 404,
+    message: 'You have process your friend request',
+  })
   @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/friends/{id}')
   @response(204, {

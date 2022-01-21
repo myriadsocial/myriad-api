@@ -63,7 +63,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     @service(PostService)
     protected postService: PostService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile
+    protected currentUser: UserProfile,
   ) {}
 
   /**
