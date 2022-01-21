@@ -21,6 +21,7 @@ import {
   ExperienceUserRepository,
   TagRepository,
   DraftPostRepository,
+  LanguageSettingRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -47,6 +48,7 @@ export async function givenRepositories(testdb: any) {
     async () => accountSettingRepository,
     async () => notificationSettingRepository,
     async () => peopleRepository,
+    async () => languageSettingRepository,
   );
   const userExperienceRepository: UserExperienceRepository =
     new UserExperienceRepository(
@@ -128,6 +130,8 @@ export async function givenRepositories(testdb: any) {
   const draftPostRepository: DraftPostRepository = new DraftPostRepository(
     testdb,
   );
+  const languageSettingRepository: LanguageSettingRepository =
+    new LanguageSettingRepository(testdb, async () => userRepository);
 
   const metricService = new MetricService(
     voteRepository,

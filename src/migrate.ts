@@ -8,20 +8,16 @@ export async function migrate(args: string[]) {
       ? args[envIndex + 1]
       : 'development'
     : undefined;
-  const initialUser = args.includes('user');
-  const nonce = args.includes('nonce');
-  const post = args.includes('post');
-  const remove = args.includes('remove');
-  const wallet = args.includes('wallet');
+  const alterIndex = args.indexOf('--alter');
+  const alter = args.includes('--alter') ? args[alterIndex + 1].split(',') : [];
+  const dropIndex = args.indexOf('--drop');
+  const drop = args.includes('--drop') ? args[dropIndex + 1].split(',') : [];
   console.log('Migrating schemas (%s existing schema)', existingSchema);
 
   const app = new MyriadApiApplication({
     environment,
-    user: initialUser,
-    nonce,
-    post,
-    remove,
-    wallet,
+    alter,
+    drop,
   });
   await app.boot();
   await app.migrateSchema({existingSchema});
