@@ -195,7 +195,6 @@ jobs:
             API_SENTRY_DSN:${{ secrets.STG_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            API_DNS:${{ secrets.STG_GCP_PROJECT_ID }}/API_DNS
             SSH_HOST:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_KEY
@@ -239,16 +238,6 @@ jobs:
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
-              --set ingress.enabled=true \
-              --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
-              --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
-              --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
-              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
-              --set-string ingress.hosts[0].paths[0].path=/ \
-              --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
-              --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
               --set-string resources.requests.cpu=500m \
               --set-string resources.requests.memory=1024Mi \
               --set-string resources.limits.cpu=500m \
@@ -307,7 +296,6 @@ jobs:
             API_SENTRY_DSN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            API_DNS:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_DNS
             SSH_HOST:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_KEY
@@ -351,16 +339,6 @@ jobs:
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
-              --set ingress.enabled=true \
-              --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
-              --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
-              --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
-              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
-              --set-string ingress.hosts[0].paths[0].path=/ \
-              --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
-              --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
               --set-string resources.requests.cpu=500m \
               --set-string resources.requests.memory=1024Mi \
               --set-string resources.limits.cpu=500m \
@@ -419,7 +397,6 @@ jobs:
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            API_DNS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_DNS
             SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
@@ -463,16 +440,6 @@ jobs:
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
-              --set ingress.enabled=true \
-              --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
-              --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
-              --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
-              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
-              --set-string ingress.hosts[0].paths[0].path=/ \
-              --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
-              --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
               --set-string resources.requests.cpu=500m \
               --set-string resources.requests.memory=1024Mi \
               --set-string resources.limits.cpu=500m \
@@ -531,7 +498,6 @@ jobs:
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            API_DNS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_DNS
             SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
@@ -575,16 +541,6 @@ jobs:
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
               --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
               --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
-              --set ingress.enabled=true \
-              --set-string ingress.annotations."kubernetes\.io/ingress\.class"=nginx \
-              --set-string ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt \
-              --set-string ingress.annotations."nginx\.ingress\.kubernetes\.io/proxy-body-size"="100m" \
-              --set-string ingress.annotations."nginx\.org/client-max-body-size"="100m" \
-              --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
-              --set-string ingress.hosts[0].paths[0].path=/ \
-              --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
-              --set-string ingress.tls[0].secretName=myriad-api-tls \
-              --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
               --set-string resources.requests.cpu=500m \
               --set-string resources.requests.memory=1024Mi \
               --set-string resources.limits.cpu=500m \
