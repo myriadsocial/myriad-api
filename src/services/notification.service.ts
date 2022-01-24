@@ -181,9 +181,11 @@ export class NotificationService {
   }
 
   async sendReportResponseToReporters(reportId: string): Promise<boolean> {
-    const {referenceType, referenceId} = await this.reportRepository.findById(
-      reportId,
-    );
+    const {referenceType, referenceId, status} =
+      await this.reportRepository.findById(reportId);
+
+    if (status === ReportStatusType.PENDING) return false;
+
     const reporters = await this.userReportReportRepository.find({
       where: {reportId: reportId},
     });
@@ -195,21 +197,34 @@ export class NotificationService {
       message: 'approved your report',
     });
 
+    if (status === ReportStatusType.IGNORED) {
+      notification.message = 'ignored your report';
+    }
+
     switch (referenceType) {
       case ReferenceType.USER: {
         notification.type = NotificationType.USER_BANNED;
+        if (status === ReportStatusType.IGNORED) {
+          notification.type = NotificationType.REPORT_USER_IGNORED;
+        }
         notification.referenceId = referenceId;
         break;
       }
 
       case ReferenceType.POST: {
         notification.type = NotificationType.POST_REMOVED;
+        if (status === ReportStatusType.IGNORED) {
+          notification.type = NotificationType.REPORT_POST_IGNORED;
+        }
         notification.referenceId = referenceId;
         break;
       }
 
       case ReferenceType.COMMENT: {
         notification.type = NotificationType.COMMENT_REMOVED;
+        if (status === ReportStatusType.IGNORED) {
+          notification.type = NotificationType.REPORT_COMMENT_IGNORED;
+        }
         notification.referenceId = referenceId;
         notification.additionalReferenceId =
           await this.getCommentAdditionalReferenceIds(referenceId);
@@ -221,7 +236,10 @@ export class NotificationService {
     }
 
     const reporterIds = reporters.map(reporter => reporter.reportedBy);
-    const title = 'Report Approved';
+    let title = 'Report Approved';
+    if (status === ReportStatusType.IGNORED) {
+      title = 'Report Ignored';
+    }
     const body = 'Myriad Official ' + notification.message;
 
     await this.sendNotificationToMultipleUsers(
