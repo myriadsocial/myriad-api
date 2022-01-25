@@ -11,11 +11,7 @@ import {
 import {Report} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
-import {
-  AuthorizeInterceptor,
-  PaginationInterceptor,
-  UpdateInterceptor,
-} from '../interceptors';
+import {AuthorizeInterceptor, PaginationInterceptor} from '../interceptors';
 import {ReportInterceptor} from '../interceptors/report.interceptor';
 import {service} from '@loopback/core';
 import {NotificationService} from '../services';
