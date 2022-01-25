@@ -6,6 +6,7 @@ import {AccountSettingRepository, FriendRepository, UserRepository} from '../rep
 import {injectable, BindingScope} from '@loopback/core';
 import {Filter} from '@loopback/repository';
 import {config} from '../config';
+import _ from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class FriendService {
@@ -193,11 +194,8 @@ export class FriendService {
     const requesteeIds = friends.map(friend => friend.requesteeId);
     const requestorIds = friends.map(friend => friend.requestorId);
 
-    const friendIds = [...new Set([...requesteeIds, ...requestorIds])].filter(
-      userId => userId !== id,
-    );
-
-    return [...friendIds, ...privateIds];
+    const friendIds = _.union(requesteeIds, requestorIds, privateIds);
+    return _.pull(friendIds, id);
   }
 
   async friendsTimeline(userId: string): Promise<Where<Post> | undefined> {
