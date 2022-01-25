@@ -3,7 +3,7 @@ import {
   AccountSettingType,
   FriendStatusType,
   PlatformType,
-  VisibilityType
+  VisibilityType,
 } from '../enums';
 import {Experience, People, Post, UserExperienceWithRelations} from '../models';
 import {

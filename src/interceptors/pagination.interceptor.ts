@@ -262,8 +262,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           filter.include = filter.include
-          ? [...filter.include, 'user']
-          : ['user'];
+            ? [...filter.include, 'user']
+            : ['user'];
         }
 
         if (methodName === MethodType.GETIMPORTERS) {

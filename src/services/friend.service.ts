@@ -2,7 +2,11 @@ import {AnyObject, Count, repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {AccountSettingType, FriendStatusType, VisibilityType} from '../enums';
 import {Friend, FriendWithRelations, Post} from '../models';
-import {AccountSettingRepository, FriendRepository, UserRepository} from '../repositories';
+import {
+  AccountSettingRepository,
+  FriendRepository,
+  UserRepository,
+} from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 import {Filter} from '@loopback/repository';
 import {config} from '../config';
