@@ -68,18 +68,17 @@ export class MetricService {
     protected userCurrencyRepository: UserCurrencyRepository,
   ) {}
 
-  async postMetric(
-    type: ReferenceType,
+  async publicMetric(
+    referenceType: ReferenceType,
     referenceId: string,
-    postId?: string,
   ): Promise<Metric> {
     const upvote = await this.voteRepository.count({
-      type,
+      type: referenceType,
       referenceId,
       state: true,
     });
     const downvote = await this.voteRepository.count({
-      type,
+      type: referenceType,
       referenceId,
       state: false,
     });
@@ -89,23 +88,27 @@ export class MetricService {
       downvotes: downvote.count,
     };
 
-    if (postId) {
-      metric.debates = (
-        await this.commentRepository.count({
-          postId: postId,
-          section: SectionType.DEBATE,
-        })
-      ).count;
+    if (referenceType === ReferenceType.COMMENT) {
+      const {count: countComment} = await this.commentRepository.count({
+        referenceId,
+      });
 
-      metric.discussions = (
-        await this.commentRepository.count({
-          postId: postId,
-          section: SectionType.DISCUSSION,
-        })
-      ).count;
-
-      metric.comments = (metric.discussions ?? 0) + (metric.debates ?? 0);
+      return Object.assign(metric, {comments: countComment});
     }
+
+    const {count: countDebate} = await this.commentRepository.count({
+      postId: referenceId,
+      section: SectionType.DEBATE,
+    });
+
+    const {count: countDiscussion} = await this.commentRepository.count({
+      postId: referenceId,
+      section: SectionType.DISCUSSION,
+    });
+
+    metric.debates = countDebate;
+    metric.discussions = countDiscussion;
+    metric.comments = (countDebate ?? 0) + (countDiscussion ?? 0);
 
     return metric;
   }

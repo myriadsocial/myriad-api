@@ -224,19 +224,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.COMMENT: {
-        const metric = await this.metricService.postMetric(
-          result.type,
-          result.referenceId,
-          result.postId,
-        );
-
-        const popularCount = await this.metricService.countPopularPost(
-          result.postId,
-        );
-        await this.postService.postRepository.updateById(result.postId, {
-          metric: metric,
-          popularCount: popularCount,
-        });
         await this.activityLogService.createLog(
           ActivityLogType.CREATECOMMENT,
           result.userId,
@@ -245,7 +232,31 @@ export class CreateInterceptor implements Provider<Interceptor> {
         );
         await this.createNotification(controllerName, result);
 
-        return Object.assign(result, {metric});
+        const {type: referenceType, referenceId, postId} = result as Comment;
+
+        const popularCount = await this.metricService.countPopularPost(postId);
+        const postMetric = await this.metricService.publicMetric(
+          ReferenceType.POST,
+          postId,
+        );
+        await this.postService.postRepository.updateById(postId, {
+          metric: postMetric,
+          popularCount: popularCount,
+        });
+
+        if (result.type === ReferenceType.COMMENT) {
+          const commentMetric = await this.metricService.publicMetric(
+            referenceType,
+            referenceId,
+          );
+          await this.commentRepository.updateById(referenceId, {
+            metric: commentMetric,
+          });
+
+          return Object.assign(result, {metric: commentMetric});
+        }
+
+        return Object.assign(result, {metric: postMetric});
       }
 
       case ControllerType.FRIEND: {
