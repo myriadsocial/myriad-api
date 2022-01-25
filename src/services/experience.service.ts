@@ -1,5 +1,10 @@
 import {repository, Where} from '@loopback/repository';
-import {FriendStatusType, PlatformType, VisibilityType} from '../enums';
+import {
+  AccountSettingType,
+  FriendStatusType,
+  PlatformType,
+  VisibilityType
+} from '../enums';
 import {Experience, People, Post, UserExperienceWithRelations} from '../models';
 import {
   ExperienceRepository,
@@ -22,28 +27,64 @@ export class ExperienceService {
     protected friendService: FriendService,
   ) {}
 
-  async getExperience(userId: string): Promise<Experience | null> {
+  async getExperience(
+    userId: string,
+    experienceId?: string,
+  ): Promise<Experience | null> {
     let experience = null;
 
     try {
-      const user = await this.userRepository.findById(userId, {
-        include: [
-          {
-            relation: 'experience',
-            scope: {
-              include: [
-                {
-                  relation: 'users',
-                },
-              ],
-            },
-          },
-        ],
-      });
+      if (experienceId) {
+        const {count} = await this.userExperienceRepository.count({
+          userId,
+          experienceId,
+        });
 
-      if (user.experience) experience = user.experience;
+        if (count === 0) return null;
+
+        experience = await this.experienceRepository.findById(experienceId, {
+          include: [
+            {
+              relation: 'users',
+              scope: {
+                include: [{relation: 'accountSetting'}],
+              },
+            },
+          ],
+        });
+      } else {
+        const user = await this.userRepository.findById(userId, {
+          include: [
+            {
+              relation: 'experience',
+              scope: {
+                include: [
+                  {
+                    relation: 'users',
+                    scope: {
+                      include: [{relation: 'accountSetting'}],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        });
+
+        if (user.experience) experience = user.experience;
+      }
     } catch {
       // ignore
+    }
+
+    if (experience?.users) {
+      experience.users = experience.users.filter(user => {
+        const accountPrivacy = user?.accountSetting.accountPrivacy;
+        const privateSetting = AccountSettingType.PRIVATE;
+
+        if (accountPrivacy === privateSetting) return false;
+        return true;
+      });
     }
 
     return experience;
@@ -53,22 +94,7 @@ export class ExperienceService {
     userId: string,
     experienceId?: string,
   ): Promise<Where<Post> | undefined> {
-    let experience: Experience | null = null;
-
-    if (experienceId) {
-      const {count} = await this.userExperienceRepository.count({
-        userId,
-        experienceId,
-      });
-
-      if (count === 0) return;
-
-      experience = await this.experienceRepository.findById(experienceId, {
-        include: ['users'],
-      });
-    } else {
-      experience = await this.getExperience(userId);
-    }
+    const experience = await this.getExperience(userId, experienceId);
 
     if (!experience) return;
 
