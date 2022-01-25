@@ -18,26 +18,30 @@ export class VoteService {
   ) {}
 
   async updateVoteCounter(voteDetail: AnyObject): Promise<void> {
-    const {referenceId, type, postId, toUserId} = voteDetail;
-    const metric = await this.metricService.postMetric(
-      type,
-      referenceId,
-      type === ReferenceType.POST ? referenceId : undefined,
-    );
-    const popular = await this.metricService.countPopularPost(postId);
-    const data: AnyObject = {
-      popularCount: popular,
-    };
+    const {referenceId, type, toUserId} = voteDetail;
 
     if (type === ReferenceType.COMMENT) {
+      const commentMetric = await this.metricService.publicMetric(
+        type,
+        referenceId,
+      );
       await this.commentRepository.updateById(referenceId, {
-        metric,
+        metric: commentMetric,
       });
     } else {
-      data.metric = metric;
+      const popularCount = await this.metricService.countPopularPost(
+        referenceId,
+      );
+      const postMetric = await this.metricService.publicMetric(
+        type,
+        referenceId,
+      );
+      await this.postRepository.updateById(referenceId, {
+        popularCount: popularCount,
+        metric: postMetric,
+      });
     }
 
-    await this.postRepository.updateById(referenceId, data);
     await this.metricService.userMetric(toUserId);
   }
 

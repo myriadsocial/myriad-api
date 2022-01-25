@@ -150,8 +150,9 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.NOTIFICATION: {
-        if (typeof data === 'string') userId = data;
-        else {
+        if (typeof data === 'string') {
+          ({to: userId} = await this.notificationRepository.findById(data));
+        } else {
           for (const id of data) {
             ({to: userId} = await this.notificationRepository.findById(id));
 

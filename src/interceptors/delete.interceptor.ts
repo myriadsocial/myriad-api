@@ -25,6 +25,7 @@ import {
   NotificationService,
   VoteService,
 } from '../services';
+import {Comment} from '../models';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -89,8 +90,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       case ControllerType.COMMENT: {
         const commentId = invocationCtx.args[0];
-        const {postId} = await this.commentRepository.findById(commentId);
-        invocationCtx.args[1] = postId;
+        const comment = await this.commentRepository.findById(commentId);
+        invocationCtx.args[1] = comment;
         break;
       }
 
@@ -139,14 +140,32 @@ export class DeleteInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.COMMENT: {
-        const postId = invocationCtx.args[1];
-        const metric = await this.metricService.postMetric(
+        const {
+          type: referenceType,
+          referenceId,
+          postId,
+        } = invocationCtx.args[1] as Comment;
+
+        const popularCount = await this.metricService.countPopularPost(postId);
+        const postMetric = await this.metricService.publicMetric(
           ReferenceType.POST,
           postId,
-          postId,
         );
+        await this.postRepository.updateById(postId, {
+          metric: postMetric,
+          popularCount: popularCount,
+        });
 
-        await this.postRepository.updateById(postId, {metric});
+        if (referenceType === ReferenceType.COMMENT) {
+          const commentMetric = await this.metricService.publicMetric(
+            referenceType,
+            referenceId,
+          );
+          await this.commentRepository.updateById(referenceId, {
+            metric: commentMetric,
+          });
+        }
+
         break;
       }
 
