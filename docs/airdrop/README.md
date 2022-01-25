@@ -1,29 +1,46 @@
-# Verify Airdrop Snapshoot
+# MYRIA Airdrop
 
-## Download database testnet
+## 1. Early adopter
 
-```
-https://github.com/myriadsocial/myriad-api/releases/download/1.0.0-beta3/01.15.2022_myriad-db-0.dump
-```
+### Verify Leaderboard Snapshot
 
-## Restore mongo database
+- Download database
 
-```
-mongorestore -u=<username> -p=<password> -d=myriad --archive=./01.15.2022_myriad-db-0.dump
-```
+  ```bash
+  https://github.com/myriadsocial/myriad-api/releases/download/1.0.0-beta3/01.15.2022_myriad-db-0.dump
+  ```
 
-On restoring data, you will see this error that showed a duplicate data, but this will not affect rank.
+- Restore database
 
-```
-continuing through error: E11000 duplicate key error collection: myriad.votes index: uniqueVoteIndex dup key: { userId: "0x22ab91aba7e6f8937930da2b42147b426301e8dbafdfa006330afe33e36e925b", type: "post", referenceId: "61dfc228d376da001d0eeebf" }
-```
+  ```bash
+  mongorestore -u=<username> -p=<password> -d=myriad --archive=./01.15.2022_myriad-db-0.dump
+  ```
 
-## Fetch Sorted Data
+  > **Note:**</br>
+  > On restoring data, you will see this error that showed a duplicate data, but this will not affect the rank.
+  >
+  > ```bash
+  > continuing through error: E11000 duplicate key error collection: myriad.votes index: uniqueVoteIndex dup key: { userId: "0x22ab91aba7e6f8937930da2b42147b426301e8dbafdfa006330afe33e36e925b", type: "post", referenceId: "61dfc228d376da001d0eeebf" }
+  > ```
 
-```
-db.users.find({},{_id: 1, username: 1, name: 1, profilePictureURL: 1, "metric.totalKudos": 1}).sort({"metric.totalKudos": -1}).limit(500)
-```
+- Run query
 
-## Result
+  ```bash
+  db.users.find({},{_id: 1, username: 1, name: 1, profilePictureURL: 1, "metric.totalKudos": 1}).sort({"metric.totalKudos": -1}).limit(500)
+  ```
 
-[Leaderboard Snapshot](./leaderboard-snapshot.md)
+- Result
+
+  [Leaderboard Snapshot](./leaderboard-snapshot.md)
+
+### Distribution
+
+- Run command
+
+  ```bash
+  yarn install && yarn airdrop
+  ```
+
+- Result
+
+  [Leaderboard Distribution](./leaderboard-distribution.txt)
