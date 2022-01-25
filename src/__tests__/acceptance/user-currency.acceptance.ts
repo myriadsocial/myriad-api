@@ -8,6 +8,7 @@ import {
 import {
   givenAccesToken,
   givenCurrencyRepository,
+  givenOtherUser,
   givenUserCurrency,
   givenUserCurrencyRepository,
   givenUserInstance,
@@ -15,7 +16,6 @@ import {
   setupApplication,
   givenMultipleCurrencyInstances,
   givenAddress,
-  givenOtherUser,
   givenUserCurrencyInstance,
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
@@ -171,6 +171,17 @@ describe('UserCurrencyApplication', function () {
       .expect(422);
   });
 
+  it('returns 401 when deleting user currency not as login user', async () => {
+    const accessToken = await givenAccesToken(otherUser);
+    const userCurrency = givenUserCurrency({userId: user.id});
+
+    await client
+      .del('/user-currencies')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({userId: userCurrency.userId, currencyId: userCurrency.currencyId})
+      .expect(401);
+  });
+
   it('deletes the user currency', async () => {
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,
@@ -178,20 +189,19 @@ describe('UserCurrencyApplication', function () {
     });
     const userCurrency = givenUserCurrency({
       userId: user.id,
-      currencyId: 'ACA',
     });
 
     await client
       .del(`/user-currencies`)
       .set('Authorization', `Bearer ${token}`)
-      .send({userId: userCurrency.userId, currencyId: userCurrency.currencyId})
+      .send({userId: userCurrency.userId, currencyId: 'ACA'})
       .expect(200, {count: 1});
 
     expect(
       await userCurrencyRepository.findOne({
         where: {
           userId: userCurrency.userId,
-          currencyId: userCurrency.currencyId,
+          currencyId: 'ACA',
         },
       }),
     ).to.be.equal(null);

@@ -20,7 +20,6 @@ import {
   AuthorizeInterceptor,
   ExperienceInterceptor,
   PaginationInterceptor,
-  UpdateInterceptor,
 } from '../interceptors';
 import {Experience, UserExperience} from '../models';
 import {
@@ -135,7 +134,6 @@ export class UserExperienceController {
     return this.userRepository.experiences(id).create(experience);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
   @intercept(ExperienceInterceptor.BINDING_KEY)
   @patch('/users/{userId}/experiences/{experienceId}', {
     responses: {

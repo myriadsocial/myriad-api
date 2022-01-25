@@ -153,6 +153,7 @@ export class UserSocialMediaController {
 
     await this.userSocialMediaService.userSocialMediaRepository.updateById(id, {
       primary: true,
+      updatedAt: new Date().toString(),
     });
   }
 

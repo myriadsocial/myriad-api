@@ -13,9 +13,9 @@ import {
 import {
   AuthorizeInterceptor,
   CreateInterceptor,
-  DeleteInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
+  DeleteInterceptor,
 } from '../interceptors';
 import {Friend, User} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';

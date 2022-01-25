@@ -19,11 +19,9 @@ import {
 import {Comment, DraftPost, Transaction, UserSocialMedia} from '../models';
 import {
   CommentRepository,
-  DraftPostRepository,
   ReportRepository,
   UserCurrencyRepository,
   UserReportRepository,
-  UserRepository,
 } from '../repositories';
 import {
   ActivityLogService,
@@ -53,10 +51,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected reportRepository: ReportRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
-    @repository(DraftPostRepository)
-    protected draftPostRepository: DraftPostRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)

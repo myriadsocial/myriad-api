@@ -243,7 +243,7 @@ export function givenImportedPost(post?: Partial<Post>) {
       tags: [],
       platform: PlatformType.TWITTER,
       title: '',
-      text: 'Tesla Solar + Powerwall battery enables consumers to be their own utility',
+      text: '"Tesla Solar + Powerwall battery enables consumers to be their own utility"',
       originPostId: '1385108424761872387',
       url: 'https://twitter.com/44196397/status/1385108424761872387',
       originCreatedAt:
