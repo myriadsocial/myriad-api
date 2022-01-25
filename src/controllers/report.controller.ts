@@ -11,13 +11,18 @@ import {
 import {Report} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
-import {PaginationInterceptor} from '../interceptors';
+import {
+  AuthorizeInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {ReportInterceptor} from '../interceptors/report.interceptor';
 import {service} from '@loopback/core';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class ReportController {
   constructor(
     @repository(ReportRepository)
@@ -74,6 +79,7 @@ export class ReportController {
     return this.reportRepository.findById(id, filter);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @intercept(ReportInterceptor.BINDING_KEY)
   @patch('/reports/{id}')
   @response(204, {

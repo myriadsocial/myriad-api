@@ -1,7 +1,7 @@
-import {AnyObject, repository, Where} from '@loopback/repository';
+import {AnyObject, Count, repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {FriendStatusType, VisibilityType} from '../enums';
-import {Friend, Post} from '../models';
+import {Friend, FriendWithRelations, Post} from '../models';
 import {FriendRepository, UserRepository} from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 import {Filter} from '@loopback/repository';
@@ -80,8 +80,8 @@ export class FriendService {
   }
 
   async validateBlockFriendRequest(
-    requestorId: string,
     requesteeId: string,
+    requestorId: string,
   ): Promise<void> {
     if (requesteeId === requestorId) {
       throw new HttpErrors.UnprocessableEntity(
@@ -132,13 +132,10 @@ export class FriendService {
     }
   }
 
-  async validateApproveFriendRequest(friendId: string): Promise<AnyObject> {
-    const {requestee, requestor, status} = await this.friendRepository.findById(
-      friendId,
-      {
-        include: ['requestee', 'requestor'],
-      },
-    );
+  async validateApproveFriendRequest(
+    friend: FriendWithRelations,
+  ): Promise<AnyObject> {
+    const {requestee, requestor, status} = friend;
 
     if (requestee && requestor) {
       if (status === FriendStatusType.APPROVED) {
@@ -213,31 +210,8 @@ export class FriendService {
     });
   }
 
-  async getImporterIds(userId?: string): Promise<string[]> {
-    if (!userId) return [];
-
-    const friends = await this.friendRepository.find({
-      where: {
-        requestorId: userId.toString(),
-        status: FriendStatusType.APPROVED,
-      },
-      limit: 5,
-      order: ['updatedAt DESC'],
-    });
-
-    if (friends.length > 0) {
-      const friendIds = friends.map(friend => friend.requesteeId);
-
-      return [...friendIds, userId];
-    }
-
-    return [];
-  }
-
-  async removedFriend(friendId: string): Promise<AnyObject> {
-    const {requesteeId, requestorId} = await this.friendRepository.findById(
-      friendId,
-    );
+  async removedFriend(friend: Friend): Promise<AnyObject> {
+    const {requesteeId, requestorId} = friend;
 
     if (requesteeId === config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY) {
       throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
@@ -252,5 +226,90 @@ export class FriendService {
       requesteeId: requesteeId,
       requestorId: requestorId,
     };
+  }
+
+  async countMutual(requestorId: string, requesteeId: string): Promise<Count> {
+    const collection = (
+      this.friendRepository.dataSource.connector as AnyObject
+    ).collection(Friend.modelName);
+
+    const countMutual = await collection
+      .aggregate([
+        {
+          $match: {
+            $or: [
+              {
+                requestorId: requestorId,
+                status: FriendStatusType.APPROVED,
+              },
+              {
+                requestorId: requesteeId,
+                status: FriendStatusType.APPROVED,
+              },
+            ],
+          },
+        },
+        {$group: {_id: '$requesteeId', count: {$sum: 1}}},
+        {$match: {count: 2}},
+        {$group: {_id: null, count: {$sum: 1}}},
+        {$project: {_id: 0}},
+      ])
+      .get();
+
+    if (countMutual.length === 0) return {count: 0};
+    return countMutual[0];
+  }
+
+  async handlePendingBlockedRequest(friend: Friend): Promise<void> {
+    const {requestorId, requesteeId, status} = friend;
+
+    switch (status) {
+      case FriendStatusType.PENDING: {
+        return this.validatePendingFriendRequest(requesteeId, requestorId);
+      }
+
+      case FriendStatusType.BLOCKED: {
+        return this.validateBlockFriendRequest(requesteeId, requestorId);
+      }
+
+      case FriendStatusType.APPROVED: {
+        throw new HttpErrors.UnprocessableEntity(
+          'Please set status to pending or blocked',
+        );
+      }
+    }
+  }
+
+  async getMutualUserIds(
+    requestorId: string,
+    requesteeId: string,
+  ): Promise<string[]> {
+    const collection = (
+      this.friendRepository.dataSource.connector as AnyObject
+    ).collection(Friend.modelName);
+
+    return (
+      await collection
+        .aggregate([
+          {
+            $match: {
+              $or: [
+                {
+                  requestorId: requestorId,
+                  status: FriendStatusType.APPROVED,
+                },
+                {
+                  requestorId: requesteeId,
+                  status: FriendStatusType.APPROVED,
+                },
+              ],
+            },
+          },
+          {$group: {_id: '$requesteeId', count: {$sum: 1}}},
+          {$match: {count: 2}},
+          {$project: {_id: 1}},
+        ])
+        .get()
+    ).map((user: AnyObject) => user._id);
   }
 }

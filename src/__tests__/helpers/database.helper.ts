@@ -33,6 +33,7 @@ import {
   TransactionService,
   UserSocialMediaService,
 } from '../../services';
+import {UserProfile, securityId} from '@loopback/security';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export async function givenRepositories(testdb: any) {
@@ -153,6 +154,10 @@ export async function givenRepositories(testdb: any) {
     userCurrencyRepository,
   );
 
+  const currentUser: UserProfile = {
+    [securityId]: '',
+  };
+
   const fcmService = new FCMService();
 
   const notificationService = new NotificationService(
@@ -166,6 +171,7 @@ export async function givenRepositories(testdb: any) {
     userReportRepository,
     notificationSettingRepository,
     fcmService,
+    currentUser,
   );
 
   const friendService = new FriendService(friendRepository, userRepository);
@@ -178,6 +184,7 @@ export async function givenRepositories(testdb: any) {
     friendRepository,
     voteRepository,
     metricService,
+    currentUser,
   );
 
   const transactionService = new TransactionService(transactionRepository);

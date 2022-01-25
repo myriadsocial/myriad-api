@@ -1,27 +1,20 @@
-import {expect, toJSON} from '@loopback/testlab';
+import {expect} from '@loopback/testlab';
 import {CommentController} from '../../../controllers';
-import {ReferenceType, NotificationType, PlatformType} from '../../../enums';
+import {ReferenceType} from '../../../enums';
 import {
   CommentRepository,
-  NotificationRepository,
-  PeopleRepository,
   PostRepository,
   TransactionRepository,
   UserRepository,
-  UserSocialMediaRepository,
 } from '../../../repositories';
-import {NotificationService} from '../../../services';
 import {
   givenComment,
   givenCommentInstance,
   givenEmptyDatabase,
-  givenMyriadPostInstance,
-  givenPeopleInstance,
   givenPostInstance,
   givenRepositories,
   givenTransactionInstance,
   givenUserInstance,
-  givenUserSocialMediaInstance,
   testdb,
 } from '../../helpers';
 
@@ -31,31 +24,18 @@ describe('CommentControllerIntegration', () => {
   let postRepository: PostRepository;
   let transactionRepository: TransactionRepository;
   let controller: CommentController;
-  let notificationRepository: NotificationRepository;
-  let userSocialMediaRepository: UserSocialMediaRepository;
-  let peopleRepository: PeopleRepository;
-  let notificationService: NotificationService;
 
   before(async () => {
     ({
       commentRepository,
       postRepository,
-      notificationService,
       transactionRepository,
       userRepository,
-      notificationRepository,
-      peopleRepository,
-      notificationService,
-      userSocialMediaRepository,
     } = await givenRepositories(testdb));
   });
 
   before(async () => {
-    controller = new CommentController(
-      commentRepository,
-      postRepository,
-      notificationService,
-    );
+    controller = new CommentController(commentRepository);
   });
 
   beforeEach(async () => {
@@ -381,142 +361,6 @@ describe('CommentControllerIntegration', () => {
           comments: [newAnotherComment],
         },
       ],
-    });
-  });
-
-  it('creates a notification when a user comment on a myriad post', async () => {
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccckcfb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const post = await givenMyriadPostInstance(postRepository, {
-      createdBy: otherUser.id,
-      platform: PlatformType.MYRIAD,
-    });
-    const user = await givenUserInstance(userRepository);
-    const commentInstance = givenComment({
-      postId: post.id,
-      userId: user.id,
-      text: 'hello world',
-      referenceId: post.id,
-      type: ReferenceType.POST,
-    });
-
-    const newComment = await controller.create(commentInstance);
-
-    const notifications = await notificationRepository.find({
-      where: {
-        from: newComment.userId,
-        to: post.createdBy,
-        referenceId: newComment.id,
-      },
-    });
-
-    delete notifications[0].id;
-    delete notifications[0].createdAt;
-    delete notifications[0].updatedAt;
-
-    expect({
-      type: NotificationType.POST_COMMENT,
-      from: newComment.userId,
-      read: false,
-      to: post.createdBy,
-      referenceId: newComment.id,
-      additionalReferenceId: [{postId: post.id}],
-      message: 'commented: ' + newComment.text,
-    }).to.containDeep(toJSON(notifications[0]));
-  });
-
-  it('creates a notification when a user comment on a post from other social media and the post belong to user', async () => {
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccckcfb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const people = await givenPeopleInstance(peopleRepository);
-    await givenUserSocialMediaInstance(userSocialMediaRepository, {
-      userId: otherUser.id,
-      peopleId: people.id,
-    });
-    const post = await givenPostInstance(postRepository, {
-      createdBy: otherUser.id,
-      peopleId: people.id,
-    });
-    const user = await givenUserInstance(userRepository);
-    const commentInstance = givenComment({
-      postId: post.id,
-      userId: user.id,
-      text: 'hello world',
-      referenceId: post.id,
-      type: ReferenceType.POST,
-    });
-
-    const newComment = await controller.create(commentInstance);
-
-    const notifications = await notificationRepository.find({
-      where: {
-        from: newComment.userId,
-        to: otherUser.id,
-        referenceId: newComment.id,
-      },
-    });
-
-    delete notifications[0].id;
-    delete notifications[0].createdAt;
-    delete notifications[0].updatedAt;
-
-    expect({
-      type: NotificationType.POST_COMMENT,
-      from: newComment.userId,
-      read: false,
-      to: otherUser.id,
-      referenceId: newComment.id,
-      additionalReferenceId: [{postId: post.id}],
-      message: 'commented: ' + newComment.text,
-    }).to.containDeep(toJSON(notifications[0]));
-  });
-
-  it('creates a notification when a user comment on a comment', async () => {
-    const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccckcfb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
-    const post = await givenMyriadPostInstance(postRepository, {
-      createdBy: otherUser.id,
-      platform: PlatformType.MYRIAD,
-    });
-    const user = await givenUserInstance(userRepository);
-    const comment = await givenCommentInstance(commentRepository, {
-      postId: post.id,
-      userId: user.id,
-      text: 'hello world',
-      referenceId: post.id,
-      type: ReferenceType.POST,
-    });
-    const commentInstance = givenComment({
-      postId: post.id,
-      userId: otherUser.id,
-      text: 'welcome world',
-      referenceId: comment.id,
-      type: ReferenceType.COMMENT,
-    });
-
-    const response = await controller.create(commentInstance);
-    const notification = await notificationRepository.findOne({
-      where: {
-        from: response.userId,
-      },
-    });
-
-    delete notification?.id;
-    delete notification?.createdAt;
-    delete notification?.updatedAt;
-    delete notification?.deletedAt;
-
-    expect(toJSON(notification)).to.deepEqual({
-      type: NotificationType.COMMENT_COMMENT,
-      from: response.userId,
-      referenceId: response.id,
-      message: 'commented: ' + response.text,
-      additionalReferenceId: [{postId: post.id}, {firstCommentId: comment.id}],
-      to: comment.userId,
-      read: false,
     });
   });
 });

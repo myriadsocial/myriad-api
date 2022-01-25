@@ -68,11 +68,10 @@ export class MetricService {
     protected userCurrencyRepository: UserCurrencyRepository,
   ) {}
 
-  async publicMetric(
+  async postMetric(
     type: ReferenceType,
     referenceId: string,
     postId?: string,
-    section?: SectionType,
   ): Promise<Metric> {
     const upvote = await this.voteRepository.count({
       type,
@@ -90,26 +89,23 @@ export class MetricService {
       downvotes: downvote.count,
     };
 
-    if (!section) return metric;
-    if (section === SectionType.DEBATE) {
+    if (postId) {
       metric.debates = (
         await this.commentRepository.count({
-          postId,
+          postId: postId,
           section: SectionType.DEBATE,
         })
       ).count;
-    }
 
-    if (section === SectionType.DISCUSSION) {
       metric.discussions = (
         await this.commentRepository.count({
-          postId,
+          postId: postId,
           section: SectionType.DISCUSSION,
         })
       ).count;
-    }
 
-    metric.comments = (metric.discussions ?? 0) + (metric.debates ?? 0);
+      metric.comments = (metric.discussions ?? 0) + (metric.debates ?? 0);
+    }
 
     return metric;
   }
@@ -197,9 +193,6 @@ export class MetricService {
       case ControllerType.REPORT:
         return this.reportRepository.count(where);
 
-      case ControllerType.DELETEDCOLLECTION:
-        return this.countDeletedData(methodName, where);
-
       case ControllerType.REPORTUSER:
         return this.userReportRepository.count(where);
 
@@ -226,34 +219,13 @@ export class MetricService {
     }
   }
 
-  async countDeletedData(
-    methodName: MethodType,
-    where: Where<AnyObject>,
-  ): Promise<Count> {
-    switch (methodName) {
-      case MethodType.DELETEDUSERLIST:
-        return this.userRepository.count(where);
-
-      case MethodType.DELETEDPOSTLIST:
-        return this.postRepository.count(where);
-
-      default:
-        return {
-          count: 0,
-        };
-    }
-  }
-
   async countPopularPost(postId: string): Promise<number> {
-    const post = await this.postRepository.findOne({where: {id: postId}});
-    if (!post) return 0;
-
     const {count: voteCount} = await this.voteRepository.count({
-      postId: post.id,
+      postId: postId,
       state: true,
     });
     const {count: commentCount} = await this.commentRepository.count({
-      postId: post.id,
+      postId: postId,
     });
 
     return commentCount + voteCount;

@@ -25,7 +25,7 @@ describe('FriendControllers', () => {
     it('creates a Friend', async () => {
       const create = friendRepository.stubs.create;
       create.resolves(aFriendWithId);
-      const result = await controller.add(aFriend);
+      const result = await controller.create(aFriend);
       expect(result).to.eql(aFriendWithId);
       sinon.assert.calledWith(create, aFriend);
     });

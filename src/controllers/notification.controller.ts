@@ -8,7 +8,6 @@ import {
   Where,
 } from '@loopback/repository';
 import {
-  del,
   get,
   getModelSchemaRef,
   param,
@@ -16,12 +15,13 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {PaginationInterceptor} from '../interceptors';
+import {AuthorizeInterceptor, PaginationInterceptor} from '../interceptors';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class NotificationController {
   constructor(
     @repository(NotificationRepository)
@@ -113,20 +113,12 @@ export class NotificationController {
     notificationIds: string[],
   ): Promise<Count> {
     return this.notificationRepository.updateAll(
-      {read: true},
+      {read: true, updatedAt: new Date().toString()},
       {
         id: {
           inq: notificationIds,
         },
       },
     );
-  }
-
-  @del('/notifications/{id}')
-  @response(204, {
-    description: 'Notification DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.notificationRepository.deleteById(id);
   }
 }

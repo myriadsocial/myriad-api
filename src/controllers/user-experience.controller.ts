@@ -16,7 +16,12 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
+import {
+  AuthorizeInterceptor,
+  ExperienceInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {Experience, UserExperience} from '../models';
 import {
   ExperienceRepository,
@@ -26,6 +31,7 @@ import {
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserExperienceController {
   constructor(
     @repository(UserRepository)
@@ -129,6 +135,7 @@ export class UserExperienceController {
     return this.userRepository.experiences(id).create(experience);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @intercept(ExperienceInterceptor.BINDING_KEY)
   @patch('/users/{userId}/experiences/{experienceId}', {
     responses: {

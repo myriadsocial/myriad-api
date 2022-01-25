@@ -15,28 +15,28 @@ export class JWTService implements TokenService {
   constructor(
     @inject(TokenServiceBindings.TOKEN_SECRET)
     private jwtSecret: string,
+    @inject(TokenServiceBindings.TOKEN_EXPIRES_IN)
+    public readonly expiresSecret: string,
   ) {}
 
-  async generateToken(authProfile: UserProfile): Promise<string> {
-    if (!authProfile) {
+  async generateToken(userProfile: UserProfile): Promise<string> {
+    if (!userProfile) {
       throw new HttpErrors.Unauthorized(
         'Error while generating token :userProfile is null',
       );
     }
-    const authInfoForToken = {
-      id: authProfile[securityId],
-      name: authProfile.name,
-      email: authProfile.email,
+    const userInfoForToken = {
+      id: userProfile[securityId],
+      name: userProfile.name,
+      username: userProfile.username,
+      createdAt: userProfile.createdAt,
     };
 
-    let token: string;
     try {
-      token = await signAsync(authInfoForToken, this.jwtSecret);
+      return signAsync(userInfoForToken, this.jwtSecret);
     } catch (err) {
       throw new HttpErrors.Unauthorized(`error generating token ${err}`);
     }
-
-    return token;
   }
 
   async verifyToken(token: string): Promise<UserProfile> {
@@ -46,21 +46,22 @@ export class JWTService implements TokenService {
       );
     }
 
-    let authProfile: UserProfile;
+    let userProfile: UserProfile;
     try {
       const decryptedToken = await verifyAsync(token, this.jwtSecret);
-      authProfile = Object.assign(
-        {[securityId]: '', id: '', name: ''},
+      userProfile = Object.assign(
+        {[securityId]: '', id: '', name: '', username: ''},
         {
           [securityId]: decryptedToken.id,
           id: decryptedToken.id,
           name: decryptedToken.name,
+          username: decryptedToken.username,
         },
       );
     } catch (err) {
       throw new HttpErrors.Unauthorized(`Error verifying token:${err.message}`);
     }
-    return authProfile;
+    return userProfile;
   }
 
   async generateAnyToken(payload: AnyObject): Promise<string> {

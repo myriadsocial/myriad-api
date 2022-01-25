@@ -1,4 +1,4 @@
-import {BindingScope, injectable, service} from '@loopback/core';
+import {BindingScope, inject, injectable, service} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {config} from '../config';
 import {NotificationType, ReferenceType, ReportStatusType} from '../enums';
@@ -23,6 +23,8 @@ import {
   UserSocialMediaRepository,
 } from '../repositories';
 import {FCMService} from './fcm.service';
+import {UserProfile, securityId} from '@loopback/security';
+import {AuthenticationBindings} from '@loopback/authentication';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class NotificationService {
@@ -47,44 +49,44 @@ export class NotificationService {
     public notificationSettingRepository: NotificationSettingRepository,
     @service(FCMService)
     public fcmService: FCMService,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    public currentUser: UserProfile,
   ) {}
 
-  async sendFriendRequest(from: string, to: string): Promise<boolean> {
+  async sendFriendRequest(to: string): Promise<boolean> {
     const active = await this.checkNotificationSetting(
       to,
       NotificationType.FRIEND_REQUEST,
     );
     if (!active) return false;
 
-    const fromUser = await this.userRepository.findById(from);
     const notification = new Notification({
       type: NotificationType.FRIEND_REQUEST,
-      from: fromUser.id,
-      referenceId: fromUser.id,
+      from: this.currentUser[securityId],
+      referenceId: this.currentUser[securityId],
       message: 'sent you friend request',
     });
 
     const title = 'Friend Request Accepted';
-    const body = fromUser.name + ' ' + notification.message;
+    const body = this.currentUser.name + ' ' + notification.message;
 
     await this.sendNotificationToUser(notification, to, title, body);
 
     return true;
   }
 
-  async sendFriendAccept(from: string, to: string): Promise<boolean> {
-    const fromUser = await this.userRepository.findById(from);
+  async sendFriendAccept(to: string): Promise<boolean> {
     const toUser = await this.userRepository.findById(to);
 
     const notification = new Notification({
       type: NotificationType.FRIEND_ACCEPT,
-      from: fromUser.id,
-      referenceId: fromUser.id,
+      from: this.currentUser[securityId],
+      referenceId: this.currentUser[securityId],
       message: 'accept your friend request',
     });
 
     const title = 'Friend Request Accepted';
-    const body = fromUser.name + ' ' + notification.message;
+    const body = this.currentUser.name + ' ' + notification.message;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
 
@@ -108,15 +110,13 @@ export class NotificationService {
     return;
   }
 
-  async sendPostComment(from: string, comment: Comment): Promise<boolean> {
+  async sendPostComment(comment: Comment): Promise<boolean> {
     await this.sendMention(
-      from,
       comment.id ?? '',
       comment.mentions,
       ReferenceType.COMMENT,
     );
 
-    const fromUser = await this.userRepository.findById(from);
     const additionalReferenceId = await this.getCommentAdditionalReferenceIds(
       comment.id ?? '',
     );
@@ -126,7 +126,7 @@ export class NotificationService {
         comment.type === ReferenceType.POST
           ? NotificationType.POST_COMMENT
           : NotificationType.COMMENT_COMMENT,
-      from: fromUser.id,
+      from: this.currentUser[securityId],
       referenceId: comment.id,
       message: 'commented: ' + comment.text,
       additionalReferenceId: additionalReferenceId,
@@ -136,7 +136,7 @@ export class NotificationService {
 
     // FCM messages
     const title = 'New Comment';
-    const body = fromUser.name + ' commented to your post';
+    const body = this.currentUser.name + ' commented to your post';
 
     // Notification comment to comment
     if (comment.type === ReferenceType.COMMENT) {
@@ -154,7 +154,7 @@ export class NotificationService {
             notification,
             toComment.userId,
             title,
-            fromUser.name + ' ' + 'reply to your comment',
+            this.currentUser.name + ' ' + 'reply to your comment',
           );
         }
       }
@@ -304,20 +304,19 @@ export class NotificationService {
   }
 
   async sendPostVote(from: string, vote: Vote): Promise<boolean> {
-    const fromUser = await this.userRepository.findById(from);
     const notification = new Notification({
       type:
         vote.type === ReferenceType.POST
           ? NotificationType.POST_VOTE
           : NotificationType.COMMENT_VOTE,
-      from: fromUser.id,
+      from: this.currentUser[securityId],
       referenceId: vote.id,
       message: vote.state ? 'upvoted' : 'downvoted',
     });
 
     // FCM messages
     const title = 'New Vote';
-    const body = fromUser.name + ' ' + notification.message;
+    const body = this.currentUser.name + ' ' + notification.message;
 
     // Notification vote to comment
     if (vote.type === ReferenceType.COMMENT) {
@@ -353,20 +352,18 @@ export class NotificationService {
   }
 
   async sendMention(
-    from: string,
     to: string,
     mentions: MentionUser[],
     type?: ReferenceType,
   ): Promise<boolean> {
     if (mentions.length === 0) return false;
 
-    const fromUser = await this.userRepository.findById(from);
     const notification = new Notification({
       type:
         type === ReferenceType.COMMENT
           ? NotificationType.COMMENT_MENTION
           : NotificationType.POST_MENTION,
-      from: fromUser.id,
+      from: this.currentUser[securityId],
       referenceId: to,
       message: 'mentioned you',
     });
@@ -378,10 +375,10 @@ export class NotificationService {
 
     // FCM messages
     const title = 'New Mention';
-    const body = fromUser.name + ' ' + notification.message;
+    const body = this.currentUser.name + ' ' + notification.message;
 
     const userIds = mentions
-      .filter(mention => mention.id !== from)
+      .filter(mention => mention.id !== this.currentUser[securityId])
       .filter(async user => {
         const mentionActive = await this.checkNotificationSetting(
           user.id,
@@ -404,8 +401,7 @@ export class NotificationService {
   }
 
   async sendTipsSuccess(transaction: Transaction): Promise<boolean> {
-    const {from, to, type, referenceId} = transaction;
-    const fromUser = await this.userRepository.findById(from);
+    const {to, type, referenceId} = transaction;
 
     const tipsActive = await this.checkNotificationSetting(
       to,
@@ -414,7 +410,7 @@ export class NotificationService {
     if (!tipsActive) return false;
 
     const notification = new Notification({
-      from: fromUser.id,
+      from: this.currentUser[securityId],
       referenceId: transaction.id,
       message: transaction.amount + ' ' + transaction.currencyId,
     });
@@ -429,7 +425,7 @@ export class NotificationService {
     } else notification.type = NotificationType.USER_TIPS;
 
     const title = 'Send Tips Success';
-    const body = fromUser.name + ' ' + notification.message;
+    const body = this.currentUser.name + ' ' + notification.message;
 
     await this.sendNotificationToUser(notification, to, title, body);
 
@@ -454,7 +450,7 @@ export class NotificationService {
     return true;
   }
 
-  async sendIntitalTips(transaction: Transaction): Promise<boolean> {
+  async sendInitialTips(transaction: Transaction): Promise<boolean> {
     const {from, to} = transaction;
 
     const notification = new Notification({
@@ -535,7 +531,6 @@ export class NotificationService {
     const {userId, platform, peopleId, people} = userSocialMedia;
 
     if (!fromUserId) fromUserId = userId;
-    else await this.userRepository.findById(fromUserId);
 
     const notification = new Notification({
       type: NotificationType.DISCONNECTED_SOCIAL_MEDIA,

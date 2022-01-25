@@ -19,7 +19,6 @@ export * from './user-experience.controller';
 export * from './user-social-media.controller';
 export * from './user.controller';
 export * from './report.controller';
-export * from './deleted-collection.controller';
 export * from './report-user.controller';
 export * from './user-report.controller';
 export * from './exchange-rate.controller';

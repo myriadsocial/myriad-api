@@ -13,22 +13,11 @@ import {givenUser} from '../helpers';
 describe('UserControllers', () => {
   let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
   let controller: UserController;
-  let aUser: User;
   let aUserWithId: User;
   let aChangedUser: User;
   let aListOfUsers: User[];
 
   beforeEach(resetRepositories);
-
-  describe('createUser', () => {
-    it('creates a User', async () => {
-      const create = userRepository.stubs.create;
-      create.resolves(aUserWithId);
-      const result = await controller.create(aUser);
-      expect(result).to.eql(aUserWithId);
-      sinon.assert.calledWith(create, aUser);
-    });
-  });
 
   describe('findUserById', () => {
     it('returns a user if it exists', async () => {
@@ -78,9 +67,6 @@ describe('UserControllers', () => {
 
   function resetRepositories() {
     userRepository = createStubInstance(UserRepository);
-    aUser = givenUser({
-      bio: 'Hello, my name is Abdul Hakim!',
-    });
     aUserWithId = givenUser({
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
     });

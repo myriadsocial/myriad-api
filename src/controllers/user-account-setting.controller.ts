@@ -16,8 +16,11 @@ import {
 import {AccountSetting} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {intercept} from '@loopback/core';
+import {AuthorizeInterceptor} from '../interceptors';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserAccountSettingController {
   constructor(
     @repository(UserRepository)
@@ -56,7 +59,10 @@ export class UserAccountSettingController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(AccountSetting, {partial: true}),
+          schema: getModelSchemaRef(AccountSetting, {
+            partial: true,
+            exclude: ['id', 'userId'],
+          }),
         },
       },
     })

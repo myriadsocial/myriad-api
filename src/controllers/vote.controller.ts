@@ -1,14 +1,18 @@
 import {intercept, service} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {del, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
-import {ValidateVoteInterceptor} from '../interceptors';
+import {
+  AuthorizeInterceptor,
+  CreateInterceptor,
+  DeleteInterceptor,
+} from '../interceptors';
 import {Vote} from '../models';
 import {VoteRepository} from '../repositories';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
-@intercept(ValidateVoteInterceptor.BINDING_KEY)
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class VoteController {
   constructor(
     @repository(VoteRepository)
@@ -17,6 +21,7 @@ export class VoteController {
     protected notificationService: NotificationService,
   ) {}
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/votes', {
     responses: {
       '200': {
@@ -25,7 +30,7 @@ export class VoteController {
       },
     },
   })
-  async createVote(
+  async create(
     @requestBody({
       content: {
         'application/json': {
@@ -38,25 +43,21 @@ export class VoteController {
     })
     vote: Omit<Vote, 'id'>,
   ): Promise<Vote> {
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
     const collection = (
-      this.voteRepository.dataSource.connector as any
+      this.voteRepository.dataSource.connector as AnyObject
     ).collection(Vote.modelName);
     const query = {
       userId: vote.userId,
       type: vote.type,
       referenceId: vote.referenceId,
     };
-    const update = {
-      $set: vote,
-    };
+    const update = {$set: vote};
     const options = {upsert: true, returnDocument: 'after'};
 
-    const result = await collection.findOneAndUpdate(query, update, options);
-
-    return result;
+    return collection.findOneAndUpdate(query, update, options);
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/votes/{id}', {
     responses: {
       '200': {

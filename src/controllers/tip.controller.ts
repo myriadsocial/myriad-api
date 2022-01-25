@@ -1,12 +1,17 @@
-import {AnyObject} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {post, response, param, get} from '@loopback/rest';
 import {CurrencyService} from '../services';
-import {service} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {authenticate} from '@loopback/authentication';
+import {UserRepository} from '../repositories';
+import {AuthorizeInterceptor} from '../interceptors';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class TipController {
   constructor(
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
   ) {}

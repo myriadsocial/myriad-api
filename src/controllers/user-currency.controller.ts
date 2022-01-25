@@ -12,7 +12,10 @@ import {
 } from '@loopback/rest';
 import {
   PaginationInterceptor,
-  ValidateCurrencyInterceptor,
+  AuthorizeInterceptor,
+  CreateInterceptor,
+  UpdateInterceptor,
+  DeleteInterceptor,
 } from '../interceptors';
 import {UserCurrency} from '../models';
 import {UserCurrencyRepository, UserRepository} from '../repositories';
@@ -24,6 +27,7 @@ interface UserCurrencyPriority {
 }
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserCurrencyController {
   constructor(
     @repository(UserCurrencyRepository)
@@ -52,7 +56,7 @@ export class UserCurrencyController {
     return this.userCurrencyRepository.find(filter);
   }
 
-  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/user-currencies', {
     responses: {
       '200': {
@@ -81,6 +85,7 @@ export class UserCurrencyController {
     return this.userCurrencyRepository.create(userCurrency);
   }
 
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/user-currencies', {
     responses: {
       '200': {
@@ -93,7 +98,7 @@ export class UserCurrencyController {
       },
     },
   })
-  async update(
+  async patch(
     @requestBody({
       content: {
         'application/json': {
@@ -134,13 +139,9 @@ export class UserCurrencyController {
         );
       }),
     );
-
-    await this.userRepository.updateById(userId, {
-      defaultCurrency: currencies[0],
-    });
   }
 
-  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/user-currencies', {
     responses: {
       '200': {

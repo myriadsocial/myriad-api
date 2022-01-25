@@ -11,21 +11,24 @@ import {
   patch,
 } from '@loopback/rest';
 import {
+  AuthorizeInterceptor,
+  CreateInterceptor,
   PaginationInterceptor,
-  ValidateCurrencyInterceptor,
+  UpdateInterceptor,
 } from '../interceptors';
 import {Currency} from '../models';
 import {CurrencyRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class CurrencyController {
   constructor(
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
   ) {}
 
-  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/currencies')
   @response(200, {
     description: 'Currency model instance',
@@ -80,10 +83,10 @@ export class CurrencyController {
     @param.filter(Currency, {exclude: 'where'})
     filter?: FilterExcludingWhere<Currency>,
   ): Promise<Currency> {
-    return this.currencyRepository.findById(id.toUpperCase(), filter);
+    return this.currencyRepository.findById(id, filter);
   }
 
-  @intercept(ValidateCurrencyInterceptor.BINDING_KEY)
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/currencies/{id}')
   @response(204, {
     description: 'Currency PATCH success',
@@ -110,6 +113,6 @@ export class CurrencyController {
     description: 'Currency DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.currencyRepository.deleteById(id.toUpperCase());
+    await this.currencyRepository.deleteById(id);
   }
 }

@@ -1,52 +1,43 @@
-import {inject} from '@loopback/core';
+import {inject, intercept} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {HttpErrors, post, requestBody} from '@loopback/rest';
-import {UserProfile} from '@loopback/security';
-
-import * as _ from 'lodash';
-import {NewAuthRequest, RefreshGrant, TokenObject, Token} from '../interfaces';
 import {
-  AuthServiceBindings,
-  PasswordHasherBindings,
-  RefreshTokenServiceBindings,
-  TokenServiceBindings,
-} from '../keys';
-import {Authentication} from '../models';
-import {AuthenticationRepository, Credentials} from '../repositories';
-import {RefreshtokenService, validateCredentials} from '../services';
-import {MyAuthService} from '../services/authentication/authentication.service';
-import {BcryptHasher} from '../services/authentication/hash.password.service';
+  getModelSchemaRef,
+  param,
+  post,
+  response,
+  requestBody,
+  get,
+} from '@loopback/rest';
+import {UserProfile} from '@loopback/security';
+import {RefreshGrant, TokenObject} from '../interfaces';
+import {RefreshTokenServiceBindings, TokenServiceBindings} from '../keys';
+import {Credential, User} from '../models';
+import {UserRepository} from '../repositories';
+import {RefreshtokenService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
-import {config} from '../config';
+import {AuthenticationInterceptor} from '../interceptors';
 
 export class AuthenticationController {
   constructor(
-    @repository(AuthenticationRepository)
-    protected authenticationRepository: AuthenticationRepository,
-    @inject(PasswordHasherBindings.PASSWORD_HASHER)
-    protected hasher: BcryptHasher,
-    @inject(AuthServiceBindings.AUTH_SERVICE)
-    protected authService: MyAuthService,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
     @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
     protected refreshService: RefreshtokenService,
   ) {}
 
-  @post('/signup', {
+  @get('/users/{id}/nonce', {
     responses: {
       '200': {
-        description: 'Authentication',
+        desciption: 'User nonce',
         content: {
           'application/json': {
             schema: {
               type: 'object',
               properties: {
-                id: {
-                  type: 'string',
-                },
-                email: {
-                  type: 'string',
+                nonce: {
+                  type: 'number',
                 },
               },
             },
@@ -55,59 +46,81 @@ export class AuthenticationController {
       },
     },
   })
-  async signup(
-    @requestBody({
-      description: 'The input of signup function',
-      required: true,
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            required: ['email', 'password'],
-            properties: {
-              email: {
-                type: 'string',
-                format: 'email',
-              },
-              password: {
-                type: 'string',
-                minLength: 6,
-              },
+  async getNonce(
+    @param.path.string('id') id: string,
+  ): Promise<{nonce: number}> {
+    const user = await this.userRepository.findOne({where: {id}});
+
+    if (!user) return {nonce: 0};
+    return {nonce: user.nonce};
+  }
+
+  @get('/username/{username}')
+  @response(200, {
+    description: 'Get username',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'boolean',
+        },
+      },
+    },
+  })
+  async username(
+    @param.path.string('username') username: string,
+  ): Promise<boolean> {
+    const user = await this.userRepository.findOne({where: {username}});
+
+    return Boolean(user);
+  }
+
+  @intercept(AuthenticationInterceptor.BINDING_KEY)
+  @post('/signup')
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            nonce: {
+              type: 'number',
             },
           },
         },
       },
-    })
-    newAuthRequest: NewAuthRequest,
-  ): Promise<Authentication> {
-    const foundAuth = await this.authenticationRepository.findOne({
-      where: {
-        email: newAuthRequest.email,
+    },
+  })
+  async signup(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(User, {
+            title: 'NewUser',
+            exclude: [
+              'profilePictureURL',
+              'bannerImageUrl',
+              'bio',
+              'defaultCurrency',
+              'websiteURL',
+              'metric',
+              'fcmTokens',
+              'onTimeline',
+              'nonce',
+              'createdAt',
+              'updatedAt',
+              'deletedAt',
+            ],
+          }),
+        },
       },
-    });
-
-    if (foundAuth) {
-      throw new HttpErrors.UnprocessableEntity('Email Already Exist');
-    }
-
-    if (config.JWT_EMAIL !== newAuthRequest.email) {
-      throw new HttpErrors.UnprocessableEntity('Only admin can register!');
-    }
-
-    validateCredentials(_.pick(newAuthRequest, ['email', 'password']));
-    const password = await this.hasher.hashPassword(newAuthRequest.password);
-    const savedUser = await this.authenticationRepository.create(
-      _.omit(newAuthRequest, 'password'),
-    );
-    // delete savedUser.password;
-
-    await this.authenticationRepository
-      .authCredential(savedUser.id)
-      .create({password});
-
-    return savedUser;
+    })
+    user: User,
+  ): Promise<User> {
+    return this.userRepository.create(user);
   }
 
+  @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/login', {
     responses: {
       '200': {
@@ -120,13 +133,13 @@ export class AuthenticationController {
                 accessToken: {
                   type: 'string',
                 },
-                tokenType: {
-                  type: 'string',
-                },
-                expiresIn: {
-                  type: 'string',
-                },
                 refreshToken: {
+                  type: 'string',
+                },
+                expiresId: {
+                  type: 'string',
+                },
+                tokenType: {
                   type: 'string',
                 },
               },
@@ -142,42 +155,17 @@ export class AuthenticationController {
       required: true,
       content: {
         'application/json': {
-          schema: {
-            type: 'object',
-            required: ['email', 'password'],
-            properties: {
-              email: {
-                type: 'string',
-                format: 'email',
-              },
-              password: {
-                type: 'string',
-                minLength: 6,
-              },
-            },
-          },
+          schema: getModelSchemaRef(Credential, {exclude: ['data']}),
         },
       },
     })
-    credentials: Credentials,
-  ): Promise<Token> {
-    // ensure the user exists, and the password is correct
-    const user = await this.authService.verifyCredentials(credentials);
-    // convert a User object into a UserProfile object (reduced set of properties)
-    const userProfile: UserProfile =
-      this.authService.convertToUserProfile(user);
+    credential: Credential,
+  ): Promise<TokenObject> {
+    const accessToken = await this.jwtService.generateToken(
+      credential.data as UserProfile,
+    );
 
-    const accessToken = await this.jwtService.generateToken(userProfile);
-
-    // TODO: if refresh token needed
-    // const tokens = await this.refreshService.generateToken(
-    //   userProfile,
-    //   accessToken,
-    // );
-
-    return {
-      accessToken: accessToken,
-    };
+    return {accessToken};
   }
 
   @post('/refresh', {

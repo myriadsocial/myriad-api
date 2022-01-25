@@ -1,8 +1,8 @@
 import {inject, intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
-import {FriendStatusType, PlatformType} from '../enums';
-import {PaginationInterceptor} from '../interceptors';
+import {PlatformType, FriendStatusType} from '../enums';
+import {AuthorizeInterceptor, PaginationInterceptor} from '../interceptors';
 import {People} from '../models';
 import {
   FriendRepository,
@@ -14,6 +14,7 @@ import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class PeopleController {
   constructor(
     @repository(PeopleRepository)
@@ -59,6 +60,35 @@ export class PeopleController {
     },
   })
   async searchPeople(@param.query.string('q') q?: string): Promise<People[]> {
+    return this.getPeopleAndUser(q);
+  }
+
+  @get('/people/{id}')
+  @response(200, {
+    description: 'People model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(People, {includeRelations: true}),
+      },
+    },
+  })
+  async findById(
+    @param.path.string('id') id: string,
+    @param.filter(People, {exclude: 'where'})
+    filter?: FilterExcludingWhere<People>,
+  ): Promise<People> {
+    return this.peopleRepository.findById(id, filter);
+  }
+
+  @del('/people/{id}')
+  @response(204, {
+    description: 'People DELETE success',
+  })
+  async deleteById(@param.path.string('id') id: string): Promise<void> {
+    await this.peopleRepository.deleteById(id);
+  }
+
+  async getPeopleAndUser(q?: string): Promise<People[]> {
     if (!q) return [];
     const pattern = new RegExp('^' + q, 'i');
 
@@ -142,30 +172,5 @@ export class PeopleController {
     });
 
     return [...userToPeople, ...people];
-  }
-
-  @get('/people/{id}')
-  @response(200, {
-    description: 'People model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(People, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(People, {exclude: 'where'})
-    filter?: FilterExcludingWhere<People>,
-  ): Promise<People> {
-    return this.peopleRepository.findById(id, filter);
-  }
-
-  @del('/people/{id}')
-  @response(204, {
-    description: 'People DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.peopleRepository.deleteById(id);
   }
 }

@@ -72,15 +72,6 @@ describe('TransactionController', () => {
     });
   });
 
-  describe('deleteTransaction', () => {
-    it('successfully deletes existing items', async () => {
-      const deleteById = transactionRepository.stubs.deleteById;
-      deleteById.resolves();
-      await controller.deleteById(aTransactionWithId.id as string);
-      sinon.assert.calledWith(deleteById, aTransactionWithId.id);
-    });
-  });
-
   function resetRepositories() {
     transactionRepository = createStubInstance(TransactionRepository);
     aTransaction = givenTransaction();

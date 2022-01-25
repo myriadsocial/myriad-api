@@ -7,7 +7,7 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {ActivityLogType, ReferenceType} from '../enums';
 import {UserRepository} from '../repositories';
 import {
@@ -58,16 +58,27 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
+    await this.beforeImport(invocationCtx);
+
+    const result = await next();
+
+    return this.afterImport(invocationCtx, result);
+  }
+
+  async beforeImport(invocationCtx: InvocationContext): Promise<void> {
     const urlUtils = new UrlUtils(invocationCtx.args[0].url);
     const platform = urlUtils.getPlatform();
     const originPostId = urlUtils.getOriginPostId();
     const username = urlUtils.getUsername();
 
-    const importer = invocationCtx.args[0].importer;
-
     invocationCtx.args[0].url = [platform, originPostId, username].join(',');
-    // Add pre-invocation logic here
-    const result = await next();
+  }
+
+  async afterImport(
+    invocationCtx: InvocationContext,
+    result: AnyObject,
+  ): Promise<AnyObject> {
+    const importer = invocationCtx.args[0].importer;
 
     const user = await this.userRepository.findOne({where: {id: importer}});
     const {count} = await this.postService.postRepository.count({
@@ -90,7 +101,6 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
 
     const importerInfo = user ? [Object.assign(user, {name: 'You'})] : [];
 
-    // Add post-invocation logic here
     return {
       ...result,
       importers: importerInfo,

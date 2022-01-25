@@ -1,4 +1,4 @@
-import {inject, service} from '@loopback/core';
+import {inject, intercept, service} from '@loopback/core';
 import {
   post,
   requestBody,
@@ -13,10 +13,16 @@ import {FileUploadHandler} from '../types';
 import {config} from '../config';
 import {UploadType} from '../enums';
 import {authenticate} from '@loopback/authentication';
+import {repository} from '@loopback/repository';
+import {UserRepository} from '../repositories';
+import {AuthorizeInterceptor} from '../interceptors';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class StorageController {
   constructor(
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @inject(FILE_UPLOAD_SERVICE)
     private handler: FileUploadHandler,
     @service(FCSService)

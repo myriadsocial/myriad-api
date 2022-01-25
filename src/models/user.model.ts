@@ -20,6 +20,7 @@ import {People} from './people.model';
 import {UserSocialMedia} from './user-social-media.model';
 import {ExperienceWithRelations} from './experience.model';
 import {LanguageSetting} from './language-setting.model';
+import NonceGenerator from 'a-nonce-generator';
 
 @model({
   settings: {
@@ -33,6 +34,7 @@ import {LanguageSetting} from './language-setting.model';
         },
       },
     },
+    hiddenProperties: ['nonce'],
   },
 })
 export class User extends Entity {
@@ -118,6 +120,15 @@ export class User extends Entity {
     default: [],
   })
   fcmTokens?: string[];
+
+  @property({
+    type: 'number',
+    default: () => {
+      const ng = new NonceGenerator();
+      return ng.generate();
+    },
+  })
+  nonce: number;
 
   @property({
     type: 'date',

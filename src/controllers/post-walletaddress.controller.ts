@@ -11,7 +11,7 @@ import {config} from '../config';
 import {PlatformType} from '../enums';
 import {TokenServiceBindings} from '../keys';
 import {Wallet} from '../models';
-import {PeopleRepository, PostRepository} from '../repositories';
+import {PostRepository} from '../repositories';
 import {JWTService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
@@ -22,8 +22,6 @@ export class PostWalletAddress {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
   ) {}
@@ -38,52 +36,55 @@ export class PostWalletAddress {
     },
   })
   async getWalletAddress(@param.path.string('id') id: string): Promise<Wallet> {
-    const post = await this.postRepository.findById(id);
-
-    const wallet = new Wallet();
-    const hasher = new BcryptHasher();
-
-    if (!post.peopleId) {
-      if (post.platform === PlatformType.MYRIAD) {
-        wallet.walletAddress = post.createdBy;
-
-        return wallet;
-      } else {
-        throw new HttpErrors.NotFound('Walletaddress Not Found!');
-      }
-    }
-
-    const people = await this.peopleRepository.findById(post.peopleId, {
-      include: ['userSocialMedia'],
+    const post = await this.postRepository.findById(id, {
+      include: [
+        {
+          relation: 'people',
+          scope: {
+            include: [{relation: 'userSocialMedia'}],
+          },
+        },
+      ],
     });
 
-    if (people.userSocialMedia) {
-      wallet.walletAddress = people.userSocialMedia.userId;
-    } else {
-      if (!people.walletAddressPassword)
-        throw new HttpErrors.Unauthorized('Not Authorized');
+    const hasher = new BcryptHasher();
+    const people = post.people;
 
-      const password = people.id + config.MYRIAD_ESCROW_SECRET_KEY;
-      const match = await hasher.comparePassword(
-        password,
-        people.walletAddressPassword,
-      );
+    if (!people) {
+      if (post.platform !== PlatformType.MYRIAD) {
+        throw new HttpErrors.NotFound('Walletaddress Not Found!');
+      }
 
-      if (!match) throw new HttpErrors.Unauthorized('Not Authorized');
-
-      const token = await this.jwtService.generateAnyToken({
-        id: people.id,
-        originUserId: people.originUserId,
-        platform: people.platform,
-        iat: new Date(people.createdAt ?? '').getTime(),
-      });
-
-      const {getKeyring, getHexPublicKey} = new PolkadotJs();
-      const newKey = getKeyring().addFromUri('//' + token);
-
-      wallet.walletAddress = getHexPublicKey(newKey);
+      return new Wallet({walletAddress: post.createdBy});
     }
 
-    return wallet;
+    if (people.userSocialMedia) {
+      const userId = people.userSocialMedia.userId;
+      return new Wallet({walletAddress: userId});
+    }
+
+    if (!people.walletAddressPassword) {
+      throw new HttpErrors.Unauthorized('Not Authorized');
+    }
+
+    const password = people.id + config.MYRIAD_ESCROW_SECRET_KEY;
+    const match = await hasher.comparePassword(
+      password,
+      people.walletAddressPassword,
+    );
+
+    if (!match) throw new HttpErrors.Unauthorized('Not Authorized');
+
+    const token = await this.jwtService.generateAnyToken({
+      id: people.id,
+      originUserId: people.originUserId,
+      platform: people.platform,
+      iat: new Date(people.createdAt ?? '').getTime(),
+    });
+
+    const {getKeyring, getHexPublicKey} = new PolkadotJs();
+    const newKey = getKeyring().addFromUri('//' + token);
+
+    return new Wallet({walletAddress: getHexPublicKey(newKey)});
   }
 }

@@ -1,5 +1,5 @@
 import {inject} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {ExtendedPeople, ExtendedPost} from '../interfaces';
@@ -7,10 +7,10 @@ import {Asset} from '../interfaces/asset.interface';
 import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
+import {injectable, BindingScope} from '@loopback/core';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
-import {injectable, BindingScope} from '@loopback/core';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class SocialMediaService {
@@ -206,10 +206,11 @@ export class SocialMediaService {
       videos: [],
     };
 
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
     const twitterTags = entities
       ? entities.hashtags
-        ? entities.hashtags.map((hashtag: any) => hashtag.text.toLowerCase())
+        ? entities.hashtags.map((hashtag: AnyObject) =>
+            hashtag.text.toLowerCase(),
+          )
         : []
       : [];
 
@@ -232,7 +233,7 @@ export class SocialMediaService {
       }
     }
 
-    const urls = entities.urls.map((url: any) => url.expanded_url);
+    const urls = entities.urls.map((url: AnyObject) => url.expanded_url);
 
     let embedded = null;
 

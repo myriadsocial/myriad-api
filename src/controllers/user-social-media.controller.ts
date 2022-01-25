@@ -12,7 +12,11 @@ import {
   patch,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {PaginationInterceptor} from '../interceptors';
+import {
+  AuthorizeInterceptor,
+  CreateInterceptor,
+  PaginationInterceptor,
+} from '../interceptors';
 import {UserSocialMedia, UserVerification} from '../models';
 import {
   NotificationService,
@@ -22,6 +26,7 @@ import {
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserSocialMediaController {
   constructor(
     @service(SocialMediaService)
@@ -32,6 +37,7 @@ export class UserSocialMediaController {
     protected notificationService: NotificationService,
   ) {}
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/user-social-medias/verify')
   @response(200, {
     description: 'Verify User Social Media',
@@ -41,7 +47,7 @@ export class UserSocialMediaController {
       },
     },
   })
-  async verify(
+  async create(
     @requestBody({
       content: {
         'application/json': {

@@ -2,24 +2,32 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType} from '../../enums';
-import {UserSocialMedia, UserVerification} from '../../models';
+import {
+  Credential,
+  User,
+  UserSocialMedia,
+  UserVerification,
+} from '../../models';
 import {
   PeopleRepository,
   UserRepository,
   UserSocialMediaRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
+  givenAccesToken,
+  givenAddress,
+  givenOtherUser,
   givenPeopleInstance,
   givenPeopleRepository,
   givenUserInstance,
   givenUserRepository,
   givenUserSocialMediaInstance,
   givenUserSocialMediaRepository,
-  givenAuthenticationRepository,
   givenUserVerification,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserSocialMediaApplication', function () {
@@ -29,12 +37,10 @@ describe('UserSocialMediaApplication', function () {
   let userRepository: UserRepository;
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let otherUser: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -43,28 +49,40 @@ describe('UserSocialMediaApplication', function () {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     userRepository = await givenUserRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
   });
 
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
+  });
+
   after(async () => {
-    await authenticationRepository.deleteAll();
+    await userRepository.deleteAll();
   });
 
   beforeEach(async () => {
-    await userRepository.deleteAll();
     await peopleRepository.deleteAll();
     await userSocialMediaRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -76,10 +94,7 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('verifies user social media', async () => {
-      await givenUserInstance(userRepository, {
-        id: '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
-      });
-      const userVerification = givenUserVerification();
+      const userVerification = givenUserVerification({publicKey: user.id});
       const response = await client
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
@@ -98,8 +113,9 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('rejects user to verify non existing social media', async () => {
-      const userVerification: Partial<UserVerification> =
-        givenUserVerification();
+      const userVerification: Partial<UserVerification> = givenUserVerification(
+        {publicKey: user.id},
+      );
       delete userVerification.platform;
 
       await client
@@ -111,6 +127,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('rejects user to verify non existing social media username', async () => {
       const userVerification = givenUserVerification({
+        publicKey: user.id,
         username: 'kemrenwebrge',
       });
 
@@ -131,15 +148,11 @@ describe('UserSocialMediaApplication', function () {
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
-        .expect(404);
+        .expect(401);
     });
 
     it('rejects user to verify social media that already been claimed', async () => {
-      await givenUserInstance(userRepository, {
-        id: '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
-      });
-
-      const userVerification = givenUserVerification();
+      const userVerification = givenUserVerification({publicKey: user.id});
 
       await client
         .post('/user-social-medias/verify')
@@ -181,14 +194,37 @@ describe('UserSocialMediaApplication', function () {
         .expect(404);
     });
 
-    it('deletes the user social media', async () => {
+    it('returns 401 when deleting the user social media not as login user', async () => {
+      const accessToken = await givenAccesToken(otherUser);
+      const userVerification = givenUserVerification({publicKey: user.id});
+      const response = await client
+        .post('/user-social-medias/verify')
+        .set('Authorization', `Bearer ${token}`)
+        .send(userVerification)
+        .expect(200);
+
       await client
-        .del(`/user-social-medias/${persistedUserSocialMedia.id}`)
+        .del(`/user-social-medias/${response.body.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send()
+        .expect(401);
+    });
+
+    it('deletes the user social media', async () => {
+      const userVerification = givenUserVerification({publicKey: user.id});
+      const response = await client
+        .post('/user-social-medias/verify')
+        .set('Authorization', `Bearer ${token}`)
+        .send(userVerification)
+        .expect(200);
+
+      await client
+        .del(`/user-social-medias/${response.body.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(204);
       await expect(
-        userRepository.findById(persistedUserSocialMedia.id),
+        userSocialMediaRepository.findById(response.body.id),
       ).to.be.rejectedWith(EntityNotFoundError);
     });
 
@@ -266,9 +302,6 @@ describe('UserSocialMediaApplication', function () {
 
   it('includes friends and currencies in query result', async () => {
     const people = await givenPeopleInstance(peopleRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6185g',
-    });
     const userSocialMedia = await givenUserSocialMediaInstance(
       userSocialMediaRepository,
       {

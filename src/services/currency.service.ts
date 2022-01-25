@@ -4,7 +4,7 @@ import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
 import {ActivityLogType, DefaultCurrencyType, ReferenceType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
-import {UserSocialMedia} from '../models';
+import {Currency, UserSocialMedia} from '../models';
 import {
   CurrencyRepository,
   PeopleRepository,
@@ -23,14 +23,15 @@ import {ActivityLogService} from './activity-log.service';
 import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
 import {BN} from '@polkadot/util';
+import {CoinMarketCap} from './coin-market-cap.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class CurrencyService {
   constructor(
     @repository(CurrencyRepository)
-    protected currencyRepository: CurrencyRepository,
+    public currencyRepository: CurrencyRepository,
     @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
+    public userCurrencyRepository: UserCurrencyRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(UserSocialMediaRepository)
@@ -49,6 +50,8 @@ export class CurrencyService {
     protected activityLogService: ActivityLogService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
+    @inject('services.CoinMarketCap')
+    protected coinMarketCapService: CoinMarketCap,
   ) {}
 
   async defaultCurrency(userId: string): Promise<void> {
@@ -60,6 +63,7 @@ export class CurrencyService {
       rpcURL: config.MYRIAD_RPC_WS_URL,
       native: true,
       networkType: 'substrate',
+
       exchangeRate: false,
     };
 
@@ -74,7 +78,9 @@ export class CurrencyService {
   }
 
   async sendMyriadReward(userId: string): Promise<void> {
+    if (!config.MYRIAD_REWARD_AMOUNT) return;
     if (config.MYRIAD_REWARD_AMOUNT === 0) return;
+
     try {
       const {rpcURL: myriadRpc, decimal: myriadDecimal} =
         await this.currencyRepository.findById(DefaultCurrencyType.MYRIA);
@@ -88,30 +94,59 @@ export class CurrencyService {
 
       const rewardAmount = config.MYRIAD_REWARD_AMOUNT * 10 ** myriadDecimal;
 
+      const transfer = api.tx.balances.transfer(
+        to,
+        new BN(rewardAmount.toString()),
+      );
       const {nonce} = await api.query.system.account(from.address);
       const getNonce = await this.getQueueNumber(
         nonce.toJSON(),
         DefaultCurrencyType.MYRIA,
       );
 
-      const transfer = api.tx.balances.transfer(
-        to,
-        new BN(rewardAmount.toString()),
+      let hash: string | null = null;
+
+      await transfer.signAndSend(
+        from,
+        {nonce: getNonce},
+        async ({status, events}) => {
+          if (status.isInBlock || status.isFinalized) {
+            let transactionStatus = null;
+
+            if (status.isInBlock) hash = status.asInBlock.toString();
+
+            events
+              .filter(({event}) => event.section === 'system')
+              .forEach(event => {
+                const method = event.event.method;
+
+                if (method === 'ExtrinsicSuccess') {
+                  transactionStatus = 'success';
+                }
+              });
+
+            if (status.isFinalized) {
+              if (transactionStatus === 'success' && hash) {
+                try {
+                  const transaction = await this.transactionRepository.create({
+                    hash: hash,
+                    amount: rewardAmount / 10 ** myriadDecimal,
+                    to: to,
+                    from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+                    currencyId: DefaultCurrencyType.MYRIA,
+                  });
+
+                  await this.notificationService.sendInitialTips(transaction);
+                } catch {
+                  // ignore
+                }
+              }
+
+              await api.disconnect();
+            }
+          }
+        },
       );
-      const txHash = await transfer.signAndSend(from, {nonce: getNonce});
-
-      const transaction = await this.transactionRepository.create({
-        hash: txHash.toString(),
-        amount: rewardAmount / 10 ** myriadDecimal,
-        to: to,
-        from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-        currencyId: DefaultCurrencyType.MYRIA,
-      });
-
-      // await this.notificationService.sendRewardSuccess(transaction);
-      await this.notificationService.sendIntitalTips(transaction);
-
-      await api.disconnect();
     } catch {
       // ignore
     }
@@ -489,5 +524,64 @@ export class CurrencyService {
     }
 
     return priority;
+  }
+
+  async verifyRpcAddressConnection(
+    currency: Currency,
+  ): Promise<Omit<Currency, 'id'>> {
+    let native = false;
+    let api: ApiPromise;
+    let exchangeRate = false;
+
+    const {id, rpcURL, types} = currency;
+
+    const {polkadotApi, getSystemParameters} = new PolkadotJs();
+
+    try {
+      api = await polkadotApi(rpcURL, types);
+    } catch (err) {
+      throw new HttpErrors.UnprocessableEntity('Connection failed!');
+    }
+
+    const {symbols, symbolsDecimals} = await getSystemParameters(api);
+    const currencyId = symbols.find(e => e === id.toUpperCase());
+
+    if (!currencyId) throw new HttpErrors.NotFound('Currency not found!');
+
+    if (currencyId === symbols[0]) native = true;
+
+    try {
+      const {data} = await this.coinMarketCapService.getActions(
+        `cryptocurrency/quotes/latest?symbol=${currencyId}`,
+      );
+
+      const currencyInfo = data[currencyId];
+
+      if (
+        currency.networkType === 'substrate' &&
+        currencyInfo.tags.find((tag: string) => tag === 'substrate') &&
+        !currencyInfo.platform
+      ) {
+        exchangeRate = true;
+      }
+    } catch (error) {
+      const err = JSON.parse(error.message);
+
+      // Testing will pass this error
+      if (err.status && currency.networkType !== 'substrate-test') {
+        if (err.status.error_code === 1002 || err.status.error_code === 1008) {
+          throw new HttpErrors.UnprocessableEntity(err.status.error_message);
+        }
+      }
+    }
+
+    await api.disconnect();
+
+    return Object.assign(currency, {
+      id: currencyId,
+      decimal: symbolsDecimals[currencyId],
+      native,
+      exchangeRate,
+    });
   }
 }

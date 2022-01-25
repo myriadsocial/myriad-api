@@ -1,32 +1,35 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {Currency} from '../../models/';
+import {Currency, Credential, User} from '../../models/';
+import {CurrencyRepository, UserRepository} from '../../repositories/';
 import {
-  CurrencyRepository,
-  AuthenticationRepository,
-} from '../../repositories/';
-import {
+  givenAccesToken,
+  givenAddress,
   givenCurrency,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenMultipleCurrencyInstances,
+  givenOtherUser,
+  givenUserInstance,
+  givenUserRepository,
   setupApplication,
-  givenAuthenticationRepository,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
-describe('CurrencyApplication', () => {
+describe('CurrencyApplication', function () {
+  this.timeout(100000);
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
   let currencyRepository: CurrencyRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let userRepository: UserRepository;
+  let nonce: number;
+  let user: User;
+  let otherUser: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -34,24 +37,34 @@ describe('CurrencyApplication', () => {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
+    userRepository = await givenUserRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
   });
 
   beforeEach(async () => {
     await currencyRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -98,6 +111,17 @@ describe('CurrencyApplication', () => {
       .expect(422);
   });
 
+  it('rejects request when creates a currency not as admin myriad', async () => {
+    const currency = givenCurrency();
+    const accessToken = await givenAccesToken(otherUser);
+
+    await client
+      .post('/currencies')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(currency)
+      .expect(401);
+  });
+
   context('when dealing with a single persisted currency', () => {
     let persistedCurrency: Currency;
 
@@ -111,6 +135,32 @@ describe('CurrencyApplication', () => {
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200, toJSON(persistedCurrency));
+    });
+
+    it('updates the curency by ID', async () => {
+      const updatedCurrency: Partial<Currency> = givenCurrency();
+
+      delete updatedCurrency.id;
+
+      await client
+        .patch(`/currencies/${persistedCurrency.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(updatedCurrency)
+        .expect(204);
+    });
+
+    it('returns 401 when updating a currency not as myriad admin', async function () {
+      const updatedCurrency: Partial<Currency> = givenCurrency();
+
+      delete updatedCurrency.id;
+
+      const accessToken = await givenAccesToken(otherUser);
+
+      await client
+        .patch(`/currencies/${persistedCurrency.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(updatedCurrency)
+        .expect(401);
     });
 
     it('returns 404 when getting a currency that does not exist', () => {

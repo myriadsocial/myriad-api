@@ -1,7 +1,6 @@
 import {intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {
-  del,
   get,
   getModelSchemaRef,
   param,
@@ -9,18 +8,24 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {PaginationInterceptor} from '../interceptors';
+import {
+  AuthorizeInterceptor,
+  CreateInterceptor,
+  PaginationInterceptor,
+} from '../interceptors';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class TagController {
   constructor(
     @repository(TagRepository)
     protected tagRepository: TagRepository,
   ) {}
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/tags')
   @response(200, {
     description: 'Tag model instance',
@@ -76,13 +81,5 @@ export class TagController {
     @param.filter(Tag, {exclude: 'where'}) filter?: FilterExcludingWhere<Tag>,
   ): Promise<Tag> {
     return this.tagRepository.findById(id, filter);
-  }
-
-  @del('/tags/{id}')
-  @response(204, {
-    description: 'Tag DELETE success',
-  })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.tagRepository.deleteById(id);
   }
 }

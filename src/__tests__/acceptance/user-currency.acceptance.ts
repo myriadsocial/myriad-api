@@ -1,23 +1,26 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {DefaultCurrencyType} from '../../enums';
 import {
   CurrencyRepository,
   UserCurrencyRepository,
   UserRepository,
-  AuthenticationRepository,
 } from '../../repositories';
 import {
+  givenAccesToken,
   givenCurrencyRepository,
   givenUserCurrency,
-  givenUserCurrencyInstance,
   givenUserCurrencyRepository,
   givenUserInstance,
   givenUserRepository,
-  givenAuthenticationRepository,
   setupApplication,
   givenMultipleCurrencyInstances,
+  givenAddress,
+  givenOtherUser,
+  givenUserCurrencyInstance,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
+import {Credential, User} from '../../models';
 
 describe('UserCurrencyApplication', function () {
   let app: MyriadApiApplication;
@@ -26,12 +29,10 @@ describe('UserCurrencyApplication', function () {
   let userCurrencyRepository: UserCurrencyRepository;
   let currencyRepository: CurrencyRepository;
   let userRepository: UserRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let otherUser: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -40,13 +41,16 @@ describe('UserCurrencyApplication', function () {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     userCurrencyRepository = await givenUserCurrencyRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     userRepository = await givenUserRepository(app);
   });
 
   before(async () => {
+    user = await givenUserInstance(userRepository, {defaultCurrency: 'ROC'});
+    otherUser = await givenUserInstance(userRepository, givenOtherUser());
+    address = givenAddress();
+
     await givenMultipleCurrencyInstances(currencyRepository);
   });
 
@@ -54,20 +58,37 @@ describe('UserCurrencyApplication', function () {
     await userCurrencyRepository.deleteAll();
     await currencyRepository.deleteAll();
     await userRepository.deleteAll();
-    await authenticationRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
+  it('returns 401 whens creating a user currency not as login user', async () => {
+    const accessToken = await givenAccesToken(otherUser);
+    const userCurrency = givenUserCurrency({userId: user.id});
+    await client
+      .post('/user-currencies')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(userCurrency)
+      .expect(401);
+  });
+
   it('creates a user currency', async function () {
-    const userCurrency = givenUserCurrency();
+    const userCurrency = givenUserCurrency({userId: user.id});
     const response = await client
       .post('/user-currencies')
       .set('Authorization', `Bearer ${token}`)
@@ -82,45 +103,46 @@ describe('UserCurrencyApplication', function () {
   });
 
   it('update user currency priority', async function () {
-    const userId =
-      '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b3m5e8449ee61864';
-    await givenUserInstance(userRepository, {id: userId});
-
-    const userCurrency1 = givenUserCurrency({userId});
+    const userCurrency1 = givenUserCurrency({userId: otherUser.id});
+    const accessToken = await givenAccesToken(otherUser);
     await client
       .post('/user-currencies')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send(userCurrency1)
       .expect(200);
 
-    const userCurrency2 = givenUserCurrency({currencyId: 'ACA', userId});
+    const userCurrency2 = givenUserCurrency({
+      currencyId: 'ACA',
+      userId: otherUser.id,
+    });
     await client
       .post('/user-currencies')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send(userCurrency2)
       .expect(200);
 
     const currencyPriority = {
-      userId: userId,
+      userId: otherUser.id,
       currencies: [userCurrency2.currencyId, userCurrency1.currencyId],
     };
 
     await client
       .patch('/user-currencies')
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .send(currencyPriority)
       .expect(204);
-
-    const result = await userCurrencyRepository.find({where: {userId}});
+    const result = await userCurrencyRepository.find({
+      where: {userId: otherUser.id},
+    });
 
     expect(result).to.containDeep([
       {
-        userId: userId,
+        userId: otherUser.id,
         currencyId: currencyPriority.currencies[0],
         priority: 1,
       },
       {
-        userId: userId,
+        userId: otherUser.id,
         currencyId: currencyPriority.currencies[1],
         priority: 2,
       },
@@ -129,6 +151,7 @@ describe('UserCurrencyApplication', function () {
 
   it('returns 404 when creates user currency but the currency not exist', async () => {
     const userCurrency = givenUserCurrency({
+      userId: user.id,
       currencyId: 'DOT',
     });
     await client
@@ -138,18 +161,25 @@ describe('UserCurrencyApplication', function () {
       .expect(404);
   });
 
-  it('deletes the user currency', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee62164',
-      defaultCurrency: DefaultCurrencyType.MYRIA,
-    });
+  it('return 422 when deletes the only user currency', async () => {
+    const userCurrency = givenUserCurrency({userId: user.id});
 
+    await client
+      .del(`/user-currencies`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({userId: userCurrency.userId, currencyId: userCurrency.currencyId})
+      .expect(422);
+  });
+
+  it('deletes the user currency', async () => {
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,
-      currencyId: 'ROC',
+      currencyId: 'ACA',
     });
-
-    const userCurrency = givenUserCurrency({userId: user.id});
+    const userCurrency = givenUserCurrency({
+      userId: user.id,
+      currencyId: 'ACA',
+    });
 
     await client
       .del(`/user-currencies`)

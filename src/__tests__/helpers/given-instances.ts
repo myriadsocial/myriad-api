@@ -12,6 +12,7 @@ import {
   AccountSetting,
   ActivityLog,
   Comment,
+  Credential,
   Currency,
   DraftPost,
   Experience,
@@ -54,18 +55,64 @@ import {
   UserSocialMediaRepository,
   VoteRepository,
 } from '../../repositories';
+import {PolkadotJs} from '../../utils/polkadotJs-utils';
+import {KeyringPair} from '@polkadot/keyring/types';
+import {AnyObject} from '@loopback/repository';
+import {UserProfile, securityId} from '@loopback/security';
+import {promisify} from 'util';
+import {config} from '../../config';
 
-/* eslint-disable  @typescript-eslint/no-explicit-any */
+const jwt = require('jsonwebtoken');
+const signAsync = promisify(jwt.sign);
+const {getKeyring, getHexPublicKey} = new PolkadotJs();
+const mnemonic =
+  'account custom bind hero sleep ugly century tooth seed potato curious always';
+
 export function givenUser(user?: Partial<User>) {
+  const publicKey = getKeyring().addFromMnemonic(mnemonic);
+  const id = getHexPublicKey(publicKey);
+
   const data = Object.assign(
     {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
+      id: id,
       name: 'Abdul Hakim',
       username: 'abdulhakim',
+      nonce: 99999999999,
     },
     user,
   );
   return new User(data);
+}
+
+export function givenOtherUser(user?: Partial<User>) {
+  const mnemonicOtherUser =
+    'spirit suggest few confirm frequent desert tray puzzle repair photo foil trash';
+  const publicKey = getKeyring().addFromMnemonic(mnemonicOtherUser);
+  const id = getHexPublicKey(publicKey);
+
+  const data = Object.assign(
+    {
+      id: id,
+      name: 'Abdul Hakim',
+      username: 'otheruser',
+      createdAt: new Date(),
+      nonce: 99999999999,
+    },
+    user,
+  );
+  return new User(data);
+}
+
+export async function givenAccesToken(user: User) {
+  const userProfile: UserProfile = {
+    [securityId]: user.id!.toString(),
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    createdAt: user.createdAt,
+  };
+
+  return signAsync(userProfile, config.JWT_TOKEN_SECRET_KEY);
 }
 
 export async function givenUserInstance(
@@ -86,6 +133,23 @@ export async function givenMultipleUserInstances(
       username: 'irman',
     }),
   ]);
+}
+
+export function givenAddress(): KeyringPair {
+  return getKeyring().addFromMnemonic(mnemonic);
+}
+
+export function givenCredential(credential?: Partial<Credential>) {
+  const publicKey = getKeyring().addFromMnemonic(mnemonic);
+  const id = getHexPublicKey(publicKey);
+
+  const data = Object.assign(
+    {
+      publicAddress: id,
+    },
+    credential,
+  );
+  return new Credential(data);
 }
 
 export function givenPeople(people?: Partial<People>) {
@@ -219,7 +283,7 @@ export async function givenPostInstance(
   setMongo?: boolean,
 ) {
   if (setMongo) {
-    return (postRepository.dataSource.connector as any)
+    return (postRepository.dataSource.connector as AnyObject)
       .collection(Post.modelName)
       .insertOne(givenImportedPost(post));
   }

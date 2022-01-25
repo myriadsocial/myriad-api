@@ -9,7 +9,7 @@ import {
   HttpErrors,
 } from '@loopback/rest';
 import {ReferenceType, ReportStatusType, ReportType} from '../enums';
-import {ReportInterceptor} from '../interceptors';
+import {AuthorizeInterceptor, CreateInterceptor} from '../interceptors';
 import {Report, ReportDetail} from '../models';
 import {
   ReportRepository,
@@ -23,6 +23,7 @@ import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserReportController {
   constructor(
     @repository(ReportRepository)
@@ -41,7 +42,7 @@ export class UserReportController {
     protected notificationService: NotificationService,
   ) {}
 
-  @intercept(ReportInterceptor.BINDING_KEY)
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/users/{id}/reports')
   @response(200, {
     description: 'Report model instance',

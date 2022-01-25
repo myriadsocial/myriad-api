@@ -3,8 +3,8 @@ import {PlatformType} from '../enums';
 import {EmbeddedURL, Media} from '../models';
 import validator from 'validator';
 import {HttpErrors} from '@loopback/rest';
+import {AnyObject} from '@loopback/repository';
 
-/* eslint-disable  @typescript-eslint/no-explicit-any */
 export class UrlUtils {
   detail: string[];
 
@@ -36,7 +36,7 @@ export class UrlUtils {
   async getOpenGraph(url: string): Promise<EmbeddedURL> {
     const {result} = await ogs({url});
     const embeddedURL = new EmbeddedURL();
-    const embedded: any = result;
+    const embedded: AnyObject = result;
 
     embeddedURL.description = embedded.ogDescription ?? '';
     embeddedURL.title = embedded.ogTitle ?? '';

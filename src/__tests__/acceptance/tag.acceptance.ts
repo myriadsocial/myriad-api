@@ -1,28 +1,29 @@
-import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {Tag} from '../../models';
-import {TagRepository, AuthenticationRepository} from '../../repositories';
+import {Credential, Tag, User} from '../../models';
+import {TagRepository, UserRepository} from '../../repositories';
 import {
+  givenAddress,
   givenMultipleTagInstances,
   givenTag,
   givenTagInstance,
   givenTagRepository,
-  givenAuthenticationRepository,
+  givenUserInstance,
+  givenUserRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('TagApplication', function () {
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
   let tagRepository: TagRepository;
-  let authenticationRepository: AuthenticationRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let userRepository: UserRepository;
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -31,24 +32,37 @@ describe('TagApplication', function () {
   after(() => app.stop());
 
   before(async () => {
-    authenticationRepository = await givenAuthenticationRepository(app);
     tagRepository = await givenTagRepository(app);
+    userRepository = await givenUserRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   beforeEach(async () => {
     await tagRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  after(async () => {
+    await userRepository.deleteAll();
+  });
+
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -96,24 +110,6 @@ describe('TagApplication', function () {
     it('returns 404 when getting a tag that does not exist', () => {
       return client
         .get('/tags/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
-    });
-
-    it('deletes the tag', async () => {
-      await client
-        .del(`/tags/${persistedTag.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(204);
-      await expect(tagRepository.findById(persistedTag.id)).to.be.rejectedWith(
-        EntityNotFoundError,
-      );
-    });
-
-    it('returns 404 when deleting a tag that does not exist', async () => {
-      await client
-        .del(`/tags/99999`)
         .set('Authorization', `Bearer ${token}`)
         .expect(404);
     });

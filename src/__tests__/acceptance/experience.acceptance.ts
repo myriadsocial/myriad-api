@@ -1,33 +1,28 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {Experience} from '../../models';
+import {Credential, Experience, User} from '../../models';
+import {ExperienceRepository, UserRepository} from '../../repositories';
 import {
-  ExperienceRepository,
-  UserRepository,
-  AuthenticationRepository,
-} from '../../repositories';
-import {
+  givenAddress,
   givenExperienceInstance,
   givenExperienceRepository,
   givenMultipleExperienceInstances,
   givenUserInstance,
   givenUserRepository,
-  givenAuthenticationRepository,
   setupApplication,
 } from '../helpers';
+import {u8aToHex, numberToHex} from '@polkadot/util';
+import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('ExperienceApplication', function () {
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
   let experienceRepository: ExperienceRepository;
-  let authenticationRepository: AuthenticationRepository;
   let userRepository: UserRepository;
-
-  const userCredential = {
-    email: 'admin@mail.com',
-    password: '123456',
-  };
+  let nonce: number;
+  let user: User;
+  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -38,24 +33,35 @@ describe('ExperienceApplication', function () {
   before(async () => {
     userRepository = await givenUserRepository(app);
     experienceRepository = await givenExperienceRepository(app);
-    authenticationRepository = await givenAuthenticationRepository(app);
   });
 
-  after(async () => {
-    await authenticationRepository.deleteAll();
+  before(async () => {
+    user = await givenUserInstance(userRepository);
+    address = givenAddress();
   });
 
   beforeEach(async () => {
-    await userRepository.deleteAll();
     await experienceRepository.deleteAll();
   });
 
-  it('sign up successfully', async () => {
-    await client.post('/signup').send(userCredential).expect(200);
+  after(async () => {
+    await userRepository.deleteAll();
+  });
+
+  it('gets user nonce', async () => {
+    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
+
+    nonce = response.body.nonce;
   });
 
   it('user login successfully', async () => {
-    const res = await client.post('/login').send(userCredential).expect(200);
+    const credential: Credential = new Credential({
+      nonce: nonce,
+      publicAddress: user.id,
+      signature: u8aToHex(address.sign(numberToHex(nonce))),
+    });
+
+    const res = await client.post('/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -149,7 +155,6 @@ describe('ExperienceApplication', function () {
   });
 
   it('includes user in query result', async () => {
-    const user = await givenUserInstance(userRepository);
     const experience = await givenExperienceInstance(experienceRepository, {
       createdBy: user.id,
     });
