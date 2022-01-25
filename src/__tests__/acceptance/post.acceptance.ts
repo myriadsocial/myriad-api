@@ -40,6 +40,7 @@ import {
   setupApplication,
   givenActivityLogRepository,
   givenAddress,
+  givenOtherUser,
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
@@ -289,14 +290,22 @@ describe('PostApplication', function () {
     });
 
     it('queries posts with a filter', async () => {
-      const postInProgress = await givenMyriadPostInstance(postRepository, {
-        text: "what's up, docs!",
-        createdBy: user.id,
-        platform: PlatformType.MYRIAD,
-      });
+      const anotherUser = await givenUserInstance(
+        userRepository,
+        givenOtherUser(),
+      );
+      const postInProgress: PostWithRelations = await givenMyriadPostInstance(
+        postRepository,
+        {
+          text: "what's up, docs!",
+          createdBy: anotherUser.id,
+          platform: PlatformType.MYRIAD,
+        },
+      );
+      postInProgress.user = anotherUser;
 
       await client
-        .get('/posts?userId=' + user.id)
+        .get('/posts')
         .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {text: "what's up, docs!"}}))
         .expect(200, {

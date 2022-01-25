@@ -174,7 +174,11 @@ export async function givenRepositories(testdb: any) {
     currentUser,
   );
 
-  const friendService = new FriendService(friendRepository, userRepository);
+  const friendService = new FriendService(
+    accountSettingRepository,
+    friendRepository,
+    userRepository,
+  );
 
   const postService = new PostService(
     postRepository,

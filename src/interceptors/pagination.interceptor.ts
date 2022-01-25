@@ -205,7 +205,23 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       // Both Where filter and timeline cannot be used together
       case ControllerType.POST: {
         if (methodName === MethodType.TIMELINE) {
-          const {experienceId, timelineType, q} = request.query;
+          const {experienceId, timelineType, q, topic} = request.query;
+
+          if (
+            (q && (topic || timelineType)) ||
+            (topic && (q || timelineType)) ||
+            (timelineType && (q || topic))
+          ) {
+            if (Object.keys(filter.where as Where<AnyObject>).length > 1) {
+              throw new HttpErrors.UnprocessableEntity(
+                'Cannot used where filter together with q, topic, and timelineType',
+              );
+            }
+
+            throw new HttpErrors.UnprocessableEntity(
+              'Cannot used q, topic, and timelineType at the same time',
+            );
+          }
 
           // search post
           if (!q && typeof q === 'string') return;
@@ -223,34 +239,31 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               }
             }
 
-            filter.where = await this.getPostByQuery(filter.where, postQuery);
+            filter.where = await this.getPostByQuery(postQuery);
 
             break;
           }
 
-          // get timeline
-          if (
-            Object.keys(filter.where as Where<AnyObject>).length > 1 &&
-            timelineType
-          ) {
-            throw new HttpErrors.UnprocessableEntity(
-              'Where filter and timelineType can not be used at the same time!',
-            );
+          // search topic
+          if (!topic && typeof topic === 'string') return;
+          if (topic) {
+            filter.where = await this.getTopicByQuery(topic.toString());
           }
 
+          // get timeline
+          if (!timelineType && typeof timelineType === 'string') return;
           if (timelineType) {
             const whereTimeline = await this.getTimeline(
               timelineType as TimelineType,
               experienceId?.toString(),
             );
 
-            if (!whereTimeline) return;
-
-            filter.where = Object.assign(filter.where ?? {}, whereTimeline);
-            filter.include = filter.include
-              ? [...filter.include, 'user']
-              : ['user'];
+            filter.where = whereTimeline ?? {id: ''};
           }
+
+          filter.include = filter.include
+            ? [...filter.include, 'user']
+            : ['user'];
         }
 
         if (methodName === MethodType.GETIMPORTERS) {
@@ -273,7 +286,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       case ControllerType.EXPERIENCE: {
         const {q} = request.query;
 
-        // search post
+        // search experience
         if (!q && typeof q === 'string') return;
         if (q) {
           let experienceQuery = q.toString();
@@ -289,10 +302,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             );
           }
 
-          filter.where = await this.getExperienceByQuery(
-            filter.where,
-            experienceQuery,
-          );
+          filter.where = await this.getExperienceByQuery(experienceQuery);
         }
         break;
       }
@@ -475,7 +485,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     return meta;
   }
 
-  async getPostByQuery(where: Where<Post>, q: string): Promise<Where<Post>> {
+  async getPostByQuery(q: string): Promise<Where<Post>> {
     const blockedFriendIds: string[] = await this.friendService.getFriendIds(
       this.currentUser[securityId],
       FriendStatusType.BLOCKED,
@@ -575,21 +585,53 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     } as Where<Post>;
   }
 
-  async getExperienceByQuery(
-    where: Where<Experience>,
-    q: string,
-  ): Promise<Where<Experience>> {
+  async getTopicByQuery(topic: string): Promise<Where<Post>> {
+    const blockedFriendIds: string[] = await this.friendService.getFriendIds(
+      this.currentUser[securityId],
+      FriendStatusType.BLOCKED,
+    );
+    const friendIds = await this.friendService.getFriendIds(
+      this.currentUser[securityId],
+      FriendStatusType.APPROVED,
+    );
+    const approvedFriendIds = [...friendIds, this.currentUser[securityId]];
+
+    return {
+      or: [
+        {
+          and: [
+            {createdBy: {nin: blockedFriendIds}},
+            {tags: {inq: [topic]}},
+            {visibility: VisibilityType.PUBLIC},
+          ],
+        },
+        {
+          and: [
+            {createdBy: {inq: approvedFriendIds}},
+            {tags: {inq: [topic]}},
+            {visibility: VisibilityType.FRIEND},
+          ],
+        },
+        {
+          and: [
+            {createdBy: this.currentUser[securityId]},
+            {tags: {inq: [topic]}},
+          ],
+        },
+      ],
+    } as Where<Post>;
+  }
+
+  async getExperienceByQuery(q: string): Promise<Where<Experience>> {
     const blockedFriendIds = await this.friendService.getFriendIds(
       this.currentUser[securityId],
       FriendStatusType.BLOCKED,
     );
 
     const pattern = new RegExp(q, 'i');
-    const w = {
+    return {
       and: [{name: {regexp: pattern}}, {createdBy: {nin: blockedFriendIds}}],
     };
-
-    return Object.assign(where ?? {}, {w}) as Where<Experience>;
   }
 
   async getTimeline(
