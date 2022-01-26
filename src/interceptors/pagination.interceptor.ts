@@ -180,6 +180,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const blockedFriendIds = await this.friendService.getFriendIds(
           this.currentUser[securityId],
           FriendStatusType.BLOCKED,
+          true,
         );
 
         filter.where = Object.assign(filter.where, {
