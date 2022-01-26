@@ -1,16 +1,19 @@
-name: Deploy automation
+name: Deployer
 
 on:
   release:
-    types: [published]
+    types:
+      - published
   workflow_run:
-    workflows: ['Builder']
-    branches: [main]
+    branches:
+      - main
+    workflows:
+      - 'Builder'
     types:
       - completed
 
 concurrency:
-  group: deploy-automation
+  group: deployer
 
 jobs:
   compute-build-info:
@@ -20,6 +23,7 @@ jobs:
       sha_short: ${{ steps.build-info.outputs.sha_short }}
       date: ${{ steps.build-info.outputs.date }}
       latest_tag: ${{ steps.build-info.outputs.latest_tag }}
+      package_version: ${{ steps.build-info.outputs.package_version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -36,10 +40,15 @@ jobs:
           echo $version
           echo "::set-output name=latest_tag::$version"
 
+          package_version=$(cat ./package.json | grep version | head -1 | awk -F: '{ print $2 }' | sed 's/[",]//g' | tr -d '[[:space:]]')
+          echo $package_version
+          echo "::set-output name=package_version::$package_version"
+
   deploy-dev:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    needs: [compute-build-info]
+    needs:
+      - compute-build-info
     env:
       DEPLOY: ${{ secrets.DEV_DEPLOY }}
     steps:
@@ -61,6 +70,10 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@main
         with:
           secrets: |-
+            SSH_HOST:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_HOST
+            SSH_PORT:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_PORT
+            SSH_USERNAME:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_USERNAME
+            SSH_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.DEV_GCP_PROJECT_ID }}/RPC_WS_URL
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
@@ -70,7 +83,6 @@ jobs:
             JWT_TOKEN_EXPIRES_IN:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
             JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
-            JWT_EMAIL:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_PROTOCOL:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PROTOCOL
             MONGO_HOST:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.DEV_GCP_PROJECT_ID }}/MONGO_PORT
@@ -84,18 +96,14 @@ jobs:
             TWITTER_API_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
             API_DNS:${{ secrets.DEV_GCP_PROJECT_ID }}/API_DNS
-            SSH_HOST:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_HOST
-            SSH_USERNAME:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_USERNAME
-            SSH_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_KEY
-            SSH_PORT:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_PORT
       - name: Deploy
         if: "${{ env.DEPLOY == 'true' }}"
         uses: appleboy/ssh-action@master
         with:
           host: ${{ steps.secrets.outputs.SSH_HOST }}
+          port: ${{ steps.secrets.outputs.SSH_PORT }}
           username: ${{ steps.secrets.outputs.SSH_USERNAME }}
           key: ${{ steps.secrets.outputs.SSH_KEY }}
-          port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
             helm repo add myriadsocial https://charts.myriad.social
@@ -103,8 +111,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }} \
-              --set-string config.openApiDisable="false" \
-              --set-string config.explorerDisable="false" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
@@ -114,7 +120,6 @@ jobs:
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
-              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.protocol=${{ steps.secrets.outputs.MONGO_PROTOCOL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
@@ -149,9 +154,10 @@ jobs:
             kubectl rollout status deployment/myriad-api
 
   deploy-alpha-release:
-    if: "github.event.release.prerelease && contains(needs.compute-build-info.outputs.latest_tag, 'alpha')"
+    if: "startsWith(github.ref, 'refs/tags/') && github.event.release.prerelease && contains(needs.compute-build-info.outputs.latest_tag, 'alpha')"
     runs-on: ubuntu-latest
-    needs: [compute-build-info]
+    needs:
+      - compute-build-info
     env:
       DEPLOY: ${{ secrets.STG_DEPLOY }}
     steps:
@@ -173,6 +179,10 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@main
         with:
           secrets: |-
+            SSH_HOST:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_HOST
+            SSH_PORT:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_PORT
+            SSH_USERNAME:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_USERNAME
+            SSH_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.STG_GCP_PROJECT_ID }}/RPC_WS_URL
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.STG_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
@@ -182,7 +192,6 @@ jobs:
             JWT_TOKEN_EXPIRES_IN:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
             JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
-            JWT_EMAIL:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_PROTOCOL:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_PROTOCOL
             MONGO_HOST:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.STG_GCP_PROJECT_ID }}/MONGO_PORT
@@ -195,18 +204,14 @@ jobs:
             API_SENTRY_DSN:${{ secrets.STG_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            SSH_HOST:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_HOST
-            SSH_USERNAME:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_USERNAME
-            SSH_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_KEY
-            SSH_PORT:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_PORT
       - name: Deploy
         if: "${{ env.DEPLOY == 'true' }}"
         uses: appleboy/ssh-action@master
         with:
           host: ${{ steps.secrets.outputs.SSH_HOST }}
+          port: ${{ steps.secrets.outputs.SSH_PORT }}
           username: ${{ steps.secrets.outputs.SSH_USERNAME }}
           key: ${{ steps.secrets.outputs.SSH_KEY }}
-          port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
             helm repo add myriadsocial https://charts.myriad.social
@@ -214,8 +219,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.openApiDisable="true" \
-              --set-string config.explorerDisable="true" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
@@ -225,7 +228,6 @@ jobs:
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
-              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.protocol=${{ steps.secrets.outputs.MONGO_PROTOCOL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
@@ -250,9 +252,10 @@ jobs:
             kubectl rollout status deployment/myriad-api
 
   deploy-beta-release:
-    if: "github.event.release.prerelease && contains(needs.compute-build-info.outputs.latest_tag, 'beta')"
+    if: "startsWith(github.ref, 'refs/tags/') && github.event.release.prerelease && contains(needs.compute-build-info.outputs.latest_tag, 'beta')"
     runs-on: ubuntu-latest
-    needs: [compute-build-info]
+    needs:
+      - compute-build-info
     env:
       DEPLOY: ${{ secrets.TESTNET_DEPLOY }}
     steps:
@@ -274,6 +277,10 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@main
         with:
           secrets: |-
+            SSH_HOST:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_HOST
+            SSH_PORT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_PORT
+            SSH_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_USERNAME
+            SSH_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.TESTNET_GCP_PROJECT_ID }}/RPC_WS_URL
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
@@ -283,7 +290,6 @@ jobs:
             JWT_TOKEN_EXPIRES_IN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
             JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
-            JWT_EMAIL:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_PROTOCOL:${{ secrets.TESTNET_GCP_PROJECT_ID }}/MONGO_PROTOCOL
             MONGO_HOST:${{ secrets.TESTNET_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/MONGO_PORT
@@ -296,18 +302,14 @@ jobs:
             API_SENTRY_DSN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            SSH_HOST:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_HOST
-            SSH_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_USERNAME
-            SSH_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_KEY
-            SSH_PORT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_PORT
       - name: Deploy
         if: "${{ env.DEPLOY == 'true' }}"
         uses: appleboy/ssh-action@master
         with:
           host: ${{ steps.secrets.outputs.SSH_HOST }}
+          port: ${{ steps.secrets.outputs.SSH_PORT }}
           username: ${{ steps.secrets.outputs.SSH_USERNAME }}
           key: ${{ steps.secrets.outputs.SSH_KEY }}
-          port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
             helm repo add myriadsocial https://charts.myriad.social
@@ -315,8 +317,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.openApiDisable="true" \
-              --set-string config.explorerDisable="true" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
@@ -326,7 +326,6 @@ jobs:
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
-              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.protocol=${{ steps.secrets.outputs.MONGO_PROTOCOL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
@@ -351,9 +350,10 @@ jobs:
             kubectl rollout status deployment/myriad-api
 
   deploy-pre-release:
-    if: "github.event.release.prerelease && contains(needs.compute-build-info.outputs.latest_tag, 'rc')"
+    if: "startsWith(github.ref, 'refs/tags/') && github.event.release.prerelease && contains(needs.compute-build-info.outputs.latest_tag, 'rc')"
     runs-on: ubuntu-latest
-    needs: [compute-build-info]
+    needs:
+      - compute-build-info
     env:
       DEPLOY: ${{ secrets.MAINNET_DEPLOY }}
     steps:
@@ -375,6 +375,10 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@main
         with:
           secrets: |-
+            SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
+            SSH_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_PORT
+            SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
+            SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/RPC_WS_URL
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
@@ -384,7 +388,6 @@ jobs:
             JWT_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
             JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
-            JWT_EMAIL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_PROTOCOL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_PROTOCOL
             MONGO_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_PORT
@@ -397,18 +400,14 @@ jobs:
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
-            SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
-            SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
-            SSH_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_PORT
       - name: Deploy
         if: "${{ env.DEPLOY == 'true' }}"
         uses: appleboy/ssh-action@master
         with:
           host: ${{ steps.secrets.outputs.SSH_HOST }}
+          port: ${{ steps.secrets.outputs.SSH_PORT }}
           username: ${{ steps.secrets.outputs.SSH_USERNAME }}
           key: ${{ steps.secrets.outputs.SSH_KEY }}
-          port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
             helm repo add myriadsocial https://charts.myriad.social
@@ -416,8 +415,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.openApiDisable="true" \
-              --set-string config.explorerDisable="true" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
@@ -427,7 +424,6 @@ jobs:
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
-              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.protocol=${{ steps.secrets.outputs.MONGO_PROTOCOL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
@@ -454,7 +450,8 @@ jobs:
   deploy-release:
     if: "startsWith(github.ref, 'refs/tags/') && !github.event.release.prerelease"
     runs-on: ubuntu-latest
-    needs: [compute-build-info]
+    needs:
+      - compute-build-info
     env:
       DEPLOY: ${{ secrets.MAINNET_DEPLOY }}
     steps:
@@ -476,6 +473,10 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@main
         with:
           secrets: |-
+            SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
+            SSH_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_PORT
+            SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
+            SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/RPC_WS_URL
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
@@ -485,7 +486,6 @@ jobs:
             JWT_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
             JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_EXPIRES_IN
-            JWT_EMAIL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_EMAIL
             MONGO_PROTOCOL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_PROTOCOL
             MONGO_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_HOST
             MONGO_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/MONGO_PORT
@@ -498,18 +498,14 @@ jobs:
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
             TWITTER_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/TWITTER_API_KEY
             COIN_MARKET_CAP_API_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/COIN_MARKET_CAP_API_KEY
-            SSH_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_HOST
-            SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
-            SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
-            SSH_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_PORT
       - name: Deploy
         if: "${{ env.DEPLOY == 'true' }}"
         uses: appleboy/ssh-action@master
         with:
           host: ${{ steps.secrets.outputs.SSH_HOST }}
+          port: ${{ steps.secrets.outputs.SSH_PORT }}
           username: ${{ steps.secrets.outputs.SSH_USERNAME }}
           key: ${{ steps.secrets.outputs.SSH_KEY }}
-          port: ${{ steps.secrets.outputs.SSH_PORT }}
           script: |
             ./connect.sh
             helm repo add myriadsocial https://charts.myriad.social
@@ -517,8 +513,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.openApiDisable="true" \
-              --set-string config.explorerDisable="true" \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
@@ -528,7 +522,6 @@ jobs:
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
               --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
-              --set-string config.jwt.email=${{ steps.secrets.outputs.JWT_EMAIL }} \
               --set-string config.mongo.protocol=${{ steps.secrets.outputs.MONGO_PROTOCOL }} \
               --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
               --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \

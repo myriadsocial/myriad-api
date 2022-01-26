@@ -8,10 +8,7 @@ import {
   SchemaMigrationOptions,
 } from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
-import {
-  RestExplorerBindings,
-  RestExplorerComponent,
-} from '@loopback/rest-explorer';
+import {RestExplorerComponent} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
 import {config} from './config';
@@ -117,15 +114,7 @@ export class MyriadApiApplication extends BootMixin(
     this.component(CronComponent);
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
-
-    if (this.options.test) return;
-    if (!this.options.rest?.apiExplorer.disabled) {
-      this.configure(RestExplorerBindings.COMPONENT).to({
-        path: '/explorer',
-        useSelfHostedSpec: true,
-      });
-      this.component(RestExplorerComponent);
-    }
+    this.component(RestExplorerComponent);
   }
 
   registerService() {
@@ -167,7 +156,7 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   configureFirebase() {
-    if (this.options.test) return;
+    if (this.options.test || !config.FIREBASE_STORAGE_BUCKET) return;
     firebaseAdmin.initializeApp({
       storageBucket: config.FIREBASE_STORAGE_BUCKET,
     });

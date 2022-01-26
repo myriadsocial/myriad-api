@@ -5,11 +5,6 @@ export const config = {
   APPLICATION_HOST: process.env.HOST ?? 'localhost',
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
 
-  APP_EXPLORER_DISABLED:
-    process.env.APP_EXPLORER_DISABLED === 'true' ? true : false,
-  APP_OPEN_API_DISABLED:
-    process.env.APP_OPEN_API_DISABLED === 'true' ? true : false,
-
   MYRIAD_RPC_WS_URL: process.env.MYRIAD_RPC_WS_URL ?? 'ws://127.0.0.1:9944',
   MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY:
     process.env.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY ??
@@ -32,7 +27,7 @@ export const config = {
     process.env.JWT_REFRESH_TOKEN_EXPIRES_IN ?? '216000',
 
   MONGO_PROTOCOL: process.env.MONGO_PROTOCOL ?? 'mongodb',
-  MONGO_HOST: process.env.MONGO_HOST ?? '',
+  MONGO_HOST: process.env.MONGO_HOST ?? 'localhost',
   MONGO_PORT: +(process.env.MONGO_PORT ?? 27017),
   MONGO_USER: process.env.MONGO_USER ?? 'api',
   MONGO_PASSWORD: process.env.MONGO_PASSWORD ?? 'passw0rd',
