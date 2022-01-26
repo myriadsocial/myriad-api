@@ -28,10 +28,6 @@ if (require.main === module) {
       openApiSpec: {
         // useful when used with OpenAPI-to-GraphQL to locate your application
         setServersFromRequest: true,
-        disabled: config.APP_OPEN_API_DISABLED,
-      },
-      apiExplorer: {
-        disabled: config.APP_EXPLORER_DISABLED,
       },
     },
   };

@@ -293,63 +293,6 @@ describe('CommentApplication', function () {
       .expect(422);
   });
 
-  it('rejects request to create a comments more than three levels comment', async () => {
-    // First level
-    const comment = givenComment({
-      userId: user.id,
-      postId: post.id,
-      referenceId: post.id,
-      type: ReferenceType.POST,
-    });
-    const response = await client
-      .post('/comments')
-      .set('Authorization', `Bearer ${token}`)
-      .send(comment)
-      .expect(200);
-    const newComment = response.body;
-
-    // Second level
-    const otherComment = givenComment({
-      userId: user.id,
-      postId: post.id,
-      referenceId: newComment.id,
-      type: ReferenceType.COMMENT,
-    });
-    const otherResponse = await client
-      .post('/comments')
-      .set('Authorization', `Bearer ${token}`)
-      .send(otherComment)
-      .expect(200);
-    const otherNewComment = otherResponse.body;
-
-    // Third level
-    const anotherComment = givenComment({
-      userId: user.id,
-      postId: post.id,
-      referenceId: otherNewComment.id,
-      type: ReferenceType.COMMENT,
-    });
-    const anotherResponse = await client
-      .post('/comments')
-      .set('Authorization', `Bearer ${token}`)
-      .send(anotherComment)
-      .expect(200);
-    const anotherNewComment = anotherResponse.body;
-
-    // Rejected comment
-    const rejectedComment = givenComment({
-      userId: user.id,
-      postId: post.id,
-      referenceId: anotherNewComment.id,
-      type: ReferenceType.COMMENT,
-    });
-    await client
-      .post('/comments')
-      .set('Authorization', `Bearer ${token}`)
-      .send(rejectedComment)
-      .expect(422);
-  });
-
   context('when dealing with a single persisted comment', () => {
     let persistedComment: Comment;
 

@@ -113,10 +113,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.COMMENT: {
-        const {referenceId, postId} = invocationCtx.args[0] as Comment;
+        const {postId} = invocationCtx.args[0] as Comment;
 
         await this.postService.postRepository.findById(postId);
-        await this.validateComment(referenceId);
 
         return;
       }
@@ -333,27 +332,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
       default:
         return result;
     }
-  }
-
-  async validateComment(referenceId: string): Promise<void> {
-    const lastComment = await this.commentRepository.findOne({
-      where: {
-        id: referenceId,
-        type: ReferenceType.COMMENT,
-      },
-    });
-
-    if (!lastComment) return;
-
-    const comment = await this.commentRepository.findOne({
-      where: {
-        id: lastComment.referenceId,
-        type: ReferenceType.COMMENT,
-      },
-    });
-
-    if (!comment) return;
-    throw new HttpErrors.UnprocessableEntity('Cannot added comment anymore');
   }
 
   async createNotification(
