@@ -168,7 +168,11 @@ export class FriendService {
     }
   }
 
-  async getFriendIds(id: string, status: FriendStatusType): Promise<string[]> {
+  async getFriendIds(
+    id: string,
+    status: FriendStatusType,
+    skipPrivateAccont = false,
+  ): Promise<string[]> {
     const filter = {
       where: {
         or: [
@@ -186,7 +190,7 @@ export class FriendService {
 
     let privateIds: string[] = [];
 
-    if (status === FriendStatusType.BLOCKED) {
+    if (status === FriendStatusType.BLOCKED && !skipPrivateAccont) {
       const accountSetting = await this.accountSettingRepository.find({
         where: {accountPrivacy: AccountSettingType.PRIVATE},
       });
