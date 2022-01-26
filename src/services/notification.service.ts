@@ -269,11 +269,14 @@ export class NotificationService {
         notification.referenceId = referenceId;
         notification.message = 'removed your post';
 
-        const post = await this.postRepository.findById(referenceId);
+        const {url} = await this.postRepository.findById(referenceId);
+        if (!url) break;
+        const posts = await this.postRepository.find({where: {url: url}});
+        const reporteeIds = posts.map(reportee => reportee.createdBy);
 
-        await this.sendNotificationToUser(
+        await this.sendNotificationToMultipleUsers(
           notification,
-          post.createdBy,
+          reporteeIds,
           'Post Removed',
           'Myriad Official ' + notification.message,
         );

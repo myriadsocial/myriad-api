@@ -218,17 +218,13 @@ export class PostService {
     const hasBeenDeleted = posts.find(e => e.deletedAt);
 
     if (hasBeenDeleted) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You cannot import deleted post',
-      );
+      throw new HttpErrors.NotFound('You cannot import deleted post');
     }
 
     const hasImported = posts.find(e => e.createdBy === importer);
 
     if (hasImported) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You have already import this post',
-      );
+      throw new HttpErrors.Conflict('You have already import this post');
     }
 
     if (posts.length === 0) return undefined;

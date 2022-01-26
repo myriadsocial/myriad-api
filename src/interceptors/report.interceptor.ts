@@ -160,9 +160,12 @@ export class ReportInterceptor implements Provider<Interceptor> {
     if (report.status === ReportStatusType.REMOVED) {
       switch (referenceType) {
         case ReferenceType.POST: {
-          await this.postRepository.updateById(referenceId, {
-            deletedAt: new Date().toString(),
-          });
+          const {url} = await this.postRepository.findById(referenceId);
+          if (!url) break;
+          await this.postRepository.updateAll(
+            {deletedAt: new Date().toString()},
+            {url: url},
+          );
 
           break;
         }

@@ -463,7 +463,7 @@ describe('PostApplication', function () {
         .post('/posts/import')
         .set('Authorization', `Bearer ${token}`)
         .send(platformPost)
-        .expect(422);
+        .expect(409);
     });
 
     it('rejects requests to create a post from social media if no url and no importer', async () => {
