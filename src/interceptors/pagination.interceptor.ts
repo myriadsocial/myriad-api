@@ -602,21 +602,21 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         {
           and: [
             {createdBy: {nin: blockedFriendIds}},
-            {tags: {inq: [topic]}},
+            {tags: {inq: [topic.toLowerCase()]}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
           and: [
             {createdBy: {inq: approvedFriendIds}},
-            {tags: {inq: [topic]}},
+            {tags: {inq: [topic.toLowerCase()]}},
             {visibility: VisibilityType.FRIEND},
           ],
         },
         {
           and: [
             {createdBy: this.currentUser[securityId]},
-            {tags: {inq: [topic]}},
+            {tags: {inq: [topic.toLowerCase()]}},
           ],
         },
       ],
