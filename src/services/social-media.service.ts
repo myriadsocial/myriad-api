@@ -397,7 +397,7 @@ export class SocialMediaService {
 
       if (foundIndex === -1)
         throw new HttpErrors.NotFound('Cannot find specified post');
-      if (getPublicKey.replace('"', '').trim() !== publicKey)
+      if (getPublicKey.replace(/'/g, '').trim() !== publicKey)
         throw new HttpErrors.NotFound('Cannot find specified post');
     }
 

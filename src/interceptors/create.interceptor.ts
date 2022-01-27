@@ -252,10 +252,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
             metric: commentMetric,
           });
 
-          return Object.assign(result, {metric: commentMetric});
+          return result;
         }
 
-        return Object.assign(result, {metric: postMetric});
+        return result;
       }
 
       case ControllerType.FRIEND: {
