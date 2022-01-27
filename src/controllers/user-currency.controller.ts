@@ -36,6 +36,7 @@ export class UserCurrencyController {
     protected userRepository: UserRepository,
   ) {}
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/user-currencies')
   @response(200, {

@@ -28,6 +28,7 @@ export class NotificationController {
     protected notificationRepository: NotificationRepository,
   ) {}
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/notifications')
   @response(200, {
@@ -48,6 +49,7 @@ export class NotificationController {
     return this.notificationRepository.find(filter);
   }
 
+  @authenticate.skip()
   @get('/notifications/{id}')
   @response(200, {
     description: 'Notification model instance',
@@ -65,6 +67,7 @@ export class NotificationController {
     return this.notificationRepository.findById(id, filter);
   }
 
+  @authenticate.skip()
   @get('/notifications/count', {
     responses: {
       '200': {

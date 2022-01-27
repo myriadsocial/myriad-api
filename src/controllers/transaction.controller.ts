@@ -50,6 +50,7 @@ export class TransactionController {
     return this.transactionRepository.create(transaction);
   }
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/transactions')
   @response(200, {
@@ -70,6 +71,7 @@ export class TransactionController {
     return this.transactionRepository.find(filter);
   }
 
+  @authenticate.skip()
   @get('/transactions/{id}')
   @response(200, {
     description: 'Transaction model instance',

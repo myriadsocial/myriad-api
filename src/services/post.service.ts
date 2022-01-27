@@ -23,6 +23,9 @@ import {UserProfile, securityId} from '@loopback/security';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
+const defaultUserProfile: UserProfile = {
+  [securityId]: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+};
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class PostService {
@@ -42,7 +45,7 @@ export class PostService {
     @service(MetricService)
     protected metricService: MetricService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    protected currentUser = defaultUserProfile,
   ) {}
 
   async createPost(post: Omit<ExtendedPost, 'id'>): Promise<PostWithRelations> {

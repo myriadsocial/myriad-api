@@ -26,6 +26,7 @@ export class PostWalletAddress {
     protected jwtService: JWTService,
   ) {}
 
+  @authenticate.skip()
   @get('/posts/{id}/walletaddress')
   @response(200, {
     description: 'Post model wallet address',

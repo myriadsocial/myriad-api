@@ -27,6 +27,7 @@ export class UserNotificationSettingController {
     protected userRepository: UserRepository,
   ) {}
 
+  @authenticate.skip()
   @get('/users/{id}/notification-setting', {
     responses: {
       '200': {

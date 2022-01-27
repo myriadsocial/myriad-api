@@ -26,6 +26,10 @@ import {FCMService} from './fcm.service';
 import {UserProfile, securityId} from '@loopback/security';
 import {AuthenticationBindings} from '@loopback/authentication';
 
+const defaultUserProfile: UserProfile = {
+  [securityId]: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+};
+
 @injectable({scope: BindingScope.TRANSIENT})
 export class NotificationService {
   constructor(
@@ -50,7 +54,7 @@ export class NotificationService {
     @service(FCMService)
     public fcmService: FCMService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    public currentUser: UserProfile,
+    public currentUser = defaultUserProfile,
   ) {}
 
   async sendFriendRequest(to: string): Promise<boolean> {

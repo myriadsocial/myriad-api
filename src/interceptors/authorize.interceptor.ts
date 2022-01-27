@@ -24,6 +24,10 @@ import {ControllerType, FriendStatusType, MethodType} from '../enums';
 import {config} from '../config';
 import {HttpErrors} from '@loopback/rest';
 
+const defaultUserProfile: UserProfile = {
+  [securityId]: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+};
+
 /**
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
@@ -50,7 +54,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    public currentUser: UserProfile,
+    public currentUser = defaultUserProfile,
   ) {}
 
   /**

@@ -27,6 +27,7 @@ export class TipController {
     return this.currencyService.claimTips(userId, currencyId.toUpperCase());
   }
 
+  @authenticate.skip()
   @get('/users/{userId}/balance/{currencyId}')
   @response(200, {
     description: 'User Balance',

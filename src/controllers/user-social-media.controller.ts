@@ -98,6 +98,7 @@ export class UserSocialMediaController {
     return userSocialMedia;
   }
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/user-social-medias')
   @response(200, {

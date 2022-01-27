@@ -14,6 +14,7 @@ export class UserDraftPostController {
     protected draftPostRepository: DraftPostRepository,
   ) {}
 
+  @authenticate.skip()
   @get('/users/{userId}/draft')
   @response(200, {
     description: 'Draft Post model instance',

@@ -18,14 +18,15 @@ import {User} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
+@authenticate('jwt')
+@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
   ) {}
 
-  @authenticate('jwt')
-  @intercept(AuthorizeInterceptor.BINDING_KEY)
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/users')
   @response(200, {
@@ -46,6 +47,7 @@ export class UserController {
     return this.userRepository.find(filter);
   }
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/users/leaderboard')
   @response(200, {
@@ -66,8 +68,7 @@ export class UserController {
     return this.userRepository.find(filter);
   }
 
-  @authenticate('jwt')
-  @intercept(AuthorizeInterceptor.BINDING_KEY)
+  @authenticate.skip()
   @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/users/{id}')
   @response(200, {
@@ -85,8 +86,6 @@ export class UserController {
     return this.userRepository.findById(id, filter);
   }
 
-  @authenticate('jwt')
-  @intercept(AuthorizeInterceptor.BINDING_KEY)
   @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/users/{id}')
   @response(204, {

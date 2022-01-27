@@ -49,6 +49,7 @@ export class CurrencyController {
     return this.currencyRepository.create(currency);
   }
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/currencies')
   @response(200, {
@@ -69,6 +70,7 @@ export class CurrencyController {
     return this.currencyRepository.find(filter);
   }
 
+  @authenticate.skip()
   @get('/currencies/{id}')
   @response(200, {
     description: 'Currency model instance',

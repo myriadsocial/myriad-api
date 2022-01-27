@@ -40,6 +40,11 @@ import {pageMetadata} from '../utils/page-metadata.utils';
 import {UserRepository} from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
+import {config} from '../config';
+
+const defaultUserProfile: UserProfile = {
+  [securityId]: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+};
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -63,7 +68,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     @service(PostService)
     protected postService: PostService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    protected currentUser = defaultUserProfile,
   ) {}
 
   /**

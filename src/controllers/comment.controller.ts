@@ -30,6 +30,7 @@ export class CommentController {
     protected commentRepository: CommentRepository,
   ) {}
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/comments', {
     responses: {
@@ -53,6 +54,7 @@ export class CommentController {
     return this.commentRepository.find(filter);
   }
 
+  @authenticate.skip()
   @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/comments/{id}', {
     responses: {

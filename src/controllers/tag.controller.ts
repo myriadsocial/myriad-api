@@ -47,6 +47,7 @@ export class TagController {
     return this.tagRepository.create(tag);
   }
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/tags')
   @response(200, {
@@ -67,6 +68,7 @@ export class TagController {
     return this.tagRepository.find(filter);
   }
 
+  @authenticate.skip()
   @get('/tags/{id}')
   @response(200, {
     description: 'Tag model instance',

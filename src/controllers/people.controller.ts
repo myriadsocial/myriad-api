@@ -10,8 +10,12 @@ import {
   UserRepository,
 } from '../repositories';
 import {authenticate, AuthenticationBindings} from '@loopback/authentication';
-
 import {UserProfile, securityId} from '@loopback/security';
+import {config} from '../config';
+
+const defaultUserProfile: UserProfile = {
+  [securityId]: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+};
 
 @authenticate('jwt')
 @intercept(AuthorizeInterceptor.BINDING_KEY)
@@ -23,10 +27,11 @@ export class PeopleController {
     protected userRepository: UserRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
-    @inject(AuthenticationBindings.CURRENT_USER)
-    protected currentUser: UserProfile,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    protected currentUser = defaultUserProfile,
   ) {}
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/people')
   @response(200, {
@@ -47,6 +52,7 @@ export class PeopleController {
     return this.peopleRepository.find(filter);
   }
 
+  @authenticate.skip()
   @get('/people/search')
   @response(200, {
     description: 'Array of People model instance',
@@ -63,6 +69,7 @@ export class PeopleController {
     return this.getPeopleAndUser(q);
   }
 
+  @authenticate.skip()
   @get('/people/{id}')
   @response(200, {
     description: 'People model instance',

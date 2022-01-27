@@ -27,6 +27,7 @@ export class UserAccountSettingController {
     protected userRepository: UserRepository,
   ) {}
 
+  @authenticate.skip()
   @get('/users/{id}/account-setting', {
     responses: {
       '200': {

@@ -11,6 +11,7 @@ export class ExchangeRateController {
     public exchangeRateRepository: ExchangeRateRepository,
   ) {}
 
+  @authenticate.skip()
   @get('/exchange-rates')
   @response(200, {
     description: 'Array of ExchangeRate model instances',
@@ -29,6 +30,7 @@ export class ExchangeRateController {
     return this.exchangeRateRepository.find(filter);
   }
 
+  @authenticate.skip()
   @get('/exchange-rates/{id}')
   @response(200, {
     description: 'ExchangeRate model instance',
