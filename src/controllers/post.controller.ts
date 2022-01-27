@@ -55,7 +55,7 @@ export class PostController {
     return this.postService.createDraftPost(draftPost);
   }
 
-  @authenticate.skip()
+  @intercept(CreateInterceptor.BINDING_KEY)
   @intercept(ValidatePostImportURL.BINDING_KEY)
   @post('/posts/import')
   @response(200, {
