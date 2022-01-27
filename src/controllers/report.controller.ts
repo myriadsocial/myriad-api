@@ -27,6 +27,7 @@ export class ReportController {
     public notificationService: NotificationService,
   ) {}
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/reports')
   @response(200, {
@@ -58,6 +59,7 @@ export class ReportController {
     );
   }
 
+  @authenticate.skip()
   @get('/reports/{id}')
   @response(200, {
     description: 'Report model instance',

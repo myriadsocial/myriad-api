@@ -15,6 +15,7 @@ export class TransactionSummaryController {
     protected transactionService: TransactionService,
   ) {}
 
+  @authenticate.skip()
   @get('/users/{id}/transaction-summary')
   @response(200, {
     description: 'Transaction Summary of User model instances',
@@ -78,6 +79,7 @@ export class TransactionSummaryController {
     };
   }
 
+  @authenticate.skip()
   @get('/posts/{id}/transaction-summary')
   @response(200, {
     description: 'Transaction Summary of Post model instances',
@@ -110,6 +112,7 @@ export class TransactionSummaryController {
     );
   }
 
+  @authenticate.skip()
   @get('/comments/{id}/transaction-summary')
   @response(200, {
     description: 'Transaction Summary of Comment model instances',

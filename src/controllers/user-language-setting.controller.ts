@@ -26,6 +26,7 @@ export class UserLanguageSettingController {
     @repository(UserRepository) protected userRepository: UserRepository,
   ) {}
 
+  @authenticate.skip()
   @get('/users/{id}/language-setting', {
     responses: {
       '200': {

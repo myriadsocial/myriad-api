@@ -13,6 +13,7 @@ export class ActivityLogController {
     protected activityLogRepository: ActivityLogRepository,
   ) {}
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/activity-logs', {
     responses: {

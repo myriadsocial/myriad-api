@@ -13,6 +13,7 @@ export class ReportUserController {
     protected reportRepository: ReportRepository,
   ) {}
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/reports/{id}/users', {
     responses: {

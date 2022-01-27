@@ -13,6 +13,7 @@ export class ExperienceController {
     protected experienceRepository: ExperienceRepository,
   ) {}
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/experiences')
   @response(200, {
@@ -33,6 +34,7 @@ export class ExperienceController {
     return this.experienceRepository.find(filter);
   }
 
+  @authenticate.skip()
   @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/experiences/{id}')
   @response(200, {

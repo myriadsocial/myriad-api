@@ -18,6 +18,7 @@ export class QueueController {
     protected queueRepository: QueueRepository,
   ) {}
 
+  @authenticate.skip()
   @get('/queues')
   @response(200, {
     description: 'Array of Queue model instances',

@@ -41,6 +41,7 @@ export class UserExperienceController {
     protected experienceRepository: ExperienceRepository,
   ) {}
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/user-experiences', {
     responses: {
@@ -66,6 +67,7 @@ export class UserExperienceController {
     return this.userExperienceRepository.find(filter);
   }
 
+  @authenticate.skip()
   @get('/user-experiences/{id}')
   @response(200, {
     description: 'UserExperience model instance',

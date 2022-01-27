@@ -53,6 +53,7 @@ export class FriendController {
     return this.friendRepository.create(friend);
   }
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/friends')
   @response(200, {
@@ -73,6 +74,7 @@ export class FriendController {
     return this.friendRepository.find(filter);
   }
 
+  @authenticate.skip()
   @get('/friends/{id}')
   @response(200, {
     description: 'Friend model instance',
@@ -120,6 +122,7 @@ export class FriendController {
     await this.friendRepository.updateById(id, friend);
   }
 
+  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/friends/{requestorId}/detail/{requesteeId}')
   @response(200, {
