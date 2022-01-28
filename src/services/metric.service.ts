@@ -3,7 +3,6 @@ import {
   ControllerType,
   FriendStatusType,
   MethodType,
-  PlatformType,
   ReferenceType,
   SectionType,
 } from '../enums';
@@ -125,7 +124,6 @@ export class MetricService {
     });
     const {count: totalPosts} = await this.postRepository.count({
       createdBy: userId,
-      platform: PlatformType.MYRIAD,
     });
 
     const {count: totalUpvote} = await this.voteRepository.count({
