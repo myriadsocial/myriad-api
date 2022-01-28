@@ -246,13 +246,16 @@ export class SocialMediaService {
       }
     }
 
-    const findUrlInFullText = fullText.search('https://t.co/');
-    const text = fullText
-      .substring(
-        0,
-        findUrlInFullText !== -1 ? findUrlInFullText : fullText.length,
-      )
-      .trim();
+    const text: String = fullText;
+    if (entities.media) {
+      const medias = entities.media;
+
+      for (const media of medias) {
+        const key = media.url;
+        if (!key) continue;
+        text.replace(key, '');
+      }
+    }
 
     return {
       platform: PlatformType.TWITTER,
