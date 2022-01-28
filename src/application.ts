@@ -71,7 +71,12 @@ import {
   UserSocialMediaRepository,
   VoteRepository,
 } from './repositories';
-import {DefaultCurrencyType, NotificationType, PlatformType} from './enums';
+import {
+  DefaultCurrencyType,
+  NotificationType,
+  PlatformType,
+  ReferenceType,
+} from './enums';
 import {Currency, Experience, People, Post, User} from './models';
 import {BcryptHasher} from './services/authentication/hash.password.service';
 import NonceGenerator from 'a-nonce-generator';
@@ -178,6 +183,7 @@ export class MyriadApiApplication extends BootMixin(
     }
 
     await this.doMigrateUser();
+    await this.doMigrateComment();
     await this.doRemoveDocument();
     await this.doMigrateMyriadPublicKey();
     await this.doMigratePost();
@@ -262,6 +268,45 @@ export class MyriadApiApplication extends BootMixin(
         },
       },
     );
+  }
+
+  async doMigrateComment(): Promise<void> {
+    if (this.options.alter.indexOf('comment') === -1) return;
+    const {commentRepository} = await this.repositories();
+    const {count} = await commentRepository.count();
+
+    const referenceIds: string[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const [comment] = await commentRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      const {referenceId, type} = comment;
+
+      if (type === ReferenceType.POST) continue;
+
+      const found = referenceIds.find(id => id === referenceId);
+
+      if (found) continue;
+      referenceIds.push(referenceId);
+
+      const totalComment = await commentRepository.count({
+        referenceId,
+        type,
+      });
+
+      const {id, metric} = await (
+        commentRepository as CommentRepository
+      ).findById(referenceId);
+
+      metric.comments = totalComment;
+
+      await commentRepository.updateById(id, {metric});
+    }
+
+    console.log('comments have been successfuly updated');
   }
 
   async doMigrateMyriadPublicKey(): Promise<void> {
