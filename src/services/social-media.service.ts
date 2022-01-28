@@ -246,14 +246,13 @@ export class SocialMediaService {
       }
     }
 
-    const text: String = fullText;
-    if (entities.media) {
+    let text: String = fullText;
+    if (entities?.media?.length > 0) {
       const medias = entities.media;
 
       for (const media of medias) {
         const key = media.url;
-        if (!key) continue;
-        text.replace(key, '');
+        text = text.replace(key, '');
       }
     }
 
