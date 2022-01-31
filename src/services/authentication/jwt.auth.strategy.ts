@@ -3,6 +3,7 @@ import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors, Request} from '@loopback/rest';
 import {UserProfile, securityId} from '@loopback/security';
+import {config} from '../../config';
 import {TokenServiceBindings} from '../../keys';
 import {UserRepository} from '../../repositories';
 
@@ -17,8 +18,19 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   ) {}
 
   async authenticate(request: Request): Promise<UserProfile | undefined> {
-    const token: string = this.extractCredentials(request);
-    const userProfile: UserProfile = await this.tokenService.verifyToken(token);
+    let userProfile: UserProfile = {
+      [securityId]: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+    };
+
+    try {
+      const token: string = this.extractCredentials(request);
+      userProfile = await this.tokenService.verifyToken(token);
+    } catch (err) {
+      // Handle posts and users
+      if (request.method === 'GET') return userProfile;
+      throw err;
+    }
+
     const user = await this.userRepository.findOne({
       where: {
         id: userProfile[securityId],

@@ -11,7 +11,7 @@ import {
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {UserProfile, securityId} from '@loopback/security';
+import {UserProfile} from '@loopback/security';
 import {ControllerType, ReferenceType} from '../enums';
 import {
   CommentRepository,
@@ -26,11 +26,6 @@ import {
   VoteService,
 } from '../services';
 import {Comment} from '../models';
-import {config} from '../config';
-
-const defaultUserProfile: UserProfile = {
-  [securityId]: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-};
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -58,7 +53,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     @service(VoteService)
     protected voteService: VoteService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser = defaultUserProfile,
+    protected currentUser: UserProfile,
   ) {}
 
   /**

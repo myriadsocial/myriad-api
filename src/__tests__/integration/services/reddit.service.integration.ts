@@ -20,7 +20,7 @@ describe('RedditService', function () {
 
   it('gets not found error if post not found in reddit', async () => {
     try {
-      await service.getActions('sd112d.json');
+      await service.getActions('sd1dasd12d.json');
     } catch (err) {
       expect(err.statusCode).to.be.equal(404);
     }

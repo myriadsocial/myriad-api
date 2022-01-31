@@ -11,11 +11,6 @@ import {
 } from '../repositories';
 import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
-import {config} from '../config';
-
-const defaultUserProfile: UserProfile = {
-  [securityId]: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-};
 
 @authenticate('jwt')
 @intercept(AuthorizeInterceptor.BINDING_KEY)
@@ -28,7 +23,7 @@ export class PeopleController {
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser = defaultUserProfile,
+    protected currentUser: UserProfile,
   ) {}
 
   @authenticate.skip()
