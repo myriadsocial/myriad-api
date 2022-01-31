@@ -55,7 +55,6 @@ export class PostController {
     return this.postService.createDraftPost(draftPost);
   }
 
-  @intercept(CreateInterceptor.BINDING_KEY)
   @intercept(ValidatePostImportURL.BINDING_KEY)
   @post('/posts/import')
   @response(200, {
@@ -89,7 +88,6 @@ export class PostController {
     return this.postService.createPost(newPost);
   }
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/posts')
   @response(200, {
@@ -110,7 +108,6 @@ export class PostController {
     return this.postService.postRepository.find(filter);
   }
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/posts/{originPostId}/importers/{platform}')
   @response(200, {
@@ -133,7 +130,6 @@ export class PostController {
     return this.postService.postRepository.find(filter);
   }
 
-  @authenticate.skip()
   @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/posts/{id}')
   @response(200, {

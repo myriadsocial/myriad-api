@@ -26,7 +26,6 @@ export class UserController {
     protected userRepository: UserRepository,
   ) {}
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/users')
   @response(200, {
@@ -68,7 +67,6 @@ export class UserController {
     return this.userRepository.find(filter);
   }
 
-  @authenticate.skip()
   @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/users/{id}')
   @response(200, {
