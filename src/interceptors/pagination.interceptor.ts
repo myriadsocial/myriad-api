@@ -370,6 +370,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         filter.include = invocationCtx.args[1]?.include ?? [];
         break;
       }
+
+      case ControllerType.USERWALLET: {
+        const userWalletFilter = invocationCtx.args[1] ?? {};
+
+        filter.where = Object.assign(userWalletFilter.where ?? {}, {
+          userId: invocationCtx.args[0],
+        });
+        break;
+      }
     }
 
     return filter;
@@ -635,9 +644,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       limit: meta.itemsPerPage,
     });
 
-    if (controllerName === ControllerType.REPORTUSER)
-      invocationCtx.args[1] = paginationFilter;
-    else if (controllerName === ControllerType.EXPERIENCEPOST)
+    if (
+      controllerName === ControllerType.REPORTUSER ||
+      controllerName === ControllerType.USERWALLET ||
+      controllerName === ControllerType.EXPERIENCEPOST
+    )
       invocationCtx.args[1] = paginationFilter;
     else if (methodName === MethodType.GETIMPORTERS)
       invocationCtx.args[2] = paginationFilter;

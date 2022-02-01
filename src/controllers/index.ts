@@ -27,4 +27,6 @@ export * from './user-language-setting.controller';
 export * from './user-notification-setting.controller';
 export * from './user-report.controller';
 export * from './user-social-media.controller';
+export * from './user-wallet.controller';
 export * from './vote.controller';
+export * from './wallet-user.controller';

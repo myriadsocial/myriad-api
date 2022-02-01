@@ -25,6 +25,7 @@ import {
   UserReportRepository,
   UserCurrencyRepository,
   ExperiencePostRepository,
+  WalletRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 @injectable({scope: BindingScope.TRANSIENT})
@@ -66,6 +67,8 @@ export class MetricService {
     protected userReportRepository: UserReportRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
   ) {}
 
   async publicMetric(
@@ -237,6 +240,9 @@ export class MetricService {
         const experienceId = additionalData;
         return this.experiencePostRepository.count({experienceId});
       }
+
+      case ControllerType.USERWALLET:
+        return this.walletRepository.count(where);
 
       default:
         return {

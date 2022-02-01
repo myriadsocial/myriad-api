@@ -20,6 +20,7 @@ import {People} from './people.model';
 import {UserSocialMedia} from './user-social-media.model';
 import {ExperienceWithRelations} from './experience.model';
 import {LanguageSetting} from './language-setting.model';
+import {Wallet} from './wallet.model';
 import NonceGenerator from 'a-nonce-generator';
 
 @model({
@@ -196,6 +197,9 @@ export class User extends Entity {
 
   @hasMany(() => People, {through: {model: () => UserSocialMedia}})
   people: People[];
+
+  @hasMany(() => Wallet)
+  wallets: Wallet[];
 
   @belongsTo(
     () => Currency,
