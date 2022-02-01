@@ -365,9 +365,20 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           );
 
           if (request.query.experienceId) {
-            await this.userRepository.updateById(this.currentUser[securityId], {
-              onTimeline: request.query.experienceId.toString(),
-            });
+            const {count} =
+              await this.experienceService.userExperienceRepository.count({
+                userId: this.currentUser[securityId],
+                experienceId: request.query.experienceId.toString(),
+              });
+
+            if (count === 1) {
+              await this.userRepository.updateById(
+                this.currentUser[securityId],
+                {
+                  onTimeline: request.query.experienceId.toString(),
+                },
+              );
+            }
           }
         }
 
