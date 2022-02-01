@@ -15,3 +15,4 @@ export * from './report-status-type.enum';
 export * from './timelinefilter-type.enum';
 export * from './upload-type.enum';
 export * from './visibility-type.enum';
+export * from './wallet-type.enum';

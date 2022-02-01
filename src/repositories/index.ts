@@ -25,3 +25,4 @@ export * from './user-refresh-token.repository';
 export * from './user-social-media.repository';
 export * from './user-report.repository';
 export * from './vote.repository';
+export * from './wallet.repository';
