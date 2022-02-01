@@ -41,12 +41,9 @@ export class User extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: false,
-    required: true,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
+    generated: true,
+    mongodb: {
+      dataType: 'ObjectId',
     },
   })
   id: string;
@@ -207,7 +204,7 @@ export class User extends Entity {
   )
   defaultCurrency: string;
 
-  @belongsTo(() => Experience, {name: 'experience'})
+  @belongsTo(() => Experience, {name: 'experience'}, {type: 'string'})
   onTimeline: string;
 
   constructor(data?: Partial<User>) {

@@ -114,18 +114,7 @@ export class Comment extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => User, {}, {required: true})
   userId: string;
 
   @belongsTo(() => Post, {}, {required: true})

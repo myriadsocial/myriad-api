@@ -78,18 +78,7 @@ export class UserExperience extends Entity {
   @belongsTo(() => Experience, {}, {required: true})
   experienceId: string;
 
-  @belongsTo(
-    () => User,
-    {},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => User, {}, {required: true})
   userId: string;
 
   constructor(data?: Partial<UserExperience>) {

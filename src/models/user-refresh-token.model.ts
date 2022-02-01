@@ -28,11 +28,6 @@ export class UserRefreshToken extends Entity {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
-    },
   })
   userId: string;
 
