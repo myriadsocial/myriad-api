@@ -537,6 +537,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       .filter(user => !approvedFriendIds.includes(user.id))
       .map(e => e.id);
     const regexTopic = new RegExp(` ${q}"|"${q} |"${q}"| ${q} `, 'i');
+    const hashtag = q
+      .replace(/%23/gi, '')
+      .replace(new RegExp('#', 'gi'), '')
+      .trim();
+
     return {
       or: [
         {
@@ -567,7 +572,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
         {
           and: [
-            {tags: {inq: [q.replace(/%23/gi, '').trim()]}},
+            {tags: {inq: [hashtag]}},
             {visibility: VisibilityType.PUBLIC},
             {createdBy: {nin: blockedFriendIds}},
           ],
@@ -588,7 +593,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
         {
           and: [
-            {tags: {inq: [q.replace(/%23/gi, '').trim()]}},
+            {tags: {inq: [hashtag]}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
           ],
@@ -607,7 +612,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
         {
           and: [
-            {tags: {inq: [q.replace(/%23/gi, '').trim()]}},
+            {tags: {inq: [hashtag]}},
             {createdBy: this.currentUser[securityId]},
           ],
         },
