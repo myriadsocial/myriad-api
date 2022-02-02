@@ -140,6 +140,10 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
           if (methodName === MethodType.DELETEBYID) {
             userId = friend.requestorId;
 
+            if (friend.status === FriendStatusType.PENDING) {
+              userId = friend.requesteeId;
+            }
+
             invocationCtx.args[1] = friend;
           } else {
             userId = friend.requesteeId;
