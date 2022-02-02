@@ -13,7 +13,6 @@ export class ExperienceController {
     protected experienceRepository: ExperienceRepository,
   ) {}
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/experiences')
   @response(200, {
