@@ -47,7 +47,6 @@ export class PeopleController {
     return this.peopleRepository.find(filter);
   }
 
-  @authenticate.skip()
   @get('/people/search')
   @response(200, {
     description: 'Array of People model instance',
