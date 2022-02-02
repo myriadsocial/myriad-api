@@ -18,7 +18,7 @@ import {FriendService} from './friend.service';
 export class ExperienceService {
   constructor(
     @repository(UserExperienceRepository)
-    protected userExperienceRepository: UserExperienceRepository,
+    public userExperienceRepository: UserExperienceRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
     @repository(UserRepository)

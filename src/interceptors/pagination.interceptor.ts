@@ -240,7 +240,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               }
             }
 
-            filter.where = await this.getPostByQuery(postQuery);
+            filter.where = await this.getPostByQuery(postQuery.trim());
 
             break;
           }
@@ -365,9 +365,20 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           );
 
           if (request.query.experienceId) {
-            await this.userRepository.updateById(this.currentUser[securityId], {
-              onTimeline: request.query.experienceId.toString(),
-            });
+            const {count} =
+              await this.experienceService.userExperienceRepository.count({
+                userId: this.currentUser[securityId],
+                experienceId: request.query.experienceId.toString(),
+              });
+
+            if (count === 1) {
+              await this.userRepository.updateById(
+                this.currentUser[securityId],
+                {
+                  onTimeline: request.query.experienceId.toString(),
+                },
+              );
+            }
           }
         }
 
@@ -580,6 +591,24 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             {tags: {inq: [q.replace(/%23/gi, '').trim()]}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {text: {regexp: regexTopic}},
+            {createdBy: this.currentUser[securityId]},
+          ],
+        },
+        {
+          and: [
+            {title: {regexp: regexTopic}},
+            {createdBy: this.currentUser[securityId]},
+          ],
+        },
+        {
+          and: [
+            {tags: {inq: [q.replace(/%23/gi, '').trim()]}},
+            {createdBy: this.currentUser[securityId]},
           ],
         },
       ],
