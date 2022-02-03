@@ -560,7 +560,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       .filter(user => approvedFriendIds.includes(user.id))
       .map(e => e.id);
     const blockedUserIds = blockedFriendIds.filter(
-      userId => !friendUserIds.includes(userId),
+      userId => !approvedFriendIds.includes(userId),
     );
     const publicUserIds = users
       .filter(user => !approvedFriendIds.includes(user.id))
