@@ -15,6 +15,7 @@ import {
   UserRepository,
 } from '../repositories';
 import {authenticate, AuthenticationBindings} from '@loopback/authentication';
+
 import {UserProfile, securityId} from '@loopback/security';
 
 @authenticate({strategy: 'jwt', options: {required: [PermissionKeys.ADMIN]}})
@@ -26,11 +27,10 @@ export class PeopleController {
     protected userRepository: UserRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
-    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    @inject(AuthenticationBindings.CURRENT_USER)
     protected currentUser: UserProfile,
   ) {}
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/people')
   @response(200, {
@@ -67,7 +67,6 @@ export class PeopleController {
     return this.getPeopleAndUser(q);
   }
 
-  @authenticate.skip()
   @get('/people/{id}')
   @response(200, {
     description: 'People model instance',
@@ -119,16 +118,17 @@ export class PeopleController {
       limit: 5,
     });
 
+    const requesteeIds = users.map(e => e.id);
     const blockedFriends = await this.friendRepository.find({
       where: {
         or: [
           {
             requestorId: this.currentUser[securityId],
-            requesteeId: {inq: users.map(e => e.id)},
+            requesteeId: {inq: requesteeIds},
             status: FriendStatusType.BLOCKED,
           },
           {
-            requestorId: {inq: users.map(e => e.id)},
+            requestorId: {inq: requesteeIds},
             requesteeId: this.currentUser[securityId],
             status: FriendStatusType.BLOCKED,
           },

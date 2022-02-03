@@ -9,14 +9,9 @@ import {
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {
-  ActivityLogType,
-  MethodType,
-  PermissionKeys,
-  ReferenceType,
-} from '../enums';
-import {Credential} from '../models';
-import {UserRepository} from '../repositories';
+import {ActivityLogType, MethodType, PermissionKeys, ReferenceType} from '../enums';
+import {Credential, Wallet} from '../models';
+import {UserRepository, WalletRepository} from '../repositories';
 import {ActivityLogService, CurrencyService, FriendService} from '../services';
 import {numberToHex} from '@polkadot/util';
 import {signatureVerify} from '@polkadot/util-crypto';
@@ -37,6 +32,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     protected activityLogService: ActivityLogService,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
     @service(FriendService)
@@ -76,19 +73,26 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
-      const {id, name, username} = invocationCtx.args[0];
-      const user = await this.userRepository.findOne({
+      const {name, username, ...wallet} = invocationCtx.args[0];
+      const found = await this.walletRepository.findOne({
         where: {
-          or: [{id}, {username}],
+          id: wallet.walletAddress,
         },
       });
 
-      if (user) throw new HttpErrors.UnprocessableEntity('User already exists');
+      if (found) throw new HttpErrors.UnprocessableEntity('User already exists');
 
       this.validateUsername(username);
 
       invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
         name: name.substring(0, 22),
+      });
+      invocationCtx.args[1] = new Wallet({
+        id: wallet.walletAddress,
+        name: wallet.walletName,
+        type: wallet.walletType,
+        platform: wallet.walletPlatform,
+        primary: true,
       });
 
       return;
@@ -111,7 +115,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         throw new Error('Invalid user!');
       }
 
-      const user = await this.userRepository.findById(publicAddress);
+      const user = await this.walletRepository.user(publicAddress);
 
       if (user.nonce !== nonce) {
         throw new Error('Invalid user!');
@@ -142,6 +146,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         username: user.username,
         createdAt: user.createdAt,
         permissions: user.permissions,
+        walletAddress: publicAddress,
       };
 
       invocationCtx.args[0].data = userProfile;
@@ -159,13 +164,15 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
+      const wallet = invocationCtx.args[1];
       Promise.allSettled([
         this.userRepository.accountSetting(result.id).create({}),
         this.userRepository.notificationSetting(result.id).create({}),
         this.userRepository.languageSetting(result.id).create({}),
+        this.userRepository.wallets(result.id).create(wallet),
         this.currencyService.sendMyriadReward(result.id),
-        this.friendService.defaultFriend(result.id),
         this.currencyService.defaultCurrency(result.id),
+        this.friendService.defaultFriend(result.id),
         this.activityLogService.createLog(
           ActivityLogType.NEWUSER,
           result.id,
@@ -175,11 +182,11 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       ]) as Promise<AnyObject>;
     } else {
       // Generate random nonce after login
-      const {publicAddress} = invocationCtx.args[0];
+      const {id} = invocationCtx.args[0].data;
       const ng = new NonceGenerator();
       const newNonce = ng.generate();
 
-      await this.userRepository.updateById(publicAddress, {nonce: newNonce});
+      await this.userRepository.updateById(id, {nonce: newNonce});
     }
   }
 

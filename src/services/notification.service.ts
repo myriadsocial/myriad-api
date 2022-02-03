@@ -7,12 +7,12 @@ import {
   ReferenceType,
   ReportStatusType,
 } from '../enums';
-import {ExtendedPeople} from '../interfaces';
 import {
   Comment,
   MentionUser,
   Notification,
   PostWithRelations,
+  People,
   Transaction,
   UserSocialMedia,
   Vote,
@@ -641,7 +641,7 @@ export class NotificationService {
 
   async sendConnectedSocialMedia(
     userSocialMedia: UserSocialMedia,
-    people: ExtendedPeople,
+    people: People,
   ) {
     const {userId, platform} = userSocialMedia;
 
