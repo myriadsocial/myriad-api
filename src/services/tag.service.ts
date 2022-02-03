@@ -97,13 +97,16 @@ export class TagService {
       userId,
       FriendStatusType.BLOCKED,
     );
+    const blockedUserIds = blockedFriendIds.filter(
+      id => !approvedFriendIds.includes(id),
+    );
 
     return {
       or: [
         {
           and: [
             {tags: {inq: trendingTopics}},
-            {createdBy: {nin: blockedFriendIds}},
+            {createdBy: {nin: blockedUserIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },

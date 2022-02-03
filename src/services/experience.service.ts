@@ -115,20 +115,23 @@ export class ExperienceService {
       },
     });
     const friendIds = friends.map(friend => friend.requesteeId);
+    const blockedUserIds = blockedFriendIds.filter(
+      id => !friendIds.includes(id),
+    );
 
     return {
       or: [
         {
           and: [
             {tags: {inq: tags}},
-            {createdBy: {nin: blockedFriendIds}},
+            {createdBy: {nin: blockedUserIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
           and: [
             {peopleId: {inq: personIds}},
-            {createdBy: {nin: blockedFriendIds}},
+            {createdBy: {nin: blockedUserIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },

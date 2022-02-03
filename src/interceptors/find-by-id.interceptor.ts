@@ -9,11 +9,16 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
-import {ControllerType, FriendStatusType, PlatformType} from '../enums';
+import {
+  AccountSettingType,
+  ControllerType,
+  FriendStatusType,
+  PlatformType,
+} from '../enums';
 import {People, Post, User} from '../models';
 import _ from 'lodash';
 import {PostService} from '../services';
-import {FriendRepository} from '../repositories';
+import {AccountSettingRepository, FriendRepository} from '../repositories';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
 
@@ -26,6 +31,8 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${FindByIdInterceptor.name}`;
 
   constructor(
+    @repository(AccountSettingRepository)
+    protected accountSettingRepository: AccountSettingRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
     @service(PostService)
@@ -95,10 +102,24 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.COMMENT: {
-        if (!result.deletedAt) return result;
-        return Object.assign(result, {
-          text: '[comment removed]',
+        if (result.deletedAt) result.text = '[comment removed]';
+        const accountSetting = await this.accountSettingRepository.findOne({
+          where: {
+            userId: result.userId,
+          },
         });
+        if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE) {
+          const friend = await this.friendRepository.findOne({
+            where: {
+              requestorId: this.currentUser[securityId],
+              requesteeId: result.userId,
+              status: FriendStatusType.APPROVED,
+            },
+          });
+
+          if (!friend) result.text = '[This comment is from a private account]';
+        }
+        return result;
       }
 
       case ControllerType.EXPERIENCE: {

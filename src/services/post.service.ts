@@ -9,11 +9,17 @@ import {
   FriendRepository,
   VoteRepository,
   DraftPostRepository,
+  AccountSettingRepository,
 } from '../repositories';
 import {injectable, BindingScope, service, inject} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
-import {FriendStatusType, PlatformType, VisibilityType} from '../enums';
+import {
+  AccountSettingType,
+  FriendStatusType,
+  PlatformType,
+  VisibilityType,
+} from '../enums';
 import {MetricService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import _ from 'lodash';
@@ -39,6 +45,8 @@ export class PostService {
     protected friendRepository: FriendRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
+    @repository(AccountSettingRepository)
+    protected accountSettingRepository: AccountSettingRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -108,7 +116,7 @@ export class PostService {
     if (post.deletedAt) post.text = '[post removed]';
     if (post.platform === PlatformType.MYRIAD) return post;
     if (post.platform === PlatformType.REDDIT) {
-      post.title = post.title.substring(1, post.text.length - 1);
+      post.title = post.title.substring(1, post.title.length - 1);
     }
 
     post.text = post.text.substring(1, post.text.length - 1);
@@ -263,6 +271,26 @@ export class PostService {
       case VisibilityType.PRIVATE: {
         if (this.currentUser[securityId] === creator) return post;
         throw new HttpErrors.Forbidden('Restricted post!');
+      }
+
+      case VisibilityType.PUBLIC: {
+        const accountSetting = await this.accountSettingRepository.findOne({
+          where: {userId: post.createdBy},
+        });
+        if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE) {
+          const friend = await this.friendRepository.findOne({
+            where: {
+              requestorId: this.currentUser[securityId],
+              requesteeId: post.createdBy,
+              status: FriendStatusType.APPROVED,
+            },
+          });
+          if (!friend) {
+            throw new HttpErrors.Forbidden('Restricted post!');
+          }
+        }
+
+        return post;
       }
 
       default:

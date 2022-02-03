@@ -187,6 +187,7 @@ export async function givenRepositories(testdb: any) {
     commentRepository,
     friendRepository,
     voteRepository,
+    accountSettingRepository,
     metricService,
     currentUser,
   );
