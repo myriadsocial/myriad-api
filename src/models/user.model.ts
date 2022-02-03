@@ -20,7 +20,7 @@ import {People} from './people.model';
 import {UserSocialMedia} from './user-social-media.model';
 import {ExperienceWithRelations} from './experience.model';
 import {LanguageSetting} from './language-setting.model';
-import {Wallet} from './wallet.model';
+import {Wallet, WalletWithRelations} from './wallet.model';
 import NonceGenerator from 'a-nonce-generator';
 
 @model({
@@ -219,6 +219,7 @@ export class User extends Entity {
 export interface UserRelations {
   // describe navigational properties here
   experience?: ExperienceWithRelations;
+  wallets?: WalletWithRelations;
 }
 
 export type UserWithRelations = User & UserRelations;
