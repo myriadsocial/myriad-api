@@ -384,36 +384,39 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
         // rename importers detail
         if (methodName === MethodType.GETIMPORTERS) {
-          result = await Promise.all(
-            result.map(async (e: PostWithRelations) => {
-              if (e.visibility === VisibilityType.PRIVATE) {
-                return Object.assign(e.user, {
-                  name: 'Unknown Myrian',
-                  username: 'Unknown Myrian',
-                });
-              }
-
-              if (e.visibility === VisibilityType.FRIEND) {
-                if (this.currentUser[securityId] === e.createdBy) return e.user;
-                const friend =
-                  await this.friendService.friendRepository.findOne({
-                    where: {
-                      requestorId: this.currentUser[securityId],
-                      requesteeId: e.createdBy,
-                    },
+          result = (
+            await Promise.all(
+              result.map(async (e: PostWithRelations) => {
+                if (e.visibility === VisibilityType.PRIVATE) {
+                  return Object.assign(e.user, {
+                    name: 'Unknown Myrian',
+                    username: 'Unknown Myrian',
                   });
+                }
 
-                if (friend) return e.user;
+                if (e.visibility === VisibilityType.FRIEND) {
+                  if (this.currentUser[securityId] === e.createdBy)
+                    return e.user;
+                  const friend =
+                    await this.friendService.friendRepository.findOne({
+                      where: {
+                        requestorId: this.currentUser[securityId],
+                        requesteeId: e.createdBy,
+                      },
+                    });
 
-                return Object.assign(e.user, {
-                  name: 'Unknown Myrian',
-                  username: 'Unknown Myrian',
-                });
-              }
+                  if (friend) return e.user;
 
-              return e.user;
-            }),
-          );
+                  return Object.assign(e.user, {
+                    name: 'Unknown Myrian',
+                    username: 'Unknown Myrian',
+                  });
+                }
+
+                return e.user;
+              }),
+            )
+          ).filter(e => e);
         }
         break;
       }
@@ -537,10 +540,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       .filter(user => !approvedFriendIds.includes(user.id))
       .map(e => e.id);
     const regexTopic = new RegExp(` ${q}"|"${q} |"${q}"| ${q} `, 'i');
-    const hashtag = q
-      .replace(/%23/gi, '')
-      .replace(new RegExp('#', 'gi'), '')
-      .trim();
+    const hashtag = q.replace(new RegExp('#', 'gi'), '').trim();
 
     return {
       or: [

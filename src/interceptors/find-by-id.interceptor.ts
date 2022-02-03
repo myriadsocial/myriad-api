@@ -124,8 +124,12 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
       case ControllerType.POST: {
         const post = await this.postService.restrictedPost(result as Post);
-        if (!post.deletedAt) return post;
-        return Object.assign(post, {
+        const postDetail = await this.postService.getPostImporterInfo(
+          post,
+          this.currentUser[securityId],
+        );
+        if (!post.deletedAt) return postDetail;
+        return Object.assign(postDetail, {
           text: '[post removed]',
         });
       }

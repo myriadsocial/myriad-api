@@ -214,10 +214,13 @@ export class SocialMediaService {
         : []
       : [];
 
+    let text: String = fullText;
     if (extendedEntities) {
       const medias = extendedEntities.media;
 
       for (const media of medias) {
+        text = text.replace(media.url, '');
+
         if (media.type === 'photo') {
           asset.images.push(media.media_url_https);
         } else {
@@ -233,26 +236,26 @@ export class SocialMediaService {
       }
     }
 
-    const urls = entities.urls.map((url: AnyObject) => url.expanded_url);
+    for (const entitity of entities.urls as AnyObject[]) {
+      const url = entitity.url;
+      const expandedURL = entitity.expanded_url;
 
-    let embedded = null;
-
-    if (urls.length > 0) {
-      try {
-        validateURL(urls[0]);
-        embedded = await getOpenGraph(urls[0]);
-      } catch {
-        // ignore
-      }
+      text = text.replace(url, expandedURL);
     }
 
-    let text: String = fullText;
-    if (entities?.media?.length > 0) {
-      const medias = entities.media;
+    let embedded = null;
+    const embeddedURL = entities?.urls[0]?.expanded_url;
 
-      for (const media of medias) {
-        const key = media.url;
-        text = text.replace(key, '');
+    if (embeddedURL && asset.images.length === 0 && asset.videos.length === 0) {
+      try {
+        validateURL(embeddedURL);
+        embedded = await getOpenGraph(embeddedURL);
+        if (!embedded.url) embedded.url = embeddedURL;
+        if (embedded) {
+          text = text.replace(embeddedURL, '');
+        }
+      } catch {
+        // ignore
       }
     }
 
