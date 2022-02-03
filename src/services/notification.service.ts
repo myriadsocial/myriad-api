@@ -380,18 +380,20 @@ export class NotificationService {
     const title = 'New Mention';
     const body = this.currentUser.name + ' ' + notification.message;
 
-    const userIds = mentions
-      .filter(mention => mention.id !== this.currentUser[securityId])
-      .filter(async user => {
-        const mentionActive = await this.checkNotificationSetting(
-          user.id,
-          NotificationType.POST_MENTION,
-        );
+    const users = mentions.filter(
+      mention => mention.id !== this.currentUser[securityId],
+    );
 
-        if (!mentionActive) return false;
-        return true;
-      })
-      .map(user => user.id);
+    const userIds = [];
+
+    for (const user of users) {
+      const mentionActive = await this.checkNotificationSetting(
+        user.id,
+        NotificationType.POST_MENTION,
+      );
+
+      if (mentionActive) userIds.push(user.id);
+    }
 
     await this.sendNotificationToMultipleUsers(
       notification,
@@ -588,6 +590,7 @@ export class NotificationService {
     title?: string,
     body?: string,
   ): Promise<void> {
+    if (userIds.length === 0) return;
     const notifications = userIds.map(id => {
       const updatedNotification = {
         ...notification,
