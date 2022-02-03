@@ -274,8 +274,9 @@ export class PostService {
       }
 
       case VisibilityType.PUBLIC: {
+        if (this.currentUser[securityId] === creator) return post;
         const accountSetting = await this.accountSettingRepository.findOne({
-          where: {userId: post.createdBy},
+          where: {userId: creator},
         });
         if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE) {
           const friend = await this.friendRepository.findOne({
