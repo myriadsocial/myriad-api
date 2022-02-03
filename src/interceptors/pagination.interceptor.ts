@@ -12,6 +12,7 @@ import {
 import {AnyObject, Where, repository, Filter} from '@loopback/repository';
 import {HttpErrors, RestBindings, Request} from '@loopback/rest';
 import {
+  AccountSettingType,
   ControllerType,
   FriendStatusType,
   MethodType,
@@ -37,7 +38,7 @@ import {
   TagService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
-import {UserRepository} from '../repositories';
+import {AccountSettingRepository, UserRepository} from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
 
@@ -50,6 +51,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${PaginationInterceptor.name}`;
 
   constructor(
+    @repository(AccountSettingRepository)
+    protected accountSettingRepository: AccountSettingRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @service(MetricService)
@@ -447,10 +450,30 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       // Changed comment text to [comment removed] when comment is deleted
       case ControllerType.COMMENT: {
-        result = result.map((comment: Comment) => {
-          if (comment.deletedAt) comment.text = '[comment removed]';
-          return comment;
-        });
+        result = await Promise.all(
+          result.map(async (comment: Comment) => {
+            if (comment.deletedAt) comment.text = '[comment removed]';
+            const accountSetting = await this.accountSettingRepository.findOne({
+              where: {
+                userId: comment.userId,
+              },
+            });
+            if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE) {
+              const friend = await this.friendService.friendRepository.findOne({
+                where: {
+                  requestorId: this.currentUser[securityId],
+                  requesteeId: comment.userId,
+                  status: FriendStatusType.APPROVED,
+                },
+              });
+
+              if (!friend)
+                comment.text = '[This comment is from a private account]';
+            }
+
+            return comment;
+          }),
+        );
 
         break;
       }
@@ -536,6 +559,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const friendUserIds = users
       .filter(user => approvedFriendIds.includes(user.id))
       .map(e => e.id);
+    const blockedUserIds = blockedFriendIds.filter(
+      userId => !friendUserIds.includes(userId),
+    );
     const publicUserIds = users
       .filter(user => !approvedFriendIds.includes(user.id))
       .map(e => e.id);
@@ -560,21 +586,21 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           and: [
             {text: {regexp: regexTopic}},
             {visibility: VisibilityType.PUBLIC},
-            {createdBy: {nin: blockedFriendIds}},
+            {createdBy: {nin: blockedUserIds}},
           ],
         },
         {
           and: [
             {title: {regexp: regexTopic}},
             {visibility: VisibilityType.PUBLIC},
-            {createdBy: {nin: blockedFriendIds}},
+            {createdBy: {nin: blockedUserIds}},
           ],
         },
         {
           and: [
             {tags: {inq: [hashtag]}},
             {visibility: VisibilityType.PUBLIC},
-            {createdBy: {nin: blockedFriendIds}},
+            {createdBy: {nin: blockedUserIds}},
           ],
         },
         {
@@ -630,12 +656,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       FriendStatusType.APPROVED,
     );
     const approvedFriendIds = [...friendIds, this.currentUser[securityId]];
+    const blockedUserIds = blockedFriendIds.filter(
+      userId => !approvedFriendIds.includes(userId),
+    );
 
     return {
       or: [
         {
           and: [
-            {createdBy: {nin: blockedFriendIds}},
+            {createdBy: {nin: blockedUserIds}},
             {tags: {inq: [topic.toLowerCase()]}},
             {visibility: VisibilityType.PUBLIC},
           ],

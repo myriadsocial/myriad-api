@@ -9,6 +9,7 @@ import {PostController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {Post} from '../../models';
 import {
+  AccountSettingRepository,
   CommentRepository,
   DraftPostRepository,
   FriendRepository,
@@ -21,6 +22,7 @@ import {givenMyriadPost} from '../helpers';
 import {securityId} from '@loopback/security';
 
 describe('PostController', () => {
+  let accountSettingRepository: StubbedInstanceWithSinonAccessor<AccountSettingRepository>;
   let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
   let draftPostRepository: StubbedInstanceWithSinonAccessor<DraftPostRepository>;
   let commentRepository: StubbedInstanceWithSinonAccessor<CommentRepository>;
@@ -84,6 +86,7 @@ describe('PostController', () => {
   });
 
   function resetRepositories() {
+    accountSettingRepository = createStubInstance(AccountSettingRepository);
     postRepository = createStubInstance(PostRepository);
     draftPostRepository = createStubInstance(DraftPostRepository);
     commentRepository = createStubInstance(CommentRepository);
@@ -115,6 +118,7 @@ describe('PostController', () => {
       commentRepository,
       friendRepository,
       voteRepository,
+      accountSettingRepository,
       metricService,
       {[securityId]: ''},
     );
