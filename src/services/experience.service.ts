@@ -77,16 +77,6 @@ export class ExperienceService {
       // ignore
     }
 
-    if (experience?.users) {
-      experience.users = experience.users.filter(user => {
-        const accountPrivacy = user?.accountSetting.accountPrivacy;
-        const privateSetting = AccountSettingType.PRIVATE;
-
-        if (accountPrivacy === privateSetting) return false;
-        return true;
-      });
-    }
-
     return experience;
   }
 
@@ -98,11 +88,11 @@ export class ExperienceService {
 
     if (!experience) return;
 
+    const userIds: string[] = [];
     const tags = experience.tags;
     const personIds = experience.people
       .filter((e: People) => e.platform !== PlatformType.MYRIAD)
       .map(e => e.id);
-    const userIds = (experience.users ?? []).map(e => e.id);
     const blockedFriendIds = await this.friendService.getFriendIds(
       userId,
       FriendStatusType.BLOCKED,
@@ -110,7 +100,7 @@ export class ExperienceService {
     const friends = await this.friendService.friendRepository.find({
       where: {
         requestorId: userId,
-        requesteeId: {inq: userIds},
+        requesteeId: {inq: (experience.users ?? []).map(e => e.id)},
         status: FriendStatusType.APPROVED,
       },
     });
@@ -118,6 +108,20 @@ export class ExperienceService {
     const blockedUserIds = blockedFriendIds.filter(
       id => !friendIds.includes(id),
     );
+
+    if (experience?.users) {
+      for (const user of experience.users) {
+        const accountPrivacy = user?.accountSetting.accountPrivacy;
+        const privateSetting = AccountSettingType.PRIVATE;
+
+        if (accountPrivacy === privateSetting) {
+          const found = friendIds.find(id => id === user.id);
+          if (found) userIds.push(user.id);
+        } else {
+          userIds.push(user.id);
+        }
+      }
+    }
 
     return {
       or: [

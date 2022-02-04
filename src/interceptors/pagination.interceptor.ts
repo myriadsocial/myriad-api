@@ -453,6 +453,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         result = await Promise.all(
           result.map(async (comment: Comment) => {
             if (comment.deletedAt) comment.text = '[comment removed]';
+            if (this.currentUser[securityId] === comment.userId) return comment;
             const accountSetting = await this.accountSettingRepository.findOne({
               where: {
                 userId: comment.userId,
@@ -533,16 +534,19 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       FriendStatusType.APPROVED,
     );
     const approvedFriendIds = [...friendIds, this.currentUser[securityId]];
+    const blockedUserIds = blockedFriendIds.filter(
+      userId => !approvedFriendIds.includes(userId),
+    );
 
     const pattern = new RegExp(q, 'i');
     const users = await this.userRepository.find({
       where: {
         or: [
           {
-            and: [{name: {regexp: pattern}}, {id: {nin: blockedFriendIds}}],
+            and: [{name: {regexp: pattern}}, {id: {nin: blockedUserIds}}],
           },
           {
-            and: [{username: {regexp: pattern}}, {id: {nin: blockedFriendIds}}],
+            and: [{username: {regexp: pattern}}, {id: {nin: blockedUserIds}}],
           },
           {
             and: [
@@ -559,9 +563,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const friendUserIds = users
       .filter(user => approvedFriendIds.includes(user.id))
       .map(e => e.id);
-    const blockedUserIds = blockedFriendIds.filter(
-      userId => !approvedFriendIds.includes(userId),
-    );
     const publicUserIds = users
       .filter(user => !approvedFriendIds.includes(user.id))
       .map(e => e.id);

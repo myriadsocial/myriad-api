@@ -103,6 +103,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       case ControllerType.COMMENT: {
         if (result.deletedAt) result.text = '[comment removed]';
+        if (this.currentUser[securityId] === result.userId) return result;
         const accountSetting = await this.accountSettingRepository.findOne({
           where: {
             userId: result.userId,
