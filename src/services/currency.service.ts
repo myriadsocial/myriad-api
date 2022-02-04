@@ -405,26 +405,53 @@ export class CurrencyService {
         transfer = api.tx.currencies.transfer(to, {Token: id}, balance - txFee);
       }
 
-      const txHash = await transfer.signAndSend(from);
+      let txHash: string | null = null;
 
-      const transaction = await this.transactionRepository.create({
-        hash: txHash.toString(),
-        amount: balance / 10 ** decimal,
-        to: to,
-        from: getHexPublicKey(from),
-        currencyId: id,
+      await transfer.signAndSend(from, async ({status, events}) => {
+        if (status.isInBlock || status.isFinalized) {
+          let transactionStatus = null;
+
+          if (status.isInBlock) txHash = status.asInBlock.toString();
+
+          events
+            .filter(({event}) => event.section === 'system')
+            .forEach(event => {
+              const method = event.event.method;
+
+              if (method === 'ExtrinsicSuccess') {
+                transactionStatus = 'success';
+              }
+            });
+
+          if (status.isFinalized) {
+            if (transactionStatus === 'status' && txHash) {
+              try {
+                const transaction = await this.transactionRepository.create({
+                  hash: txHash.toString(),
+                  amount: balance / 10 ** decimal,
+                  to: to,
+                  from: getHexPublicKey(from),
+                  currencyId: id,
+                });
+
+                await this.activityLogService.createLog(
+                  ActivityLogType.CLAIMTIP,
+                  to,
+                  transaction.id ?? '',
+                  ReferenceType.TRANSACTION,
+                );
+
+                await this.notificationService.sendClaimTips(transaction);
+              } catch {
+                // ignore
+              }
+            }
+
+            await api.disconnect();
+          }
+        }
       });
-
-      await this.activityLogService.createLog(
-        ActivityLogType.CLAIMTIP,
-        to,
-        transaction.id ?? '',
-        ReferenceType.TRANSACTION,
-      );
-      await this.notificationService.sendClaimTips(transaction);
     }
-
-    await api.disconnect();
 
     return;
   }

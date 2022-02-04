@@ -8,7 +8,7 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
-import {ActivityLogType, ReferenceType} from '../enums';
+import {ActivityLogType, PlatformType, ReferenceType} from '../enums';
 import {UserRepository} from '../repositories';
 import {
   ActivityLogService,
@@ -100,6 +100,12 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     );
 
     const importerInfo = user ? [Object.assign(user, {name: 'You'})] : [];
+
+    if (result.platform === PlatformType.REDDIT) {
+      result.title = result.title.substring(1, result.title.length - 1);
+    }
+
+    result.text = result.text.substring(1, result.text.length - 1);
 
     return {
       ...result,

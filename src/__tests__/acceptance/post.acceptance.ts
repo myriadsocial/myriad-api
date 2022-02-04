@@ -428,6 +428,8 @@ describe('PostApplication', function () {
       expect(
         toJSON({
           ...result,
+          text: result.text?.substring(1, result.text.length - 1),
+          title: result.title?.substring(1, result.title.length - 1),
           importers: [Object.assign(user, {name: 'You'})],
         }),
       ).to.containDeep(toJSON(response.body));
