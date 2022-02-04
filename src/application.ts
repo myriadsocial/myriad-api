@@ -357,9 +357,9 @@ export class MyriadApiApplication extends BootMixin(
 
     const baseStorageURL: {[key: string]: string} = {
       development:
-        'https://storage.googleapis.com/myriad-substrate-development.appspot.com',
+        'https://storage.googleapis.com/myriad-social-development.appspot.com',
       staging:
-        'https://storage.googleapis.com/myriad-substrate-staging.appspot.com',
+        'https://storage.googleapis.com/myriad-social-staging.appspot.com',
       testnet:
         'https://storage.googleapis.com/myriad-social-testnet.appspot.com',
       mainnet:
