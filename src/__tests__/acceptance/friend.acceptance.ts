@@ -390,9 +390,13 @@ describe('FriendApplication', function () {
         id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a2m1d33a5fef48b915e8449ee6112',
       });
 
+      const requestee = await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a2m1d33a5fef48b915e8449ee6118',
+      });
+
       const friend = await givenFriendInstance(friendRepository, {
         requestorId: requestor.id,
-        requesteeId: user.id,
+        requesteeId: requestee.id,
         status: FriendStatusType.APPROVED,
       });
 
