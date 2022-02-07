@@ -75,6 +75,8 @@ import {DefaultCurrencyType, NotificationType, PlatformType} from './enums';
 import {Currency, Experience, People, Post, User} from './models';
 import {BcryptHasher} from './services/authentication/hash.password.service';
 import NonceGenerator from 'a-nonce-generator';
+import cliProgress from 'cli-progress';
+import colors from 'ansi-colors';
 
 export {ApplicationConfig};
 
@@ -225,8 +227,12 @@ export class MyriadApiApplication extends BootMixin(
     if (this.options.alter.indexOf('user') === -1) return;
     const {userRepository} = await this.repositories();
     const {count} = await userRepository.count();
+    const bar = this.initializeProgressBar('Alter user');
 
+    bar.start(count - 1, 0);
     for (let i = 0; i < count; i++) {
+      bar.update(i);
+
       const [user] = await userRepository.find({
         limit: 1,
         skip: i,
@@ -244,8 +250,7 @@ export class MyriadApiApplication extends BootMixin(
 
       await userRepository.languageSetting(user.id).create({});
     }
-
-    console.log('language settings have been successfully updated');
+    bar.stop();
 
     const collection = (
       userRepository.dataSource.connector as AnyObject
@@ -277,39 +282,70 @@ export class MyriadApiApplication extends BootMixin(
     if (this.options.alter.indexOf('post') === -1) return;
     const {postRepository} = await this.repositories();
     const {count} = await postRepository.count();
+    const bar = this.initializeProgressBar('Alter post');
 
+    bar.start(count - 1, 0);
     for (let i = 0; i < count; i++) {
+      bar.update(i);
+
       const [post] = await postRepository.find({
         limit: 1,
         skip: i,
-        where: {
-          platform: {
-            nin: [PlatformType.MYRIAD],
-          },
-        },
       });
 
-      if (!post) continue;
+      const {platform, text, title, keywords} = post;
+      const data: Partial<Post> = {};
 
-      const data: Partial<Post> = {
-        text: `"${post.text}"`,
-      };
+      if (platform !== PlatformType.MYRIAD) {
+        if (platform === PlatformType.REDDIT) {
+          data.title = title.replace(/^("+)/, '').replace(/("+)$/, '');
+        }
 
-      if (post.platform === PlatformType.REDDIT) {
-        data.title = `"${post.title}"`;
+        data.text = text.replace(/^("+)/, '').replace(/("+)$/, '');
+        data.keywords = data.text;
+      } else {
+        if (keywords) continue;
+
+        let myriadKeywords = '';
+
+        try {
+          const nodes = JSON.parse(text);
+          const renderElement = (node: AnyObject) => {
+            if (node.text) {
+              myriadKeywords += node.text + ' ';
+            }
+
+            node?.children?.forEach((child: AnyObject) => renderElement(child));
+          };
+
+          nodes.forEach((node: AnyObject) => renderElement(node));
+
+          data.keywords = myriadKeywords
+            .replace(/\,/gi, '')
+            .replace(/ +/gi, ' ')
+            .trim();
+        } catch {
+          data.keywords = text;
+        }
       }
 
       await postRepository.updateById(post.id, data);
-
-      console.log('posts have been successfully updated');
     }
+
+    bar.stop();
   }
 
   async doRemoveDocument(): Promise<void> {
     if (this.options.drop.indexOf('document') === -1) return;
-    const {currencyRepository, notificationRepository, userSocMedRepository} =
-      await this.repositories();
+    const {
+      currencyRepository,
+      notificationRepository,
+      userSocMedRepository,
+      userCurrencyRepository,
+    } = await this.repositories();
+    const bar = this.initializeProgressBar('Remove documents');
 
+    bar.start(4, 0);
     await notificationRepository.deleteAll({
       or: [
         {type: NotificationType.COMMENT_TIPS},
@@ -321,9 +357,7 @@ export class MyriadApiApplication extends BootMixin(
       ],
     });
 
-    console.log(
-      'notification related to tipping have been successfully removed',
-    );
+    bar.update(1);
 
     await currencyRepository.deleteAll();
     await currencyRepository.create({
@@ -337,11 +371,18 @@ export class MyriadApiApplication extends BootMixin(
       exchangeRate: false,
     });
 
-    console.log('currency have been successfully removed except MYRIA');
+    bar.update(2);
 
     await userSocMedRepository.deleteAll();
 
-    console.log('user social media have been successfully removed');
+    bar.update(3);
+
+    await userCurrencyRepository.deleteAll({
+      currencyId: {nin: [DefaultCurrencyType.MYRIA]},
+    });
+
+    bar.update(4);
+    bar.stop();
   }
 
   async doChangeBaseStorageURL(): Promise<void> {
@@ -372,7 +413,11 @@ export class MyriadApiApplication extends BootMixin(
     const oldStorageURL: string[] = [];
 
     const regexp = new RegExp(oldStorageURL.join('|'), 'i');
+    const bar = this.initializeProgressBar('Alter storage url');
 
+    bar.start(3, 0);
+
+    let index = 0;
     for (const property in baseStorageURL) {
       if (property !== environment) {
         await userRepository.dataSource.connector
@@ -454,9 +499,11 @@ export class MyriadApiApplication extends BootMixin(
             },
           ]);
       }
+      bar.update(index);
+      index++;
     }
 
-    console.log('image has been succesfully updated');
+    bar.stop();
   }
 
   async doUpdatePeopleWallet(): Promise<void> {
@@ -466,8 +513,12 @@ export class MyriadApiApplication extends BootMixin(
 
     const foundPeople = await peopleRepository.findOne();
     const hasher = new BcryptHasher();
+    const bar = this.initializeProgressBar('Alter people wallet');
 
+    bar.start(count - 1, 0);
     for (let i = 0; i < count; i++) {
+      bar.update(i);
+
       const [people] = await peopleRepository.find({
         limit: 1,
         skip: i,
@@ -489,7 +540,7 @@ export class MyriadApiApplication extends BootMixin(
       });
     }
 
-    console.log('people wallet address have been successfully updated');
+    bar.stop();
   }
 
   async updateMyriadIdInAllCollection(
@@ -518,16 +569,21 @@ export class MyriadApiApplication extends BootMixin(
       voteRepository,
     } = await this.repositories();
 
+    const bar = this.initializeProgressBar('Alter myriad public key');
+
+    bar.start(10, 0);
+
     const id = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
     const oldPublicKey = myriadOfficial.id;
 
     await userRepository.deleteById(oldPublicKey);
     await userRepository.create(Object.assign(myriadOfficial, {id}));
 
+    bar.update(1);
+
     let data: AnyObject = {userId: id};
     let where: AnyObject = {userId: oldPublicKey};
     await accountSettingRepository.updateAll(data, where);
-
     await activityLogRepository.updateAll(data, where);
     await commentRepository.updateAll(data, where);
     await experienceUserRepository.updateAll(data, where);
@@ -537,11 +593,15 @@ export class MyriadApiApplication extends BootMixin(
     await userSocMedRepository.updateAll(data, where);
     await voteRepository.updateAll(data, where);
 
+    bar.update(2);
+
     data = {referenceId: id};
     where = {referenceId: oldPublicKey};
     await activityLogRepository.updateAll(data, where);
     await notificationRepository.updateAll(data, where);
     await transactionRepository.updateAll(data, where);
+
+    bar.update(3);
 
     data = {createdBy: id};
     where = {createdBy: oldPublicKey};
@@ -549,33 +609,46 @@ export class MyriadApiApplication extends BootMixin(
     await experienceRepository.updateAll(data, where);
     await postRepository.updateAll(data, where);
 
+    bar.update(4);
+
     data = {requesteeId: id};
     where = {requesteeId: oldPublicKey};
     await friendRepository.updateAll(data, where);
 
+    bar.update(5);
+
     data = {requestorId: id};
     where = {requestorId: oldPublicKey};
     await friendRepository.updateAll(data, where);
+
+    bar.update(6);
 
     data = {from: id};
     where = {from: oldPublicKey};
     await notificationRepository.updateAll(data, where);
     await transactionRepository.updateAll(data, where);
 
+    bar.update(7);
+
     data = {to: id};
     where = {to: oldPublicKey};
     await notificationRepository.updateAll(data, where);
     await transactionRepository.updateAll(data, where);
 
+    bar.update(8);
+
     data = {reportedBy: id};
     where = {reportedBy: oldPublicKey};
     await userReportRepository.updateAll(data, where);
+
+    bar.update(9);
 
     data = {toUserId: id};
     where = {toUserId: oldPublicKey};
     await voteRepository.updateAll(data, where);
 
-    console.log('myriad public key have been successfully changed');
+    bar.update(10);
+    bar.stop();
   }
 
   async initialPeopleProfile(): Promise<void> {
@@ -747,5 +820,18 @@ export class MyriadApiApplication extends BootMixin(
       userSocMedRepository,
       voteRepository,
     };
+  }
+
+  initializeProgressBar(title: string) {
+    return new cliProgress.Bar({
+      format:
+        `${title} |` +
+        colors.cyan('{bar}') +
+        '| {percentage}% || ETA: {eta}s || {value}/{total} documents ',
+      barCompleteChar: '\u2588',
+      barIncompleteChar: '\u2591',
+      hideCursor: true,
+      synchronousUpdate: true,
+    });
   }
 }
