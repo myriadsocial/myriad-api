@@ -44,3 +44,51 @@
 - Result
 
   [Leaderboard Distribution](./leaderboard-distribution.txt)
+
+## 2. Social media post
+
+### Verify Social Media Snapshot
+
+- Download csv file
+
+  ```bash
+  https://github.com/myriadsocial/myriad-api/releases/download/1.0.0/Airdrop-Social-Media-Post-Snapshot.csv
+  ```
+
+  > NB: validate for post url
+
+- Download database
+
+  ```bash
+  https://github.com/myriadsocial/myriad-api/releases/download/1.0.0/01.19.2022_myriad-db-0.dump
+  ```
+
+- Restore database
+
+  ```bash
+  mongorestore -u=<username> -p=<password> -d=myriad --archive=./01.19.2022_myriad-db-0.dump
+  ```
+
+- Run query to get user data by username
+
+  ```bash
+  db.users.findOne({"username": "input username from csv file"})
+  ```
+
+  > NB: validate for username
+
+- Result
+
+  [Social Media Post Snapshot](./socmedpost-snapshot.md)
+
+### Distribution
+
+- Run command
+
+  ```bash
+  yarn install && yarn airdrop
+  ```
+
+- Result
+
+  [Social Media Post Distribution](./socmedpost-distribution.txt)
