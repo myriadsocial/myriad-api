@@ -293,26 +293,32 @@ export class MyriadApiApplication extends BootMixin(
         skip: i,
       });
 
-      const {platform, text, title, keywords} = post;
+      const {platform, text, title, rawText} = post;
       const data: Partial<Post> = {};
 
       if (platform !== PlatformType.MYRIAD) {
         if (platform === PlatformType.REDDIT) {
-          data.title = title.replace(/^("+)/, '').replace(/("+)$/, '');
+          data.title = title
+            .replace(/^("+)/, '')
+            .replace(/("+)$/, '')
+            .replace(new RegExp('&#x200B', 'ig'), '');
         }
 
-        data.text = text.replace(/^("+)/, '').replace(/("+)$/, '');
-        data.keywords = data.text;
+        data.rawText = text
+          .replace(/^("+)/, '')
+          .replace(/("+)$/, '')
+          .replace(new RegExp('&#x200B', 'ig'), '')
+          .replace(/#\w+/gi, '');
       } else {
-        if (keywords) continue;
+        if (rawText) continue;
 
-        let myriadKeywords = '';
+        let myriadRawText = '';
 
         try {
           const nodes = JSON.parse(text);
           const renderElement = (node: AnyObject) => {
             if (node.text) {
-              myriadKeywords += node.text + ' ';
+              myriadRawText += node.text + ' ';
             }
 
             node?.children?.forEach((child: AnyObject) => renderElement(child));
@@ -320,12 +326,12 @@ export class MyriadApiApplication extends BootMixin(
 
           nodes.forEach((node: AnyObject) => renderElement(node));
 
-          data.keywords = myriadKeywords
+          data.rawText = myriadRawText
             .replace(/\,/gi, '')
             .replace(/ +/gi, ' ')
             .trim();
         } catch {
-          data.keywords = text;
+          data.rawText = text;
         }
       }
 
