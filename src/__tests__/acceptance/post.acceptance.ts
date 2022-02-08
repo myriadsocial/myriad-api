@@ -375,11 +375,7 @@ describe('PostApplication', function () {
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
-      ...toJSON(
-        Object.assign(post, {
-          text: post.text.substring(1, post.text.length - 1),
-        }) as Post,
-      ),
+      ...toJSON(post as Post),
       totalImporter: 1,
       popularCount: 0,
       user: toJSON(user),
@@ -428,8 +424,8 @@ describe('PostApplication', function () {
       expect(
         toJSON({
           ...result,
-          text: result.text?.substring(1, result.text.length - 1),
-          title: result.title?.substring(1, result.title.length - 1),
+          text: result.text,
+          title: result.title,
           importers: [Object.assign(user, {name: 'You'})],
         }),
       ).to.containDeep(toJSON(response.body));
