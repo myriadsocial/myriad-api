@@ -36,7 +36,7 @@ import {UserWithRelations} from './';
         },
       },
     },
-    hiddenProperties: ['popularCount'],
+    hiddenProperties: ['popularCount', 'rawText'],
   },
 })
 export class Post extends Entity {
@@ -81,6 +81,12 @@ export class Post extends Entity {
     },
   })
   text?: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  rawText?: string;
 
   @property({
     type: 'string',
