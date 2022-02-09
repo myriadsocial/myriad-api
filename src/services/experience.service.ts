@@ -35,13 +35,6 @@ export class ExperienceService {
 
     try {
       if (experienceId) {
-        const {count} = await this.userExperienceRepository.count({
-          userId,
-          experienceId,
-        });
-
-        if (count === 0) return null;
-
         experience = await this.experienceRepository.findById(experienceId, {
           include: [
             {
