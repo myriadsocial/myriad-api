@@ -5,13 +5,12 @@ import {DraftPost, Post, PostWithRelations, User} from '../models';
 import {
   PeopleRepository,
   PostRepository,
-  CommentRepository,
   FriendRepository,
   VoteRepository,
   DraftPostRepository,
   AccountSettingRepository,
 } from '../repositories';
-import {injectable, BindingScope, service, inject} from '@loopback/core';
+import {injectable, BindingScope, inject} from '@loopback/core';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {config} from '../config';
 import {
@@ -20,7 +19,6 @@ import {
   PlatformType,
   VisibilityType,
 } from '../enums';
-import {MetricService} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import _ from 'lodash';
 import {PlatformPost} from '../models/platform-post.model';
@@ -39,16 +37,12 @@ export class PostService {
     public draftPostRepository: DraftPostRepository,
     @repository(PeopleRepository)
     protected peopleRepository: PeopleRepository,
-    @repository(CommentRepository)
-    protected commentRepository: CommentRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
-    @service(MetricService)
-    protected metricService: MetricService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
     protected currentUser: UserProfile,
   ) {}
@@ -84,16 +78,6 @@ export class PostService {
     );
 
     return Object.assign(newPost, {people: people});
-  }
-
-  async deletePost(id: string): Promise<void> {
-    const {createdBy} = await this.postRepository.findById(id);
-
-    await this.postRepository.deleteById(id);
-    await this.commentRepository.deleteAll({
-      postId: id,
-    });
-    await this.metricService.userMetric(createdBy);
   }
 
   async getPostImporterInfo(

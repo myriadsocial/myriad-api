@@ -15,6 +15,7 @@ import {PlatformType, VisibilityType} from '../enums';
 import {
   AuthorizeInterceptor,
   CreateInterceptor,
+  DeleteInterceptor,
   FindByIdInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
@@ -185,12 +186,13 @@ export class PostController {
     await this.postService.postRepository.updateById(id, updatedPost);
   }
 
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/posts/{id}')
   @response(204, {
     description: 'Post DELETE success',
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.postService.deletePost(id);
+    await this.postService.postRepository.deleteById(id);
   }
 
   async getSocialMediaPost(platformPost: PlatformPost): Promise<ExtendedPost> {
