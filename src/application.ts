@@ -62,7 +62,7 @@ import {
   UserSocialMediaRepository,
   VoteRepository,
 } from './repositories';
-import {PlatformType} from './enums';
+import {PermissionKeys, PlatformType} from './enums';
 import {Post} from './models';
 
 export {ApplicationConfig};
@@ -163,8 +163,27 @@ export class MyriadApiApplication extends BootMixin(
     await super.migrateSchema(options);
 
     if (options?.existingSchema === 'alter') {
-      return this.doMigratePost();
+      await this.doMigratePost();
+      await this.doMigrateUser();
+      return;
     }
+  }
+
+  async doMigrateUser(): Promise<void> {
+    if (this.options.alter.indexOf('user') === -1) return;
+    const {userRepository} = await this.repositories();
+
+    await userRepository.updateAll({permissions: [PermissionKeys.USER]});
+    await userRepository.updateAll(
+      {
+        permissions: [
+          PermissionKeys.MASTER,
+          PermissionKeys.ADMIN,
+          PermissionKeys.USER,
+        ],
+      },
+      {username: 'myriad_official'},
+    );
   }
 
   async doMigratePost(): Promise<void> {
