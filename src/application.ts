@@ -193,11 +193,17 @@ export class MyriadApiApplication extends BootMixin(
             .replace(new RegExp('&#x200B', 'ig'), '');
         }
 
-        data.rawText = text
+        const removedQuote = text
           .replace(/^("+)/, '')
           .replace(/("+)$/, '')
           .replace(new RegExp('&#x200B', 'ig'), '')
-          .replace(/#\w+/gi, '');
+          .trim();
+
+        data.text = removedQuote;
+        data.rawText = removedQuote
+          .replace(/#\w+/gi, '')
+          .replace(/ +/gi, ' ')
+          .trim();
       } else {
         if (rawText) continue;
 
