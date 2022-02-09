@@ -235,11 +235,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               return;
             if (postQuery.length > 1) {
               if (postQuery[0] === '@' || postQuery[0] === '#') {
-                postQuery =
-                  postQuery[0] +
-                  postQuery.replace(new RegExp('[^A-Za-z0-9]', 'gi'), '');
+                const re =
+                  postQuery[0] === '@'
+                    ? new RegExp('[^A-Za-z0-9 _]', 'gi')
+                    : new RegExp('[^A-Za-z0-9]', 'gi');
+                postQuery = postQuery[0] + postQuery.replace(re, '');
               } else {
-                postQuery.replace(new RegExp('[^A-Za-z0-9]', 'gi'), '');
+                postQuery.replace(new RegExp('[^A-Za-z0-9 ]', 'gi'), '');
               }
             }
 
@@ -525,88 +527,113 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   }
 
   async getPostByQuery(q: string): Promise<Where<Post>> {
-    const blockedFriendIds: string[] = await this.friendService.getFriendIds(
-      this.currentUser[securityId],
-      FriendStatusType.BLOCKED,
-    );
-    const friendIds = await this.friendService.getFriendIds(
+    const approvedFriendIds = await this.friendService.getFriendIds(
       this.currentUser[securityId],
       FriendStatusType.APPROVED,
     );
-    const approvedFriendIds = [...friendIds, this.currentUser[securityId]];
-    const blockedUserIds = blockedFriendIds.filter(
-      userId => !approvedFriendIds.includes(userId),
+    const blockedFriendIds = (
+      await this.friendService.getFriendIds(
+        this.currentUser[securityId],
+        FriendStatusType.BLOCKED,
+      )
+    ).filter(userId => !approvedFriendIds.includes(userId));
+    const filterPost = await this.initializeFilter(
+      approvedFriendIds,
+      blockedFriendIds,
+      q,
     );
 
-    const pattern = new RegExp(q, 'i');
-    const users = await this.userRepository.find({
-      where: {
-        or: [
-          {
-            and: [{name: {regexp: pattern}}, {id: {nin: blockedUserIds}}],
-          },
-          {
-            and: [{username: {regexp: pattern}}, {id: {nin: blockedUserIds}}],
-          },
-          {
-            and: [
-              {username: {regexp: pattern}},
-              {id: {inq: approvedFriendIds}},
-            ],
-          },
-          {
-            and: [{name: {regexp: pattern}}, {id: {inq: approvedFriendIds}}],
-          },
-        ],
-      },
-    });
-    const friendUserIds = users
-      .filter(user => approvedFriendIds.includes(user.id))
-      .map(e => e.id);
-    const publicUserIds = users
-      .filter(user => !approvedFriendIds.includes(user.id))
-      .map(e => e.id);
-    const regexTopic = new RegExp(` ${q}"|"${q} |"${q}"| ${q} `, 'i');
-    const hashtag = q.replace(new RegExp('#', 'gi'), '').trim();
+    if (q[0] === '#') {
+      const hashtag = q.replace('#', '').trim();
 
-    return {
-      or: [
+      filterPost.push(
         {
           and: [
-            {createdBy: {inq: publicUserIds}},
+            {tags: {inq: [hashtag]}},
             {visibility: VisibilityType.PUBLIC},
+            {createdBy: {nin: blockedFriendIds}},
           ],
         },
         {
           and: [
-            {createdBy: {inq: friendUserIds}},
+            {tags: {inq: [hashtag]}},
             {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
           ],
         },
         {
           and: [
-            {text: {regexp: regexTopic}},
+            {tags: {inq: [hashtag]}},
+            {createdBy: this.currentUser[securityId]},
+          ],
+        },
+      );
+    } else if (q[0] === '@') {
+      const mention = q.replace('@', '').trim();
+
+      filterPost.push(
+        {
+          and: [
+            {'mentions.name': {inq: [mention]}},
             {visibility: VisibilityType.PUBLIC},
-            {createdBy: {nin: blockedUserIds}},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {'mentions.name': {inq: [mention]}},
+            {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {'mentions.name': {inq: [mention]}},
+            {createdBy: this.currentUser[securityId]},
+          ],
+        },
+        {
+          and: [
+            {'mentions.username': {inq: [mention]}},
+            {visibility: VisibilityType.PUBLIC},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {'mentions.username': {inq: [mention]}},
+            {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {'mentions.username': {inq: [mention]}},
+            {createdBy: this.currentUser[securityId]},
+          ],
+        },
+      );
+    } else {
+      const regexTopic = new RegExp(`\\b${q}\\b`, 'i');
+
+      filterPost.push(
+        {
+          and: [
+            {rawText: {regexp: regexTopic}},
+            {visibility: VisibilityType.PUBLIC},
+            {createdBy: {nin: blockedFriendIds}},
           ],
         },
         {
           and: [
             {title: {regexp: regexTopic}},
             {visibility: VisibilityType.PUBLIC},
-            {createdBy: {nin: blockedUserIds}},
+            {createdBy: {nin: blockedFriendIds}},
           ],
         },
         {
           and: [
-            {tags: {inq: [hashtag]}},
-            {visibility: VisibilityType.PUBLIC},
-            {createdBy: {nin: blockedUserIds}},
-          ],
-        },
-        {
-          and: [
-            {text: {regexp: regexTopic}},
+            {rawText: {regexp: regexTopic}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
           ],
@@ -620,14 +647,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
         {
           and: [
-            {tags: {inq: [hashtag]}},
-            {visibility: VisibilityType.FRIEND},
-            {createdBy: {inq: approvedFriendIds}},
-          ],
-        },
-        {
-          and: [
-            {text: {regexp: regexTopic}},
+            {rawText: {regexp: regexTopic}},
             {createdBy: this.currentUser[securityId]},
           ],
         },
@@ -637,50 +657,45 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             {createdBy: this.currentUser[securityId]},
           ],
         },
-        {
-          and: [
-            {tags: {inq: [hashtag]}},
-            {createdBy: this.currentUser[securityId]},
-          ],
-        },
-      ],
-    } as Where<Post>;
+      );
+    }
+
+    return {or: filterPost} as Where<Post>;
   }
 
   async getTopicByQuery(topic: string): Promise<Where<Post>> {
-    const blockedFriendIds: string[] = await this.friendService.getFriendIds(
-      this.currentUser[securityId],
-      FriendStatusType.BLOCKED,
-    );
-    const friendIds = await this.friendService.getFriendIds(
+    const hashtag = topic.toLowerCase();
+    const approvedFriendIds = await this.friendService.getFriendIds(
       this.currentUser[securityId],
       FriendStatusType.APPROVED,
     );
-    const approvedFriendIds = [...friendIds, this.currentUser[securityId]];
-    const blockedUserIds = blockedFriendIds.filter(
-      userId => !approvedFriendIds.includes(userId),
-    );
+    const blockedFriendIds = (
+      await this.friendService.getFriendIds(
+        this.currentUser[securityId],
+        FriendStatusType.BLOCKED,
+      )
+    ).filter(userId => !approvedFriendIds.includes(userId));
 
     return {
       or: [
         {
           and: [
-            {createdBy: {nin: blockedUserIds}},
-            {tags: {inq: [topic.toLowerCase()]}},
+            {createdBy: {nin: blockedFriendIds}},
+            {tags: {inq: [hashtag]}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
           and: [
             {createdBy: {inq: approvedFriendIds}},
-            {tags: {inq: [topic.toLowerCase()]}},
+            {tags: {inq: [hashtag]}},
             {visibility: VisibilityType.FRIEND},
           ],
         },
         {
           and: [
             {createdBy: this.currentUser[securityId]},
-            {tags: {inq: [topic.toLowerCase()]}},
+            {tags: {inq: [hashtag]}},
           ],
         },
       ],
@@ -774,5 +789,53 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         } as Where<Post>;
       }
     }
+  }
+
+  async initializeFilter(
+    approvedFriendIds: string[],
+    blockedFriendIds: string[],
+    q: string,
+  ): Promise<AnyObject[]> {
+    const pattern = new RegExp(`\\b${q}\\b`, 'i');
+    const filterUser: AnyObject[] = [
+      {
+        and: [{name: {regexp: pattern}}, {id: {nin: blockedFriendIds}}],
+      },
+      {
+        and: [{name: {regexp: pattern}}, {id: {inq: approvedFriendIds}}],
+      },
+    ];
+    if (!q.match(/^#|^@/)) {
+      filterUser.push(
+        {
+          and: [{username: {regexp: pattern}}, {id: {nin: blockedFriendIds}}],
+        },
+        {
+          and: [{username: {regexp: pattern}}, {id: {inq: approvedFriendIds}}],
+        },
+      );
+    }
+    const users = await this.userRepository.find({where: {or: filterUser}});
+    const friendUserIds = users
+      .filter(user => approvedFriendIds.includes(user.id))
+      .map(e => e.id);
+    const publicUserIds = users
+      .filter(user => !approvedFriendIds.includes(user.id))
+      .map(e => e.id);
+
+    return [
+      {
+        and: [
+          {createdBy: {inq: publicUserIds}},
+          {visibility: VisibilityType.PUBLIC},
+        ],
+      },
+      {
+        and: [
+          {createdBy: {inq: friendUserIds}},
+          {visibility: VisibilityType.FRIEND},
+        ],
+      },
+    ];
   }
 }

@@ -18,6 +18,7 @@ import {PostStatus, VisibilityType} from '../enums';
         },
       },
     },
+    hiddenProperties: ['rawText'],
   },
 })
 export class DraftPost extends Entity {
@@ -44,6 +45,12 @@ export class DraftPost extends Entity {
     required: false,
   })
   text?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  rawText?: string;
 
   @property({
     type: 'object',

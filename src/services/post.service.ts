@@ -79,10 +79,8 @@ export class PostService {
       });
     }
 
-    delete post.platformUser;
-
     const newPost: PostWithRelations = await this.postRepository.create(
-      Object.assign(post, {peopleId: people.id}),
+      Object.assign(_.omit(post, ['platformUser']), {peopleId: people.id}),
     );
 
     return Object.assign(newPost, {people: people});
@@ -115,12 +113,6 @@ export class PostService {
     if (found) post.text = '[this post is unavailable]';
     if (post.deletedAt) post.text = '[post removed]';
     if (post.platform === PlatformType.MYRIAD) return post;
-    if (post.platform === PlatformType.REDDIT) {
-      post.title = post.title.substring(1, post.title.length - 1);
-    }
-
-    post.text = post.text.substring(1, post.text.length - 1);
-
     if (!post.user) return post;
     if (!userId) return post;
 
