@@ -146,6 +146,26 @@ export class MetricService {
     await this.userRepository.updateById(userId, {metric: userMetric});
   }
 
+  async countTags(tags: string[]): Promise<void> {
+    if (tags.length === 0) return;
+
+    for (const tag of tags) {
+      const {count} = await this.postRepository.count({
+        tags: {inq: [[tag], [tag.toUpperCase()], [tag.toLowerCase()]]},
+      });
+
+      const found = await this.tagRepository.findOne({
+        where: {id: {regexp: new RegExp(`\\b${tag}\\b`, 'i')}},
+      });
+
+      if (!found) continue;
+      await this.tagRepository.updateById(found.id, {
+        count,
+        updatedAt: new Date().toString(),
+      });
+    }
+  }
+
   async countData(
     controller: ControllerType,
     methodName: MethodType,
