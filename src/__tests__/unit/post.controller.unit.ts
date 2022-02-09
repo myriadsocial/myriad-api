@@ -10,14 +10,13 @@ import {PlatformType} from '../../enums';
 import {Post} from '../../models';
 import {
   AccountSettingRepository,
-  CommentRepository,
   DraftPostRepository,
   FriendRepository,
   PeopleRepository,
   PostRepository,
   VoteRepository,
 } from '../../repositories';
-import {MetricService, PostService, SocialMediaService} from '../../services';
+import {PostService, SocialMediaService} from '../../services';
 import {givenMyriadPost} from '../helpers';
 import {securityId} from '@loopback/security';
 
@@ -25,13 +24,11 @@ describe('PostController', () => {
   let accountSettingRepository: StubbedInstanceWithSinonAccessor<AccountSettingRepository>;
   let postRepository: StubbedInstanceWithSinonAccessor<PostRepository>;
   let draftPostRepository: StubbedInstanceWithSinonAccessor<DraftPostRepository>;
-  let commentRepository: StubbedInstanceWithSinonAccessor<CommentRepository>;
   let peopleRepository: StubbedInstanceWithSinonAccessor<PeopleRepository>;
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
   let voteRepository: StubbedInstanceWithSinonAccessor<VoteRepository>;
   let postService: PostService;
   let socialMediaService: SocialMediaService;
-  let metricService: MetricService;
   let controller: PostController;
   let aPostWithId: Post;
   let aChangedPost: Post;
@@ -89,7 +86,6 @@ describe('PostController', () => {
     accountSettingRepository = createStubInstance(AccountSettingRepository);
     postRepository = createStubInstance(PostRepository);
     draftPostRepository = createStubInstance(DraftPostRepository);
-    commentRepository = createStubInstance(CommentRepository);
     peopleRepository = createStubInstance(PeopleRepository);
     voteRepository = createStubInstance(VoteRepository);
     aPostWithId = givenMyriadPost({
@@ -115,11 +111,9 @@ describe('PostController', () => {
       postRepository,
       draftPostRepository,
       peopleRepository,
-      commentRepository,
       friendRepository,
       voteRepository,
       accountSettingRepository,
-      metricService,
       {[securityId]: ''},
     );
     controller = new PostController(socialMediaService, postService);

@@ -399,7 +399,7 @@ describe('PostApplication', function () {
       await postRepository.deleteAll();
 
       user.metric = {
-        totalPosts: 0,
+        totalPosts: 1,
         totalExperiences: 0,
         totalFriends: 0,
         totalKudos: 0,

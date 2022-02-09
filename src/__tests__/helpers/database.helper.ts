@@ -184,11 +184,9 @@ export async function givenRepositories(testdb: any) {
     postRepository,
     draftPostRepository,
     peopleRepository,
-    commentRepository,
     friendRepository,
     voteRepository,
     accountSettingRepository,
-    metricService,
     currentUser,
   );
 

@@ -26,19 +26,7 @@ export class TagService {
     const dateUtils = new DateUtils();
     for (const tag of [...new Set(tags)]) {
       const foundTag = await this.tagRepository.findOne({
-        where: {
-          or: [
-            {
-              id: tag,
-            },
-            {
-              id: tag.toLowerCase(),
-            },
-            {
-              id: tag.toUpperCase(),
-            },
-          ],
-        },
+        where: {id: {regexp: new RegExp('\\bhello\\b', 'i')}},
       });
 
       let count = 1;
@@ -49,17 +37,10 @@ export class TagService {
           count: count,
         });
       } else {
-        const today = new Date();
-
         if (!dateUtils.isToday(foundTag.updatedAt)) {
           ({count} = await this.postRepository.count({
             tags: {
               inq: [[foundTag.id]],
-            },
-            createdAt: {
-              gt: new Date(
-                today.getTime() - new Date(foundTag.updatedAt).getTime(),
-              ).toString(),
             },
           }));
         }

@@ -100,6 +100,12 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.POST: {
+        const post = await this.postRepository.findById(invocationCtx.args[0]);
+        invocationCtx.args[1] = post;
+        break;
+      }
+
       case ControllerType.USERCURRENCY: {
         if (
           this.currentUser.defaultCurrency === invocationCtx.args[0].currencyId
@@ -177,6 +183,14 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         );
         await this.metricService.userMetric(requesteeId);
         await this.metricService.userMetric(requestorId);
+        break;
+      }
+
+      case ControllerType.POST: {
+        const [id, post] = invocationCtx.args;
+        await this.commentRepository.deleteAll({postId: id});
+        await this.metricService.userMetric(post.reatedBy);
+        await this.metricService.countTags(post.tags);
         break;
       }
 
