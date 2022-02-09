@@ -6,7 +6,7 @@ import {
   hasOne,
   belongsTo,
 } from '@loopback/repository';
-import {DefaultCurrencyType} from '../enums';
+import {DefaultCurrencyType, PermissionKeys} from '../enums';
 import {UserMetric} from '../interfaces';
 import {ActivityLog} from './activity-log.model';
 import {Currency} from './currency.model';
@@ -34,7 +34,7 @@ import NonceGenerator from 'a-nonce-generator';
         },
       },
     },
-    hiddenProperties: ['nonce'],
+    hiddenProperties: ['nonce', 'permissions'],
   },
 })
 export class User extends Entity {
@@ -129,6 +129,13 @@ export class User extends Entity {
     },
   })
   nonce: number;
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    default: [PermissionKeys.USER],
+  })
+  permissions: PermissionKeys[];
 
   @property({
     type: 'date',
