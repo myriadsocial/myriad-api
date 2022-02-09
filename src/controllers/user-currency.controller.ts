@@ -12,7 +12,6 @@ import {
 } from '@loopback/rest';
 import {
   PaginationInterceptor,
-  AuthorizeInterceptor,
   CreateInterceptor,
   UpdateInterceptor,
   DeleteInterceptor,
@@ -27,7 +26,6 @@ interface UserCurrencyPriority {
 }
 
 @authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserCurrencyController {
   constructor(
     @repository(UserCurrencyRepository)

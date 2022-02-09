@@ -9,7 +9,7 @@ import {
   HttpErrors,
 } from '@loopback/rest';
 import {ReferenceType, ReportStatusType, ReportType} from '../enums';
-import {AuthorizeInterceptor, CreateInterceptor} from '../interceptors';
+import {CreateInterceptor} from '../interceptors';
 import {Report, ReportDetail} from '../models';
 import {
   ReportRepository,
@@ -23,7 +23,6 @@ import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserReportController {
   constructor(
     @repository(ReportRepository)

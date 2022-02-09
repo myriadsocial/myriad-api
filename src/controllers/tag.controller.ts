@@ -8,17 +8,13 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {
-  AuthorizeInterceptor,
-  CreateInterceptor,
-  PaginationInterceptor,
-} from '../interceptors';
+import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {Tag} from '../models';
 import {TagRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {PermissionKeys} from '../enums';
 
-@authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
+@authenticate({strategy: 'jwt', options: {required: [PermissionKeys.ADMIN]}})
 export class TagController {
   constructor(
     @repository(TagRepository)

@@ -12,11 +12,7 @@ import {
   patch,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {
-  AuthorizeInterceptor,
-  CreateInterceptor,
-  PaginationInterceptor,
-} from '../interceptors';
+import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {UserSocialMedia, UserVerification} from '../models';
 import {
   NotificationService,
@@ -26,7 +22,6 @@ import {
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserSocialMediaController {
   constructor(
     @service(SocialMediaService)

@@ -16,11 +16,8 @@ import {
 import {NotificationSetting} from '../models';
 import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
-import {intercept} from '@loopback/core';
-import {AuthorizeInterceptor} from '../interceptors';
 
 @authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserNotificationSettingController {
   constructor(
     @repository(UserRepository)

@@ -107,6 +107,7 @@ export class AuthenticationController {
               'fcmTokens',
               'onTimeline',
               'nonce',
+              'permissions',
               'createdAt',
               'updatedAt',
               'deletedAt',
