@@ -4,16 +4,13 @@ import {get, getModelSchemaRef, param} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {ActivityLog} from '../models';
 import {ActivityLogRepository} from '../repositories';
-import {authenticate} from '@loopback/authentication';
 
-@authenticate('jwt')
 export class ActivityLogController {
   constructor(
     @repository(ActivityLogRepository)
     protected activityLogRepository: ActivityLogRepository,
   ) {}
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/activity-logs', {
     responses: {

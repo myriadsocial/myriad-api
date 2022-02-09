@@ -11,7 +11,6 @@ import {
 } from '@loopback/rest';
 import {ReferenceType} from '../enums';
 import {
-  AuthorizeInterceptor,
   CreateInterceptor,
   DeleteInterceptor,
   FindByIdInterceptor,
@@ -23,7 +22,6 @@ import {CommentRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class CommentController {
   constructor(
     @repository(CommentRepository)

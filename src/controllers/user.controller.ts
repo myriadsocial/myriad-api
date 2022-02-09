@@ -9,7 +9,6 @@ import {
   response,
 } from '@loopback/rest';
 import {
-  AuthorizeInterceptor,
   FindByIdInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
@@ -19,7 +18,6 @@ import {UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class UserController {
   constructor(
     @repository(UserRepository)
@@ -101,6 +99,7 @@ export class UserController {
               'defaultCurrency',
               'onTimeline',
               'nonce',
+              'permissions',
               'createdAt',
               'deletedAt',
             ],

@@ -30,6 +30,7 @@ export class JWTService implements TokenService {
       name: userProfile.name,
       username: userProfile.username,
       createdAt: userProfile.createdAt,
+      permissions: userProfile.permissions,
     };
 
     try {
@@ -50,12 +51,13 @@ export class JWTService implements TokenService {
     try {
       const decryptedToken = await verifyAsync(token, this.jwtSecret);
       userProfile = Object.assign(
-        {[securityId]: '', id: '', name: '', username: ''},
+        {[securityId]: '', id: '', name: '', username: '', permissions: []},
         {
           [securityId]: decryptedToken.id,
           id: decryptedToken.id,
           name: decryptedToken.name,
           username: decryptedToken.username,
+          permissions: decryptedToken.permissions,
         },
       );
     } catch (err) {

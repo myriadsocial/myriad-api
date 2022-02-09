@@ -1,7 +1,12 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
-import {ReferenceType, ReportStatusType, ReportType} from '../../enums';
+import {
+  PermissionKeys,
+  ReferenceType,
+  ReportStatusType,
+  ReportType,
+} from '../../enums';
 import {Credential, Post, Report, User} from '../../models';
 import {
   PostRepository,
@@ -48,7 +53,9 @@ describe('ReportApplication', () => {
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository);
+    user = await givenUserInstance(userRepository, {
+      permissions: [PermissionKeys.ADMIN],
+    });
     address = givenAddress();
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
   });
@@ -75,7 +82,7 @@ describe('ReportApplication', () => {
       signature: u8aToHex(address.sign(numberToHex(nonce))),
     });
 
-    const res = await client.post('/login').send(credential).expect(200);
+    const res = await client.post('/admin/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -121,7 +128,7 @@ describe('ReportApplication', () => {
         .patch(`/reports/${persistedReport.id}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send(updatedReport)
-        .expect(401);
+        .expect(403);
     });
 
     it('updates the reports by ID', async () => {
@@ -145,7 +152,7 @@ describe('ReportApplication', () => {
         .del(`/reports/${persistedReport.id}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send()
-        .expect(401);
+        .expect(403);
     });
 
     it('deletes the report', async () => {

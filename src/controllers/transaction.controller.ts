@@ -8,18 +8,13 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {
-  AuthorizeInterceptor,
-  CreateInterceptor,
-  PaginationInterceptor,
-} from '../interceptors';
+import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {Transaction} from '../models';
 import {TransactionRepository} from '../repositories';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class TransactionController {
   constructor(
     @repository(TransactionRepository)

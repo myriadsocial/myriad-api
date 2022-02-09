@@ -11,7 +11,6 @@ import {
   response,
 } from '@loopback/rest';
 import {
-  AuthorizeInterceptor,
   CreateInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
@@ -22,7 +21,6 @@ import {FriendRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class FriendController {
   constructor(
     @repository(FriendRepository)

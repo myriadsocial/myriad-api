@@ -9,13 +9,19 @@ import {
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ActivityLogType, MethodType, ReferenceType} from '../enums';
+import {
+  ActivityLogType,
+  MethodType,
+  PermissionKeys,
+  ReferenceType,
+} from '../enums';
 import {Credential} from '../models';
 import {UserRepository} from '../repositories';
 import {ActivityLogService, CurrencyService, FriendService} from '../services';
 import {numberToHex} from '@polkadot/util';
 import {signatureVerify} from '@polkadot/util-crypto';
 import {securityId, UserProfile} from '@loopback/security';
+import {intersection} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
 
 /**
@@ -104,12 +110,31 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         throw new Error('Invalid user!');
       }
 
+      if (methodName === MethodType.ADMINLOGIN) {
+        const [permission] = intersection(user.permissions, [
+          PermissionKeys.ADMIN,
+        ]);
+
+        if (permission !== PermissionKeys.ADMIN) {
+          throw new HttpErrors.Forbidden('Invalid admin');
+        }
+      } else {
+        const [userPermission] = intersection(user.permissions, [
+          PermissionKeys.USER,
+        ]);
+
+        if (userPermission !== PermissionKeys.USER) {
+          throw new HttpErrors.Forbidden('Invalid user');
+        }
+      }
+
       const userProfile: UserProfile = {
         [securityId]: user.id!.toString(),
         id: user.id,
         name: user.name,
         username: user.username,
         createdAt: user.createdAt,
+        permissions: user.permissions,
       };
 
       invocationCtx.args[0].data = userProfile;

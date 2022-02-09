@@ -11,14 +11,14 @@ import {
 import {Report} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
-import {AuthorizeInterceptor, PaginationInterceptor} from '../interceptors';
+import {PaginationInterceptor} from '../interceptors';
 import {ReportInterceptor} from '../interceptors/report.interceptor';
 import {service} from '@loopback/core';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
+import {PermissionKeys} from '../enums';
 
-@authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
+@authenticate({strategy: 'jwt', options: {required: [PermissionKeys.ADMIN]}})
 export class ReportController {
   constructor(
     @repository(ReportRepository)

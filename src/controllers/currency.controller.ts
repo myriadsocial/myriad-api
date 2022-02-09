@@ -11,7 +11,6 @@ import {
   patch,
 } from '@loopback/rest';
 import {
-  AuthorizeInterceptor,
   CreateInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
@@ -19,9 +18,9 @@ import {
 import {Currency} from '../models';
 import {CurrencyRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {PermissionKeys} from '../enums';
 
-@authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
+@authenticate({strategy: 'jwt', options: {required: [PermissionKeys.ADMIN]}})
 export class CurrencyController {
   constructor(
     @repository(CurrencyRepository)

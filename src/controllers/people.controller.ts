@@ -1,8 +1,8 @@
 import {inject, intercept} from '@loopback/core';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
-import {PlatformType, FriendStatusType} from '../enums';
-import {AuthorizeInterceptor, PaginationInterceptor} from '../interceptors';
+import {PlatformType, FriendStatusType, PermissionKeys} from '../enums';
+import {PaginationInterceptor} from '../interceptors';
 import {People} from '../models';
 import {
   FriendRepository,
@@ -12,8 +12,7 @@ import {
 import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
 
-@authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
+@authenticate({strategy: 'jwt', options: {required: [PermissionKeys.ADMIN]}})
 export class PeopleController {
   constructor(
     @repository(PeopleRepository)

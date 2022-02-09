@@ -13,7 +13,6 @@ import {
 } from '@loopback/rest';
 import {PlatformType, VisibilityType} from '../enums';
 import {
-  AuthorizeInterceptor,
   CreateInterceptor,
   DeleteInterceptor,
   FindByIdInterceptor,
@@ -28,7 +27,6 @@ import {PostService, SocialMediaService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
-@intercept(AuthorizeInterceptor.BINDING_KEY)
 export class PostController {
   constructor(
     @service(SocialMediaService)
