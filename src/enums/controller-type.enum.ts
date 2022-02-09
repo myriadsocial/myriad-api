@@ -1,4 +1,5 @@
 export enum ControllerType {
+  ADMIN = 'AdminController',
   USER = 'UserController',
   POST = 'PostController',
   TRANSACTION = 'TransactionController',

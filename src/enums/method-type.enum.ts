@@ -1,4 +1,5 @@
 export enum MethodType {
+  ADMINLOGIN = 'adminLogin',
   FIND = 'find',
   FINDBYID = 'findById',
   CREATE = 'create',
