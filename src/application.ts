@@ -64,8 +64,6 @@ import {
 } from './repositories';
 import {PlatformType} from './enums';
 import {Post} from './models';
-import cliProgress from 'cli-progress';
-import colors from 'ansi-colors';
 
 export {ApplicationConfig};
 
@@ -295,6 +293,9 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   initializeProgressBar(title: string) {
+    const cliProgress = require('cli-progress');
+    const colors = require('ansi-colors');
+
     return new cliProgress.Bar({
       format:
         `${title} |` +
