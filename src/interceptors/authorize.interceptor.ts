@@ -1,6 +1,6 @@
 import {
+  globalInterceptor,
   inject,
-  injectable,
   Interceptor,
   InvocationContext,
   InvocationResult,
@@ -19,18 +19,28 @@ import {
   VoteRepository,
 } from '../repositories';
 import {UserProfile, securityId} from '@loopback/security';
-import {AuthenticationBindings} from '@loopback/authentication';
-import {ControllerType, FriendStatusType, MethodType} from '../enums';
-import {config} from '../config';
+import {
+  AuthenticationBindings,
+  AuthenticationMetadata,
+} from '@loopback/authentication';
+import {
+  ControllerType,
+  FriendStatusType,
+  MethodType,
+  PermissionKeys,
+} from '../enums';
 import {HttpErrors} from '@loopback/rest';
+import {RequiredPermissions} from '../interfaces';
+import {intersection} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
  */
-@injectable({tags: {key: AuthorizeInterceptor.BINDING_KEY}})
+// @injectable({tags: {key: AuthorizeInterceptor.BINDING_KEY}})
+@globalInterceptor('', {tags: {name: 'authorize'}})
 export class AuthorizeInterceptor implements Provider<Interceptor> {
-  static readonly BINDING_KEY = `interceptors.${AuthorizeInterceptor.name}`;
+  // static readonly BINDING_KEY = `interceptors.${AuthorizeInterceptor.name}`;
 
   constructor(
     @repository(CommentRepository)
@@ -49,6 +59,8 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
+    @inject(AuthenticationBindings.METADATA)
+    public metadata: AuthenticationMetadata[],
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
     protected currentUser: UserProfile,
   ) {}
@@ -72,6 +84,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
+    if (!this.metadata) return next();
     if (!this.selectMethod(invocationCtx)) return next();
     await this.authorize(invocationCtx);
 
@@ -120,11 +133,12 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.ADMIN:
       case ControllerType.CURRENCY:
       case ControllerType.TAG:
       case ControllerType.REPORT:
       case ControllerType.PEOPLE:
-        userId = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
+        userId = this.admin(controllerName);
         break;
 
       case ControllerType.FRIEND: {
@@ -237,5 +251,31 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     if (error) {
       throw new HttpErrors.Unauthorized('Unauthorized user!');
     }
+  }
+
+  admin(controllerName?: ControllerType): string {
+    const requiredPermissions =
+      (this.metadata[0].options as RequiredPermissions) ?? {};
+    const user = this.currentUser;
+    const result = intersection(
+      user.permissions,
+      requiredPermissions.required ?? [],
+    ).length;
+    if (
+      requiredPermissions.required !== undefined &&
+      result !== requiredPermissions.required.length
+    ) {
+      throw new HttpErrors.Forbidden('Invalid access');
+    }
+    if (controllerName === ControllerType.ADMIN) {
+      const found = user.permissions.find(
+        (permission: PermissionKeys) => permission === PermissionKeys.MASTER,
+      );
+      if (!found) {
+        throw new HttpErrors.Forbidden('Only master admin can create role');
+      }
+    }
+
+    return this.currentUser[securityId];
   }
 }
