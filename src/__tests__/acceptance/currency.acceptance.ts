@@ -17,6 +17,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
+import {PermissionKeys} from '../../enums';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('CurrencyApplication', function () {
@@ -42,7 +43,9 @@ describe('CurrencyApplication', function () {
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository);
+    user = await givenUserInstance(userRepository, {
+      permissions: [PermissionKeys.ADMIN],
+    });
     address = givenAddress();
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
   });
@@ -64,7 +67,7 @@ describe('CurrencyApplication', function () {
       signature: u8aToHex(address.sign(numberToHex(nonce))),
     });
 
-    const res = await client.post('/login').send(credential).expect(200);
+    const res = await client.post('/admin/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
@@ -119,7 +122,7 @@ describe('CurrencyApplication', function () {
       .post('/currencies')
       .set('Authorization', `Bearer ${accessToken}`)
       .send(currency)
-      .expect(401);
+      .expect(403);
   });
 
   context('when dealing with a single persisted currency', () => {
@@ -160,7 +163,7 @@ describe('CurrencyApplication', function () {
         .patch(`/currencies/${persistedCurrency.id}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send(updatedCurrency)
-        .expect(401);
+        .expect(403);
     });
 
     it('returns 404 when getting a currency that does not exist', () => {

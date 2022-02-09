@@ -14,6 +14,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
+import {PermissionKeys} from '../../enums';
 
 describe('TagApplication', function () {
   let app: MyriadApiApplication;
@@ -37,7 +38,9 @@ describe('TagApplication', function () {
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository);
+    user = await givenUserInstance(userRepository, {
+      permissions: [PermissionKeys.ADMIN],
+    });
     address = givenAddress();
   });
 
@@ -62,7 +65,7 @@ describe('TagApplication', function () {
       signature: u8aToHex(address.sign(numberToHex(nonce))),
     });
 
-    const res = await client.post('/login').send(credential).expect(200);
+    const res = await client.post('/admin/login').send(credential).expect(200);
     token = res.body.accessToken;
   });
 
