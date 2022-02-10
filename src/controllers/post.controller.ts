@@ -212,14 +212,14 @@ export class PostController {
     if (!socialTags) socialTags = [];
     if (!importedTags) importedTags = [];
 
-    const postTags = socialTags
-      .filter((tag: string) => {
-        return !importedTags
-          .map((newTag: string) => newTag.toLowerCase())
-          .includes(tag.toLowerCase());
-      })
-      .map((tag: string) => tag.toLowerCase());
+    const postTags = [...socialTags, ...importedTags].map(tag => {
+      return tag
+        .toLowerCase()
+        .split(/ +/gi)[0]
+        .replace(/[^A-Za-z0-9]/gi, '')
+        .trim();
+    });
 
-    return [...socialTags, ...postTags];
+    return [...new Set(postTags)];
   }
 }
