@@ -30,11 +30,7 @@ import {
   ActivityLogService,
   VoteService,
 } from './services';
-import {
-  UpdateExchangeRateJob,
-  UpdateTrendingTopicJob,
-  UpdatePeopleProfileJob,
-} from './jobs';
+import {UpdateExchangeRateJob, UpdatePeopleProfileJob} from './jobs';
 import {CronComponent} from '@loopback/cron';
 import * as Sentry from '@sentry/node';
 import multer from 'multer';
@@ -54,6 +50,7 @@ import {
   NotificationSettingRepository,
   PeopleRepository,
   PostRepository,
+  TagRepository,
   TransactionRepository,
   UserCurrencyRepository,
   UserExperienceRepository,
@@ -127,7 +124,6 @@ export class MyriadApiApplication extends BootMixin(
 
   registerJob() {
     this.add(createBindingFromClass(UpdateExchangeRateJob));
-    this.add(createBindingFromClass(UpdateTrendingTopicJob));
     this.add(createBindingFromClass(UpdatePeopleProfileJob));
   }
 
@@ -165,6 +161,7 @@ export class MyriadApiApplication extends BootMixin(
     if (options?.existingSchema === 'alter') {
       await this.doMigratePost();
       await this.doMigrateUser();
+      await this.doMigrateTag();
       return;
     }
   }
@@ -201,8 +198,18 @@ export class MyriadApiApplication extends BootMixin(
         skip: i,
       });
 
-      const {platform, text, title, rawText} = post;
+      const {platform, text, title, tags} = post;
       const data: Partial<Post> = {};
+
+      if (tags.length > 0) {
+        data.text = tags.map((tag: string) => {
+          return tag
+            .toLowerCase()
+            .replace(/ +/gi, '')
+            .replace(/[^A-Za-z0-9]/gi, '')
+            .trim();
+        });
+      }
 
       if (platform !== PlatformType.MYRIAD) {
         if (platform === PlatformType.REDDIT) {
@@ -224,8 +231,6 @@ export class MyriadApiApplication extends BootMixin(
           .replace(/ +/gi, ' ')
           .trim();
       } else {
-        if (rawText) continue;
-
         let myriadRawText = '';
 
         try {
@@ -255,6 +260,44 @@ export class MyriadApiApplication extends BootMixin(
     bar.stop();
   }
 
+  async doMigrateTag(): Promise<void> {
+    if (this.options.alter.indexOf('tag') === -1) return;
+    const {tagRepository} = await this.repositories();
+    const {count} = await tagRepository.count();
+    const bar = this.initializeProgressBar('Alter tag');
+
+    bar.start(count - 1, 0);
+    for (let i = 0; i < count; i++) {
+      bar.update(i);
+
+      const [tag] = await tagRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      if (!tag) continue;
+      if (!tag.id) continue;
+      if (!tag.id.match(/ +/gi) || !tag.id.match(/[^A-Za-z0-9]/gi)) continue;
+
+      const tagId = tag.id;
+      const newTag = Object.assign(tag, {
+        id: tag.id
+          .toLowerCase()
+          .replace(/ +/gi, '')
+          .replace(/[^A-Za-z0-9]/gi, '')
+          .trim(),
+      });
+
+      try {
+        await tagRepository.deleteById(tagId);
+        await tagRepository.create(newTag);
+      } catch {
+        // ignore
+      }
+    }
+    bar.stop();
+  }
+
   async repositories(): Promise<AnyObject> {
     const accountSettingRepository = await this.getRepository(
       AccountSettingRepository,
@@ -278,6 +321,7 @@ export class MyriadApiApplication extends BootMixin(
     );
     const peopleRepository = await this.getRepository(PeopleRepository);
     const postRepository = await this.getRepository(PostRepository);
+    const tagRepository = await this.getRepository(TagRepository);
     const transactionRepository = await this.getRepository(
       TransactionRepository,
     );
@@ -307,6 +351,7 @@ export class MyriadApiApplication extends BootMixin(
       notificationSettingRepository,
       peopleRepository,
       postRepository,
+      tagRepository,
       transactionRepository,
       userRepository,
       userCurrencyRepository,
