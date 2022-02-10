@@ -139,7 +139,13 @@ export class PostService {
     }
 
     if (draftPost.tags && draftPost.tags.length > 0) {
-      draftPost.tags = draftPost.tags.map(tag => tag.toLowerCase());
+      draftPost.tags = draftPost.tags.map(tag => {
+        return tag
+          .toLowerCase()
+          .split(/ +/gi)[0]
+          .replace(/[^A-Za-z0-9]/gi, '')
+          .trim();
+      });
     }
 
     const found = await this.draftPostRepository.findOne({

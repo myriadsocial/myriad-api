@@ -24,9 +24,9 @@ export class TagService {
 
   async createTags(tags: string[]): Promise<void> {
     const dateUtils = new DateUtils();
-    for (const tag of [...new Set(tags)]) {
+    for (const tag of tags) {
       const foundTag = await this.tagRepository.findOne({
-        where: {id: {regexp: new RegExp('\\bhello\\b', 'i')}},
+        where: {id: {regexp: new RegExp(`\\b${tag}\\b`, 'i')}},
       });
 
       let count = 1;

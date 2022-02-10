@@ -174,6 +174,18 @@ export class CreateInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.TAG: {
+        invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+          id: invocationCtx.args[0].id
+            .toLowerCase()
+            .split(/ +/gi)[0]
+            .replace(/[^A-Za-z0-9]/gi, '')
+            .trim(),
+        });
+
+        break;
+      }
+
       default:
         return;
     }
