@@ -202,7 +202,7 @@ export class MyriadApiApplication extends BootMixin(
       const data: Partial<Post> = {};
 
       if (tags.length > 0) {
-        data.text = tags.map((tag: string) => {
+        data.tags = tags.map((tag: string) => {
           return tag
             .toLowerCase()
             .replace(/ +/gi, '')
@@ -262,7 +262,7 @@ export class MyriadApiApplication extends BootMixin(
 
   async doMigrateTag(): Promise<void> {
     if (this.options.alter.indexOf('tag') === -1) return;
-    const {tagRepository} = await this.repositories();
+    const {postRepository, tagRepository} = await this.repositories();
     const {count} = await tagRepository.count();
     const bar = this.initializeProgressBar('Alter tag');
 
@@ -277,7 +277,6 @@ export class MyriadApiApplication extends BootMixin(
 
       if (!tag) continue;
       if (!tag.id) continue;
-      if (!tag.id.match(/ +/gi) || !tag.id.match(/[^A-Za-z0-9]/gi)) continue;
 
       const tagId = tag.id;
       const newTag = Object.assign(tag, {
@@ -290,7 +289,12 @@ export class MyriadApiApplication extends BootMixin(
 
       try {
         await tagRepository.deleteById(tagId);
-        await tagRepository.create(newTag);
+
+        const {count: countTag} = await postRepository.count({
+          tags: {inq: [[newTag.id]]},
+        });
+
+        await tagRepository.create(Object.assign(newTag, {count: countTag}));
       } catch {
         // ignore
       }
