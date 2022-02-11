@@ -60,7 +60,7 @@ import {
   VoteRepository,
 } from './repositories';
 import {PermissionKeys, PlatformType} from './enums';
-import {Post} from './models';
+import {Post, UserCurrency} from './models';
 
 export {ApplicationConfig};
 
@@ -162,6 +162,7 @@ export class MyriadApiApplication extends BootMixin(
       await this.doMigratePost();
       await this.doMigrateUser();
       await this.doMigrateTag();
+      await this.doMigrateUserCurrency();
       return;
     }
   }
@@ -222,14 +223,17 @@ export class MyriadApiApplication extends BootMixin(
         const removedQuote = text
           .replace(/^("+)/, '')
           .replace(/("+)$/, '')
-          .replace(new RegExp('&#x200B', 'ig'), '')
+          .replace(/&(amp;)*#x200B;*/, '')
           .trim();
-
-        data.text = removedQuote;
-        data.rawText = removedQuote
+        const socmedRawText = removedQuote
           .replace(/#\w+/gi, '')
+          .replace(/\n/gi, ' ')
           .replace(/ +/gi, ' ')
           .trim();
+        const rawText = data.title ?? '' + ' ' + socmedRawText;
+
+        data.text = removedQuote;
+        data.rawText = rawText.trim();
       } else {
         let myriadRawText = '';
 
@@ -298,6 +302,38 @@ export class MyriadApiApplication extends BootMixin(
       } catch {
         // ignore
       }
+    }
+    bar.stop();
+  }
+
+  async doMigrateUserCurrency(): Promise<void> {
+    if (this.options.alter.indexOf('currency') === -1) return;
+    const {userRepository, userCurrencyRepository} = await this.repositories();
+    const {count: countUser} = await userRepository.count();
+    const bar = this.initializeProgressBar('Alter user currency');
+
+    bar.start(countUser - 1, 0);
+    for (let i = 0; i < countUser; i++) {
+      bar.update(i);
+
+      const [user] = await userRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      const userCurrency = await userCurrencyRepository.find({
+        where: {
+          userId: user.id,
+        },
+      });
+
+      await Promise.all(
+        userCurrency.map(async (e: UserCurrency, index: number) => {
+          return userCurrencyRepository.updateById(e.id, {
+            priority: index + 1,
+          });
+        }),
+      );
     }
     bar.stop();
   }
