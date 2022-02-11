@@ -259,11 +259,17 @@ export class SocialMediaService {
       }
     }
 
+    const rawText = text
+      .replace(/#\w+/gi, '')
+      .replace(/\n/gi, ' ')
+      .replace(/ +/gi, ' ')
+      .trim();
+
     return {
       platform: PlatformType.TWITTER,
       originPostId: idStr,
-      text: `${text.trim()}`,
-      rawText: `${text.replace(/#\w+/gi, '').trim()}`,
+      text: text.trim(),
+      rawText: rawText,
       tags: twitterTags,
       originCreatedAt: new Date(createdAt).toString(),
       asset: asset,
@@ -368,13 +374,20 @@ export class SocialMediaService {
       throw new HttpErrors.UnprocessableEntity('User not found');
     }
 
+    const redditText = text.replace(/&(amp;)*#x200B;*/, '').trim();
+    const redditRawText = redditText
+      .replace(/\n/gi, ' ')
+      .replace(/ +/gi, ' ')
+      .trim();
+    const rawText = redditPost.title + ' ' + redditRawText;
+
     return {
       platform: PlatformType.REDDIT,
       originPostId: textId,
       originCreatedAt: new Date(redditPost.created_utc * 1000).toString(),
-      title: `${redditPost.title}`,
-      text: `${text.replace(new RegExp('&#x200B', 'ig'), '').trim()}`,
-      rawText: `${text.replace(new RegExp('&#x200B', 'ig'), '').trim()}`,
+      title: redditPost.title,
+      text: redditText.trim(),
+      rawText: rawText.trim(),
       url: `https://reddit.com/${textId}`,
       asset: asset,
       embeddedURL: embedded,

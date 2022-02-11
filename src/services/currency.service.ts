@@ -69,10 +69,18 @@ export class CurrencyService {
 
     try {
       await this.userRepository.currencies(userId).create(currency);
+      await this.userCurrencyRepository.updateAll(
+        {priority: 1},
+        {
+          userId: userId,
+          currencyId: DefaultCurrencyType.MYRIA,
+        },
+      );
     } catch {
       await this.userCurrencyRepository.create({
         userId: userId,
         currencyId: currency.id,
+        priority: 1,
       });
     }
   }
