@@ -35,7 +35,6 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
       where: {
         id: userProfile[securityId],
         username: userProfile.username,
-        createdAt: userProfile.createdAt,
       },
     });
 

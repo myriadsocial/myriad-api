@@ -214,21 +214,24 @@ export class CurrencyService {
           };
 
           const txFee = await this.getTransactionFee(api, paymentInfo);
+          const existensial =
+            api.consts.balances?.existentialDeposit.toBigInt();
+          const transferBalance = BigInt(balance - txFee);
 
-          if (balance - txFee < 0) continue;
+          if (transferBalance < existensial) continue;
 
           let transfer = null;
 
           if (native)
             transfer = api.tx.balances.transfer(
               to,
-              new BN((balance - txFee).toString()),
+              new BN(transferBalance.toString()),
             );
           else
             transfer = api.tx.currencies.transfer(
               to,
               {Token: id},
-              new BN((balance - txFee).toString()),
+              new BN(transferBalance.toString()),
             );
 
           let txHash: string | null = null;
@@ -403,14 +406,24 @@ export class CurrencyService {
       };
 
       const txFee = await this.getTransactionFee(api, paymentInfo);
+      const existensial = api.consts.balances?.existentialDeposit.toBigInt();
+      const transferBalance = BigInt(balance - txFee);
 
-      if (balance - txFee < 0) continue;
+      if (transferBalance < existensial) continue;
 
       let transfer;
 
-      if (native) transfer = api.tx.balances.transfer(to, balance - txFee);
+      if (native)
+        transfer = api.tx.balances.transfer(
+          to,
+          new BN(transferBalance.toString()),
+        );
       else {
-        transfer = api.tx.currencies.transfer(to, {Token: id}, balance - txFee);
+        transfer = api.tx.currencies.transfer(
+          to,
+          {Token: id},
+          new BN(transferBalance.toString()),
+        );
       }
 
       let txHash: string | null = null;
