@@ -626,13 +626,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
         {
           and: [
-            {title: {regexp: regexTopic}},
-            {visibility: VisibilityType.PUBLIC},
-            {createdBy: {nin: blockedFriendIds}},
-          ],
-        },
-        {
-          and: [
             {rawText: {regexp: regexTopic}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
@@ -640,20 +633,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
         {
           and: [
-            {title: {regexp: regexTopic}},
-            {visibility: VisibilityType.FRIEND},
-            {createdBy: {inq: approvedFriendIds}},
-          ],
-        },
-        {
-          and: [
             {rawText: {regexp: regexTopic}},
-            {createdBy: this.currentUser[securityId]},
-          ],
-        },
-        {
-          and: [
-            {title: {regexp: regexTopic}},
             {createdBy: this.currentUser[securityId]},
           ],
         },
