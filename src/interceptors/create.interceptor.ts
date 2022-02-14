@@ -122,6 +122,13 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.CURRENCY: {
         const data = invocationCtx.args[0];
+        const currencyId = data.id;
+        const found = await this.currencyService.currencyRepository.findOne({
+          where: {id: currencyId},
+        });
+
+        if (found)
+          throw new HttpErrors.UnprocessableEntity('Currency already exists');
 
         invocationCtx.args[0] =
           await this.currencyService.verifyRpcAddressConnection(data);
@@ -141,6 +148,14 @@ export class CreateInterceptor implements Provider<Interceptor> {
         const {userId, currencyId} = invocationCtx.args[0];
 
         await this.currencyService.currencyRepository.findById(currencyId);
+
+        const userCurrency = await this.userCurrencyRepository.findOne({
+          where: {userId, currencyId},
+        });
+        if (userCurrency)
+          throw new HttpErrors.UnprocessableEntity(
+            'User currency already exists',
+          );
 
         const {count} = await this.userCurrencyRepository.count({userId});
 
@@ -175,13 +190,16 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.TAG: {
-        invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
-          id: invocationCtx.args[0].id
-            .toLowerCase()
-            .split(/ +/gi)[0]
-            .replace(/[^A-Za-z0-9]/gi, '')
-            .trim(),
-        });
+        const id = invocationCtx.args[0].id
+          .toLowerCase()
+          .split(/ +/gi)[0]
+          .replace(/[^A-Za-z0-9]/gi, '')
+          .trim();
+        const tag = await this.tagService.tagRepository.findOne({where: {id}});
+
+        if (tag) throw new HttpErrors.UnprocessableEntity('Tag already exist');
+
+        invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {id});
 
         break;
       }
