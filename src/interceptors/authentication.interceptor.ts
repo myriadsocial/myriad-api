@@ -76,7 +76,10 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
-      const {name, username} = invocationCtx.args[0];
+      const {id, name, username} = invocationCtx.args[0];
+      const user = await this.userRepository.findOne({where: {id}});
+
+      if (user) throw new HttpErrors.UnprocessableEntity('User already exists');
 
       this.validateUsername(username);
 

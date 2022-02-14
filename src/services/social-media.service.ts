@@ -93,7 +93,8 @@ export class SocialMediaService {
     }
 
     if (!redditUser) throw new HttpErrors.NotFound('Invalid username');
-
+    if (!foundRedditPost)
+      throw new HttpErrors.NotFound('Cannot find the speccified post');
     if (foundRedditPost.children.length === 0)
       throw new HttpErrors.NotFound('Cannot find the spesified post');
 
