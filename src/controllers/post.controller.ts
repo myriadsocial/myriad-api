@@ -25,6 +25,7 @@ import {DraftPost, Post, User} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {PostService, SocialMediaService} from '../services';
 import {authenticate} from '@loopback/authentication';
+import {formatTag} from '../utils/format-tag';
 
 @authenticate('jwt')
 export class PostController {
@@ -213,11 +214,7 @@ export class PostController {
     if (!importedTags) importedTags = [];
 
     const postTags = [...socialTags, ...importedTags].map(tag => {
-      return tag
-        .toLowerCase()
-        .split(/ +/gi)[0]
-        .replace(/[^A-Za-z0-9]/gi, '')
-        .trim();
+      return formatTag(tag);
     });
 
     return [...new Set(postTags)];
