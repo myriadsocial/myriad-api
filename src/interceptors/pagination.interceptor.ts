@@ -640,7 +640,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       );
     }
 
-    return {or: filterPost} as Where<Post>;
+    return {or: filterPost, deletedAt: {$exists: false}} as Where<Post>;
   }
 
   async getTopicByQuery(topic: string): Promise<Where<Post>> {
@@ -679,6 +679,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           ],
         },
       ],
+      deletedAt: {$exists: false},
     } as Where<Post>;
   }
 
@@ -766,6 +767,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             },
             {createdBy: userId},
           ],
+          deletedAt: {$exists: false},
         } as Where<Post>;
       }
     }
@@ -795,7 +797,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
       );
     }
-    const users = await this.userRepository.find({where: {or: filterUser}});
+    const nonDeletedUser = {or: filterUser, deletedAt: {$exists: false}};
+    const users = await this.userRepository.find({where: nonDeletedUser});
     const friendUserIds = users
       .filter(user => approvedFriendIds.includes(user.id))
       .map(e => e.id);

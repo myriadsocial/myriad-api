@@ -9,7 +9,12 @@ import {
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {MethodType, ReferenceType, ReportStatusType} from '../enums';
+import {
+  MethodType,
+  PlatformType,
+  ReferenceType,
+  ReportStatusType,
+} from '../enums';
 import {Report} from '../models';
 import {
   CommentRepository,
@@ -160,12 +165,21 @@ export class ReportInterceptor implements Provider<Interceptor> {
     if (report.status === ReportStatusType.REMOVED) {
       switch (referenceType) {
         case ReferenceType.POST: {
-          const {url} = await this.postRepository.findById(referenceId);
-          if (!url) break;
-          await this.postRepository.updateAll(
-            {deletedAt: new Date().toString()},
-            {url: url},
+          const {platform, url} = await this.postRepository.findById(
+            referenceId,
           );
+          if (platform === PlatformType.MYRIAD) {
+            await this.postRepository.updateById(referenceId, {
+              deletedAt: new Date().toString(),
+            });
+          } else {
+            if (url) {
+              await this.postRepository.updateAll(
+                {deletedAt: new Date().toString()},
+                {url: url},
+              );
+            }
+          }
 
           break;
         }

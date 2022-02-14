@@ -150,10 +150,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
           post,
           this.currentUser[securityId],
         );
-        if (!post.deletedAt) return postDetail;
-        return Object.assign(postDetail, {
-          text: '[post removed]',
-        });
+        return postDetail;
       }
 
       case ControllerType.USER: {
