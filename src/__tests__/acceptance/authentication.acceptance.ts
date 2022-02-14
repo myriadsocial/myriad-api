@@ -18,6 +18,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
+import {omit} from 'lodash';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('AuthenticationApplication', function () {
@@ -80,23 +81,24 @@ describe('AuthenticationApplication', function () {
     expect(createdUser.notificationSetting).to.containDeep(notificationSetting);
   });
 
-  it('returns 500 when creates a user with same id', async () => {
+  it('returns 422 when creates a user with same id', async () => {
     await givenUserInstance(userRepository);
 
     const user: Partial<User> = givenUser();
 
-    delete user.nonce;
-
-    await client.post('/signup').send(user).expect(409);
+    await client
+      .post('/signup')
+      .send(omit(user, ['nonce']))
+      .expect(422);
   });
 
   it('rejects requests to create a user with no id', async () => {
     const user: Partial<User> = givenUser();
 
-    delete user.id;
-    delete user.nonce;
-
-    await client.post('/signup').send(user).expect(422);
+    await client
+      .post('/signup')
+      .send(omit(user, ['id', 'nonce']))
+      .expect(422);
   });
 
   it('rejects requests to create a user with id type is not a hex', async () => {
@@ -105,9 +107,10 @@ describe('AuthenticationApplication', function () {
       name: 'Hakim',
     });
 
-    delete user.nonce;
-
-    await client.post('/signup').send(user).expect(422);
+    await client
+      .post('/signup')
+      .send(omit(user, ['nonce']))
+      .expect(422);
   });
 
   it('rejects requests to create a user with id length less than 66', async () => {
@@ -116,9 +119,10 @@ describe('AuthenticationApplication', function () {
       name: 'Hakim',
     });
 
-    delete user.nonce;
-
-    await client.post('/signup').send(user).expect(422);
+    await client
+      .post('/signup')
+      .send(omit(user, ['nonce']))
+      .expect(422);
   });
 
   it('rejects requests to create a user with id length more than 66', async () => {
@@ -127,9 +131,10 @@ describe('AuthenticationApplication', function () {
       name: 'Hakim',
     });
 
-    delete user.nonce;
-
-    await client.post('/signup').send(user).expect(422);
+    await client
+      .post('/signup')
+      .send(omit(user, ['nonce']))
+      .expect(422);
   });
 
   it('rejects requests to create a user with name length less than 2', async () => {
@@ -178,14 +183,14 @@ describe('AuthenticationApplication', function () {
 
   it('checks authentication flow', async () => {
     const user: Partial<User> = givenUser();
-
-    delete user.nonce;
-
     const getNonce = await client.get(`/users/${user.id}/nonce`).expect(200);
 
     expect(getNonce.body).to.containDeep({nonce: 0});
 
-    await client.post('/signup').send(user).expect(200);
+    await client
+      .post('/signup')
+      .send(omit(user, ['nonce']))
+      .expect(200);
 
     const createdUser = await userRepository.findById(user.id ?? '');
     const nonce = createdUser.nonce;

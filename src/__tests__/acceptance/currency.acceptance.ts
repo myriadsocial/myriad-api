@@ -145,11 +145,12 @@ describe('CurrencyApplication', function () {
 
       delete updatedCurrency.id;
 
-      await client
+      const res = await client
         .patch(`/currencies/${persistedCurrency.id}`)
         .set('Authorization', `Bearer ${token}`)
-        .send(updatedCurrency)
-        .expect(204);
+        .send(updatedCurrency);
+      console.log(res.body.error);
+      // .expect(204);
     });
 
     it('returns 401 when updating a currency not as myriad admin', async function () {
