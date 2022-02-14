@@ -15,7 +15,7 @@ import {FriendService} from './friend.service';
 export class TagService {
   constructor(
     @repository(TagRepository)
-    protected tagRepository: TagRepository,
+    public tagRepository: TagRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
     @service(FriendService)
