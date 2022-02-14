@@ -94,8 +94,8 @@ export class PostService {
       },
     });
 
-    if (found) post.text = '[this post is unavailable]';
-    if (post.deletedAt) post.text = '[post removed]';
+    if (found || post.deletedAt)
+      throw new HttpErrors.NotFound('Post not found');
     if (post.platform === PlatformType.MYRIAD) return post;
     if (!post.user) return post;
     if (!userId) return post;
