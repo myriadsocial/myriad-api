@@ -60,7 +60,7 @@ import {
   VoteRepository,
 } from './repositories';
 import {PermissionKeys, PlatformType} from './enums';
-import {Post, UserCurrency} from './models';
+import {MentionUser, Post, UserCurrency} from './models';
 
 export {ApplicationConfig};
 
@@ -169,7 +169,7 @@ export class MyriadApiApplication extends BootMixin(
 
   async doMigrateUser(): Promise<void> {
     if (this.options.alter.indexOf('user') === -1) return;
-    const {userRepository} = await this.repositories();
+    const {postRepository, userRepository} = await this.repositories();
 
     await userRepository.updateAll({permissions: [PermissionKeys.USER]});
     await userRepository.updateAll(
@@ -182,6 +182,45 @@ export class MyriadApiApplication extends BootMixin(
       },
       {username: 'myriad_official'},
     );
+
+    const {count} = await userRepository.count();
+    const bar = this.initializeProgressBar('Alter mention user');
+
+    bar.start(count - 1, 0);
+    for (let i = 0; i < count; i++) {
+      bar.update(i);
+
+      const [user] = await userRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      const re = new RegExp(
+        `\"type\":\"mention\",\"children\":[{\"text\":\"\"}],\"value\":\"${user.id}\"`,
+        'i',
+      );
+      const post = await postRepository.findOne({
+        where: {
+          text: {
+            regexp: re,
+          },
+        },
+      });
+      if (!post) continue;
+      const mentions = post.mentions as MentionUser[];
+      const found = mentions.find(mention => mention.id === user.id);
+      if (found) continue;
+      mentions.push(
+        new MentionUser({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+        }),
+      );
+      await postRepository.updateById(post.id, {mentions});
+    }
+
+    bar.stop();
   }
 
   async doMigratePost(): Promise<void> {
