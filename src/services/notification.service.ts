@@ -199,6 +199,18 @@ export class NotificationService {
       case ReferenceType.USER: {
         notification.type = NotificationType.USER_BANNED;
         notification.referenceId = referenceId;
+
+        const userBanned = await this.userRepository.findById(referenceId, {
+          fields: ['id', 'name', 'username'],
+        });
+
+        notification.additionalReferenceId = [
+          {
+            id: userBanned.id,
+            displayName: userBanned.name,
+            username: userBanned.username,
+          },
+        ];
         break;
       }
 
@@ -288,6 +300,18 @@ export class NotificationService {
         notification.type = NotificationType.USER_BANNED;
         notification.referenceId = referenceId;
         notification.message = 'banned you';
+
+        const userBanned = await this.userRepository.findById(referenceId, {
+          fields: ['id', 'name', 'username'],
+        });
+
+        notification.additionalReferenceId = [
+          {
+            id: userBanned.id,
+            displayName: userBanned.name,
+            username: userBanned.username,
+          },
+        ];
 
         await this.sendNotificationToUser(
           notification,
