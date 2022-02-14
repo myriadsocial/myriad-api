@@ -8,6 +8,7 @@ import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import {injectable, BindingScope} from '@loopback/core';
+import {formatRawText} from '../utils/format-tag';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -260,17 +261,11 @@ export class SocialMediaService {
       }
     }
 
-    const rawText = text
-      .replace(/#\w+/gi, '')
-      .replace(/\n/gi, ' ')
-      .replace(/ +/gi, ' ')
-      .trim();
-
     return {
       platform: PlatformType.TWITTER,
       originPostId: idStr,
       text: text.trim(),
-      rawText: rawText,
+      rawText: formatRawText(text),
       tags: twitterTags,
       originCreatedAt: new Date(createdAt).toString(),
       asset: asset,
