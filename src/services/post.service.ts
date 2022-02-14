@@ -24,6 +24,7 @@ import _ from 'lodash';
 import {PlatformPost} from '../models/platform-post.model';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
+import {formatTag} from '../utils/format-tag';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -140,11 +141,7 @@ export class PostService {
 
     if (draftPost.tags && draftPost.tags.length > 0) {
       draftPost.tags = draftPost.tags.map(tag => {
-        return tag
-          .toLowerCase()
-          .split(/ +/gi)[0]
-          .replace(/[^A-Za-z0-9]/gi, '')
-          .trim();
+        return formatTag(tag);
       });
     }
 
