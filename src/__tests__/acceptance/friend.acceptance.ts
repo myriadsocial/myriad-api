@@ -10,6 +10,7 @@ import {
   UserRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenActivityLogRepository,
   givenAddress,
   givenFriend,
@@ -24,7 +25,10 @@ import {
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
 
+/* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('FriendApplication', function () {
+  this.timeout(20000);
+
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
@@ -37,7 +41,7 @@ describe('FriendApplication', function () {
   let address: KeyringPair;
 
   before(async () => {
-    ({app, client} = await setupApplication());
+    ({app, client} = await setupApplication(true));
   });
 
   after(() => app.stop());
@@ -60,7 +64,7 @@ describe('FriendApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

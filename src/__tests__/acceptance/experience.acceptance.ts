@@ -3,6 +3,7 @@ import {MyriadApiApplication} from '../../application';
 import {Credential, Experience, User} from '../../models';
 import {ExperienceRepository, UserRepository} from '../../repositories';
 import {
+  deleteAllRepository,
   givenAddress,
   givenExperienceInstance,
   givenExperienceRepository,
@@ -45,7 +46,7 @@ describe('ExperienceApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

@@ -17,6 +17,7 @@ import {
   givenMultipleCurrencyInstances,
   givenAddress,
   givenUserCurrencyInstance,
+  deleteAllRepository,
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
@@ -55,9 +56,7 @@ describe('UserCurrencyApplication', function () {
   });
 
   after(async () => {
-    await userCurrencyRepository.deleteAll();
-    await currencyRepository.deleteAll();
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

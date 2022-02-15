@@ -7,6 +7,7 @@ import {
   UserRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenAccesToken,
   givenAddress,
   givenExperience,
@@ -24,7 +25,10 @@ import {
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
 
+/* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserExperienceApplication', function () {
+  this.timeout(20000);
+
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
@@ -37,7 +41,7 @@ describe('UserExperienceApplication', function () {
   let address: KeyringPair;
 
   before(async () => {
-    ({app, client} = await setupApplication());
+    ({app, client} = await setupApplication(true));
   });
 
   after(() => app.stop());
@@ -60,7 +64,7 @@ describe('UserExperienceApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {
@@ -196,7 +200,7 @@ describe('UserExperienceApplication', function () {
       const experience = await givenExperienceInstance(experienceRepository);
       const userExperience = givenUserExperience({
         userId: user.id,
-        experienceId: experience.id,
+        experienceId: experience.id?.toString(),
         subscribed: true,
       });
       const response = await client
@@ -222,7 +226,7 @@ describe('UserExperienceApplication', function () {
 
       const expected = {
         ...user,
-        onTimeline: response.body.experienceId,
+        onTimeline: response.body.experienceId.toString(),
         metric: {
           totalPosts: 0,
           totalKudos: 0,
@@ -233,6 +237,7 @@ describe('UserExperienceApplication', function () {
 
       const result = await userRepository.findById(user.id);
       result.nonce = user.nonce;
+      result.onTimeline = result.onTimeline.toString();
 
       expect(result).to.containDeep(expected);
     });
@@ -345,7 +350,7 @@ describe('UserExperienceApplication', function () {
 
       const expected = {
         ...user,
-        onTimeline: response.body.id,
+        onTimeline: response.body.id.toString(),
         metric: {
           totalPosts: 0,
           totalExperiences: 1,
@@ -356,6 +361,7 @@ describe('UserExperienceApplication', function () {
 
       const result = await userRepository.findById(user.id);
       result.nonce = user.nonce;
+      result.onTimeline = result.onTimeline.toString();
 
       expect(result).to.containDeep(expected);
     });

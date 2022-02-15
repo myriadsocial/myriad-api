@@ -11,6 +11,7 @@ import {
   NotificationSettingRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenAccesToken,
   givenAccountSettingRepository,
   givenActivityLogInstance,
@@ -85,7 +86,7 @@ describe('UserApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

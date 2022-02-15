@@ -14,7 +14,6 @@ import {
   VoteRepository,
   PeopleRepository,
   PostRepository,
-  TagRepository,
   TransactionRepository,
   UserRepository,
   ActivityLogRepository,
@@ -32,7 +31,6 @@ import {
   givenPost,
   givenPostInstance,
   givenPostRepository,
-  givenTagRepository,
   givenTransactionInstance,
   givenTransactionRepository,
   givenUserInstance,
@@ -41,6 +39,7 @@ import {
   givenActivityLogRepository,
   givenAddress,
   givenOtherUser,
+  deleteAllRepository,
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
@@ -55,7 +54,6 @@ describe('PostApplication', function () {
   let client: Client;
   let postRepository: PostRepository;
   let userRepository: UserRepository;
-  let tagRepository: TagRepository;
   let voteRepository: VoteRepository;
   let peopleRepository: PeopleRepository;
   let transactionRepository: TransactionRepository;
@@ -74,7 +72,6 @@ describe('PostApplication', function () {
   before(async () => {
     postRepository = await givenPostRepository(app);
     userRepository = await givenUserRepository(app);
-    tagRepository = await givenTagRepository(app);
     voteRepository = await givenVoteRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     transactionRepository = await givenTransactionRepository(app);
@@ -88,13 +85,7 @@ describe('PostApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
-    await tagRepository.deleteAll();
-    await voteRepository.deleteAll();
-    await peopleRepository.deleteAll();
-    await transactionRepository.deleteAll();
-    await commentRepository.deleteAll();
-    await activityLogRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   beforeEach(async () => {
@@ -171,12 +162,7 @@ describe('PostApplication', function () {
         .expect(200);
 
       persistedPost.user = user;
-      persistedPost.user.metric = {
-        totalPosts: 1,
-        totalExperiences: 0,
-        totalFriends: 0,
-        totalKudos: 0,
-      };
+
       const expected = toJSON(persistedPost);
 
       expect(result.body).to.deepEqual(expected);
@@ -366,12 +352,7 @@ describe('PostApplication', function () {
         },
       });
 
-    user.metric = {
-      totalPosts: 1,
-      totalExperiences: 0,
-      totalFriends: 0,
-      totalKudos: 0,
-    };
+    user.metric.totalFriends = 0;
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
@@ -397,13 +378,6 @@ describe('PostApplication', function () {
 
     beforeEach(async () => {
       await postRepository.deleteAll();
-
-      user.metric = {
-        totalPosts: 1,
-        totalExperiences: 0,
-        totalFriends: 0,
-        totalKudos: 0,
-      };
     });
 
     it('creates a post from reddit', async () => {

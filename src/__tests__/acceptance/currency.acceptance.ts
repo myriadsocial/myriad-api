@@ -4,6 +4,7 @@ import {MyriadApiApplication} from '../../application';
 import {Currency, Credential, User} from '../../models/';
 import {CurrencyRepository, UserRepository} from '../../repositories/';
 import {
+  deleteAllRepository,
   givenAccesToken,
   givenAddress,
   givenCurrency,
@@ -52,6 +53,10 @@ describe('CurrencyApplication', function () {
 
   beforeEach(async () => {
     await currencyRepository.deleteAll();
+  });
+
+  after(async () => {
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

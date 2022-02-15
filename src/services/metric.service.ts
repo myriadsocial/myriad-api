@@ -124,6 +124,7 @@ export class MetricService {
     });
     const {count: totalPosts} = await this.postRepository.count({
       createdBy: userId,
+      deletedAt: {exists: true},
     });
 
     const {count: totalUpvote} = await this.voteRepository.count({
@@ -152,6 +153,7 @@ export class MetricService {
     for (const tag of tags) {
       const {count} = await this.postRepository.count({
         tags: {inq: [[tag], [tag.toUpperCase()], [tag.toLowerCase()]]},
+        deletedAt: {exists: false},
       });
 
       const found = await this.tagRepository.findOne({

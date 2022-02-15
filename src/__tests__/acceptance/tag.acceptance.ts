@@ -3,6 +3,7 @@ import {MyriadApiApplication} from '../../application';
 import {Credential, Tag, User} from '../../models';
 import {TagRepository, UserRepository} from '../../repositories';
 import {
+  deleteAllRepository,
   givenAddress,
   givenMultipleTagInstances,
   givenTag,
@@ -49,7 +50,7 @@ describe('TagApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

@@ -4,6 +4,7 @@ import {NotificationType} from '../../enums';
 import {Credential, Notification, User} from '../../models';
 import {NotificationRepository, UserRepository} from '../../repositories';
 import {
+  deleteAllRepository,
   givenAddress,
   givenMultipleNotificationInstances,
   givenNotification,
@@ -47,7 +48,7 @@ describe('NotificationApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

@@ -213,9 +213,9 @@ export class PostController {
     if (!socialTags) socialTags = [];
     if (!importedTags) importedTags = [];
 
-    const postTags = [...socialTags, ...importedTags].map(tag => {
-      return formatTag(tag);
-    });
+    const postTags = [...socialTags, ...importedTags]
+      .map(tag => formatTag(tag))
+      .filter(tag => Boolean(tag));
 
     return [...new Set(postTags)];
   }

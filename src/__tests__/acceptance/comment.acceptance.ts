@@ -22,6 +22,7 @@ import {
   UserSocialMediaRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenActivityLogRepository,
   givenAddress,
   givenComment,
@@ -114,6 +115,10 @@ describe('CommentApplication', function () {
       userId: otherUser.id,
       peopleId: people.id,
     });
+  });
+
+  after(async () => {
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

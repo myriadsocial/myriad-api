@@ -4,6 +4,7 @@ import {ReferenceType} from '../../enums';
 import {Credential, Transaction, User} from '../../models';
 import {TransactionRepository, UserRepository} from '../../repositories';
 import {
+  deleteAllRepository,
   givenAddress,
   givenTransactionInstance,
   givenTransactionRepository,
@@ -93,8 +94,7 @@ describe('TransactionSummaryApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
-    await transactionRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

@@ -7,6 +7,7 @@ import {
   UserRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenAccountSettingRepository,
   givenAddress,
   givenCredential,
@@ -51,6 +52,10 @@ describe('AuthenticationApplication', function () {
     await userRepository.deleteAll();
     await accountSettingRepository.deleteAll();
     await notificationSettingRepository.deleteAll();
+  });
+
+  after(async () => {
+    await deleteAllRepository(app);
   });
 
   it('successfully sign up a new user', async () => {
