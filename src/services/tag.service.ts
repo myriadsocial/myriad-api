@@ -7,7 +7,6 @@ import {
 } from '../enums';
 import {Post} from '../models';
 import {PostRepository, TagRepository} from '../repositories';
-import {DateUtils} from '../utils/date-utils';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {FriendService} from './friend.service';
 
@@ -23,31 +22,21 @@ export class TagService {
   ) {}
 
   async createTags(tags: string[]): Promise<void> {
-    const dateUtils = new DateUtils();
     for (const tag of tags) {
-      if (tag === '') continue;
-      const foundTag = await this.tagRepository.findOne({
-        where: {id: {regexp: new RegExp(`\\b${tag}\\b`, 'i')}},
-      });
-
-      let count = 1;
-
-      if (!foundTag) {
+      try {
         await this.tagRepository.create({
           id: tag,
-          count: count,
+          count: 1,
         });
-      } else {
-        if (!dateUtils.isToday(foundTag.updatedAt)) {
-          ({count} = await this.postRepository.count({
-            tags: {
-              inq: [[foundTag.id]],
-            },
-            deletedAt: {exists: false},
-          }));
-        }
+      } catch {
+        const {count} = await this.postRepository.count({
+          tags: {
+            inq: [[tag]],
+          },
+          deletedAt: {exists: false},
+        });
 
-        await this.tagRepository.updateById(foundTag.id, {
+        await this.tagRepository.updateById(tag, {
           updatedAt: new Date().toString(),
           count: count,
         });
