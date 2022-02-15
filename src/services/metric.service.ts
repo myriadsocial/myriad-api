@@ -105,9 +105,15 @@ export class MetricService {
       section: SectionType.DISCUSSION,
     });
 
+    const {count: countTip} = await this.transactionRepository.count({
+      referenceId: referenceId,
+      type: referenceType,
+    });
+
     metric.debates = countDebate;
     metric.discussions = countDiscussion;
     metric.comments = (countDebate ?? 0) + (countDiscussion ?? 0);
+    metric.tips = countTip;
 
     return metric;
   }
