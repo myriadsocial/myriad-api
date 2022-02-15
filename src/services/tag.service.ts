@@ -43,6 +43,7 @@ export class TagService {
             tags: {
               inq: [[foundTag.id]],
             },
+            deletedAt: {exists: false},
           }));
         }
 
