@@ -121,6 +121,7 @@ export class Post extends Entity {
       discussions: 0,
       debates: 0,
       comments: 0,
+      tips: 0,
     },
   })
   metric: Metric;
