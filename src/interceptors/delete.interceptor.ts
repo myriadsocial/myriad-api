@@ -88,21 +88,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
     switch (controllerName) {
-      case ControllerType.COMMENT: {
-        const commentId = invocationCtx.args[0];
-        const comment = await this.commentRepository.findById(commentId);
-        invocationCtx.args[1] = comment;
-        break;
-      }
-
       case ControllerType.FRIEND: {
         await this.friendService.removedFriend(invocationCtx.args[1]);
-        break;
-      }
-
-      case ControllerType.POST: {
-        const post = await this.postRepository.findById(invocationCtx.args[0]);
-        invocationCtx.args[1] = post;
         break;
       }
 
