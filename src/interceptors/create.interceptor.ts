@@ -225,6 +225,13 @@ export class CreateInterceptor implements Provider<Interceptor> {
           ReferenceType.TRANSACTION,
         );
 
+        if (result.type === ReferenceType.POST) {
+          await this.metricService.publicMetric(
+            result.type,
+            result.referenceId,
+          );
+        }
+
         return result;
       }
 

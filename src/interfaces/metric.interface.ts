@@ -1,9 +1,10 @@
 export interface Metric {
-  comments?: number;
   upvotes: number;
   downvotes: number;
   discussions?: number;
   debates?: number;
+  comments?: number;
+  tips?: number;
 }
 
 export interface UserMetric {
