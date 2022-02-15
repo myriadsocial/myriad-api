@@ -266,7 +266,7 @@ export class SocialMediaService {
       originPostId: idStr,
       text: text.trim(),
       rawText: formatRawText(text),
-      tags: twitterTags,
+      tags: twitterTags.filter((tag: string) => Boolean(tag)),
       originCreatedAt: new Date(createdAt).toString(),
       asset: asset,
       embeddedURL: embedded,

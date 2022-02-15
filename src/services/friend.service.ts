@@ -217,7 +217,6 @@ export class FriendService {
     return {
       createdBy: {inq: approvedFriendIds},
       visibility: {nlike: VisibilityType.PRIVATE},
-      deletedAt: {$exists: false},
     } as Where<Post>;
   }
 

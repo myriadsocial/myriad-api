@@ -14,6 +14,7 @@ import {
   UserRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenAccesToken,
   givenAddress,
   givenOtherUser,
@@ -62,11 +63,10 @@ describe('ReportApplication', () => {
 
   beforeEach(async () => {
     await reportRepository.deleteAll();
-    await postRepository.deleteAll();
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

@@ -9,6 +9,7 @@ import {
   UserSocialMediaRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenAddress,
   givenMyriadPostInstance,
   givenPeopleInstance,
@@ -78,7 +79,7 @@ describe('PostWalletAddressApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

@@ -14,6 +14,7 @@ import {
   UserSocialMediaRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenAccesToken,
   givenAddress,
   givenOtherUser,
@@ -61,7 +62,7 @@ describe('UserSocialMediaApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   beforeEach(async () => {

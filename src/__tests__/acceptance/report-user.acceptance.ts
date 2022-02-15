@@ -7,6 +7,7 @@ import {
   UserRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenAddress,
   givenReportInstance,
   givenReportRepository,
@@ -54,7 +55,7 @@ describe('ReportUserApplication', () => {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

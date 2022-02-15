@@ -4,6 +4,7 @@ import {ActivityLogType} from '../../enums';
 import {ActivityLog, Credential, User} from '../../models';
 import {ActivityLogRepository, UserRepository} from '../../repositories';
 import {
+  deleteAllRepository,
   givenActivityLogInstance,
   givenActivityLogRepository,
   givenAddress,
@@ -46,7 +47,7 @@ describe('ActivityLogApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

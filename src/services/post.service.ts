@@ -230,6 +230,19 @@ export class PostService {
   }
 
   async restrictedPost(post: Post): Promise<Post> {
+    const found = await this.postRepository.findOne({
+      where: <AnyObject>{
+        originPostId: post.originPostId ?? '',
+        platform: post.platform,
+        deletedAt: {
+          $exists: true,
+        },
+      },
+    });
+
+    if (found || post.deletedAt)
+      throw new HttpErrors.NotFound('Post not found');
+
     const creator = post.createdBy;
     const visibility = post.visibility;
     switch (visibility) {
@@ -239,12 +252,12 @@ export class PostService {
           where: {
             requestorId: this.currentUser[securityId],
             requesteeId: creator,
+            status: FriendStatusType.APPROVED,
           },
         });
 
         if (!friend) throw new HttpErrors.Forbidden('Restricted post!');
-        if (friend.status === FriendStatusType.APPROVED) return post;
-        throw new HttpErrors.Forbidden('Restricted post!');
+        return post;
       }
 
       case VisibilityType.PRIVATE: {
