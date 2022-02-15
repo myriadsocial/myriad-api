@@ -129,7 +129,15 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       case ControllerType.COMMENT: {
         if (typeof data === 'object') userId = data.userId;
-        else ({userId} = await this.commentRepository.findById(data));
+        else {
+          const comment = await this.commentRepository.findById(data);
+          if (methodName === MethodType.DELETEBYID) {
+            invocationCtx.args[1] = comment;
+          } else {
+            invocationCtx.args[2] = comment;
+          }
+          userId = comment.userId;
+        }
         break;
       }
 
@@ -193,7 +201,11 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         } else {
           const post = await this.postRepository.findById(data);
 
-          invocationCtx.args[2] = post;
+          if (methodName === MethodType.DELETEBYID) {
+            invocationCtx.args[1] = post;
+          } else {
+            invocationCtx.args[2] = post;
+          }
           userId = post.createdBy;
         }
         break;
