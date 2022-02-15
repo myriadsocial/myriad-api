@@ -5,6 +5,7 @@ export enum OrderFieldType {
   POPULAR = 'popular',
   LATEST = 'latest',
   UPDATEDAT = 'updatedAt',
+  TIP = 'tip',
 }
 
 export enum OrderType {

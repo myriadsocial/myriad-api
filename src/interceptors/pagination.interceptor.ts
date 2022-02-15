@@ -140,6 +140,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         sortBy = 'metric.comments';
         break;
 
+      case OrderFieldType.TIP:
+        sortBy = 'metric.tips';
+        break;
+
       case OrderFieldType.LATEST:
         sortBy = 'createdAt';
         break;
