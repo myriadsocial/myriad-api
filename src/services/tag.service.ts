@@ -103,7 +103,6 @@ export class TagService {
           and: [{tags: {inq: trendingTopics}}, {createdBy: userId}],
         },
       ],
-      deletedAt: {$exists: false},
     } as Where<Post>;
   }
 }

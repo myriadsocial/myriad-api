@@ -151,7 +151,6 @@ export class ExperienceService {
           and: [{peopleId: {inq: personIds}}, {createdBy: userId}],
         },
       ],
-      deletedAt: {$exists: false},
     } as Where<Post>;
   }
 

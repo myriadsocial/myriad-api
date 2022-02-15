@@ -267,6 +267,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             filter.where = whereTimeline ?? {id: ''};
           }
 
+          filter.where.deletedAt = {$exists: false};
           filter.include = filter.include
             ? [...filter.include, 'user']
             : ['user'];
@@ -640,7 +641,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       );
     }
 
-    return {or: filterPost, deletedAt: {$exists: false}} as Where<Post>;
+    return {or: filterPost} as Where<Post>;
   }
 
   async getTopicByQuery(topic: string): Promise<Where<Post>> {
@@ -679,7 +680,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           ],
         },
       ],
-      deletedAt: {$exists: false},
     } as Where<Post>;
   }
 
@@ -767,7 +767,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             },
             {createdBy: userId},
           ],
-          deletedAt: {$exists: false},
         } as Where<Post>;
       }
     }
