@@ -105,3 +105,48 @@ export async function givenNotificationSettingRepository(
 ) {
   return app.getRepository(NotificationSettingRepository);
 }
+
+export async function deleteAllRepository(app: MyriadApiApplication) {
+  const userRepository = await givenUserRepository(app);
+  const friendRepository = await givenFriendRepository(app);
+  const currencyRepository = await givenCurrencyRepository(app);
+  const peopleRepository = await givenPeopleRepository(app);
+  const commentRepository = await givenCommentRepository(app);
+  const postRepository = await givenPostRepository(app);
+  const voteRepository = await givenVoteRepository(app);
+  const notificationRepository = await givenNotificationRepository(app);
+  const userSocialMediaRepository = await givenUserSocialMediaRepository(app);
+  const tagRepository = await givenTagRepository(app);
+  const transactionRepository = await givenTransactionRepository(app);
+  const userCurrencyRepository = await givenUserCurrencyRepository(app);
+  const activityLogRepository = await givenActivityLogRepository(app);
+  const experienceRepository = await givenExperienceRepository(app);
+  const userExperienceRepository = await givenUserExperienceRepository(app);
+  const commentLinkRepository = await givenCommentLinkRepository(app);
+  const reportRepository = await givenReportRepository(app);
+  const userReportRepository = await givenUserReportRepository(app);
+  const accountSettingRepository = await givenAccountSettingRepository(app);
+  const notificationSettingRepository =
+    await givenNotificationSettingRepository(app);
+
+  await userRepository.deleteAll();
+  await friendRepository.deleteAll();
+  await currencyRepository.deleteAll();
+  await peopleRepository.deleteAll();
+  await commentRepository.deleteAll();
+  await postRepository.deleteAll();
+  await voteRepository.deleteAll();
+  await notificationRepository.deleteAll();
+  await userSocialMediaRepository.deleteAll();
+  await tagRepository.deleteAll();
+  await transactionRepository.deleteAll();
+  await userCurrencyRepository.deleteAll();
+  await activityLogRepository.deleteAll();
+  await experienceRepository.deleteAll();
+  await userExperienceRepository.deleteAll();
+  await commentLinkRepository.deleteAll();
+  await reportRepository.deleteAll();
+  await userReportRepository.deleteAll();
+  await accountSettingRepository.deleteAll();
+  await notificationSettingRepository.deleteAll();
+}

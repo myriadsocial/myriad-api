@@ -4,6 +4,7 @@ import {AccountSettingType} from '../../enums';
 import {AccountSetting, Credential, User} from '../../models';
 import {AccountSettingRepository, UserRepository} from '../../repositories';
 import {
+  deleteAllRepository,
   givenAccountSetting,
   givenAccountSettingInstance,
   givenAccountSettingRepository,
@@ -46,7 +47,7 @@ describe('AccountSettingApplication', () => {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

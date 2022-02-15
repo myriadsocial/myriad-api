@@ -8,6 +8,7 @@ import {
   UserRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenAddress,
   givenCurrencyInstance,
   givenCurrencyRepository,
@@ -55,8 +56,7 @@ describe('TransactionApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
-    await currencyRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   beforeEach(async () => {

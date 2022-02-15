@@ -22,6 +22,7 @@ import {
   givenAddress,
   givenOtherUser,
   givenAccesToken,
+  deleteAllRepository,
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
@@ -68,7 +69,7 @@ describe('VoteApplication', function () {
   });
 
   after(async () => {
-    await userRepository.deleteAll();
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {

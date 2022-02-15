@@ -10,6 +10,7 @@ import {
   UserSocialMediaRepository,
 } from '../../repositories';
 import {
+  deleteAllRepository,
   givenAddress,
   givenMultiplePeopleInstances,
   givenPeopleInstance,
@@ -57,14 +58,12 @@ describe('PeopleApplication', function () {
     address = givenAddress();
   });
 
-  after(async () => {
-    await postRepository.deleteAll();
-    await userSocialMediaRepository.deleteAll();
-    await userRepository.deleteAll();
-  });
-
   beforeEach(async () => {
     await peopleRepository.deleteAll();
+  });
+
+  after(async () => {
+    await deleteAllRepository(app);
   });
 
   it('gets user nonce', async () => {
