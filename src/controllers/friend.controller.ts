@@ -135,6 +135,8 @@ export class FriendController {
     },
   })
   async mutualDetail(
+    @param.path.string('requestorId') requestorId: string,
+    @param.path.string('requesteeId') requesteeId: string,
     @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<User>,
   ): Promise<User[]> {
