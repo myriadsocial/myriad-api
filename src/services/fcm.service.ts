@@ -25,7 +25,11 @@ export class FCMService {
       },
     };
 
-    await firebaseAdmin.messaging().sendMulticast(message);
+    try {
+      await firebaseAdmin.messaging().sendMulticast(message);
+    } catch {
+      // ignore
+    }
 
     return;
   }
