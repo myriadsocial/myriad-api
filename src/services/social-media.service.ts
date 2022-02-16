@@ -47,12 +47,11 @@ export class SocialMediaService {
     }
 
     if (!user) throw new HttpErrors.NotFound('Invalid username');
-
     if (!tweets)
       throw new HttpErrors.NotFound('Tweet not found/protected by user');
 
     // Verify that the publicKey is existing in user twitter
-    const foundTwitterPublicKey = tweets[0].text
+    const foundTwitterPublicKey = tweets[0]?.text
       .replace(/\n/g, ' ')
       .split(' ')
       .find((tweet: string) => tweet === publicKey);
@@ -76,50 +75,36 @@ export class SocialMediaService {
     username: string,
     publicKey: string,
   ): Promise<ExtendedPeople> {
-    let redditUser = null;
-    let foundRedditPost = null;
-
     try {
-      // Fetch data user from reddit api
-      ({data: redditUser} = await this.redditService.getActions(
+      const {data: redditUser} = await this.redditService.getActions(
         `user/${username}/about.json`,
-      ));
-
-      // Fetch post timeline based on reddit username from reddit api
-      ({data: foundRedditPost} = await this.redditService.getActions(
+      );
+      const {data: redditPost} = await this.redditService.getActions(
         `user/${username}/.json?limit=1`,
-      ));
+      );
+
+      const found = redditPost?.children[0]?.data?.title
+        .replace(/\n/g, ' ')
+        .split(' ')
+        .find((post: string) => post === publicKey);
+
+      if (!found) throw new Error('PostNotFound');
+
+      return {
+        name: redditUser.subreddit.title
+          ? redditUser.subreddit.title
+          : redditUser.name,
+        originUserId: 't2_' + redditUser.id,
+        platform: PlatformType.REDDIT,
+        username: redditUser.name,
+        profilePictureURL: redditUser.icon_img
+          ? redditUser.icon_img.split('?')[0]
+          : '',
+        publicKey: publicKey,
+      } as ExtendedPeople;
     } catch {
-      // ignore
+      throw new HttpErrors.NotFound('Cannot find the specified post');
     }
-
-    if (!redditUser) throw new HttpErrors.NotFound('Invalid username');
-    if (!foundRedditPost)
-      throw new HttpErrors.NotFound('Cannot find the speccified post');
-    if (foundRedditPost.children.length === 0)
-      throw new HttpErrors.NotFound('Cannot find the spesified post');
-
-    // Verify that the publicKey is existing in user reddit
-    const foundRedditPublicKey = foundRedditPost.children[0].data.title
-      .replace(/\n/g, ' ')
-      .split(' ')
-      .find((post: string) => post === publicKey);
-
-    if (!foundRedditPublicKey)
-      throw new HttpErrors.NotFound('Cannot find specified post');
-
-    return {
-      name: redditUser.subreddit.title
-        ? redditUser.subreddit.title
-        : redditUser.name,
-      originUserId: 't2_' + redditUser.id,
-      platform: PlatformType.REDDIT,
-      username: redditUser.name,
-      profilePictureURL: redditUser.icon_img
-        ? redditUser.icon_img.split('?')[0]
-        : '',
-      publicKey: publicKey,
-    } as ExtendedPeople;
   }
 
   async verifyToFacebook(
