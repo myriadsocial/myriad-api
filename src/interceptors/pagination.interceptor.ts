@@ -278,8 +278,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         if (methodName === MethodType.GETIMPORTERS) {
-          const [originPostId, platform, importerFilter] =
-            invocationCtx.args;
+          const [originPostId, platform, importerFilter] = invocationCtx.args;
 
           filter.include = ['user'];
           filter.where = Object.assign(importerFilter.where ?? {}, {
@@ -319,16 +318,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       case ControllerType.FRIEND: {
         if (methodName === MethodType.MUTUALDETAIL) {
-          const mutualPath = request.path.split('/');
-          const requestorId = mutualPath[2];
-          const requesteeId = mutualPath[4];
+          const [requestorId, requesteeId, mutualFilter] = invocationCtx.args;
           const userIds = this.friendService.getMutualUserIds(
             requestorId,
             requesteeId,
           );
 
           filter.order = this.orderSetting(request.query);
-          filter.where = Object.assign(filter.where ?? {}, {
+          filter.where = Object.assign(mutualFilter.where ?? {}, {
             id: {inq: userIds},
           });
         }
@@ -526,6 +523,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     if (controllerName === ControllerType.REPORTUSER)
       invocationCtx.args[1] = paginationFilter;
     else if (methodName === MethodType.GETIMPORTERS)
+      invocationCtx.args[2] = paginationFilter;
+    else if (methodName === MethodType.MUTUALDETAIL)
       invocationCtx.args[2] = paginationFilter;
     else invocationCtx.args[0] = paginationFilter;
 

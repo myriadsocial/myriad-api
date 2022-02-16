@@ -30,7 +30,7 @@ export class AuthenticationController {
   @get('/users/{id}/nonce', {
     responses: {
       '200': {
-        desciption: 'User nonce',
+        description: 'User nonce',
         content: {
           'application/json': {
             schema: {
