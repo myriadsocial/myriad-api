@@ -85,18 +85,6 @@ export class PostService {
     post: AnyObject,
     userId?: string,
   ): Promise<AnyObject> {
-    const found = await this.postRepository.findOne({
-      where: <AnyObject>{
-        originPostId: post.originPostId ?? '',
-        platform: post.platform,
-        deletedAt: {
-          $exists: true,
-        },
-      },
-    });
-
-    if (found || post.deletedAt)
-      throw new HttpErrors.NotFound('Post not found');
     if (post.platform === PlatformType.MYRIAD) return post;
     if (!post.user) return post;
     if (!userId) return post;

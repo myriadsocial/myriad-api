@@ -130,7 +130,7 @@ export class MetricService {
     });
     const {count: totalPosts} = await this.postRepository.count({
       createdBy: userId,
-      deletedAt: {exists: true},
+      deletedAt: {exists: false},
     });
 
     const {count: totalUpvote} = await this.voteRepository.count({
