@@ -62,6 +62,12 @@ export class UserSocialMediaService {
       await this.peopleRepository.updateById(foundPeople.id, {
         walletAddressPassword: hashPeopleId,
       });
+    } else {
+      await this.peopleRepository.updateById(foundPeople.id, {
+        name,
+        username,
+        profilePictureURL,
+      });
     }
 
     const userSocialMedia = await this.userSocialMediaRepository.findOne({

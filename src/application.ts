@@ -59,8 +59,7 @@ import {
   UserSocialMediaRepository,
   VoteRepository,
 } from './repositories';
-import {PermissionKeys, PlatformType} from './enums';
-import {Post, UserCurrency} from './models';
+import {NotificationType, ReferenceType} from './enums';
 
 export {ApplicationConfig};
 
@@ -159,182 +158,78 @@ export class MyriadApiApplication extends BootMixin(
     await super.migrateSchema(options);
 
     if (options?.existingSchema === 'alter') {
-      await this.doMigratePost();
-      await this.doMigrateUser();
-      await this.doMigrateTag();
-      await this.doMigrateUserCurrency();
-      return;
+      return this.doMigrateNotification();
     }
   }
 
-  async doMigrateUser(): Promise<void> {
-    if (this.options.alter.indexOf('user') === -1) return;
-    const {userRepository} = await this.repositories();
+  async doMigrateNotification(): Promise<void> {
+    const {commentRepository, notificationRepository} =
+      await this.repositories();
+    const {count} = await notificationRepository.count({
+      type: NotificationType.COMMENT_REMOVED,
+    });
+    const bar = this.initializeProgressBar('Alter notification');
 
-    await userRepository.updateAll({permissions: [PermissionKeys.USER]});
-    await userRepository.updateAll(
-      {
-        permissions: [
-          PermissionKeys.MASTER,
-          PermissionKeys.ADMIN,
-          PermissionKeys.USER,
-        ],
-      },
-      {username: 'myriad_official'},
-    );
-  }
-
-  async doMigratePost(): Promise<void> {
-    if (this.options.alter.indexOf('post') === -1) return;
-    const {postRepository} = await this.repositories();
-    const {count} = await postRepository.count();
-    const bar = this.initializeProgressBar('Alter post');
-
-    bar.start(count - 1, 0);
+    bar.start(count, 0);
     for (let i = 0; i < count; i++) {
-      bar.update(i);
-
-      const [post] = await postRepository.find({
-        limit: 1,
-        skip: i,
-      });
-
-      const {platform, text, title, tags} = post;
-      const data: Partial<Post> = {};
-
-      if (tags.length > 0) {
-        data.tags = tags.map((tag: string) => {
-          return tag
-            .toLowerCase()
-            .replace(/ +/gi, '')
-            .replace(/[^A-Za-z0-9]/gi, '')
-            .trim();
-        });
-      }
-
-      if (platform !== PlatformType.MYRIAD) {
-        if (platform === PlatformType.REDDIT) {
-          data.title = title
-            .replace(/^("+)/, '')
-            .replace(/("+)$/, '')
-            .replace(new RegExp('&#x200B', 'ig'), '');
-        }
-
-        const removedQuote = text
-          .replace(/^("+)/, '')
-          .replace(/("+)$/, '')
-          .replace(/&(amp;)*#x200B;*/, '')
-          .trim();
-        const socmedRawText = removedQuote
-          .replace(/#\w+/gi, '')
-          .replace(/\n/gi, ' ')
-          .replace(/ +/gi, ' ')
-          .trim();
-        const rawText = data.title ?? '' + ' ' + socmedRawText;
-
-        data.text = removedQuote;
-        data.rawText = rawText.trim();
-      } else {
-        let myriadRawText = '';
-
-        try {
-          const nodes = JSON.parse(text);
-          const renderElement = (node: AnyObject) => {
-            if (node.text) {
-              myriadRawText += node.text + ' ';
-            }
-
-            node?.children?.forEach((child: AnyObject) => renderElement(child));
-          };
-
-          nodes.forEach((node: AnyObject) => renderElement(node));
-
-          data.rawText = myriadRawText
-            .replace(/\,/gi, '')
-            .replace(/ +/gi, ' ')
-            .trim();
-        } catch {
-          data.rawText = text;
-        }
-      }
-
-      await postRepository.updateById(post.id, data);
-    }
-
-    bar.stop();
-  }
-
-  async doMigrateTag(): Promise<void> {
-    if (this.options.alter.indexOf('tag') === -1) return;
-    const {postRepository, tagRepository} = await this.repositories();
-    const {count} = await tagRepository.count();
-    const bar = this.initializeProgressBar('Alter tag');
-
-    bar.start(count - 1, 0);
-    for (let i = 0; i < count; i++) {
-      bar.update(i);
-
-      const [tag] = await tagRepository.find({
-        limit: 1,
-        skip: i,
-      });
-
-      if (!tag) continue;
-      if (!tag.id) continue;
-
-      const tagId = tag.id;
-      const newTag = Object.assign(tag, {
-        id: tag.id
-          .toLowerCase()
-          .replace(/ +/gi, '')
-          .replace(/[^A-Za-z0-9]/gi, '')
-          .trim(),
-      });
+      bar.update(i + 1);
 
       try {
-        await tagRepository.deleteById(tagId);
-
-        const {count: countTag} = await postRepository.count({
-          tags: {inq: [[newTag.id]]},
+        const [notification] = await notificationRepository.find({
+          limit: 1,
+          skip: i,
+          where: {
+            type: NotificationType.COMMENT_REMOVED,
+          },
         });
 
-        await tagRepository.create(Object.assign(newTag, {count: countTag}));
+        if (!notification) continue;
+
+        const notificationId = notification.id;
+        const referenceId = notification.referenceId;
+        const additionalReferenceId = [];
+        const flag = true;
+
+        let lastCommentId = referenceId;
+
+        while (flag) {
+          const lastComment = await commentRepository.findById(lastCommentId);
+
+          if (lastComment.type === ReferenceType.POST) {
+            additionalReferenceId.unshift({postId: lastComment.postId});
+            break;
+          } else {
+            const comment = await commentRepository.findById(
+              lastComment.referenceId,
+            );
+            additionalReferenceId.unshift({commentId: comment.id});
+
+            if (comment.id) lastCommentId = comment.id;
+            else break;
+          }
+        }
+
+        const initialComment = await commentRepository.findById(referenceId, {
+          include: ['user'],
+        });
+
+        additionalReferenceId.push({
+          referenceId,
+          user: {
+            id: initialComment.user?.id,
+            displayName: initialComment.user?.name,
+            username: initialComment.user?.username,
+          },
+        });
+
+        await notificationRepository.updateById(notificationId, {
+          additionalReferenceId,
+        });
       } catch {
         // ignore
       }
     }
-    bar.stop();
-  }
 
-  async doMigrateUserCurrency(): Promise<void> {
-    if (this.options.alter.indexOf('currency') === -1) return;
-    const {userRepository, userCurrencyRepository} = await this.repositories();
-    const {count: countUser} = await userRepository.count();
-    const bar = this.initializeProgressBar('Alter user currency');
-
-    bar.start(countUser - 1, 0);
-    for (let i = 0; i < countUser; i++) {
-      bar.update(i);
-
-      const [user] = await userRepository.find({
-        limit: 1,
-        skip: i,
-      });
-
-      const userCurrency = await userCurrencyRepository.find({
-        where: {
-          userId: user.id,
-        },
-      });
-
-      await Promise.all(
-        userCurrency.map(async (e: UserCurrency, index: number) => {
-          return userCurrencyRepository.updateById(e.id, {
-            priority: index + 1,
-          });
-        }),
-      );
-    }
     bar.stop();
   }
 
