@@ -1,7 +1,12 @@
 import {BindingScope, inject, injectable, service} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {config} from '../config';
-import {NotificationType, ReferenceType, ReportStatusType} from '../enums';
+import {
+  NotificationType,
+  PlatformType,
+  ReferenceType,
+  ReportStatusType,
+} from '../enums';
 import {ExtendedPeople} from '../interfaces';
 import {
   Comment,
@@ -281,10 +286,19 @@ export class NotificationService {
         notification.referenceId = referenceId;
         notification.message = 'removed your post';
 
-        const {url} = await this.postRepository.findById(referenceId);
-        if (!url) break;
-        const posts = await this.postRepository.find({where: {url: url}});
-        const reporteeIds = posts.map(reportee => reportee.createdBy);
+        const {platform, url, createdBy} = await this.postRepository.findById(
+          referenceId,
+        );
+        const reporteeIds: string[] = [];
+
+        if (url) {
+          const posts = await this.postRepository.find({where: {url: url}});
+          reporteeIds.push(...posts.map(reportee => reportee.createdBy));
+        } else {
+          if (platform === PlatformType.MYRIAD) {
+            reporteeIds.push(createdBy);
+          } else break;
+        }
 
         await this.sendNotificationToMultipleUsers(
           notification,
@@ -330,7 +344,7 @@ export class NotificationService {
     return true;
   }
 
-  async sendPostVote(from: string, vote: Vote): Promise<boolean> {
+  async sendPostVote(vote: Vote): Promise<boolean> {
     const notification = new Notification({
       type:
         vote.type === ReferenceType.POST
@@ -661,42 +675,40 @@ export class NotificationService {
   async getCommentAdditionalReferenceIds(
     commentId: string,
   ): Promise<AnyObject[]> {
-    const lastCommentId = commentId;
+    const additionalReferenceId = [];
+    const flag = true;
 
-    let additionalReferenceId = [];
-    let firstCommentId = null;
-    let secondCommentId = null;
+    let lastCommentId = commentId;
 
-    let lastComment = await this.commentRepository.findById(lastCommentId);
-
-    if (lastComment.type === ReferenceType.POST) {
-      additionalReferenceId = [{postId: lastComment.postId}];
-    } else {
-      lastComment = await this.commentRepository.findById(
-        lastComment.referenceId,
-      );
-
-      firstCommentId = lastComment.id;
-      secondCommentId = lastComment.id;
+    while (flag) {
+      const lastComment = await this.commentRepository.findById(lastCommentId);
 
       if (lastComment.type === ReferenceType.POST) {
-        additionalReferenceId = [
-          {postId: lastComment.postId},
-          {firstCommentId: firstCommentId},
-        ];
+        additionalReferenceId.unshift({postId: lastComment.postId});
+        break;
       } else {
-        lastComment = await this.commentRepository.findById(
+        const comment = await this.commentRepository.findById(
           lastComment.referenceId,
         );
-        firstCommentId = lastComment.id;
+        additionalReferenceId.unshift({commentId: comment.id});
 
-        additionalReferenceId = [
-          {postId: lastComment.postId},
-          {firstCommentId: firstCommentId},
-          {secondCommentId: secondCommentId},
-        ];
+        if (comment.id) lastCommentId = comment.id;
+        else break;
       }
     }
+
+    const initialComment = await this.commentRepository.findById(commentId, {
+      include: ['user'],
+    });
+
+    additionalReferenceId.push({
+      commentId,
+      user: {
+        id: initialComment.user?.id,
+        displayName: initialComment.user?.name,
+        username: initialComment.user?.username,
+      },
+    });
 
     return additionalReferenceId;
   }
