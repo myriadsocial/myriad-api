@@ -278,12 +278,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         if (methodName === MethodType.GETIMPORTERS) {
-          const splitPath = request.path.split('/');
-          const originPostId = splitPath[2];
-          const platform = splitPath[4];
+          const [originPostId, platform, importerFilter] =
+            invocationCtx.args;
 
           filter.include = ['user'];
-          filter.where = Object.assign(filter.where, {
+          filter.where = Object.assign(importerFilter.where ?? {}, {
             originPostId: originPostId,
             platform: platform,
           });
@@ -526,6 +525,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     if (controllerName === ControllerType.REPORTUSER)
       invocationCtx.args[1] = paginationFilter;
+    else if (methodName === MethodType.GETIMPORTERS)
+      invocationCtx.args[2] = paginationFilter;
     else invocationCtx.args[0] = paginationFilter;
 
     return meta;

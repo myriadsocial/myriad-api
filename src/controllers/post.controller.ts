@@ -122,6 +122,8 @@ export class PostController {
     },
   })
   async getImporters(
+    @param.path.string('originPostId') originPostId: string,
+    @param.path.string('platform') platform: string,
     @param.filter(Post, {
       exclude: ['limit', 'skip', 'offset', 'where', 'include'],
     })
