@@ -161,6 +161,7 @@ describe('PostApplication', function () {
         .send()
         .expect(200);
 
+      result.body.user.metric.totalPosts = 0;
       persistedPost.user = user;
 
       const expected = toJSON(persistedPost);
@@ -352,7 +353,11 @@ describe('PostApplication', function () {
         },
       });
 
+    response.body.data[0].user.metric.totalPosts = 0;
+    response.body.data[0].importers[0].metric.totalPosts = 0;
+
     user.metric.totalFriends = 0;
+    user.metric.totalPosts = 0;
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
@@ -394,6 +399,7 @@ describe('PostApplication', function () {
 
       peopleId = response.body.peopleId;
       result.totalImporter = 1;
+      response.body.importers[0].metric.totalPosts = 0;
 
       expect(
         toJSON({
