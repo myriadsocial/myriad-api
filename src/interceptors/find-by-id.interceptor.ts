@@ -21,6 +21,7 @@ import {PostService} from '../services';
 import {AccountSettingRepository, FriendRepository} from '../repositories';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
+import {HttpErrors} from '@loopback/rest';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -124,6 +125,8 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.EXPERIENCE: {
+        if (result.deletedAt)
+          throw new HttpErrors.NotFound('Experience not found');
         if (!result.users) return result;
         const users = result.users;
         const userToPeople = users.map((user: User) => {
@@ -145,6 +148,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.POST: {
+        if (result.deletedAt) throw new HttpErrors.NotFound('Post not found');
         const post = await this.postService.restrictedPost(result as Post);
         const postDetail = await this.postService.getPostImporterInfo(
           post,

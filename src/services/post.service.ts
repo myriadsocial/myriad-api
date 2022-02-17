@@ -218,19 +218,6 @@ export class PostService {
   }
 
   async restrictedPost(post: Post): Promise<Post> {
-    const found = await this.postRepository.findOne({
-      where: <AnyObject>{
-        originPostId: post.originPostId ?? '',
-        platform: post.platform,
-        deletedAt: {
-          $exists: true,
-        },
-      },
-    });
-
-    if (found || post.deletedAt)
-      throw new HttpErrors.NotFound('Post not found');
-
     const creator = post.createdBy;
     const visibility = post.visibility;
     switch (visibility) {
