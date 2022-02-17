@@ -29,7 +29,10 @@ import {
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
 
-describe('ReportApplication', () => {
+/* eslint-disable  @typescript-eslint/no-invalid-this */
+describe('ReportApplication', function () {
+  this.timeout(20000);
+
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
@@ -42,7 +45,7 @@ describe('ReportApplication', () => {
   let address: KeyringPair;
 
   before(async () => {
-    ({app, client} = await setupApplication());
+    ({app, client} = await setupApplication(true));
   });
 
   after(() => app.stop());
@@ -89,6 +92,12 @@ describe('ReportApplication', () => {
   context('when dealing with a single persisted report', () => {
     let persistedReport: Report;
     let post: Post;
+
+    before(async () => {
+      await givenUserInstance(userRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
+      });
+    });
 
     beforeEach(async () => {
       post = await givenPostInstance(postRepository);
