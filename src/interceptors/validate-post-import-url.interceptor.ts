@@ -8,14 +8,24 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
-import {ActivityLogType, ReferenceType} from '../enums';
+import {HttpErrors} from '@loopback/rest';
+import {
+  ActivityLogType,
+  PlatformType,
+  ReferenceType,
+  VisibilityType,
+} from '../enums';
+import {ExtendedPost} from '../interfaces';
+import {PlatformPost} from '../models/platform-post.model';
 import {UserRepository} from '../repositories';
 import {
   ActivityLogService,
   FriendService,
   PostService,
+  SocialMediaService,
   TagService,
 } from '../services';
+import {formatTag} from '../utils/format-tag';
 import {UrlUtils} from '../utils/url.utils';
 
 /**
@@ -37,6 +47,8 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     protected postService: PostService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
+    @service(SocialMediaService)
+    protected socialMediaService: SocialMediaService,
   ) {}
 
   /**
@@ -70,8 +82,15 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     const platform = urlUtils.getPlatform();
     const originPostId = urlUtils.getOriginPostId();
     const username = urlUtils.getUsername();
+    const platformPost = Object.assign(invocationCtx.args[0], {
+      url: [platform, originPostId, username].join(','),
+    });
 
-    invocationCtx.args[0].url = [platform, originPostId, username].join(',');
+    await this.postService.validateImportedPost(platformPost);
+
+    const rawPost = await this.getSocialMediaPost(platformPost);
+
+    invocationCtx.args[0].rawPost = rawPost;
   }
 
   async afterImport(
@@ -106,5 +125,44 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
       importers: importerInfo,
       totalImporter: count,
     };
+  }
+
+  async getSocialMediaPost(platformPost: PlatformPost): Promise<ExtendedPost> {
+    const [platform, originPostId] = platformPost.url.split(',');
+
+    let rawPost = null;
+    switch (platform) {
+      case PlatformType.TWITTER:
+        rawPost = await this.socialMediaService.fetchTweet(originPostId);
+        break;
+
+      case PlatformType.REDDIT:
+        rawPost = await this.socialMediaService.fetchRedditPost(originPostId);
+        break;
+
+      default:
+        throw new HttpErrors.NotFound('Cannot find the platform!');
+    }
+
+    if (!rawPost)
+      throw new HttpErrors.NotFound('Cannot find the specified post');
+    rawPost.visibility = platformPost.visibility ?? VisibilityType.PUBLIC;
+    rawPost.tags = this.getImportedTags(rawPost.tags, platformPost.tags ?? []);
+    rawPost.createdBy = platformPost.importer;
+    rawPost.isNSFW = Boolean(platformPost.NSFWTag);
+    rawPost.NSFWTag = platformPost.NSFWTag;
+
+    return rawPost;
+  }
+
+  getImportedTags(socialTags: string[], importedTags: string[]): string[] {
+    if (!socialTags) socialTags = [];
+    if (!importedTags) importedTags = [];
+
+    const postTags = [...socialTags, ...importedTags]
+      .map(tag => formatTag(tag))
+      .filter(tag => Boolean(tag));
+
+    return [...new Set(postTags)];
   }
 }

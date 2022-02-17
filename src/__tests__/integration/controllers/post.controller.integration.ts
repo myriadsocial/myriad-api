@@ -9,7 +9,7 @@ import {
   TransactionRepository,
   UserRepository,
 } from '../../../repositories';
-import {PostService, SocialMediaService} from '../../../services';
+import {PostService} from '../../../services';
 import {
   givenCommentInstance,
   givenEmptyDatabase,
@@ -24,7 +24,6 @@ import {
 
 describe('PostControllerIntegration', () => {
   let postRepository: PostRepository;
-  let socialMediaService: SocialMediaService;
   let postService: PostService;
   let peopleRepository: PeopleRepository;
   let userRepository: UserRepository;
@@ -46,7 +45,7 @@ describe('PostControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new PostController(socialMediaService, postService);
+    controller = new PostController(postService);
   });
 
   beforeEach(async () => {
