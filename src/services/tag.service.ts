@@ -21,14 +21,15 @@ export class TagService {
     protected friendService: FriendService,
   ) {}
 
-  async createTags(tags: string[]): Promise<void> {
+  async createTags(tags: string[], experience?: boolean): Promise<void> {
     for (const tag of tags) {
       try {
         await this.tagRepository.create({
           id: tag,
-          count: 1,
+          count: experience ? 0 : 1,
         });
       } catch {
+        if (experience) continue;
         const {count} = await this.postRepository.count({
           tags: {
             inq: [[tag]],

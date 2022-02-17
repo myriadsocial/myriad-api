@@ -90,6 +90,10 @@ export class ExperienceService {
       userId,
       FriendStatusType.BLOCKED,
     );
+    const approvedFriendIds = await this.friendService.getFriendIds(
+      userId,
+      FriendStatusType.APPROVED,
+    );
     const friends = await this.friendService.friendRepository.find({
       where: {
         requestorId: userId,
@@ -99,7 +103,7 @@ export class ExperienceService {
     });
     const friendIds = friends.map(friend => friend.requesteeId);
     const blockedUserIds = blockedFriendIds.filter(
-      id => !friendIds.includes(id),
+      id => ![...friendIds, ...approvedFriendIds].includes(id),
     );
 
     if (experience?.users) {

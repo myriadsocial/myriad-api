@@ -15,14 +15,15 @@ import {
   PlatformType,
   ReferenceType,
 } from '../enums';
-import {People, User} from '../models';
+import {Experience, People, User} from '../models';
 import {
   ExperienceRepository,
   ExperienceUserRepository,
   UserExperienceRepository,
   UserRepository,
 } from '../repositories';
-import {ActivityLogService, MetricService} from '../services';
+import {ActivityLogService, MetricService, TagService} from '../services';
+import {formatTag} from '../utils/format-tag';
 /**
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
@@ -44,6 +45,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     protected metricService: MetricService,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
+    @service(TagService)
+    protected tagService: TagService,
   ) {}
 
   /**
@@ -90,6 +93,8 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
         }
 
+        const hashtags: string[] = invocationCtx.args[1].tags;
+
         people = invocationCtx.args[1].people.filter(
           (e: People) => e.platform !== PlatformType.MYRIAD,
         );
@@ -103,6 +108,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
           createdBy: userId,
           people: people,
+          tags: hashtags.map(tag => formatTag(tag)),
         });
         break;
       }
@@ -228,6 +234,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     }
 
     if (methodName === MethodType.CREATE) {
+      const createdExperience = result as Experience;
+      const tags = createdExperience.tags;
+
+      await this.tagService.createTags(tags, true);
       await this.activityLogService.createLog(
         ActivityLogType.CREATEEXPERIENCE,
         result.createdBy,

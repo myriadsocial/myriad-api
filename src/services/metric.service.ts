@@ -56,7 +56,7 @@ export class MetricService {
     @repository(TagRepository)
     protected tagRepository: TagRepository,
     @repository(UserExperienceRepository)
-    protected userExperienceRepository: UserExperienceRepository,
+    protected userExpRepository: UserExperienceRepository,
     @repository(ActivityLogRepository)
     protected activityLogRepository: ActivityLogRepository,
     @repository(ReportRepository)
@@ -121,12 +121,14 @@ export class MetricService {
   async userMetric(userId: string): Promise<void> {
     if (!userId) return;
 
-    const {count: totalExperiences} = await this.userExperienceRepository.count(
-      {userId},
-    );
+    const {count: totalExperiences} = await this.userExpRepository.count({
+      userId: userId,
+      deletedAt: {exists: false},
+    });
     const {count: totalFriends} = await this.friendRepository.count({
       requestorId: userId,
       status: FriendStatusType.APPROVED,
+      deletedAt: {exists: false},
     });
     const {count: totalPosts} = await this.postRepository.count({
       createdBy: userId,
@@ -211,7 +213,7 @@ export class MetricService {
         return this.countMutualData(methodName, where);
 
       case ControllerType.USEREXPERIENCE:
-        return this.userExperienceRepository.count(where);
+        return this.userExpRepository.count(where);
 
       case ControllerType.COMMENT:
         return this.commentRepository.count(where);

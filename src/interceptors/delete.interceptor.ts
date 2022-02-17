@@ -176,7 +176,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
       case ControllerType.POST: {
         const [id, post] = invocationCtx.args;
         await this.commentRepository.deleteAll({postId: id});
-        await this.metricService.userMetric(post.reatedBy);
+        await this.metricService.userMetric(post.createdBy);
         await this.metricService.countTags(post.tags);
         break;
       }

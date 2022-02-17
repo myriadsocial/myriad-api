@@ -5,24 +5,27 @@ import {
   InvocationContext,
   InvocationResult,
   Provider,
+  service,
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
-import {HttpErrors} from '@loopback/rest';
 import {
   MethodType,
   PlatformType,
   ReferenceType,
   ReportStatusType,
 } from '../enums';
-import {Report} from '../models';
 import {
   CommentRepository,
+  ExperienceRepository,
+  FriendRepository,
   PostRepository,
   ReportRepository,
+  UserExperienceRepository,
   UserReportRepository,
   UserRepository,
 } from '../repositories';
+import {MetricService} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -33,8 +36,12 @@ export class ReportInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${ReportInterceptor.name}`;
 
   constructor(
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
+    @repository(ExperienceRepository)
+    protected experienceRepository: ExperienceRepository,
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
     @repository(CommentRepository)
@@ -43,6 +50,10 @@ export class ReportInterceptor implements Provider<Interceptor> {
     protected userRepository: UserRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
+    @repository(UserExperienceRepository)
+    protected userExperienceRepository: UserExperienceRepository,
+    @service(MetricService)
+    protected metricService: MetricService,
   ) {}
 
   /**
@@ -64,44 +75,25 @@ export class ReportInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
+    const report = invocationCtx.args[1];
     const methodName = invocationCtx.methodName as MethodType;
+    const {referenceId, referenceType} = await this.reportRepository.findById(
+      invocationCtx.args[0],
+    );
 
-    let referenceId = null;
-    let referenceType = null;
+    let updated = true;
+    let restored = true;
 
-    if (
-      methodName === MethodType.UPDATEBYID ||
-      methodName === MethodType.RESTORE
-    ) {
-      ({referenceId, referenceType} = await this.reportRepository.findById(
-        invocationCtx.args[0],
-      ));
-
-      switch (methodName) {
-        case MethodType.UPDATEBYID: {
-          const report: Report = invocationCtx.args[1];
-
-          await this.updateReport(
-            report,
-            referenceId,
-            referenceType,
-            invocationCtx,
-          );
-
-          break;
-        }
-
-        case MethodType.RESTORE: {
-          await this.restoreDocument(referenceId, referenceType);
-
-          break;
-        }
-      }
+    if (methodName === MethodType.UPDATEBYID) {
+      if (report.status === ReportStatusType.REMOVED) restored = false;
+      else updated = false;
     }
+
+    if (updated) await this.updateReport(referenceId, referenceType, restored);
 
     const result = await next();
 
-    if (methodName === MethodType.RESTORE && referenceId && referenceType) {
+    if (methodName === MethodType.RESTORE) {
       await this.reportRepository.deleteAll({
         referenceId,
         referenceType,
@@ -111,97 +103,90 @@ export class ReportInterceptor implements Provider<Interceptor> {
     return result;
   }
 
-  async restoreDocument(
+  async updateReport(
     referenceId: string,
     referenceType: ReferenceType,
+    restored: boolean,
   ): Promise<void> {
-    const where = {
+    let data: AnyObject = {
       $unset: {
         deletedAt: '',
       },
     };
 
-    switch (referenceType) {
-      case ReferenceType.POST:
-        await this.postRepository.updateById(referenceId, <AnyObject>where);
-        break;
+    if (!restored) data = {deletedAt: new Date().toString()};
+    else {
+      const reports = await this.reportRepository.find({
+        where: {
+          referenceType,
+          referenceId,
+        },
+      });
 
-      case ReferenceType.COMMENT:
-        await this.commentRepository.updateById(referenceId, <AnyObject>where);
-        break;
+      const reportIds = reports.map(report => report.id ?? '');
 
-      case ReferenceType.USER:
-        await this.userRepository.updateById(referenceId, <AnyObject>where);
-        break;
-
-      default:
-        throw new HttpErrors.UnprocessableEntity('ReferenceId not found!');
+      await this.userReportRepository.deleteAll({
+        reportId: {inq: reportIds},
+      });
     }
 
-    const reports = await this.reportRepository.find({
-      where: {
-        referenceType,
-        referenceId,
-      },
-    });
-
-    const reportIds = reports.map(report => {
-      return {
-        reportId: report.id,
-      };
-    });
-
-    await this.userReportRepository.deleteAll({
-      or: reportIds,
-    });
-  }
-
-  async updateReport(
-    report: Report,
-    referenceId: string,
-    referenceType: ReferenceType,
-    invocationCtx: InvocationContext,
-  ): Promise<void> {
-    if (report.status === ReportStatusType.REMOVED) {
-      switch (referenceType) {
-        case ReferenceType.POST: {
-          const {platform, url} = await this.postRepository.findById(
-            referenceId,
-          );
-          if (platform === PlatformType.MYRIAD) {
-            await this.postRepository.updateById(referenceId, {
-              deletedAt: new Date().toString(),
-            });
-          } else {
-            if (url) {
-              await this.postRepository.updateAll(
-                {deletedAt: new Date().toString()},
-                {url: url},
-              );
-            }
+    switch (referenceType) {
+      case ReferenceType.POST: {
+        const {platform, url, createdBy} = await this.postRepository.findById(
+          referenceId,
+        );
+        if (platform === PlatformType.MYRIAD) {
+          await this.postRepository.updateById(referenceId, data);
+        } else {
+          if (url) {
+            await this.postRepository.updateAll(data, {url: url});
           }
-
-          break;
         }
 
-        case ReferenceType.COMMENT: {
-          await this.commentRepository.updateById(referenceId, {
-            deletedAt: new Date().toString(),
-          });
+        await this.metricService.userMetric(createdBy);
 
-          break;
-        }
+        break;
+      }
 
-        case ReferenceType.USER: {
-          await this.userRepository.updateById(referenceId, {
-            deletedAt: new Date().toString(),
-          });
+      case ReferenceType.COMMENT: {
+        await this.commentRepository.updateById(referenceId, data);
 
-          break;
-        }
+        break;
+      }
+
+      case ReferenceType.USER: {
+        await this.handleUserReports(referenceId, data);
+
+        break;
       }
     }
+  }
 
-    invocationCtx.args[1] = report;
+  async handleUserReports(userId: string, data: AnyObject): Promise<void> {
+    await this.userRepository.updateById(userId, data);
+    await this.friendRepository.updateAll(data, {requesteeId: userId});
+    await this.experienceRepository.updateAll(data, {createdBy: userId});
+    await this.postRepository.updateAll(data, {createdBy: userId});
+    const experiences = await this.experienceRepository.find({
+      where: {
+        createdBy: userId,
+      },
+    });
+    const friends = await this.friendRepository.find({
+      where: {
+        requesteeId: userId,
+      },
+    });
+    const experienceIds = experiences.map(e => e.id ?? '');
+
+    await this.userExperienceRepository.updateAll(data, {
+      experienceId: {inq: experienceIds},
+    });
+    await this.metricService.userMetric(userId);
+    await Promise.all(
+      friends.map(async friend => {
+        return this.metricService.userMetric(friend.requestorId);
+      }),
+    );
   }
 }

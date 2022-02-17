@@ -312,6 +312,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           filter.where = await this.getExperienceByQuery(experienceQuery);
+          filter.where.deletedAt = {$exists: false};
         }
         break;
       }
@@ -408,6 +409,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                       where: {
                         requestorId: this.currentUser[securityId],
                         requesteeId: e.createdBy,
+                        status: FriendStatusType.APPROVED,
                       },
                     });
 
@@ -728,7 +730,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           ? experience.people.map(e => e.id)
           : [];
         const experienceUserIds = experience
-          ? (experience.users ?? []).map(e => e.id)
+          ? (experience.users ?? [])
+              .filter(user => {
+                const accountPrivacy = user?.accountSetting.accountPrivacy;
+                const privateSetting = AccountSettingType.PRIVATE;
+
+                return !(accountPrivacy === privateSetting);
+              })
+              .map(e => e.id)
           : [];
         const blockedFriendIds = await this.friendService.getFriendIds(
           userId,
