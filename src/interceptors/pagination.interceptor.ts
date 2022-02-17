@@ -312,6 +312,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           filter.where = await this.getExperienceByQuery(experienceQuery);
+          filter.where.deletedAt = {$exists: false};
         }
         break;
       }
@@ -408,6 +409,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                       where: {
                         requestorId: this.currentUser[securityId],
                         requesteeId: e.createdBy,
+                        status: FriendStatusType.APPROVED,
                       },
                     });
 
