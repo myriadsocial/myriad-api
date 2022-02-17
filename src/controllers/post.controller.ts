@@ -164,6 +164,7 @@ export class PostController {
             exclude: [
               'id',
               'metric',
+              'banned',
               'embeddedURL',
               'deletedAt',
               'createdBy',
