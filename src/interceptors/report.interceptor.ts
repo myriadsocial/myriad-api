@@ -155,18 +155,25 @@ export class ReportInterceptor implements Provider<Interceptor> {
       }
 
       case ReferenceType.USER: {
-        await this.handleUserReports(referenceId, data);
+        await this.handleUserReports(referenceId, data, restored);
 
         break;
       }
     }
   }
 
-  async handleUserReports(userId: string, data: AnyObject): Promise<void> {
+  async handleUserReports(
+    userId: string,
+    data: AnyObject,
+    restored: boolean,
+  ): Promise<void> {
     await this.userRepository.updateById(userId, data);
     await this.friendRepository.updateAll(data, {requesteeId: userId});
     await this.experienceRepository.updateAll(data, {createdBy: userId});
-    await this.postRepository.updateAll(data, {createdBy: userId});
+    await this.postRepository.updateAll(
+      {banned: !restored},
+      {createdBy: userId},
+    );
     const experiences = await this.experienceRepository.find({
       where: {
         createdBy: userId,
