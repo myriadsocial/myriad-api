@@ -36,7 +36,7 @@ import {UserWithRelations} from './';
         },
       },
     },
-    hiddenProperties: ['popularCount', 'rawText'],
+    hiddenProperties: ['popularCount', 'rawText', 'banned'],
   },
 })
 export class Post extends Entity {
@@ -175,6 +175,13 @@ export class Post extends Entity {
     required: false,
   })
   totalImporter?: number;
+
+  @property({
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  banned: boolean;
 
   @property({
     type: 'date',

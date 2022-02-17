@@ -271,6 +271,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             filter.where = whereTimeline ?? {id: ''};
           }
 
+          filter.where.banned = false;
           filter.where.deletedAt = {$exists: false};
           filter.include = filter.include
             ? [...filter.include, 'user']

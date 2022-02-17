@@ -43,6 +43,11 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
     userProfile.defaultCurrency = user.defaultCurrency;
     userProfile.permissions = user.permissions;
 
+    if (request.method === 'GET') return userProfile;
+    if (user.deletedAt)
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot create, update, or delete',
+      );
     return userProfile;
   }
 
