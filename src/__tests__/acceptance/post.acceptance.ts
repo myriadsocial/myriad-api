@@ -362,6 +362,7 @@ describe('PostApplication', function () {
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(post as Post),
+      banned: false,
       totalImporter: 1,
       popularCount: 0,
       user: toJSON(user),
