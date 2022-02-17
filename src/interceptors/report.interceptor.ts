@@ -132,7 +132,9 @@ export class ReportInterceptor implements Provider<Interceptor> {
 
     switch (referenceType) {
       case ReferenceType.POST: {
-        const {platform, url} = await this.postRepository.findById(referenceId);
+        const {platform, url, createdBy} = await this.postRepository.findById(
+          referenceId,
+        );
         if (platform === PlatformType.MYRIAD) {
           await this.postRepository.updateById(referenceId, data);
         } else {
@@ -140,6 +142,8 @@ export class ReportInterceptor implements Provider<Interceptor> {
             await this.postRepository.updateAll(data, {url: url});
           }
         }
+
+        await this.metricService.userMetric(createdBy);
 
         break;
       }
