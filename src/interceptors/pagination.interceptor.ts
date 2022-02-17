@@ -730,7 +730,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           ? experience.people.map(e => e.id)
           : [];
         const experienceUserIds = experience
-          ? (experience.users ?? []).map(e => e.id)
+          ? (experience.users ?? [])
+              .filter(user => {
+                const accountPrivacy = user?.accountSetting.accountPrivacy;
+                const privateSetting = AccountSettingType.PRIVATE;
+
+                return !(accountPrivacy === privateSetting);
+              })
+              .map(e => e.id)
           : [];
         const blockedFriendIds = await this.friendService.getFriendIds(
           userId,
