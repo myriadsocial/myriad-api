@@ -132,6 +132,7 @@ export class MetricService {
     });
     const {count: totalPosts} = await this.postRepository.count({
       createdBy: userId,
+      banned: false,
       deletedAt: {exists: false},
     });
 
