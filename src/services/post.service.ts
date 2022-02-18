@@ -49,6 +49,8 @@ export class PostService {
   ) {}
 
   async createPost(post: Omit<ExtendedPost, 'id'>): Promise<PostWithRelations> {
+    if (!post)
+      throw new HttpErrors.UnprocessableEntity('Cannot find specified post');
     const {platformUser, platform} = post;
 
     if (!platformUser)
@@ -72,6 +74,11 @@ export class PostService {
       await this.peopleRepository.updateById(people.id, {
         walletAddressPassword: hashPeopleId,
       });
+    } else {
+      people.name = platformUser.name;
+      people.profilePictureURL = platformUser.profilePictureURL;
+
+      await this.peopleRepository.updateById(people.id, _.omit(people, ['id']));
     }
 
     const newPost: PostWithRelations = await this.postRepository.create(
@@ -158,9 +165,7 @@ export class PostService {
     });
   }
 
-  async findImportedPost(
-    platformPost: PlatformPost,
-  ): Promise<ExtendedPost | undefined> {
+  async validateImportedPost(platformPost: PlatformPost): Promise<void> {
     const [platform, originPostId] = platformPost.url.split(',');
     const importer = platformPost.importer;
 
@@ -203,18 +208,6 @@ export class PostService {
     }
 
     if (posts.length === 0) return undefined;
-
-    const platformUser = _.omit(posts[0].people, ['id']);
-    const existingPost = _.omit(posts[0], [
-      'id',
-      'people',
-      'metric',
-      'createdAt',
-      'updatedAt',
-      'deletedAt',
-    ]);
-
-    return _.assign(existingPost as ExtendedPost, {platformUser: platformUser});
   }
 
   async restrictedPost(post: Post): Promise<Post> {

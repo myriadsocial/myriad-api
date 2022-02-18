@@ -1,5 +1,6 @@
 import {Model, model, property} from '@loopback/repository';
 import {VisibilityType} from '../enums';
+import {ExtendedPost} from '../interfaces';
 
 @model()
 export class PlatformPost extends Model {
@@ -36,6 +37,12 @@ export class PlatformPost extends Model {
     require: false,
   })
   NSFWTag?: string;
+
+  @property({
+    type: 'object',
+    required: false,
+  })
+  rawPost: ExtendedPost;
 
   constructor(data?: Partial<PlatformPost>) {
     super(data);

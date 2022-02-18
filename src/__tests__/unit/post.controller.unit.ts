@@ -16,7 +16,7 @@ import {
   PostRepository,
   VoteRepository,
 } from '../../repositories';
-import {PostService, SocialMediaService} from '../../services';
+import {PostService} from '../../services';
 import {givenMyriadPost} from '../helpers';
 import {securityId} from '@loopback/security';
 
@@ -28,7 +28,6 @@ describe('PostController', () => {
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
   let voteRepository: StubbedInstanceWithSinonAccessor<VoteRepository>;
   let postService: PostService;
-  let socialMediaService: SocialMediaService;
   let controller: PostController;
   let aPostWithId: Post;
   let aChangedPost: Post;
@@ -116,6 +115,6 @@ describe('PostController', () => {
       accountSettingRepository,
       {[securityId]: ''},
     );
-    controller = new PostController(socialMediaService, postService);
+    controller = new PostController(postService);
   }
 });

@@ -4,14 +4,12 @@ import {
   del,
   get,
   getModelSchemaRef,
-  HttpErrors,
   param,
   patch,
   post,
   requestBody,
   response,
 } from '@loopback/rest';
-import {PlatformType, VisibilityType} from '../enums';
 import {
   CreateInterceptor,
   DeleteInterceptor,
@@ -20,18 +18,14 @@ import {
   UpdateInterceptor,
 } from '../interceptors';
 import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
-import {ExtendedPost} from '../interfaces';
 import {DraftPost, Post, User} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
-import {PostService, SocialMediaService} from '../services';
+import {PostService} from '../services';
 import {authenticate} from '@loopback/authentication';
-import {formatTag} from '../utils/format-tag';
 
 @authenticate('jwt')
 export class PostController {
   constructor(
-    @service(SocialMediaService)
-    protected socialMediaService: SocialMediaService,
     @service(PostService)
     protected postService: PostService,
   ) {}
@@ -66,26 +60,15 @@ export class PostController {
       description: 'Import post',
       content: {
         'application/json': {
-          schema: getModelSchemaRef(PlatformPost),
+          schema: getModelSchemaRef(PlatformPost, {
+            exclude: ['rawPost'],
+          }),
         },
       },
     })
     platformPost: PlatformPost,
   ): Promise<Post> {
-    let newPost = await this.postService.findImportedPost(platformPost);
-
-    if (!newPost) {
-      newPost = await this.getSocialMediaPost(platformPost);
-    }
-
-    newPost.visibility = platformPost.visibility ?? VisibilityType.PUBLIC;
-    newPost.tags = this.getImportedTags(newPost.tags, platformPost.tags ?? []);
-    newPost.createdBy = platformPost.importer;
-    newPost.isNSFW = Boolean(platformPost.NSFWTag);
-    newPost.NSFWTag = platformPost.NSFWTag;
-    newPost.popularCount = 0;
-
-    return this.postService.createPost(newPost);
+    return this.postService.createPost(platformPost.rawPost);
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -195,31 +178,5 @@ export class PostController {
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.postService.postRepository.deleteById(id);
-  }
-
-  async getSocialMediaPost(platformPost: PlatformPost): Promise<ExtendedPost> {
-    const [platform, originPostId] = platformPost.url.split(',');
-
-    switch (platform) {
-      case PlatformType.TWITTER:
-        return this.socialMediaService.fetchTweet(originPostId);
-
-      case PlatformType.REDDIT:
-        return this.socialMediaService.fetchRedditPost(originPostId);
-
-      default:
-        throw new HttpErrors.NotFound('Cannot find the platform!');
-    }
-  }
-
-  getImportedTags(socialTags: string[], importedTags: string[]): string[] {
-    if (!socialTags) socialTags = [];
-    if (!importedTags) importedTags = [];
-
-    const postTags = [...socialTags, ...importedTags]
-      .map(tag => formatTag(tag))
-      .filter(tag => Boolean(tag));
-
-    return [...new Set(postTags)];
   }
 }

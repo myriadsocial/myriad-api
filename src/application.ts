@@ -158,11 +158,21 @@ export class MyriadApiApplication extends BootMixin(
     await super.migrateSchema(options);
 
     if (options?.existingSchema === 'alter') {
-      return this.doMigrateNotification();
+      await this.doMigratePost();
+      await this.doMigrateNotification();
+      return;
     }
   }
 
+  async doMigratePost(): Promise<void> {
+    if (this.options.alter.indexOf('post') === -1) return;
+    const {postRepository} = await this.repositories();
+
+    await (postRepository as PostRepository).updateAll({banned: false});
+  }
+
   async doMigrateNotification(): Promise<void> {
+    if (this.options.alter.indexOf('notification') === -1) return;
     const {commentRepository, notificationRepository} =
       await this.repositories();
     const {count} = await notificationRepository.count({
