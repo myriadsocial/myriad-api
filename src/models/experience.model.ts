@@ -8,6 +8,7 @@ import {
 import {People} from './people.model';
 import {User} from './user.model';
 import {ExperienceUser} from './experience-user.model';
+import {UserWithRelations} from './user.model';
 
 @model({
   settings: {
@@ -125,6 +126,7 @@ export class Experience extends Entity {
 
 export interface ExperienceRelations {
   // describe navigational properties here
+  user?: UserWithRelations;
 }
 
 export type ExperienceWithRelations = Experience & ExperienceRelations;
