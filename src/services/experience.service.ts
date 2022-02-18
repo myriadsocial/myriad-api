@@ -1,11 +1,17 @@
-import {repository, Where} from '@loopback/repository';
+import {AnyObject, repository, Where} from '@loopback/repository';
 import {
   AccountSettingType,
   FriendStatusType,
   PlatformType,
   VisibilityType,
 } from '../enums';
-import {Experience, People, Post, UserExperienceWithRelations} from '../models';
+import {
+  Experience,
+  ExperienceWithRelations,
+  People,
+  Post,
+  UserExperienceWithRelations,
+} from '../models';
 import {
   ExperienceRepository,
   UserExperienceRepository,
@@ -156,6 +162,70 @@ export class ExperienceService {
         },
       ],
     } as Where<Post>;
+  }
+
+  async privateUserExperience(
+    userId: string,
+    userExperiences: UserExperienceWithRelations[],
+  ): Promise<AnyObject[]> {
+    return Promise.all(
+      userExperiences.map(async userExperience => {
+        const accountSetting = userExperience.experience?.user?.accountSetting;
+        const privateUserExperience = {
+          ...userExperience,
+          private: false,
+        };
+
+        if (
+          accountSetting?.accountPrivacy === AccountSettingType.PRIVATE &&
+          accountSetting?.userId !== userId
+        ) {
+          const friend = await this.friendService.friendRepository.findOne({
+            where: <AnyObject>{
+              requestorId: userId,
+              requesteeId: accountSetting.userId,
+              deletedAt: {
+                $exists: false,
+              },
+            },
+          });
+
+          if (!friend) privateUserExperience.private = true;
+        }
+
+        return privateUserExperience;
+      }),
+    );
+  }
+
+  async privateExperience(
+    userId: string,
+    experience: ExperienceWithRelations,
+  ): Promise<AnyObject> {
+    const accountSetting = experience?.user?.accountSetting;
+    const privateExperience = {
+      ...experience,
+      private: false,
+    };
+
+    if (
+      accountSetting?.accountPrivacy === AccountSettingType.PRIVATE &&
+      accountSetting?.userId !== userId
+    ) {
+      const friend = await this.friendService.friendRepository.findOne({
+        where: <AnyObject>{
+          requestorId: userId,
+          requesteeId: accountSetting.userId,
+          deletedAt: {
+            $exists: false,
+          },
+        },
+      });
+
+      if (!friend) privateExperience.private = true;
+    }
+
+    return privateExperience;
   }
 
   combinePeopleAndUser(

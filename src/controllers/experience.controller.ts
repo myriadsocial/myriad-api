@@ -33,7 +33,6 @@ export class ExperienceController {
     return this.experienceRepository.find(filter);
   }
 
-  @authenticate.skip()
   @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/experiences/{id}')
   @response(200, {

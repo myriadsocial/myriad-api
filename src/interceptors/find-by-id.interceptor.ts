@@ -15,9 +15,9 @@ import {
   FriendStatusType,
   PlatformType,
 } from '../enums';
-import {People, Post, User} from '../models';
-import _ from 'lodash';
-import {PostService} from '../services';
+import {Experience, People, Post, User} from '../models';
+import {omit} from 'lodash';
+import {ExperienceService, PostService} from '../services';
 import {AccountSettingRepository, FriendRepository} from '../repositories';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
@@ -36,6 +36,8 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
     protected accountSettingRepository: AccountSettingRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
+    @service(ExperienceService)
+    protected experienceService: ExperienceService,
     @service(PostService)
     protected postService: PostService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -74,9 +76,18 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       case ControllerType.EXPERIENCE: {
         const filter = invocationCtx.args[1] ?? {};
+        const include = [
+          {
+            relation: 'user',
+            scope: {
+              include: [{relation: 'accountSetting'}],
+            },
+          },
+          {relation: 'users'},
+        ];
 
-        if (!filter.include) filter.include = ['users'];
-        else filter.include.push('users');
+        if (!filter.include) filter.include = include;
+        else filter.include.push(...include);
 
         invocationCtx.args[1] = filter;
         break;
@@ -112,10 +123,13 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         });
         if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE) {
           const friend = await this.friendRepository.findOne({
-            where: {
+            where: <AnyObject>{
               requestorId: this.currentUser[securityId],
               requesteeId: result.userId,
               status: FriendStatusType.APPROVED,
+              deletedAt: {
+                $exists: false,
+              },
             },
           });
 
@@ -127,8 +141,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       case ControllerType.EXPERIENCE: {
         if (result.deletedAt)
           throw new HttpErrors.NotFound('Experience not found');
-        if (!result.users) return result;
-        const users = result.users;
+        const users = result.users ?? [];
         const userToPeople = users.map((user: User) => {
           return new People({
             id: user.id,
@@ -144,7 +157,13 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
         result.people = [...result.people, ...userToPeople];
 
-        return _.omit(result, ['users']);
+        const privateExperience =
+          await this.experienceService.privateExperience(
+            this.currentUser[securityId],
+            result as Experience,
+          );
+
+        return omit(privateExperience, ['users']);
       }
 
       case ControllerType.POST: {
