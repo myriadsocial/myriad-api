@@ -137,50 +137,36 @@ export class NotificationService {
       additionalReferenceId: additionalReferenceId,
     });
 
-    const post = await this.postRepository.findById(comment.postId);
-
     // FCM messages
     const title = 'New Comment';
-    const body = this.currentUser.name + ' commented to your post';
+    const body = `${this.currentUser.name} ${
+      comment.type === ReferenceType.COMMENT ? 'reply' : 'commented'
+    } your ${comment.type}`;
+    const notificationType =
+      comment.type === ReferenceType.COMMENT
+        ? NotificationType.COMMENT_COMMENT
+        : NotificationType.POST_COMMENT;
 
-    // Notification comment to comment
+    let userId = null;
+
     if (comment.type === ReferenceType.COMMENT) {
-      const toComment = await this.commentRepository.findById(
-        comment.referenceId,
-      );
-
-      if (toComment.userId !== comment.userId) {
-        const commentActive = await this.checkNotificationSetting(
-          toComment.userId,
-          NotificationType.COMMENT_COMMENT,
-        );
-        if (commentActive) {
-          await this.sendNotificationToUser(
-            notification,
-            toComment.userId,
-            title,
-            this.currentUser.name + ' ' + 'reply to your comment',
-          );
-        }
-      }
+      ({userId} = await this.commentRepository.findById(comment.referenceId));
+    } else {
+      ({createdBy: userId} = await this.postRepository.findById(
+        comment.postId,
+      ));
     }
 
-    // Notification comment to post
-    if (post.createdBy === comment.userId) return false;
+    if (userId && userId !== comment.userId) {
+      const active = await this.checkNotificationSetting(
+        userId,
+        notificationType,
+      );
 
-    const postActive = await this.checkNotificationSetting(
-      post.createdBy,
-      NotificationType.POST_COMMENT,
-    );
-
-    if (!postActive) return postActive;
-
-    await this.sendNotificationToUser(
-      notification,
-      post.createdBy,
-      title,
-      body,
-    );
+      if (active) {
+        await this.sendNotificationToUser(notification, userId, title, body);
+      }
+    }
 
     return true;
   }
@@ -398,6 +384,7 @@ export class NotificationService {
     type?: ReferenceType,
   ): Promise<boolean> {
     if (mentions.length === 0) return false;
+    if (!to) return false;
 
     const notification = new Notification({
       type:
@@ -675,6 +662,8 @@ export class NotificationService {
   async getCommentAdditionalReferenceIds(
     commentId: string,
   ): Promise<AnyObject[]> {
+    if (!commentId) return [];
+
     const additionalReferenceId = [];
     const flag = true;
 
