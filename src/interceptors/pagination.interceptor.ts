@@ -279,13 +279,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         if (methodName === MethodType.GETIMPORTERS) {
-          const [originPostId, platform, importerFilter] = invocationCtx.args;
+          const [originPostId, platform, importerFilter = {where: {}}] =
+            invocationCtx.args;
 
           filter.include = ['user'];
-          filter.where = Object.assign(importerFilter.where ?? {}, {
+          filter.where = {
+            ...importerFilter.where,
             originPostId: originPostId,
             platform: platform,
-          });
+          };
         }
 
         filter.order = this.orderSetting(request.query);
@@ -320,7 +322,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       case ControllerType.FRIEND: {
         if (methodName === MethodType.MUTUALDETAIL) {
-          const [requestorId, requesteeId, mutualFilter] = invocationCtx.args;
+          const [requestorId, requesteeId, mutualFilter = {where: {}}] =
+            invocationCtx.args;
           const userIds = this.friendService.getMutualUserIds(
             requestorId,
             requesteeId,
