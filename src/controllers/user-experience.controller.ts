@@ -36,7 +36,6 @@ export class UserExperienceController {
     protected experienceRepository: ExperienceRepository,
   ) {}
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/user-experiences', {
     responses: {

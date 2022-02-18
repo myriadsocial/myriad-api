@@ -355,8 +355,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       // include user in people field
       case ControllerType.USEREXPERIENCE: {
         if (Object.prototype.hasOwnProperty.call(filter.where, 'userId')) {
-          result = this.experienceService.combinePeopleAndUser(
+          const userExperiences = this.experienceService.combinePeopleAndUser(
             result as UserExperienceWithRelations[],
+          );
+
+          result = await this.experienceService.privateUserExperience(
+            this.currentUser[securityId],
+            userExperiences,
           );
         }
 
@@ -410,10 +415,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                     return e.user;
                   const friend =
                     await this.friendService.friendRepository.findOne({
-                      where: {
+                      where: <AnyObject>{
                         requestorId: this.currentUser[securityId],
                         requesteeId: e.createdBy,
                         status: FriendStatusType.APPROVED,
+                        deletedAt: {
+                          $exists: false,
+                        },
                       },
                     });
 
@@ -470,10 +478,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             });
             if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE) {
               const friend = await this.friendService.friendRepository.findOne({
-                where: {
+                where: <AnyObject>{
                   requestorId: this.currentUser[securityId],
                   requesteeId: comment.userId,
                   status: FriendStatusType.APPROVED,
+                  deletedAt: {
+                    $exists: false,
+                  },
                 },
               });
 
