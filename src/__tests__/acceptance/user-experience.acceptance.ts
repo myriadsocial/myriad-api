@@ -156,7 +156,12 @@ describe('UserExperienceApplication', function () {
             }),
         )
         .expect(200, {
-          data: [toJSON(userExperience)],
+          data: [
+            toJSON({
+              ...userExperience,
+              private: false,
+            }),
+          ],
           meta: {
             currentPage: 1,
             itemsPerPage: 1,
