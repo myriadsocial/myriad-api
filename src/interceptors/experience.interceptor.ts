@@ -89,18 +89,38 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
     switch (methodName) {
       case MethodType.CREATE: {
-        if (invocationCtx.args[1].people.length === 0) {
+        const experience: Experience = invocationCtx.args[1];
+        const tagExperience = experience.tags.filter(e => e !== '');
+        const expPeople = experience.people.filter(e => {
+          if (
+            e.id === '' ||
+            e.name === '' ||
+            e.username === '' ||
+            !e.platform
+          ) {
+            return false;
+          }
+
+          const platforms = [
+            PlatformType.MYRIAD,
+            PlatformType.REDDIT,
+            PlatformType.TWITTER,
+          ];
+
+          if (platforms.includes(e.platform)) return true;
+          return false;
+        });
+        if (expPeople.length === 0) {
           throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
+        }
+        if (tagExperience.length === 0) {
+          throw new HttpErrors.UnprocessableEntity('Tags cannot be empty!');
         }
 
         const hashtags: string[] = invocationCtx.args[1].tags;
 
-        people = invocationCtx.args[1].people.filter(
-          (e: People) => e.platform !== PlatformType.MYRIAD,
-        );
-        users = invocationCtx.args[1].people.filter(
-          (e: People) => e.platform === PlatformType.MYRIAD,
-        );
+        people = expPeople.filter(e => e.platform !== PlatformType.MYRIAD);
+        users = expPeople.filter(e => e.platform === PlatformType.MYRIAD);
 
         numberOfUserExperience = await this.validateNumberOfUserExperience(
           userId,
