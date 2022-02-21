@@ -160,6 +160,7 @@ describe('UserExperienceApplication', function () {
             toJSON({
               ...userExperience,
               private: false,
+              friend: false,
             }),
           ],
           meta: {

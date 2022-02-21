@@ -84,7 +84,9 @@ describe('ExperienceApplication', function () {
         .expect(200);
       const expected = toJSON(persistedExperience);
 
-      expect(result.body).to.deepEqual(toJSON({...expected, private: false}));
+      expect(result.body).to.deepEqual(
+        toJSON({...expected, private: false, friend: false}),
+      );
     });
 
     it('returns 404 when getting a user that does not exist', () => {
