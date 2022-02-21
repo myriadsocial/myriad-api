@@ -12,6 +12,7 @@ import {
   Comment,
   MentionUser,
   Notification,
+  PostWithRelations,
   Transaction,
   UserSocialMedia,
   Vote,
@@ -49,7 +50,7 @@ export class NotificationService {
     @repository(CommentRepository)
     public commentRepository: CommentRepository,
     @repository(UserReportRepository)
-    public userReportReportRepository: UserReportRepository,
+    public userReportRepository: UserReportRepository,
     @repository(NotificationSettingRepository)
     public notificationSettingRepository: NotificationSettingRepository,
     @service(FCMService)
@@ -58,12 +59,12 @@ export class NotificationService {
     public currentUser: UserProfile,
   ) {}
 
-  async sendFriendRequest(to: string): Promise<boolean> {
+  async sendFriendRequest(to: string): Promise<void> {
     const active = await this.checkNotificationSetting(
       to,
       NotificationType.FRIEND_REQUEST,
     );
-    if (!active) return false;
+    if (!active) return;
 
     const notification = new Notification({
       type: NotificationType.FRIEND_REQUEST,
@@ -77,10 +78,10 @@ export class NotificationService {
 
     await this.sendNotificationToUser(notification, to, title, body);
 
-    return true;
+    return;
   }
 
-  async sendFriendAccept(to: string): Promise<boolean> {
+  async sendFriendAccept(to: string): Promise<void> {
     const toUser = await this.userRepository.findById(to);
 
     const notification = new Notification({
@@ -95,7 +96,7 @@ export class NotificationService {
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
 
-    return true;
+    return;
   }
 
   async cancelFriendRequest(from: string, to: string): Promise<void> {
@@ -115,16 +116,24 @@ export class NotificationService {
     return;
   }
 
-  async sendPostComment(comment: Comment): Promise<boolean> {
+  async sendPostComment(comment: Comment): Promise<void> {
     await this.sendMention(
       comment.id ?? '',
       comment.mentions,
       ReferenceType.COMMENT,
     );
 
-    const additionalReferenceId = await this.getCommentAdditionalReferenceIds(
-      comment.id ?? '',
-    );
+    const additionalReferenceId = {
+      comment: {
+        id: comment.id,
+        postId: comment.postId,
+        user: {
+          id: this.currentUser[securityId],
+          name: this.currentUser.name ?? '',
+          username: this.currentUser.username ?? '',
+        },
+      },
+    };
 
     const notification = new Notification({
       type:
@@ -142,10 +151,6 @@ export class NotificationService {
     const body = `${this.currentUser.name} ${
       comment.type === ReferenceType.COMMENT ? 'reply' : 'commented'
     } your ${comment.type}`;
-    const notificationType =
-      comment.type === ReferenceType.COMMENT
-        ? NotificationType.COMMENT_COMMENT
-        : NotificationType.POST_COMMENT;
 
     let userId = null;
 
@@ -157,10 +162,10 @@ export class NotificationService {
       ));
     }
 
-    if (userId && userId !== comment.userId) {
+    if (userId !== comment.userId) {
       const active = await this.checkNotificationSetting(
         userId,
-        notificationType,
+        notification.type,
       );
 
       if (active) {
@@ -168,18 +173,18 @@ export class NotificationService {
       }
     }
 
-    return true;
+    return;
   }
 
-  async sendReportResponseToReporters(reportId: string): Promise<boolean> {
+  async sendReportResponseToReporters(reportId: string): Promise<void> {
     const {referenceType, referenceId} = await this.reportRepository.findById(
       reportId,
     );
-    const reporters = await this.userReportReportRepository.find({
+    const reporters = await this.userReportRepository.find({
       where: {reportId: reportId},
     });
 
-    if (reporters.length === 0) return false;
+    if (reporters.length === 0) return;
 
     const notification = new Notification({
       from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
@@ -195,32 +200,52 @@ export class NotificationService {
           fields: ['id', 'name', 'username'],
         });
 
-        notification.additionalReferenceId = [
-          {
-            id: userBanned.id,
-            displayName: userBanned.name,
-            username: userBanned.username,
-          },
-        ];
+        notification.additionalReferenceId = {
+          user: userBanned,
+        };
         break;
       }
 
       case ReferenceType.POST: {
+        const post = await this.postRepository.findById(referenceId, {
+          include: ['user'],
+        });
+
         notification.type = NotificationType.POST_REMOVED;
         notification.referenceId = referenceId;
+        notification.additionalReferenceId = {
+          post: {
+            id: post.id,
+            user: {
+              id: post.user?.id,
+              name: post.user?.name,
+              username: post.user?.username,
+            },
+          },
+        };
         break;
       }
 
       case ReferenceType.COMMENT: {
+        const comment = await this.commentRepository.findById(referenceId, {
+          include: ['user'],
+        });
+
         notification.type = NotificationType.COMMENT_REMOVED;
         notification.referenceId = referenceId;
-        notification.additionalReferenceId =
-          await this.getCommentAdditionalReferenceIds(referenceId);
+        notification.additionalReferenceId = {
+          comment: {
+            id: comment.id,
+            postId: comment.postId,
+            user: {
+              id: comment.user?.id,
+              name: comment.user?.name,
+              username: comment.user?.username,
+            },
+          },
+        };
         break;
       }
-
-      default:
-        return false;
     }
 
     const reporterIds = reporters.map(reporter => reporter.reportedBy);
@@ -234,14 +259,14 @@ export class NotificationService {
       body,
     );
 
-    return true;
+    return;
   }
 
-  async sendReportResponseToUser(reportId: string): Promise<boolean> {
+  async sendReportResponseToUser(reportId: string): Promise<void> {
     const {referenceId, referenceType, status} =
       await this.reportRepository.findById(reportId);
 
-    if (status !== ReportStatusType.REMOVED) return false;
+    if (status !== ReportStatusType.REMOVED) return;
 
     const notification = new Notification({
       from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
@@ -249,13 +274,24 @@ export class NotificationService {
 
     switch (referenceType) {
       case ReferenceType.COMMENT: {
+        const comment = await this.commentRepository.findById(referenceId, {
+          include: ['user'],
+        });
+
         notification.type = NotificationType.COMMENT_REMOVED;
         notification.referenceId = referenceId;
         notification.message = 'removed your comment';
-        notification.additionalReferenceId =
-          await this.getCommentAdditionalReferenceIds(referenceId);
-
-        const comment = await this.commentRepository.findById(referenceId);
+        notification.additionalReferenceId = {
+          comment: {
+            id: comment.id,
+            postId: comment.postId,
+            user: {
+              id: comment.user?.id,
+              name: comment.user?.name,
+              username: comment.user?.username,
+            },
+          },
+        };
 
         await this.sendNotificationToUser(
           notification,
@@ -272,25 +308,43 @@ export class NotificationService {
         notification.referenceId = referenceId;
         notification.message = 'removed your post';
 
-        const {platform, url, createdBy} = await this.postRepository.findById(
-          referenceId,
-        );
-        const reporteeIds: string[] = [];
+        const post = await this.postRepository.findById(referenceId, {
+          include: ['user'],
+        });
+        let posts: PostWithRelations[] = [];
 
-        if (url) {
-          const posts = await this.postRepository.find({where: {url: url}});
-          reporteeIds.push(...posts.map(reportee => reportee.createdBy));
+        if (post.url) {
+          posts = await this.postRepository.find({
+            where: {
+              url: post.url,
+            },
+            include: ['user'],
+          });
         } else {
-          if (platform === PlatformType.MYRIAD) {
-            reporteeIds.push(createdBy);
+          if (post.platform === PlatformType.MYRIAD) {
+            posts = [post];
           } else break;
         }
 
-        await this.sendNotificationToMultipleUsers(
-          notification,
-          reporteeIds,
-          'Post Removed',
-          'Myriad Official ' + notification.message,
+        await Promise.all(
+          posts.map(e => {
+            notification.additionalReferenceId = {
+              post: {
+                id: e.id,
+                user: {
+                  id: e.user?.id,
+                  name: e.user?.name,
+                  username: e.user?.username,
+                },
+              },
+            };
+            return this.sendNotificationToUser(
+              notification,
+              e.createdBy,
+              'Post Removed',
+              'Myriad Official ' + notification.message,
+            );
+          }),
         );
 
         break;
@@ -305,13 +359,9 @@ export class NotificationService {
           fields: ['id', 'name', 'username'],
         });
 
-        notification.additionalReferenceId = [
-          {
-            id: userBanned.id,
-            displayName: userBanned.name,
-            username: userBanned.username,
-          },
-        ];
+        notification.additionalReferenceId = {
+          user: userBanned,
+        };
 
         await this.sendNotificationToUser(
           notification,
@@ -322,20 +372,13 @@ export class NotificationService {
 
         break;
       }
-
-      default:
-        return false;
     }
 
-    return true;
+    return;
   }
 
-  async sendPostVote(vote: Vote): Promise<boolean> {
+  async sendPostVote(vote: Vote): Promise<void> {
     const notification = new Notification({
-      type:
-        vote.type === ReferenceType.POST
-          ? NotificationType.POST_VOTE
-          : NotificationType.COMMENT_VOTE,
       from: this.currentUser[securityId],
       referenceId: vote.id,
       message: vote.state ? 'upvoted' : 'downvoted',
@@ -345,60 +388,102 @@ export class NotificationService {
     const title = 'New Vote';
     const body = this.currentUser.name + ' ' + notification.message;
 
+    let userId = null;
+
     // Notification vote to comment
     if (vote.type === ReferenceType.COMMENT) {
-      const toComment = await this.commentRepository.findById(vote.referenceId);
+      const toComment = await this.commentRepository.findById(
+        vote.referenceId,
+        {
+          include: ['user'],
+        },
+      );
+      notification.type = NotificationType.COMMENT_VOTE;
+      notification.additionalReferenceId = {
+        comment: {
+          id: toComment.id,
+          postId: toComment.postId,
+          user: {
+            id: toComment.user?.id,
+            name: toComment.user?.name,
+            username: toComment.user?.username,
+          },
+        },
+      };
 
-      notification.additionalReferenceId =
-        await this.getCommentAdditionalReferenceIds(toComment.id ?? '');
+      userId = toComment.userId;
+    } else {
+      const toPost = await this.postRepository.findById(vote.referenceId, {
+        include: ['user'],
+      });
+      notification.type = NotificationType.POST_VOTE;
+      notification.additionalReferenceId = {
+        post: {
+          id: toPost.id,
+          user: {
+            id: toPost.user?.id,
+            name: toPost.user?.name,
+            username: toPost.user?.username,
+          },
+        },
+      };
 
-      if (toComment.userId !== vote.userId) {
-        await this.sendNotificationToUser(
-          notification,
-          toComment.userId,
-          title,
-          body,
-        );
-
-        return true;
-      }
-
-      return false;
+      userId = toPost.createdBy;
     }
 
-    const post = await this.postRepository.findById(vote.postId);
+    if (!userId) return;
+    if (userId !== vote.userId) {
+      await this.sendNotificationToUser(notification, userId, title, body);
+    }
 
-    await this.sendNotificationToUser(
-      notification,
-      post.createdBy,
-      title,
-      body,
-    );
-
-    return true;
+    return;
   }
 
   async sendMention(
     to: string,
     mentions: MentionUser[],
     type?: ReferenceType,
-  ): Promise<boolean> {
-    if (mentions.length === 0) return false;
-    if (!to) return false;
+  ): Promise<void> {
+    if (mentions.length === 0) return;
+    if (!to) return;
 
     const notification = new Notification({
-      type:
-        type === ReferenceType.COMMENT
-          ? NotificationType.COMMENT_MENTION
-          : NotificationType.POST_MENTION,
       from: this.currentUser[securityId],
       referenceId: to,
       message: 'mentioned you',
     });
 
     if (type === ReferenceType.COMMENT) {
-      notification.additionalReferenceId =
-        await this.getCommentAdditionalReferenceIds(to);
+      const comment = await this.commentRepository.findById(to, {
+        include: ['user'],
+      });
+      notification.type = NotificationType.COMMENT_MENTION;
+      notification.additionalReferenceId = {
+        comment: {
+          id: comment.id,
+          postId: comment.postId,
+          user: {
+            id: comment.user?.id,
+            name: comment.user?.name,
+            username: comment.user?.username,
+          },
+        },
+      };
+    } else {
+      const post = await this.postRepository.findById(to, {
+        include: ['user'],
+      });
+      notification.type = NotificationType.POST_MENTION;
+      notification.additionalReferenceId = {
+        post: {
+          id: post.id,
+          user: {
+            id: post.user?.id,
+            name: post.user?.name,
+            username: post.user?.username,
+          },
+        },
+      };
     }
 
     // FCM messages
@@ -414,7 +499,7 @@ export class NotificationService {
     for (const user of users) {
       const mentionActive = await this.checkNotificationSetting(
         user.id,
-        NotificationType.POST_MENTION,
+        notification.type,
       );
 
       if (mentionActive) userIds.push(user.id);
@@ -427,17 +512,17 @@ export class NotificationService {
       body,
     );
 
-    return true;
+    return;
   }
 
-  async sendTipsSuccess(transaction: Transaction): Promise<boolean> {
+  async sendTipsSuccess(transaction: Transaction): Promise<void> {
     const {to, type, referenceId} = transaction;
 
     const tipsActive = await this.checkNotificationSetting(
       to,
       NotificationType.POST_TIPS,
     );
-    if (!tipsActive) return false;
+    if (!tipsActive) return;
 
     const notification = new Notification({
       from: this.currentUser[securityId],
@@ -446,12 +531,38 @@ export class NotificationService {
     });
 
     if (type === ReferenceType.COMMENT && referenceId) {
+      const comment = await this.commentRepository.findById(referenceId, {
+        include: ['user'],
+      });
+
       notification.type = NotificationType.COMMENT_TIPS;
-      notification.additionalReferenceId =
-        await this.getCommentAdditionalReferenceIds(referenceId);
+      notification.additionalReferenceId = {
+        comment: {
+          id: comment.id,
+          postId: comment.postId,
+          user: {
+            id: comment.user?.id,
+            name: comment.user?.name,
+            username: comment.user?.username,
+          },
+        },
+      };
     } else if (type === ReferenceType.POST && referenceId) {
+      const post = await this.postRepository.findById(referenceId, {
+        include: ['user'],
+      });
+
       notification.type = NotificationType.POST_TIPS;
-      notification.additionalReferenceId = [{postId: referenceId}];
+      notification.additionalReferenceId = {
+        post: {
+          id: post.id,
+          user: {
+            id: post.user?.id,
+            name: post.user?.name,
+            username: post.user?.username,
+          },
+        },
+      };
     } else notification.type = NotificationType.USER_TIPS;
 
     const title = 'Send Tips Success';
@@ -459,11 +570,17 @@ export class NotificationService {
 
     await this.sendNotificationToUser(notification, to, title, body);
 
-    return true;
+    return;
   }
 
-  async sendRewardSuccess(transaction: Transaction): Promise<boolean> {
+  async sendRewardSuccess(transaction: Transaction): Promise<void> {
     const {from, to} = transaction;
+
+    const tipsActive = await this.checkNotificationSetting(
+      to,
+      NotificationType.POST_TIPS,
+    );
+    if (!tipsActive) return;
 
     const notification = new Notification({
       type: NotificationType.USER_REWARD,
@@ -477,10 +594,10 @@ export class NotificationService {
 
     await this.sendNotificationToUser(notification, to, title, body);
 
-    return true;
+    return;
   }
 
-  async sendInitialTips(transaction: Transaction): Promise<boolean> {
+  async sendInitialTips(transaction: Transaction): Promise<void> {
     const {from, to} = transaction;
 
     const notification = new Notification({
@@ -495,7 +612,7 @@ export class NotificationService {
 
     await this.sendNotificationToUser(notification, to, title, body);
 
-    return true;
+    return;
   }
 
   async sendClaimTips(transaction: Transaction): Promise<boolean> {
@@ -526,22 +643,21 @@ export class NotificationService {
     userSocialMedia: UserSocialMedia,
     people: ExtendedPeople,
   ) {
-    const {userId, platform, peopleId} = userSocialMedia;
-    const {name, username} = people;
+    const {userId, platform} = userSocialMedia;
 
     const notification = new Notification({
       type: NotificationType.CONNECTED_SOCIAL_MEDIA,
       from: userId,
       referenceId: userId,
       message: `connected your ${platform} social media`,
-      additionalReferenceId: [
-        {
-          peopleId: peopleId,
-          peopleName: name,
-          peopleUsername: username,
-          peoplePlatform: platform,
+      additionalReferenceId: {
+        people: {
+          id: people.id,
+          name: people.name,
+          username: people.username,
+          platform: people.platform,
         },
-      ],
+      },
     });
 
     const title = `Connected ${
@@ -558,7 +674,7 @@ export class NotificationService {
     const userSocialMedia = await this.userSocialMediaRepository.findById(id, {
       include: ['people'],
     });
-    const {userId, platform, peopleId, people} = userSocialMedia;
+    const {userId, platform, people} = userSocialMedia;
 
     if (!fromUserId) fromUserId = userId;
 
@@ -567,14 +683,14 @@ export class NotificationService {
       from: fromUserId,
       referenceId: fromUserId,
       message: `disconnected your ${platform} social media`,
-      additionalReferenceId: [
-        {
-          peopleId: peopleId,
-          peopleName: people?.name,
-          peopleUsername: people?.username,
-          peoplePlatform: people?.platform,
+      additionalReferenceId: {
+        people: {
+          id: people?.id,
+          name: people?.name,
+          username: people?.username,
+          platform: people?.platform,
         },
-      ],
+      },
     });
 
     const title = `Disconnected ${
