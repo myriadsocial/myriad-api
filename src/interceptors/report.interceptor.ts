@@ -188,7 +188,14 @@ export class ReportInterceptor implements Provider<Interceptor> {
 
     await this.userExperienceRepository.updateAll(data, {
       experienceId: {inq: experienceIds},
+      subscribed: false,
     });
+    if (!restored) {
+      await this.userExperienceRepository.deleteAll({
+        experienceId: {inq: experienceIds},
+        subscribed: true,
+      });
+    }
     await this.metricService.userMetric(userId);
     await Promise.all(
       friends.map(async friend => {
