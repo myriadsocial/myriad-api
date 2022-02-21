@@ -174,23 +174,27 @@ export class ExperienceService {
         const privateUserExperience = {
           ...userExperience,
           private: false,
+          friend: false,
         };
 
+        const friend = await this.friendService.friendRepository.findOne({
+          where: <AnyObject>{
+            requestorId: userId,
+            requesteeId: accountSetting?.userId ?? '',
+            status: FriendStatusType.APPROVED,
+            deletedAt: {
+              $exists: false,
+            },
+          },
+        });
+
+        if (friend) privateUserExperience.friend = true;
         if (
           accountSetting?.accountPrivacy === AccountSettingType.PRIVATE &&
-          accountSetting?.userId !== userId
+          accountSetting?.userId !== userId &&
+          friend === null
         ) {
-          const friend = await this.friendService.friendRepository.findOne({
-            where: <AnyObject>{
-              requestorId: userId,
-              requesteeId: accountSetting.userId,
-              deletedAt: {
-                $exists: false,
-              },
-            },
-          });
-
-          if (!friend) privateUserExperience.private = true;
+          privateUserExperience.private = true;
         }
 
         return privateUserExperience;
@@ -206,23 +210,27 @@ export class ExperienceService {
     const privateExperience = {
       ...experience,
       private: false,
+      friend: false,
     };
 
+    const friend = await this.friendService.friendRepository.findOne({
+      where: <AnyObject>{
+        requestorId: userId,
+        requesteeId: accountSetting?.userId ?? '',
+        status: FriendStatusType.APPROVED,
+        deletedAt: {
+          $exists: false,
+        },
+      },
+    });
+
+    if (friend) privateExperience.friend = true;
     if (
       accountSetting?.accountPrivacy === AccountSettingType.PRIVATE &&
-      accountSetting?.userId !== userId
+      accountSetting?.userId !== userId &&
+      friend === null
     ) {
-      const friend = await this.friendService.friendRepository.findOne({
-        where: <AnyObject>{
-          requestorId: userId,
-          requesteeId: accountSetting.userId,
-          deletedAt: {
-            $exists: false,
-          },
-        },
-      });
-
-      if (!friend) privateExperience.private = true;
+      privateExperience.private = true;
     }
 
     return privateExperience;
