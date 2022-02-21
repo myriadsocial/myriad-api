@@ -180,17 +180,16 @@ describe('CommentApplication', function () {
       read: false,
       referenceId: response.body.id,
       message: 'commented: ' + comment.text,
-      additionalReferenceId: [
-        {postId: post.id},
-        {
-          commentId: response.body.id,
+      additionalReferenceId: {
+        comment: {
+          ...response.body,
           user: toJSON({
             id: user.id,
-            displayName: user.name,
+            name: user.name,
             username: user.username,
           }),
         },
-      ],
+      },
       createdAt: notification?.createdAt,
       updatedAt: notification?.updatedAt,
       deletedAt: undefined,

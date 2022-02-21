@@ -173,12 +173,17 @@ export class MyriadApiApplication extends BootMixin(
 
   async doMigrateNotification(): Promise<void> {
     if (this.options.alter.indexOf('notification') === -1) return;
-    const {commentRepository, notificationRepository} =
-      await this.repositories();
-    const {count} = await notificationRepository.count({
-      type: NotificationType.COMMENT_REMOVED,
-    });
+    const {
+      commentRepository,
+      notificationRepository,
+      peopleRepository,
+      postRepository,
+      transactionRepository,
+      userRepository,
+    } = await this.repositories();
+    const {count} = await notificationRepository.count();
     const bar = this.initializeProgressBar('Alter notification');
+    const notificationIds: string[] = [];
 
     bar.start(count, 0);
     for (let i = 0; i < count; i++) {
@@ -188,57 +193,283 @@ export class MyriadApiApplication extends BootMixin(
         const [notification] = await notificationRepository.find({
           limit: 1,
           skip: i,
-          where: {
-            type: NotificationType.COMMENT_REMOVED,
-          },
         });
 
         if (!notification) continue;
 
-        const notificationId = notification.id;
+        const type = notification.type;
         const referenceId = notification.referenceId;
-        const additionalReferenceId = [];
-        const flag = true;
+        const additionalReferenceId = notification.additionalReferenceId;
 
-        let lastCommentId = referenceId;
+        switch (type) {
+          case NotificationType.CONNECTED_SOCIAL_MEDIA:
+          case NotificationType.DISCONNECTED_SOCIAL_MEDIA: {
+            const people = await peopleRepository.findOne({
+              where: {
+                id: additionalReferenceId[0].peopleId,
+              },
+            });
 
-        while (flag) {
-          const lastComment = await commentRepository.findById(lastCommentId);
+            if (!people) {
+              notificationIds.push(notification.id);
+              continue;
+            }
 
-          if (lastComment.type === ReferenceType.POST) {
-            additionalReferenceId.unshift({postId: lastComment.postId});
+            notification.additionalReferenceId = {
+              people: {
+                id: people.id,
+                name: people.name,
+                username: people.username,
+                platform: people.platform,
+              },
+            };
+
             break;
-          } else {
-            const comment = await commentRepository.findById(
-              lastComment.referenceId,
-            );
-            additionalReferenceId.unshift({commentId: comment.id});
+          }
 
-            if (comment.id) lastCommentId = comment.id;
-            else break;
+          case NotificationType.USER_BANNED:
+          case NotificationType.POST_REMOVED:
+          case NotificationType.COMMENT_REMOVED: {
+            if (type === NotificationType.USER_BANNED) {
+              const user = await userRepository.findOne({
+                where: {
+                  id: referenceId,
+                },
+              });
+
+              if (!user) {
+                notificationIds.push(notification.id);
+                continue;
+              }
+
+              notification.additionalReferenceId = {
+                user: {
+                  id: user.id,
+                  name: user.name,
+                  username: user.username,
+                },
+              };
+            } else if (type === NotificationType.POST_REMOVED) {
+              const post = await postRepository.findOne({
+                where: {
+                  id: referenceId,
+                },
+                include: ['user'],
+              });
+
+              if (!post) {
+                notificationIds.push(notification.id);
+                continue;
+              }
+
+              notification.additionalReferenceId = {
+                post: {
+                  id: post.id,
+                  user: {
+                    id: post.user?.id,
+                    name: post.user?.name,
+                    username: post.user?.username,
+                  },
+                },
+              };
+            } else {
+              const comment = await commentRepository.findOne({
+                where: {
+                  id: referenceId,
+                },
+                include: ['user'],
+              });
+
+              if (!comment) {
+                notificationIds.push(notification.id);
+                continue;
+              }
+
+              notification.additionalReferenceId = {
+                comment: {
+                  id: comment.id,
+                  postId: comment.postId,
+                  user: {
+                    id: comment.user?.id,
+                    name: comment.user?.name,
+                    username: comment.user?.username,
+                  },
+                },
+              };
+            }
+
+            break;
+          }
+
+          case NotificationType.POST_COMMENT:
+          case NotificationType.COMMENT_COMMENT: {
+            const comment = await commentRepository.findOne({
+              where: {
+                id: referenceId,
+              },
+              include: ['user'],
+            });
+
+            if (!comment) {
+              notificationIds.push(notification.id);
+              continue;
+            }
+
+            notification.additionalReferenceId = {
+              comment: {
+                id: comment.id,
+                postId: comment.postId,
+                user: {
+                  id: comment.user.id,
+                  name: comment.user.name,
+                  username: comment.user.username,
+                },
+              },
+            };
+
+            break;
+          }
+
+          case NotificationType.POST_TIPS:
+          case NotificationType.COMMENT_TIPS: {
+            const transaction = await transactionRepository.findOne({
+              where: {
+                id: referenceId,
+              },
+            });
+            if (!transaction) {
+              notificationIds.push(notification.id);
+              continue;
+            }
+            if (
+              transaction.type === ReferenceType.POST ||
+              transaction.type === ReferenceType.COMMENT
+            ) {
+              if (!referenceId) {
+                notificationIds.push(notification.id);
+                await transactionRepository.deleteById(transaction.id);
+                continue;
+              }
+            }
+
+            if (transaction.type === ReferenceType.POST) {
+              const post = await postRepository.findOne({
+                where: {
+                  id: transaction.referenceId,
+                },
+                include: ['user'],
+              });
+
+              if (!post) {
+                notificationIds.push(notification.id);
+                continue;
+              }
+
+              notification.additionalReferenceId = {
+                post: {
+                  id: post.id,
+                  user: {
+                    id: post.user?.id,
+                    name: post.user?.name,
+                    username: post.user?.username,
+                  },
+                },
+              };
+            } else {
+              const comment = await commentRepository.findOne({
+                where: {
+                  id: transaction.referenceId,
+                },
+                include: ['user'],
+              });
+
+              if (!comment) {
+                notificationIds.push(notification.id);
+                continue;
+              }
+
+              notification.additionalReferenceId = {
+                comment: {
+                  id: comment.id,
+                  postId: comment.postId,
+                  user: {
+                    id: comment.user?.id,
+                    name: comment.user?.name,
+                    username: comment.user?.username,
+                  },
+                },
+              };
+            }
+
+            break;
+          }
+
+          case NotificationType.POST_MENTION:
+          case NotificationType.COMMENT_MENTION: {
+            if (type === NotificationType.POST_MENTION) {
+              const post = await postRepository.findOne({
+                where: {
+                  id: referenceId,
+                },
+                include: ['user'],
+              });
+
+              if (!post) {
+                notificationIds.push(notification.id);
+                continue;
+              }
+
+              notification.additionalReferenceId = {
+                post: {
+                  id: post.id,
+                  user: {
+                    id: post.user.id,
+                    name: post.user.name,
+                    username: post.user.username,
+                  },
+                },
+              };
+            } else {
+              const comment = await commentRepository.findOne({
+                where: {
+                  id: referenceId,
+                },
+                include: ['user'],
+              });
+
+              if (!comment) {
+                notificationIds.push(notification.id);
+                continue;
+              }
+
+              notification.additionalReferenceId = {
+                comment: {
+                  id: comment.id,
+                  postId: comment.postId,
+                  user: {
+                    id: comment.user?.id,
+                    name: comment.user?.name,
+                    username: comment.user?.username,
+                  },
+                },
+              };
+            }
+
+            break;
           }
         }
 
-        const initialComment = await commentRepository.findById(referenceId, {
-          include: ['user'],
-        });
-
-        additionalReferenceId.push({
-          referenceId,
-          user: {
-            id: initialComment.user?.id,
-            displayName: initialComment.user?.name,
-            username: initialComment.user?.username,
-          },
-        });
-
-        await notificationRepository.updateById(notificationId, {
-          additionalReferenceId,
+        await notificationRepository.updateById(notification.id, {
+          additionalReferenceId: notification.additionalReferenceId,
         });
       } catch {
         // ignore
       }
     }
+
+    await notificationRepository.deleteAll({
+      id: {inq: notificationIds},
+    });
 
     bar.stop();
   }

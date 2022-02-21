@@ -1,4 +1,10 @@
-import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {
+  AnyObject,
+  belongsTo,
+  Entity,
+  model,
+  property,
+} from '@loopback/repository';
 import {NotificationType} from '../enums';
 import {User} from './user.model';
 
@@ -61,12 +67,10 @@ export class Notification extends Entity {
   message: string;
 
   @property({
-    type: 'array',
-    itemType: 'object',
+    type: 'object',
     required: false,
-    default: [],
   })
-  additionalReferenceId: object[];
+  additionalReferenceId: AnyObject;
 
   @property({
     type: 'date',

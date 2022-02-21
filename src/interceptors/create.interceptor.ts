@@ -100,14 +100,26 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.TRANSACTION: {
-        if (invocationCtx.args[0].from === invocationCtx.args[0].to) {
+        const transaction: Transaction = invocationCtx.args[0];
+        if (transaction.from === transaction.to) {
           throw new HttpErrors.UnprocessableEntity(
             'From and to address cannot be the same!',
           );
         }
 
+        if (
+          transaction.type === ReferenceType.POST ||
+          transaction.type === ReferenceType.COMMENT
+        ) {
+          if (!transaction.referenceId) {
+            throw new HttpErrors.UnprocessableEntity(
+              'Please insert referenceId',
+            );
+          }
+        }
+
         await this.currencyService.currencyRepository.findById(
-          invocationCtx.args[0].currencyId,
+          transaction.currencyId,
         );
         return;
       }

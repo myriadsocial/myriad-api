@@ -250,8 +250,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             }
 
             filter.where = await this.getPostByQuery(postQuery.trim());
-
-            break;
           }
 
           // search topic
