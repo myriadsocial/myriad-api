@@ -34,6 +34,11 @@ export const config = {
   MONGO_DATABASE: process.env.MONGO_DATABASE ?? 'myriad',
   MONGO_URL: process.env.MONGO_URL ?? '',
 
+  REDIS_CONNECTOR: process.env.REDIS_CONNECTOR ?? 'kv-memory',
+  REDIS_HOST: process.env.REDIS_HOST ?? 'localhost',
+  REDIS_PORT: +(process.env.REDIS_PORT ?? 6379),
+  REDIS_PASSWORD: process.env.REDIS_PASSWORD ?? 'passw0rd',
+
   FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ?? '',
 
   SENTRY_DSN: process.env.SENTRY_DSN ?? '',
