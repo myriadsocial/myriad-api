@@ -41,23 +41,7 @@ export class UpdateExchangeRateJob extends CronJob {
 
       for (const currencyId of currencyIds) {
         const price = data[currencyId].quote.USD.price;
-        const found = await this.exchangeRateRepository.findOne({
-          where: {
-            id: currencyId,
-          },
-        });
-
-        if (found) {
-          await this.exchangeRateRepository.updateById(currencyId, {
-            price: price,
-            updatedAt: new Date().toString(),
-          });
-        } else {
-          await this.exchangeRateRepository.create({
-            id: currencyId,
-            price: price,
-          });
-        }
+        await this.exchangeRateRepository.set(currencyId, {price: price});
       }
     } catch {
       // ignore

@@ -1,16 +1,10 @@
 import {inject} from '@loopback/core';
-import {DefaultCrudRepository} from '@loopback/repository';
-import {ExchangeRateDataSource} from '../datasources';
-import {ExchangeRate, ExchangeRateRelations} from '../models';
+import {DefaultKeyValueRepository} from '@loopback/repository';
+import {RedisDataSource} from '../datasources';
+import {ExchangeRate} from '../models';
 
-export class ExchangeRateRepository extends DefaultCrudRepository<
-  ExchangeRate,
-  typeof ExchangeRate.prototype.id,
-  ExchangeRateRelations
-> {
-  constructor(
-    @inject('datasources.exchangerate') dataSource: ExchangeRateDataSource,
-  ) {
+export class ExchangeRateRepository extends DefaultKeyValueRepository<ExchangeRate> {
+  constructor(@inject('datasources.redis') dataSource: RedisDataSource) {
     super(ExchangeRate, dataSource);
   }
 }

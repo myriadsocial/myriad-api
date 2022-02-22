@@ -1,5 +1,5 @@
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {param, get, getModelSchemaRef, response} from '@loopback/rest';
+import {repository} from '@loopback/repository';
+import {param, get, response} from '@loopback/rest';
 import {ExchangeRate} from '../models';
 import {ExchangeRateRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
@@ -12,39 +12,18 @@ export class ExchangeRateController {
   ) {}
 
   @authenticate.skip()
-  @get('/exchange-rates')
-  @response(200, {
-    description: 'Array of ExchangeRate model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(ExchangeRate, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async find(
-    @param.filter(ExchangeRate) filter?: Filter<ExchangeRate>,
-  ): Promise<ExchangeRate[]> {
-    return this.exchangeRateRepository.find(filter);
-  }
-
-  @authenticate.skip()
   @get('/exchange-rates/{id}')
   @response(200, {
-    description: 'ExchangeRate model instance',
+    description: 'ExchangeRate is read',
     content: {
       'application/json': {
-        schema: getModelSchemaRef(ExchangeRate, {includeRelations: true}),
+        schema: {'x-ts-type': ExchangeRate},
       },
     },
   })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(ExchangeRate, {exclude: 'where'})
-    filter?: FilterExcludingWhere<ExchangeRate>,
-  ): Promise<ExchangeRate> {
-    return this.exchangeRateRepository.findById(id, filter);
+  async findById(@param.path.string('id') id: string): Promise<ExchangeRate> {
+    const rate = await this.exchangeRateRepository.get(id);
+    if (!rate) return new ExchangeRate({price: 0});
+    return rate;
   }
 }
