@@ -43,6 +43,11 @@ export async function setupApplication(
     });
   }
 
+  app.bind('datasources.config.redis').to({
+    name: 'redis',
+    connector: 'kv-memory',
+  });
+
   await app.start();
 
   const client = createRestAppClient(app);

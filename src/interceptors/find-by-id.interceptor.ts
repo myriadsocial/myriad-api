@@ -167,7 +167,8 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.POST: {
-        if (result.deletedAt) throw new HttpErrors.NotFound('Post not found');
+        if (result.deletedAt || result.banned)
+          throw new HttpErrors.NotFound('Post not found');
         const post = await this.postService.restrictedPost(result as Post);
         const postDetail = await this.postService.getPostImporterInfo(
           post,
