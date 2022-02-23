@@ -32,6 +32,8 @@ import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserSocialMediaApplication', function () {
+  this.timeout(20000);
+
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
@@ -87,9 +89,7 @@ describe('UserSocialMediaApplication', function () {
     token = res.body.accessToken;
   });
 
-  context('when claiming social medias', function () {
-    this.timeout(10000);
-
+  context('when claiming social medias', () => {
     beforeEach(async () => {
       await userSocialMediaRepository.deleteAll();
     });
