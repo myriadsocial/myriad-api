@@ -7,7 +7,7 @@ import {
   RepositoryMixin,
   SchemaMigrationOptions,
 } from '@loopback/repository';
-import {RestApplication} from '@loopback/rest';
+import {RestApplication, Request, Response} from '@loopback/rest';
 import {RestExplorerComponent} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
 import * as firebaseAdmin from 'firebase-admin';
@@ -60,6 +60,14 @@ import {
   VoteRepository,
 } from './repositories';
 import {NotificationType, ReferenceType} from './enums';
+import {
+  RateLimiterComponent,
+  RateLimitSecurityBindings,
+} from 'loopback4-ratelimiter';
+import {DateUtils} from './utils/date-utils';
+
+const date = new DateUtils();
+const jwt = require('jsonwebtoken');
 
 export {ApplicationConfig};
 
@@ -100,6 +108,53 @@ export class MyriadApiApplication extends BootMixin(
     this.component(AuthenticationComponent);
     this.component(JWTAuthenticationComponent);
     this.component(RestExplorerComponent);
+
+    if (this.options.test) return;
+    if (config.REDIS_CONNECTOR !== 'kv-redis') return;
+    this.component(RateLimiterComponent);
+    this.bind(RateLimitSecurityBindings.CONFIG).to({
+      name: 'redis',
+      type: 'RedisStore',
+      windowMs: 15 * date.minute,
+      max: (req: Request, res: Response) => {
+        switch (req.method) {
+          case 'GET':
+            return 900;
+
+          case 'POST':
+            return 50;
+
+          case 'PATCH':
+            return 50;
+
+          case 'DELETE':
+            return 50;
+
+          default:
+            return 900;
+        }
+      },
+      keyGenerator: (req: Request, res: Response) => {
+        const token = req.headers?.authorization?.replace(/bearer /i, '');
+        const decryptedToken = token
+          ? jwt.verify(token, config.JWT_TOKEN_SECRET_KEY)
+          : undefined;
+        const keyId = decryptedToken?.id ?? req.ip;
+        const key = `${req.method}${req.path}/${keyId}`;
+
+        return key;
+      },
+      handler: (req: Request, res: Response) => {
+        res.status(429).send({
+          error: {
+            statusCode: 429,
+            name: 'TooManyRequestsError',
+            message: 'Too many request, please try again later',
+          },
+        });
+      },
+      skipFailedRequests: true,
+    });
   }
 
   registerService() {
@@ -166,9 +221,37 @@ export class MyriadApiApplication extends BootMixin(
 
   async doMigratePost(): Promise<void> {
     if (this.options.alter.indexOf('post') === -1) return;
-    const {postRepository} = await this.repositories();
+    const {postRepository, transactionRepository} = await this.repositories();
 
-    await (postRepository as PostRepository).updateAll({banned: false});
+    await postRepository.updateAll({banned: false});
+
+    const {count} = await postRepository.count();
+    const bar = this.initializeProgressBar('Alter post');
+
+    bar.start(count, 0);
+    for (let i = 0; i < count; i++) {
+      bar.update(i + 1);
+
+      const [post] = await postRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      if (!post) continue;
+      const {id, metric} = post;
+      const {count: countTip} = await transactionRepository.count({
+        referenceId: id,
+        type: ReferenceType.POST,
+      });
+
+      await (postRepository as PostRepository).updateById(id, {
+        metric: {
+          ...metric,
+          tips: countTip,
+        },
+      });
+    }
+    bar.stop();
   }
 
   async doMigrateNotification(): Promise<void> {
