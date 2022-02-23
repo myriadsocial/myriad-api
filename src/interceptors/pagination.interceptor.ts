@@ -173,28 +173,63 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       // Use for search unblock user
       case ControllerType.USER: {
-        if (methodName === MethodType.LEADERBOARD) {
-          filter.fields = [
-            'id',
-            'name',
-            'username',
-            'profilePictureURL',
-            'metric',
-          ];
-          break;
+        const {requestorId, requesteeId, friendsName} = request.query;
+        const hasWhere =
+          Object.keys(filter.where as Where<AnyObject>).length > 0;
+        if (
+          (friendsName && (requestorId || requesteeId || hasWhere)) ||
+          ((requestorId || requesteeId) && (friendsName || hasWhere)) ||
+          (hasWhere && (friendsName || requestorId || requesteeId))
+        ) {
+          throw new HttpErrors.UnprocessableEntity(
+            'Cannot used where filter together with friendsName and (requesteeId, requestorId)',
+          );
         }
 
-        const blockedFriendIds = await this.friendService.getFriendIds(
-          this.currentUser[securityId],
-          FriendStatusType.BLOCKED,
-          true,
-        );
+        if (requestorId || requesteeId) {
+          if (!requestorId)
+            throw new HttpErrors.UnprocessableEntity(
+              'Please input requesteeId',
+            );
+          if (!requesteeId)
+            throw new HttpErrors.UnprocessableEntity(
+              'Please input requestorId',
+            );
+          const userIds = this.friendService.getMutualUserIds(
+            requestorId.toString(),
+            requesteeId.toString(),
+          );
 
-        filter.where = Object.assign(filter.where, {
-          id: {
-            nin: blockedFriendIds,
-          },
-        });
+          filter.order = this.orderSetting(request.query);
+          filter.where = {
+            id: {inq: userIds},
+            deletedAt: {
+              $exists: false,
+            },
+          };
+        } else if (friendsName) {
+          const searchQuery = await this.getSearchFriendByQuery(
+            friendsName.toString(),
+          );
+          if (!searchQuery) return;
+          filter.where = searchQuery;
+          filter.fields = ['id', 'name', 'username', 'profilePictureURL'];
+        } else {
+          const blockedFriendIds = await this.friendService.getFriendIds(
+            this.currentUser[securityId],
+            FriendStatusType.BLOCKED,
+            true,
+          );
+
+          filter.where = Object.assign(filter.where, {
+            id: {
+              nin: blockedFriendIds,
+            },
+            deletedAt: {
+              $exists: false,
+            },
+          });
+        }
 
         break;
       }
@@ -214,20 +249,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       case ControllerType.POST: {
         if (methodName === MethodType.TIMELINE) {
           const {experienceId, timelineType, q, topic} = request.query;
+          const hasWhere =
+            Object.keys(filter.where as Where<AnyObject>).length > 0;
 
           if (
-            (q && (topic || timelineType)) ||
-            (topic && (q || timelineType)) ||
-            (timelineType && (q || topic))
+            (q && (topic || timelineType || hasWhere)) ||
+            (topic && (q || timelineType || hasWhere)) ||
+            (timelineType && (q || topic || hasWhere)) ||
+            (hasWhere && (q || topic || timelineType))
           ) {
-            if (Object.keys(filter.where as Where<AnyObject>).length > 1) {
-              throw new HttpErrors.UnprocessableEntity(
-                'Cannot used where filter together with q, topic, and timelineType',
-              );
-            }
-
             throw new HttpErrors.UnprocessableEntity(
-              'Cannot used q, topic, and timelineType at the same time',
+              'Cannot used where filter together with q, topic, and timelineType',
             );
           }
 
@@ -315,24 +347,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           filter.where = await this.getExperienceByQuery(experienceQuery);
           filter.where.deletedAt = {$exists: false};
         }
-        break;
-      }
-
-      case ControllerType.FRIEND: {
-        if (methodName === MethodType.MUTUALDETAIL) {
-          const [requestorId, requesteeId, mutualFilter = {where: {}}] =
-            invocationCtx.args;
-          const userIds = this.friendService.getMutualUserIds(
-            requestorId,
-            requesteeId,
-          );
-
-          filter.order = this.orderSetting(request.query);
-          filter.where = Object.assign(mutualFilter.where ?? {}, {
-            id: {inq: userIds},
-          });
-        }
-
         break;
       }
     }
@@ -521,15 +535,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   ): Promise<MetaPagination> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
     const methodName = invocationCtx.methodName as MethodType;
+    const where = filter.where as Where<AnyObject>;
 
-    const {count} = await this.metricService.countData(
-      controllerName,
-      methodName,
-      filter.where as Where<AnyObject>,
-    );
-
+    const {count} = await this.metricService.countData(controllerName, where);
     const meta = pageMetadata([...pageDetail, count]);
-
     const paginationFilter = Object.assign(filter, {
       offset: ((meta.currentPage ?? 1) - 1) * meta.itemsPerPage,
       limit: meta.itemsPerPage,
@@ -538,8 +547,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     if (controllerName === ControllerType.REPORTUSER)
       invocationCtx.args[1] = paginationFilter;
     else if (methodName === MethodType.GETIMPORTERS)
-      invocationCtx.args[2] = paginationFilter;
-    else if (methodName === MethodType.MUTUALDETAIL)
       invocationCtx.args[2] = paginationFilter;
     else invocationCtx.args[0] = paginationFilter;
 
@@ -796,6 +803,35 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         } as Where<Post>;
       }
     }
+  }
+
+  async getSearchFriendByQuery(q: string): Promise<Where<User> | void> {
+    if (!q || (!q && typeof q === 'string')) return;
+    const friends = await this.friendService.friendRepository.find({
+      where: <AnyObject>{
+        requestorId: this.currentUser[securityId],
+        status: FriendStatusType.APPROVED,
+        deletedAt: {
+          $exists: false,
+        },
+      },
+    });
+
+    if (friends.length === 0) return;
+    if (q) {
+      return {
+        id: {inq: friends.map(friend => friend.requesteeId)},
+        name: {
+          like: `${q}.*`,
+          options: 'i',
+        },
+        deletedAt: {
+          $exists: false,
+        },
+      } as Where<User>;
+    }
+
+    return;
   }
 
   async initializeFilter(
