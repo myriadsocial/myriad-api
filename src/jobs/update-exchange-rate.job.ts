@@ -3,6 +3,7 @@ import {inject} from '@loopback/core';
 import {CoinMarketCap} from '../services';
 import {repository} from '@loopback/repository';
 import {CurrencyRepository, ExchangeRateRepository} from '../repositories';
+import {ExchangeRate} from '../models';
 
 @cronJob()
 export class UpdateExchangeRateJob extends CronJob {
@@ -41,7 +42,9 @@ export class UpdateExchangeRateJob extends CronJob {
 
       for (const currencyId of currencyIds) {
         const price = data[currencyId].quote.USD.price;
-        await this.exchangeRateRepository.set(currencyId, {price: price});
+        const exchangeRate = new ExchangeRate({id: currencyId, price: price});
+
+        await this.exchangeRateRepository.set(currencyId, exchangeRate);
       }
     } catch {
       // ignore
