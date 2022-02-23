@@ -16,8 +16,8 @@ import {
   UpdateInterceptor,
   DeleteInterceptor,
 } from '../interceptors';
-import {Friend, User} from '../models';
-import {FriendRepository, UserRepository} from '../repositories';
+import {Friend} from '../models';
+import {FriendRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
@@ -25,8 +25,6 @@ export class FriendController {
   constructor(
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
   ) {}
 
   @intercept(CreateInterceptor.BINDING_KEY)
@@ -118,29 +116,6 @@ export class FriendController {
     friend: Partial<Friend>,
   ): Promise<void> {
     await this.friendRepository.updateById(id, friend);
-  }
-
-  @authenticate.skip()
-  @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/friends/{requestorId}/detail/{requesteeId}')
-  @response(200, {
-    description: 'Array of Detail Mutual User model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(User, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async mutualDetail(
-    @param.path.string('requestorId') requestorId: string,
-    @param.path.string('requesteeId') requesteeId: string,
-    @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
-    filter?: Filter<User>,
-  ): Promise<User[]> {
-    return this.userRepository.find(filter);
   }
 
   @intercept(DeleteInterceptor.BINDING_KEY)
