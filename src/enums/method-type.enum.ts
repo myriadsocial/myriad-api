@@ -19,8 +19,6 @@ export enum MethodType {
   SELECTCURRENCY = 'selectCurrency',
   SELECTEXPERIENCE = 'selectExperience',
   GETIMPORTERS = 'getImporters',
-  MUTUALDETAIL = 'mutualDetail',
-  LEADERBOARD = 'leaderboard',
   RECOVERPOST = 'recoverPost',
   RECOVERUSER = 'recoverUser',
   READNOTIFICATION = 'readNotification',
@@ -31,4 +29,5 @@ export enum MethodType {
   IMPORT = 'import',
   SIGNUP = 'signup',
   LOGIN = 'login',
+  SEARCH = 'search',
 }

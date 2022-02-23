@@ -44,27 +44,6 @@ export class UserController {
     return this.userRepository.find(filter);
   }
 
-  @authenticate.skip()
-  @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/users/leaderboard')
-  @response(200, {
-    description: 'Array of User model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(User, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async leaderboard(
-    @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
-    filter?: Filter<User>,
-  ): Promise<User[]> {
-    return this.userRepository.find(filter);
-  }
-
   @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/users/{id}')
   @response(200, {

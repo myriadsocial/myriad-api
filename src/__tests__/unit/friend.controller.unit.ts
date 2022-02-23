@@ -8,12 +8,11 @@ import {
 import {FriendController} from '../../controllers';
 import {FriendStatusType} from '../../enums';
 import {Friend} from '../../models';
-import {FriendRepository, UserRepository} from '../../repositories';
+import {FriendRepository} from '../../repositories';
 import {givenFriend} from '../helpers';
 
 describe('FriendControllers', () => {
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
-  let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
   let controller: FriendController;
   let aFriend: Friend;
   let aFriendWithId: Friend;
@@ -70,7 +69,6 @@ describe('FriendControllers', () => {
 
   function resetRepositories() {
     friendRepository = createStubInstance(FriendRepository);
-    userRepository = createStubInstance(UserRepository);
 
     aFriend = givenFriend();
     aFriendWithId = givenFriend({
@@ -83,6 +81,6 @@ describe('FriendControllers', () => {
       }),
     ] as Friend[];
 
-    controller = new FriendController(friendRepository, userRepository);
+    controller = new FriendController(friendRepository);
   }
 });

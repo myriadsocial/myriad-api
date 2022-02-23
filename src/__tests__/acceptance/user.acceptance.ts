@@ -32,6 +32,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
+import {omit} from 'lodash';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserApplication', function () {
@@ -53,7 +54,7 @@ describe('UserApplication', function () {
   let address: KeyringPair;
 
   before(async () => {
-    ({app, client} = await setupApplication());
+    ({app, client} = await setupApplication(true));
   });
 
   after(() => app.stop());
@@ -132,30 +133,21 @@ describe('UserApplication', function () {
         bio: 'Hello, my name is Abdul Hakim',
       });
 
-      delete updatedUser.id;
-      delete updatedUser.username;
-      delete updatedUser.nonce;
-
-      user.bio = updatedUser.bio;
-
       await client
         .patch(`/users/${user.id}`)
         .set('Authorization', `Bearer ${accesToken}`)
-        .send(updatedUser)
+        .send(omit(updatedUser, ['id', 'username', 'nonce']))
         .expect(401);
+
+      user.bio = updatedUser.bio;
     });
 
     it('updates the user by ID ', async () => {
-      const updatedUser: Partial<User> = givenUser({
+      const rawUser: Partial<User> = givenUser({
         name: 'Abdul Hakim',
         bio: 'Hello, my name is Abdul Hakim',
       });
-
-      delete updatedUser.id;
-      delete updatedUser.username;
-      delete updatedUser.nonce;
-
-      user.bio = updatedUser.bio;
+      const updatedUser = omit(rawUser, ['id', 'username', 'nonce']);
 
       await client
         .patch(`/users/${user.id}`)
@@ -165,6 +157,8 @@ describe('UserApplication', function () {
 
       const result = await userRepository.findById(user.id);
       expect(result).to.containEql(updatedUser);
+
+      user.bio = updatedUser.bio;
     });
 
     it('returns 422 when updating a username', async () => {
@@ -172,27 +166,20 @@ describe('UserApplication', function () {
         username: 'abdulhakim',
       });
 
-      delete updatedUser.id;
-      delete updatedUser.nonce;
-
       await client
         .patch(`/users/${user.id}`)
         .set('Authorization', `Bearer ${token}`)
-        .send(updatedUser)
+        .send(omit(updatedUser, ['id', 'nonce']))
         .expect(422);
     });
 
     it('returns 401 when updating a user that does not belong to user', async () => {
       const updatedUser: Partial<User> = givenUser();
 
-      delete updatedUser.id;
-      delete updatedUser.username;
-      delete updatedUser.nonce;
-
       await client
         .patch(`/users/999999`)
         .set('Authorization', `Bearer ${token}`)
-        .send(updatedUser)
+        .send(omit(updatedUser, ['id', 'username', 'nonce']))
         .expect(401);
     });
   });

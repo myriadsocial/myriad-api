@@ -20,7 +20,7 @@ describe('FriendControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new FriendController(friendRepository, userRepository);
+    controller = new FriendController(friendRepository);
   });
 
   before(async () => {

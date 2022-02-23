@@ -2,7 +2,6 @@ import {AnyObject, Count, repository, Where} from '@loopback/repository';
 import {
   ControllerType,
   FriendStatusType,
-  MethodType,
   ReferenceType,
   SectionType,
 } from '../enums';
@@ -179,7 +178,6 @@ export class MetricService {
 
   async countData(
     controller: ControllerType,
-    methodName: MethodType,
     where: Where<AnyObject>,
   ): Promise<Count> {
     switch (controller) {
@@ -211,7 +209,7 @@ export class MetricService {
         return this.userSocialMediaRepository.count(where);
 
       case ControllerType.FRIEND:
-        return this.countMutualData(methodName, where);
+        return this.friendRepository.count(where);
 
       case ControllerType.USEREXPERIENCE:
         return this.userExpRepository.count(where);
@@ -235,19 +233,6 @@ export class MetricService {
         return {
           count: 0,
         };
-    }
-  }
-
-  async countMutualData(
-    methodName: MethodType,
-    where: Where<AnyObject>,
-  ): Promise<Count> {
-    switch (methodName) {
-      case MethodType.MUTUALDETAIL:
-        return this.userRepository.count(where);
-
-      default:
-        return this.friendRepository.count(where);
     }
   }
 
