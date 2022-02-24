@@ -42,6 +42,7 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
 
     userProfile.defaultCurrency = user.defaultCurrency;
     userProfile.permissions = user.permissions;
+    userProfile.profilePictureURL = user.profilePictureURL;
 
     if (request.method === 'GET') return userProfile;
     if (user.deletedAt)

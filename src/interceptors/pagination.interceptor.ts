@@ -210,6 +210,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         } else if (friendsName) {
           const searchQuery = await this.getSearchFriendByQuery(
             friendsName.toString(),
+            invocationCtx,
           );
           if (!searchQuery) return;
           filter.where = searchQuery;
@@ -513,13 +514,53 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       // Changed user name and username to [user banned] when user is deleted
       case ControllerType.USER: {
-        result = result.map((user: User) => {
-          if (user.deletedAt) {
-            user.name = '[user banned]';
-            user.username = '[user banned]';
-          }
-          return user;
-        });
+        const {friendsName, mutual} = request.query;
+
+        if (friendsName) {
+          const userIds = invocationCtx.args[1];
+          result = Promise.all(
+            result.map(async (user: User) => {
+              let totalMutual = 0;
+
+              if (mutual === 'true') {
+                ({count: totalMutual} = await this.friendService.countMutual(
+                  this.currentUser[securityId],
+                  user.id,
+                ));
+              }
+
+              const friend: AnyObject = {
+                id: userIds[user.id],
+                requestorId: this.currentUser[securityId],
+                requesteeId: user.id,
+                status: FriendStatusType.APPROVED,
+                requestee: {
+                  id: user.id,
+                  name: user.name,
+                  username: user.username,
+                  profilePictureURL: user.profilePictureURL,
+                },
+                requestor: {
+                  id: this.currentUser[securityId],
+                  name: this.currentUser.name,
+                  username: this.currentUser.username,
+                  profilePictureURL: this.currentUser.profilePictureURL,
+                },
+              };
+
+              if (mutual === 'true') friend.mutual = totalMutual;
+              return friend;
+            }),
+          );
+        } else {
+          result = result.map((user: User) => {
+            if (user.deletedAt) {
+              user.name = '[user banned]';
+              user.username = '[user banned]';
+            }
+            return user;
+          });
+        }
 
         break;
       }
@@ -805,7 +846,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
   }
 
-  async getSearchFriendByQuery(q: string): Promise<Where<User> | void> {
+  async getSearchFriendByQuery(
+    q: string,
+    invocationCtx: InvocationContext,
+  ): Promise<Where<User> | void> {
     if (!q || (!q && typeof q === 'string')) return;
     const friends = await this.friendService.friendRepository.find({
       where: <AnyObject>{
@@ -819,8 +863,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     if (friends.length === 0) return;
     if (q) {
+      const userIds: AnyObject = {};
+      const friendIds = friends.map(friend => {
+        userIds[friend.requesteeId] = friend.id;
+        return friend.requesteeId;
+      });
+      invocationCtx.args[1] = userIds;
+
       return {
-        id: {inq: friends.map(friend => friend.requesteeId)},
+        id: {inq: friendIds},
         name: {
           like: `${q}.*`,
           options: 'i',
