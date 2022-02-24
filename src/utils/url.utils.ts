@@ -4,6 +4,7 @@ import {EmbeddedURL, Media} from '../models';
 import validator from 'validator';
 import {HttpErrors} from '@loopback/rest';
 import {AnyObject} from '@loopback/repository';
+import {omit} from 'lodash';
 
 export class UrlUtils {
   detail: string[];
@@ -33,24 +34,21 @@ export class UrlUtils {
     return this.detail[1];
   }
 
-  async getOpenGraph(url: string): Promise<EmbeddedURL> {
+  async getOpenGraph(url: string): Promise<EmbeddedURL | null> {
     const {result} = await ogs({url});
     const embeddedURL = new EmbeddedURL();
     const embedded: AnyObject = result;
+
+    if (!embedded.ogImage) return null;
 
     embeddedURL.description = embedded.ogDescription ?? '';
     embeddedURL.title = embedded.ogTitle ?? '';
     embeddedURL.siteName = embedded.ogSiteName ?? '';
     embeddedURL.url = embedded.ogUrl ?? '';
-
-    if (embedded.ogImage) {
-      delete embedded.ogImage.type;
-      embeddedURL.image = new Media(embedded.ogImage);
-    }
+    embeddedURL.image = new Media(omit(embedded.ogImage, ['type']));
 
     if (embedded.ogVideo) {
-      delete embedded.ogVideo.type;
-      embeddedURL.video = new Media(embedded.ogVideo);
+      embeddedURL.video = new Media(omit(embedded.ogVideo, ['type']));
     }
 
     return embeddedURL;

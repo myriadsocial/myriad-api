@@ -9,6 +9,7 @@ import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import {injectable, BindingScope} from '@loopback/core';
 import {formatRawText} from '../utils/format-tag';
+import {EmbeddedURL, Media} from '../models';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -186,6 +187,8 @@ export class SocialMediaService {
       user,
       entities,
       extended_entities: extendedEntities,
+      quoted_status: quotedStatus,
+      display_text_range: [startWith],
     } = data;
 
     const asset: Asset = {
@@ -201,7 +204,7 @@ export class SocialMediaService {
         : []
       : [];
 
-    let text: String = fullText;
+    let text: String = fullText.substring(startWith);
     if (extendedEntities) {
       const medias = extendedEntities.media;
 
@@ -231,13 +234,32 @@ export class SocialMediaService {
     }
 
     let embedded = null;
-    const embeddedURL = entities?.urls[0]?.expanded_url;
+    let embeddedURL = entities?.urls[entities.urls.length - 1]?.expanded_url;
 
     if (embeddedURL && asset.images.length === 0 && asset.videos.length === 0) {
       try {
         validateURL(embeddedURL);
-        embedded = await getOpenGraph(embeddedURL);
-        if (!embedded.url) embedded.url = embeddedURL;
+        if (quotedStatus) {
+          const [embeddeStartWith] = quotedStatus.display_text_range;
+          const description =
+            quotedStatus.full_text.substring(embeddeStartWith);
+          const defaultImage =
+            'https://res.cloudinary.com/hakimblocksphere/image/upload/v1645684958/4719129_vgwiii.webp';
+
+          embeddedURL = `https://twitter.com/${quotedStatus.user.screen_name}/status/${quotedStatus.id_str}`;
+          embedded = new EmbeddedURL({
+            title: quotedStatus.user.name,
+            description: description,
+            siteName: 'Twitter',
+            url: embeddedURL,
+            image: new Media({
+              url: quotedStatus?.user?.profile_banner_url ?? defaultImage,
+            }),
+          });
+        } else {
+          embedded = await getOpenGraph(embeddedURL);
+        }
+
         if (embedded) {
           text = text.replace(embeddedURL, '');
         }
