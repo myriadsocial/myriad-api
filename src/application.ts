@@ -65,6 +65,7 @@ import {
   RateLimitSecurityBindings,
 } from 'loopback4-ratelimiter';
 import {DateUtils} from './utils/date-utils';
+import {MentionUser, Post} from './models';
 
 const date = new DateUtils();
 const jwt = require('jsonwebtoken');
@@ -215,6 +216,7 @@ export class MyriadApiApplication extends BootMixin(
     if (options?.existingSchema === 'alter') {
       await this.doMigratePost();
       await this.doMigrateNotification();
+      await this.doUpdateMention();
       return;
     }
   }
@@ -244,7 +246,7 @@ export class MyriadApiApplication extends BootMixin(
         type: ReferenceType.POST,
       });
 
-      await (postRepository as PostRepository).updateById(id, {
+      await postRepository.updateById(id, {
         metric: {
           ...metric,
           tips: countTip,
@@ -429,8 +431,16 @@ export class MyriadApiApplication extends BootMixin(
               transaction.type === ReferenceType.COMMENT
             ) {
               if (!referenceId) {
-                notificationIds.push(notification.id);
-                await transactionRepository.deleteById(transaction.id);
+                if (transaction.type === ReferenceType.COMMENT) {
+                  await transaction.updateById(transaction.id, {
+                    $unset: {
+                      type: '',
+                    },
+                  });
+                } else {
+                  notificationIds.push(notification.id);
+                  await transactionRepository.deleteById(transaction.id);
+                }
                 continue;
               }
             }
@@ -554,6 +564,89 @@ export class MyriadApiApplication extends BootMixin(
       id: {inq: notificationIds},
     });
 
+    bar.stop();
+  }
+
+  async doUpdateMention(): Promise<void> {
+    if (this.options.alter.indexOf('mention') === -1) return;
+    const {postRepository, userRepository} = await this.repositories();
+    const {count} = await userRepository.count();
+    const bar = this.initializeProgressBar('Alter mention');
+
+    await postRepository.updateAll({mentions: []});
+
+    bar.start(count + 1, 0);
+    for (let i = 0; i < count; i++) {
+      const [user] = await userRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      if (!user) continue;
+      const textMention = `"type":"mention","children":\\[{"text":""\\}],"value":"${user.id}"`;
+      const posts = await postRepository.find({
+        where: {
+          text: {
+            regexp: new RegExp(textMention, 'i'),
+          },
+        },
+      });
+
+      if (posts.length === 0) continue;
+      await Promise.all(
+        posts.map(async (post: Post) => {
+          post.mentions.push(
+            new MentionUser({
+              id: user.id,
+              name: user.name,
+              username: user.username,
+            }),
+          );
+
+          return postRepository.updateById(post.id, {mentions: post.mentions});
+        }),
+      );
+      bar.update(i + 1);
+    }
+
+    const user = await userRepository.findOne({
+      where: {username: 'myriad_official'},
+    });
+
+    if (user) {
+      const myriadMention = new RegExp(
+        '"type":"mention","children":\\[{"text":""\\}],"value":"' +
+          '.*' +
+          '","name":"Myriad Official"',
+        'i',
+      );
+      const replaceMention = `"type":"mention","children":[{"text":""}],"value":"${user.id}","name":"Myriad Official"`;
+      const myriadPost = await postRepository.find({
+        where: {
+          text: {
+            regexp: new RegExp(myriadMention, 'i'),
+          },
+        },
+      });
+
+      await Promise.all(
+        myriadPost.map(async (post: Post) => {
+          post.mentions.push(
+            new MentionUser({
+              id: user.id,
+              name: user.name,
+              username: user.username,
+            }),
+          );
+          post.text = post.text?.replace(myriadMention, replaceMention);
+          return postRepository.updateById(post.id, {
+            mentions: post.mentions,
+            text: post.text,
+          });
+        }),
+      );
+    }
+    bar.update(count + 1);
     bar.stop();
   }
 
