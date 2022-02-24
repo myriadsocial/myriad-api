@@ -173,7 +173,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       // Use for search unblock user
       case ControllerType.USER: {
-        const {requestorId, requesteeId, friendsName} = request.query;
+        const {requestorId, requesteeId, friendsName, userId} = request.query;
         const hasWhere =
           Object.keys(filter.where as Where<AnyObject>).length > 0;
         if (
@@ -208,7 +208,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             },
           };
         } else if (friendsName) {
+          if (!userId)
+            throw new HttpErrors.UnprocessableEntity('UserId cannot be empty');
           const searchQuery = await this.getSearchFriendByQuery(
+            userId.toString(),
             friendsName.toString(),
             invocationCtx,
           );
@@ -518,20 +521,21 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
         if (friendsName) {
           const userIds = invocationCtx.args[1];
+          const requestor = invocationCtx.args[2];
           result = Promise.all(
             result.map(async (user: User) => {
               let totalMutual = 0;
 
               if (mutual === 'true') {
                 ({count: totalMutual} = await this.friendService.countMutual(
-                  this.currentUser[securityId],
+                  requestor.id,
                   user.id,
                 ));
               }
 
               const friend: AnyObject = {
                 id: userIds[user.id],
-                requestorId: this.currentUser[securityId],
+                requestorId: requestor.id,
                 requesteeId: user.id,
                 status: FriendStatusType.APPROVED,
                 requestee: {
@@ -541,10 +545,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                   profilePictureURL: user.profilePictureURL,
                 },
                 requestor: {
-                  id: this.currentUser[securityId],
-                  name: this.currentUser.name,
-                  username: this.currentUser.username,
-                  profilePictureURL: this.currentUser.profilePictureURL,
+                  id: requestor.id,
+                  name: requestor.name,
+                  username: requestor.username,
+                  profilePictureURL: requestor.profilePictureURL,
                 },
               };
 
@@ -847,13 +851,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   }
 
   async getSearchFriendByQuery(
+    userId: string,
     q: string,
     invocationCtx: InvocationContext,
   ): Promise<Where<User> | void> {
     if (!q || (!q && typeof q === 'string')) return;
+    const requestor = await this.userRepository.findById(userId);
     const friends = await this.friendService.friendRepository.find({
       where: <AnyObject>{
-        requestorId: this.currentUser[securityId],
+        requestorId: userId,
         status: FriendStatusType.APPROVED,
         deletedAt: {
           $exists: false,
@@ -869,6 +875,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return friend.requesteeId;
       });
       invocationCtx.args[1] = userIds;
+      invocationCtx.args[2] = requestor;
 
       return {
         id: {inq: friendIds},
