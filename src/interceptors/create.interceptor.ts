@@ -356,7 +356,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERSOCIALMEDIA: {
-        await this.currencyService.autoClaimTips(result as UserSocialMedia);
+        this.currencyService.autoClaimTips(
+          result as UserSocialMedia,
+        ) as Promise<void>;
 
         return result;
       }

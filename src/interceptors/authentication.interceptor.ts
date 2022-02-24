@@ -164,13 +164,14 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       await this.userRepository.languageSetting(result.id).create({});
       await this.friendService.defaultFriend(result.id);
       await this.currencyService.defaultCurrency(result.id);
-      await this.currencyService.sendMyriadReward(result.id);
       await this.activityLogService.createLog(
         ActivityLogType.NEWUSER,
         result.id,
         result.id,
         ReferenceType.USER,
       );
+
+      this.currencyService.sendMyriadReward(result.id) as Promise<void>;
 
       return;
     }
