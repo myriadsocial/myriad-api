@@ -226,9 +226,9 @@ export class SocialMediaService {
       }
     }
 
-    for (const entitity of entities.urls as AnyObject[]) {
-      const url = entitity.url;
-      const expandedURL = entitity.expanded_url;
+    for (const entity of entities.urls as AnyObject[]) {
+      const url = entity.url;
+      const expandedURL = entity.expanded_url;
 
       text = text.replace(url, expandedURL);
     }
@@ -241,8 +241,14 @@ export class SocialMediaService {
         validateURL(embeddedURL);
         if (quotedStatus) {
           const [embeddeStartWith] = quotedStatus.display_text_range;
-          const description =
-            quotedStatus.full_text.substring(embeddeStartWith);
+          const quoteEntities = quotedStatus.entities;
+
+          let description = quotedStatus.full_text.substring(embeddeStartWith);
+
+          quoteEntities.forEach((entity: AnyObject) => {
+            description = description.replace(entity.url, entity.expanded_url);
+          });
+
           const defaultImage =
             'https://res.cloudinary.com/hakimblocksphere/image/upload/v1645684958/4719129_vgwiii.webp';
 
