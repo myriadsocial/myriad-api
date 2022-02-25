@@ -112,49 +112,31 @@ export class CurrencyService {
         DefaultCurrencyType.MYRIA,
       );
 
-      let hash: string | null = null;
-
-      await transfer.signAndSend(
-        from,
-        {nonce: getNonce},
-        async ({status, events}) => {
-          if (status.isInBlock || status.isFinalized) {
-            let transactionStatus = null;
-
-            if (status.isInBlock) hash = status.asInBlock.toString();
-
-            events
-              .filter(({event}) => event.section === 'system')
-              .forEach(event => {
-                const method = event.event.method;
-
-                if (method === 'ExtrinsicSuccess') {
-                  transactionStatus = 'success';
-                }
-              });
-
-            if (status.isFinalized) {
-              if (transactionStatus === 'success' && hash) {
-                try {
-                  const transaction = await this.transactionRepository.create({
-                    hash: hash,
-                    amount: rewardAmount / 10 ** myriadDecimal,
-                    to: to,
-                    from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-                    currencyId: DefaultCurrencyType.MYRIA,
-                  });
-
-                  await this.notificationService.sendInitialTips(transaction);
-                } catch {
-                  // ignore
-                }
-              }
-
-              await api.disconnect();
-            }
+      const hash = await new Promise((resolve, reject) => {
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        transfer.signAndSend(from, {nonce: getNonce}, ({status, isError}) => {
+          if (status.isFinalized) {
+            const blockHash = status.asFinalized.toHex();
+            resolve(blockHash);
+          } else if (isError) {
+            reject();
           }
-        },
-      );
+        });
+      });
+
+      await api.disconnect();
+
+      if (hash && typeof hash === 'string') {
+        const transaction = await this.transactionRepository.create({
+          hash: hash,
+          amount: rewardAmount / 10 ** myriadDecimal,
+          to: to,
+          from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+          currencyId: DefaultCurrencyType.MYRIA,
+        });
+
+        await this.notificationService.sendInitialTips(transaction);
+      }
     } catch {
       // ignore
     }
@@ -202,7 +184,10 @@ export class CurrencyService {
             balance = result.free;
           }
 
-          if (!balance) continue;
+          if (!balance) {
+            await api.disconnect();
+            continue;
+          }
 
           const paymentInfo = {
             amount: balance,
@@ -218,63 +203,49 @@ export class CurrencyService {
             api.consts.balances?.existentialDeposit.toBigInt();
           const transferBalance = BigInt(balance - txFee);
 
-          if (transferBalance < existensial) continue;
+          if (transferBalance < existensial) {
+            await api.disconnect();
+            continue;
+          }
 
-          let transfer = null;
+          let transfer = api.tx.balances.transfer(
+            to,
+            new BN(transferBalance.toString()),
+          );
 
-          if (native)
-            transfer = api.tx.balances.transfer(
-              to,
-              new BN(transferBalance.toString()),
-            );
-          else
+          if (!native) {
             transfer = api.tx.currencies.transfer(
               to,
               {Token: id},
               new BN(transferBalance.toString()),
             );
+          }
 
-          let txHash: string | null = null;
-
-          await transfer.signAndSend(from, async ({status, events}) => {
-            if (status.isInBlock || status.isFinalized) {
-              let transactionStatus = null;
-
-              if (status.isInBlock) txHash = status.asInBlock.toString();
-
-              events
-                .filter(({event}) => event.section === 'system')
-                .forEach(event => {
-                  const method = event.event.method;
-
-                  if (method === 'ExtrinsicSuccess') {
-                    transactionStatus = 'success';
-                  }
-                });
-
+          const hash = await new Promise((resolve, reject) => {
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            transfer.signAndSend(from, ({status, isError}) => {
               if (status.isFinalized) {
-                if (transactionStatus === 'success' && txHash) {
-                  try {
-                    const transaction = await this.transactionRepository.create(
-                      {
-                        hash: txHash,
-                        amount: balance / 10 ** decimal,
-                        to: to,
-                        from: getHexPublicKey(from),
-                        currencyId: id,
-                      },
-                    );
-
-                    await this.notificationService.sendClaimTips(transaction);
-                  } catch {
-                    // ignore
-                  }
-                }
-
-                await api.disconnect();
+                const blockHash = status.asFinalized.toHex();
+                resolve(blockHash);
+              } else if (isError) {
+                reject();
               }
-            }
+            });
           });
+
+          await api.disconnect();
+
+          if (hash && typeof hash === 'string') {
+            const transaction = await this.transactionRepository.create({
+              hash: hash,
+              amount: Number(transferBalance) / 10 ** decimal,
+              to: to,
+              from: getHexPublicKey(from),
+              currencyId: id,
+            });
+
+            await this.notificationService.sendClaimTips(transaction);
+          }
         } catch (err) {
           // ignore
         }
@@ -346,7 +317,6 @@ export class CurrencyService {
     const to = userId;
 
     let api: ApiPromise;
-    let balance = 0;
 
     try {
       api = await polkadotApi(rpcURL, types);
@@ -380,6 +350,8 @@ export class CurrencyService {
 
       const from = getKeyring().addFromUri('//' + token);
 
+      let balance = 0;
+
       if (native) {
         const nativeBalance = await api.query.system.account(from.publicKey);
 
@@ -411,14 +383,12 @@ export class CurrencyService {
 
       if (transferBalance < existensial) continue;
 
-      let transfer;
+      let transfer = api.tx.balances.transfer(
+        to,
+        new BN(transferBalance.toString()),
+      );
 
-      if (native)
-        transfer = api.tx.balances.transfer(
-          to,
-          new BN(transferBalance.toString()),
-        );
-      else {
+      if (!native) {
         transfer = api.tx.currencies.transfer(
           to,
           {Token: id},
@@ -426,53 +396,43 @@ export class CurrencyService {
         );
       }
 
-      let txHash: string | null = null;
-
-      await transfer.signAndSend(from, async ({status, events}) => {
-        if (status.isInBlock || status.isFinalized) {
-          let transactionStatus = null;
-
-          if (status.isInBlock) txHash = status.asInBlock.toString();
-
-          events
-            .filter(({event}) => event.section === 'system')
-            .forEach(event => {
-              const method = event.event.method;
-
-              if (method === 'ExtrinsicSuccess') {
-                transactionStatus = 'success';
-              }
-            });
-
+      const hash = await new Promise((resolve, reject) => {
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        transfer.signAndSend(from, ({status, isError}) => {
           if (status.isFinalized) {
-            if (transactionStatus === 'status' && txHash) {
-              try {
-                const transaction = await this.transactionRepository.create({
-                  hash: txHash.toString(),
-                  amount: balance / 10 ** decimal,
-                  to: to,
-                  from: getHexPublicKey(from),
-                  currencyId: id,
-                });
-
-                await this.activityLogService.createLog(
-                  ActivityLogType.CLAIMTIP,
-                  to,
-                  transaction.id ?? '',
-                  ReferenceType.TRANSACTION,
-                );
-
-                await this.notificationService.sendClaimTips(transaction);
-              } catch {
-                // ignore
-              }
-            }
-
-            await api.disconnect();
+            const blockHash = status.asFinalized.toHex();
+            resolve(blockHash);
+          } else if (isError) {
+            reject();
           }
-        }
+        });
       });
+
+      if (hash && typeof hash === 'string') {
+        const transaction = await this.transactionRepository.create({
+          hash: hash,
+          amount: Number(transferBalance) / 10 ** decimal,
+          to: to,
+          from: getHexPublicKey(from),
+          currencyId: id,
+        });
+
+        await this.activityLogService.createLog(
+          ActivityLogType.CLAIMTIP,
+          to,
+          transaction.id ?? '',
+          ReferenceType.TRANSACTION,
+        );
+
+        try {
+          await this.notificationService.sendClaimTips(transaction);
+        } catch {
+          // ignore
+        }
+      }
     }
+
+    await api.disconnect();
 
     return;
   }
