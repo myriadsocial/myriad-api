@@ -880,7 +880,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       return {
         id: {inq: friendIds},
         name: {
-          like: `${q}.*`,
+          like: `${encodeURI(q)}.*`,
           options: 'i',
         },
         deletedAt: {
