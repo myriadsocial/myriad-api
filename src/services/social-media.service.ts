@@ -240,21 +240,29 @@ export class SocialMediaService {
       try {
         validateURL(embeddedURL);
         if (quotedStatus) {
-          const [embeddeStartWith] = quotedStatus.display_text_range;
-          const quoteEntities = quotedStatus.entities;
+          const [embeddeStartWith] = quotedStatus?.display_text_range ?? 0;
+          const quoteEntities = quotedStatus?.entities?.urls ?? [];
 
-          let description = quotedStatus.full_text.substring(embeddeStartWith);
+          let description =
+            quotedStatus?.full_text?.substring(embeddeStartWith) ?? '';
 
           quoteEntities.forEach((entity: AnyObject) => {
-            description = description.replace(entity.url, entity.expanded_url);
+            description = description.replace(
+              entity?.url ?? '',
+              entity?.expanded_url ?? '',
+            );
           });
 
           const defaultImage =
             'https://res.cloudinary.com/hakimblocksphere/image/upload/v1645684958/4719129_vgwiii.webp';
 
-          embeddedURL = `https://twitter.com/${quotedStatus.user.screen_name}/status/${quotedStatus.id_str}`;
+          embeddedURL =
+            quotedStatus?.user?.screen_name && quotedStatus?.id_str
+              ? `https://twitter.com/${quotedStatus.user.screen_name}/status/${quotedStatus.id_str}`
+              : '';
+
           embedded = new EmbeddedURL({
-            title: quotedStatus.user.name,
+            title: quotedStatus?.user?.name ?? '',
             description: description,
             siteName: 'Twitter',
             url: embeddedURL,
