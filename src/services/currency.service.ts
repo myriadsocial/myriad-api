@@ -159,96 +159,88 @@ export class CurrencyService {
       const from = getKeyring().addFromUri('//' + token);
       const to = userId;
 
-      const currencies = await this.currencyRepository.find();
+      const currency = await this.currencyRepository.findById(
+        DefaultCurrencyType.MYRIA,
+      );
+      const {id, decimal, rpcURL, native, types} = currency;
+      const api = await polkadotApi(rpcURL, types);
 
-      for (const currency of currencies) {
-        const {id, decimal, rpcURL, native, types} = currency;
-        const api = await polkadotApi(rpcURL, types);
+      let balance = 0;
 
-        let balance = 0;
+      if (native) {
+        const nativeBalance = await api.query.system.account(from.publicKey);
 
-        try {
-          if (native) {
-            const nativeBalance = await api.query.system.account(
-              from.publicKey,
-            );
+        balance = nativeBalance.data.free.toJSON();
+      } else {
+        const nonNativeBalance = await api.query.tokens.accounts(
+          from.publicKey,
+          {Token: id},
+        );
+        const result = nonNativeBalance.toJSON() as unknown as Balance;
 
-            balance = nativeBalance.data.free.toJSON();
-          } else {
-            const nonNativeBalance = await api.query.tokens.accounts(
-              from.publicKey,
-              {Token: id},
-            );
-            const result = nonNativeBalance.toJSON() as unknown as Balance;
+        balance = result.free;
+      }
 
-            balance = result.free;
+      if (!balance) {
+        await api.disconnect();
+        return;
+      }
+
+      const paymentInfo = {
+        amount: balance,
+        to: to,
+        from: from,
+        currencyId: id as DefaultCurrencyType,
+        decimal: decimal,
+        native: native,
+      };
+
+      const txFee = await this.getTransactionFee(api, paymentInfo);
+      const existensial = api.consts.balances?.existentialDeposit.toBigInt();
+      const transferBalance = BigInt(balance - txFee);
+
+      if (transferBalance < existensial) {
+        await api.disconnect();
+        return;
+      }
+
+      let transfer = api.tx.balances.transfer(
+        to,
+        new BN(transferBalance.toString()),
+      );
+
+      if (!native) {
+        transfer = api.tx.currencies.transfer(
+          to,
+          {Token: id},
+          new BN(transferBalance.toString()),
+        );
+      }
+
+      const hash = await new Promise((resolve, reject) => {
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        transfer.signAndSend(from, ({status, isError}) => {
+          if (status.isFinalized) {
+            const blockHash = status.asFinalized.toHex();
+            resolve(blockHash);
+          } else if (isError) {
+            reject();
           }
+        });
+      });
 
-          if (!balance) {
-            await api.disconnect();
-            continue;
-          }
+      await api.disconnect();
 
-          const paymentInfo = {
-            amount: balance,
-            to: to,
-            from: from,
-            currencyId: id as DefaultCurrencyType,
-            decimal: decimal,
-            native: native,
-          };
+      if (hash && typeof hash === 'string') {
+        const transaction = await this.transactionRepository.create({
+          hash: hash,
+          amount: Number(transferBalance) / 10 ** decimal,
+          to: to,
+          from: getHexPublicKey(from),
+          currencyId: id,
+        });
 
-          const txFee = await this.getTransactionFee(api, paymentInfo);
-          const existensial =
-            api.consts.balances?.existentialDeposit.toBigInt();
-          const transferBalance = BigInt(balance - txFee);
-
-          if (transferBalance < existensial) {
-            await api.disconnect();
-            continue;
-          }
-
-          let transfer = api.tx.balances.transfer(
-            to,
-            new BN(transferBalance.toString()),
-          );
-
-          if (!native) {
-            transfer = api.tx.currencies.transfer(
-              to,
-              {Token: id},
-              new BN(transferBalance.toString()),
-            );
-          }
-
-          const hash = await new Promise((resolve, reject) => {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-            transfer.signAndSend(from, ({status, isError}) => {
-              if (status.isFinalized) {
-                const blockHash = status.asFinalized.toHex();
-                resolve(blockHash);
-              } else if (isError) {
-                reject();
-              }
-            });
-          });
-
-          await api.disconnect();
-
-          if (hash && typeof hash === 'string') {
-            const transaction = await this.transactionRepository.create({
-              hash: hash,
-              amount: Number(transferBalance) / 10 ** decimal,
-              to: to,
-              from: getHexPublicKey(from),
-              currencyId: id,
-            });
-
-            await this.notificationService.sendClaimTips(transaction);
-          }
-        } catch (err) {
-          // ignore
-        }
+        await this.notificationService.sendClaimTips(transaction);
       }
     } catch (err) {
       // ignore
