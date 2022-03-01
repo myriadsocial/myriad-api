@@ -99,7 +99,11 @@ describe('UserExperienceApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
-      const expected = toJSON(persistedUserExperience);
+      const expected = toJSON({
+        ...persistedUserExperience,
+        private: false,
+        friend: false,
+      });
 
       expect(result.body).to.deepEqual(expected);
     });

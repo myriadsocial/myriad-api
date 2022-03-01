@@ -19,6 +19,7 @@ import {
 } from '../repositories';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {FriendService} from './friend.service';
+import {omit} from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class ExperienceService {
@@ -248,8 +249,6 @@ export class ExperienceService {
         ...userExperience.experience,
       };
 
-      delete newExperience.users;
-
       const userToPeople = users.map(user => {
         return new People({
           id: user.id,
@@ -268,7 +267,7 @@ export class ExperienceService {
       newExperience.people = [...userToPeople, ...people];
       userExperience.experience = newExperience as Experience;
 
-      return userExperience;
+      return omit(userExperience, ['users']) as UserExperienceWithRelations;
     });
   }
 }

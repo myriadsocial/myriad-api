@@ -16,7 +16,11 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {ExperienceInterceptor, PaginationInterceptor} from '../interceptors';
+import {
+  ExperienceInterceptor,
+  FindByIdInterceptor,
+  PaginationInterceptor,
+} from '../interceptors';
 import {Experience, UserExperience} from '../models';
 import {
   ExperienceRepository,
@@ -61,7 +65,7 @@ export class UserExperienceController {
     return this.userExperienceRepository.find(filter);
   }
 
-  @authenticate.skip()
+  @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/user-experiences/{id}')
   @response(200, {
     description: 'UserExperience model instance',

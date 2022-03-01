@@ -15,7 +15,13 @@ import {
   FriendStatusType,
   PlatformType,
 } from '../enums';
-import {Experience, People, Post, User} from '../models';
+import {
+  Experience,
+  People,
+  Post,
+  User,
+  UserExperienceWithRelations,
+} from '../models';
 import {omit} from 'lodash';
 import {ExperienceService, PostService} from '../services';
 import {AccountSettingRepository, FriendRepository} from '../repositories';
@@ -99,6 +105,31 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         filter.include = filter.include
           ? [...filter.include, 'user']
           : ['user'];
+
+        invocationCtx.args[1] = filter;
+        break;
+      }
+
+      case ControllerType.USEREXPERIENCE: {
+        const filter = invocationCtx.args[1] ?? {};
+        const include = [
+          {
+            relation: 'experience',
+            scope: {
+              include: [
+                {
+                  relation: 'user',
+                  scope: {
+                    include: [{relation: 'accountSetting'}],
+                  },
+                },
+              ],
+            },
+          },
+        ];
+
+        if (!filter.include) filter.include = include;
+        else filter.include.push(...include);
 
         invocationCtx.args[1] = filter;
         break;
@@ -204,6 +235,19 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
           status: 'blocked',
           blocker: blockedFriend.requestorId,
         };
+      }
+
+      case ControllerType.USEREXPERIENCE: {
+        const userExperiences = this.experienceService.combinePeopleAndUser([
+          result,
+        ] as UserExperienceWithRelations[]);
+
+        [result] = await this.experienceService.privateUserExperience(
+          this.currentUser[securityId],
+          userExperiences,
+        );
+
+        return result;
       }
 
       default:
