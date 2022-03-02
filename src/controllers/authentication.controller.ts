@@ -106,6 +106,7 @@ export class AuthenticationController {
               'metric',
               'fcmTokens',
               'onTimeline',
+              'verified',
               'nonce',
               'permissions',
               'createdAt',

@@ -122,6 +122,13 @@ export class User extends Entity {
   fcmTokens?: string[];
 
   @property({
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  verified: boolean;
+
+  @property({
     type: 'number',
     default: () => {
       const ng = new NonceGenerator();

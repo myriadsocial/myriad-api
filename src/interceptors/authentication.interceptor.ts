@@ -159,31 +159,28 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
-      await this.userRepository.accountSetting(result.id).create({});
-      await this.userRepository.notificationSetting(result.id).create({});
-      await this.userRepository.languageSetting(result.id).create({});
-      await this.friendService.defaultFriend(result.id);
-      await this.currencyService.defaultCurrency(result.id);
-      await this.activityLogService.createLog(
-        ActivityLogType.NEWUSER,
-        result.id,
-        result.id,
-        ReferenceType.USER,
-      );
+      Promise.allSettled([
+        this.userRepository.accountSetting(result.id).create({}),
+        this.userRepository.notificationSetting(result.id).create({}),
+        this.userRepository.languageSetting(result.id).create({}),
+        this.currencyService.sendMyriadReward(result.id),
+        this.friendService.defaultFriend(result.id),
+        this.currencyService.defaultCurrency(result.id),
+        this.activityLogService.createLog(
+          ActivityLogType.NEWUSER,
+          result.id,
+          result.id,
+          ReferenceType.USER,
+        ),
+      ]) as Promise<AnyObject>;
+    } else {
+      // Generate random nonce after login
+      const {publicAddress} = invocationCtx.args[0];
+      const ng = new NonceGenerator();
+      const newNonce = ng.generate();
 
-      this.currencyService.sendMyriadReward(result.id) as Promise<void>;
-
-      return;
+      await this.userRepository.updateById(publicAddress, {nonce: newNonce});
     }
-
-    // Generate random nonce after login
-    const {publicAddress} = invocationCtx.args[0];
-    const ng = new NonceGenerator();
-    const newNonce = ng.generate();
-
-    await this.userRepository.updateById(publicAddress, {nonce: newNonce});
-
-    return;
   }
 
   validateUsername(username: string): void {
