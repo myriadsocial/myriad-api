@@ -59,13 +59,23 @@ import {
   UserSocialMediaRepository,
   VoteRepository,
 } from './repositories';
-import {NotificationType, ReferenceType} from './enums';
+import {
+  NotificationType,
+  ReferenceType,
+  PermissionKeys,
+  DefaultCurrencyType,
+  FriendStatusType,
+  ActivityLogType,
+} from './enums';
 import {
   RateLimiterComponent,
   RateLimitSecurityBindings,
 } from 'loopback4-ratelimiter';
 import {DateUtils} from './utils/date-utils';
 import {MentionUser, Post} from './models';
+import {decodeAddress} from '@polkadot/util-crypto';
+import {u8aToHex} from '@polkadot/util';
+import NonceGenerator from 'a-nonce-generator';
 
 const date = new DateUtils();
 const jwt = require('jsonwebtoken');
@@ -217,6 +227,8 @@ export class MyriadApiApplication extends BootMixin(
       await this.doMigratePost();
       await this.doMigrateNotification();
       await this.doUpdateMention();
+      await this.doMigrateUser();
+      await this.doMigrateCurrency();
       return;
     }
   }
@@ -648,6 +660,105 @@ export class MyriadApiApplication extends BootMixin(
     }
     bar.update(count + 1);
     bar.stop();
+  }
+
+  async doMigrateUser() {
+    if (this.options.alter.indexOf('user') === -1) return;
+    const {
+      activityLogRepository,
+      userRepository,
+      friendRepository,
+      userCurrencyRepository,
+    } = await this.repositories();
+
+    await userRepository.updateAll({verified: false});
+    await userRepository.updateAll(
+      {verified: true},
+      {id: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY},
+    );
+    const user = await (userRepository as UserRepository).create({
+      id: u8aToHex(
+        decodeAddress('1x8aa2N2Ar9SQweJv9vsuZn3WYDHu7gMQu1RePjZuBe33Hv'),
+      ),
+      name: 'Ukraine / Україна',
+      username: 'ukraine',
+      profilePictureURL:
+        'https://pbs.twimg.com/profile_images/1011852346232631296/gw8Yp3dG_400x400.jpg',
+      bannerImageUrl:
+        'https://pbs.twimg.com/profile_banners/732521058507620356/1625634206/1500x500',
+      bio: 'Yes, this is the official Myriad account of Ukraine. Nice pics: #BeautifulUkraine⛰ Our music: #UkieBeats🎶',
+      verified: true,
+      fcmTokens: [],
+      metric: {
+        totalPosts: 0,
+        totalKudos: 0,
+        totalFriends: 1,
+        totalExperiences: 0,
+      },
+      nonce: (() => {
+        const ng = new NonceGenerator();
+        return ng.generate();
+      })(),
+      defaultCurrency: DefaultCurrencyType.MYRIA,
+      permissions: [PermissionKeys.USER],
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString(),
+    });
+    await userRepository.accountSetting(user.id).create({});
+    await userRepository.notificationSetting(user.id).create({});
+    await userRepository.languageSetting(user.id).create({});
+    await friendRepository.create({
+      status: FriendStatusType.APPROVED,
+      requestorId: user.id,
+      requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+    });
+    await userCurrencyRepository.create({
+      userId: user.id,
+      currencyId: DefaultCurrencyType.MYRIA,
+      priority: 1,
+    });
+    await activityLogRepository.create({
+      type: ActivityLogType.NEWUSER,
+      userId: user.id,
+      referenceId: user.id,
+      referenceType: ReferenceType.USER,
+    });
+  }
+
+  async doMigrateCurrency() {
+    if (this.options.alter.indexOf('currency') === -1) return;
+    console.log('hello');
+    const {currencyRepository} = await this.repositories();
+    try {
+      await currencyRepository.createAll([
+        {
+          id: 'DOT',
+          image:
+            'https://pbs.twimg.com/profile_images/1471096119182700550/KTxlFVah_400x400.jpg',
+          decimal: 10,
+          rpcURL: 'wss://rpc.polkadot.io',
+          native: true,
+          exchangeRate: true,
+          networkType: 'substrate',
+          explorerURL:
+            'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.polkadot.io#/explorer/query',
+        },
+        {
+          id: 'KSM',
+          image:
+            'https://pbs.twimg.com/profile_images/1430157114194944000/72gTG-fc_400x400.jpg',
+          decimal: 12,
+          rpcURL: 'wss://kusama-rpc.polkadot.io',
+          native: true,
+          exchangeRate: true,
+          networkType: 'substrate',
+          explorerURL:
+            'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fkusama-rpc.polkadot.io#/explorer/query',
+        },
+      ]);
+    } catch {
+      // ignore
+    }
   }
 
   async repositories(): Promise<AnyObject> {

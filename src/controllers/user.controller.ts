@@ -77,6 +77,7 @@ export class UserController {
               'id',
               'defaultCurrency',
               'onTimeline',
+              'verified',
               'nonce',
               'permissions',
               'createdAt',
