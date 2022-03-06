@@ -1,4 +1,5 @@
 import {AnyObject, Model, model, property} from '@loopback/repository';
+import {WalletType} from '../enums';
 
 @model()
 export class Credential extends Model {
@@ -11,11 +12,6 @@ export class Credential extends Model {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
-    },
   })
   publicAddress: string;
 
@@ -24,6 +20,12 @@ export class Credential extends Model {
     required: true,
   })
   signature: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  walletType: WalletType;
 
   @property({
     type: 'object',

@@ -23,11 +23,6 @@ export class Wallet extends Entity {
     id: true,
     generated: false,
     required: true,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
-    },
   })
   id: string;
 

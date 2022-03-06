@@ -9,15 +9,23 @@ import {
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ActivityLogType, MethodType, PermissionKeys, ReferenceType} from '../enums';
-import {Credential, Wallet} from '../models';
+import {
+  ActivityLogType,
+  BlockchainPlatform,
+  MethodType,
+  PermissionKeys,
+  ReferenceType,
+  WalletType,
+} from '../enums';
+import {Credential, UserWallet, Wallet} from '../models';
 import {UserRepository, WalletRepository} from '../repositories';
 import {ActivityLogService, CurrencyService, FriendService} from '../services';
-import {numberToHex} from '@polkadot/util';
+import {numberToHex, hexToU8a} from '@polkadot/util';
 import {signatureVerify} from '@polkadot/util-crypto';
 import {securityId, UserProfile} from '@loopback/security';
-import {intersection} from 'lodash';
+import {assign, intersection} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
+import nacl from 'tweetnacl';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -73,16 +81,40 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
-      const {name, username, ...wallet} = invocationCtx.args[0];
-      const found = await this.walletRepository.findOne({
-        where: {
-          id: wallet.walletAddress,
-        },
+      const {name, username, ...wallet} = invocationCtx.args[0] as UserWallet;
+      const foundWallet = await this.walletRepository.findOne({
+        where: {id: wallet.walletAddress},
       });
 
-      if (found) throw new HttpErrors.UnprocessableEntity('User already exists');
+      if (foundWallet)
+        throw new HttpErrors.UnprocessableEntity(
+          'Wallet address already exists',
+        );
 
+      const foundUser = await this.userRepository.findOne({
+        where: {username},
+      });
+
+      if (foundUser)
+        throw new HttpErrors.UnprocessableEntity('User already exists');
+
+      this.validateWalletAddress(wallet.walletAddress);
       this.validateUsername(username);
+
+      let walletPlatform: BlockchainPlatform;
+
+      switch (wallet.walletType) {
+        case WalletType.NEAR:
+          walletPlatform = BlockchainPlatform.NEAR;
+          break;
+
+        case WalletType.METAMASK:
+          walletPlatform = BlockchainPlatform.ETHEREUM;
+          break;
+
+        default:
+          walletPlatform = BlockchainPlatform.SUBSTRATE;
+      }
 
       invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
         name: name.substring(0, 22),
@@ -91,7 +123,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         id: wallet.walletAddress,
         name: wallet.walletName,
         type: wallet.walletType,
-        platform: wallet.walletPlatform,
+        platform: walletPlatform,
         primary: true,
       });
 
@@ -100,22 +132,23 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     try {
       // Verify login process
-      const {nonce, signature, publicAddress} = invocationCtx
-        .args[0] as Credential;
+      const credential = invocationCtx.args[0] as Credential;
+      const {nonce, walletType} = credential;
+      const [publicAddress, nearAccount] = credential.publicAddress.split('/');
 
       if (nonce === 0 || !nonce) throw new Error('Invalid user!');
 
-      const {isValid} = signatureVerify(
-        numberToHex(nonce),
-        signature,
-        publicAddress,
+      const verified = this.validateAccount(
+        assign(credential, {publicAddress}),
       );
 
-      if (!isValid) {
+      if (!verified) {
         throw new Error('Invalid user!');
       }
 
-      const user = await this.walletRepository.user(publicAddress);
+      const user = await this.walletRepository.user(
+        nearAccount ?? publicAddress,
+      );
 
       if (user.nonce !== nonce) {
         throw new Error('Invalid user!');
@@ -146,6 +179,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         username: user.username,
         createdAt: user.createdAt,
         permissions: user.permissions,
+        walletType: walletType,
         walletAddress: publicAddress,
       };
 
@@ -187,6 +221,72 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       const newNonce = ng.generate();
 
       await this.userRepository.updateById(id, {nonce: newNonce});
+    }
+  }
+
+  validateWalletAddress(id: string): void {
+    const environment = process.env.NODE_ENV ?? 'development';
+
+    if (id.startsWith('0x')) {
+      if (id.length !== 66) {
+        throw new HttpErrors.UnprocessableEntity('Please a valid id');
+      }
+    } else {
+      let nearId = null;
+      let nearStatus = false;
+
+      switch (environment) {
+        case 'mainnet':
+          nearStatus = id.endsWith('.near');
+          nearId = id.split('.near')[0];
+          break;
+
+        default:
+          nearStatus = id.endsWith('.testnet');
+          nearId = id.split('.testnet')[0];
+          break;
+      }
+
+      if (!nearStatus) {
+        throw new HttpErrors.UnprocessableEntity('Invalid near id');
+      }
+
+      if (!nearId.match('^[a-z0-9_]+$')) {
+        throw new HttpErrors.UnprocessableEntity(
+          'Only allowed ascii letter (a-z), number (0-9), and underscore(_)',
+        );
+      }
+    }
+  }
+
+  validateAccount(credential: Credential): boolean {
+    const {nonce, signature, publicAddress, walletType} = credential;
+    const publicKey = publicAddress.replace('0x', '');
+
+    switch (walletType) {
+      case WalletType.NEAR: {
+        return nacl.sign.detached.verify(
+          Buffer.from(numberToHex(nonce)),
+          Buffer.from(hexToU8a(signature)),
+          Buffer.from(publicKey, 'hex'),
+        );
+      }
+
+      case WalletType.POLKADOT: {
+        const {isValid} = signatureVerify(
+          numberToHex(nonce),
+          signature,
+          publicAddress,
+        );
+        return isValid;
+      }
+
+      case WalletType.METAMASK: {
+        return false;
+      }
+
+      default:
+        return false;
     }
   }
 

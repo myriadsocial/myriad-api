@@ -68,7 +68,7 @@ export class User extends Entity {
       maxLength: 16,
     },
   })
-  username?: string;
+  username: string;
 
   @property({
     type: 'string',
