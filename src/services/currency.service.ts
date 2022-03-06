@@ -13,6 +13,7 @@ import {
   UserCurrencyRepository,
   UserRepository,
   UserSocialMediaRepository,
+  WalletRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {HttpErrors} from '@loopback/rest';
@@ -42,6 +43,8 @@ export class CurrencyService {
     protected transactionRepository: TransactionRepository,
     @repository(QueueRepository)
     protected queueRepository: QueueRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(TransactionService)
     protected transactionService: TransactionService,
     @service(NotificationService)
@@ -127,11 +130,12 @@ export class CurrencyService {
       await api.disconnect();
 
       if (hash && typeof hash === 'string') {
+        const myriadUserId = await this.getMyriadUserId();
         const transaction = await this.transactionRepository.create({
           hash: hash,
           amount: rewardAmount / 10 ** myriadDecimal,
           to: to,
-          from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+          from: myriadUserId,
           currencyId: DefaultCurrencyType.MYRIA,
         });
 
@@ -583,5 +587,11 @@ export class CurrencyService {
       native,
       exchangeRate,
     });
+  }
+
+  async getMyriadUserId(): Promise<string> {
+    const publicAddress = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
+    const wallet = await this.walletRepository.findById(publicAddress);
+    return wallet.userId;
   }
 }

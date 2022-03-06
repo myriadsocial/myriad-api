@@ -27,6 +27,7 @@ import {
   UserReportRepository,
   UserRepository,
   UserSocialMediaRepository,
+  WalletRepository,
 } from '../repositories';
 import {FCMService} from './fcm.service';
 import {UserProfile, securityId} from '@loopback/security';
@@ -53,6 +54,8 @@ export class NotificationService {
     public userReportRepository: UserReportRepository,
     @repository(NotificationSettingRepository)
     public notificationSettingRepository: NotificationSettingRepository,
+    @repository(WalletRepository)
+    public walletRepository: WalletRepository,
     @service(FCMService)
     public fcmService: FCMService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -186,8 +189,9 @@ export class NotificationService {
 
     if (reporters.length === 0) return;
 
+    const myriadUserId = await this.getMyriadUserId();
     const notification = new Notification({
-      from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+      from: myriadUserId,
       message: 'approved your report',
     });
 
@@ -268,8 +272,9 @@ export class NotificationService {
 
     if (status !== ReportStatusType.REMOVED) return;
 
+    const myriadUserId = await this.getMyriadUserId();
     const notification = new Notification({
-      from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+      from: myriadUserId,
     });
 
     switch (referenceType) {
@@ -624,9 +629,10 @@ export class NotificationService {
     );
     if (!tipsActive) return false;
 
+    const myriadUserId = await this.getMyriadUserId();
     const notification = new Notification({
       type: NotificationType.USER_CLAIM_TIPS,
-      from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+      from: myriadUserId,
       referenceId: transaction.id,
       message: transaction.amount + ' ' + transaction.currencyId,
     });
@@ -855,5 +861,11 @@ export class NotificationService {
     }
 
     return true;
+  }
+
+  async getMyriadUserId(): Promise<string> {
+    const publicAddress = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
+    const wallet = await this.walletRepository.findById(publicAddress);
+    return wallet.userId;
   }
 }

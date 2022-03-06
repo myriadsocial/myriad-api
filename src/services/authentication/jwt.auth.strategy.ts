@@ -5,7 +5,7 @@ import {HttpErrors, Request} from '@loopback/rest';
 import {UserProfile, securityId} from '@loopback/security';
 import {config} from '../../config';
 import {TokenServiceBindings} from '../../keys';
-import {UserRepository} from '../../repositories';
+import {UserRepository, WalletRepository} from '../../repositories';
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   name = 'jwt';
@@ -13,21 +13,26 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     public tokenService: TokenService,
   ) {}
 
   async authenticate(request: Request): Promise<UserProfile | undefined> {
-    let userProfile: UserProfile = {
-      [securityId]: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-    };
+    let userProfile: UserProfile;
 
     try {
       const token: string = this.extractCredentials(request);
       userProfile = await this.tokenService.verifyToken(token);
     } catch (err) {
       // Handle posts and users
-      if (request.method === 'GET') return userProfile;
+      if (request.method === 'GET') {
+        const myriadUserId = await this.getMyriadUserId();
+        return {
+          [securityId]: myriadUserId,
+        };
+      }
       throw err;
     }
 
@@ -50,6 +55,12 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
         'You cannot create, update, or delete',
       );
     return userProfile;
+  }
+
+  async getMyriadUserId(): Promise<string> {
+    const publicAddress = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
+    const wallet = await this.walletRepository.findById(publicAddress);
+    return wallet.userId;
   }
 
   extractCredentials(request: Request): string {
