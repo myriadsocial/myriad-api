@@ -89,7 +89,8 @@ export class ExperienceService {
     if (!experience) return;
 
     const userIds: string[] = [];
-    const tags = experience.tags;
+    const allowedTags = experience.allowedTags;
+    const prohibitedTags = experience.prohibitedTags;
     const personIds = experience.people
       .filter((e: People) => e.platform !== PlatformType.MYRIAD)
       .map(e => e.id);
@@ -131,7 +132,8 @@ export class ExperienceService {
       or: [
         {
           and: [
-            {tags: {inq: tags}},
+            {tags: {inq: allowedTags}},
+            {tags: {nin: prohibitedTags}},
             {createdBy: {nin: blockedUserIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
@@ -145,6 +147,13 @@ export class ExperienceService {
         },
         {
           and: [
+            {tags: {inq: allowedTags}},
+            {tags: {nin: prohibitedTags}},
+            {createdBy: userId},
+          ],
+        },
+        {
+          and: [
             {createdBy: {inq: userIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
@@ -154,9 +163,6 @@ export class ExperienceService {
             {createdBy: {inq: friendIds}},
             {visibility: VisibilityType.FRIEND},
           ],
-        },
-        {
-          and: [{tags: {inq: tags}}, {createdBy: userId}],
         },
         {
           and: [{peopleId: {inq: personIds}}, {createdBy: userId}],
