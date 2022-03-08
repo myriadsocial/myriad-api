@@ -803,7 +803,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const experienceTopics = experience ? experience.allowedTags : [];
         const prohibitedTopics = experience ? experience.prohibitedTags : [];
         const postIds = experience
-          ? await this.experienceService.getExperience(experience.id ?? '')
+          ? await this.experienceService.getExperiencePostId(
+              experience.id ?? '',
+            )
           : [];
         const experiencePersonIds = experience
           ? experience.people.map(e => e.id)
