@@ -19,6 +19,7 @@ import {
 import {Comment, DraftPost, Transaction, UserSocialMedia} from '../models';
 import {
   CommentRepository,
+  ExperiencePostRepository,
   ReportRepository,
   UserCurrencyRepository,
   UserReportRepository,
@@ -51,6 +52,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected reportRepository: ReportRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
+    @repository(ExperiencePostRepository)
+    protected experiencePostRepository: ExperiencePostRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -212,6 +215,25 @@ export class CreateInterceptor implements Provider<Interceptor> {
         if (tag) throw new HttpErrors.UnprocessableEntity('Tag already exist');
 
         invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {id});
+
+        break;
+      }
+
+      case ControllerType.EXPERIENCEPOST: {
+        await this.postService.postRepository.findById(invocationCtx.args[1]);
+
+        const found = await this.experiencePostRepository.findOne({
+          where: {
+            postId: invocationCtx.args[1],
+            experienceId: invocationCtx.args[0],
+          },
+        });
+
+        if (found) {
+          throw new HttpErrors.UnprocessableEntity(
+            'Already added to experience',
+          );
+        }
 
         break;
       }
