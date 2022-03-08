@@ -10,6 +10,7 @@ import {
 import {repository} from '@loopback/repository';
 import {
   CommentRepository,
+  ExperienceRepository,
   FriendRepository,
   NotificationRepository,
   PostRepository,
@@ -45,6 +46,8 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
+    @repository(ExperienceRepository)
+    protected experienceRepository: ExperienceRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
     @repository(PostRepository)
@@ -147,6 +150,10 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.REPORT:
       case ControllerType.PEOPLE:
         userId = this.admin(controllerName);
+        break;
+
+      case ControllerType.EXPERIENCEPOST:
+        ({createdBy: userId} = await this.experienceRepository.findById(data));
         break;
 
       case ControllerType.FRIEND: {

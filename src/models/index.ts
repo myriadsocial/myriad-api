@@ -30,3 +30,4 @@ export * from './notification-setting.model';
 export * from './experience-user.model';
 export * from './draft-post.model';
 export * from './language-setting.model';
+export * from './experience-post.model';

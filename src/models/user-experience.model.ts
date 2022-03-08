@@ -29,6 +29,7 @@ import {User} from './user.model';
         },
       },
     },
+    hiddenProperties: ['clonedId'],
   },
 })
 export class UserExperience extends Entity {
@@ -47,6 +48,12 @@ export class UserExperience extends Entity {
     default: false,
   })
   subscribed: boolean;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  clonedId?: string;
 
   @property({
     type: 'date',

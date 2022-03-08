@@ -583,7 +583,7 @@ export function givenExperience(experience?: Partial<Experience>) {
   const data = Object.assign(
     {
       name: 'to the moon crypto',
-      tags: ['blockchain', 'bitcoin'],
+      allowedTags: ['blockchain', 'bitcoin'],
       people: [
         {
           id: '60efac8c565ab8004ed28ba7',
@@ -618,7 +618,7 @@ export async function givenMultipleExperienceInstances(
     givenExperienceInstance(experienceRepository),
     givenExperienceInstance(experienceRepository, {
       name: 'cryptocurrency',
-      tags: ['cryptocurrency'],
+      allowedTags: ['cryptocurrency'],
       people: [
         new People({
           id: '60efac8c565ab8004ed28ba7',

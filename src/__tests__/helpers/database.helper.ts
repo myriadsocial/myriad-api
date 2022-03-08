@@ -22,6 +22,7 @@ import {
   TagRepository,
   DraftPostRepository,
   LanguageSettingRepository,
+  ExperiencePostRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -87,9 +88,13 @@ export async function givenRepositories(testdb: any) {
     testdb,
     async () => userRepository,
     async () => experienceUserRepository,
+    async () => experiencePostRepository,
+    async () => postRepository,
   );
   const experienceUserRepository: ExperienceUserRepository =
     new ExperienceUserRepository(testdb);
+  const experiencePostRepository: ExperiencePostRepository =
+    new ExperiencePostRepository(testdb);
   const commentRepository: CommentRepository = new CommentRepository(
     testdb,
     async () => userRepository,
@@ -145,6 +150,7 @@ export async function givenRepositories(testdb: any) {
     notificationRepository,
     currencyRepository,
     experienceRepository,
+    experiencePostRepository,
     userSocialMediaRepository,
     tagRepository,
     userExperienceRepository,
@@ -230,6 +236,7 @@ export async function givenRepositories(testdb: any) {
     userSocialMediaService,
     draftPostRepository,
     activityLogService,
+    experiencePostRepository,
   };
 }
 
@@ -254,6 +261,7 @@ export async function givenEmptyDatabase(testdb: any) {
     notificationSettingRepository,
     tagRepository,
     draftPostRepository,
+    experiencePostRepository,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
@@ -275,4 +283,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await accountSettingRepository.deleteAll();
   await notificationSettingRepository.deleteAll();
   await draftPostRepository.deleteAll();
+  await experiencePostRepository.deleteAll();
 }

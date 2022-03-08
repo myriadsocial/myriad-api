@@ -24,6 +24,7 @@ import {
 } from '../repositories';
 import {ActivityLogService, MetricService, TagService} from '../services';
 import {formatTag} from '../utils/format-tag';
+import {intersection} from 'lodash';
 /**
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
@@ -68,14 +69,14 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    const experienceDetail = await this.beforeExperience(invocationCtx);
+    await this.beforeExperience(invocationCtx);
 
     const result = await next();
 
-    return this.afterExperience(invocationCtx, experienceDetail, result);
+    return this.afterExperience(invocationCtx, result);
   }
 
-  async beforeExperience(invocationCtx: InvocationContext): Promise<AnyObject> {
+  async beforeExperience(invocationCtx: InvocationContext): Promise<void> {
     let userId = invocationCtx.args[0];
     let experienceId = invocationCtx.args[1];
 
@@ -90,7 +91,9 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     switch (methodName) {
       case MethodType.CREATE: {
         const experience: Experience = invocationCtx.args[1];
-        const tagExperience = experience.tags.filter(e => e !== '');
+        const tagExperience = experience.allowedTags.filter(e => e !== '');
+        const prohibitedTags = experience.prohibitedTags;
+        const intersectionTags = intersection(tagExperience, prohibitedTags);
         const expPeople = experience.people.filter(e => {
           if (
             e.id === '' ||
@@ -116,8 +119,11 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         if (tagExperience.length === 0) {
           throw new HttpErrors.UnprocessableEntity('Tags cannot be empty!');
         }
-
-        const hashtags: string[] = invocationCtx.args[1].tags;
+        if (intersectionTags.length > 0) {
+          throw new HttpErrors.UnprocessableEntity(
+            'You cannot insert same hashtag in allowed and prohibited tags',
+          );
+        }
 
         people = expPeople.filter(e => e.platform !== PlatformType.MYRIAD);
         users = expPeople.filter(e => e.platform === PlatformType.MYRIAD);
@@ -125,10 +131,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         numberOfUserExperience = await this.validateNumberOfUserExperience(
           userId,
         );
-        invocationCtx.args[1] = Object.assign(invocationCtx.args[1], {
+        invocationCtx.args[1] = Object.assign(experience, {
           createdBy: userId,
           people: people,
-          tags: hashtags.map(tag => formatTag(tag)),
+          allowedTags: tagExperience.map(tag => formatTag(tag)),
         });
         break;
       }
@@ -192,7 +198,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
     }
 
-    return {
+    invocationCtx.args[3] = {
       userId,
       experienceId,
       numberOfUserExperience,
@@ -203,14 +209,16 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
 
   async afterExperience(
     invocationCtx: InvocationContext,
-    experienceDetail: AnyObject,
     result: AnyObject,
   ): Promise<AnyObject> {
     const methodName = invocationCtx.methodName;
-    const {userId, experienceId, numberOfUserExperience, isBelongToUser} =
-      experienceDetail;
-
-    const users = experienceDetail.users;
+    const {
+      users,
+      userId,
+      experienceId,
+      numberOfUserExperience,
+      isBelongToUser,
+    } = invocationCtx.args[3];
 
     if (
       (methodName === MethodType.CREATE ||
@@ -240,7 +248,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         methodName === MethodType.UPDATEEXPERIENCE) &&
       users.length > 0
     ) {
-      await Promise.all(
+      Promise.allSettled(
         users.map(async (user: User) => {
           return this.experienceUserRepository.create({
             userId: user.id,
@@ -250,12 +258,28 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
                 : result.id,
           });
         }),
-      );
+      ) as Promise<AnyObject>;
     }
 
     if (methodName === MethodType.CREATE) {
       const createdExperience = result as Experience;
-      const tags = createdExperience.tags;
+      const allowedTags = createdExperience.allowedTags;
+      const prohibitedTags = createdExperience.prohibitedTags;
+      const tags = [...allowedTags, ...prohibitedTags];
+      const clonedId = invocationCtx.args[2];
+
+      if (clonedId) {
+        await this.userExperienceRepository.updateAll(
+          {clonedId},
+          {userId, experienceId: result.id.toString()},
+        );
+        const {count: totalCloned} = await this.userExperienceRepository.count({
+          clonedId,
+        });
+        await this.experienceRepository.updateById(clonedId, {
+          clonedCount: totalCloned,
+        });
+      }
 
       await this.tagService.createTags(tags, true);
       await this.activityLogService.createLog(

@@ -9,6 +9,8 @@ import {People} from './people.model';
 import {User} from './user.model';
 import {ExperienceUser} from './experience-user.model';
 import {UserWithRelations} from './user.model';
+import {Post} from './post.model';
+import {ExperiencePost} from './experience-post.model';
 
 @model({
   settings: {
@@ -51,7 +53,15 @@ export class Experience extends Entity {
     itemType: 'string',
     required: true,
   })
-  tags: string[];
+  allowedTags: string[];
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: false,
+    default: [],
+  })
+  prohibitedTags: string[];
 
   @property({
     type: 'array',
@@ -81,6 +91,12 @@ export class Experience extends Entity {
     default: 0,
   })
   subscribedCount: number;
+
+  @property({
+    type: 'number',
+    default: 0,
+  })
+  clonedCount: number;
 
   @property({
     type: 'date',
@@ -118,6 +134,9 @@ export class Experience extends Entity {
 
   @hasMany(() => User, {through: {model: () => ExperienceUser}})
   users: User[];
+
+  @hasMany(() => Post, {through: {model: () => ExperiencePost}})
+  posts: Post[];
 
   constructor(data?: Partial<Experience>) {
     super(data);
