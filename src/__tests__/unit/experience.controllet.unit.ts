@@ -65,7 +65,7 @@ describe('ExperienceController', () => {
       aExperienceWithId,
       givenExperience({
         name: 'my crypto',
-        tags: ['cryptocurrency'],
+        allowedTags: ['cryptocurrency'],
         people: [
           new People({
             id: '60efac8c565ab8004ed28ba7',

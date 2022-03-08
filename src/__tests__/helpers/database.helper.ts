@@ -87,6 +87,7 @@ export async function givenRepositories(testdb: any) {
     testdb,
     async () => userRepository,
     async () => experienceUserRepository,
+    async () => postRepository,
   );
   const experienceUserRepository: ExperienceUserRepository =
     new ExperienceUserRepository(testdb);
