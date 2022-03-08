@@ -13,6 +13,7 @@ import {
   UserExperienceWithRelations,
 } from '../models';
 import {
+  ExperiencePostRepository,
   ExperienceRepository,
   UserExperienceRepository,
   UserRepository,
@@ -28,6 +29,8 @@ export class ExperienceService {
     public userExperienceRepository: UserExperienceRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
+    @repository(ExperiencePostRepository)
+    protected experiencePostRepository: ExperiencePostRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @service(FriendService)
@@ -88,6 +91,7 @@ export class ExperienceService {
 
     if (!experience) return;
 
+    const postIds = await this.getExperiencePostId(experience.id ?? '');
     const userIds: string[] = [];
     const allowedTags = experience.allowedTags;
     const prohibitedTags = experience.prohibitedTags;
@@ -143,6 +147,20 @@ export class ExperienceService {
             {peopleId: {inq: personIds}},
             {createdBy: {nin: blockedUserIds}},
             {visibility: VisibilityType.PUBLIC},
+          ],
+        },
+        {
+          and: [
+            {id: {inq: postIds}},
+            {createdBy: {nin: blockedUserIds}},
+            {visibility: VisibilityType.PUBLIC},
+          ],
+        },
+        {
+          and: [
+            {id: {inq: postIds}},
+            {createdBy: {inq: friendIds}},
+            {visibility: VisibilityType.FRIEND},
           ],
         },
         {
@@ -241,6 +259,13 @@ export class ExperienceService {
     }
 
     return privateExperience;
+  }
+
+  async getExperiencePostId(experienceId: string): Promise<string[]> {
+    const experiencePosts = await this.experiencePostRepository.find({
+      where: {experienceId},
+    });
+    return experiencePosts.map(e => e.postId?.toString());
   }
 
   combinePeopleAndUser(

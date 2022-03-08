@@ -24,6 +24,7 @@ import {
   ReportRepository,
   UserReportRepository,
   UserCurrencyRepository,
+  ExperiencePostRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 
@@ -50,6 +51,8 @@ export class MetricService {
     protected currencyRepository: CurrencyRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
+    @repository(ExperiencePostRepository)
+    protected experiencePostRepository: ExperiencePostRepository,
     @repository(UserSocialMediaRepository)
     protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(TagRepository)
@@ -179,6 +182,7 @@ export class MetricService {
   async countData(
     controller: ControllerType,
     where: Where<AnyObject>,
+    additionalData?: string,
   ): Promise<Count> {
     switch (controller) {
       case ControllerType.USER:
@@ -228,6 +232,11 @@ export class MetricService {
 
       case ControllerType.USERCURRENCY:
         return this.userCurrencyRepository.count(where);
+
+      case ControllerType.EXPERIENCEPOST: {
+        const experienceId = additionalData;
+        return this.experiencePostRepository.count({experienceId});
+      }
 
       default:
         return {

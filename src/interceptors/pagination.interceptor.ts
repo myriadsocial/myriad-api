@@ -353,6 +353,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
         break;
       }
+
+      case ControllerType.EXPERIENCEPOST: {
+        filter.include = invocationCtx.args[1]?.include ?? [];
+        break;
+      }
     }
 
     return filter;
@@ -581,8 +586,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
     const methodName = invocationCtx.methodName as MethodType;
     const where = filter.where as Where<AnyObject>;
-
-    const {count} = await this.metricService.countData(controllerName, where);
+    const {count} = await this.metricService.countData(
+      controllerName,
+      where,
+      invocationCtx.args[0],
+    );
     const meta = pageMetadata([...pageDetail, count]);
     const paginationFilter = Object.assign(filter, {
       offset: ((meta.currentPage ?? 1) - 1) * meta.itemsPerPage,
@@ -590,6 +598,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     });
 
     if (controllerName === ControllerType.REPORTUSER)
+      invocationCtx.args[1] = paginationFilter;
+    else if (controllerName === ControllerType.EXPERIENCEPOST)
       invocationCtx.args[1] = paginationFilter;
     else if (methodName === MethodType.GETIMPORTERS)
       invocationCtx.args[2] = paginationFilter;
@@ -790,7 +800,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const trendingTopics = await this.tagService.trendingTopics();
 
         const experience = await this.experienceService.getExperience(userId);
-        const experienceTopics = experience ? experience.tags : [];
+        const experienceTopics = experience ? experience.allowedTags : [];
+        const prohibitedTopics = experience ? experience.prohibitedTags : [];
+        const postIds = experience
+          ? await this.experienceService.getExperience(experience.id ?? '')
+          : [];
         const experiencePersonIds = experience
           ? experience.people.map(e => e.id)
           : [];
@@ -820,6 +834,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             {
               and: [
                 {tags: {inq: topics}},
+                {tags: {nin: prohibitedTopics}},
+                {createdBy: {nin: blockedFriendIds}},
+                {visibility: VisibilityType.PUBLIC},
+              ],
+            },
+            {
+              and: [
+                {id: {inq: postIds}},
                 {createdBy: {nin: blockedFriendIds}},
                 {visibility: VisibilityType.PUBLIC},
               ],
@@ -829,6 +851,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 {peopleId: {inq: personIds}},
                 {createdBy: {nin: blockedFriendIds}},
                 {visibility: VisibilityType.PUBLIC},
+              ],
+            },
+            {
+              and: [
+                {id: {inq: postIds}},
+                {createdBy: {inq: friends}},
+                {visibility: VisibilityType.FRIEND},
               ],
             },
             {
