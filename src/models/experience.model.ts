@@ -51,7 +51,15 @@ export class Experience extends Entity {
     itemType: 'string',
     required: true,
   })
-  tags: string[];
+  allowedTags: string[];
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: false,
+    default: [],
+  })
+  prohibitedTags: string[];
 
   @property({
     type: 'array',
