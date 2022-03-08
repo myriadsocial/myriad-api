@@ -266,6 +266,20 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       const allowedTags = createdExperience.allowedTags;
       const prohibitedTags = createdExperience.prohibitedTags;
       const tags = [...allowedTags, ...prohibitedTags];
+      const clonedId = invocationCtx.args[2];
+
+      if (clonedId) {
+        await this.userExperienceRepository.updateAll(
+          {clonedId},
+          {userId, experienceId: result.id.toString()},
+        );
+        const {count: totalCloned} = await this.userExperienceRepository.count({
+          clonedId,
+        });
+        await this.experienceRepository.updateById(clonedId, {
+          clonedCount: totalCloned,
+        });
+      }
 
       await this.tagService.createTags(tags, true);
       await this.activityLogService.createLog(
