@@ -4,6 +4,7 @@ export enum ControllerType {
   POST = 'PostController',
   TRANSACTION = 'TransactionController',
   EXPERIENCE = 'ExperienceController',
+  EXPERIENCEPOST = 'ExperiencePostController',
   PEOPLE = 'PeopleController',
   TAG = 'TagController',
   NOTIFICATION = 'NotificationController',
