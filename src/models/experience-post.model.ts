@@ -2,15 +2,14 @@ import {Entity, model, property} from '@loopback/repository';
 
 @model({
   settings: {
-    strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'experienceUsers',
+      collection: 'experiencePosts',
     },
     indexes: {
-      uniqueUserExperienceIndex: {
+      uniqueExperiencePostIndex: {
         keys: {
-          userId: 1,
           experienceId: 1,
+          postId: 1,
         },
         options: {
           unique: true,
@@ -19,7 +18,7 @@ import {Entity, model, property} from '@loopback/repository';
     },
   },
 })
-export class ExperienceUser extends Entity {
+export class ExperiencePost extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -40,16 +39,16 @@ export class ExperienceUser extends Entity {
     type: 'string',
     required: false,
   })
-  userId: string;
+  postId: string;
 
-  constructor(data?: Partial<ExperienceUser>) {
+  constructor(data?: Partial<ExperiencePost>) {
     super(data);
   }
 }
 
-export interface ExperienceUserRelations {
+export interface ExperiencePostRelations {
   // describe navigational properties here
 }
 
-export type ExperienceUserWithRelations = ExperienceUser &
-  ExperienceUserRelations;
+export type ExperiencePostWithRelations = ExperiencePost &
+  ExperiencePostRelations;
