@@ -14,15 +14,17 @@ import {
   MethodType,
   PermissionKeys,
   ReferenceType,
+  WalletType,
 } from '../enums';
 import {Credential} from '../models';
 import {UserRepository} from '../repositories';
 import {ActivityLogService, CurrencyService, FriendService} from '../services';
-import {numberToHex} from '@polkadot/util';
+import {numberToHex, hexToU8a} from '@polkadot/util';
 import {signatureVerify} from '@polkadot/util-crypto';
 import {securityId, UserProfile} from '@loopback/security';
-import {intersection} from 'lodash';
+import {assign, intersection} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
+import nacl from 'tweetnacl';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -85,6 +87,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
       if (user) throw new HttpErrors.UnprocessableEntity('User already exists');
 
+      this.validateId(id);
       this.validateUsername(username);
 
       invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
@@ -96,22 +99,22 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     try {
       // Verify login process
-      const {nonce, signature, publicAddress} = invocationCtx
-        .args[0] as Credential;
+      const credential: Credential = invocationCtx.args[0];
+      const {nonce} = credential;
+      const [publicAddress, nearAccount] = credential.publicAddress.split('/');
 
       if (nonce === 0 || !nonce) throw new Error('Invalid user!');
-
-      const {isValid} = signatureVerify(
-        numberToHex(nonce),
-        signature,
-        publicAddress,
+      const verified = this.validateAccount(
+        assign(credential, {publicAddress}),
       );
 
-      if (!isValid) {
+      if (!verified) {
         throw new Error('Invalid user!');
       }
 
-      const user = await this.userRepository.findById(publicAddress);
+      const user = await this.userRepository.findById(
+        nearAccount ?? publicAddress,
+      );
 
       if (user.nonce !== nonce) {
         throw new Error('Invalid user!');
@@ -175,11 +178,42 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       ]) as Promise<AnyObject>;
     } else {
       // Generate random nonce after login
-      const {publicAddress} = invocationCtx.args[0];
+      const userId = invocationCtx.args[0].data.id;
       const ng = new NonceGenerator();
-      const newNonce = ng.generate();
+      const nonce = ng.generate();
 
-      await this.userRepository.updateById(publicAddress, {nonce: newNonce});
+      await this.userRepository.updateById(userId, {nonce});
+    }
+  }
+
+  validateAccount(credential: Credential): boolean {
+    const {nonce, signature, publicAddress, walletType} = credential;
+    const publicKey = publicAddress.replace('0x', '');
+
+    switch (walletType) {
+      case WalletType.NEAR: {
+        return nacl.sign.detached.verify(
+          Buffer.from(numberToHex(nonce)),
+          Buffer.from(hexToU8a(signature)),
+          Buffer.from(publicKey, 'hex'),
+        );
+      }
+
+      case WalletType.POLKADOT: {
+        const {isValid} = signatureVerify(
+          numberToHex(nonce),
+          signature,
+          publicAddress,
+        );
+        return isValid;
+      }
+
+      case WalletType.METAMASK: {
+        return false;
+      }
+
+      default:
+        return false;
     }
   }
 
@@ -200,6 +234,41 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       throw new HttpErrors.UnprocessableEntity(
         'Only allowed ascii letter (a-z), number (0-9), and underscore(_)',
       );
+    }
+  }
+
+  validateId(id: string): void {
+    const environment = process.env.NODE_ENV ?? 'development';
+
+    if (id.startsWith('0x')) {
+      if (id.length !== 66) {
+        throw new HttpErrors.UnprocessableEntity('Please a valid id');
+      }
+    } else {
+      let nearId = null;
+      let nearStatus = false;
+
+      switch (environment) {
+        case 'mainnet':
+          nearStatus = id.endsWith('.near');
+          nearId = id.split('.near')[0];
+          break;
+
+        default:
+          nearStatus = id.endsWith('.testnet');
+          nearId = id.split('.testnet')[0];
+          break;
+      }
+
+      if (!nearStatus) {
+        throw new HttpErrors.UnprocessableEntity('Invalid near id');
+      }
+
+      if (!nearId.match('^[a-z0-9_-]+$')) {
+        throw new HttpErrors.UnprocessableEntity(
+          'Only allowed ascii letter (a-z), number (0-9), dash(-), and underscore(_)',
+        );
+      }
     }
   }
 }

@@ -63,7 +63,6 @@ export class CurrencyService {
       rpcURL: config.MYRIAD_RPC_WS_URL,
       native: true,
       networkType: 'substrate',
-
       exchangeRate: false,
     };
 

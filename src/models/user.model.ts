@@ -43,11 +43,6 @@ export class User extends Entity {
     id: true,
     generated: false,
     required: true,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
-    },
   })
   id: string;
 
@@ -70,7 +65,7 @@ export class User extends Entity {
       maxLength: 16,
     },
   })
-  username?: string;
+  username: string;
 
   @property({
     type: 'string',
