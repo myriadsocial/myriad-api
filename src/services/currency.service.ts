@@ -6,6 +6,7 @@ import {ActivityLogType, DefaultCurrencyType, ReferenceType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
 import {Currency, UserSocialMedia} from '../models';
 import {
+  ActivityLogRepository,
   CurrencyRepository,
   PeopleRepository,
   QueueRepository,
@@ -20,7 +21,6 @@ import {HttpErrors} from '@loopback/rest';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {NotificationService} from './notification.service';
 import {TransactionService} from './transaction.service';
-import {ActivityLogService} from './activity-log.service';
 import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
 import {BN} from '@polkadot/util';
@@ -29,6 +29,8 @@ import {CoinMarketCap} from './coin-market-cap.service';
 @injectable({scope: BindingScope.TRANSIENT})
 export class CurrencyService {
   constructor(
+    @repository(ActivityLogRepository)
+    protected activityLogRepository: ActivityLogRepository,
     @repository(CurrencyRepository)
     public currencyRepository: CurrencyRepository,
     @repository(UserCurrencyRepository)
@@ -49,8 +51,6 @@ export class CurrencyService {
     protected transactionService: TransactionService,
     @service(NotificationService)
     protected notificationService: NotificationService,
-    @service(ActivityLogService)
-    protected activityLogService: ActivityLogService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
     @inject('services.CoinMarketCap')
@@ -130,12 +130,11 @@ export class CurrencyService {
       await api.disconnect();
 
       if (hash && typeof hash === 'string') {
-        const myriadUserId = await this.getMyriadUserId();
         const transaction = await this.transactionRepository.create({
           hash: hash,
           amount: rewardAmount / 10 ** myriadDecimal,
           to: to,
-          from: myriadUserId,
+          from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
           currencyId: DefaultCurrencyType.MYRIA,
         });
 
@@ -244,9 +243,18 @@ export class CurrencyService {
           currencyId: id,
         });
 
-        await this.notificationService.sendClaimTips(transaction);
+        const user = await this.walletRepository.user(to);
+        await Promise.allSettled([
+          this.notificationService.sendClaimTips(transaction),
+          this.activityLogRepository.create({
+            type: ActivityLogType.CLAIMTIP,
+            userId: user.id,
+            referenceId: transaction.id ?? '',
+            referenceType: ReferenceType.TRANSACTION,
+          }),
+        ]);
       }
-    } catch (err) {
+    } catch {
       // ignore
     }
   }
@@ -413,15 +421,17 @@ export class CurrencyService {
           currencyId: id,
         });
 
-        await this.activityLogService.createLog(
-          ActivityLogType.CLAIMTIP,
-          to,
-          transaction.id ?? '',
-          ReferenceType.TRANSACTION,
-        );
-
         try {
-          await this.notificationService.sendClaimTips(transaction);
+          const user = await this.walletRepository.user(to);
+          await Promise.allSettled([
+            this.notificationService.sendClaimTips(transaction),
+            this.activityLogRepository.create({
+              type: ActivityLogType.CLAIMTIP,
+              userId: user.id,
+              referenceId: transaction.id ?? '',
+              referenceType: ReferenceType.TRANSACTION,
+            }),
+          ]);
         } catch {
           // ignore
         }
@@ -587,11 +597,5 @@ export class CurrencyService {
       native,
       exchangeRate,
     });
-  }
-
-  async getMyriadUserId(): Promise<string> {
-    const publicAddress = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
-    const wallet = await this.walletRepository.findById(publicAddress);
-    return wallet.userId;
   }
 }

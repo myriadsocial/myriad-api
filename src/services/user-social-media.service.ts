@@ -100,7 +100,6 @@ export class UserSocialMediaService {
 
     await this.activityLogService.createLog(
       ActivityLogType.CLAIMSOCIAL,
-      this.currentUser[securityId],
       foundPeople.id,
       ReferenceType.PEOPLE,
     );
