@@ -6,6 +6,7 @@ import {
   ReferenceType,
   ReportStatusType,
   ReportType,
+  WalletType,
 } from '../../enums';
 import {Credential, Post, Report, User} from '../../models';
 import {
@@ -83,6 +84,7 @@ describe('ReportApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/admin/login').send(credential).expect(200);

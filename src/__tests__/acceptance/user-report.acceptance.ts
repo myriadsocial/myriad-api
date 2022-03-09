@@ -1,6 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
-import {ReferenceType} from '../../enums';
+import {ReferenceType, WalletType} from '../../enums';
 import {
   ReportRepository,
   UserReportRepository,
@@ -72,6 +72,7 @@ describe('UserReportApplication', () => {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

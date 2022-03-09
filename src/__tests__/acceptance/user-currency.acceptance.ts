@@ -22,6 +22,7 @@ import {
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
 import {Credential, User} from '../../models';
+import {WalletType} from '../../enums';
 
 describe('UserCurrencyApplication', function () {
   let app: MyriadApiApplication;
@@ -70,6 +71,7 @@ describe('UserCurrencyApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

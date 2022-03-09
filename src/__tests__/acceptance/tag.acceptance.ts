@@ -15,7 +15,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
-import {PermissionKeys} from '../../enums';
+import {PermissionKeys, WalletType} from '../../enums';
 
 describe('TagApplication', function () {
   let app: MyriadApiApplication;
@@ -64,6 +64,7 @@ describe('TagApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/admin/login').send(credential).expect(200);

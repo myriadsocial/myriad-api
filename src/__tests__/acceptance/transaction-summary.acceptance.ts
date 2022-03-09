@@ -1,6 +1,6 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {ReferenceType} from '../../enums';
+import {ReferenceType, WalletType} from '../../enums';
 import {Credential, Transaction, User} from '../../models';
 import {TransactionRepository, UserRepository} from '../../repositories';
 import {
@@ -108,6 +108,7 @@ describe('TransactionSummaryApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

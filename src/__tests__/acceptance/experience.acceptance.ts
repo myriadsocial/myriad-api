@@ -14,6 +14,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
+import {WalletType} from '../../enums';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('ExperienceApplication', function () {
@@ -63,6 +64,7 @@ describe('ExperienceApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

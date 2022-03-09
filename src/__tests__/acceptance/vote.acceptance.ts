@@ -1,7 +1,7 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {SectionType} from '../../enums';
+import {SectionType, WalletType} from '../../enums';
 import {
   CommentRepository,
   VoteRepository,
@@ -83,6 +83,7 @@ describe('VoteApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

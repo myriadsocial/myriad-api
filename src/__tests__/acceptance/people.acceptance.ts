@@ -1,7 +1,7 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {PermissionKeys, PlatformType} from '../../enums';
+import {PermissionKeys, PlatformType, WalletType} from '../../enums';
 import {Credential, People, User} from '../../models';
 import {
   PeopleRepository,
@@ -77,6 +77,7 @@ describe('PeopleApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/admin/login').send(credential).expect(200);

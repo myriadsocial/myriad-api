@@ -1,6 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {DefaultCurrencyType} from '../../enums';
+import {DefaultCurrencyType, WalletType} from '../../enums';
 import {Credential, Currency, Transaction, User} from '../../models';
 import {
   CurrencyRepository,
@@ -74,6 +74,7 @@ describe('TransactionApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

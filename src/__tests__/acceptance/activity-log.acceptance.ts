@@ -1,6 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {ActivityLogType} from '../../enums';
+import {ActivityLogType, WalletType} from '../../enums';
 import {ActivityLog, Credential, User} from '../../models';
 import {ActivityLogRepository, UserRepository} from '../../repositories';
 import {
@@ -61,6 +61,7 @@ describe('ActivityLogApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

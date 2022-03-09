@@ -1,6 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {NotificationType} from '../../enums';
+import {NotificationType, WalletType} from '../../enums';
 import {Credential, Notification, User} from '../../models';
 import {NotificationRepository, UserRepository} from '../../repositories';
 import {
@@ -62,6 +62,7 @@ describe('NotificationApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

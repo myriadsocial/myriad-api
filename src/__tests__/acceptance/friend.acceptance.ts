@@ -1,7 +1,7 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {FriendStatusType, NotificationType} from '../../enums';
+import {FriendStatusType, NotificationType, WalletType} from '../../enums';
 import {Credential, Friend, User} from '../../models';
 import {
   ActivityLogRepository,
@@ -78,6 +78,7 @@ describe('FriendApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

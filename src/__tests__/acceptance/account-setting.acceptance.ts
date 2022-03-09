@@ -1,6 +1,6 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../..';
-import {AccountSettingType} from '../../enums';
+import {AccountSettingType, WalletType} from '../../enums';
 import {AccountSetting, Credential, User} from '../../models';
 import {AccountSettingRepository, UserRepository} from '../../repositories';
 import {
@@ -61,6 +61,7 @@ describe('AccountSettingApplication', () => {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

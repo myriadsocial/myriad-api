@@ -1,6 +1,6 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {PlatformType} from '../../enums';
+import {PlatformType, WalletType} from '../../enums';
 import {Credential, People, Post, User, UserSocialMedia} from '../../models';
 import {
   PeopleRepository,
@@ -93,6 +93,7 @@ describe('PostWalletAddressApplication', function () {
       nonce: nonce,
       publicAddress: user.id,
       signature: u8aToHex(address.sign(numberToHex(nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const res = await client.post('/login').send(credential).expect(200);

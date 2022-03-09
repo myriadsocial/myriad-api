@@ -20,6 +20,7 @@ import {
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
 import {omit} from 'lodash';
+import {WalletType} from '../../enums';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('AuthenticationApplication', function () {
@@ -155,6 +156,7 @@ describe('AuthenticationApplication', function () {
     const credential = givenCredential({
       nonce: user.nonce,
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     const response = await client.post('/login').send(credential).expect(200);
@@ -167,6 +169,7 @@ describe('AuthenticationApplication', function () {
     const credential = givenCredential({
       nonce: user.nonce + 1,
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     await client.post('/login').send(credential).expect(401);
@@ -177,6 +180,7 @@ describe('AuthenticationApplication', function () {
     const credential = givenCredential({
       nonce: user.nonce,
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),
+      walletType: WalletType.POLKADOT,
     });
 
     await client.post('/login').send(credential).expect(200);
@@ -204,6 +208,7 @@ describe('AuthenticationApplication', function () {
       nonce: nonce,
       signature: signature,
       publicAddress: user.id ?? '',
+      walletType: WalletType.POLKADOT,
     });
 
     await client.post('/login').send(credential).expect(200);
