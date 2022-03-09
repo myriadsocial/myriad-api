@@ -24,6 +24,9 @@ export class Credential extends Model {
   @property({
     type: 'string',
     required: true,
+    jsonSchema: {
+      enum: Object.values(WalletType),
+    },
   })
   walletType: WalletType;
 
@@ -31,7 +34,7 @@ export class Credential extends Model {
     type: 'object',
     required: false,
   })
-  data?: AnyObject;
+  data: AnyObject;
 
   constructor(data?: Partial<Credential>) {
     super(data);

@@ -1,5 +1,5 @@
 import {Model, model, property} from '@loopback/repository';
-import {WalletType} from '../enums';
+import {BlockchainPlatform} from '../enums';
 
 @model()
 export class UserWallet extends Model {
@@ -28,22 +28,16 @@ export class UserWallet extends Model {
     type: 'string',
     required: true,
   })
-  walletName: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
   walletAddress: string;
 
   @property({
     type: 'string',
     required: true,
     jsonSchema: {
-      enum: Object.values(WalletType),
+      enum: Object.values(BlockchainPlatform),
     },
   })
-  walletType: WalletType;
+  blockchainPlatform: BlockchainPlatform;
 
   constructor(data?: Partial<UserWallet>) {
     super(data);
