@@ -20,10 +20,9 @@ import {
   ExperienceRepository,
   UserExperienceRepository,
   UserRepository,
-  WalletRepository,
 } from '../repositories';
 import {HttpErrors} from '@loopback/rest';
-import {Post, User, Wallet} from '../models';
+import {Post, User} from '../models';
 import {
   ActivityLogService,
   CurrencyService,
@@ -51,8 +50,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
     @service(CurrencyService)
@@ -231,28 +228,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
         break;
       }
-
-      case ControllerType.USERWALLET: {
-        const userId = invocationCtx.args[0];
-        const wallet = invocationCtx.args[2] as Wallet;
-
-        if (wallet.primary !== undefined) {
-          if (wallet.primary) {
-            await this.walletRepository.updateAll(
-              {primary: false},
-              {userId: userId},
-            );
-          } else {
-            throw new HttpErrors.UnprocessableEntity(
-              'You cannot unset this primary account',
-            );
-          }
-        }
-
-        invocationCtx.args[2].updatedAt = new Date().toString();
-
-        break;
-      }
     }
   }
 
@@ -292,7 +267,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       await this.activityLogService.createLog(
         ActivityLogType.UPLOADPROFILEPICTURE,
         userId,
-        userId,
         ReferenceType.USER,
       );
     }
@@ -301,7 +275,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       await this.activityLogService.createLog(
         ActivityLogType.UPLOADBANNER,
         userId,
-        userId,
         ReferenceType.USER,
       );
     }
@@ -309,7 +282,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     if (user.bio) {
       await this.activityLogService.createLog(
         ActivityLogType.FILLBIO,
-        userId,
         userId,
         ReferenceType.USER,
       );

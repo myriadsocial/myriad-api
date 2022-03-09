@@ -284,7 +284,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       await this.tagService.createTags(tags, true);
       await this.activityLogService.createLog(
         ActivityLogType.CREATEEXPERIENCE,
-        result.createdBy,
         result.id,
         ReferenceType.EXPERIENCE,
       );
@@ -300,7 +299,6 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       } else {
         await this.activityLogService.createLog(
           ActivityLogType.SUBSCRIBEEXPERIENCE,
-          result.userId,
           result.experienceId,
           ReferenceType.EXPERIENCE,
         );

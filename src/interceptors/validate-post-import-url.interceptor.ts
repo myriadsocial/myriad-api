@@ -112,7 +112,6 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
         ActivityLogType.IMPORTPOST,
         result.createdBy,
         result.id,
-        ReferenceType.POST,
       ),
     ]) as Promise<AnyObject>;
 

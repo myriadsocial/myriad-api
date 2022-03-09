@@ -144,14 +144,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
             'You cannot remove your only wallet account!',
           );
         }
-
-        const currentWallet = wallets.find(wallet => wallet.id === walletId);
-
-        if (currentWallet?.primary) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You cannot removed your primary account!',
-          );
-        }
         break;
       }
 
