@@ -1,6 +1,6 @@
 export enum PlatformType {
-  MYRIAD = 'myriad',
   FACEBOOK = 'facebook',
-  TWITTER = 'twitter',
+  MYRIAD = 'myriad',
   REDDIT = 'reddit',
+  TWITTER = 'twitter',
 }

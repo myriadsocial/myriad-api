@@ -1,11 +1,11 @@
 export enum OrderFieldType {
-  UPVOTE = 'upvote',
   COMMENT = 'comment',
   COUNT = 'count',
-  POPULAR = 'popular',
   LATEST = 'latest',
-  UPDATEDAT = 'updatedAt',
+  POPULAR = 'popular',
   TIP = 'tip',
+  UPDATEDAT = 'updatedAt',
+  UPVOTE = 'upvote',
 }
 
 export enum OrderType {
@@ -13,14 +13,9 @@ export enum OrderType {
   DESC = 'DESC',
 }
 
-export enum DefaultInq {
-  TAGS = 'cryptocurrency,blockchain,technology',
-  PEOPLE = 'elonmusk,gavofyork,W3F_Bill,CryptoChief,BillGates,vitalikbuterineth',
-}
-
 export enum TimelineType {
   ALL = 'all',
   EXPERIENCE = 'experience',
-  TRENDING = 'trending',
   FRIEND = 'friend',
+  TRENDING = 'trending',
 }

@@ -1,13 +1,13 @@
 export enum ReferenceType {
-  POST = 'post',
   COMMENT = 'comment',
-  USER = 'user',
   EXPERIENCE = 'experience',
   PEOPLE = 'people',
+  POST = 'post',
   TRANSACTION = 'transaction',
+  USER = 'user',
 }
 
 export enum SectionType {
-  DISCUSSION = 'discussion',
   DEBATE = 'debate',
+  DISCUSSION = 'discussion',
 }
