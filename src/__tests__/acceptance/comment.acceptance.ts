@@ -516,7 +516,7 @@ describe('CommentApplication', function () {
       type: ReferenceType.COMMENT,
     });
     const filter = {
-      filter: {include: ['user', 'transactions']},
+      filter: {include: ['user', 'transactions', 'post']},
     };
 
     const response = await client
@@ -529,6 +529,7 @@ describe('CommentApplication', function () {
       ...toJSON(comment),
       user: toJSON(user),
       transactions: [toJSON(transaction)],
+      post: toJSON(post),
     });
   });
 });

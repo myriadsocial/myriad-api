@@ -65,9 +65,7 @@ export class VoteService {
 
     if (!state) {
       if (!post.comments || (post.comments && post.comments.length === 0)) {
-        throw new HttpErrors.UnprocessableEntity(
-          'Please comment first in debate sections, before you downvote this post',
-        );
+        throw new Error('CommentFirst');
       }
     }
 
