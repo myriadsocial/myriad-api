@@ -343,7 +343,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             return;
           if (experienceQuery.length > 1) {
             experienceQuery = experienceQuery.replace(
-              new RegExp('[^A-Za-z0-9]', 'gi'),
+              new RegExp('[^A-Za-z0-9 ]', 'gi'),
               '',
             );
           }
