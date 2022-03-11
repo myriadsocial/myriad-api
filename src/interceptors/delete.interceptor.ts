@@ -79,27 +79,20 @@ export class DeleteInterceptor implements Provider<Interceptor> {
   ) {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
-    let result;
-
     try {
       await this.beforeDelete(invocationCtx);
-
+      await next();
+      await this.afterDelete(invocationCtx);
       if (controllerName === ControllerType.COMMENT) {
-        result = {
+        return {
           ...invocationCtx.args[1],
           deletedAt: new Date().toString(),
           deleteByUser: true,
         };
-      } else {
-        result = await next();
       }
-
-      await this.afterDelete(invocationCtx);
     } catch (err) {
       if (controllerName === ControllerType.USERCURRENCY) throw err;
     }
-
-    return result;
   }
 
   async beforeDelete(invocationCtx: InvocationContext): Promise<void> {
