@@ -11,6 +11,7 @@ import {Metric} from '../interfaces';
 import {CommentLink} from './comment-link.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
+import {Post} from './post.model';
 
 @model({
   settings: {
@@ -77,12 +78,6 @@ export class Comment extends Entity {
   section: SectionType;
 
   @property({
-    type: 'string',
-    required: true,
-  })
-  postId: string;
-
-  @property({
     type: 'object',
     default: {
       upvotes: 0,
@@ -125,6 +120,9 @@ export class Comment extends Entity {
     },
   )
   userId: string;
+
+  @belongsTo(() => Post, {}, {required: true})
+  postId: string;
 
   @hasMany(() => Comment, {
     through: {

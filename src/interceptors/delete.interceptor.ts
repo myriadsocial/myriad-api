@@ -14,6 +14,7 @@ import {HttpErrors} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
 import {ControllerType, ReferenceType} from '../enums';
 import {
+  CommentLinkRepository,
   CommentRepository,
   PostRepository,
   UserCurrencyRepository,
@@ -38,6 +39,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
+    @repository(CommentLinkRepository)
+    protected commentLinkRepository: CommentLinkRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
     @repository(UserCurrencyRepository)
@@ -187,5 +190,25 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         break;
       }
     }
+  }
+
+  async removeComment(referenceIds: string[]): Promise<string[] | void> {
+    const comments = await this.commentRepository.find({
+      where: {
+        referenceId: {inq: referenceIds},
+      },
+    });
+
+    if (comments.length === 0) return;
+
+    const commentIds = comments.map(comment => comment.id ?? '');
+
+    await this.commentRepository.deleteAll({id: {inq: commentIds}});
+    await this.commentLinkRepository.deleteAll({
+      fromCommentId: {inq: referenceIds},
+      toCommentId: {inq: commentIds},
+    });
+
+    return this.removeComment(commentIds);
   }
 }

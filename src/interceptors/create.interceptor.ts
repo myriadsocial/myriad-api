@@ -322,8 +322,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
           await this.commentRepository.updateById(referenceId, {
             metric: commentMetric,
           });
-
-          return result;
         }
 
         return result;
