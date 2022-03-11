@@ -76,15 +76,6 @@ describe('CommentController', () => {
     });
   });
 
-  describe('deleteComment', () => {
-    it('successfully deletes existing items', async () => {
-      const deleteById = commentRepository.stubs.deleteById;
-      deleteById.resolves();
-      await controller.deleteById(aCommentWithId.id as string);
-      sinon.assert.calledWith(deleteById, aCommentWithId.id);
-    });
-  });
-
   function resetRepositories() {
     commentRepository = createStubInstance(CommentRepository);
     aComment = givenComment();

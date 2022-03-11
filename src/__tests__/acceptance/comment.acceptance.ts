@@ -1,4 +1,3 @@
-import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ReferenceType, NotificationType} from '../../enums';
@@ -403,10 +402,7 @@ describe('CommentApplication', function () {
         .del(`/comments/${persistedComment.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
-        .expect(204);
-      await expect(
-        commentRepository.findById(persistedComment.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
+        .expect(200);
     });
 
     it('returns 401 when deletes the comment not belong to user', async () => {
