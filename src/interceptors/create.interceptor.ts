@@ -91,11 +91,23 @@ export class CreateInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    await this.beforeCreate(invocationCtx);
+    try {
+      await this.beforeCreate(invocationCtx);
 
-    const result = await next();
+      const result = await next();
 
-    return this.afterCreate(invocationCtx, result);
+      return await this.afterCreate(invocationCtx, result);
+    } catch (err) {
+      const controllerName = invocationCtx.targetClass.name as ControllerType;
+      if (controllerName === ControllerType.VOTE) {
+        if (err.message === 'CommentFirst') {
+          throw new HttpErrors.UnprocessableEntity(
+            'Please comment first in debate sections, before you downvote this post',
+          );
+        }
+      }
+      throw err;
+    }
   }
 
   async beforeCreate(invocationCtx: InvocationContext): Promise<void> {

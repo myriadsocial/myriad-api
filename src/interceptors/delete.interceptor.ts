@@ -78,11 +78,18 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    await this.beforeDelete(invocationCtx);
+    let result;
 
-    const result = await next();
+    try {
+      await this.beforeDelete(invocationCtx);
 
-    await this.afterDelete(invocationCtx);
+      result = await next();
+
+      await this.afterDelete(invocationCtx);
+    } catch (err) {
+      const controllerName = invocationCtx.targetClass.name as ControllerType;
+      if (controllerName === ControllerType.USERCURRENCY) throw err;
+    }
 
     return result;
   }
