@@ -12,7 +12,7 @@ import {
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
-import {ControllerType, ReferenceType} from '../enums';
+import {ControllerType} from '../enums';
 import {
   CommentLinkRepository,
   CommentRepository,
@@ -26,7 +26,6 @@ import {
   NotificationService,
   VoteService,
 } from '../services';
-import {Comment} from '../models';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -78,16 +77,25 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
+    const controllerName = invocationCtx.targetClass.name as ControllerType;
+
     let result;
 
     try {
       await this.beforeDelete(invocationCtx);
 
-      result = await next();
+      if (controllerName === ControllerType.COMMENT) {
+        result = {
+          ...invocationCtx.args[1],
+          deletedAt: new Date().toString(),
+          deleteByUser: true,
+        };
+      } else {
+        result = await next();
+      }
 
       await this.afterDelete(invocationCtx);
     } catch (err) {
-      const controllerName = invocationCtx.targetClass.name as ControllerType;
       if (controllerName === ControllerType.USERCURRENCY) throw err;
     }
 
@@ -142,36 +150,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
     switch (controllerName) {
-      case ControllerType.COMMENT: {
-        const {
-          type: referenceType,
-          referenceId,
-          postId,
-        } = invocationCtx.args[1] as Comment;
-
-        const popularCount = await this.metricService.countPopularPost(postId);
-        const postMetric = await this.metricService.publicMetric(
-          ReferenceType.POST,
-          postId,
-        );
-        await this.postRepository.updateById(postId, {
-          metric: postMetric,
-          popularCount: popularCount,
-        });
-
-        if (referenceType === ReferenceType.COMMENT) {
-          const commentMetric = await this.metricService.publicMetric(
-            referenceType,
-            referenceId,
-          );
-          await this.commentRepository.updateById(referenceId, {
-            metric: commentMetric,
-          });
-        }
-
-        break;
-      }
-
       case ControllerType.FRIEND: {
         const {requesteeId, requestorId} = invocationCtx.args[1];
         await this.notificationService.cancelFriendRequest(

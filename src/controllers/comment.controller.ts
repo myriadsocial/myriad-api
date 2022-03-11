@@ -87,7 +87,7 @@ export class CommentController {
         'application/json': {
           schema: getModelSchemaRef(Comment, {
             title: 'NewComment',
-            exclude: ['id'],
+            exclude: ['id', 'deleteByUser'],
           }),
         },
       },
@@ -121,6 +121,7 @@ export class CommentController {
               'type',
               'section',
               'referenceId',
+              'deleteByUser',
               'userId',
               'postId',
               'metric',
@@ -143,6 +144,9 @@ export class CommentController {
     },
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.commentRepository.deleteById(id);
+    await this.commentRepository.updateById(id, {
+      deletedAt: new Date().toString(),
+      deleteByUser: true,
+    });
   }
 }
