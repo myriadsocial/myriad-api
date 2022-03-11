@@ -88,6 +88,13 @@ export class Comment extends Entity {
   metric: Metric;
 
   @property({
+    type: 'boolean',
+    default: false,
+    required: false,
+  })
+  deleteByUser: boolean;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
