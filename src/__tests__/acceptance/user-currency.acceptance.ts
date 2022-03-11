@@ -194,7 +194,7 @@ describe('UserCurrencyApplication', function () {
       .del(`/user-currencies`)
       .set('Authorization', `Bearer ${token}`)
       .send({userId: userCurrency.userId, currencyId: 'ACA'})
-      .expect(200, {count: 1});
+      .expect(204);
 
     expect(
       await userCurrencyRepository.findOne({

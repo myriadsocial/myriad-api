@@ -214,6 +214,7 @@ export class MyriadApiApplication extends BootMixin(
 
     if (options?.existingSchema === 'alter') {
       await this.doMigrateExperience();
+      await this.doMigrateComment();
       return;
     }
   }
@@ -235,6 +236,16 @@ export class MyriadApiApplication extends BootMixin(
           clonedCount: 0,
         },
       },
+    );
+  }
+
+  async doMigrateComment(): Promise<void> {
+    if (this.options.alter.indexOf('comment') === -1) return;
+    const {commentRepository} = await this.repositories();
+
+    await (commentRepository as CommentRepository).updateAll(
+      {deleteByUser: false},
+      {deleteByUser: {exists: false}},
     );
   }
 

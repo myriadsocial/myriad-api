@@ -105,8 +105,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
             'Please comment first in debate sections, before you downvote this post',
           );
         }
+      } else {
+        throw err;
       }
-      throw err;
     }
   }
 
