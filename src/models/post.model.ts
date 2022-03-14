@@ -1,4 +1,5 @@
 import {
+  AnyObject,
   belongsTo,
   Entity,
   hasMany,
@@ -36,7 +37,7 @@ import {UserWithRelations} from './';
         },
       },
     },
-    hiddenProperties: ['popularCount', 'rawText', 'banned'],
+    hiddenProperties: ['popularCount', 'rawText', 'banned', 'experienceIndex'],
   },
 })
 export class Post extends Entity {
@@ -182,6 +183,13 @@ export class Post extends Entity {
     default: false,
   })
   banned: boolean;
+
+  @property({
+    type: 'object',
+    required: false,
+    default: {},
+  })
+  experienceIndex: AnyObject;
 
   @property({
     type: 'date',

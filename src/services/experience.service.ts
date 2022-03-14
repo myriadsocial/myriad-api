@@ -186,6 +186,7 @@ export class ExperienceService {
           and: [{peopleId: {inq: personIds}}, {createdBy: userId}],
         },
       ],
+      experienceId: experience.id,
     } as Where<Post>;
   }
 
