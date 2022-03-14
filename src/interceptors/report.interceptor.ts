@@ -8,7 +8,7 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {AnyObject, repository} from '@loopback/repository';
+import {AnyObject, Count, repository} from '@loopback/repository';
 import {
   MethodType,
   PlatformType,
@@ -19,11 +19,13 @@ import {
   CommentRepository,
   ExperienceRepository,
   FriendRepository,
+  PeopleRepository,
   PostRepository,
   ReportRepository,
   UserExperienceRepository,
   UserReportRepository,
   UserRepository,
+  UserSocialMediaRepository,
 } from '../repositories';
 import {MetricService} from '../services';
 
@@ -40,6 +42,8 @@ export class ReportInterceptor implements Provider<Interceptor> {
     protected friendRepository: FriendRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
+    @repository(PeopleRepository)
+    protected peopleRepository: PeopleRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
     @repository(ReportRepository)
@@ -52,6 +56,8 @@ export class ReportInterceptor implements Provider<Interceptor> {
     protected userReportRepository: UserReportRepository,
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
+    @repository(UserSocialMediaRepository)
+    protected userSocialMediaRepository: UserSocialMediaRepository,
     @service(MetricService)
     protected metricService: MetricService,
   ) {}
@@ -167,40 +173,42 @@ export class ReportInterceptor implements Provider<Interceptor> {
     data: AnyObject,
     restored: boolean,
   ): Promise<void> {
-    await this.userRepository.updateById(userId, data);
-    await this.friendRepository.updateAll(data, {requesteeId: userId});
-    await this.experienceRepository.updateAll(data, {createdBy: userId});
-    await this.postRepository.updateAll(
-      {banned: !restored},
-      {createdBy: userId},
-    );
-    const experiences = await this.experienceRepository.find({
-      where: {
-        createdBy: userId,
-      },
-    });
+    const experienceIds = (
+      await this.experienceRepository.find({
+        where: {createdBy: userId},
+      })
+    ).map(e => e.id ?? '');
     const friends = await this.friendRepository.find({
-      where: {
-        requesteeId: userId,
-      },
+      where: {requesteeId: userId},
     });
-    const experienceIds = experiences.map(e => e.id ?? '');
+    const peopleIds = (
+      await this.userSocialMediaRepository.find({
+        where: {userId},
+      })
+    ).map(e => e.peopleId);
 
-    await this.userExperienceRepository.updateAll(data, {
-      experienceId: {inq: experienceIds},
-      subscribed: false,
-    });
-    if (!restored) {
-      await this.userExperienceRepository.deleteAll({
+    Promise.allSettled([
+      this.userRepository.updateById(userId, data),
+      this.friendRepository.updateAll(data, {requesteeId: userId}),
+      this.experienceRepository.updateAll(data, {createdBy: userId}),
+      this.commentRepository.updateAll(data, {userId: userId}),
+      this.postRepository.updateAll({banned: !restored}, {createdBy: userId}),
+      this.metricService.userMetric(userId),
+      this.peopleRepository.updateAll(data, {id: {inq: peopleIds}}),
+      this.userExperienceRepository.updateAll(data, {
         experienceId: {inq: experienceIds},
-        subscribed: true,
-      });
-    }
-    await this.metricService.userMetric(userId);
-    await Promise.all(
-      friends.map(async friend => {
+        subscribed: false,
+      }),
+      ...friends.map(async friend => {
         return this.metricService.userMetric(friend.requestorId);
       }),
-    );
+    ]) as Promise<AnyObject>;
+
+    if (!restored) {
+      this.userExperienceRepository.deleteAll({
+        experienceId: {inq: experienceIds},
+        subscribed: true,
+      }) as Promise<Count>;
+    }
   }
 }

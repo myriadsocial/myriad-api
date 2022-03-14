@@ -1,5 +1,10 @@
 import {inject, intercept} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {
+  AnyObject,
+  Filter,
+  FilterExcludingWhere,
+  repository,
+} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {PlatformType, FriendStatusType, PermissionKeys} from '../enums';
 import {PaginationInterceptor} from '../interceptors';
@@ -92,7 +97,7 @@ export class PeopleController {
     if (!q) return [];
     const pattern = new RegExp('^' + q, 'i');
 
-    let users = await this.userRepository.find({
+    let users = await this.userRepository.find(<AnyObject>{
       where: {
         or: [
           {
@@ -106,6 +111,9 @@ export class PeopleController {
             },
           },
         ],
+        deletedAt: {
+          $exists: false,
+        },
       },
       order: ['createdAt DESC'],
       limit: 5,
@@ -151,7 +159,7 @@ export class PeopleController {
       });
     });
 
-    const people = await this.peopleRepository.find({
+    const people = await this.peopleRepository.find(<AnyObject>{
       where: {
         or: [
           {
@@ -165,6 +173,9 @@ export class PeopleController {
             },
           },
         ],
+        deletedAt: {
+          $exists: false,
+        },
       },
       include: ['userSocialMedia'],
       order: ['createdAt DESC'],
