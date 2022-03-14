@@ -98,19 +98,14 @@ export class MetricService {
       return Object.assign(metric, {comments: countComment});
     }
 
-    const {count: countDebate} = await this.commentRepository.count({
-      postId: referenceId,
-      section: SectionType.DEBATE,
-      deleteByUser: false,
-      deletedAt: {exists: false},
-    });
-
-    const {count: countDiscussion} = await this.commentRepository.count({
-      postId: referenceId,
-      section: SectionType.DISCUSSION,
-      deleteByUser: false,
-      deletedAt: {exists: false},
-    });
+    const countDebate = await this.countComment(
+      [referenceId],
+      SectionType.DEBATE,
+    );
+    const countDiscussion = await this.countComment(
+      [referenceId],
+      SectionType.DISCUSSION,
+    );
 
     const {count: countTip} = await this.transactionRepository.count({
       referenceId: referenceId,
@@ -257,8 +252,29 @@ export class MetricService {
     });
     const {count: commentCount} = await this.commentRepository.count({
       postId: postId,
+      deletedAt: {exists: false},
     });
 
     return commentCount + voteCount;
+  }
+
+  async countComment(
+    referenceIds: string[],
+    section: SectionType,
+  ): Promise<number> {
+    const comments = await this.commentRepository.find(<AnyObject>{
+      where: {
+        referenceId: {inq: referenceIds},
+        section: section,
+        deleteByUser: false,
+        deletedAt: {
+          $exists: false,
+        },
+      },
+    });
+
+    if (comments.length === 0) return 0;
+    const commentIds = comments.map(comment => comment.id ?? '');
+    return comments.length + (await this.countComment(commentIds, section));
   }
 }
