@@ -92,6 +92,8 @@ export class MetricService {
     if (referenceType === ReferenceType.COMMENT) {
       const {count: countComment} = await this.commentRepository.count({
         referenceId,
+        deleteByUser: false,
+        deletedAt: {exists: false},
       });
 
       return Object.assign(metric, {comments: countComment});
@@ -100,11 +102,15 @@ export class MetricService {
     const {count: countDebate} = await this.commentRepository.count({
       postId: referenceId,
       section: SectionType.DEBATE,
+      deleteByUser: false,
+      deletedAt: {exists: false},
     });
 
     const {count: countDiscussion} = await this.commentRepository.count({
       postId: referenceId,
       section: SectionType.DISCUSSION,
+      deleteByUser: false,
+      deletedAt: {exists: false},
     });
 
     const {count: countTip} = await this.transactionRepository.count({
