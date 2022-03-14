@@ -145,7 +145,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.EXPERIENCEPOST: {
-        const [postId, experienceId] = invocationCtx.args;
+        const [experienceId, postId] = invocationCtx.args;
         const {id, experienceIndex} = await this.postRepository.findById(
           postId,
         );
