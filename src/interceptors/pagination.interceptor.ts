@@ -38,7 +38,11 @@ import {
   TagService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
-import {AccountSettingRepository, UserRepository} from '../repositories';
+import {
+  AccountSettingRepository,
+  ExperiencePostRepository,
+  UserRepository,
+} from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
 import {omit} from 'lodash';
@@ -54,6 +58,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
+    @repository(ExperiencePostRepository)
+    protected experiencePostRepository: ExperiencePostRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @service(MetricService)
@@ -577,6 +583,32 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           });
         }
 
+        break;
+      }
+
+      case ControllerType.EXPERIENCE: {
+        const {postId} = request.query;
+        const experiences = result as Experience[];
+
+        if (postId) {
+          result = await Promise.all(
+            experiences.map(async experience => {
+              const experiencePost =
+                await this.experiencePostRepository.findOne({
+                  where: {
+                    postId: postId.toString(),
+                    experienceId: experience.id,
+                  },
+                });
+
+              if (!experiencePost) return experience;
+              return {
+                ...experience,
+                addedToPost: true,
+              };
+            }),
+          );
+        }
         break;
       }
     }
