@@ -97,12 +97,18 @@ export class PostService {
     if (!userId) return post;
 
     const importer = new User({...post.user});
+    const {count} = await this.postRepository.count({
+      originPostId: post.originPostId,
+      platform: post.platform,
+      banned: false,
+      deletedAt: {exists: false},
+    });
 
     if (userId === post.createdBy) {
       importer.name = 'You';
     }
 
-    return {...post, importers: [importer]};
+    return {...post, importers: [importer], totalImporter: count};
   }
 
   async createDraftPost(draftPost: DraftPost): Promise<DraftPost> {
