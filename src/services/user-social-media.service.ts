@@ -63,12 +63,6 @@ export class UserSocialMediaService {
         walletAddressPassword: hashPeopleId,
       });
     } else {
-      if (foundPeople.deletedAt) {
-        throw new HttpErrors.UnprocessableEntity(
-          `This ${platform} has been banned by admin!`,
-        );
-      }
-
       await this.peopleRepository.updateById(foundPeople.id, {
         name,
         username,

@@ -291,6 +291,7 @@ export class ExperienceService {
           profilePictureURL: user.profilePictureURL,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
+          deletedAt: user.deletedAt,
         });
       });
 
