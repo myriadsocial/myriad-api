@@ -76,19 +76,6 @@ describe('CurrencyApplication', function () {
     token = res.body.accessToken;
   });
 
-  it('creates a currency', async function () {
-    this.timeout(10000);
-    const currency = givenCurrency();
-    const response = await client
-      .post('/currencies')
-      .set('Authorization', `Bearer ${token}`)
-      .send(currency)
-      .expect(200);
-    expect(response.body).to.containDeep(currency);
-    const result = await currencyRepository.findById(response.body.id);
-    expect(result).to.containDeep(currency);
-  });
-
   it('rejects requests to create a currency with no id', async () => {
     const currency: Partial<Currency> = givenCurrency();
     delete currency.id;
@@ -143,18 +130,6 @@ describe('CurrencyApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200, toJSON(persistedCurrency));
-    });
-
-    it('updates the curency by ID', async () => {
-      const updatedCurrency: Partial<Currency> = givenCurrency();
-
-      delete updatedCurrency.id;
-
-      await client
-        .patch(`/currencies/${persistedCurrency.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send(updatedCurrency)
-        .expect(204);
     });
 
     it('returns 401 when updating a currency not as myriad admin', async function () {

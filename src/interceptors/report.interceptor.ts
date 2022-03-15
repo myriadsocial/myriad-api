@@ -186,12 +186,14 @@ export class ReportInterceptor implements Provider<Interceptor> {
         where: {userId},
       })
     ).map(e => e.peopleId);
+    const comment = await this.commentRepository.findOne({
+      where: {userId},
+    });
 
     Promise.allSettled([
       this.userRepository.updateById(userId, data),
       this.friendRepository.updateAll(data, {requesteeId: userId}),
       this.experienceRepository.updateAll(data, {createdBy: userId}),
-      this.commentRepository.updateAll(data, {userId: userId}),
       this.postRepository.updateAll({banned: !restored}, {createdBy: userId}),
       this.metricService.userMetric(userId),
       this.peopleRepository.updateAll(data, {id: {inq: peopleIds}}),
@@ -209,6 +211,13 @@ export class ReportInterceptor implements Provider<Interceptor> {
         experienceId: {inq: experienceIds},
         subscribed: true,
       }) as Promise<Count>;
+    }
+
+    if (comment) {
+      Promise.allSettled([
+        this.commentRepository.updateAll(data, {userId: userId}),
+        this.metricService.publicMetric(ReferenceType.POST, comment.postId),
+      ]) as Promise<AnyObject>;
     }
   }
 }
