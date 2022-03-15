@@ -233,12 +233,13 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.EXPERIENCEPOST: {
-        await this.postService.postRepository.findById(invocationCtx.args[1]);
+        const [experienceId, postId] = invocationCtx.args;
+        const post = await this.postService.postRepository.findById(postId);
 
         const found = await this.experiencePostRepository.findOne({
           where: {
-            postId: invocationCtx.args[1],
-            experienceId: invocationCtx.args[0],
+            postId: postId,
+            experienceId: experienceId,
           },
         });
 
@@ -247,6 +248,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
             'Already added to experience',
           );
         }
+        invocationCtx.args[2] = post?.experienceIndex ?? {};
 
         break;
       }
@@ -350,6 +352,17 @@ export class CreateInterceptor implements Provider<Interceptor> {
             ReferenceType.USER,
           );
         }
+
+        return result;
+      }
+
+      case ControllerType.EXPERIENCEPOST: {
+        const [experienceId, postId] = invocationCtx.args;
+        const experienceIndex = invocationCtx.args[2] as AnyObject;
+        experienceIndex[experienceId] = 1;
+        await this.postService.postRepository.updateById(postId, {
+          experienceIndex,
+        });
 
         return result;
       }

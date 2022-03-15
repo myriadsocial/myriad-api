@@ -2,7 +2,11 @@ import {authenticate} from '@loopback/authentication';
 import {intercept} from '@loopback/core';
 import {Count, CountSchema, Filter, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, post} from '@loopback/rest';
-import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
+import {
+  CreateInterceptor,
+  DeleteInterceptor,
+  PaginationInterceptor,
+} from '../interceptors';
 import {ExperiencePost, Post} from '../models';
 import {ExperiencePostRepository, ExperienceRepository} from '../repositories';
 
@@ -59,7 +63,7 @@ export class ExperiencePostController {
     return this.experiencePostRepository.create({postId, experienceId});
   }
 
-  @intercept(CreateInterceptor.BINDING_KEY)
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/experiences/{experienceId}/posts/{postId}', {
     responses: {
       '200': {

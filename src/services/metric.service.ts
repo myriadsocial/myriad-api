@@ -27,7 +27,6 @@ import {
   ExperiencePostRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
-
 @injectable({scope: BindingScope.TRANSIENT})
 export class MetricService {
   constructor(
@@ -92,20 +91,21 @@ export class MetricService {
     if (referenceType === ReferenceType.COMMENT) {
       const {count: countComment} = await this.commentRepository.count({
         referenceId,
+        deleteByUser: false,
+        deletedAt: {exists: false},
       });
 
       return Object.assign(metric, {comments: countComment});
     }
 
-    const {count: countDebate} = await this.commentRepository.count({
-      postId: referenceId,
-      section: SectionType.DEBATE,
-    });
-
-    const {count: countDiscussion} = await this.commentRepository.count({
-      postId: referenceId,
-      section: SectionType.DISCUSSION,
-    });
+    const countDebate = await this.countComment(
+      [referenceId],
+      SectionType.DEBATE,
+    );
+    const countDiscussion = await this.countComment(
+      [referenceId],
+      SectionType.DISCUSSION,
+    );
 
     const {count: countTip} = await this.transactionRepository.count({
       referenceId: referenceId,
@@ -252,8 +252,29 @@ export class MetricService {
     });
     const {count: commentCount} = await this.commentRepository.count({
       postId: postId,
+      deletedAt: {exists: false},
     });
 
     return commentCount + voteCount;
+  }
+
+  async countComment(
+    referenceIds: string[],
+    section: SectionType,
+  ): Promise<number> {
+    const comments = await this.commentRepository.find(<AnyObject>{
+      where: {
+        referenceId: {inq: referenceIds},
+        section: section,
+        deleteByUser: false,
+        deletedAt: {
+          $exists: false,
+        },
+      },
+    });
+
+    if (comments.length === 0) return 0;
+    const commentIds = comments.map(comment => comment.id ?? '');
+    return comments.length + (await this.countComment(commentIds, section));
   }
 }

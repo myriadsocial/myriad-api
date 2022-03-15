@@ -26,6 +26,7 @@ import {
   NotificationService,
   VoteService,
 } from '../services';
+import {omit} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -143,6 +144,17 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
     switch (controllerName) {
+      case ControllerType.EXPERIENCEPOST: {
+        const [experienceId, postId] = invocationCtx.args;
+        const {id, experienceIndex} = await this.postRepository.findById(
+          postId,
+        );
+        await this.postRepository.updateById(id, {
+          experienceIndex: omit(experienceIndex, [experienceId]),
+        });
+        break;
+      }
+
       case ControllerType.FRIEND: {
         const {requesteeId, requestorId} = invocationCtx.args[1];
         await this.notificationService.cancelFriendRequest(

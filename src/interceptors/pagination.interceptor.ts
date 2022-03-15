@@ -38,9 +38,14 @@ import {
   TagService,
 } from '../services';
 import {pageMetadata} from '../utils/page-metadata.utils';
-import {AccountSettingRepository, UserRepository} from '../repositories';
+import {
+  AccountSettingRepository,
+  ExperiencePostRepository,
+  UserRepository,
+} from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
+import {omit} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -53,6 +58,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
+    @repository(ExperiencePostRepository)
+    protected experiencePostRepository: ExperiencePostRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @service(MetricService)
@@ -124,7 +131,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     };
   }
 
-  orderSetting(query: AnyObject): string[] {
+  orderSetting(query: AnyObject, hasExperience = null): string[] {
     let {sortBy, order} = query;
 
     switch (sortBy) {
@@ -153,6 +160,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
 
     if (!order) order = OrderType.DESC;
+    if (hasExperience) {
+      return [`experienceIndex.${hasExperience} DESC`, sortBy + ' ' + order];
+    }
     return [sortBy + ' ' + order];
   }
 
@@ -251,6 +261,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       // Set where filter when using timeline
       // Both Where filter and timeline cannot be used together
       case ControllerType.POST: {
+        let hasExperience = null;
         if (methodName === MethodType.TIMELINE) {
           const {experienceId, timelineType, q, topic} = request.query;
           const hasWhere =
@@ -297,12 +308,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           // get timeline
           if (!timelineType && typeof timelineType === 'string') return;
           if (timelineType) {
-            const whereTimeline = await this.getTimeline(
+            const whereTimeline = (await this.getTimeline(
               timelineType as TimelineType,
               experienceId?.toString(),
-            );
+            )) ?? {id: ''};
 
-            filter.where = whereTimeline ?? {id: ''};
+            hasExperience = (whereTimeline as AnyObject).experienceId;
+            filter.where = omit(whereTimeline, ['experienceId']);
           }
 
           filter.where.banned = false;
@@ -324,7 +336,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           };
         }
 
-        filter.order = this.orderSetting(request.query);
+        filter.order = this.orderSetting(request.query, hasExperience);
 
         break;
       }
@@ -571,6 +583,32 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           });
         }
 
+        break;
+      }
+
+      case ControllerType.EXPERIENCE: {
+        const {postId} = request.query;
+        const experiences = result as Experience[];
+
+        if (postId) {
+          result = await Promise.all(
+            experiences.map(async experience => {
+              const experiencePost =
+                await this.experiencePostRepository.findOne({
+                  where: {
+                    postId: postId.toString(),
+                    experienceId: experience.id,
+                  },
+                });
+
+              if (!experiencePost) return experience;
+              return {
+                ...experience,
+                addedToPost: true,
+              };
+            }),
+          );
+        }
         break;
       }
     }

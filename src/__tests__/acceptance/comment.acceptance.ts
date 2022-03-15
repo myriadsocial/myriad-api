@@ -46,7 +46,9 @@ import {
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
 
+/* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('CommentApplication', function () {
+  this.timeout(50000);
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
@@ -67,7 +69,7 @@ describe('CommentApplication', function () {
   let address: KeyringPair;
 
   before(async () => {
-    ({app, client} = await setupApplication());
+    ({app, client} = await setupApplication(true));
   });
 
   after(() => app.stop());
@@ -140,8 +142,8 @@ describe('CommentApplication', function () {
   it('creates a comment', async () => {
     const comment = givenComment({
       userId: user.id,
-      postId: post.id,
-      referenceId: post.id,
+      postId: post.id.toString(),
+      referenceId: post.id.toString(),
       type: ReferenceType.POST,
     });
 
@@ -158,8 +160,8 @@ describe('CommentApplication', function () {
   it('creates a notification when creating a comment', async () => {
     const comment = givenComment({
       userId: user.id,
-      postId: post.id,
-      referenceId: post.id,
+      postId: post.id.toString(),
+      referenceId: post.id.toString(),
       type: ReferenceType.POST,
     });
 
@@ -182,6 +184,7 @@ describe('CommentApplication', function () {
       additionalReferenceId: {
         comment: {
           ...response.body,
+          id: response.body.id.toString(),
           user: toJSON({
             id: user.id,
             name: user.name,
@@ -193,6 +196,10 @@ describe('CommentApplication', function () {
       updatedAt: notification?.updatedAt,
       deletedAt: undefined,
     });
+    if (notification?.additionalReferenceId) {
+      notification.additionalReferenceId.comment.id =
+        notification.additionalReferenceId.comment.id.toString();
+    }
     expect(expected).to.containDeep(notification);
   });
 
@@ -228,8 +235,8 @@ describe('CommentApplication', function () {
   it('adds by 1 post metric comments', async () => {
     const comment = givenComment({
       userId: user.id,
-      postId: post.id,
-      referenceId: post.id,
+      postId: post.id.toString(),
+      referenceId: post.id.toString(),
       type: ReferenceType.POST,
     });
 
@@ -240,12 +247,12 @@ describe('CommentApplication', function () {
       .expect(200);
     const resultPost = await postRepository.findById(post.id);
     post.metric.discussions = (
-      await commentRepository.count({postId: post.id})
+      await commentRepository.count({postId: post.id.toString()})
     ).count;
     post.metric.comments = post.metric.discussions;
     post.popularCount = 1;
 
-    expect(resultPost).to.containDeep(post);
+    expect(resultPost).to.containDeep({...post, id: post.id.toString()});
   });
 
   it('returns 422 when creates a comment not as login user', async () => {

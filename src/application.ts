@@ -243,7 +243,7 @@ export class MyriadApiApplication extends BootMixin(
     if (this.options.alter.indexOf('comment') === -1) return;
     const {commentRepository} = await this.repositories();
 
-    await (commentRepository as CommentRepository).updateAll(
+    await commentRepository.updateAll(
       {deleteByUser: false},
       {deleteByUser: {exists: false}},
     );
