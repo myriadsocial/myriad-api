@@ -183,6 +183,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
             profilePictureURL: user.profilePictureURL,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+            deletedAt: user.deletedAt,
           });
         });
 
