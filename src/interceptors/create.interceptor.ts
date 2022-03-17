@@ -386,75 +386,55 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.TRANSACTION: {
-        await this.createNotification(controllerName, result);
-        await this.activityLogService.createLog(
-          ActivityLogType.SENDTIP,
-          result.id,
-          ReferenceType.TRANSACTION,
-        );
-
-        if (result.type === ReferenceType.POST) {
-          await this.metricService.publicMetric(
-            result.type,
+        Promise.allSettled([
+          this.createNotification(controllerName, result),
+          this.metricService.publicMetric(
+            ReferenceType.POST,
             result.referenceId,
-          );
-        }
-
+          ),
+          this.activityLogService.createLog(
+            ActivityLogType.SENDTIP,
+            result.from,
+            ReferenceType.TRANSACTION,
+          ),
+        ]) as Promise<AnyObject>;
         return result;
       }
 
       case ControllerType.POST: {
         if (result.status === PostStatus.PUBLISHED) {
-          const newPost = await this.postService.createPublishPost(
+          result = await this.postService.createPublishPost(
             result as DraftPost,
           );
 
-          if (newPost.tags.length > 0) {
-            await this.tagService.createTags(newPost.tags);
-          }
-
-          await this.createNotification(controllerName, newPost);
-          await this.metricService.userMetric(newPost.createdBy);
-          await this.activityLogService.createLog(
-            ActivityLogType.CREATEPOST,
-            newPost.id,
-            ReferenceType.POST,
-          );
-
-          return newPost;
+          Promise.allSettled([
+            this.tagService.createTags(result.tags),
+            this.createNotification(controllerName, result),
+            this.metricService.userMetric(result.createdBy),
+            this.activityLogService.createLog(
+              ActivityLogType.CREATEPOST,
+              result.createdBy,
+              ReferenceType.POST,
+            ),
+          ]) as Promise<AnyObject>;
         }
         return result;
       }
 
       case ControllerType.COMMENT: {
-        await this.activityLogService.createLog(
-          ActivityLogType.CREATECOMMENT,
-          result.id,
-          ReferenceType.COMMENT,
-        );
-        await this.createNotification(controllerName, result);
+        const {referenceId, postId} = result as Comment;
 
-        const {type: referenceType, referenceId, postId} = result as Comment;
-
-        const popularCount = await this.metricService.countPopularPost(postId);
-        const postMetric = await this.metricService.publicMetric(
-          ReferenceType.POST,
-          postId,
-        );
-        await this.postService.postRepository.updateById(postId, {
-          metric: postMetric,
-          popularCount: popularCount,
-        });
-
-        if (result.type === ReferenceType.COMMENT) {
-          const commentMetric = await this.metricService.publicMetric(
-            referenceType,
-            referenceId,
-          );
-          await this.commentRepository.updateById(referenceId, {
-            metric: commentMetric,
-          });
-        }
+        Promise.allSettled([
+          this.createNotification(controllerName, result),
+          this.metricService.countPopularPost(postId),
+          this.metricService.publicMetric(ReferenceType.POST, postId),
+          this.metricService.publicMetric(ReferenceType.COMMENT, referenceId),
+          this.activityLogService.createLog(
+            ActivityLogType.CREATECOMMENT,
+            result.userId,
+            ReferenceType.COMMENT,
+          ),
+        ]) as Promise<AnyObject>;
 
         return result;
       }

@@ -75,6 +75,15 @@ export class MetricService {
     referenceType: ReferenceType,
     referenceId: string,
   ): Promise<Metric> {
+    let exists = false;
+    if (referenceType === ReferenceType.POST) {
+      exists = await this.postRepository.exists(referenceId);
+    } else {
+      exists = await this.commentRepository.exists(referenceId);
+    }
+
+    if (!exists) return {upvotes: 0, downvotes: 0};
+
     const upvote = await this.voteRepository.count({
       type: referenceType,
       referenceId,
@@ -98,6 +107,13 @@ export class MetricService {
         deletedAt: {exists: false},
       });
 
+      await this.commentRepository.updateById(referenceId, {
+        metric: {
+          ...metric,
+          comments: countComment,
+        },
+      });
+
       return Object.assign(metric, {comments: countComment});
     }
 
@@ -119,6 +135,8 @@ export class MetricService {
     metric.discussions = countDiscussion;
     metric.comments = (countDebate ?? 0) + (countDiscussion ?? 0);
     metric.tips = countTip;
+
+    await this.postRepository.updateById(referenceId, {metric});
 
     return metric;
   }
@@ -251,17 +269,22 @@ export class MetricService {
     }
   }
 
-  async countPopularPost(postId: string): Promise<number> {
+  async countPopularPost(postId: string): Promise<void> {
+    const exists = await this.postRepository.exists(postId);
+    if (!exists) return;
     const {count: voteCount} = await this.voteRepository.count({
       postId: postId,
       state: true,
     });
     const {count: commentCount} = await this.commentRepository.count({
       postId: postId,
+      deleteByUser: false,
       deletedAt: {exists: false},
     });
 
-    return commentCount + voteCount;
+    await this.postRepository.updateById(postId, {
+      popularCount: commentCount + voteCount,
+    });
   }
 
   async countComment(

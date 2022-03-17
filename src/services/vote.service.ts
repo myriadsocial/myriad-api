@@ -1,5 +1,5 @@
 import {AnyObject, repository} from '@loopback/repository';
-import {ReferenceType, SectionType} from '../enums';
+import {SectionType} from '../enums';
 import {CommentRepository, PostRepository} from '../repositories';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {MetricService} from './metric.service';
@@ -20,29 +20,11 @@ export class VoteService {
   async updateVoteCounter(voteDetail: AnyObject): Promise<void> {
     const {referenceId, type, toUserId} = voteDetail;
 
-    if (type === ReferenceType.COMMENT) {
-      const commentMetric = await this.metricService.publicMetric(
-        type,
-        referenceId,
-      );
-      await this.commentRepository.updateById(referenceId, {
-        metric: commentMetric,
-      });
-    } else {
-      const popularCount = await this.metricService.countPopularPost(
-        referenceId,
-      );
-      const postMetric = await this.metricService.publicMetric(
-        type,
-        referenceId,
-      );
-      await this.postRepository.updateById(referenceId, {
-        popularCount: popularCount,
-        metric: postMetric,
-      });
-    }
-
-    await this.metricService.userMetric(toUserId);
+    await Promise.allSettled([
+      this.metricService.countPopularPost(referenceId),
+      this.metricService.publicMetric(type, referenceId),
+      this.metricService.userMetric(toUserId),
+    ]);
   }
 
   async validatePostVote(voteDetail: AnyObject): Promise<PostWithRelations> {

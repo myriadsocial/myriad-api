@@ -9,10 +9,10 @@ import {
   service,
   ValueOrPromise,
 } from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
-import {ControllerType} from '../enums';
+import {ControllerType, ReferenceType} from '../enums';
 import {
   CommentLinkRepository,
   CommentRepository,
@@ -26,6 +26,7 @@ import {
   NotificationService,
   VoteService,
 } from '../services';
+import {Comment} from '../models';
 import {omit} from 'lodash';
 
 /**
@@ -144,6 +145,18 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
     switch (controllerName) {
+      case ControllerType.COMMENT: {
+        const comment: Comment = invocationCtx.args[1];
+        const {referenceId, postId} = comment;
+
+        Promise.allSettled([
+          this.metricService.countPopularPost(postId),
+          this.metricService.publicMetric(ReferenceType.POST, postId),
+          this.metricService.publicMetric(ReferenceType.COMMENT, referenceId),
+        ]) as Promise<AnyObject>;
+
+        break;
+      }
       case ControllerType.EXPERIENCEPOST: {
         const [experienceId, postId] = invocationCtx.args;
         const {id, experienceIndex} = await this.postRepository.findById(
