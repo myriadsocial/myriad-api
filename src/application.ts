@@ -46,10 +46,12 @@ import {
   ExperienceRepository,
   ExperienceUserRepository,
   FriendRepository,
+  LanguageSettingRepository,
   NotificationRepository,
   NotificationSettingRepository,
   PeopleRepository,
   PostRepository,
+  ReportRepository,
   TagRepository,
   TransactionRepository,
   UserCurrencyRepository,
@@ -58,11 +60,14 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   VoteRepository,
+  WalletRepository,
 } from './repositories';
+import {NetworkType, WalletType} from './enums';
 import {
   RateLimiterComponent,
   RateLimitSecurityBindings,
 } from 'loopback4-ratelimiter';
+import {omit} from 'lodash';
 import {DateUtils} from './utils/date-utils';
 import {Experience} from './models';
 
@@ -215,6 +220,7 @@ export class MyriadApiApplication extends BootMixin(
     if (options?.existingSchema === 'alter') {
       await this.doMigrateExperience();
       await this.doMigrateComment();
+      await this.doMigrateUser();
       return;
     }
   }
@@ -249,6 +255,317 @@ export class MyriadApiApplication extends BootMixin(
     );
   }
 
+  async doMigrateUser(): Promise<void> {
+    if (this.options.alter.indexOf('user') === -1) return;
+    const {
+      accountSettingRepository,
+      activityLogRepository,
+      commentRepository,
+      draftPostRepository,
+      experienceUserRepository,
+      experienceRepository,
+      friendRepository,
+      languageSettingRepository,
+      notificationSettingRepository,
+      notificationRepository,
+      postRepository,
+      reportRepository,
+      userCurrencyRepository,
+      userExperienceRepository,
+      userReportRepository,
+      userSocMedRepository,
+      userRepository,
+      voteRepository,
+      walletRepository,
+    } = await this.repositories();
+    const {count} = await userRepository.count({id: /^0x/});
+    const bar = this.initializeProgressBar('Alter user');
+
+    let i = 0;
+    const start = true;
+
+    bar.start(count, 0);
+    while (start) {
+      const oldUser = await userRepository.findOne({
+        where: {
+          id: {
+            regexp: '^0x',
+          },
+        },
+      });
+
+      if (!oldUser) break;
+
+      await userRepository.deleteById(oldUser.id);
+
+      const rawUser = omit(oldUser, ['id']);
+      const newUser = await userRepository.create(rawUser);
+      const oldId = oldUser.id.toString();
+      const newId = newUser.id.toString();
+
+      await Promise.allSettled([
+        this.accountSetting(oldId, newId, accountSettingRepository),
+        this.activityLog(oldId, newId, activityLogRepository),
+        this.commentMention(oldId, newId, commentRepository),
+        this.comment(oldId, newId, commentRepository),
+        this.draftPost(oldId, newId, draftPostRepository),
+        this.experienceUser(oldId, newId, experienceUserRepository),
+        this.experience(oldId, newId, experienceRepository),
+        this.friend(oldId, newId, friendRepository),
+        this.languageSetting(oldId, newId, languageSettingRepository),
+        this.notifSetting(oldId, newId, notificationSettingRepository),
+        this.notification(oldId, newId, notificationRepository),
+        this.postMention(oldId, newId, postRepository),
+        this.post(oldId, newId, postRepository),
+        this.report(oldId, newId, reportRepository),
+        this.userCurrency(oldId, newId, userCurrencyRepository),
+        this.userExperience(oldId, newId, userExperienceRepository),
+        this.userReport(oldId, newId, userReportRepository),
+        this.userSocialMedia(oldId, newId, userSocMedRepository),
+        this.vote(oldId, newId, voteRepository),
+        this.wallet(oldId, newId, walletRepository),
+      ]);
+
+      i++;
+
+      bar.update(i);
+    }
+
+    bar.stop();
+  }
+
+  async accountSetting(
+    oldId: string,
+    newId: string,
+    accountSettingRepository: AccountSettingRepository,
+  ): Promise<void> {
+    await accountSettingRepository.updateAll({userId: newId}, {userId: oldId});
+  }
+
+  async activityLog(
+    oldId: string,
+    newId: string,
+    activityLogRepository: ActivityLogRepository,
+  ) {
+    await activityLogRepository.updateAll({userId: newId}, {userId: oldId});
+    await activityLogRepository.updateAll(
+      {referenceId: newId},
+      {referenceId: oldId},
+    );
+  }
+
+  async commentMention(
+    oldId: string,
+    newId: string,
+    commentRepository: CommentRepository,
+  ) {
+    const comments = await commentRepository.find({
+      where: <AnyObject>{
+        'mentions.id': oldId,
+      },
+    });
+
+    await Promise.all(
+      comments.map(async comment => {
+        const mentions = comment.mentions.map(mention => {
+          if (mention.id === oldId) {
+            mention.id = newId;
+          }
+          return mention;
+        });
+        const currentText = `{\"type\":\"mention\",\"children\":[{\"text\":\"\"}],\"value\":\"${oldId}\"`;
+        const updatedText = `{\"type\":\"mention\",\"children\":[{\"text\":\"\"}],\"value\":\"${newId}\"`;
+        return commentRepository.updateById(comment.id, {
+          mentions: mentions,
+          text: comment.text?.replace(
+            new RegExp(currentText, 'g'),
+            updatedText,
+          ),
+        });
+      }),
+    );
+  }
+
+  async comment(
+    oldId: string,
+    newId: string,
+    commentRepository: CommentRepository,
+  ) {
+    await commentRepository.updateAll({userId: newId}, {userId: oldId});
+  }
+
+  async draftPost(
+    oldId: string,
+    newId: string,
+    draftPostRepository: DraftPostRepository,
+  ) {
+    await draftPostRepository.updateAll({createdBy: newId}, {createdBy: oldId});
+  }
+
+  async experienceUser(
+    oldId: string,
+    newId: string,
+    experienceUserRepository: ExperienceUserRepository,
+  ) {
+    await experienceUserRepository.updateAll({userId: newId}, {userId: oldId});
+  }
+
+  async experience(
+    oldId: string,
+    newId: string,
+    experienceRepository: ExperienceRepository,
+  ) {
+    await experienceRepository.updateAll(
+      {createdBy: newId},
+      {createdBy: oldId},
+    );
+  }
+
+  async friend(
+    oldId: string,
+    newId: string,
+    friendRepository: FriendRepository,
+  ) {
+    await friendRepository.updateAll(
+      {requesteeId: newId},
+      {requesteeId: oldId},
+    );
+    await friendRepository.updateAll(
+      {requestorId: newId},
+      {requestorId: oldId},
+    );
+  }
+
+  async languageSetting(
+    oldId: string,
+    newId: string,
+    languageSettingRepository: LanguageSettingRepository,
+  ) {
+    await languageSettingRepository.updateAll({userId: newId}, {userId: oldId});
+  }
+
+  async notifSetting(
+    oldId: string,
+    newId: string,
+    notificationSettingRepository: NotificationSettingRepository,
+  ) {
+    await notificationSettingRepository.updateAll(
+      {userId: newId},
+      {userId: oldId},
+    );
+  }
+
+  async notification(
+    oldId: string,
+    newId: string,
+    notificationRepository: NotificationRepository,
+  ) {
+    await notificationRepository.updateAll(
+      {referenceId: newId},
+      {referenceId: oldId},
+    );
+    await notificationRepository.updateAll({from: newId}, {from: oldId});
+    await notificationRepository.updateAll({to: newId}, {to: oldId});
+  }
+
+  async postMention(
+    oldId: string,
+    newId: string,
+    postRepository: PostRepository,
+  ) {
+    const posts = await postRepository.find({
+      where: <AnyObject>{
+        'mentions.id': oldId,
+      },
+    });
+
+    await Promise.all(
+      posts.map(async post => {
+        const mentions = post.mentions.map(mention => {
+          if (mention.id === oldId) {
+            mention.id = newId;
+          }
+          return mention;
+        });
+        const currentText = `{\"type\":\"mention\",\"children\":[{\"text\":\"\"}],\"value\":\"${oldId}\"`;
+        const updatedText = `{\"type\":\"mention\",\"children\":[{\"text\":\"\"}],\"value\":\"${newId}\"`;
+        return postRepository.updateById(post.id, {
+          mentions: mentions,
+          text: post.text?.replace(new RegExp(currentText, 'g'), updatedText),
+        });
+      }),
+    );
+  }
+
+  async post(oldId: string, newId: string, postRepository: PostRepository) {
+    await postRepository.updateAll({createdBy: newId}, {createdBy: oldId});
+  }
+
+  async report(
+    oldId: string,
+    newId: string,
+    reportRepository: ReportRepository,
+  ) {
+    await reportRepository.updateAll(
+      {referenceId: newId},
+      {referenceId: oldId},
+    );
+  }
+
+  async userCurrency(
+    oldId: string,
+    newId: string,
+    userCurrencyRepository: UserCurrencyRepository,
+  ) {
+    await userCurrencyRepository.updateAll({userId: newId}, {userId: oldId});
+  }
+
+  async userExperience(
+    oldId: string,
+    newId: string,
+    userExperienceRepository: UserExperienceRepository,
+  ) {
+    await userExperienceRepository.updateAll({userId: newId}, {userId: oldId});
+  }
+
+  async userReport(
+    oldId: string,
+    newId: string,
+    userReportRepository: UserReportRepository,
+  ) {
+    await userReportRepository.updateAll(
+      {reportedBy: newId},
+      {reportedBy: oldId},
+    );
+  }
+
+  async userSocialMedia(
+    oldId: string,
+    newId: string,
+    userSocialMediaRepository: UserSocialMediaRepository,
+  ) {
+    await userSocialMediaRepository.updateAll({userId: newId}, {userId: oldId});
+  }
+
+  async vote(oldId: string, newId: string, voteRepository: VoteRepository) {
+    await voteRepository.updateAll({userId: newId}, {userId: oldId});
+  }
+
+  async wallet(
+    oldId: string,
+    newId: string,
+    walletRepository: WalletRepository,
+  ) {
+    await walletRepository.create({
+      id: oldId,
+      networks: [NetworkType.POLKADOT],
+      network: NetworkType.POLKADOT,
+      type: WalletType.POLKADOT,
+      primary: true,
+      userId: newId,
+    });
+  }
+
   async repositories(): Promise<AnyObject> {
     const accountSettingRepository = await this.getRepository(
       AccountSettingRepository,
@@ -264,6 +581,9 @@ export class MyriadApiApplication extends BootMixin(
     );
     const experienceRepository = await this.getRepository(ExperienceRepository);
     const friendRepository = await this.getRepository(FriendRepository);
+    const languageSettingRepository = await this.getRepository(
+      LanguageSettingRepository,
+    );
     const notificationRepository = await this.getRepository(
       NotificationRepository,
     );
@@ -272,6 +592,7 @@ export class MyriadApiApplication extends BootMixin(
     );
     const peopleRepository = await this.getRepository(PeopleRepository);
     const postRepository = await this.getRepository(PostRepository);
+    const reportRepository = await this.getRepository(ReportRepository);
     const tagRepository = await this.getRepository(TagRepository);
     const transactionRepository = await this.getRepository(
       TransactionRepository,
@@ -288,6 +609,7 @@ export class MyriadApiApplication extends BootMixin(
       UserSocialMediaRepository,
     );
     const voteRepository = await this.getRepository(VoteRepository);
+    const walletRepository = await this.getRepository(WalletRepository);
 
     return {
       accountSettingRepository,
@@ -298,10 +620,12 @@ export class MyriadApiApplication extends BootMixin(
       experienceUserRepository,
       experienceRepository,
       friendRepository,
+      languageSettingRepository,
       notificationRepository,
       notificationSettingRepository,
       peopleRepository,
       postRepository,
+      reportRepository,
       tagRepository,
       transactionRepository,
       userRepository,
@@ -310,6 +634,7 @@ export class MyriadApiApplication extends BootMixin(
       userReportRepository,
       userSocMedRepository,
       voteRepository,
+      walletRepository,
     };
   }
 
