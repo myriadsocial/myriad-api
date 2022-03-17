@@ -1,7 +1,7 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {ReferenceType, NotificationType} from '../../enums';
-import {Comment, Notification, People, Post, User} from '../../models';
+import {ReferenceType} from '../../enums';
+import {Comment, People, Post, User} from '../../models';
 import {
   ActivityLogRepository,
   CommentRepository,
@@ -22,7 +22,6 @@ import {
   givenCommentRepository,
   givenMultipleCommentInstances,
   givenNotificationRepository,
-  givenNotificationSettingInstance,
   givenNotificationSettingRepository,
   givenPeopleInstance,
   givenPeopleRepository,
@@ -127,104 +126,6 @@ describe('CommentApplication', function () {
     expect(response.body).to.containDeep(comment);
     const result = await commentRepository.findById(response.body.id);
     expect(result).to.containDeep(comment);
-  });
-
-  it('creates a notification when creating a comment', async () => {
-    const comment = givenComment({
-      userId: user.id.toString(),
-      postId: post.id.toString(),
-      referenceId: post.id.toString(),
-      type: ReferenceType.POST,
-    });
-
-    const response = await client
-      .post('/comments')
-      .set('Authorization', `Bearer ${token}`)
-      .send(comment)
-      .expect(200);
-    const notification = await notificationRepository.findOne({
-      where: {referenceId: response.body.id},
-    });
-    const expected = new Notification({
-      id: notification?.id,
-      type: NotificationType.POST_COMMENT,
-      from: user.id.toString(),
-      to: otherUser.id.toString(),
-      read: false,
-      referenceId: response.body.id,
-      message: 'commented: ' + comment.text,
-      additionalReferenceId: {
-        comment: {
-          ...response.body,
-          id: response.body.id.toString(),
-          user: toJSON({
-            id: user.id,
-            name: user.name,
-            username: user.username,
-          }),
-        },
-      },
-      createdAt: notification?.createdAt,
-      updatedAt: notification?.updatedAt,
-      deletedAt: undefined,
-    });
-    if (notification?.additionalReferenceId) {
-      notification.additionalReferenceId.comment.id =
-        notification.additionalReferenceId.comment.id.toString();
-    }
-    expect(expected).to.containDeep(notification);
-  });
-
-  it('does not create a notification when notification setting for comments is off', async () => {
-    await givenNotificationSettingInstance(notificationSettingRepository, {
-      userId: user.id,
-      comments: false,
-    });
-    await givenNotificationSettingInstance(notificationSettingRepository, {
-      userId: otherUser.id,
-      comments: false,
-    });
-
-    const comment = givenComment({
-      userId: user.id,
-      postId: post.id,
-      referenceId: post.id,
-      type: ReferenceType.POST,
-    });
-
-    const response = await client
-      .post('/comments')
-      .set('Authorization', `Bearer ${token}`)
-      .send(comment)
-      .expect(200);
-    const notification = await notificationRepository.findOne({
-      where: {referenceId: response.body.id},
-    });
-    const expected = null;
-    expect(expected).to.containDeep(notification);
-  });
-
-  it('adds by 1 post metric comments', async () => {
-    const comment = givenComment({
-      userId: user.id,
-      postId: post.id.toString(),
-      referenceId: post.id.toString(),
-      type: ReferenceType.POST,
-    });
-
-    await client
-      .post('/comments')
-      .set('Authorization', `Bearer ${token}`)
-      .send(comment)
-      .expect(200);
-    const resultPost = await postRepository.findById(post.id);
-    post.metric.discussions = (
-      await commentRepository.count({postId: post.id.toString()})
-    ).count;
-    post.metric.comments = post.metric.discussions;
-    post.popularCount = 1;
-
-    expect(resultPost).to.containDeep({...post, id: post.id.toString()});
   });
 
   it('returns 401 when creates a comment not as login user', async () => {
