@@ -1,5 +1,5 @@
 import {AnyObject, Model, model, property} from '@loopback/repository';
-import {WalletType} from '../enums';
+import {NetworkType, WalletType} from '../enums';
 
 @model()
 export class Credential extends Model {
@@ -29,6 +29,15 @@ export class Credential extends Model {
     },
   })
   walletType: WalletType;
+
+  @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      enum: Object.values(NetworkType),
+    },
+  })
+  networkType: NetworkType;
 
   @property({
     type: 'object',

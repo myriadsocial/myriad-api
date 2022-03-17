@@ -1,5 +1,5 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
-import {BlockchainPlatform} from '../enums';
+import {NetworkType, WalletType} from '../enums';
 import {User, UserWithRelations} from './user.model';
 
 @model({
@@ -30,10 +30,29 @@ export class Wallet extends Entity {
     type: 'string',
     required: true,
     jsonSchema: {
-      enum: Object.values(BlockchainPlatform),
+      enum: Object.values(WalletType),
     },
   })
-  platform: BlockchainPlatform;
+  type: WalletType;
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: false,
+  })
+  networks: string[];
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  network: NetworkType;
+
+  @property({
+    type: 'boolean',
+    required: false,
+  })
+  primary: boolean;
 
   @property({
     type: 'date',

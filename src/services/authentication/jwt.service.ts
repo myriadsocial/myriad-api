@@ -31,8 +31,8 @@ export class JWTService implements TokenService {
       username: userProfile.username,
       createdAt: userProfile.createdAt,
       permissions: userProfile.permissions,
-      walletAddress: userProfile.walletAddress,
-      blockchainPlatform: userProfile.blockchainPlatform,
+      publicAddress: userProfile.publicAddress,
+      network: userProfile.network,
     };
 
     try {
@@ -60,8 +60,8 @@ export class JWTService implements TokenService {
           username: '',
           createdAt: '',
           permissions: [],
-          walletAddress: '',
-          blockchainPlatform: '',
+          publicAddress: '',
+          network: '',
         },
         {
           [securityId]: decryptedToken.id,
@@ -70,8 +70,8 @@ export class JWTService implements TokenService {
           username: decryptedToken.username,
           createdAt: decryptedToken.createdAt,
           permissions: decryptedToken.permissions,
-          walletAddress: decryptedToken.walletAddress,
-          blockchainPlatform: decryptedToken.blockchainPlatform,
+          publicAddres: decryptedToken.publicAddres,
+          network: decryptedToken.network,
         },
       );
     } catch (err) {

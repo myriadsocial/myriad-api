@@ -252,6 +252,20 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
         break;
       }
+
+      case ControllerType.USERWALLET: {
+        const [userId, credential] = invocationCtx.args;
+        const {
+          data: {id, network},
+        } = credential;
+
+        await this.userRepository.wallets(userId).patch({primary: false});
+        await this.userRepository
+          .wallets(userId)
+          .patch({primary: true}, {id, network});
+
+        break;
+      }
     }
   }
 

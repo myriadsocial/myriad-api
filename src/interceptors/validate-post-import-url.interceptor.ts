@@ -9,12 +9,7 @@ import {
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {
-  ActivityLogType,
-  PlatformType,
-  ReferenceType,
-  VisibilityType,
-} from '../enums';
+import {ActivityLogType, PlatformType, VisibilityType} from '../enums';
 import {ExtendedPost} from '../interfaces';
 import {PlatformPost} from '../models/platform-post.model';
 import {UserRepository} from '../repositories';

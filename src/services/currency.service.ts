@@ -88,7 +88,8 @@ export class CurrencyService {
     }
   }
 
-  async sendMyriadReward(userId: string): Promise<void> {
+  async sendMyriadReward(address: string): Promise<void> {
+    if (!address.startsWith('0x') && address.length !== 66) return;
     if (!config.MYRIAD_REWARD_AMOUNT) return;
     if (config.MYRIAD_REWARD_AMOUNT === 0) return;
 
@@ -101,7 +102,7 @@ export class CurrencyService {
 
       const mnemonic = config.MYRIAD_FAUCET_MNEMONIC;
       const from = getKeyring().addFromMnemonic(mnemonic);
-      const to = userId;
+      const to = address;
 
       const rewardAmount = config.MYRIAD_REWARD_AMOUNT * 10 ** myriadDecimal;
 

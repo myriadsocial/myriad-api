@@ -19,7 +19,6 @@ import {
   PostRepository,
   UserCurrencyRepository,
   VoteRepository,
-  WalletRepository,
 } from '../repositories';
 import {
   FriendService,
@@ -48,8 +47,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     protected userCurrencyRepository: UserCurrencyRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
-    @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
     @service(FriendService)
     protected friendService: FriendService,
     @service(MetricService)
@@ -127,23 +124,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
           );
         }
 
-        break;
-      }
-
-      case ControllerType.USERWALLET: {
-        const [userId, walletId] = invocationCtx.args;
-        const wallets = await this.walletRepository.find({
-          where: {
-            or: [{userId}, {id: walletId}],
-          },
-          limit: 2,
-        });
-
-        if (wallets.length === 1) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You cannot remove your only wallet account!',
-          );
-        }
         break;
       }
 

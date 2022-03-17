@@ -82,10 +82,7 @@ export class UserSocialMediaController {
     );
 
     await Promise.allSettled([
-      this.notificationService.sendConnectedSocialMedia(
-        userSocialMedia,
-        platformUser,
-      ),
+      this.notificationService.sendConnectedSocialMedia(socialMedia, people),
     ]);
 
     return socialMedia;

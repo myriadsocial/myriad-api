@@ -22,6 +22,7 @@ export enum ControllerType {
   USERDRAFTPOST = 'UserDraftPostController',
   USEREXPERIENCE = 'UserExperienceController',
   USERLANGUAGESETTING = 'UserLanguageSettingController',
+  USERNETWORK = 'UserNetworkController',
   USERNOTIFICATIONSETTING = 'UserNotificationSettingController',
   USERREPORT = 'UserReportController',
   USERSOCIALMEDIA = 'UserSocialMediaController',

@@ -1,5 +1,5 @@
 export enum WalletType {
+  ETH = 'eth',
   NEAR = 'near',
-  METAMASK = 'metamask',
   POLKADOT = 'polkadot',
 }

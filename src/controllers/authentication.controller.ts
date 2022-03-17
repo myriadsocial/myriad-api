@@ -16,7 +16,7 @@ import {UserRepository, WalletRepository} from '../repositories';
 import {RefreshtokenService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
 import {AuthenticationInterceptor} from '../interceptors';
-import _ from 'lodash';
+import {pick} from 'lodash';
 
 export class AuthenticationController {
   constructor(
@@ -49,7 +49,7 @@ export class AuthenticationController {
       },
     },
   })
-  async getNonce(
+  async getNonceByWallet(
     @param.path.string('id') id: string,
   ): Promise<{nonce: number}> {
     const result = {nonce: 0};
@@ -62,6 +62,32 @@ export class AuthenticationController {
     }
 
     return result;
+  }
+
+  @get('/users/{id}/nonce', {
+    responses: {
+      '200': {
+        description: 'User nonce',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                nonce: {
+                  type: 'number',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getNonceByUser(
+    @param.path.string('id') id: string,
+  ): Promise<{nonce: number}> {
+    const {nonce} = await this.userRepository.findById(id);
+    return {nonce};
   }
 
   @get('/username/{username}')
@@ -112,7 +138,7 @@ export class AuthenticationController {
     })
     userWallet: UserWallet,
   ): Promise<User> {
-    const user = _.pick(userWallet, ['name', 'username']);
+    const user = pick(userWallet, ['name', 'username']);
     return this.userRepository.create(user);
   }
 

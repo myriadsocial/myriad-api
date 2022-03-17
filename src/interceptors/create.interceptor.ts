@@ -9,6 +9,7 @@ import {
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
+import NonceGenerator from 'a-nonce-generator';
 import {
   ReferenceType,
   ControllerType,
@@ -16,13 +17,22 @@ import {
   ActivityLogType,
   FriendStatusType,
 } from '../enums';
-import {Comment, DraftPost, Transaction, UserSocialMedia} from '../models';
+import {
+  Comment,
+  Credential,
+  DraftPost,
+  Transaction,
+  UserSocialMedia,
+  Wallet,
+} from '../models';
 import {
   CommentRepository,
   ExperiencePostRepository,
   ReportRepository,
   UserCurrencyRepository,
   UserReportRepository,
+  UserRepository,
+  WalletRepository,
 } from '../repositories';
 import {
   ActivityLogService,
@@ -34,6 +44,8 @@ import {
   TagService,
   VoteService,
 } from '../services';
+import {validateAccount} from '../utils/validate-account';
+import {assign} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -50,10 +62,14 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected userCurrencyRepository: UserCurrencyRepository,
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
     @repository(ExperiencePostRepository)
     protected experiencePostRepository: ExperiencePostRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -253,6 +269,110 @@ export class CreateInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.USERNETWORK: {
+        const [userId, credential] = invocationCtx.args;
+        const {networkType: networkId, walletType} = credential as Credential;
+        const [publicAddress, nearAccount] =
+          credential.publicAddress.split('/');
+
+        // TODO: validate network
+
+        const found = await this.walletRepository.findOne({
+          where: {
+            id: nearAccount ?? publicAddress,
+            networks: {inq: [[networkId]]},
+            type: walletType,
+            userId: userId,
+          },
+        });
+
+        if (!found) {
+          throw new HttpErrors.UnprocessableEntity('Network not connected');
+        }
+
+        if (found.network === networkId) {
+          throw new HttpErrors.UnprocessableEntity('Network already connected');
+        }
+
+        const verified = validateAccount(assign(credential, {publicAddress}));
+
+        if (!verified) {
+          throw new HttpErrors.UnprocessableEntity('Failed to verify');
+        }
+
+        found.network = networkId;
+        found.primary = true;
+        invocationCtx.args[2].data = found;
+
+        break;
+      }
+
+      case ControllerType.USERWALLET: {
+        const [userId, credential] = invocationCtx.args;
+        const {data, walletType, networkType} = credential as Credential;
+
+        if (!data) {
+          throw new HttpErrors.UnprocessableEntity('Data cannot be empty');
+        }
+
+        // TODO: validate network
+
+        if (!data.id) {
+          throw new HttpErrors.UnprocessableEntity('Id must included');
+        }
+
+        let wallet = await this.walletRepository.findOne({
+          where: {
+            id: data.id,
+            type: walletType,
+            userId: userId,
+          },
+        });
+
+        const hasWallet = Boolean(wallet);
+
+        if (wallet) {
+          const found = wallet.networks.find(
+            network => network === networkType,
+          );
+
+          if (found) {
+            throw new HttpErrors.UnprocessableEntity(
+              'Wallet already connected',
+            );
+          }
+
+          if (wallet.id !== data.id) {
+            throw new HttpErrors.UnprocessableEntity('Wrong address');
+          }
+
+          wallet.primary = true;
+          wallet.network = networkType;
+          wallet.networks = [...wallet.networks, networkType];
+        } else {
+          wallet = new Wallet({
+            ...data,
+            primary: true,
+            type: walletType,
+            network: networkType,
+            networks: [networkType],
+            userId: userId,
+          });
+        }
+
+        const verified = validateAccount(credential);
+
+        if (!verified) {
+          throw new HttpErrors.UnprocessableEntity('Failed to verify');
+        }
+
+        invocationCtx.args[1].data = assign(wallet, {
+          updated: hasWallet ? true : false,
+        });
+
+        break;
+      }
+
       default:
         return;
     }
@@ -269,7 +389,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
         await this.createNotification(controllerName, result);
         await this.activityLogService.createLog(
           ActivityLogType.SENDTIP,
-          result.from,
           result.id,
           ReferenceType.TRANSACTION,
         );
@@ -298,7 +417,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
           await this.metricService.userMetric(newPost.createdBy);
           await this.activityLogService.createLog(
             ActivityLogType.CREATEPOST,
-            newPost.createdBy,
             newPost.id,
             ReferenceType.POST,
           );
@@ -311,7 +429,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case ControllerType.COMMENT: {
         await this.activityLogService.createLog(
           ActivityLogType.CREATECOMMENT,
-          result.userId,
           result.id,
           ReferenceType.COMMENT,
         );
@@ -347,7 +464,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
           await this.createNotification(controllerName, result);
           await this.activityLogService.createLog(
             ActivityLogType.FRIENDREQUEST,
-            result.requestorId,
             result.requesteeId,
             ReferenceType.USER,
           );
@@ -365,6 +481,34 @@ export class CreateInterceptor implements Provider<Interceptor> {
         });
 
         return result;
+      }
+
+      case ControllerType.USERNETWORK: {
+        const {id, network, userId} = invocationCtx.args[2].data;
+        const ng = new NonceGenerator();
+        const newNonce = ng.generate();
+
+        await this.userRepository.updateById(userId, {nonce: newNonce});
+        await this.walletRepository.updateAll(
+          {primary: false},
+          {userId: userId},
+        );
+        await this.walletRepository.updateById(id, {
+          network: network,
+          primary: true,
+        });
+
+        return result;
+      }
+
+      case ControllerType.USERWALLET: {
+        const {userId} = invocationCtx.args[1].data;
+        const ng = new NonceGenerator();
+        const newNonce = ng.generate();
+
+        await this.userRepository.updateById(userId, {nonce: newNonce});
+
+        return invocationCtx.args[1].data;
       }
 
       case ControllerType.USERREPORT: {
@@ -410,12 +554,11 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.VOTE: {
-        const {_id: id, referenceId, type, userId} = result.value;
+        const {_id: id, referenceId, type} = result.value;
 
         await this.voteService.updateVoteCounter(result.value);
         await this.activityLogService.createLog(
           ActivityLogType.GIVEVOTE,
-          userId,
           referenceId,
           type,
         );

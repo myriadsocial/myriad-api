@@ -1,29 +1,19 @@
 import {authenticate} from '@loopback/authentication';
 import {intercept} from '@loopback/core';
-import {Count, CountSchema, Filter, repository} from '@loopback/repository';
-import {
-  del,
-  get,
-  getModelSchemaRef,
-  HttpErrors,
-  param,
-  patch,
-  post,
-  requestBody,
-} from '@loopback/rest';
-import {
-  DeleteInterceptor,
-  PaginationInterceptor,
-  UpdateInterceptor,
-} from '../interceptors';
-import {User, Wallet} from '../models';
-import {UserRepository} from '../repositories';
+import {Count, Filter, repository} from '@loopback/repository';
+import {get, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
+import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
+import {Credential, User, Wallet} from '../models';
+import {UserRepository, WalletRepository} from '../repositories';
+import {omit} from 'lodash';
 
 @authenticate('jwt')
 export class UserWalletController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -46,10 +36,11 @@ export class UserWalletController {
     return this.userRepository.wallets(id).find(filter);
   }
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/users/{id}/wallets', {
     responses: {
       '200': {
-        description: 'User model instance',
+        description: 'Connect new wallet',
         content: {'application/json': {schema: getModelSchemaRef(Wallet)}},
       },
     },
@@ -59,69 +50,21 @@ export class UserWalletController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Wallet, {
-            title: 'NewWalletInUser',
-            optional: ['userId'],
-            exclude: ['primary'],
-          }),
+          schema: getModelSchemaRef(Credential),
         },
       },
     })
-    wallet: Wallet,
-  ): Promise<Wallet> {
-    return this.userRepository.wallets(id).create(wallet);
-  }
-
-  @intercept(UpdateInterceptor.BINDING_KEY)
-  @patch('/users/{userId}/wallets/{walletId}', {
-    responses: {
-      '200': {
-        description: 'User.Wallet PATCH success count',
-        content: {'application/json': {schema: CountSchema}},
-      },
-    },
-  })
-  async patch(
-    @param.path.string('userId') userId: string,
-    @param.path.string('walletId') walletId: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Wallet, {
-            partial: true,
-            exclude: ['type', 'userId', 'platform'],
-          }),
-        },
-      },
-    })
-    wallet: Partial<Wallet>,
-  ): Promise<Count> {
-    return this.userRepository.wallets(userId).patch(wallet, {
-      id: walletId,
-    });
-  }
-
-  @intercept(DeleteInterceptor.BINDING_KEY)
-  @del('/users/{userId}/wallets/{walletId}', {
-    responses: {
-      '200': {
-        description: 'User.Wallet DELETE success count',
-        content: {'application/json': {schema: CountSchema}},
-      },
-    },
-  })
-  async delete(
-    @param.path.string('userId') userId: string,
-    @param.path.string('walletId') walletId: string,
-  ): Promise<Count> {
-    const wallets = await this.userRepository.wallets(userId).find({limit: 2});
-
-    if (wallets.length === 1) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You cannot remove your wallet!',
-      );
+    credential: Credential,
+  ): Promise<Wallet | Count> {
+    if (credential.data.updated) {
+      const {network, networks, primary} = credential.data;
+      return this.userRepository
+        .wallets(id)
+        .patch({network, networks, primary}, {id: credential.data.id});
     }
 
-    return this.userRepository.wallets(userId).delete({id: walletId});
+    return this.userRepository
+      .wallets(id)
+      .create(omit(credential.data, ['updated']));
   }
 }
