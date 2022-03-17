@@ -2,11 +2,11 @@ import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType, ReferenceType} from '../../enums';
 import {
-  Credential,
   DraftPost,
   Post,
   PostWithRelations,
   User,
+  UserWithRelations,
 } from '../../models';
 import {PlatformPost} from '../../models/platform-post.model';
 import {
@@ -37,12 +37,10 @@ import {
   givenUserRepository,
   setupApplication,
   givenActivityLogRepository,
-  givenAddress,
   givenOtherUser,
   deleteAllRepository,
+  givenAccesToken,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 import {EntityNotFoundError} from '@loopback/repository';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
@@ -60,8 +58,6 @@ describe('PostApplication', function () {
   let commentRepository: CommentRepository;
   let activityLogRepository: ActivityLogRepository;
   let user: User;
-  let nonce: number;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -81,7 +77,7 @@ describe('PostApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
+    token = await givenAccesToken(user);
   });
 
   after(async () => {
@@ -93,25 +89,10 @@ describe('PostApplication', function () {
     await activityLogRepository.deleteAll();
   });
 
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
-  });
-
   it('creates a post', async () => {
-    const myriadPost: Partial<DraftPost> = givenPost({createdBy: user.id});
+    const myriadPost: Partial<DraftPost> = givenPost({
+      createdBy: user.id.toString(),
+    });
     const response = await client
       .post('/posts')
       .set('Authorization', `Bearer ${token}`)
@@ -162,7 +143,7 @@ describe('PostApplication', function () {
         .expect(200);
 
       result.body.user.metric.totalPosts = 0;
-      persistedPost.user = user;
+      persistedPost.user = user as UserWithRelations;
 
       const expected = toJSON(persistedPost);
 
@@ -289,7 +270,7 @@ describe('PostApplication', function () {
           platform: PlatformType.MYRIAD,
         },
       );
-      postInProgress.user = anotherUser;
+      postInProgress.user = anotherUser as UserWithRelations;
 
       await client
         .get('/posts')

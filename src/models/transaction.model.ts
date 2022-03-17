@@ -1,7 +1,7 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {ReferenceType} from '../enums/reference-type.enum';
 import {Currency} from './currency.model';
-import {User} from './user.model';
+import {Wallet} from './wallet.model';
 
 @model({
   settings: {
@@ -86,32 +86,10 @@ export class Transaction extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'fromUser'},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => Wallet, {name: 'fromWallet'}, {required: true})
   from: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'toUser'},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => Wallet, {name: 'toWallet'}, {required: true})
   to: string;
 
   @belongsTo(() => Currency, {}, {required: true})

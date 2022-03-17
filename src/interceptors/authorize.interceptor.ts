@@ -18,6 +18,7 @@ import {
   UserRepository,
   UserSocialMediaRepository,
   VoteRepository,
+  WalletRepository,
 } from '../repositories';
 import {UserProfile, securityId} from '@loopback/security';
 import {
@@ -62,10 +63,12 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @inject(AuthenticationBindings.METADATA)
     public metadata: AuthenticationMetadata[],
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    public currentUser: UserProfile,
   ) {}
 
   /**
@@ -148,9 +151,10 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.CURRENCY:
       case ControllerType.TAG:
       case ControllerType.REPORT:
-      case ControllerType.PEOPLE:
+      case ControllerType.PEOPLE: {
         userId = this.admin(controllerName);
         break;
+      }
 
       case ControllerType.EXPERIENCEPOST:
         ({createdBy: userId} = await this.experienceRepository.findById(data));
@@ -217,13 +221,15 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         }
         break;
 
-      case ControllerType.USERDRAFTPOST:
       case ControllerType.STORAGE:
       case ControllerType.TIP:
       case ControllerType.USERACCOUNTSETTING:
+      case ControllerType.USERDRAFTPOST:
+      case ControllerType.USERNETWORK:
       case ControllerType.USERNOTIFICATIONSETTING:
       case ControllerType.USERLANGUAGESETTING:
       case ControllerType.USERREPORT:
+      case ControllerType.USERWALLET:
       case ControllerType.USER:
         userId = data;
         break;
@@ -247,20 +253,25 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERSOCIALMEDIA: {
-        if (typeof data === 'object') userId = data.publicKey;
-        else {
+        if (typeof data === 'object') {
+          const userSocialMedia = await this.walletRepository.user(
+            data.publicKey,
+          );
+          userId = userSocialMedia.id;
+        } else {
           ({userId} = await this.userSocialMediaRepository.findById(data));
         }
         break;
       }
 
-      case ControllerType.VOTE:
+      case ControllerType.VOTE: {
         if (typeof data === 'object') {
           userId = data.userId;
         } else {
           ({userId} = await this.voteRepository.findById(data));
         }
         break;
+      }
     }
 
     let error = false;

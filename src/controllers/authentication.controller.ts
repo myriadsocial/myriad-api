@@ -11,21 +11,58 @@ import {
 import {UserProfile} from '@loopback/security';
 import {RefreshGrant, TokenObject} from '../interfaces';
 import {RefreshTokenServiceBindings, TokenServiceBindings} from '../keys';
-import {Credential, User} from '../models';
-import {UserRepository} from '../repositories';
+import {Credential, User, UserWallet} from '../models';
+import {UserRepository, WalletRepository} from '../repositories';
 import {RefreshtokenService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
 import {AuthenticationInterceptor} from '../interceptors';
+import {pick} from 'lodash';
 
 export class AuthenticationController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
     @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
     protected refreshService: RefreshtokenService,
   ) {}
+
+  @get('/wallets/{id}/nonce', {
+    responses: {
+      '200': {
+        description: 'User nonce',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                nonce: {
+                  type: 'number',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getNonceByWallet(
+    @param.path.string('id') id: string,
+  ): Promise<{nonce: number}> {
+    const result = {nonce: 0};
+
+    try {
+      const user = await this.walletRepository.user(id);
+      result.nonce = user.nonce;
+    } catch {
+      // ignore
+    }
+
+    return result;
+  }
 
   @get('/users/{id}/nonce', {
     responses: {
@@ -46,13 +83,11 @@ export class AuthenticationController {
       },
     },
   })
-  async getNonce(
+  async getNonceByUser(
     @param.path.string('id') id: string,
   ): Promise<{nonce: number}> {
-    const user = await this.userRepository.findOne({where: {id}});
-
-    if (!user) return {nonce: 0};
-    return {nonce: user.nonce};
+    const {nonce} = await this.userRepository.findById(id);
+    return {nonce};
   }
 
   @get('/username/{username}')
@@ -95,30 +130,15 @@ export class AuthenticationController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(User, {
+          schema: getModelSchemaRef(UserWallet, {
             title: 'NewUser',
-            exclude: [
-              'profilePictureURL',
-              'bannerImageUrl',
-              'bio',
-              'defaultCurrency',
-              'websiteURL',
-              'metric',
-              'fcmTokens',
-              'onTimeline',
-              'verified',
-              'nonce',
-              'permissions',
-              'createdAt',
-              'updatedAt',
-              'deletedAt',
-            ],
           }),
         },
       },
     })
-    user: User,
+    userWallet: UserWallet,
   ): Promise<User> {
+    const user = pick(userWallet, ['name', 'username']);
     return this.userRepository.create(user);
   }
 

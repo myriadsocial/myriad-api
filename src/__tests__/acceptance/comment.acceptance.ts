@@ -1,14 +1,7 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {ReferenceType, NotificationType} from '../../enums';
-import {
-  Comment,
-  Credential,
-  Notification,
-  People,
-  Post,
-  User,
-} from '../../models';
+import {Comment, Notification, People, Post, User} from '../../models';
 import {
   ActivityLogRepository,
   CommentRepository,
@@ -22,8 +15,8 @@ import {
 } from '../../repositories';
 import {
   deleteAllRepository,
+  givenAccesToken,
   givenActivityLogRepository,
-  givenAddress,
   givenComment,
   givenCommentInstance,
   givenCommentRepository,
@@ -43,8 +36,6 @@ import {
   givenUserSocialMediaRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('CommentApplication', function () {
@@ -65,8 +56,6 @@ describe('CommentApplication', function () {
   let post: Post;
   let people: People;
   let otherUser: User;
-  let nonce: number;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -86,8 +75,6 @@ describe('CommentApplication', function () {
     notificationSettingRepository = await givenNotificationSettingRepository(
       app,
     );
-
-    address = givenAddress();
   });
 
   beforeEach(async () => {
@@ -104,8 +91,10 @@ describe('CommentApplication', function () {
 
   beforeEach(async () => {
     user = await givenUserInstance(userRepository);
+    token = await givenAccesToken(user);
     otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61841',
+      name: 'John Doe',
+      username: 'johndoe',
     });
     people = await givenPeopleInstance(peopleRepository);
     post = await givenPostInstance(postRepository, {
@@ -122,26 +111,9 @@ describe('CommentApplication', function () {
     await deleteAllRepository(app);
   });
 
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
-  });
-
   it('creates a comment', async () => {
     const comment = givenComment({
-      userId: user.id,
+      userId: user.id.toString(),
       postId: post.id.toString(),
       referenceId: post.id.toString(),
       type: ReferenceType.POST,
@@ -159,7 +131,7 @@ describe('CommentApplication', function () {
 
   it('creates a notification when creating a comment', async () => {
     const comment = givenComment({
-      userId: user.id,
+      userId: user.id.toString(),
       postId: post.id.toString(),
       referenceId: post.id.toString(),
       type: ReferenceType.POST,
@@ -176,8 +148,8 @@ describe('CommentApplication', function () {
     const expected = new Notification({
       id: notification?.id,
       type: NotificationType.POST_COMMENT,
-      from: user.id,
-      to: otherUser.id,
+      from: user.id.toString(),
+      to: otherUser.id.toString(),
       read: false,
       referenceId: response.body.id,
       message: 'commented: ' + comment.text,
@@ -255,7 +227,7 @@ describe('CommentApplication', function () {
     expect(resultPost).to.containDeep({...post, id: post.id.toString()});
   });
 
-  it('returns 422 when creates a comment not as login user', async () => {
+  it('returns 401 when creates a comment not as login user', async () => {
     const comment = givenComment({
       postId: post.id,
       referenceId: post.id,
@@ -268,20 +240,6 @@ describe('CommentApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .send(comment)
       .expect(401);
-  });
-
-  it('returns 422 when creates a comment with no userId', async () => {
-    const comment = givenComment({
-      postId: post.id,
-      referenceId: post.id,
-      type: ReferenceType.POST,
-    });
-
-    await client
-      .post('/comments')
-      .set('Authorization', `Bearer ${token}`)
-      .send(comment)
-      .expect(422);
   });
 
   it('returns 422 when created a comment with no referenceId and no type', async () => {

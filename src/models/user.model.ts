@@ -20,6 +20,7 @@ import {People} from './people.model';
 import {UserSocialMedia} from './user-social-media.model';
 import {ExperienceWithRelations} from './experience.model';
 import {LanguageSetting} from './language-setting.model';
+import {Wallet, WalletWithRelations} from './wallet.model';
 import NonceGenerator from 'a-nonce-generator';
 
 @model({
@@ -41,12 +42,9 @@ export class User extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: false,
-    required: true,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
+    generated: true,
+    mongodb: {
+      dataType: 'ObjectId',
     },
   })
   id: string;
@@ -70,7 +68,7 @@ export class User extends Entity {
       maxLength: 16,
     },
   })
-  username?: string;
+  username: string;
 
   @property({
     type: 'string',
@@ -200,6 +198,9 @@ export class User extends Entity {
   @hasMany(() => People, {through: {model: () => UserSocialMedia}})
   people: People[];
 
+  @hasMany(() => Wallet)
+  wallets: Wallet[];
+
   @belongsTo(
     () => Currency,
     {name: 'currency'},
@@ -207,7 +208,7 @@ export class User extends Entity {
   )
   defaultCurrency: string;
 
-  @belongsTo(() => Experience, {name: 'experience'})
+  @belongsTo(() => Experience, {name: 'experience'}, {type: 'string'})
   onTimeline: string;
 
   constructor(data?: Partial<User>) {
@@ -218,6 +219,7 @@ export class User extends Entity {
 export interface UserRelations {
   // describe navigational properties here
   experience?: ExperienceWithRelations;
+  wallets?: WalletWithRelations;
 }
 
 export type UserWithRelations = User & UserRelations;

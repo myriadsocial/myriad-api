@@ -1,4 +1,5 @@
 import {AnyObject, Model, model, property} from '@loopback/repository';
+import {NetworkType, WalletType} from '../enums';
 
 @model()
 export class Credential extends Model {
@@ -11,11 +12,6 @@ export class Credential extends Model {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
-    },
   })
   publicAddress: string;
 
@@ -26,10 +22,28 @@ export class Credential extends Model {
   signature: string;
 
   @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      enum: Object.values(WalletType),
+    },
+  })
+  walletType: WalletType;
+
+  @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      enum: Object.values(NetworkType),
+    },
+  })
+  networkType: NetworkType;
+
+  @property({
     type: 'object',
     required: false,
   })
-  data?: AnyObject;
+  data: AnyObject;
 
   constructor(data?: Partial<Credential>) {
     super(data);

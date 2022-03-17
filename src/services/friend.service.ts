@@ -5,7 +5,7 @@ import {Friend, FriendWithRelations, Post} from '../models';
 import {
   AccountSettingRepository,
   FriendRepository,
-  UserRepository,
+  WalletRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 import {Filter} from '@loopback/repository';
@@ -19,8 +19,8 @@ export class FriendService {
     protected accountSettingRepository: AccountSettingRepository,
     @repository(FriendRepository)
     public friendRepository: FriendRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
   ) {}
 
   async validatePendingFriendRequest(
@@ -96,7 +96,8 @@ export class FriendService {
       );
     }
 
-    if (requesteeId === config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY) {
+    const myriadUserId = await this.getMyriadUserId();
+    if (requesteeId === myriadUserId) {
       throw new HttpErrors.UnprocessableEntity(
         'You cannot blocked myriad official',
       );
@@ -151,7 +152,8 @@ export class FriendService {
         );
       }
 
-      if (requestor.id !== config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY) {
+      const myriadUserId = await this.getMyriadUserId();
+      if (requestor.id !== myriadUserId) {
         await this.friendRepository.create({
           requesteeId: requestor.id,
           requestorId: requestee.id,
@@ -221,17 +223,18 @@ export class FriendService {
   }
 
   async defaultFriend(userId: string): Promise<void> {
+    const myriadUserId = await this.getMyriadUserId();
     await this.friendRepository.create({
       status: FriendStatusType.APPROVED,
       requestorId: userId,
-      requesteeId: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+      requesteeId: myriadUserId,
     });
   }
 
   async removedFriend(friend: Friend): Promise<AnyObject> {
     const {requesteeId, requestorId} = friend;
-
-    if (requesteeId === config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY) {
+    const myriadUserId = await this.getMyriadUserId();
+    if (requesteeId === myriadUserId) {
       throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
     }
 
@@ -329,5 +332,11 @@ export class FriendService {
         ])
         .get()
     ).map((user: AnyObject) => user._id);
+  }
+
+  async getMyriadUserId(): Promise<string> {
+    const publicAddress = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
+    const wallet = await this.walletRepository.findById(publicAddress);
+    return wallet.userId;
   }
 }

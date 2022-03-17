@@ -84,32 +84,10 @@ export class Friend extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'requestee'},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => User, {name: 'requestee'}, {required: true})
   requesteeId: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'requestor'},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => User, {name: 'requestor'}, {required: true})
   requestorId: string;
 
   constructor(data?: Partial<Friend>) {

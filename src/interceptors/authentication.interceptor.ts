@@ -15,14 +15,17 @@ import {
   PermissionKeys,
   ReferenceType,
 } from '../enums';
-import {Credential} from '../models';
-import {UserRepository} from '../repositories';
-import {ActivityLogService, CurrencyService, FriendService} from '../services';
-import {numberToHex} from '@polkadot/util';
-import {signatureVerify} from '@polkadot/util-crypto';
+import {Credential, UserWallet, Wallet} from '../models';
+import {
+  ActivityLogRepository,
+  UserRepository,
+  WalletRepository,
+} from '../repositories';
+import {CurrencyService, FriendService} from '../services';
 import {securityId, UserProfile} from '@loopback/security';
-import {intersection} from 'lodash';
+import {assign, intersection} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
+import {validateAccount} from '../utils/validate-account';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -33,10 +36,12 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${AuthenticationInterceptor.name}`;
 
   constructor(
-    @service(ActivityLogService)
-    protected activityLogService: ActivityLogService,
+    @repository(ActivityLogRepository)
+    protected activityLogRepository: ActivityLogRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
     @service(FriendService)
@@ -76,19 +81,33 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
-      const {id, name, username} = invocationCtx.args[0];
-      const user = await this.userRepository.findOne({
-        where: {
-          or: [{id}, {username}],
-        },
+      const {name, username, ...wallet} = invocationCtx.args[0] as UserWallet;
+      const exist = await this.walletRepository.exists(wallet.address);
+
+      if (exist)
+        throw new HttpErrors.UnprocessableEntity(
+          'Wallet address already exists',
+        );
+
+      const foundUser = await this.userRepository.findOne({
+        where: {username},
       });
 
-      if (user) throw new HttpErrors.UnprocessableEntity('User already exists');
+      if (foundUser)
+        throw new HttpErrors.UnprocessableEntity('User already exists');
 
+      this.validateWalletAddress(wallet.address);
       this.validateUsername(username);
 
       invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
         name: name.substring(0, 22),
+      });
+      invocationCtx.args[1] = new Wallet({
+        id: wallet.address,
+        type: wallet.type,
+        network: wallet.network,
+        networks: [wallet.network],
+        primary: true,
       });
 
       return;
@@ -96,25 +115,34 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     try {
       // Verify login process
-      const {nonce, signature, publicAddress} = invocationCtx
-        .args[0] as Credential;
+      const credential = invocationCtx.args[0] as Credential;
+      const {nonce, networkType} = credential;
+      const [publicAddress, nearAccount] = credential.publicAddress.split('/');
 
-      if (nonce === 0 || !nonce) throw new Error('Invalid user!');
+      if (nonce === 0 || !nonce) throw new Error('Invalid nonce!');
 
-      const {isValid} = signatureVerify(
-        numberToHex(nonce),
-        signature,
-        publicAddress,
-      );
+      const wallet = await this.walletRepository.findOne({
+        where: {
+          id: nearAccount ?? publicAddress,
+          networks: {inq: [[networkType]]},
+        },
+        include: ['user'],
+      });
 
-      if (!isValid) {
-        throw new Error('Invalid user!');
+      const user = wallet?.user;
+
+      if (!user) {
+        throw new Error('Wallet address not exists!');
       }
 
-      const user = await this.userRepository.findById(publicAddress);
-
       if (user.nonce !== nonce) {
-        throw new Error('Invalid user!');
+        throw new Error('Invalid nonce!');
+      }
+
+      const verified = validateAccount(assign(credential, {publicAddress}));
+
+      if (!verified) {
+        throw new Error('Failed to verified!');
       }
 
       if (methodName === MethodType.ADMINLOGIN) {
@@ -142,6 +170,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         username: user.username,
         createdAt: user.createdAt,
         permissions: user.permissions,
+        publicAddress: wallet.id,
+        network: networkType,
       };
 
       invocationCtx.args[0].data = userProfile;
@@ -159,27 +189,70 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     if (methodName === MethodType.SIGNUP) {
+      const wallet = invocationCtx.args[1] as Wallet;
       Promise.allSettled([
         this.userRepository.accountSetting(result.id).create({}),
         this.userRepository.notificationSetting(result.id).create({}),
         this.userRepository.languageSetting(result.id).create({}),
-        this.currencyService.sendMyriadReward(result.id),
-        this.friendService.defaultFriend(result.id),
+        this.userRepository.wallets(result.id).create(wallet),
+        this.currencyService.sendMyriadReward(wallet.id),
         this.currencyService.defaultCurrency(result.id),
-        this.activityLogService.createLog(
-          ActivityLogType.NEWUSER,
-          result.id,
-          result.id,
-          ReferenceType.USER,
-        ),
+        this.friendService.defaultFriend(result.id),
+        this.activityLogRepository.create({
+          type: ActivityLogType.NEWUSER,
+          userId: result.id,
+          referenceId: result.id,
+          referenceType: ReferenceType.USER,
+        }),
       ]) as Promise<AnyObject>;
     } else {
       // Generate random nonce after login
-      const {publicAddress} = invocationCtx.args[0];
+      const {id, publicAddress, network} = invocationCtx.args[0].data;
       const ng = new NonceGenerator();
       const newNonce = ng.generate();
 
-      await this.userRepository.updateById(publicAddress, {nonce: newNonce});
+      await this.userRepository.updateById(id, {nonce: newNonce});
+      await this.walletRepository.updateById(publicAddress, {
+        primary: true,
+        network,
+      });
+    }
+  }
+
+  validateWalletAddress(id: string): void {
+    if (id.length === 66) {
+      if (!id.startsWith('0x')) {
+        throw new HttpErrors.UnprocessableEntity('Invalid polkadot address');
+      }
+
+      return;
+    } else if (id.length === 42) {
+      if (!id.startsWith('0x')) {
+        throw new HttpErrors.UnprocessableEntity('Invalid ethereum address');
+      }
+
+      return;
+    } else {
+      let nearId = '';
+      let nearStatus = false;
+
+      if (id.endsWith('.near')) {
+        nearId = id.split('.near')[0];
+        nearStatus = true;
+      } else if (id.endsWith('.testnet')) {
+        nearId = id.split('.testnet')[0];
+        nearStatus = true;
+      }
+
+      if (!nearStatus) {
+        throw new HttpErrors.UnprocessableEntity('Invalid near id');
+      }
+
+      if (!nearId.match('^[a-z0-9_-]+$')) {
+        throw new HttpErrors.UnprocessableEntity(
+          'Only allowed ascii letter (a-z), number (0-9), dash(-) and underscore(_)',
+        );
+      }
     }
   }
 

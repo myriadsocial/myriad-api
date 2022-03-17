@@ -252,6 +252,20 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
         break;
       }
+
+      case ControllerType.USERWALLET: {
+        const [userId, credential] = invocationCtx.args;
+        const {
+          data: {id, network},
+        } = credential;
+
+        await this.userRepository.wallets(userId).patch({primary: false});
+        await this.userRepository
+          .wallets(userId)
+          .patch({primary: true}, {id, network});
+
+        break;
+      }
     }
   }
 
@@ -267,7 +281,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       await this.activityLogService.createLog(
         ActivityLogType.UPLOADPROFILEPICTURE,
         userId,
-        userId,
         ReferenceType.USER,
       );
     }
@@ -276,7 +289,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       await this.activityLogService.createLog(
         ActivityLogType.UPLOADBANNER,
         userId,
-        userId,
         ReferenceType.USER,
       );
     }
@@ -284,7 +296,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     if (user.bio) {
       await this.activityLogService.createLog(
         ActivityLogType.FILLBIO,
-        userId,
         userId,
         ReferenceType.USER,
       );

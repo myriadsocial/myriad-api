@@ -1,6 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {Credential, User, UserExperience} from '../../models';
+import {User, UserExperience} from '../../models';
 import {
   ExperienceRepository,
   UserExperienceRepository,
@@ -9,7 +9,6 @@ import {
 import {
   deleteAllRepository,
   givenAccesToken,
-  givenAddress,
   givenExperience,
   givenExperienceInstance,
   givenExperienceRepository,
@@ -22,8 +21,6 @@ import {
   givenUserRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserExperienceApplication', function () {
@@ -35,10 +32,8 @@ describe('UserExperienceApplication', function () {
   let experienceRepository: ExperienceRepository;
   let userRepository: UserRepository;
   let userExperienceRepository: UserExperienceRepository;
-  let nonce: number;
   let user: User;
   let otherUser: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -54,8 +49,8 @@ describe('UserExperienceApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
+    token = await givenAccesToken(user);
   });
 
   beforeEach(async () => {
@@ -65,23 +60,6 @@ describe('UserExperienceApplication', function () {
 
   after(async () => {
     await deleteAllRepository(app);
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted userExperience', () => {
@@ -142,8 +120,7 @@ describe('UserExperienceApplication', function () {
         {
           subscribed: true,
           experienceId: '3',
-          userId:
-            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6184z',
+          userId: '9999',
         },
       );
 
@@ -154,8 +131,7 @@ describe('UserExperienceApplication', function () {
           'filter=' +
             JSON.stringify({
               where: {
-                userId:
-                  '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee6184z',
+                userId: '9999',
               },
             }),
         )
@@ -209,7 +185,7 @@ describe('UserExperienceApplication', function () {
     it('subscribes other user experience', async () => {
       const experience = await givenExperienceInstance(experienceRepository);
       const userExperience = givenUserExperience({
-        userId: user.id,
+        userId: user.id.toString(),
         experienceId: experience.id?.toString(),
         subscribed: true,
       });
@@ -236,6 +212,7 @@ describe('UserExperienceApplication', function () {
 
       const expected = {
         ...user,
+        id: user.id.toString(),
         onTimeline: response.body.experienceId.toString(),
         metric: {
           totalPosts: 0,
@@ -245,9 +222,10 @@ describe('UserExperienceApplication', function () {
         },
       };
 
-      const result = await userRepository.findById(user.id);
+      const result = await userRepository.findById(user.id.toString());
       result.nonce = user.nonce;
       result.onTimeline = result.onTimeline.toString();
+      result.id = result.id.toString();
 
       expect(result).to.containDeep(expected);
     });
@@ -323,7 +301,7 @@ describe('UserExperienceApplication', function () {
     });
 
     it('creates an experience and store it in userExperience list', async () => {
-      const experience = givenExperience({createdBy: user.id});
+      const experience = givenExperience({createdBy: user.id.toString()});
       const response = await client
         .post(`/users/${user.id}/experiences`)
         .set('Authorization', `Bearer ${token}`)
@@ -337,15 +315,15 @@ describe('UserExperienceApplication', function () {
 
       const resulUserExperience = await userExperienceRepository.findOne({
         where: {
-          userId: user.id,
-          experienceId: response.body.id,
+          userId: user.id.toString(),
+          experienceId: response.body.id.toString(),
           subscribed: false,
         },
       });
 
       expect(resulUserExperience).to.containDeep({
-        userId: user.id,
-        experienceId: result.id,
+        userId: user.id.toString(),
+        experienceId: result.id?.toString(),
         subscribed: false,
       });
     });
@@ -360,6 +338,7 @@ describe('UserExperienceApplication', function () {
 
       const expected = {
         ...user,
+        id: user.id.toString(),
         onTimeline: response.body.id.toString(),
         metric: {
           totalPosts: 0,

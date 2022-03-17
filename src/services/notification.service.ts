@@ -7,12 +7,12 @@ import {
   ReferenceType,
   ReportStatusType,
 } from '../enums';
-import {ExtendedPeople} from '../interfaces';
 import {
   Comment,
   MentionUser,
   Notification,
   PostWithRelations,
+  People,
   Transaction,
   UserSocialMedia,
   Vote,
@@ -27,6 +27,7 @@ import {
   UserReportRepository,
   UserRepository,
   UserSocialMediaRepository,
+  WalletRepository,
 } from '../repositories';
 import {FCMService} from './fcm.service';
 import {UserProfile, securityId} from '@loopback/security';
@@ -53,6 +54,8 @@ export class NotificationService {
     public userReportRepository: UserReportRepository,
     @repository(NotificationSettingRepository)
     public notificationSettingRepository: NotificationSettingRepository,
+    @repository(WalletRepository)
+    public walletRepository: WalletRepository,
     @service(FCMService)
     public fcmService: FCMService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -186,8 +189,9 @@ export class NotificationService {
 
     if (reporters.length === 0) return;
 
+    const myriadUserId = await this.getMyriadUserId();
     const notification = new Notification({
-      from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+      from: myriadUserId,
       message: 'approved your report',
     });
 
@@ -268,8 +272,9 @@ export class NotificationService {
 
     if (status !== ReportStatusType.REMOVED) return;
 
+    const myriadUserId = await this.getMyriadUserId();
     const notification = new Notification({
-      from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+      from: myriadUserId,
     });
 
     switch (referenceType) {
@@ -517,9 +522,10 @@ export class NotificationService {
 
   async sendTipsSuccess(transaction: Transaction): Promise<void> {
     const {to, type, referenceId} = transaction;
+    const toUser = await this.walletRepository.user(to);
 
     const tipsActive = await this.checkNotificationSetting(
-      to,
+      toUser.id,
       NotificationType.POST_TIPS,
     );
     if (!tipsActive) return;
@@ -568,23 +574,25 @@ export class NotificationService {
     const title = 'Send Tips Success';
     const body = this.currentUser.name + ' ' + notification.message;
 
-    await this.sendNotificationToUser(notification, to, title, body);
+    await this.sendNotificationToUser(notification, toUser.id, title, body);
 
     return;
   }
 
   async sendRewardSuccess(transaction: Transaction): Promise<void> {
     const {from, to} = transaction;
+    const fromUser = await this.walletRepository.user(from);
+    const toUser = await this.walletRepository.user(to);
 
     const tipsActive = await this.checkNotificationSetting(
-      to,
+      toUser.id,
       NotificationType.POST_TIPS,
     );
     if (!tipsActive) return;
 
     const notification = new Notification({
       type: NotificationType.USER_REWARD,
-      from: from,
+      from: fromUser.id,
       referenceId: transaction.id,
       message: transaction.amount + ' ' + transaction.currencyId,
     });
@@ -592,17 +600,19 @@ export class NotificationService {
     const title = 'Send Reward Success';
     const body = 'Myriad Official' + ' ' + notification.message;
 
-    await this.sendNotificationToUser(notification, to, title, body);
+    await this.sendNotificationToUser(notification, toUser.id, title, body);
 
     return;
   }
 
   async sendInitialTips(transaction: Transaction): Promise<void> {
     const {from, to} = transaction;
+    const fromUser = await this.walletRepository.user(from);
+    const toUser = await this.walletRepository.user(to);
 
     const notification = new Notification({
       type: NotificationType.USER_INITIAL_TIPS,
-      from: from,
+      from: fromUser.id,
       referenceId: transaction.id,
       message: transaction.amount + ' ' + transaction.currencyId,
     });
@@ -610,23 +620,25 @@ export class NotificationService {
     const title = `Send Initial ${transaction.currencyId} Success`;
     const body = 'Myriad Official' + ' ' + notification.message;
 
-    await this.sendNotificationToUser(notification, to, title, body);
+    await this.sendNotificationToUser(notification, toUser.id, title, body);
 
     return;
   }
 
   async sendClaimTips(transaction: Transaction): Promise<boolean> {
     const {to} = transaction;
+    const toUser = await this.walletRepository.user(to);
 
     const tipsActive = await this.checkNotificationSetting(
-      to,
+      toUser.id,
       NotificationType.POST_TIPS,
     );
     if (!tipsActive) return false;
 
+    const myriadUserId = await this.getMyriadUserId();
     const notification = new Notification({
       type: NotificationType.USER_CLAIM_TIPS,
-      from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
+      from: myriadUserId,
       referenceId: transaction.id,
       message: transaction.amount + ' ' + transaction.currencyId,
     });
@@ -634,14 +646,14 @@ export class NotificationService {
     const title = 'Send Claim Tips Success';
     const body = 'You ' + notification.message;
 
-    await this.sendNotificationToUser(notification, to, title, body);
+    await this.sendNotificationToUser(notification, toUser.id, title, body);
 
     return true;
   }
 
   async sendConnectedSocialMedia(
     userSocialMedia: UserSocialMedia,
-    people: ExtendedPeople,
+    people: People,
   ) {
     const {userId, platform} = userSocialMedia;
 
@@ -855,5 +867,11 @@ export class NotificationService {
     }
 
     return true;
+  }
+
+  async getMyriadUserId(): Promise<string> {
+    const publicAddress = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
+    const user = await this.walletRepository.user(publicAddress);
+    return user.id;
   }
 }

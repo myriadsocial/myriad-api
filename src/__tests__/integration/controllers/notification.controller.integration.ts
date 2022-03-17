@@ -29,15 +29,13 @@ describe('NotificationControllerIntegration', () => {
   });
 
   it('includes fromUserId in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     const notification = await givenNotificationInstance(
       notificationRepository,
       {
         from: user.id,
-        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+        to: '9999',
       },
     );
 
@@ -52,14 +50,12 @@ describe('NotificationControllerIntegration', () => {
   });
 
   it('includes toUserId in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const notification = await givenNotificationInstance(
       notificationRepository,
       {
         to: user.id,
-        from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+        from: '9999',
       },
     );
     const response = await controller.find({include: ['toUserId']});
@@ -73,11 +69,9 @@ describe('NotificationControllerIntegration', () => {
   });
 
   it('includes both fromUserId and toUserId in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      username: 'johndoe',
     });
     const notification = await givenNotificationInstance(
       notificationRepository,
@@ -100,15 +94,13 @@ describe('NotificationControllerIntegration', () => {
   });
 
   it('includes fromUserId in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     const notification = await givenNotificationInstance(
       notificationRepository,
       {
         from: user.id,
-        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+        to: '9999',
       },
     );
 
@@ -123,14 +115,12 @@ describe('NotificationControllerIntegration', () => {
   });
 
   it('includes toUserId in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const notification = await givenNotificationInstance(
       notificationRepository,
       {
         to: user.id,
-        from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+        from: '9999',
       },
     );
 
@@ -145,11 +135,9 @@ describe('NotificationControllerIntegration', () => {
   });
 
   it('includes both fromUserId and toUserId in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      username: 'johndoe',
     });
     const notification = await givenNotificationInstance(
       notificationRepository,

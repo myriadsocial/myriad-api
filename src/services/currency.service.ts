@@ -6,6 +6,7 @@ import {ActivityLogType, DefaultCurrencyType, ReferenceType} from '../enums';
 import {Balance, PaymentInfo} from '../interfaces';
 import {Currency, UserSocialMedia} from '../models';
 import {
+  ActivityLogRepository,
   CurrencyRepository,
   PeopleRepository,
   QueueRepository,
@@ -13,13 +14,13 @@ import {
   UserCurrencyRepository,
   UserRepository,
   UserSocialMediaRepository,
+  WalletRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {HttpErrors} from '@loopback/rest';
 import {BcryptHasher} from './authentication/hash.password.service';
 import {NotificationService} from './notification.service';
 import {TransactionService} from './transaction.service';
-import {ActivityLogService} from './activity-log.service';
 import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
 import {BN} from '@polkadot/util';
@@ -28,6 +29,8 @@ import {CoinMarketCap} from './coin-market-cap.service';
 @injectable({scope: BindingScope.TRANSIENT})
 export class CurrencyService {
   constructor(
+    @repository(ActivityLogRepository)
+    protected activityLogRepository: ActivityLogRepository,
     @repository(CurrencyRepository)
     public currencyRepository: CurrencyRepository,
     @repository(UserCurrencyRepository)
@@ -42,12 +45,12 @@ export class CurrencyService {
     protected transactionRepository: TransactionRepository,
     @repository(QueueRepository)
     protected queueRepository: QueueRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(TransactionService)
     protected transactionService: TransactionService,
     @service(NotificationService)
     protected notificationService: NotificationService,
-    @service(ActivityLogService)
-    protected activityLogService: ActivityLogService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
     @inject('services.CoinMarketCap')
@@ -85,7 +88,8 @@ export class CurrencyService {
     }
   }
 
-  async sendMyriadReward(userId: string): Promise<void> {
+  async sendMyriadReward(address: string): Promise<void> {
+    if (!address.startsWith('0x') && address.length !== 66) return;
     if (!config.MYRIAD_REWARD_AMOUNT) return;
     if (config.MYRIAD_REWARD_AMOUNT === 0) return;
 
@@ -98,7 +102,7 @@ export class CurrencyService {
 
       const mnemonic = config.MYRIAD_FAUCET_MNEMONIC;
       const from = getKeyring().addFromMnemonic(mnemonic);
-      const to = userId;
+      const to = address;
 
       const rewardAmount = config.MYRIAD_REWARD_AMOUNT * 10 ** myriadDecimal;
 
@@ -240,9 +244,18 @@ export class CurrencyService {
           currencyId: id,
         });
 
-        await this.notificationService.sendClaimTips(transaction);
+        const user = await this.walletRepository.user(to);
+        await Promise.allSettled([
+          this.notificationService.sendClaimTips(transaction),
+          this.activityLogRepository.create({
+            type: ActivityLogType.CLAIMTIP,
+            userId: user.id,
+            referenceId: transaction.id ?? '',
+            referenceType: ReferenceType.TRANSACTION,
+          }),
+        ]);
       }
-    } catch (err) {
+    } catch {
       // ignore
     }
   }
@@ -409,15 +422,17 @@ export class CurrencyService {
           currencyId: id,
         });
 
-        await this.activityLogService.createLog(
-          ActivityLogType.CLAIMTIP,
-          to,
-          transaction.id ?? '',
-          ReferenceType.TRANSACTION,
-        );
-
         try {
-          await this.notificationService.sendClaimTips(transaction);
+          const user = await this.walletRepository.user(to);
+          await Promise.allSettled([
+            this.notificationService.sendClaimTips(transaction),
+            this.activityLogRepository.create({
+              type: ActivityLogType.CLAIMTIP,
+              userId: user.id,
+              referenceId: transaction.id ?? '',
+              referenceType: ReferenceType.TRANSACTION,
+            }),
+          ]);
         } catch {
           // ignore
         }

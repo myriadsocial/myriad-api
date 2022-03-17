@@ -16,6 +16,7 @@ import {
   UserSocialMediaService,
 } from '../../services';
 import {givenUserSocialMedia} from '../helpers';
+import {securityId} from '@loopback/security';
 
 describe('UserSocialMediaController', () => {
   let userSocialMediaRepository: StubbedInstanceWithSinonAccessor<UserSocialMediaRepository>;
@@ -97,6 +98,7 @@ describe('UserSocialMediaController', () => {
       peopleRepository,
       notificationService,
       activityLogService,
+      {[securityId]: ''},
     );
     controller = new UserSocialMediaController(
       socialMediaService,

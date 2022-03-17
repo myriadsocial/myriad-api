@@ -54,11 +54,11 @@ export class UserSocialMediaController {
   ): Promise<UserSocialMedia> {
     const {publicKey, platform, username} = userVerification;
 
-    let platformUser = null;
+    let people = null;
 
     switch (platform) {
       case PlatformType.TWITTER:
-        platformUser = await this.socialMediaService.verifyToTwitter(
+        people = await this.socialMediaService.verifyToTwitter(
           username,
           publicKey,
         );
@@ -66,7 +66,7 @@ export class UserSocialMediaController {
         break;
 
       case PlatformType.REDDIT:
-        platformUser = await this.socialMediaService.verifyToReddit(
+        people = await this.socialMediaService.verifyToReddit(
           username,
           publicKey,
         );
@@ -77,21 +77,17 @@ export class UserSocialMediaController {
         throw new HttpErrors.NotFound('Platform does not exist');
     }
 
-    const userSocialMedia = await this.userSocialMediaService.createSocialMedia(
-      platformUser,
+    const socialMedia = await this.userSocialMediaService.createSocialMedia(
+      people,
     );
 
     await Promise.allSettled([
-      this.notificationService.sendConnectedSocialMedia(
-        userSocialMedia,
-        platformUser,
-      ),
+      this.notificationService.sendConnectedSocialMedia(socialMedia, people),
     ]);
 
-    return userSocialMedia;
+    return socialMedia;
   }
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/user-social-medias')
   @response(200, {

@@ -53,9 +53,7 @@ describe('PostControllerIntegration', () => {
   });
 
   it('includes User in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const post = await givenPostInstance(postRepository, {createdBy: user.id});
     const response = await controller.getTimeline({include: ['user']});
 
@@ -86,8 +84,7 @@ describe('PostControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       type: ReferenceType.POST,
       referenceId: post.id,
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId: '9999',
       postId: post.id,
     });
 
@@ -137,9 +134,7 @@ describe('PostControllerIntegration', () => {
   });
 
   it('includes User, People, Comment, votes, and Transaction in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const people = await givenPeopleInstance(peopleRepository);
     const post = await givenPostInstance(postRepository, {
       peopleId: people.id,
@@ -157,8 +152,7 @@ describe('PostControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       type: ReferenceType.POST,
       referenceId: post.id,
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId: '9999',
       postId: post.id,
     });
 
@@ -179,9 +173,7 @@ describe('PostControllerIntegration', () => {
   });
 
   it('includes User in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const post = await givenPostInstance(postRepository, {createdBy: user.id});
     const response = await controller.findById(post.id, {include: ['user']});
 
@@ -208,8 +200,7 @@ describe('PostControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       type: ReferenceType.POST,
       referenceId: post.id,
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId: '9999',
       postId: post.id,
     });
 
@@ -257,9 +248,7 @@ describe('PostControllerIntegration', () => {
   });
 
   it('includes User, People, Comment, votes, and Transaction in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const people = await givenPeopleInstance(peopleRepository);
     const post = await givenPostInstance(postRepository, {
       peopleId: people.id,
@@ -277,8 +266,7 @@ describe('PostControllerIntegration', () => {
     const comment = await givenCommentInstance(commentRepository, {
       type: ReferenceType.POST,
       referenceId: post.id,
-      userId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
+      userId: '9999',
       postId: post.id,
     });
 

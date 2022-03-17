@@ -29,5 +29,6 @@ export * from './user-refresh-token.model';
 export * from './user-report.model';
 export * from './user-social-media.model';
 export * from './user-verification.model';
+export * from './user-wallet.model';
 export * from './vote.model';
 export * from './wallet.model';

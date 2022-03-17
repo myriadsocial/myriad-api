@@ -1,26 +1,28 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
-import {Credential, Currency, Transaction, User} from '../../models';
+import {Currency, Transaction, User} from '../../models';
 import {
   CurrencyRepository,
   TransactionRepository,
   UserRepository,
+  WalletRepository,
 } from '../../repositories';
 import {
   deleteAllRepository,
-  givenAddress,
+  givenAccesToken,
   givenCurrencyInstance,
   givenCurrencyRepository,
+  givenOtherUser,
   givenTransaction,
   givenTransactionInstance,
   givenTransactionRepository,
   givenUserInstance,
   givenUserRepository,
+  givenWalletInstance,
+  givenWalletRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('TransactionApplication', function () {
   let app: MyriadApiApplication;
@@ -29,10 +31,9 @@ describe('TransactionApplication', function () {
   let userRepository: UserRepository;
   let currencyRepository: CurrencyRepository;
   let transactionRepository: TransactionRepository;
+  let walletRepository: WalletRepository;
   let currency: Currency;
-  let nonce: number;
   let user: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -44,11 +45,12 @@ describe('TransactionApplication', function () {
     userRepository = await givenUserRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     transactionRepository = await givenTransactionRepository(app);
+    walletRepository = await givenWalletRepository(app);
   });
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
+    token = await givenAccesToken(user);
   });
 
   before(async () => {
@@ -61,23 +63,6 @@ describe('TransactionApplication', function () {
 
   beforeEach(async () => {
     await transactionRepository.deleteAll();
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   it('creates a transaction', async function () {
@@ -154,10 +139,7 @@ describe('TransactionApplication', function () {
     let otherUser: User;
 
     before(async () => {
-      otherUser = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
-        name: 'irman',
-      });
+      otherUser = await givenUserInstance(userRepository, givenOtherUser());
     });
 
     beforeEach(async () => {
@@ -182,8 +164,8 @@ describe('TransactionApplication', function () {
       const transactionInProgress = await givenTransactionInstance(
         transactionRepository,
         {
-          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
-          to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
+          from: '999',
+          to: '9999',
         },
       );
 
@@ -194,8 +176,8 @@ describe('TransactionApplication', function () {
           JSON.stringify({
             filter: {
               where: {
-                from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
-                to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
+                from: '999',
+                to: '9999',
               },
             },
           }),
@@ -221,12 +203,18 @@ describe('TransactionApplication', function () {
 
   it('includes fromUser, toUser, and currency in query result', async () => {
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61851',
-      name: 'irman',
+      name: 'husni',
+    });
+    const fromWallet = await givenWalletInstance(walletRepository, {
+      userId: user.id,
+    });
+    const toWallet = await givenWalletInstance(walletRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      userId: otherUser.id,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
-      from: user.id,
-      to: otherUser.id,
+      from: fromWallet.id,
+      to: toWallet.id,
     });
 
     const response = await client
@@ -234,7 +222,7 @@ describe('TransactionApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .query({
         filter: {
-          include: ['fromUser', 'toUser', 'currency'],
+          include: ['fromWallet', 'toWallet', 'currency'],
         },
       })
       .expect(200);
@@ -242,8 +230,8 @@ describe('TransactionApplication', function () {
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(transaction),
-      fromUser: toJSON(user),
-      toUser: toJSON(otherUser),
+      fromWallet: toJSON(fromWallet),
+      toWallet: toJSON(toWallet),
       currency: toJSON(currency),
     });
   });

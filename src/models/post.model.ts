@@ -211,18 +211,7 @@ export class Post extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(
-    () => User,
-    {name: 'user'},
-    {
-      jsonSchema: {
-        maxLength: 66,
-        minLength: 66,
-        pattern: '^0x',
-      },
-      required: true,
-    },
-  )
+  @belongsTo(() => User, {name: 'user'}, {required: true})
   createdBy: string;
 
   @belongsTo(() => People)
