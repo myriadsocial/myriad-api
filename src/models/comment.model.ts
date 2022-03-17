@@ -11,7 +11,7 @@ import {Metric} from '../interfaces';
 import {CommentLink} from './comment-link.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
-import {Post} from './post.model';
+import {Post, PostWithRelations} from './post.model';
 
 @model({
   settings: {
@@ -143,6 +143,7 @@ export class Comment extends Entity {
 export interface CommentRelations {
   // describe navigational properties here
   user?: UserWithRelations;
+  post?: PostWithRelations;
 }
 
 export type CommentWithRelations = Comment & CommentRelations;

@@ -12,7 +12,7 @@ import {
 import {AnyObject, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
-import {ControllerType, ReferenceType} from '../enums';
+import {ControllerType, ReferenceType, SectionType} from '../enums';
 import {
   CommentLinkRepository,
   CommentRepository,
@@ -26,7 +26,7 @@ import {
   NotificationService,
   VoteService,
 } from '../services';
-import {Comment} from '../models';
+import {CommentWithRelations} from '../models';
 import {omit} from 'lodash';
 
 /**
@@ -85,13 +85,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
       await this.beforeDelete(invocationCtx);
       await next();
       await this.afterDelete(invocationCtx);
-      if (controllerName === ControllerType.COMMENT) {
-        return {
-          ...invocationCtx.args[1],
-          deletedAt: new Date().toString(),
-          deleteByUser: true,
-        };
-      }
+      if (controllerName === ControllerType.COMMENT)
+        return invocationCtx.args[1];
     } catch (err) {
       if (controllerName === ControllerType.USERCURRENCY) throw err;
     }
@@ -146,8 +141,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.COMMENT: {
-        const comment: Comment = invocationCtx.args[1];
-        const {referenceId, postId} = comment;
+        const comment: CommentWithRelations = invocationCtx.args[1];
+        const {referenceId, postId, post, section} = comment;
 
         Promise.allSettled([
           this.metricService.countPopularPost(postId),
@@ -155,8 +150,36 @@ export class DeleteInterceptor implements Provider<Interceptor> {
           this.metricService.publicMetric(ReferenceType.COMMENT, referenceId),
         ]) as Promise<AnyObject>;
 
+        if (post?.metric) {
+          const metric = post.metric;
+
+          let totalDiscussions = post.metric.discussions ?? 0;
+          let totalDebate = post.metric.debates ?? 0;
+
+          if (section === SectionType.DISCUSSION && totalDiscussions > 0) {
+            totalDiscussions -= 1;
+          } else if (section === SectionType.DISCUSSION && totalDebate > 0) {
+            totalDebate -= 1;
+          }
+
+          post.metric = {
+            ...metric,
+            discussions: totalDiscussions,
+            debates: totalDebate,
+            comments: totalDiscussions + totalDebate,
+          };
+        }
+
+        invocationCtx.args[1] = {
+          ...invocationCtx.args[1],
+          deletedAt: new Date().toString(),
+          deleteByUser: true,
+          post: post,
+        };
+
         break;
       }
+
       case ControllerType.EXPERIENCEPOST: {
         const [experienceId, postId] = invocationCtx.args;
         const {id, experienceIndex} = await this.postRepository.findById(

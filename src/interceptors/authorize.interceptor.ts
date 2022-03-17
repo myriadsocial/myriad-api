@@ -136,7 +136,9 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.COMMENT: {
         if (typeof data === 'object') userId = data.userId;
         else {
-          const comment = await this.commentRepository.findById(data);
+          const comment = await this.commentRepository.findById(data, {
+            include: ['post'],
+          });
           if (methodName === MethodType.DELETEBYID) {
             invocationCtx.args[1] = comment;
           } else {
