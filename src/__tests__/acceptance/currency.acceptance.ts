@@ -1,12 +1,15 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {Currency, Credential, User} from '../../models/';
-import {CurrencyRepository, UserRepository} from '../../repositories/';
+import {Currency, User} from '../../models/';
+import {
+  CurrencyRepository,
+  UserRepository,
+  WalletRepository,
+} from '../../repositories/';
 import {
   deleteAllRepository,
   givenAccesToken,
-  givenAddress,
   givenCurrency,
   givenCurrencyInstance,
   givenCurrencyRepository,
@@ -14,11 +17,10 @@ import {
   givenOtherUser,
   givenUserInstance,
   givenUserRepository,
+  givenWalletInstance,
+  givenWalletRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
-import {PermissionKeys} from '../../enums';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('CurrencyApplication', function () {
@@ -28,10 +30,8 @@ describe('CurrencyApplication', function () {
   let client: Client;
   let currencyRepository: CurrencyRepository;
   let userRepository: UserRepository;
-  let nonce: number;
+  let walletRepository: WalletRepository;
   let user: User;
-  let otherUser: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -41,14 +41,14 @@ describe('CurrencyApplication', function () {
   before(async () => {
     currencyRepository = await givenCurrencyRepository(app);
     userRepository = await givenUserRepository(app);
+    walletRepository = await givenWalletRepository(app);
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository, {
-      permissions: [PermissionKeys.ADMIN],
-    });
-    address = givenAddress();
-    otherUser = await givenUserInstance(userRepository, givenOtherUser());
+    user = await givenUserInstance(userRepository);
+    token = await givenAccesToken(user);
+
+    await givenWalletInstance(walletRepository, {userId: user.id});
   });
 
   beforeEach(async () => {
@@ -57,23 +57,6 @@ describe('CurrencyApplication', function () {
 
   after(async () => {
     await deleteAllRepository(app);
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/admin/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   it('rejects requests to create a currency with no id', async () => {
@@ -108,6 +91,7 @@ describe('CurrencyApplication', function () {
 
   it('rejects request when creates a currency not as admin myriad', async () => {
     const currency = givenCurrency();
+    const otherUser = await givenUserInstance(userRepository, givenOtherUser());
     const accessToken = await givenAccesToken(otherUser);
 
     await client
@@ -136,7 +120,10 @@ describe('CurrencyApplication', function () {
       const updatedCurrency: Partial<Currency> = givenCurrency();
 
       delete updatedCurrency.id;
-
+      const otherUser = await givenUserInstance(
+        userRepository,
+        givenOtherUser({username: 'jojon'}),
+      );
       const accessToken = await givenAccesToken(otherUser);
 
       await client

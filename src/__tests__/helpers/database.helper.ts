@@ -23,6 +23,7 @@ import {
   DraftPostRepository,
   LanguageSettingRepository,
   ExperiencePostRepository,
+  WalletRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -51,6 +52,7 @@ export async function givenRepositories(testdb: any) {
     async () => notificationSettingRepository,
     async () => peopleRepository,
     async () => languageSettingRepository,
+    async () => walletRepository,
   );
   const userExperienceRepository: UserExperienceRepository =
     new UserExperienceRepository(
@@ -106,7 +108,7 @@ export async function givenRepositories(testdb: any) {
   const transactionRepository: TransactionRepository =
     new TransactionRepository(
       testdb,
-      async () => userRepository,
+      async () => walletRepository,
       async () => currencyRepository,
     );
   const voteRepository: VoteRepository = new VoteRepository(
@@ -140,6 +142,10 @@ export async function givenRepositories(testdb: any) {
   const languageSettingRepository: LanguageSettingRepository =
     new LanguageSettingRepository(testdb, async () => userRepository);
 
+  const walletRepository: WalletRepository = new WalletRepository(
+    testdb,
+    async () => userRepository,
+  );
   const metricService = new MetricService(
     voteRepository,
     commentRepository,
@@ -159,6 +165,7 @@ export async function givenRepositories(testdb: any) {
     reportRepository,
     userReportRepository,
     userCurrencyRepository,
+    walletRepository,
   );
 
   const currentUser: UserProfile = {
@@ -177,6 +184,7 @@ export async function givenRepositories(testdb: any) {
     commentRepository,
     userReportRepository,
     notificationSettingRepository,
+    walletRepository,
     fcmService,
     currentUser,
   );
@@ -184,7 +192,7 @@ export async function givenRepositories(testdb: any) {
   const friendService = new FriendService(
     accountSettingRepository,
     friendRepository,
-    userRepository,
+    walletRepository,
   );
 
   const postService = new PostService(
@@ -199,13 +207,17 @@ export async function givenRepositories(testdb: any) {
 
   const transactionService = new TransactionService(transactionRepository);
 
-  const activityLogService = new ActivityLogService(activityLogRepository);
+  const activityLogService = new ActivityLogService(
+    activityLogRepository,
+    currentUser,
+  );
 
   const userSocialMediaService = new UserSocialMediaService(
     userSocialMediaRepository,
     peopleRepository,
     notificationService,
     activityLogService,
+    currentUser,
   );
 
   return {
@@ -238,6 +250,7 @@ export async function givenRepositories(testdb: any) {
     draftPostRepository,
     activityLogService,
     experiencePostRepository,
+    walletRepository,
   };
 }
 
@@ -263,6 +276,7 @@ export async function givenEmptyDatabase(testdb: any) {
     tagRepository,
     draftPostRepository,
     experiencePostRepository,
+    walletRepository,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
@@ -285,4 +299,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await notificationSettingRepository.deleteAll();
   await draftPostRepository.deleteAll();
   await experiencePostRepository.deleteAll();
+  await walletRepository.deleteAll();
 }

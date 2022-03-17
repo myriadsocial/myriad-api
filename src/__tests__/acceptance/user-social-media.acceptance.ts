@@ -2,21 +2,16 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType} from '../../enums';
-import {
-  Credential,
-  User,
-  UserSocialMedia,
-  UserVerification,
-} from '../../models';
+import {User, UserSocialMedia, UserVerification} from '../../models';
 import {
   PeopleRepository,
   UserRepository,
   UserSocialMediaRepository,
+  WalletRepository,
 } from '../../repositories';
 import {
   deleteAllRepository,
   givenAccesToken,
-  givenAddress,
   givenOtherUser,
   givenPeopleInstance,
   givenPeopleRepository,
@@ -25,10 +20,10 @@ import {
   givenUserSocialMediaInstance,
   givenUserSocialMediaRepository,
   givenUserVerification,
+  givenWalletInstance,
+  givenWalletRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserSocialMediaApplication', function () {
@@ -40,10 +35,12 @@ describe('UserSocialMediaApplication', function () {
   let userRepository: UserRepository;
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
-  let nonce: number;
+  let walletRepository: WalletRepository;
   let user: User;
   let otherUser: User;
-  let address: KeyringPair;
+
+  const publicKey =
+    '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363';
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -55,12 +52,15 @@ describe('UserSocialMediaApplication', function () {
     userRepository = await givenUserRepository(app);
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
+    walletRepository = await givenWalletRepository(app);
   });
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
+    token = await givenAccesToken(user);
+
+    await givenWalletInstance(walletRepository, {userId: user.id});
   });
 
   after(async () => {
@@ -72,30 +72,13 @@ describe('UserSocialMediaApplication', function () {
     await userSocialMediaRepository.deleteAll();
   });
 
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
-  });
-
   context('when claiming social medias', () => {
     beforeEach(async () => {
       await userSocialMediaRepository.deleteAll();
     });
 
     it('verifies user social media', async () => {
-      const userVerification = givenUserVerification({publicKey: user.id});
+      const userVerification = givenUserVerification({publicKey: publicKey});
       const response = await client
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
@@ -115,7 +98,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('rejects user to verify non existing social media', async () => {
       const userVerification: Partial<UserVerification> = givenUserVerification(
-        {publicKey: user.id},
+        {publicKey: publicKey},
       );
       delete userVerification.platform;
 
@@ -128,7 +111,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('rejects user to verify non existing social media username', async () => {
       const userVerification = givenUserVerification({
-        publicKey: user.id,
+        publicKey: publicKey,
         username: 'kemrenwebrge',
       });
 
@@ -140,20 +123,20 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('rejects user to verify social media that is not belong to user', async () => {
+      const accessToken = await givenAccesToken(otherUser);
       const userVerification = givenUserVerification({
-        publicKey:
-          '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
+        publicKey: publicKey,
       });
 
       await client
         .post('/user-social-medias/verify')
-        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .send(userVerification)
         .expect(401);
     });
 
     it('rejects user to verify social media that already been claimed', async () => {
-      const userVerification = givenUserVerification({publicKey: user.id});
+      const userVerification = givenUserVerification({publicKey: publicKey});
 
       await client
         .post('/user-social-medias/verify')
@@ -197,7 +180,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('returns 401 when deleting the user social media not as login user', async () => {
       const accessToken = await givenAccesToken(otherUser);
-      const userVerification = givenUserVerification({publicKey: user.id});
+      const userVerification = givenUserVerification({publicKey: publicKey});
       const response = await client
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
@@ -212,7 +195,7 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('deletes the user social media', async () => {
-      const userVerification = givenUserVerification({publicKey: user.id});
+      const userVerification = givenUserVerification({publicKey: publicKey});
       const response = await client
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
@@ -287,8 +270,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('exploded filter conditions work', async () => {
       await givenUserSocialMediaInstance(userSocialMediaRepository, {
-        userId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+        userId: '1',
         platform: PlatformType.REDDIT,
         peopleId: '4',
       });

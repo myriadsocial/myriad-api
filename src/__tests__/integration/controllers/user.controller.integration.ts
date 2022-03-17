@@ -46,9 +46,7 @@ describe('UserControllerIntegration', () => {
 
   it('includes Currencies in find method result', async () => {
     const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,
@@ -66,11 +64,9 @@ describe('UserControllerIntegration', () => {
   });
 
   it('includes Friends in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
+      username: 'johndoe',
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
@@ -87,9 +83,7 @@ describe('UserControllerIntegration', () => {
   });
 
   it('includes Activity Log in find method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,
     });
@@ -105,11 +99,9 @@ describe('UserControllerIntegration', () => {
 
   it('includes Currencies, ActivityLogs and Friends in find method result', async () => {
     const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
+      username: 'johndoe',
     });
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,
@@ -140,9 +132,7 @@ describe('UserControllerIntegration', () => {
 
   it('includes Currencies in findById method result', async () => {
     const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,
@@ -160,11 +150,9 @@ describe('UserControllerIntegration', () => {
   });
 
   it('includes Friends in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
+      username: 'johndoe',
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
@@ -179,9 +167,7 @@ describe('UserControllerIntegration', () => {
   });
 
   it('includes ActivityLog in findById method result', async () => {
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
 
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,
@@ -199,11 +185,9 @@ describe('UserControllerIntegration', () => {
 
   it('includes Currencies, ActivityLogs, and Friends in findById method result', async () => {
     const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618bc',
-    });
+    const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618gl',
+      username: 'johndoe',
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,

@@ -1,11 +1,11 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {NotificationType} from '../../enums';
-import {Credential, Notification, User} from '../../models';
+import {Notification, User} from '../../models';
 import {NotificationRepository, UserRepository} from '../../repositories';
 import {
   deleteAllRepository,
-  givenAddress,
+  givenAccesToken,
   givenMultipleNotificationInstances,
   givenNotification,
   givenNotificationInstance,
@@ -14,8 +14,6 @@ import {
   givenUserRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 
 describe('NotificationApplication', function () {
   let app: MyriadApiApplication;
@@ -23,9 +21,7 @@ describe('NotificationApplication', function () {
   let client: Client;
   let notificationRepository: NotificationRepository;
   let userRepository: UserRepository;
-  let nonce: number;
   let user: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -40,7 +36,7 @@ describe('NotificationApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
+    token = await givenAccesToken(user);
   });
 
   beforeEach(async () => {
@@ -49,23 +45,6 @@ describe('NotificationApplication', function () {
 
   after(async () => {
     await deleteAllRepository(app);
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted notification', () => {
@@ -93,10 +72,9 @@ describe('NotificationApplication', function () {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
         message: 'sent you friend request',
-        referenceId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
-        from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61862',
-        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
+        referenceId: '1',
+        from: '2',
+        to: '1',
       });
       await client
         .get('/notifications/count')
@@ -109,10 +87,9 @@ describe('NotificationApplication', function () {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
         message: 'sent you friend request',
-        referenceId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
-        from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
-        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
+        referenceId: '4',
+        from: '3',
+        to: '4',
       });
 
       await client
@@ -120,7 +97,7 @@ describe('NotificationApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .query({
           where: {
-            from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
+            from: '3',
           },
         })
         .expect(200, {
@@ -169,10 +146,9 @@ describe('NotificationApplication', function () {
           type: NotificationType.FRIEND_REQUEST,
           read: false,
           message: 'sent you friend request',
-          referenceId:
-            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
-          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
-          to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
+          referenceId: '5',
+          from: '6',
+          to: '5',
         },
       );
 
@@ -183,7 +159,7 @@ describe('NotificationApplication', function () {
           'filter=' +
             JSON.stringify({
               where: {
-                from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61869',
+                from: '6',
               },
             }),
         )
@@ -203,10 +179,9 @@ describe('NotificationApplication', function () {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
         message: 'sent you friend request',
-        referenceId:
-          '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-        from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
-        to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+        referenceId: '7',
+        from: '8',
+        to: '7',
       });
 
       const response = await client
@@ -218,11 +193,9 @@ describe('NotificationApplication', function () {
 
     it('includes fromUserId and toUserId in query result', async () => {
       const from = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61802',
         name: 'imam',
       });
       const to = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
         name: 'muchtar',
       });
       const notification = await givenNotificationInstance(
@@ -231,10 +204,9 @@ describe('NotificationApplication', function () {
           type: NotificationType.FRIEND_REQUEST,
           read: false,
           message: 'sent you friend request',
-          referenceId:
-            '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
-          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61802',
-          to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61801',
+          referenceId: to.id,
+          from: from.id,
+          to: to.id,
         },
       );
 

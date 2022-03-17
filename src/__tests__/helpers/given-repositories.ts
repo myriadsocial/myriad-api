@@ -20,6 +20,7 @@ import {
   UserReportRepository,
   NotificationSettingRepository,
   AccountSettingRepository,
+  WalletRepository,
 } from '../../repositories';
 
 export async function givenUserRepository(app: MyriadApiApplication) {
@@ -106,6 +107,10 @@ export async function givenNotificationSettingRepository(
   return app.getRepository(NotificationSettingRepository);
 }
 
+export async function givenWalletRepository(app: MyriadApiApplication) {
+  return app.getRepository(WalletRepository);
+}
+
 export async function deleteAllRepository(app: MyriadApiApplication) {
   const userRepository = await givenUserRepository(app);
   const friendRepository = await givenFriendRepository(app);
@@ -126,6 +131,7 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   const reportRepository = await givenReportRepository(app);
   const userReportRepository = await givenUserReportRepository(app);
   const accountSettingRepository = await givenAccountSettingRepository(app);
+  const walletRepository = await givenWalletRepository(app);
   const notificationSettingRepository =
     await givenNotificationSettingRepository(app);
 
@@ -149,4 +155,5 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   await userReportRepository.deleteAll();
   await accountSettingRepository.deleteAll();
   await notificationSettingRepository.deleteAll();
+  await walletRepository.deleteAll();
 }

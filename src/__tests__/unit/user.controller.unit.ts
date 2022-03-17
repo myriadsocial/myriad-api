@@ -6,16 +6,16 @@ import {
   toJSON,
 } from '@loopback/testlab';
 import {UserController} from '../../controllers/user.controller';
-import {User} from '../../models';
+import {User, UserWithRelations} from '../../models';
 import {UserRepository} from '../../repositories';
 import {givenUser} from '../helpers';
 
 describe('UserControllers', () => {
   let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
   let controller: UserController;
-  let aUserWithId: User;
+  let aUserWithId: UserWithRelations;
   let aChangedUser: User;
-  let aListOfUsers: User[];
+  let aListOfUsers: UserWithRelations[];
 
   beforeEach(resetRepositories);
 
@@ -40,7 +40,7 @@ describe('UserControllers', () => {
 
     it('returns empty list if no users exist', async () => {
       const find = userRepository.stubs.find;
-      const expected: User[] = [];
+      const expected: UserWithRelations[] = [];
       find.resolves(expected);
       expect(await controller.find()).to.eql(expected);
       sinon.assert.called(find);
@@ -69,7 +69,7 @@ describe('UserControllers', () => {
     userRepository = createStubInstance(UserRepository);
     aUserWithId = givenUser({
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61859',
-    });
+    }) as UserWithRelations;
     aListOfUsers = [
       aUserWithId,
       givenUser({
@@ -78,7 +78,7 @@ describe('UserControllers', () => {
         username: 'husni',
         bio: 'Hello, my name is husni!',
       }),
-    ] as User[];
+    ] as UserWithRelations[];
     aChangedUser = givenUser({
       id: aUserWithId.id,
       name: 'irman',

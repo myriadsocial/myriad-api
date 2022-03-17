@@ -1,6 +1,6 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {Credential, User} from '../../models';
+import {User} from '../../models';
 import {
   ActivityLogRepository,
   CurrencyRepository,
@@ -16,7 +16,6 @@ import {
   givenAccountSettingRepository,
   givenActivityLogInstance,
   givenActivityLogRepository,
-  givenAddress,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenFriendInstance,
@@ -30,13 +29,11 @@ import {
   givenUserRepository,
   setupApplication,
 } from '../helpers';
-import {u8aToHex, numberToHex} from '@polkadot/util';
-import {KeyringPair} from '@polkadot/keyring/types';
 import {omit} from 'lodash';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserApplication', function () {
-  this.timeout(20000);
+  this.timeout(30000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -48,10 +45,8 @@ describe('UserApplication', function () {
   let activityLogRepository: ActivityLogRepository;
   let notificationSettingRepository: NotificationSettingRepository;
   let accountSettingRepository: AccountSettingRepository;
-  let nonce: number;
   let user: User;
   let otherUser: User;
-  let address: KeyringPair;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -73,8 +68,8 @@ describe('UserApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    address = givenAddress();
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
+    token = await givenAccesToken(user);
   });
 
   beforeEach(async () => {
@@ -88,23 +83,6 @@ describe('UserApplication', function () {
 
   after(async () => {
     await deleteAllRepository(app);
-  });
-
-  it('gets user nonce', async () => {
-    const response = await client.get(`/users/${user.id}/nonce`).expect(200);
-
-    nonce = response.body.nonce;
-  });
-
-  it('user login successfully', async () => {
-    const credential: Credential = new Credential({
-      nonce: nonce,
-      publicAddress: user.id,
-      signature: u8aToHex(address.sign(numberToHex(nonce))),
-    });
-
-    const res = await client.post('/login').send(credential).expect(200);
-    token = res.body.accessToken;
   });
 
   context('when dealing with a single persisted user', () => {
@@ -136,10 +114,8 @@ describe('UserApplication', function () {
       await client
         .patch(`/users/${user.id}`)
         .set('Authorization', `Bearer ${accesToken}`)
-        .send(omit(updatedUser, ['id', 'username', 'nonce']))
+        .send(omit(updatedUser, ['id', 'username', 'nonce', 'permissions']))
         .expect(401);
-
-      user.bio = updatedUser.bio;
     });
 
     it('updates the user by ID ', async () => {
@@ -147,7 +123,12 @@ describe('UserApplication', function () {
         name: 'Abdul Hakim',
         bio: 'Hello, my name is Abdul Hakim',
       });
-      const updatedUser = omit(rawUser, ['id', 'username', 'nonce']);
+      const updatedUser = omit(rawUser, [
+        'id',
+        'username',
+        'nonce',
+        'permissions',
+      ]);
 
       await client
         .patch(`/users/${user.id}`)
@@ -179,7 +160,7 @@ describe('UserApplication', function () {
       await client
         .patch(`/users/999999`)
         .set('Authorization', `Bearer ${token}`)
-        .send(omit(updatedUser, ['id', 'username', 'nonce']))
+        .send(omit(updatedUser, ['id', 'username', 'nonce', 'permissions']))
         .expect(401);
     });
   });
@@ -189,8 +170,7 @@ describe('UserApplication', function () {
 
     before(async () => {
       const otherUserr = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61861',
-        name: 'imam',
+        username: 'imam',
       });
 
       persistedUsers = [user, otherUserr];
@@ -204,14 +184,10 @@ describe('UserApplication', function () {
         .expect(200);
 
       const expectedUser = response.body.data.map((e: Partial<User>) => {
-        delete e.updatedAt;
-
-        return e;
+        return omit(e, ['updatedAt']);
       });
       const responseUser = persistedUsers.map((e: Partial<User>) => {
-        delete e.updatedAt;
-
-        return e;
+        return omit(e, ['nonce', 'updatedAt', 'permissions']);
       });
 
       expect(toJSON(expectedUser)).to.containDeep(toJSON(responseUser));
@@ -219,8 +195,7 @@ describe('UserApplication', function () {
 
     it('queries users with a filter', async () => {
       const userInProgress = await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61868',
-        name: 'husni',
+        username: 'husni',
         bannerImageUrl: '',
         fcmTokens: [],
       });
@@ -228,7 +203,7 @@ describe('UserApplication', function () {
       await client
         .get('/users')
         .set('Authorization', `Bearer ${token}`)
-        .query('filter=' + JSON.stringify({where: {name: 'husni'}}))
+        .query('filter=' + JSON.stringify({where: {username: 'husni'}}))
         .expect(200, {
           data: [toJSON(userInProgress)],
           meta: {
@@ -242,8 +217,7 @@ describe('UserApplication', function () {
 
     it('exploded filter conditions work', async () => {
       await givenUserInstance(userRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8452ee61861',
-        name: 'imam',
+        username: 'irman',
       });
 
       const response = await client
@@ -262,8 +236,7 @@ describe('UserApplication', function () {
     });
     const friend = await givenFriendInstance(friendRepository, {
       requestorId: user.id,
-      requesteeId:
-        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      requesteeId: '99999',
     });
     await givenUserCurrencyInstance(userCurrencyRepository, {
       userId: user.id,
