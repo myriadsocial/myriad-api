@@ -25,6 +25,7 @@ import {PlatformPost} from '../models/platform-post.model';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
 import {formatTag} from '../utils/format-tag';
+import {omit} from 'lodash';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -92,7 +93,7 @@ export class PostService {
     post: AnyObject,
     userId?: string,
   ): Promise<AnyObject> {
-    if (post.platform === PlatformType.MYRIAD) return post;
+    if (post.platform === PlatformType.MYRIAD) return omit(post, 'rawText');
     if (!post.user) return post;
     if (!userId) return post;
 
@@ -108,7 +109,10 @@ export class PostService {
       importer.name = 'You';
     }
 
-    return {...post, importers: [importer], totalImporter: count};
+    return omit(
+      {...post, importers: [importer], totalImporter: count},
+      'rawText',
+    );
   }
 
   async createDraftPost(draftPost: DraftPost): Promise<DraftPost> {

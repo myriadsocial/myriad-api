@@ -23,9 +23,9 @@ import {
   UserSocialMediaRepository,
   ReportRepository,
   UserReportRepository,
-  UserCurrencyRepository,
   ExperiencePostRepository,
   WalletRepository,
+  NetworkRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 @injectable({scope: BindingScope.TRANSIENT})
@@ -65,10 +65,10 @@ export class MetricService {
     protected reportRepository: ReportRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
-    @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
   ) {}
 
   async publicMetric(
@@ -251,8 +251,8 @@ export class MetricService {
       case ControllerType.REPORTUSER:
         return this.userReportRepository.count(where);
 
-      case ControllerType.USERCURRENCY:
-        return this.userCurrencyRepository.count(where);
+      case ControllerType.NETWORK:
+        return this.networkRepository.count(where);
 
       case ControllerType.EXPERIENCEPOST: {
         const experienceId = additionalData;
