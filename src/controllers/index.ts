@@ -7,6 +7,7 @@ export * from './exchange-rate.controller';
 export * from './experience.controller';
 export * from './friend.controller';
 export * from './network.controller';
+export * from './network-currency.controller';
 export * from './notification.controller';
 export * from './people.controller';
 export * from './post.controller';
