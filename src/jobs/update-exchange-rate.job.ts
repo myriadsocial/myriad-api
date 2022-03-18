@@ -31,7 +31,7 @@ export class UpdateExchangeRateJob extends CronJob {
         exchangeRate: true,
       },
     });
-    const currencyIds = currencies.map(currency => currency.id);
+    const currencyIds = currencies.map(currency => currency.symbol);
 
     if (currencyIds.length === 0) return;
 
