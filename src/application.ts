@@ -29,6 +29,7 @@ import {
   UserSocialMediaService,
   ActivityLogService,
   VoteService,
+  NetworkService,
 } from './services';
 import {UpdateExchangeRateJob, UpdatePeopleProfileJob} from './jobs';
 import {CronComponent} from '@loopback/cron';
@@ -47,6 +48,7 @@ import {
   ExperienceUserRepository,
   FriendRepository,
   LanguageSettingRepository,
+  NetworkRepository,
   NotificationRepository,
   NotificationSettingRepository,
   PeopleRepository,
@@ -54,7 +56,6 @@ import {
   ReportRepository,
   TagRepository,
   TransactionRepository,
-  UserCurrencyRepository,
   UserExperienceRepository,
   UserReportRepository,
   UserRepository,
@@ -69,7 +70,7 @@ import {
 } from 'loopback4-ratelimiter';
 import {omit} from 'lodash';
 import {DateUtils} from './utils/date-utils';
-import {Experience} from './models';
+import {Currency, Experience} from './models';
 
 const date = new DateUtils();
 const jwt = require('jsonwebtoken');
@@ -175,6 +176,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(MetricService);
     this.service(ActivityLogService);
     this.service(VoteService);
+    this.service(NetworkService);
 
     // 3rd party service
     this.service(FCMService);
@@ -221,6 +223,8 @@ export class MyriadApiApplication extends BootMixin(
       await this.doMigrateExperience();
       await this.doMigrateComment();
       await this.doMigrateUser();
+      await this.doMigrateNetwork();
+      await this.doMigrateTransaction();
       return;
     }
   }
@@ -255,6 +259,110 @@ export class MyriadApiApplication extends BootMixin(
     );
   }
 
+  async doMigrateNetwork(): Promise<void> {
+    if (this.options.alter.indexOf('network') === -1) return;
+    const {currencyRepository, networkRepository} = await this.repositories();
+    const environment =
+      process.env.NODE_ENV === 'production' ? 'mainnet' : 'testnet';
+    const rawNetworks = [
+      {
+        id: 'polkadot',
+        image:
+          'https://polkadot.network/assets/img/brand/Polkadot_Token_PolkadotToken_Pink.svg?v=3997aaa2a4',
+        rpcURL: 'wss://rpc.polkadot.io',
+        explorerURL:
+          'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.polkadot.io#/explorer/query',
+      },
+      {
+        id: 'kusama',
+        image:
+          'https://pbs.twimg.com/profile_images/1430157114194944000/72gTG-fc_400x400.jpg',
+        rpcURL: 'wss://kusama-rpc.polkadot.io',
+        explorerURL:
+          'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fkusama-rpc.polkadot.io#/explorer/query',
+      },
+      {
+        id: 'myriad',
+        image:
+          'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
+        rpcURL: config.MYRIAD_RPC_WS_URL,
+        explorerURL:
+          'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fws-rpc.dev.myriad.social#/explorer/query',
+      },
+      {
+        id: 'near',
+        image:
+          'https://pbs.twimg.com/profile_images/1441304555841597440/YPwdd6cd_400x400.jpg',
+        rpcURL: `https://rpc.${environment}.near.org`,
+        explorerURL: `https://explorer.${environment}.near.org`,
+      },
+    ];
+    const rawCurrencies = [
+      {
+        name: 'myria',
+        symbol: 'MYRIA',
+        image:
+          'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
+        decimal: 18,
+        native: true,
+        exchangeRate: false,
+        networkId: 'myriad',
+      },
+      {
+        name: 'kusama',
+        symbol: 'KSM',
+        image:
+          'https://pbs.twimg.com/profile_images/1430157114194944000/72gTG-fc_400x400.jpg',
+        decimal: 12,
+        native: true,
+        exchangeRate: true,
+        networkId: 'kusama',
+      },
+      {
+        name: 'polkadot',
+        symbol: 'DOT',
+        image:
+          'https://pbs.twimg.com/profile_images/1471096119182700550/KTxlFVah_400x400.jpg',
+        decimal: 10,
+        native: true,
+        exchangeRate: true,
+        networkId: 'polkadot',
+      },
+      {
+        name: 'near',
+        symbol: 'NEAR',
+        image:
+          'https://theme.zdassets.com/theme_assets/10318540/556218f30048c6bdaa7c26a4b05d827af5a0198c.png',
+        decimal: 24,
+        native: true,
+        exchangeRate: true,
+        networkId: 'near',
+      },
+    ];
+    await currencyRepository.deleteAll();
+    await currencyRepository.createAll(rawCurrencies);
+    await networkRepository.createAll(rawNetworks);
+  }
+
+  async doMigrateTransaction(): Promise<void> {
+    if (this.options.alter.indexOf('transaction') === -1) return;
+    const {currencyRepository, transactionRepository} =
+      await this.repositories();
+    const currencies = await currencyRepository.find({
+      where: {
+        networkId: {inq: ['polkadot', 'kusama', 'myriad']},
+      },
+    });
+    await Promise.all(
+      currencies.map(async (currency: Currency) => {
+        return transactionRepository.updateAll(
+          {currencyId: currency.id},
+          {currencyId: currency.symbol},
+        );
+      }),
+    );
+  }
+
   async doMigrateUser(): Promise<void> {
     if (this.options.alter.indexOf('user') === -1) return;
     const {
@@ -270,7 +378,6 @@ export class MyriadApiApplication extends BootMixin(
       notificationRepository,
       postRepository,
       reportRepository,
-      userCurrencyRepository,
       userExperienceRepository,
       userReportRepository,
       userSocMedRepository,
@@ -318,7 +425,6 @@ export class MyriadApiApplication extends BootMixin(
         this.postMention(oldId, newId, postRepository),
         this.post(oldId, newId, postRepository),
         this.report(oldId, newId, reportRepository),
-        this.userCurrency(oldId, newId, userCurrencyRepository),
         this.userExperience(oldId, newId, userExperienceRepository),
         this.userReport(oldId, newId, userReportRepository),
         this.userSocialMedia(oldId, newId, userSocMedRepository),
@@ -526,14 +632,6 @@ export class MyriadApiApplication extends BootMixin(
     );
   }
 
-  async userCurrency(
-    oldId: string,
-    newId: string,
-    userCurrencyRepository: UserCurrencyRepository,
-  ) {
-    await userCurrencyRepository.updateAll({userId: newId}, {userId: oldId});
-  }
-
   async userExperience(
     oldId: string,
     newId: string,
@@ -597,6 +695,7 @@ export class MyriadApiApplication extends BootMixin(
     const languageSettingRepository = await this.getRepository(
       LanguageSettingRepository,
     );
+    const networkRepository = await this.getRepository(NetworkRepository);
     const notificationRepository = await this.getRepository(
       NotificationRepository,
     );
@@ -611,9 +710,6 @@ export class MyriadApiApplication extends BootMixin(
       TransactionRepository,
     );
     const userRepository = await this.getRepository(UserRepository);
-    const userCurrencyRepository = await this.getRepository(
-      UserCurrencyRepository,
-    );
     const userExperienceRepository = await this.getRepository(
       UserExperienceRepository,
     );
@@ -634,6 +730,7 @@ export class MyriadApiApplication extends BootMixin(
       experienceRepository,
       friendRepository,
       languageSettingRepository,
+      networkRepository,
       notificationRepository,
       notificationSettingRepository,
       peopleRepository,
@@ -642,7 +739,6 @@ export class MyriadApiApplication extends BootMixin(
       tagRepository,
       transactionRepository,
       userRepository,
-      userCurrencyRepository,
       userExperienceRepository,
       userReportRepository,
       userSocMedRepository,
