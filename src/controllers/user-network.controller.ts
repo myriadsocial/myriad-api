@@ -1,7 +1,7 @@
 import {authenticate} from '@loopback/authentication';
 import {intercept} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {get, getModelSchemaRef, param, requestBody} from '@loopback/rest';
+import {getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
 import {CreateInterceptor} from '../interceptors';
 import {Credential, Wallet} from '../models';
 import {UserRepository} from '../repositories';
@@ -14,7 +14,7 @@ export class UserNetworkController {
   ) {}
 
   @intercept(CreateInterceptor.BINDING_KEY)
-  @get('/users/{id}/networks', {
+  @post('/users/{id}/networks', {
     responses: {
       '200': {
         description: 'Change user network',
