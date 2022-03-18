@@ -7,6 +7,7 @@ export * from './fcm.service';
 export * from './file-upload.service';
 export * from './friend.service';
 export * from './metric.service';
+export * from './network.service';
 export * from './notification.service';
 export * from './platform';
 export * from './post.service';
