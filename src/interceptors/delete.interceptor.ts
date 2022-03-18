@@ -10,14 +10,12 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
-import {HttpErrors} from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
 import {ControllerType, ReferenceType, SectionType} from '../enums';
 import {
   CommentLinkRepository,
   CommentRepository,
   PostRepository,
-  UserCurrencyRepository,
   VoteRepository,
 } from '../repositories';
 import {
@@ -44,8 +42,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     protected commentLinkRepository: CommentLinkRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
     @service(FriendService)
@@ -87,8 +83,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
       await this.afterDelete(invocationCtx);
       if (controllerName === ControllerType.COMMENT)
         return invocationCtx.args[1];
-    } catch (err) {
-      if (controllerName === ControllerType.USERCURRENCY) throw err;
+    } catch {
+      // ignore
     }
   }
 
@@ -98,28 +94,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       case ControllerType.FRIEND: {
         await this.friendService.removedFriend(invocationCtx.args[1]);
-        break;
-      }
-
-      case ControllerType.USERCURRENCY: {
-        if (
-          this.currentUser.defaultCurrency === invocationCtx.args[0].currencyId
-        ) {
-          throw new HttpErrors.UnprocessableEntity(
-            'Please changed your default currency, before deleting it',
-          );
-        }
-
-        const {count} = await this.userCurrencyRepository.count({
-          userId: invocationCtx.args[0].userId,
-        });
-
-        if (count === 1) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You cannot delete your only currency',
-          );
-        }
-
         break;
       }
 

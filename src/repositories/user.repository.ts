@@ -10,11 +10,9 @@ import {
 import {MongoDataSource} from '../datasources';
 import {
   ActivityLog,
-  Currency,
   Experience,
   Friend,
   User,
-  UserCurrency,
   UserExperience,
   UserRelations,
   AccountSetting,
@@ -25,10 +23,8 @@ import {
   Wallet,
 } from '../models';
 import {ActivityLogRepository} from './activity-log.repository';
-import {CurrencyRepository} from './currency.repository';
 import {ExperienceRepository} from './experience.repository';
 import {FriendRepository} from './friend.repository';
-import {UserCurrencyRepository} from './user-currency.repository';
 import {UserExperienceRepository} from './user-experience.repository';
 import {UserSocialMediaRepository} from './user-social-media.repository';
 import {AccountSettingRepository} from './account-setting.repository';
@@ -60,13 +56,6 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
-  public readonly currencies: HasManyThroughRepositoryFactory<
-    Currency,
-    typeof Currency.prototype.id,
-    UserCurrency,
-    typeof User.prototype.id
-  >;
-
   public readonly accountSetting: HasOneRepositoryFactory<
     AccountSetting,
     typeof User.prototype.id
@@ -81,11 +70,6 @@ export class UserRepository extends DefaultCrudRepository<
     People,
     typeof People.prototype.id,
     UserSocialMedia,
-    typeof User.prototype.id
-  >;
-
-  public readonly currency: BelongsToAccessor<
-    Currency,
     typeof User.prototype.id
   >;
 
@@ -108,10 +92,6 @@ export class UserRepository extends DefaultCrudRepository<
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
     protected userSocialMediaRepositoryGetter: Getter<UserSocialMediaRepository>,
-    @repository.getter('UserCurrencyRepository')
-    protected userCurrencyRepositoryGetter: Getter<UserCurrencyRepository>,
-    @repository.getter('CurrencyRepository')
-    protected currencyRepositoryGetter: Getter<CurrencyRepository>,
     @repository.getter('FriendRepository')
     protected friendRepositoryGetter: Getter<FriendRepository>,
     @repository.getter('ExperienceRepository')
@@ -148,11 +128,6 @@ export class UserRepository extends DefaultCrudRepository<
       'experience',
       this.experience.inclusionResolver,
     );
-    this.currency = this.createBelongsToAccessorFor(
-      'currency',
-      currencyRepositoryGetter,
-    );
-    this.registerInclusionResolver('currency', this.currency.inclusionResolver);
     this.people = this.createHasManyThroughRepositoryFactoryFor(
       'people',
       peopleRepositoryGetter,
@@ -196,15 +171,6 @@ export class UserRepository extends DefaultCrudRepository<
     this.registerInclusionResolver(
       'experiences',
       this.experiences.inclusionResolver,
-    );
-    this.currencies = this.createHasManyThroughRepositoryFactoryFor(
-      'currencies',
-      currencyRepositoryGetter,
-      userCurrencyRepositoryGetter,
-    );
-    this.registerInclusionResolver(
-      'currencies',
-      this.currencies.inclusionResolver,
     );
     this.wallets = this.createHasManyRepositoryFactoryFor(
       'wallets',

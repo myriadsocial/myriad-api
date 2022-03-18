@@ -1,4 +1,3 @@
-export * from './balance.interace';
 export * from './meta-pagination.interface';
 export * from './metric.interface';
 export * from './payment-info.interface';

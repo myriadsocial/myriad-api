@@ -6,13 +6,11 @@ import {
   hasOne,
   belongsTo,
 } from '@loopback/repository';
-import {DefaultCurrencyType, PermissionKeys} from '../enums';
+import {PermissionKeys} from '../enums';
 import {UserMetric} from '../interfaces';
 import {ActivityLog} from './activity-log.model';
-import {Currency} from './currency.model';
 import {Experience} from './experience.model';
 import {Friend} from './friend.model';
-import {UserCurrency} from './user-currency.model';
 import {UserExperience} from './user-experience.model';
 import {AccountSetting} from './account-setting.model';
 import {NotificationSetting} from './notification-setting.model';
@@ -174,15 +172,6 @@ export class User extends Entity {
   })
   experiences: Experience[];
 
-  @hasMany(() => Currency, {
-    through: {
-      model: () => UserCurrency,
-      keyFrom: 'userId',
-      keyTo: 'currencyId',
-    },
-  })
-  currencies: Currency[];
-
   @hasMany(() => ActivityLog)
   activityLogs: ActivityLog[];
 
@@ -200,13 +189,6 @@ export class User extends Entity {
 
   @hasMany(() => Wallet)
   wallets: Wallet[];
-
-  @belongsTo(
-    () => Currency,
-    {name: 'currency'},
-    {default: DefaultCurrencyType.MYRIA},
-  )
-  defaultCurrency: string;
 
   @belongsTo(() => Experience, {name: 'experience'}, {type: 'string'})
   onTimeline: string;
