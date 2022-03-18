@@ -150,7 +150,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.ADMIN:
-      case ControllerType.CURRENCY:
+      case ControllerType.NETWORKCURRENCY:
       case ControllerType.TAG:
       case ControllerType.REPORT:
       case ControllerType.PEOPLE: {
@@ -239,12 +239,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.TRANSACTION:
         ({userId} = await this.walletRepository.findById(data.from));
         break;
-
-      case ControllerType.USERCURRENCY: {
-        if (typeof data === 'object') userId = data.userId;
-        else userId = data;
-        break;
-      }
 
       case ControllerType.USEREXPERIENCE: {
         if (methodName !== MethodType.DELETEBYID) userId = data;

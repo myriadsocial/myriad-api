@@ -18,6 +18,7 @@ import {
 import {Credential, UserWallet, Wallet} from '../models';
 import {
   ActivityLogRepository,
+  NetworkRepository,
   UserRepository,
   WalletRepository,
 } from '../repositories';
@@ -38,6 +39,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(ActivityLogRepository)
     protected activityLogRepository: ActivityLogRepository,
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(WalletRepository)
@@ -89,6 +92,14 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           'Wallet address already exists',
         );
 
+      const existingNetwork = await this.networkRepository.exists(
+        wallet.network,
+      );
+
+      if (!existingNetwork) {
+        throw new HttpErrors.UnprocessableEntity('Network not exists');
+      }
+
       const foundUser = await this.userRepository.findOne({
         where: {username},
       });
@@ -119,6 +130,12 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       const [publicAddress, nearAccount] = credential.publicAddress.split('/');
 
       if (nonce === 0 || !nonce) throw new Error('Invalid nonce!');
+
+      const exists = await this.networkRepository.exists(networkType);
+
+      if (!exists) {
+        throw new HttpErrors.UnprocessableEntity('Network not exists');
+      }
 
       const wallet = await this.walletRepository.findOne({
         where: {
@@ -187,13 +204,29 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     if (methodName === MethodType.SIGNUP) {
       const wallet = invocationCtx.args[1] as Wallet;
+      const currency = await this.currencyService.currencyRepository.findOne({
+        where: {
+          networkId: wallet.network,
+          native: true,
+        },
+      });
+
+      if (currency) {
+        const defaultCurrency = currency?.defaultUserCurrency ?? {};
+        defaultCurrency[result.id.toString()] = 1;
+
+        this.currencyService.currencyRepository.updateAll(
+          {defaultUserCurrency: defaultCurrency},
+          {networkId: wallet.network, native: true},
+        ) as Promise<AnyObject>;
+      }
+
       Promise.allSettled([
         this.userRepository.accountSetting(result.id).create({}),
         this.userRepository.notificationSetting(result.id).create({}),
         this.userRepository.languageSetting(result.id).create({}),
         this.userRepository.wallets(result.id).create(wallet),
         this.currencyService.sendMyriadReward(wallet.id),
-        this.currencyService.defaultCurrency(result.id),
         this.friendService.defaultFriend(result.id),
         this.activityLogRepository.create({
           type: ActivityLogType.NEWUSER,
@@ -234,15 +267,22 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
       return;
     } else {
+      const environment =
+        process.env.NODE_ENV === 'production' ? 'mainnet' : 'testnet';
+
       let nearId = '';
       let nearStatus = false;
 
-      if (id.endsWith('.near')) {
-        nearId = id.split('.near')[0];
-        nearStatus = true;
-      } else if (id.endsWith('.testnet')) {
-        nearId = id.split('.testnet')[0];
-        nearStatus = true;
+      switch (environment) {
+        case 'mainnet':
+          nearStatus = id.endsWith('.near');
+          nearId = id.split('.near')[0];
+          break;
+
+        default:
+          nearStatus = id.endsWith('.testnet');
+          nearId = id.split('.testnet')[0];
+          break;
       }
 
       if (!nearStatus) {
