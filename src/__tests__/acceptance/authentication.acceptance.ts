@@ -3,6 +3,7 @@ import {MyriadApiApplication} from '../../application';
 import {UserWallet} from '../../models';
 import {
   AccountSettingRepository,
+  NetworkRepository,
   NotificationSettingRepository,
   UserRepository,
   WalletRepository,
@@ -13,12 +14,14 @@ import {
   givenAddress,
   givenCredential,
   givenNotificationSettingRepository,
+  givenNetworkRepository,
   givenUserInstance,
   givenUserRepository,
   givenUserWallet,
   givenWalletInstance,
   givenWalletRepository,
   setupApplication,
+  givenNetworkInstance,
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
@@ -35,6 +38,7 @@ describe('AuthenticationApplication', function () {
   let accountSettingRepository: AccountSettingRepository;
   let notificationSettingRepository: NotificationSettingRepository;
   let walletRepository: WalletRepository;
+  let networkRepository: NetworkRepository;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -49,6 +53,7 @@ describe('AuthenticationApplication', function () {
       app,
     );
     walletRepository = await givenWalletRepository(app);
+    networkRepository = await givenNetworkRepository(app);
 
     address = givenAddress();
   });
@@ -57,6 +62,7 @@ describe('AuthenticationApplication', function () {
     await userRepository.deleteAll();
     await accountSettingRepository.deleteAll();
     await notificationSettingRepository.deleteAll();
+    await networkRepository.deleteAll();
     await walletRepository.deleteAll();
   });
 
@@ -65,6 +71,8 @@ describe('AuthenticationApplication', function () {
   });
 
   it('successfully sign up a new user', async () => {
+    await givenNetworkInstance(networkRepository);
+
     const userWallet = givenUserWallet();
 
     const response = await client.post('/signup').send(userWallet);
@@ -72,6 +80,8 @@ describe('AuthenticationApplication', function () {
   });
 
   it('creates a user with default settings', async () => {
+    await givenNetworkInstance(networkRepository);
+
     const userWallet: UserWallet = givenUserWallet();
 
     await client.post('/signup').send(userWallet);
@@ -92,6 +102,8 @@ describe('AuthenticationApplication', function () {
   });
 
   it('rejects login when wrong signature', async () => {
+    await givenNetworkInstance(networkRepository);
+
     const user = await givenUserInstance(userRepository);
     const credential = givenCredential({
       nonce: user.nonce + 1,
@@ -102,6 +114,8 @@ describe('AuthenticationApplication', function () {
   });
 
   it('changes user nonce after login', async () => {
+    await givenNetworkInstance(networkRepository);
+
     const user = await givenUserInstance(userRepository, {username: 'johndoe'});
     await givenWalletInstance(walletRepository, {userId: user.id});
     const credential = givenCredential({
@@ -149,6 +163,8 @@ describe('AuthenticationApplication', function () {
   });
 
   it('checks authentication flow', async () => {
+    await givenNetworkInstance(networkRepository);
+
     const userWallet = givenUserWallet();
 
     const getNonce = await client

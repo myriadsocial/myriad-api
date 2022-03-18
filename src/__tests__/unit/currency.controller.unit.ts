@@ -7,27 +7,18 @@ import {
 } from '@loopback/testlab';
 import {CurrencyController} from '../../controllers';
 import {Currency} from '../../models';
-import {CurrencyRepository} from '../../repositories';
+import {CurrencyRepository, WalletRepository} from '../../repositories';
 import {givenCurrency} from '../helpers';
+import {securityId} from '@loopback/security';
 
 describe('CurrencyControllers', () => {
   let currencyRepository: StubbedInstanceWithSinonAccessor<CurrencyRepository>;
+  let walletRepository: StubbedInstanceWithSinonAccessor<WalletRepository>;
   let controller: CurrencyController;
-  let aCurrency: Currency;
   let aCurrencyWithId: Currency;
   let aListOfCurrencies: Currency[];
 
   beforeEach(resetRepositories);
-
-  describe('createCurrency', () => {
-    it('creates a Currency', async () => {
-      const create = currencyRepository.stubs.create;
-      create.resolves(aCurrencyWithId);
-      const result = await controller.create(aCurrency);
-      expect(result).to.eql(aCurrencyWithId);
-      sinon.assert.calledWith(create, aCurrency);
-    });
-  });
 
   describe('findCurrencyById', () => {
     it('returns a currency if it exists', async () => {
@@ -66,32 +57,29 @@ describe('CurrencyControllers', () => {
     });
   });
 
-  describe('deleteCurrency', () => {
-    it('successfully deletes existing items', async () => {
-      const deleteById = currencyRepository.stubs.deleteById;
-      deleteById.resolves();
-      await controller.deleteById(aCurrencyWithId.id as string);
-      sinon.assert.calledWith(deleteById, aCurrencyWithId.id);
-    });
-  });
-
   function resetRepositories() {
     currencyRepository = createStubInstance(CurrencyRepository);
-    aCurrency = givenCurrency();
+    walletRepository = createStubInstance(WalletRepository);
     aCurrencyWithId = givenCurrency({
-      id: 'AUSD',
+      id: '1',
     });
     aListOfCurrencies = [
       aCurrencyWithId,
       givenCurrency({
-        id: 'ACA',
+        id: '1',
+        name: 'AUSD',
+        symbol: 'AUSD',
         decimal: 13,
         image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
         native: true,
-        rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
+        networkId: 'acala',
       }),
     ] as Currency[];
 
-    controller = new CurrencyController(currencyRepository);
+    controller = new CurrencyController(
+      currencyRepository,
+      walletRepository,
+      {[securityId]: ''}
+    );
   }
 });

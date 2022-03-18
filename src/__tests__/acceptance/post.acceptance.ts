@@ -312,6 +312,7 @@ describe('PostApplication', function () {
       referenceId: post.id,
       type: ReferenceType.POST,
       from: user.id,
+      currencyId: '1',
     });
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
@@ -383,13 +384,19 @@ describe('PostApplication', function () {
       peopleId = response.body.peopleId;
       result.totalImporter = 1;
       response.body.importers[0].metric.totalPosts = 0;
+      response.body.importers[0].metric.totalFriends = 1;
 
       expect(
         toJSON({
           ...result,
           text: result.text,
           title: result.title,
-          importers: [Object.assign(user, {name: 'You'})],
+          importers: [
+            Object.assign(user, {
+              name: 'You',
+              metric: Object.assign(user.metric, {totalFriends: 1}),
+            }),
+          ],
         }),
       ).to.containDeep(toJSON(response.body));
     });

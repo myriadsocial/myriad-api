@@ -5,7 +5,6 @@ import {
   ActivityLogRepository,
   CurrencyRepository,
   FriendRepository,
-  UserCurrencyRepository,
   UserRepository,
   AccountSettingRepository,
   NotificationSettingRepository,
@@ -16,15 +15,12 @@ import {
   givenAccountSettingRepository,
   givenActivityLogInstance,
   givenActivityLogRepository,
-  givenCurrencyInstance,
   givenCurrencyRepository,
   givenFriendInstance,
   givenFriendRepository,
   givenNotificationSettingRepository,
   givenOtherUser,
   givenUser,
-  givenUserCurrencyInstance,
-  givenUserCurrencyRepository,
   givenUserInstance,
   givenUserRepository,
   setupApplication,
@@ -39,7 +35,6 @@ describe('UserApplication', function () {
   let token: string;
   let client: Client;
   let userRepository: UserRepository;
-  let userCurrencyRepository: UserCurrencyRepository;
   let currencyRepository: CurrencyRepository;
   let friendRepository: FriendRepository;
   let activityLogRepository: ActivityLogRepository;
@@ -56,7 +51,6 @@ describe('UserApplication', function () {
 
   before(async () => {
     userRepository = await givenUserRepository(app);
-    userCurrencyRepository = await givenUserCurrencyRepository(app);
     currencyRepository = await givenCurrencyRepository(app);
     friendRepository = await givenFriendRepository(app);
     activityLogRepository = await givenActivityLogRepository(app);
@@ -74,7 +68,6 @@ describe('UserApplication', function () {
 
   beforeEach(async () => {
     await currencyRepository.deleteAll();
-    await userCurrencyRepository.deleteAll();
     await friendRepository.deleteAll();
     await activityLogRepository.deleteAll();
     await notificationSettingRepository.deleteAll();
@@ -228,9 +221,8 @@ describe('UserApplication', function () {
     });
   });
 
-  it('includes friends, activityLogs, and currencies in query result', async () => {
+  it('includes friends and activityLogs in query result', async () => {
     await userRepository.deleteById(otherUser.id);
-    const currency = await givenCurrencyInstance(currencyRepository);
     const activityLog = await givenActivityLogInstance(activityLogRepository, {
       userId: user.id,
     });
@@ -238,15 +230,11 @@ describe('UserApplication', function () {
       requestorId: user.id,
       requesteeId: '99999',
     });
-    await givenUserCurrencyInstance(userCurrencyRepository, {
-      userId: user.id,
-      currencyId: currency.id,
-    });
 
     const filter =
       'filter=' +
       JSON.stringify({
-        include: ['friends', 'currencies', 'activityLogs'],
+        include: ['friends', 'activityLogs'],
       });
 
     const response = await client
@@ -258,7 +246,6 @@ describe('UserApplication', function () {
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(user),
       friends: [toJSON(friend)],
-      currencies: [toJSON(currency)],
       activityLogs: [toJSON(activityLog)],
     });
   });

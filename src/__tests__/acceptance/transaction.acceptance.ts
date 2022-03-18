@@ -1,6 +1,5 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {DefaultCurrencyType} from '../../enums';
 import {Currency, Transaction, User, Wallet} from '../../models';
 import {
   CurrencyRepository,
@@ -100,14 +99,14 @@ describe('TransactionApplication', function () {
   it('returns 422 when create transactions but "currency" not exist', async () => {
     const transaction = givenTransaction({
       from: wallet.id,
-      currencyId: DefaultCurrencyType.MYRIA,
+      currencyId: currency.id,
     });
 
     await client
       .post('/transactions')
       .set('Authorization', `Bearer ${token}`)
       .send(transaction)
-      .expect(404);
+      .expect(422);
   });
 
   context('when dealing with a single persisted transaction', () => {
@@ -116,6 +115,7 @@ describe('TransactionApplication', function () {
     beforeEach(async () => {
       persistedTransaction = await givenTransactionInstance(
         transactionRepository,
+        {currencyId: currency.id},
       );
     });
 
@@ -175,8 +175,9 @@ describe('TransactionApplication', function () {
       const transactionInProgress = await givenTransactionInstance(
         transactionRepository,
         {
-          from: '999',
-          to: '9999',
+          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
+          to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
+          currencyId: currency.id,
         },
       );
 
@@ -201,7 +202,9 @@ describe('TransactionApplication', function () {
     });
 
     it('exploded filter conditions work', async () => {
-      await givenTransactionInstance(transactionRepository);
+      await givenTransactionInstance(transactionRepository, {
+        currencyId: currency.id,
+      });
 
       const response = await client
         .get('/transactions')
@@ -227,6 +230,7 @@ describe('TransactionApplication', function () {
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: fromWallet.id,
       to: toWallet.id,
+      currencyId: currency.id,
     });
 
     const response = await client

@@ -10,7 +10,6 @@ import {
   PeopleRepository,
   PostRepository,
   TransactionRepository,
-  UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
   UserSocialMediaRepository,
@@ -24,6 +23,7 @@ import {
   LanguageSettingRepository,
   ExperiencePostRepository,
   WalletRepository,
+  NetworkRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -42,8 +42,6 @@ export async function givenRepositories(testdb: any) {
   const userRepository: UserRepository = new UserRepository(
     testdb,
     async () => userSocialMediaRepository,
-    async () => userCurrencyRepository,
-    async () => currencyRepository,
     async () => friendRepository,
     async () => experienceRepository,
     async () => userExperienceRepository,
@@ -79,9 +77,14 @@ export async function givenRepositories(testdb: any) {
     async () => transactionRepository,
     async () => voteRepository,
   );
-  const userCurrencyRepository: UserCurrencyRepository =
-    new UserCurrencyRepository(testdb, async () => currencyRepository);
-  const currencyRepository: CurrencyRepository = new CurrencyRepository(testdb);
+  const networkRepository: NetworkRepository = new NetworkRepository(
+    testdb,
+    async () => currencyRepository,
+  );
+  const currencyRepository: CurrencyRepository = new CurrencyRepository(
+    testdb,
+    async () => networkRepository,
+  );
   const friendRepository: FriendRepository = new FriendRepository(
     testdb,
     async () => userRepository,
@@ -164,8 +167,8 @@ export async function givenRepositories(testdb: any) {
     activityLogRepository,
     reportRepository,
     userReportRepository,
-    userCurrencyRepository,
     walletRepository,
+    networkRepository,
   );
 
   const currentUser: UserProfile = {
@@ -223,7 +226,6 @@ export async function givenRepositories(testdb: any) {
   return {
     userRepository,
     userSocialMediaRepository,
-    userCurrencyRepository,
     currencyRepository,
     friendRepository,
     experienceRepository,
@@ -251,13 +253,13 @@ export async function givenRepositories(testdb: any) {
     activityLogService,
     experiencePostRepository,
     walletRepository,
+    networkRepository,
   };
 }
 
 export async function givenEmptyDatabase(testdb: any) {
   const {
     userRepository,
-    userCurrencyRepository,
     friendRepository,
     currencyRepository,
     notificationRepository,
@@ -277,12 +279,12 @@ export async function givenEmptyDatabase(testdb: any) {
     draftPostRepository,
     experiencePostRepository,
     walletRepository,
+    networkRepository,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
   await peopleRepository.deleteAll();
   await userRepository.deleteAll();
-  await userCurrencyRepository.deleteAll();
   await friendRepository.deleteAll();
   await currencyRepository.deleteAll();
   await notificationRepository.deleteAll();
@@ -300,4 +302,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await draftPostRepository.deleteAll();
   await experiencePostRepository.deleteAll();
   await walletRepository.deleteAll();
+  await networkRepository.deleteAll();
 }

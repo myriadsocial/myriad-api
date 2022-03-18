@@ -4,9 +4,11 @@ import {
   TransactionRepository,
   UserRepository,
   WalletRepository,
+  CurrencyRepository,
 } from '../../../repositories';
 import {NotificationService} from '../../../services';
 import {
+  givenCurrencyInstance,
   givenEmptyDatabase,
   givenRepositories,
   givenTransactionInstance,
@@ -20,6 +22,7 @@ describe('TransactionControllerIntegration', () => {
   let userRepository: UserRepository;
   let walletRepository: WalletRepository;
   let notificationService: NotificationService;
+  let currencyRepository: CurrencyRepository;
   let controller: TransactionController;
 
   before(async () => {
@@ -27,6 +30,7 @@ describe('TransactionControllerIntegration', () => {
       transactionRepository,
       userRepository,
       walletRepository,
+      currencyRepository,
       notificationService,
     } = await givenRepositories(testdb));
   });
@@ -44,6 +48,7 @@ describe('TransactionControllerIntegration', () => {
 
   it('includes fromWallet in find method result', async () => {
     const user = await givenUserInstance(userRepository);
+    const currency = await givenCurrencyInstance(currencyRepository);
     const wallet = await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
@@ -51,6 +56,7 @@ describe('TransactionControllerIntegration', () => {
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: wallet.id,
       to: '9999',
+      currencyId: currency.id,
     });
 
     const response = await controller.find({include: ['fromWallet']});
@@ -63,14 +69,16 @@ describe('TransactionControllerIntegration', () => {
     ]);
   });
 
-  it('includes toUser in find method result', async () => {
+  it('includes toWallet in find method result', async () => {
     const user = await givenUserInstance(userRepository);
+    const currency = await givenCurrencyInstance(currencyRepository);
     const wallet = await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
       to: wallet.id,
       from: '9999',
+      currencyId: currency.id,
     });
     const response = await controller.find({include: ['toWallet']});
 
@@ -82,8 +90,9 @@ describe('TransactionControllerIntegration', () => {
     ]);
   });
 
-  it('includes both fromUser and toUser in find method result', async () => {
+  it('includes both fromWallet and toWallet in find method result', async () => {
     const user = await givenUserInstance(userRepository);
+    const currency = await givenCurrencyInstance(currencyRepository);
     const otherUser = await givenUserInstance(userRepository, {
       username: 'johndoe',
     });
@@ -97,6 +106,7 @@ describe('TransactionControllerIntegration', () => {
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: fromWallet.id,
       to: toWallet.id,
+      currencyId: currency.id,
     });
     const response = await controller.find({
       include: ['fromWallet', 'toWallet'],
@@ -111,14 +121,16 @@ describe('TransactionControllerIntegration', () => {
     ]);
   });
 
-  it('includes fromUser in findById method result', async () => {
+  it('includes fromWallet in findById method result', async () => {
     const user = await givenUserInstance(userRepository);
     const wallet = await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
+    const currency = await givenCurrencyInstance(currencyRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: wallet.id,
-      to: '9999',
+      to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      currencyId: currency.id,
     });
 
     const response = await controller.findById(transaction.id ?? '', {
@@ -131,14 +143,16 @@ describe('TransactionControllerIntegration', () => {
     });
   });
 
-  it('includes toUser in findById method result', async () => {
+  it('includes toWallet in findById method result', async () => {
     const user = await givenUserInstance(userRepository);
     const wallet = await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
+    const currency = await givenCurrencyInstance(currencyRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
       to: wallet.id,
-      from: '9999',
+      from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
+      currencyId: currency.id,
     });
 
     const response = await controller.findById(transaction.id ?? '', {
@@ -151,8 +165,9 @@ describe('TransactionControllerIntegration', () => {
     });
   });
 
-  it('includes both fromUser and toUser in findById method result', async () => {
+  it('includes both fromWallet and toWallet in findById method result', async () => {
     const user = await givenUserInstance(userRepository);
+    const currency = await givenCurrencyInstance(currencyRepository);
     const otherUser = await givenUserInstance(userRepository, {
       username: '9999',
     });
@@ -166,8 +181,8 @@ describe('TransactionControllerIntegration', () => {
     const transaction = await givenTransactionInstance(transactionRepository, {
       from: fromWallet.id,
       to: toWallet.id,
+      currencyId: currency.id,
     });
-
     const response = await controller.findById(transaction.id ?? '', {
       include: ['fromWallet', 'toWallet'],
     });

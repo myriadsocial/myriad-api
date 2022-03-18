@@ -12,7 +12,6 @@ import {
   PostRepository,
   TagRepository,
   TransactionRepository,
-  UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
   UserSocialMediaRepository,
@@ -21,6 +20,7 @@ import {
   NotificationSettingRepository,
   AccountSettingRepository,
   WalletRepository,
+  NetworkRepository,
 } from '../../repositories';
 
 export async function givenUserRepository(app: MyriadApiApplication) {
@@ -69,10 +69,6 @@ export async function givenTransactionRepository(app: MyriadApiApplication) {
   return app.getRepository(TransactionRepository);
 }
 
-export async function givenUserCurrencyRepository(app: MyriadApiApplication) {
-  return app.getRepository(UserCurrencyRepository);
-}
-
 export async function givenActivityLogRepository(app: MyriadApiApplication) {
   return app.getRepository(ActivityLogRepository);
 }
@@ -111,6 +107,10 @@ export async function givenWalletRepository(app: MyriadApiApplication) {
   return app.getRepository(WalletRepository);
 }
 
+export async function givenNetworkRepository(app: MyriadApiApplication) {
+  return app.getRepository(NetworkRepository);
+}
+
 export async function deleteAllRepository(app: MyriadApiApplication) {
   const userRepository = await givenUserRepository(app);
   const friendRepository = await givenFriendRepository(app);
@@ -123,7 +123,6 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   const userSocialMediaRepository = await givenUserSocialMediaRepository(app);
   const tagRepository = await givenTagRepository(app);
   const transactionRepository = await givenTransactionRepository(app);
-  const userCurrencyRepository = await givenUserCurrencyRepository(app);
   const activityLogRepository = await givenActivityLogRepository(app);
   const experienceRepository = await givenExperienceRepository(app);
   const userExperienceRepository = await givenUserExperienceRepository(app);
@@ -132,6 +131,7 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   const userReportRepository = await givenUserReportRepository(app);
   const accountSettingRepository = await givenAccountSettingRepository(app);
   const walletRepository = await givenWalletRepository(app);
+  const networkRepository = await givenNetworkRepository(app);
   const notificationSettingRepository =
     await givenNotificationSettingRepository(app);
 
@@ -146,7 +146,6 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   await userSocialMediaRepository.deleteAll();
   await tagRepository.deleteAll();
   await transactionRepository.deleteAll();
-  await userCurrencyRepository.deleteAll();
   await activityLogRepository.deleteAll();
   await experienceRepository.deleteAll();
   await userExperienceRepository.deleteAll();
@@ -156,4 +155,5 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   await accountSettingRepository.deleteAll();
   await notificationSettingRepository.deleteAll();
   await walletRepository.deleteAll();
+  await networkRepository.deleteAll();
 }
