@@ -1,7 +1,7 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {DefaultCurrencyType} from '../../enums';
-import {Currency, Transaction, User} from '../../models';
+import {Currency, Transaction, User, Wallet} from '../../models';
 import {
   CurrencyRepository,
   TransactionRepository,
@@ -34,6 +34,7 @@ describe('TransactionApplication', function () {
   let walletRepository: WalletRepository;
   let currency: Currency;
   let user: User;
+  let wallet: Wallet;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -50,6 +51,7 @@ describe('TransactionApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
+    wallet = await givenWalletInstance(walletRepository, {userId: user.id});
     token = await givenAccesToken(user);
   });
 
@@ -67,7 +69,7 @@ describe('TransactionApplication', function () {
 
   it('creates a transaction', async function () {
     const transaction = givenTransaction({
-      from: user.id,
+      from: wallet.id,
       currencyId: currency.id,
     });
     const response = await client
@@ -80,11 +82,13 @@ describe('TransactionApplication', function () {
     expect(result).to.containDeep(transaction);
   });
 
-  it('returns 401 when creates transactions but "from user" not exist', async () => {
+  it('returns 401 when creates transactions but "from wallet" not exist', async () => {
     const transaction = givenTransaction({
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
       currencyId: currency.id,
     });
+
+    await givenWalletInstance(walletRepository, {id: transaction.from});
 
     await client
       .post('/transactions')
@@ -95,7 +99,7 @@ describe('TransactionApplication', function () {
 
   it('returns 422 when create transactions but "currency" not exist', async () => {
     const transaction = givenTransaction({
-      from: user.id,
+      from: wallet.id,
       currencyId: DefaultCurrencyType.MYRIA,
     });
 
@@ -137,16 +141,23 @@ describe('TransactionApplication', function () {
   context('when dealing with multiple persisted transactions', () => {
     let persistedTransactions: Transaction[];
     let otherUser: User;
+    let otherWallet: Wallet;
 
     before(async () => {
       otherUser = await givenUserInstance(userRepository, givenOtherUser());
+      otherWallet = await givenWalletInstance(walletRepository, {
+        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449aa61811',
+        userId: otherUser.id,
+      });
     });
 
     beforeEach(async () => {
       persistedTransactions = [
-        await givenTransactionInstance(transactionRepository, {from: user.id}),
         await givenTransactionInstance(transactionRepository, {
-          from: otherUser.id,
+          from: wallet.id,
+        }),
+        await givenTransactionInstance(transactionRepository, {
+          from: otherWallet.id,
         }),
       ];
     });
@@ -206,10 +217,11 @@ describe('TransactionApplication', function () {
       name: 'husni',
     });
     const fromWallet = await givenWalletInstance(walletRepository, {
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee63111',
       userId: user.id,
     });
     const toWallet = await givenWalletInstance(walletRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
+      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
       userId: otherUser.id,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {

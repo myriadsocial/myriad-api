@@ -237,7 +237,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         break;
 
       case ControllerType.TRANSACTION:
-        userId = data.from;
+        ({userId} = await this.walletRepository.findById(data.from));
         break;
 
       case ControllerType.USERCURRENCY: {
