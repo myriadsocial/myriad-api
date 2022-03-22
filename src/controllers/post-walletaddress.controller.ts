@@ -4,19 +4,24 @@ import {get, HttpErrors, param, response} from '@loopback/rest';
 import {config} from '../config';
 import {PlatformType} from '../enums';
 import {TokenServiceBindings} from '../keys';
-import {PostRepository} from '../repositories';
+import {PostRepository, WalletRepository} from '../repositories';
 import {JWTService} from '../services';
 import {BcryptHasher} from '../services/authentication/hash.password.service';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
-import {authenticate} from '@loopback/authentication';
+import {authenticate, AuthenticationBindings} from '@loopback/authentication';
+import {UserProfile, securityId} from '@loopback/security';
 
 @authenticate('jwt')
 export class PostWalletAddress {
   constructor(
     @repository(PostRepository)
     protected postRepository: PostRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    protected currentUser: UserProfile,
   ) {}
 
   @get('/posts/{id}/walletaddress')
@@ -38,6 +43,19 @@ export class PostWalletAddress {
   async getWalletAddress(
     @param.path.string('id') id: string,
   ): Promise<AnyObject> {
+    const wallet = await this.walletRepository.findOne({
+      where: {
+        userId: this.currentUser[securityId],
+        primary: true,
+      },
+    });
+
+    if (!wallet) {
+      throw new HttpErrors.UnprocessableEntity('Wallet not exists');
+    }
+
+    const {type} = wallet;
+
     const post = await this.postRepository.findById(id, {
       include: [
         {
@@ -57,12 +75,76 @@ export class PostWalletAddress {
         throw new HttpErrors.NotFound('Walletaddress Not Found!');
       }
 
-      return {walletAddress: post.createdBy};
+      const toWalletPost = await this.walletRepository.findOne({
+        where: {
+          userId: post.createdBy,
+          type: type,
+        },
+      });
+
+      if (!toWalletPost) {
+        if (type === 'near') {
+          throw new HttpErrors.UnprocessableEntity(
+            'Post near wallet not exists',
+          );
+        } else {
+          throw new HttpErrors.UnprocessableEntity(
+            'Post polkadot wallet not exists',
+          );
+          // TODO: Uncomment when escrow ready
+          // if (network === 'myriad') {
+          //   return {
+          //     referenceId: post.createdBy,
+          //     referenceType: 'user',
+          //   };
+          // } else {
+          //   throw new HttpErrors.UnprocessableEntity(
+          //     'Post polkadot wallet not exists',
+          //   );
+          // }
+        }
+      }
+
+      return {
+        referenceId: toWalletPost.id,
+        referenceType: 'walletAddress',
+      };
     }
 
     if (people.userSocialMedia) {
       const userId = people.userSocialMedia.userId;
-      return {walletAddress: userId};
+
+      const toWalletUser = await this.walletRepository.findOne({
+        where: {userId, type},
+      });
+
+      if (!toWalletUser) {
+        if (type === 'near') {
+          throw new HttpErrors.UnprocessableEntity(
+            'Post near wallet not exists',
+          );
+        } else {
+          throw new HttpErrors.UnprocessableEntity(
+            'Post polkadot wallet not exists',
+          );
+          // TODO: Uncomment when escrow ready
+          // if (network === 'myriad') {
+          //   return {
+          //     referenceId: post.createdBy,
+          //     referenceType: 'user',
+          //   };
+          // } else {
+          //   throw new HttpErrors.UnprocessableEntity(
+          //     'Post polkadot wallet not exists',
+          //   );
+          // }
+        }
+      }
+
+      return {
+        referenceId: toWalletUser.id,
+        referenceType: 'walletAddress',
+      };
     }
 
     if (!people.walletAddressPassword) {
@@ -87,6 +169,9 @@ export class PostWalletAddress {
     const {getKeyring, getHexPublicKey} = new PolkadotJs();
     const newKey = getKeyring().addFromUri('//' + token);
 
-    return {walletAddress: getHexPublicKey(newKey)};
+    return {
+      referenceId: getHexPublicKey(newKey),
+      referenceType: 'walletAddress',
+    };
   }
 }
