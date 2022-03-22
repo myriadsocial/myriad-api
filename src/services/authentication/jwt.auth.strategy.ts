@@ -26,9 +26,16 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
       const token: string = this.extractCredentials(request);
       userProfile = await this.tokenService.verifyToken(token);
     } catch (err) {
-      const url = request.originalUrl.split('/')[1];
+      const url = request.originalUrl.split('/');
+      const wallet = url[1];
+      const walletAddress = url[3];
+
       // Handle posts and users
-      if (request.method === 'GET' && url !== 'wallet') {
+      if (
+        request.method === 'GET' &&
+        wallet !== 'wallet' &&
+        walletAddress !== 'walletaddress'
+      ) {
         const myriadUserId = await this.getMyriadUserId();
         return {
           [securityId]: myriadUserId,
