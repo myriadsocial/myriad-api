@@ -26,7 +26,7 @@ jobs:
       package_version: ${{ steps.build-info.outputs.package_version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Compute build info
@@ -54,12 +54,12 @@ jobs:
     steps:
       - name: Checkout code
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up Cloud SDK
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0
         with:
           project_id: ${{ secrets.DEV_GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.DEV_GCP_SA_KEY }}
@@ -171,12 +171,12 @@ jobs:
     steps:
       - name: Checkout code
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up Cloud SDK
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0
         with:
           project_id: ${{ secrets.STG_GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.STG_GCP_SA_KEY }}
@@ -277,12 +277,12 @@ jobs:
     steps:
       - name: Checkout code
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up Cloud SDK
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0
         with:
           project_id: ${{ secrets.TESTNET_GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.TESTNET_GCP_SA_KEY }}
@@ -383,12 +383,12 @@ jobs:
     steps:
       - name: Checkout code
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up Cloud SDK
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0
         with:
           project_id: ${{ secrets.MAINNET_GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.MAINNET_GCP_SA_KEY }}
@@ -489,12 +489,12 @@ jobs:
     steps:
       - name: Checkout code
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up Cloud SDK
         if: "${{ env.DEPLOY == 'true' }}"
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0
         with:
           project_id: ${{ secrets.MAINNET_GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.MAINNET_GCP_SA_KEY }}
