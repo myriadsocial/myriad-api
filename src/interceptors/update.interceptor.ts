@@ -20,9 +20,10 @@ import {
   ExperienceRepository,
   UserExperienceRepository,
   UserRepository,
+  WalletRepository,
 } from '../repositories';
 import {HttpErrors} from '@loopback/rest';
-import {Post, User} from '../models';
+import {Credential, Post, User} from '../models';
 import {
   ActivityLogService,
   CurrencyService,
@@ -31,6 +32,9 @@ import {
   NotificationService,
 } from '../services';
 import {UrlUtils} from '../utils/url.utils';
+import {validateAccount} from '../utils/validate-account';
+import {assign} from 'lodash';
+import NonceGenerator from 'a-nonce-generator';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -50,6 +54,8 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
     @service(CurrencyService)
@@ -228,6 +234,44 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
         break;
       }
+
+      case ControllerType.USERNETWORK: {
+        const [userId, credential] = invocationCtx.args;
+        const {networkType: networkId, walletType} = credential as Credential;
+        const [publicAddress, nearAccount] =
+          credential.publicAddress.split('/');
+
+        // TODO: validate network
+
+        const found = await this.walletRepository.findOne({
+          where: {
+            id: nearAccount ?? publicAddress,
+            networks: {inq: [[networkId]]},
+            type: walletType,
+            userId: userId,
+          },
+        });
+
+        if (!found) {
+          throw new HttpErrors.UnprocessableEntity('Network not connected');
+        }
+
+        if (found.network === networkId) {
+          throw new HttpErrors.UnprocessableEntity('Network already connected');
+        }
+
+        const verified = validateAccount(assign(credential, {publicAddress}));
+
+        if (!verified) {
+          throw new HttpErrors.UnprocessableEntity('Failed to verify');
+        }
+
+        found.network = networkId;
+        found.primary = true;
+        invocationCtx.args[2].data = found;
+
+        break;
+      }
     }
   }
 
@@ -248,6 +292,24 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
         await this.userRepository.updateById(userId, {
           defaultCurrency: currencies[0],
+        });
+
+        break;
+      }
+
+      case ControllerType.USERNETWORK: {
+        const {id, network, userId} = invocationCtx.args[2].data;
+        const ng = new NonceGenerator();
+        const newNonce = ng.generate();
+
+        await this.userRepository.updateById(userId, {nonce: newNonce});
+        await this.walletRepository.updateAll(
+          {primary: false},
+          {userId: userId},
+        );
+        await this.walletRepository.updateById(id, {
+          network: network,
+          primary: true,
         });
 
         break;

@@ -1,8 +1,8 @@
 import {authenticate} from '@loopback/authentication';
 import {intercept} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
-import {CreateInterceptor} from '../interceptors';
+import {getModelSchemaRef, param, patch, requestBody} from '@loopback/rest';
+import {UpdateInterceptor} from '../interceptors';
 import {Credential, Wallet} from '../models';
 import {UserRepository} from '../repositories';
 
@@ -13,8 +13,8 @@ export class UserNetworkController {
     protected userRepository: UserRepository,
   ) {}
 
-  @intercept(CreateInterceptor.BINDING_KEY)
-  @post('/users/{id}/networks', {
+  @intercept(UpdateInterceptor.BINDING_KEY)
+  @patch('/users/{id}/networks', {
     responses: {
       '200': {
         description: 'Change user network',
@@ -26,7 +26,7 @@ export class UserNetworkController {
       },
     },
   })
-  async find(
+  async patch(
     @param.path.string('id') id: string,
     @requestBody({
       content: {
