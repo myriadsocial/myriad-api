@@ -269,44 +269,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.USERNETWORK: {
-        const [userId, credential] = invocationCtx.args;
-        const {networkType: networkId, walletType} = credential as Credential;
-        const [publicAddress, nearAccount] =
-          credential.publicAddress.split('/');
-
-        // TODO: validate network
-
-        const found = await this.walletRepository.findOne({
-          where: {
-            id: nearAccount ?? publicAddress,
-            networks: {inq: [[networkId]]},
-            type: walletType,
-            userId: userId,
-          },
-        });
-
-        if (!found) {
-          throw new HttpErrors.UnprocessableEntity('Network not connected');
-        }
-
-        if (found.network === networkId) {
-          throw new HttpErrors.UnprocessableEntity('Network already connected');
-        }
-
-        const verified = validateAccount(assign(credential, {publicAddress}));
-
-        if (!verified) {
-          throw new HttpErrors.UnprocessableEntity('Failed to verify');
-        }
-
-        found.network = networkId;
-        found.primary = true;
-        invocationCtx.args[2].data = found;
-
-        break;
-      }
-
       case ControllerType.USERWALLET: {
         const [userId, credential] = invocationCtx.args;
         const {data, walletType, networkType} = credential as Credential;
@@ -458,24 +420,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
         experienceIndex[experienceId] = 1;
         await this.postService.postRepository.updateById(postId, {
           experienceIndex,
-        });
-
-        return result;
-      }
-
-      case ControllerType.USERNETWORK: {
-        const {id, network, userId} = invocationCtx.args[2].data;
-        const ng = new NonceGenerator();
-        const newNonce = ng.generate();
-
-        await this.userRepository.updateById(userId, {nonce: newNonce});
-        await this.walletRepository.updateAll(
-          {primary: false},
-          {userId: userId},
-        );
-        await this.walletRepository.updateById(id, {
-          network: network,
-          primary: true,
         });
 
         return result;
