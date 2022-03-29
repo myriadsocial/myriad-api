@@ -272,12 +272,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Failed to verify');
         }
 
-        const network = wallet.networks.find(e => e === networkId);
-
-        if (!network) {
-          wallet.networks.push(networkId);
-        }
-
         wallet.network = networkId;
         wallet.primary = true;
         invocationCtx.args[1].data = wallet;

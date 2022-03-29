@@ -306,7 +306,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         invocationCtx.args[1].data = new Wallet({
           ...data,
-          networks: [networkType],
           userId: userId,
           primary: false,
           network: networkType,
