@@ -17,6 +17,7 @@ import {RefreshtokenService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
 import {AuthenticationInterceptor} from '../interceptors';
 import {pick} from 'lodash';
+import {WalletType} from '../enums';
 
 export class AuthenticationController {
   constructor(
@@ -85,7 +86,22 @@ export class AuthenticationController {
   })
   async getNonceByUser(
     @param.path.string('id') id: string,
+    @param.query.string('walletType') walletType?: WalletType,
   ): Promise<{nonce: number}> {
+    if (!walletType) {
+      const {nonce} = await this.userRepository.findById(id);
+      return {nonce};
+    }
+
+    const wallet = await this.walletRepository.findOne({
+      where: {
+        type: walletType,
+        userId: id,
+      },
+    });
+
+    if (!wallet) return {nonce: 0};
+
     const {nonce} = await this.userRepository.findById(id);
     return {nonce};
   }

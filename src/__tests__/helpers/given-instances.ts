@@ -790,7 +790,6 @@ export function givenWallet(wallet?: Partial<Wallet>) {
       id: id,
       type: WalletType.POLKADOT,
       network: NetworkType.POLKADOT,
-      networks: [NetworkType.POLKADOT],
     },
     wallet,
   );

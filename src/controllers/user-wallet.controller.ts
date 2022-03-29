@@ -1,11 +1,10 @@
 import {authenticate} from '@loopback/authentication';
 import {intercept} from '@loopback/core';
-import {Count, Filter, repository} from '@loopback/repository';
+import {Filter, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
 import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {Credential, User, Wallet} from '../models';
 import {UserRepository, WalletRepository} from '../repositories';
-import {omit} from 'lodash';
 
 @authenticate('jwt')
 export class UserWalletController {
@@ -55,16 +54,7 @@ export class UserWalletController {
       },
     })
     credential: Credential,
-  ): Promise<Wallet | Count> {
-    if (credential.data.updated) {
-      const {network, networks, primary} = credential.data;
-      return this.userRepository
-        .wallets(id)
-        .patch({network, networks, primary}, {id: credential.data.id});
-    }
-
-    return this.userRepository
-      .wallets(id)
-      .create(omit(credential.data, ['updated']));
+  ): Promise<Wallet> {
+    return this.userRepository.wallets(id).create(credential.data);
   }
 }

@@ -36,13 +36,6 @@ export class Wallet extends Entity {
   type: WalletType;
 
   @property({
-    type: 'array',
-    itemType: 'string',
-    required: false,
-  })
-  networks: string[];
-
-  @property({
     type: 'string',
     required: true,
   })

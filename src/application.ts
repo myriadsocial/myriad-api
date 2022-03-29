@@ -558,7 +558,6 @@ export class MyriadApiApplication extends BootMixin(
   ) {
     await walletRepository.create({
       id: oldId,
-      networks: [NetworkType.POLKADOT],
       network: NetworkType.POLKADOT,
       type: WalletType.POLKADOT,
       primary: true,

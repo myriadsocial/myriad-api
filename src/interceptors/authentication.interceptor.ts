@@ -106,7 +106,6 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         id: wallet.address,
         type: wallet.type,
         network: wallet.network,
-        networks: [wallet.network],
         primary: true,
       });
 
@@ -116,7 +115,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     try {
       // Verify login process
       const credential = invocationCtx.args[0] as Credential;
-      const {nonce, networkType} = credential;
+      const {nonce, walletType} = credential;
       const [publicAddress, nearAccount] = credential.publicAddress.split('/');
 
       if (nonce === 0 || !nonce) throw new Error('Invalid nonce!');
@@ -124,7 +123,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       const wallet = await this.walletRepository.findOne({
         where: {
           id: nearAccount ?? publicAddress,
-          networks: {inq: [[networkType]]},
+          type: walletType,
         },
         include: ['user'],
       });
@@ -170,8 +169,6 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         username: user.username,
         createdAt: user.createdAt,
         permissions: user.permissions,
-        publicAddress: wallet.id,
-        network: networkType,
       };
 
       invocationCtx.args[0].data = userProfile;
@@ -207,16 +204,11 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       ]) as Promise<AnyObject>;
     } else {
       // Generate random nonce after login
-      const {id, publicAddress, network} = invocationCtx.args[0].data;
+      const {id} = invocationCtx.args[0].data;
       const ng = new NonceGenerator();
       const newNonce = ng.generate();
 
       await this.userRepository.updateById(id, {nonce: newNonce});
-      await this.walletRepository.updateAll({primary: false}, {userId: id});
-      await this.walletRepository.updateById(publicAddress, {
-        primary: true,
-        network,
-      });
     }
   }
 
