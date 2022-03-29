@@ -5,6 +5,9 @@
     },
     {
       "pattern": "^https://medium.com/@myriadsocial.blog"
+    },
+    {
+      "pattern": "^https://img.shields.io/badge/Medium-Myriad-brightgreen"
     }
   ]
 }

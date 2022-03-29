@@ -308,15 +308,12 @@ export class CreateInterceptor implements Provider<Interceptor> {
             throw new HttpErrors.UnprocessableEntity('Wrong address');
           }
 
-          wallet.primary = true;
           wallet.network = networkType;
           wallet.networks = [...wallet.networks, networkType];
         } else {
           wallet = new Wallet({
             ...data,
-            primary: true,
             type: walletType,
-            network: networkType,
             networks: [networkType],
             userId: userId,
           });
@@ -330,6 +327,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         invocationCtx.args[1].data = assign(wallet, {
           updated: hasWallet ? true : false,
+          primary: false,
+          network: networkType,
         });
 
         break;

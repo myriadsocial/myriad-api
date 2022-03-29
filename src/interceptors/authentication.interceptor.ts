@@ -212,6 +212,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       const newNonce = ng.generate();
 
       await this.userRepository.updateById(id, {nonce: newNonce});
+      await this.walletRepository.updateAll({primary: false}, {userId: id});
       await this.walletRepository.updateById(publicAddress, {
         primary: true,
         network,
