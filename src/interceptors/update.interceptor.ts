@@ -87,13 +87,17 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
+    const controllerName = invocationCtx.targetClass.name as ControllerType;
+
     await this.beforeUpdate(invocationCtx);
 
     const result = await next();
 
     await this.afterUpdate(invocationCtx);
 
-    return result;
+    return controllerName === ControllerType.USERNETWORK
+      ? invocationCtx.args[1].data
+      : result;
   }
 
   async beforeUpdate(invocationCtx: InvocationContext): Promise<void> {
@@ -243,20 +247,22 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
         // TODO: validate network
 
-        const found = await this.walletRepository.findOne({
+        const wallet = await this.walletRepository.findOne({
           where: {
-            id: nearAccount ?? publicAddress,
-            networks: {inq: [[networkId]]},
             type: walletType,
             userId: userId,
           },
         });
 
-        if (!found) {
-          throw new HttpErrors.UnprocessableEntity('Network not connected');
+        if (!wallet) {
+          throw new HttpErrors.UnprocessableEntity('Wallet not connected');
         }
 
-        if (found.network === networkId) {
+        if (wallet.id !== (nearAccount ?? publicAddress)) {
+          throw new HttpErrors.UnprocessableEntity('Wrong address');
+        }
+
+        if (wallet.network === networkId) {
           throw new HttpErrors.UnprocessableEntity('Network already connected');
         }
 
@@ -266,9 +272,15 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Failed to verify');
         }
 
-        found.network = networkId;
-        found.primary = true;
-        invocationCtx.args[2].data = found;
+        const network = wallet.networks.find(e => e === networkId);
+
+        if (!network) {
+          wallet.networks.push(networkId);
+        }
+
+        wallet.network = networkId;
+        wallet.primary = true;
+        invocationCtx.args[1].data = wallet;
 
         break;
       }
@@ -298,33 +310,15 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERNETWORK: {
-        const {id, network, userId} = invocationCtx.args[2].data;
+        const {id, network, userId} = invocationCtx.args[1].data;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
         await this.userRepository.updateById(userId, {nonce: newNonce});
         await this.walletRepository.updateAll(
           {primary: false},
-          {userId: userId},
+          {network: {nin: [network]}, userId: id},
         );
-        await this.walletRepository.updateById(id, {
-          network: network,
-          primary: true,
-        });
-
-        break;
-      }
-
-      case ControllerType.USERWALLET: {
-        const [userId, credential] = invocationCtx.args;
-        const {
-          data: {id, network},
-        } = credential;
-
-        await this.userRepository.wallets(userId).patch({primary: false});
-        await this.userRepository
-          .wallets(userId)
-          .patch({primary: true}, {id, network});
 
         break;
       }

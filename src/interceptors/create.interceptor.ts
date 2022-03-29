@@ -45,7 +45,6 @@ import {
   VoteService,
 } from '../services';
 import {validateAccount} from '../utils/validate-account';
-import {assign} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -283,40 +282,20 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Id must included');
         }
 
-        let wallet = await this.walletRepository.findOne({
+        const exists = await this.walletRepository.exists(data.id);
+
+        if (exists)
+          throw new HttpErrors.UnprocessableEntity('Wallet Id already exist');
+
+        const wallet = await this.walletRepository.findOne({
           where: {
-            id: data.id,
             type: walletType,
             userId: userId,
           },
         });
 
-        const hasWallet = Boolean(wallet);
-
         if (wallet) {
-          const found = wallet.networks.find(
-            network => network === networkType,
-          );
-
-          if (found) {
-            throw new HttpErrors.UnprocessableEntity(
-              'Wallet already connected',
-            );
-          }
-
-          if (wallet.id !== data.id) {
-            throw new HttpErrors.UnprocessableEntity('Wrong address');
-          }
-
-          wallet.network = networkType;
-          wallet.networks = [...wallet.networks, networkType];
-        } else {
-          wallet = new Wallet({
-            ...data,
-            type: walletType,
-            networks: [networkType],
-            userId: userId,
-          });
+          throw new HttpErrors.UnprocessableEntity('Wallet already connected');
         }
 
         const verified = validateAccount(credential);
@@ -325,10 +304,13 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Failed to verify');
         }
 
-        invocationCtx.args[1].data = assign(wallet, {
-          updated: hasWallet ? true : false,
+        invocationCtx.args[1].data = new Wallet({
+          ...data,
+          networks: [networkType],
+          userId: userId,
           primary: false,
           network: networkType,
+          type: walletType,
         });
 
         break;
@@ -431,7 +413,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         await this.userRepository.updateById(userId, {nonce: newNonce});
 
-        return invocationCtx.args[1].data;
+        return result;
       }
 
       case ControllerType.USERREPORT: {
