@@ -76,9 +76,8 @@ describe('UserWalletApplication', function () {
     const response = await client
       .post(`/users/${user.id}/wallets`)
       .set('Authorization', `Bearer ${token}`)
-      .send(credential);
-    console.log(response.body.error);
-    // .expect(200);
+      .send(credential)
+      .expect(200);
 
     expect(response.body).to.containDeep(wallet);
     const result = await walletRepository.findById(response.body.id);
