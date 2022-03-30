@@ -262,7 +262,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Wrong address');
         }
 
-        if (wallet.network === networkId) {
+        if (wallet.network === networkId && wallet.primary === true) {
           throw new HttpErrors.UnprocessableEntity('Network already connected');
         }
 
@@ -304,14 +304,14 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERNETWORK: {
-        const {id, network, userId} = invocationCtx.args[1].data;
+        const {network, userId} = invocationCtx.args[1].data;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
         await this.userRepository.updateById(userId, {nonce: newNonce});
         await this.walletRepository.updateAll(
           {primary: false},
-          {network: {nin: [network]}, userId: id},
+          {network: {nin: [network]}, userId},
         );
 
         break;
