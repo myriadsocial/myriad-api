@@ -466,6 +466,20 @@ export class MyriadApiApplication extends BootMixin(
     );
     await notificationRepository.updateAll({from: newId}, {from: oldId});
     await notificationRepository.updateAll({to: newId}, {to: oldId});
+    await notificationRepository.updateAll(
+      <AnyObject>{'additionalReferenceId.comment.user.id': newId},
+      <AnyObject>{'additionalReferenceId.comment.user.id': oldId},
+    );
+
+    await notificationRepository.updateAll(
+      <AnyObject>{'additionalReferenceId.post.user.id': newId},
+      <AnyObject>{'additionalReferenceId.post.user.id': oldId},
+    );
+
+    await notificationRepository.updateAll(
+      <AnyObject>{'additionalReferenceId.user.id': newId},
+      <AnyObject>{'additionalReferenceId.user.id': oldId},
+    );
   }
 
   async postMention(
