@@ -268,6 +268,14 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         }
         break;
       }
+
+      case ControllerType.WALLET: {
+        const wallet = await this.walletRepository.findById(data);
+
+        userId = wallet.userId;
+        invocationCtx.args[1] = wallet;
+        break;
+      }
     }
 
     let error = false;

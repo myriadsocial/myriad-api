@@ -19,6 +19,7 @@ import {Credential, UserWallet, Wallet} from '../models';
 import {
   ActivityLogRepository,
   NetworkRepository,
+  UserCurrencyRepository,
   UserRepository,
   WalletRepository,
 } from '../repositories';
@@ -43,6 +44,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     protected networkRepository: NetworkRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(UserCurrencyRepository)
+    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @service(CurrencyService)
@@ -212,13 +215,12 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       });
 
       if (currency) {
-        const defaultCurrency = currency?.defaultUserCurrency ?? {};
-        defaultCurrency[result.id.toString()] = 1;
-
-        this.currencyService.currencyRepository.updateAll(
-          {defaultUserCurrency: defaultCurrency},
-          {networkId: wallet.network, native: true},
-        ) as Promise<AnyObject>;
+        this.userCurrencyRepository.create({
+          userId: result.id,
+          currencyId: currency.id,
+          networkId: wallet.network,
+          priority: 1,
+        }) as Promise<AnyObject>;
       }
 
       Promise.allSettled([

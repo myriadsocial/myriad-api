@@ -23,12 +23,12 @@ import {
 } from '../enums';
 import {
   Comment,
-  Currency,
   Experience,
   Friend,
   Post,
   PostWithRelations,
   User,
+  UserCurrency,
   UserExperienceWithRelations,
 } from '../models';
 import {
@@ -46,6 +46,8 @@ import {
   CurrencyRepository,
   UserRepository,
   ExchangeRateRepository,
+  WalletRepository,
+  UserCurrencyRepository,
 } from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
@@ -70,6 +72,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected userRepository: UserRepository,
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
+    @repository(UserCurrencyRepository)
+    protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(ExperienceService)
@@ -391,32 +397,59 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.TRANSACTION: {
-        const {networkId, currencyId} = request.query;
-        if (networkId) {
-          const currencies = await this.currencyRepository.find({
-            where: {
-              id: currencyId?.toString(),
-              networkId: networkId?.toString(),
-            },
-          });
-          const currencyIds = currencies.map(currency => currency.id);
+        const {currencyId} = request.query;
+        const wallets = await this.walletRepository.find({
+          where: {
+            userId: this.currentUser[securityId],
+          },
+        });
 
-          filter.where = Object.assign(filter.where, {
-            currencyId: {inq: currencyIds},
-          });
+        const walletIds = wallets.map(wallet => wallet.id);
+
+        filter.where = {
+          or: [
+            {
+              from: {
+                inq: walletIds,
+              },
+            },
+            {
+              to: {
+                inq: walletIds,
+              },
+            },
+          ],
+        };
+
+        if (currencyId) {
+          filter.where = Object.assign(filter.where, {currencyId});
         }
 
         break;
       }
 
-      case ControllerType.CURRENCY: {
-        const networkId = (filter.where as AnyObject).networkId;
-        if (networkId && this.currentUser) {
-          filter.order = [
-            `defaultUserCurrency.${this.currentUser[securityId]} DESC`,
-            'symbol ASC',
-          ];
+      case ControllerType.USERCURRENCY: {
+        let networkId = '';
+
+        const wallet = await this.walletRepository.findOne({
+          where: {
+            userId: this.currentUser?.[securityId] ?? '',
+          },
+        });
+
+        if (wallet?.network) networkId = wallet.network;
+        if (this.currentUser?.[securityId] && networkId) {
+          await this.updateUserCurrency(
+            this.currentUser[securityId],
+            networkId,
+          );
         }
+
+        filter.order = ['priority ASC'];
+        filter.where = Object.assign(filter.where, {
+          userId: wallet?.userId ?? '',
+          networkId: networkId,
+        });
 
         break;
       }
@@ -632,27 +665,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             return user;
           });
         }
-
-        break;
-      }
-
-      case ControllerType.CURRENCY: {
-        result = await Promise.all(
-          result.map(async (currency: Currency) => {
-            let priceInUSD = '0';
-
-            const exchangeRate = await this.exchangeRateRepository.get(
-              currency.symbol,
-            );
-
-            if (exchangeRate) priceInUSD = exchangeRate.price.toString();
-
-            return {
-              ...omit(currency, ['defaultUserCurrency']),
-              priceInUSD,
-            };
-          }),
-        );
 
         break;
       }
@@ -1080,5 +1092,48 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         ],
       },
     ];
+  }
+
+  async updateUserCurrency(userId: string, networkId: string): Promise<void> {
+    const {count: countCurrency} = await this.currencyRepository.count({
+      networkId: networkId,
+    });
+    const {count: countUserCurrency} = await this.userCurrencyRepository.count({
+      networkId: networkId,
+      userId: userId,
+    });
+
+    if (countCurrency !== countUserCurrency) {
+      const userCurrencies = await this.userCurrencyRepository.find({
+        where: {
+          networkId: networkId,
+          userId: userId,
+        },
+      });
+      const currencyIds = userCurrencies.map(
+        userCurrency => userCurrency.currencyId,
+      );
+      const currencies = await this.currencyRepository.find({
+        where: {
+          id: {nin: currencyIds},
+          networkId: networkId,
+        },
+      });
+
+      const newUserCurrencies: UserCurrency[] = [];
+
+      for (let i = 0; i < currencies.length; i++) {
+        const newUserCurrency = new UserCurrency({
+          userId: userId,
+          networkId: networkId,
+          currencyId: currencies[i].id,
+          priority: countUserCurrency + 1 + i,
+        });
+
+        newUserCurrencies.push(newUserCurrency);
+      }
+
+      await this.userCurrencyRepository.createAll(newUserCurrencies);
+    }
   }
 }

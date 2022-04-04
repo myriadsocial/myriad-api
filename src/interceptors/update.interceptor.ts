@@ -17,7 +17,9 @@ import {
 } from '../enums';
 import {repository} from '@loopback/repository';
 import {
+  CurrencyRepository,
   ExperienceRepository,
+  UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
   WalletRepository,
@@ -48,6 +50,8 @@ export class UpdateInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${UpdateInterceptor.name}`;
 
   constructor(
+    @repository(CurrencyRepository)
+    protected currencyRepository: CurrencyRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
     @repository(UserExperienceRepository)
@@ -56,6 +60,8 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected userRepository: UserRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
+    @repository(UserCurrencyRepository)
+    protected userCurrencyRepository: UserCurrencyRepository,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
     @service(CurrencyService)
@@ -196,6 +202,27 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
             invocationCtx.args[1] = payload;
           }
+        }
+
+        break;
+      }
+
+      case ControllerType.USERCURRENCY: {
+        const {networkId, currencyIds} = invocationCtx.args[0];
+        const {count: countCurrency} = await this.currencyRepository.count({
+          id: {inq: currencyIds},
+          networkId: networkId,
+        });
+        const {count: countCurrencyNetwork} =
+          await this.currencyRepository.count({
+            networkId: networkId,
+          });
+
+        if (
+          countCurrency !== currencyIds.length ||
+          countCurrencyNetwork !== currencyIds.length
+        ) {
+          throw new HttpErrors.UnprocessableEntity('Total currency not match');
         }
 
         break;

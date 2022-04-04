@@ -17,6 +17,7 @@ import {
   CommentRepository,
   PostRepository,
   VoteRepository,
+  WalletRepository,
 } from '../repositories';
 import {
   FriendService,
@@ -26,6 +27,7 @@ import {
 } from '../services';
 import {CommentWithRelations} from '../models';
 import {omit} from 'lodash';
+import {HttpErrors} from '@loopback/rest';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -44,6 +46,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     protected postRepository: PostRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(FriendService)
     protected friendService: FriendService,
     @service(MetricService)
@@ -105,6 +109,24 @@ export class DeleteInterceptor implements Provider<Interceptor> {
           type: vote.type,
           postId: vote.postId,
         };
+        break;
+      }
+
+      case ControllerType.WALLET: {
+        const {userId, primary} = invocationCtx.args[1];
+        const {count} = await this.walletRepository.count({userId});
+
+        if (count === 1) {
+          throw new HttpErrors.UnprocessableEntity(
+            'You cannot delete your only wallet',
+          );
+        }
+
+        if (primary) {
+          throw new HttpErrors.UnprocessableEntity(
+            'You cannot delete your primary account',
+          );
+        }
         break;
       }
     }
