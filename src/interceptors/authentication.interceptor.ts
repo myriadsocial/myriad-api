@@ -204,11 +204,19 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       ]) as Promise<AnyObject>;
     } else {
       // Generate random nonce after login
-      const {id} = invocationCtx.args[0].data;
+      const {
+        data: {id},
+        walletType,
+      } = invocationCtx.args[0] as Credential;
       const ng = new NonceGenerator();
       const newNonce = ng.generate();
 
       await this.userRepository.updateById(id, {nonce: newNonce});
+      await this.walletRepository.updateAll({primary: false}, {userId: id});
+      await this.walletRepository.updateAll(
+        {primary: true},
+        {type: walletType},
+      );
     }
   }
 
