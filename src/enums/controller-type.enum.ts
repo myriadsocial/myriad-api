@@ -20,6 +20,7 @@ export enum ControllerType {
   TRANSACTION = 'TransactionController',
   USER = 'UserController',
   USERACCOUNTSETTING = 'UserAccountSettingController',
+  USERCURRENCY = 'UserCurrencyController',
   USERDRAFTPOST = 'UserDraftPostController',
   USEREXPERIENCE = 'UserExperienceController',
   USERLANGUAGESETTING = 'UserLanguageSettingController',
@@ -29,4 +30,5 @@ export enum ControllerType {
   USERSOCIALMEDIA = 'UserSocialMediaController',
   USERWALLET = 'UserWalletController',
   VOTE = 'VoteController',
+  WALLET = 'WalletController',
 }

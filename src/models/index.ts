@@ -32,3 +32,4 @@ export * from './user-verification.model';
 export * from './user-wallet.model';
 export * from './vote.model';
 export * from './wallet.model';
+export * from './user-currency.model';

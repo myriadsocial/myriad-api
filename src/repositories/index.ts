@@ -26,3 +26,4 @@ export * from './user-social-media.repository';
 export * from './user-report.repository';
 export * from './vote.repository';
 export * from './wallet.repository';
+export * from './user-currency.repository';

@@ -127,7 +127,7 @@ export class NetworkService {
           if (native) {
             const nearAccount: AnyObject = await provider.query({
               request_type: 'view_account',
-              account_id: 'abdulhakim.near',
+              account_id: accountId,
               finality: 'final',
             });
 

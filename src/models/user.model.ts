@@ -20,6 +20,8 @@ import {ExperienceWithRelations} from './experience.model';
 import {LanguageSetting} from './language-setting.model';
 import {Wallet, WalletWithRelations} from './wallet.model';
 import NonceGenerator from 'a-nonce-generator';
+import {Currency} from './currency.model';
+import {UserCurrency} from './user-currency.model';
 
 @model({
   settings: {
@@ -192,6 +194,9 @@ export class User extends Entity {
 
   @belongsTo(() => Experience, {name: 'experience'}, {type: 'string'})
   onTimeline: string;
+
+  @hasMany(() => Currency, {through: {model: () => UserCurrency}})
+  currencies: Currency[];
 
   constructor(data?: Partial<User>) {
     super(data);

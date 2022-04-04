@@ -1,10 +1,4 @@
-import {
-  Entity,
-  model,
-  property,
-  belongsTo,
-  AnyObject,
-} from '@loopback/repository';
+import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {Network, NetworkWithRelations} from './network.model';
 
 @model({
@@ -69,12 +63,6 @@ export class Currency extends Entity {
     required: false,
   })
   exchangeRate?: boolean;
-
-  @property({
-    type: 'object',
-    required: false,
-  })
-  defaultUserCurrency: AnyObject;
 
   @property({
     type: 'date',

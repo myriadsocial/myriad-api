@@ -24,6 +24,7 @@ import {
   ExperiencePostRepository,
   WalletRepository,
   NetworkRepository,
+  UserCurrencyRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -51,6 +52,8 @@ export async function givenRepositories(testdb: any) {
     async () => peopleRepository,
     async () => languageSettingRepository,
     async () => walletRepository,
+    async () => userCurrencyRepository,
+    async () => currencyRepository,
   );
   const userExperienceRepository: UserExperienceRepository =
     new UserExperienceRepository(
@@ -149,6 +152,13 @@ export async function givenRepositories(testdb: any) {
     testdb,
     async () => userRepository,
   );
+  const userCurrencyRepository: UserCurrencyRepository =
+    new UserCurrencyRepository(
+      testdb,
+      async () => userRepository,
+      async () => currencyRepository,
+      async () => networkRepository,
+    );
   const metricService = new MetricService(
     voteRepository,
     commentRepository,
@@ -163,6 +173,7 @@ export async function givenRepositories(testdb: any) {
     experiencePostRepository,
     userSocialMediaRepository,
     tagRepository,
+    userCurrencyRepository,
     userExperienceRepository,
     activityLogRepository,
     reportRepository,
@@ -254,6 +265,7 @@ export async function givenRepositories(testdb: any) {
     experiencePostRepository,
     walletRepository,
     networkRepository,
+    userCurrencyRepository,
   };
 }
 
@@ -280,6 +292,7 @@ export async function givenEmptyDatabase(testdb: any) {
     experiencePostRepository,
     walletRepository,
     networkRepository,
+    userCurrencyRepository,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
@@ -303,4 +316,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await experiencePostRepository.deleteAll();
   await walletRepository.deleteAll();
   await networkRepository.deleteAll();
+  await userCurrencyRepository.deleteAll();
 }
