@@ -111,12 +111,7 @@ describe('CurrencyApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .query(filter)
         .expect(200, {
-          data: [
-            {
-              ...toJSON(currencyInProgress),
-              priceInUSD: '0',
-            },
-          ],
+          data: [toJSON(currencyInProgress)],
           meta: {
             currentPage: 1,
             itemsPerPage: 1,

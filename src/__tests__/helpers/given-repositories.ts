@@ -21,6 +21,7 @@ import {
   AccountSettingRepository,
   WalletRepository,
   NetworkRepository,
+  UserCurrencyRepository,
 } from '../../repositories';
 
 export async function givenUserRepository(app: MyriadApiApplication) {
@@ -111,6 +112,10 @@ export async function givenNetworkRepository(app: MyriadApiApplication) {
   return app.getRepository(NetworkRepository);
 }
 
+export async function givenUserCurrencyRepository(app: MyriadApiApplication) {
+  return app.getRepository(UserCurrencyRepository);
+}
+
 export async function deleteAllRepository(app: MyriadApiApplication) {
   const userRepository = await givenUserRepository(app);
   const friendRepository = await givenFriendRepository(app);
@@ -129,9 +134,10 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   const commentLinkRepository = await givenCommentLinkRepository(app);
   const reportRepository = await givenReportRepository(app);
   const userReportRepository = await givenUserReportRepository(app);
-  const accountSettingRepository = await givenAccountSettingRepository(app);
+  const userCurrencyRepository = await givenUserCurrencyRepository(app);
   const walletRepository = await givenWalletRepository(app);
   const networkRepository = await givenNetworkRepository(app);
+  const accountSettingRepository = await givenAccountSettingRepository(app);
   const notificationSettingRepository =
     await givenNotificationSettingRepository(app);
 
@@ -156,4 +162,6 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   await notificationSettingRepository.deleteAll();
   await walletRepository.deleteAll();
   await networkRepository.deleteAll();
+  await userCurrencyRepository.deleteAll();
+  await accountSettingRepository.deleteAll();
 }

@@ -810,6 +810,7 @@ export function givenNetwork(network?: Partial<Network>) {
       rpcURL: 'wss://rpc.polkadot.io',
       explorerURL:
         'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.polkadot.io#/explorer/query',
+      walletType: WalletType.POLKADOT,
     },
     network,
   );

@@ -12,7 +12,6 @@ import {
   givenAccesToken,
   givenCurrencyInstance,
   givenCurrencyRepository,
-  givenOtherUser,
   givenTransaction,
   givenTransactionInstance,
   givenTransactionRepository,
@@ -139,28 +138,19 @@ describe('TransactionApplication', function () {
 
   context('when dealing with multiple persisted transactions', () => {
     let persistedTransactions: Transaction[];
-    let otherUser: User;
-    let otherWallet: Wallet;
-
-    before(async () => {
-      otherUser = await givenUserInstance(userRepository, givenOtherUser());
-      otherWallet = await givenWalletInstance(walletRepository, {
-        id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449aa61811',
-        userId: otherUser.id,
-      });
-    });
 
     beforeEach(async () => {
-      persistedTransactions = [
-        await givenTransactionInstance(transactionRepository, {
+      persistedTransactions = await Promise.all([
+        givenTransactionInstance(transactionRepository, {
           from: wallet.id,
           currencyId: currency.id,
         }),
-        await givenTransactionInstance(transactionRepository, {
-          from: otherWallet.id,
+        givenTransactionInstance(transactionRepository, {
+          from: wallet.id,
           currencyId: currency.id,
+          amount: 10,
         }),
-      ];
+      ]);
     });
 
     it('finds all transactions', async () => {
@@ -170,36 +160,6 @@ describe('TransactionApplication', function () {
         .send()
         .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedTransactions));
-    });
-
-    it('queries transactions with a filter', async () => {
-      const transactionInProgress = await givenTransactionInstance(
-        transactionRepository,
-        {
-          from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
-          to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61824',
-          currencyId: currency.id,
-        },
-      );
-
-      const response = await client
-        .get('/transactions')
-        .set('Authorization', `Bearer ${token}`)
-        .query(
-          JSON.stringify({
-            filter: {
-              where: {
-                from: '999',
-                to: '9999',
-              },
-            },
-          }),
-        )
-        .expect(200);
-
-      expect(response.body.data).to.containDeep([
-        toJSON(transactionInProgress),
-      ]);
     });
 
     it('exploded filter conditions work', async () => {
