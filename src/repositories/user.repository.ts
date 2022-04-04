@@ -20,8 +20,7 @@ import {
   People,
   UserSocialMedia,
   LanguageSetting,
-  Wallet,
-} from '../models';
+  Wallet, Currency, UserCurrency} from '../models';
 import {ActivityLogRepository} from './activity-log.repository';
 import {ExperienceRepository} from './experience.repository';
 import {FriendRepository} from './friend.repository';
@@ -32,6 +31,8 @@ import {NotificationSettingRepository} from './notification-setting.repository';
 import {PeopleRepository} from './people.repository';
 import {LanguageSettingRepository} from './language-setting.repository';
 import {WalletRepository} from './wallet.repository';
+import {UserCurrencyRepository} from './user-currency.repository';
+import {CurrencyRepository} from './currency.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<
@@ -88,6 +89,11 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
+  public readonly currencies: HasManyThroughRepositoryFactory<Currency, typeof Currency.prototype.id,
+          UserCurrency,
+          typeof User.prototype.id
+        >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
@@ -109,9 +115,11 @@ export class UserRepository extends DefaultCrudRepository<
     @repository.getter('LanguageSettingRepository')
     protected languageSettingRepositoryGetter: Getter<LanguageSettingRepository>,
     @repository.getter('WalletRepository')
-    protected walletRepositoryGetter: Getter<WalletRepository>,
+    protected walletRepositoryGetter: Getter<WalletRepository>, @repository.getter('UserCurrencyRepository') protected userCurrencyRepositoryGetter: Getter<UserCurrencyRepository>, @repository.getter('CurrencyRepository') protected currencyRepositoryGetter: Getter<CurrencyRepository>,
   ) {
     super(User, dataSource);
+    this.currencies = this.createHasManyThroughRepositoryFactoryFor('currencies', currencyRepositoryGetter, userCurrencyRepositoryGetter,);
+    this.registerInclusionResolver('currencies', this.currencies.inclusionResolver);
     this.languageSetting = this.createHasOneRepositoryFactoryFor(
       'languageSetting',
       languageSettingRepositoryGetter,
