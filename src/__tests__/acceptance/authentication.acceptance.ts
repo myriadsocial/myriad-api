@@ -132,6 +132,7 @@ describe('AuthenticationApplication', function () {
 
   it('uses different wallet when login', async () => {
     const user = await givenUserInstance(userRepository, {username: 'johndoe'});
+    const network = await givenNetworkInstance(networkRepository);
     const primaryWallet = await givenWalletInstance(walletRepository, {
       id: 'abdulhakim.testnet',
       type: WalletType.NEAR,
@@ -142,6 +143,7 @@ describe('AuthenticationApplication', function () {
     const wallet = await givenWalletInstance(walletRepository, {
       primary: false,
       userId: user.id,
+      network: network.id as NetworkType,
     });
     const credential = givenCredential({
       nonce: user.nonce,

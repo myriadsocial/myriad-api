@@ -126,7 +126,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     try {
       // Verify login process
       const credential = invocationCtx.args[0] as Credential;
-      const {nonce, walletType} = credential;
+      const {nonce, walletType, networkType} = credential;
       const [publicAddress, nearAccount] = credential.publicAddress.split('/');
 
       if (nonce === 0 || !nonce) throw new Error('Invalid nonce!');

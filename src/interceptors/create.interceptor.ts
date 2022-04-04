@@ -232,11 +232,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Data cannot be empty');
         }
 
-        const exists = await this.networkService.networkRepository.exists(
-          networkType,
-        );
+        const networkExists =
+          await this.networkService.networkRepository.exists(networkType);
 
-        if (!exists) {
+        if (!networkExists) {
           throw new HttpErrors.UnprocessableEntity('Network not exists');
         }
 
@@ -244,9 +243,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Id must included');
         }
 
-        const exists = await this.walletRepository.exists(data.id);
+        const walletExists = await this.walletRepository.exists(data.id);
 
-        if (exists)
+        if (walletExists)
           throw new HttpErrors.UnprocessableEntity('Wallet Id already exist');
 
         const wallet = await this.walletRepository.findOne({

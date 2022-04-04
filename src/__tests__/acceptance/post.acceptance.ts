@@ -145,7 +145,12 @@ describe('PostApplication', function () {
       result.body.user.metric.totalPosts = 0;
       persistedPost.user = user as UserWithRelations;
 
-      const expected = toJSON(persistedPost);
+      const expected = {
+        ...toJSON(persistedPost),
+        experienceIndex: {},
+        popularCount: 0,
+        banned: false,
+      };
 
       expect(result.body).to.deepEqual(expected);
     });
@@ -272,19 +277,21 @@ describe('PostApplication', function () {
       );
       postInProgress.user = anotherUser as UserWithRelations;
 
-      await client
+      const response = await client
         .get('/posts')
         .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {text: "what's up, docs!"}}))
-        .expect(200, {
-          data: [toJSON(postInProgress)],
-          meta: {
-            currentPage: 1,
-            itemsPerPage: 1,
-            totalItemCount: 1,
-            totalPageCount: 1,
-          },
-        });
+        .expect(200);
+
+      expect(response.body).to.containDeep({
+        data: [toJSON(postInProgress)],
+        meta: {
+          currentPage: 1,
+          itemsPerPage: 1,
+          totalItemCount: 1,
+          totalPageCount: 1,
+        },
+      });
     });
 
     it('exploded filter conditions work', async () => {

@@ -99,7 +99,6 @@ describe('TransactionApplication', function () {
   it('returns 422 when create transactions but "currency" not exist', async () => {
     const transaction = givenTransaction({
       from: wallet.id,
-      currencyId: currency.id,
     });
 
     await client
@@ -155,9 +154,11 @@ describe('TransactionApplication', function () {
       persistedTransactions = [
         await givenTransactionInstance(transactionRepository, {
           from: wallet.id,
+          currencyId: currency.id,
         }),
         await givenTransactionInstance(transactionRepository, {
           from: otherWallet.id,
+          currencyId: currency.id,
         }),
       ];
     });

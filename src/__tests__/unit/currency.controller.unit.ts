@@ -76,10 +76,8 @@ describe('CurrencyControllers', () => {
       }),
     ] as Currency[];
 
-    controller = new CurrencyController(
-      currencyRepository,
-      walletRepository,
-      {[securityId]: ''}
-    );
+    controller = new CurrencyController(currencyRepository, walletRepository, {
+      [securityId]: '',
+    });
   }
 });
