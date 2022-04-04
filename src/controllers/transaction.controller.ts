@@ -45,7 +45,6 @@ export class TransactionController {
     return this.transactionRepository.create(transaction);
   }
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/transactions')
   @response(200, {
@@ -60,7 +59,7 @@ export class TransactionController {
     },
   })
   async find(
-    @param.filter(Transaction, {exclude: ['limit', 'skip', 'offset']})
+    @param.filter(Transaction, {exclude: ['where', 'limit', 'skip', 'offset']})
     filter?: Filter<Transaction>,
   ): Promise<Transaction[]> {
     return this.transactionRepository.find(filter);

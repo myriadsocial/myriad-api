@@ -26,6 +26,7 @@ import {
   ExperiencePostRepository,
   WalletRepository,
   NetworkRepository,
+  UserCurrencyRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 @injectable({scope: BindingScope.TRANSIENT})
@@ -57,6 +58,8 @@ export class MetricService {
     protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(TagRepository)
     protected tagRepository: TagRepository,
+    @repository(UserCurrencyRepository)
+    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(UserExperienceRepository)
     protected userExpRepository: UserExperienceRepository,
     @repository(ActivityLogRepository)
@@ -259,6 +262,10 @@ export class MetricService {
         return this.experiencePostRepository.count({experienceId});
       }
 
+      case ControllerType.USERCURRENCY:
+        return this.userCurrencyRepository.count(where);
+
+      case ControllerType.WALLET:
       case ControllerType.USERWALLET:
         return this.walletRepository.count(where);
 

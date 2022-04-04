@@ -22,6 +22,7 @@ export * from './transaction-summary.controller';
 export * from './transaction.controller';
 export * from './user.controller';
 export * from './user-account-setting.controller';
+export * from './user-currency.controller';
 export * from './user-draft-post.controller';
 export * from './user-experience.controller';
 export * from './user-language-setting.controller';
