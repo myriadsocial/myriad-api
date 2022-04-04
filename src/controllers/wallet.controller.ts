@@ -101,7 +101,12 @@ export class WalletController {
       },
     },
   })
-  async getUser(@param.path.string('id') id: string): Promise<User> {
-    return this.walletRepository.user(id);
+  async getUser(
+    @param.path.string('id') id: string,
+    @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<User>,
+  ): Promise<User> {
+    const wallet = await this.walletRepository.findById(id);
+    return this.userRepository.findById(wallet.userId, filter);
   }
 }
