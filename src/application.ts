@@ -56,6 +56,7 @@ import {
   ReportRepository,
   TagRepository,
   TransactionRepository,
+  UserCurrencyRepository,
   UserExperienceRepository,
   UserReportRepository,
   UserRepository,
@@ -225,6 +226,7 @@ export class MyriadApiApplication extends BootMixin(
       await this.doMigrateUser();
       await this.doMigrateNetwork();
       await this.doMigrateTransaction();
+      await this.doRemoveUserCurrency();
       return;
     }
   }
@@ -272,6 +274,7 @@ export class MyriadApiApplication extends BootMixin(
         rpcURL: 'wss://rpc.polkadot.io',
         explorerURL:
           'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.polkadot.io#/explorer/query',
+        walletType: WalletType.POLKADOT,
       },
       {
         id: 'kusama',
@@ -280,6 +283,7 @@ export class MyriadApiApplication extends BootMixin(
         rpcURL: 'wss://kusama-rpc.polkadot.io',
         explorerURL:
           'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fkusama-rpc.polkadot.io#/explorer/query',
+        walletType: WalletType.POLKADOT,
       },
       {
         id: 'myriad',
@@ -288,6 +292,7 @@ export class MyriadApiApplication extends BootMixin(
         rpcURL: config.MYRIAD_RPC_WS_URL,
         explorerURL:
           'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fws-rpc.dev.myriad.social#/explorer/query',
+        walletType: WalletType.POLKADOT,
       },
       {
         id: 'near',
@@ -295,6 +300,7 @@ export class MyriadApiApplication extends BootMixin(
           'https://pbs.twimg.com/profile_images/1441304555841597440/YPwdd6cd_400x400.jpg',
         rpcURL: `https://rpc.${environment}.near.org`,
         explorerURL: `https://explorer.${environment}.near.org`,
+        walletType: WalletType.NEAR,
       },
     ];
     const rawCurrencies = [
@@ -438,6 +444,13 @@ export class MyriadApiApplication extends BootMixin(
     }
 
     bar.stop();
+  }
+
+  async doRemoveUserCurrency(): Promise<void> {
+    if (this.options.drop.indexOf('userCurrency') === -1) return;
+    const {userCurrencyRepository} = await this.repositories();
+
+    await userCurrencyRepository.deleteAll();
   }
 
   async accountSetting(
@@ -710,6 +723,9 @@ export class MyriadApiApplication extends BootMixin(
       TransactionRepository,
     );
     const userRepository = await this.getRepository(UserRepository);
+    const userCurrencyRepository = await this.getRepository(
+      UserCurrencyRepository,
+    );
     const userExperienceRepository = await this.getRepository(
       UserExperienceRepository,
     );
@@ -739,6 +755,7 @@ export class MyriadApiApplication extends BootMixin(
       tagRepository,
       transactionRepository,
       userRepository,
+      userCurrencyRepository,
       userExperienceRepository,
       userReportRepository,
       userSocMedRepository,
