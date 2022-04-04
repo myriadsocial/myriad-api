@@ -75,7 +75,6 @@ export class UserController {
             partial: true,
             exclude: [
               'id',
-              'defaultCurrency',
               'onTimeline',
               'verified',
               'nonce',

@@ -23,6 +23,7 @@ import {
 } from '../enums';
 import {
   Comment,
+  Currency,
   Experience,
   Friend,
   Post,
@@ -34,6 +35,7 @@ import {
   ExperienceService,
   FriendService,
   MetricService,
+  NetworkService,
   PostService,
   TagService,
 } from '../services';
@@ -41,7 +43,9 @@ import {pageMetadata} from '../utils/page-metadata.utils';
 import {
   AccountSettingRepository,
   ExperiencePostRepository,
+  CurrencyRepository,
   UserRepository,
+  ExchangeRateRepository,
 } from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
@@ -58,10 +62,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
+    @repository(ExchangeRateRepository)
+    protected exchangeRateRepository: ExchangeRateRepository,
     @repository(ExperiencePostRepository)
     protected experiencePostRepository: ExperiencePostRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(CurrencyRepository)
+    protected currencyRepository: CurrencyRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(ExperienceService)
@@ -72,6 +80,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected friendService: FriendService,
     @service(PostService)
     protected postService: PostService,
+    @service(NetworkService)
+    protected networkService: NetworkService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
     protected currentUser: UserProfile,
   ) {}
@@ -379,6 +389,37 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         });
         break;
       }
+
+      case ControllerType.TRANSACTION: {
+        const {networkId, currencyId} = request.query;
+        if (networkId) {
+          const currencies = await this.currencyRepository.find({
+            where: {
+              id: currencyId?.toString(),
+              networkId: networkId?.toString(),
+            },
+          });
+          const currencyIds = currencies.map(currency => currency.id);
+
+          filter.where = Object.assign(filter.where, {
+            currencyId: {inq: currencyIds},
+          });
+        }
+
+        break;
+      }
+
+      case ControllerType.CURRENCY: {
+        const networkId = (filter.where as AnyObject).networkId;
+        if (networkId && this.currentUser) {
+          filter.order = [
+            `defaultUserCurrency.${this.currentUser[securityId]} DESC`,
+            'symbol ASC',
+          ];
+        }
+
+        break;
+      }
     }
 
     return filter;
@@ -595,6 +636,27 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.CURRENCY: {
+        result = await Promise.all(
+          result.map(async (currency: Currency) => {
+            let priceInUSD = '0';
+
+            const exchangeRate = await this.exchangeRateRepository.get(
+              currency.symbol,
+            );
+
+            if (exchangeRate) priceInUSD = exchangeRate.price.toString();
+
+            return {
+              ...omit(currency, ['defaultUserCurrency']),
+              priceInUSD,
+            };
+          }),
+        );
+
+        break;
+      }
+
       case ControllerType.EXPERIENCE: {
         const {postId} = request.query;
         const experiences = result as Experience[];
@@ -618,7 +680,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             }),
           );
         }
-        break;
       }
     }
 

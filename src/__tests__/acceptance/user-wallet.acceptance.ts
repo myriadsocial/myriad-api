@@ -1,12 +1,18 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {User, Wallet} from '../../models';
-import {UserRepository, WalletRepository} from '../../repositories';
+import {
+  NetworkRepository,
+  UserRepository,
+  WalletRepository,
+} from '../../repositories';
 import {
   deleteAllRepository,
   givenAccesToken,
   givenAddress,
   givenCredential,
+  givenNetworkInstance,
+  givenNetworkRepository,
   givenUserInstance,
   givenUserRepository,
   givenWallet,
@@ -27,6 +33,7 @@ describe('UserWalletApplication', function () {
   let client: Client;
   let userRepository: UserRepository;
   let walletRepository: WalletRepository;
+  let networkRepository: NetworkRepository;
   let user: User;
   let defaultWallet: Wallet;
   let address: KeyringPair;
@@ -39,6 +46,7 @@ describe('UserWalletApplication', function () {
 
   before(async () => {
     userRepository = await givenUserRepository(app);
+    networkRepository = await givenNetworkRepository(app);
     walletRepository = await givenWalletRepository(app);
   });
 
@@ -64,6 +72,8 @@ describe('UserWalletApplication', function () {
   });
 
   it('creates a wallet for user', async () => {
+    await givenNetworkInstance(networkRepository);
+
     const credential = givenCredential({
       nonce: user.nonce,
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),

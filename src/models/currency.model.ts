@@ -1,20 +1,43 @@
-import {AnyObject, Entity, model, property} from '@loopback/repository';
+import {
+  Entity,
+  model,
+  property,
+  belongsTo,
+  AnyObject,
+} from '@loopback/repository';
+import {Network, NetworkWithRelations} from './network.model';
 
 @model({
   settings: {
+    strictObjectIDCoercion: true,
     mongodb: {
       collection: 'currencies',
     },
+    hiddenProperties: ['defaultUserCurrency'],
   },
 })
 export class Currency extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: false,
-    required: true,
+    generated: true,
+    mongodb: {
+      dataType: 'ObjectId',
+    },
   })
   id: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  name: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  symbol: string;
 
   @property({
     type: 'string',
@@ -29,23 +52,17 @@ export class Currency extends Entity {
   decimal: number;
 
   @property({
-    type: 'string',
-    required: true,
-  })
-  rpcURL: string;
-
-  @property({
     type: 'boolean',
     required: false,
   })
   native: boolean;
 
+  // ContractId
   @property({
-    type: 'object',
+    type: 'string',
     required: false,
-    default: null,
   })
-  types: AnyObject;
+  referenceId?: string;
 
   @property({
     type: 'boolean',
@@ -53,18 +70,11 @@ export class Currency extends Entity {
   })
   exchangeRate?: boolean;
 
-  // TODO: create enum
   @property({
-    type: 'string',
-    required: true,
-  })
-  networkType: string;
-
-  @property({
-    type: 'string',
+    type: 'object',
     required: false,
   })
-  explorerURL: string;
+  defaultUserCurrency: AnyObject;
 
   @property({
     type: 'date',
@@ -86,6 +96,9 @@ export class Currency extends Entity {
   })
   deletedAt?: string;
 
+  @belongsTo(() => Network)
+  networkId: string;
+
   constructor(data?: Partial<Currency>) {
     super(data);
   }
@@ -93,6 +106,7 @@ export class Currency extends Entity {
 
 export interface CurrencyRelations {
   // describe navigational properties here
+  network?: NetworkWithRelations;
 }
 
 export type CurrencyWithRelations = Currency & CurrencyRelations;

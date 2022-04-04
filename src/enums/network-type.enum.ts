@@ -1,7 +1,7 @@
 export enum NetworkType {
-  NEAR = 'near',
-  KSM = 'ksm',
-  MYRIAD = 'myriad',
   ETHEREUM = 'ethereum',
+  KUSAMA = 'kusama',
+  MYRIAD = 'myriad',
+  NEAR = 'near',
   POLKADOT = 'polkadot',
 }

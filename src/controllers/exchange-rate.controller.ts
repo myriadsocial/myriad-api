@@ -33,9 +33,9 @@ export class ExchangeRateController {
     if (currencies.length === 0) return [];
     return Promise.all(
       currencies.map(async currency => {
-        const rate = await this.exchangeRateRepository.get(currency.id);
+        const rate = await this.exchangeRateRepository.get(currency.symbol);
 
-        const exchangeRate = new ExchangeRate({id: currency.id, price: 0});
+        const exchangeRate = new ExchangeRate({id: currency.symbol, price: 0});
 
         if (rate) exchangeRate.price = rate.price;
         return exchangeRate;

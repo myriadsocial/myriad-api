@@ -1,4 +1,3 @@
-import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {Currency, User} from '../../models/';
@@ -10,11 +9,9 @@ import {
 import {
   deleteAllRepository,
   givenAccesToken,
-  givenCurrency,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenMultipleCurrencyInstances,
-  givenOtherUser,
   givenUserInstance,
   givenUserRepository,
   givenWalletInstance,
@@ -59,48 +56,6 @@ describe('CurrencyApplication', function () {
     await deleteAllRepository(app);
   });
 
-  it('rejects requests to create a currency with no id', async () => {
-    const currency: Partial<Currency> = givenCurrency();
-    delete currency.id;
-    await client
-      .post('/currencies')
-      .set('Authorization', `Bearer ${token}`)
-      .send(currency)
-      .expect(422);
-  });
-
-  it('rejects requests to create a currency with no image', async () => {
-    const currency: Partial<Currency> = givenCurrency();
-    delete currency.image;
-    await client
-      .post('/currencies')
-      .set('Authorization', `Bearer ${token}`)
-      .send(currency)
-      .expect(422);
-  });
-
-  it('rejects requests to create a currency with no rpcURL', async () => {
-    const currency: Partial<Currency> = givenCurrency();
-    delete currency.rpcURL;
-    await client
-      .post('/currencies')
-      .set('Authorization', `Bearer ${token}`)
-      .send(currency)
-      .expect(422);
-  });
-
-  it('rejects request when creates a currency not as admin myriad', async () => {
-    const currency = givenCurrency();
-    const otherUser = await givenUserInstance(userRepository, givenOtherUser());
-    const accessToken = await givenAccesToken(otherUser);
-
-    await client
-      .post('/currencies')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send(currency)
-      .expect(403);
-  });
-
   context('when dealing with a single persisted currency', () => {
     let persistedCurrency: Currency;
 
@@ -114,48 +69,6 @@ describe('CurrencyApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200, toJSON(persistedCurrency));
-    });
-
-    it('returns 401 when updating a currency not as myriad admin', async function () {
-      const updatedCurrency: Partial<Currency> = givenCurrency();
-
-      delete updatedCurrency.id;
-      const otherUser = await givenUserInstance(
-        userRepository,
-        givenOtherUser({username: 'jojon'}),
-      );
-      const accessToken = await givenAccesToken(otherUser);
-
-      await client
-        .patch(`/currencies/${persistedCurrency.id}`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send(updatedCurrency)
-        .expect(403);
-    });
-
-    it('returns 404 when getting a currency that does not exist', () => {
-      return client
-        .get('/currencies/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
-    });
-
-    it('deletes the currency', async () => {
-      await client
-        .del(`/currencies/${persistedCurrency.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(204);
-      await expect(
-        currencyRepository.findById(persistedCurrency.id),
-      ).to.be.rejectedWith(EntityNotFoundError);
-    });
-
-    it('returns 404 when deleting a currency that does not exist', async () => {
-      await client
-        .del(`/currencies/99999`)
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
     });
   });
 
@@ -181,23 +94,29 @@ describe('CurrencyApplication', function () {
       const currencyInProgress = await givenCurrencyInstance(
         currencyRepository,
         {
-          id: 'AUSD',
-          decimal: 13,
+          name: 'acala AUSD',
+          symbol: 'AUSD',
+          decimal: 12,
           image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
           native: true,
-          rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
-          networkType: 'substrate-test',
+          exchangeRate: true,
+          networkId: 'acala',
         },
       );
 
-      const filter = 'filter=' + JSON.stringify({where: {id: 'AUSD'}});
+      const filter = 'filter=' + JSON.stringify({where: {symbol: 'AUSD'}});
 
       await client
         .get('/currencies')
         .set('Authorization', `Bearer ${token}`)
         .query(filter)
         .expect(200, {
-          data: [toJSON(currencyInProgress)],
+          data: [
+            {
+              ...toJSON(currencyInProgress),
+              priceInUSD: '0',
+            },
+          ],
           meta: {
             currentPage: 1,
             itemsPerPage: 1,
@@ -209,11 +128,13 @@ describe('CurrencyApplication', function () {
 
     it('exploded filter conditions work', async () => {
       await givenCurrencyInstance(currencyRepository, {
-        id: 'MYRIA',
+        name: 'myriad',
+        symbol: 'MYRIA',
         decimal: 12,
         image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
-        native: false,
-        rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
+        native: true,
+        exchangeRate: false,
+        networkId: 'myria',
       });
 
       const response = await client

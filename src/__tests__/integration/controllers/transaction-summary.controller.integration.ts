@@ -80,13 +80,13 @@ describe('TransactionSummaryControllerIntegration', function () {
     expect(response).to.containDeep({
       sent: [
         {
-          currencyId: currency.id,
+          currencyId: currency.id.toString(),
           amount: transactionSent.amount,
         },
       ],
       received: [
         {
-          currencyId: currency.id,
+          currencyId: currency.id.toString(),
           amount: transactionReceived.amount,
         },
       ],
@@ -110,7 +110,7 @@ describe('TransactionSummaryControllerIntegration', function () {
 
     expect(response).to.containDeep([
       {
-        currencyId: currency.id,
+        currencyId: currency.id.toString(),
         amount: transaction.amount,
       },
     ]);
@@ -142,7 +142,7 @@ describe('TransactionSummaryControllerIntegration', function () {
 
     expect(response).to.containDeep([
       {
-        currencyId: currency.id,
+        currencyId: currency.id.toString(),
         amount: transaction.amount,
       },
     ]);

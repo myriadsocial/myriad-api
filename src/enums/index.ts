@@ -1,7 +1,6 @@
 export * from './account-setting-type.enum';
 export * from './activity-log-type.enum';
 export * from './controller-type.enum';
-export * from './default-currency-type.enum';
 export * from './friendstatus-type.enum';
 export * from './method-type.enum';
 export * from './network-type.enum';

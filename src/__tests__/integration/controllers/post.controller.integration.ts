@@ -8,6 +8,7 @@ import {
   PostRepository,
   TransactionRepository,
   UserRepository,
+  CurrencyRepository,
 } from '../../../repositories';
 import {PostService} from '../../../services';
 import {
@@ -20,6 +21,7 @@ import {
   givenTransactionInstance,
   givenUserInstance,
   testdb,
+  givenCurrencyInstance,
 } from '../../helpers';
 
 describe('PostControllerIntegration', () => {
@@ -30,6 +32,7 @@ describe('PostControllerIntegration', () => {
   let commentRepository: CommentRepository;
   let voteRepository: VoteRepository;
   let transactionRepository: TransactionRepository;
+  let currencyRepository: CurrencyRepository;
   let controller: PostController;
 
   before(async () => {
@@ -41,6 +44,7 @@ describe('PostControllerIntegration', () => {
       voteRepository,
       transactionRepository,
       postService,
+      currencyRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -117,10 +121,12 @@ describe('PostControllerIntegration', () => {
   });
 
   it('includes Transaction in find method result', async () => {
+    const currency = await givenCurrencyInstance(currencyRepository);
     const post = await givenPostInstance(postRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
+      currencyId: currency.id,
     });
 
     const response = await controller.getTimeline({include: ['transactions']});
@@ -135,6 +141,7 @@ describe('PostControllerIntegration', () => {
 
   it('includes User, People, Comment, votes, and Transaction in find method result', async () => {
     const user = await givenUserInstance(userRepository);
+    const currency = await givenCurrencyInstance(currencyRepository);
     const people = await givenPeopleInstance(peopleRepository);
     const post = await givenPostInstance(postRepository, {
       peopleId: people.id,
@@ -143,6 +150,7 @@ describe('PostControllerIntegration', () => {
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
+      currencyId: currency.id,
     });
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
@@ -231,10 +239,12 @@ describe('PostControllerIntegration', () => {
   });
 
   it('includes Transaction in findById method result', async () => {
+    const currency = await givenCurrencyInstance(currencyRepository);
     const post = await givenPostInstance(postRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
+      currencyId: currency.id,
     });
 
     const response = await controller.findById(post.id, {
@@ -249,6 +259,7 @@ describe('PostControllerIntegration', () => {
 
   it('includes User, People, Comment, votes, and Transaction in findById method result', async () => {
     const user = await givenUserInstance(userRepository);
+    const currency = await givenCurrencyInstance(currencyRepository);
     const people = await givenPeopleInstance(peopleRepository);
     const post = await givenPostInstance(postRepository, {
       peopleId: people.id,
@@ -257,6 +268,7 @@ describe('PostControllerIntegration', () => {
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: post.id,
       type: ReferenceType.POST,
+      currencyId: currency.id,
     });
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,

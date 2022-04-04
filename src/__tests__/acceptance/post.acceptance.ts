@@ -145,7 +145,12 @@ describe('PostApplication', function () {
       result.body.user.metric.totalPosts = 0;
       persistedPost.user = user as UserWithRelations;
 
-      const expected = toJSON(persistedPost);
+      const expected = {
+        ...toJSON(persistedPost),
+        experienceIndex: {},
+        popularCount: 0,
+        banned: false,
+      };
 
       expect(result.body).to.deepEqual(expected);
     });
@@ -272,19 +277,21 @@ describe('PostApplication', function () {
       );
       postInProgress.user = anotherUser as UserWithRelations;
 
-      await client
+      const response = await client
         .get('/posts')
         .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {text: "what's up, docs!"}}))
-        .expect(200, {
-          data: [toJSON(postInProgress)],
-          meta: {
-            currentPage: 1,
-            itemsPerPage: 1,
-            totalItemCount: 1,
-            totalPageCount: 1,
-          },
-        });
+        .expect(200);
+
+      expect(response.body).to.containDeep({
+        data: [toJSON(postInProgress)],
+        meta: {
+          currentPage: 1,
+          itemsPerPage: 1,
+          totalItemCount: 1,
+          totalPageCount: 1,
+        },
+      });
     });
 
     it('exploded filter conditions work', async () => {
@@ -312,6 +319,7 @@ describe('PostApplication', function () {
       referenceId: post.id,
       type: ReferenceType.POST,
       from: user.id,
+      currencyId: '1',
     });
     const vote = await givenVoteInstance(voteRepository, {
       referenceId: post.id,
@@ -383,13 +391,19 @@ describe('PostApplication', function () {
       peopleId = response.body.peopleId;
       result.totalImporter = 1;
       response.body.importers[0].metric.totalPosts = 0;
+      response.body.importers[0].metric.totalFriends = 1;
 
       expect(
         toJSON({
           ...result,
           text: result.text,
           title: result.title,
-          importers: [Object.assign(user, {name: 'You'})],
+          importers: [
+            Object.assign(user, {
+              name: 'You',
+              metric: Object.assign(user.metric, {totalFriends: 1}),
+            }),
+          ],
         }),
       ).to.containDeep(toJSON(response.body));
     });

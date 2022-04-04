@@ -20,6 +20,7 @@ import {
   DraftPost,
   Experience,
   Friend,
+  Network,
   Notification,
   NotificationSetting,
   People,
@@ -29,7 +30,6 @@ import {
   Tag,
   Transaction,
   User,
-  UserCurrency,
   UserExperience,
   UserReport,
   UserSocialMedia,
@@ -46,6 +46,7 @@ import {
   CurrencyRepository,
   ExperienceRepository,
   FriendRepository,
+  NetworkRepository,
   NotificationRepository,
   NotificationSettingRepository,
   PeopleRepository,
@@ -53,7 +54,6 @@ import {
   ReportRepository,
   TagRepository,
   TransactionRepository,
-  UserCurrencyRepository,
   UserExperienceRepository,
   UserReportRepository,
   UserRepository,
@@ -297,13 +297,13 @@ export async function givenPostInstance(
 export function givenCurrency(currency?: Partial<Currency>) {
   const data = Object.assign(
     {
-      id: 'ROC',
+      name: 'rococo',
+      symbol: 'ROC',
       decimal: 12,
       image: 'https://polkadot.js.org/apps/static/rococo.afea08ac.svg',
       native: true,
-      rpcURL: 'wss://rococo-rpc.polkadot.io',
-      networkType: 'substrate-test',
       exchangeRate: false,
+      networkId: 'rococo',
     },
     currency,
   );
@@ -323,12 +323,13 @@ export async function givenMultipleCurrencyInstances(
   return Promise.all([
     givenCurrencyInstance(currencyRepository),
     givenCurrencyInstance(currencyRepository, {
-      id: 'ACA',
-      decimal: 13,
+      name: 'acala',
+      symbol: 'ACA',
+      decimal: 12,
       image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
       native: true,
-      rpcURL: 'wss://acala-mandala.api.onfinality.io/public-ws',
-      networkType: 'substrate-test',
+      exchangeRate: true,
+      networkId: 'acala',
     }),
   ]);
 }
@@ -461,7 +462,6 @@ export function givenTransaction(transaction?: Partial<Transaction>) {
       amount: 1,
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
       to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
-      currencyId: 'ROC',
     },
     transaction,
   );
@@ -473,24 +473,6 @@ export async function givenTransactionInstance(
   transaction?: Partial<Transaction>,
 ) {
   return transactionRepository.create(givenTransaction(transaction));
-}
-
-export function givenUserCurrency(userCurrency?: Partial<UserCurrency>) {
-  const data = Object.assign(
-    {
-      userId: '9999',
-      currencyId: 'ROC',
-    },
-    userCurrency,
-  );
-  return new UserCurrency(data);
-}
-
-export async function givenUserCurrencyInstance(
-  userCurrencyRepository: UserCurrencyRepository,
-  userCurrency?: Partial<UserCurrency>,
-) {
-  return userCurrencyRepository.create(givenUserCurrency(userCurrency));
 }
 
 export function givenUserSocialMedia(
@@ -817,4 +799,26 @@ export function givenUserWallet(userWallet?: Partial<UserWallet>) {
     userWallet,
   );
   return new UserWallet(data);
+}
+
+export function givenNetwork(network?: Partial<Network>) {
+  const data = Object.assign(
+    {
+      id: 'polkadot',
+      image:
+        'https://polkadot.network/assets/img/brand/Polkadot_Token_PolkadotToken_Pink.svg?v=3997aaa2a4',
+      rpcURL: 'wss://rpc.polkadot.io',
+      explorerURL:
+        'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.polkadot.io#/explorer/query',
+    },
+    network,
+  );
+  return new Network(data);
+}
+
+export function givenNetworkInstance(
+  networkRepository: NetworkRepository,
+  network?: Partial<Network>,
+) {
+  return networkRepository.create(givenNetwork(network));
 }

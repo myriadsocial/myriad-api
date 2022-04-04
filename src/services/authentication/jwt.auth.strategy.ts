@@ -53,7 +53,6 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
 
     if (!user) throw new HttpErrors.Unauthorized('Forbidden user!');
 
-    userProfile.defaultCurrency = user.defaultCurrency;
     userProfile.permissions = user.permissions;
     userProfile.profilePictureURL = user.profilePictureURL;
 

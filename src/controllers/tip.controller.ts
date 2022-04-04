@@ -1,19 +1,18 @@
-import {AnyObject, repository} from '@loopback/repository';
+import {AnyObject} from '@loopback/repository';
 import {post, response, param, get} from '@loopback/rest';
-import {CurrencyService} from '../services';
+import {CurrencyService, NetworkService} from '../services';
 import {service} from '@loopback/core';
 import {authenticate} from '@loopback/authentication';
-import {UserRepository} from '../repositories';
 
-@authenticate('jwt')
 export class TipController {
   constructor(
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
+    @service(NetworkService)
+    protected networkService: NetworkService,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
   ) {}
 
+  @authenticate('jwt')
   @post('/users/{userId}/claim/{currencyId}')
   @response(200, {
     description: 'Claim Token Tips',
@@ -22,11 +21,10 @@ export class TipController {
     @param.path.string('userId') userId: string,
     @param.path.string('currencyId') currencyId: string,
   ): Promise<void> {
-    return this.currencyService.claimTips(userId, currencyId.toUpperCase());
+    return this.currencyService.claimTips(userId, currencyId);
   }
 
-  @authenticate.skip()
-  @get('/users/{userId}/balance/{currencyId}')
+  @get('/users/{userId}/balance/{networkId}')
   @response(200, {
     description: 'User Balance',
     content: {
@@ -47,8 +45,8 @@ export class TipController {
   })
   async getBalance(
     @param.path.string('userId') userId: string,
-    @param.path.string('currencyId') currencyId: string,
+    @param.path.string('networkId') networkId: string,
   ): Promise<AnyObject> {
-    return this.currencyService.getBalance(userId, currencyId.toUpperCase());
+    return this.networkService.escrowBalance(userId, networkId);
   }
 }

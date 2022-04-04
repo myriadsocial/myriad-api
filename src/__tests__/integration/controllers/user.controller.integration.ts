@@ -2,38 +2,27 @@ import {expect} from '@loopback/testlab';
 import {UserController} from '../../../controllers';
 import {
   ActivityLogRepository,
-  CurrencyRepository,
   FriendRepository,
-  UserCurrencyRepository,
   UserRepository,
 } from '../../../repositories';
 import {
   givenActivityLogInstance,
-  givenCurrencyInstance,
   givenEmptyDatabase,
   givenFriendInstance,
   givenRepositories,
-  givenUserCurrencyInstance,
   givenUserInstance,
   testdb,
 } from '../../helpers';
 
 describe('UserControllerIntegration', () => {
   let userRepository: UserRepository;
-  let userCurrencyRepository: UserCurrencyRepository;
   let activityLogRepository: ActivityLogRepository;
-  let currencyRepository: CurrencyRepository;
   let friendRepository: FriendRepository;
   let controller: UserController;
 
   before(async () => {
-    ({
-      userRepository,
-      userCurrencyRepository,
-      currencyRepository,
-      friendRepository,
-      activityLogRepository,
-    } = await givenRepositories(testdb));
+    ({userRepository, friendRepository, activityLogRepository} =
+      await givenRepositories(testdb));
   });
 
   before(async () => {
@@ -42,25 +31,6 @@ describe('UserControllerIntegration', () => {
 
   beforeEach(async () => {
     await givenEmptyDatabase(testdb);
-  });
-
-  it('includes Currencies in find method result', async () => {
-    const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository);
-
-    await givenUserCurrencyInstance(userCurrencyRepository, {
-      userId: user.id,
-      currencyId: currency.id,
-    });
-
-    const response = await controller.find({include: ['currencies']});
-
-    expect(response).to.containDeep([
-      {
-        ...user,
-        currencies: [currency],
-      },
-    ]);
   });
 
   it('includes Friends in find method result', async () => {
@@ -97,8 +67,7 @@ describe('UserControllerIntegration', () => {
     ]);
   });
 
-  it('includes Currencies, ActivityLogs and Friends in find method result', async () => {
-    const currency = await givenCurrencyInstance(currencyRepository);
+  it('includes ActivityLogs and Friends in find method result', async () => {
     const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
       username: 'johndoe',
@@ -111,42 +80,17 @@ describe('UserControllerIntegration', () => {
       requesteeId: otherUser.id,
     });
 
-    await givenUserCurrencyInstance(userCurrencyRepository, {
-      userId: user.id,
-      currencyId: currency.id,
-    });
-
     const response = await controller.find({
-      include: ['currencies', 'friends', 'activityLogs'],
+      include: ['friends', 'activityLogs'],
     });
 
     expect(response).to.containDeep([
       {
         ...user,
-        currencies: [currency],
         friends: [friend],
         activityLogs: [activityLog],
       },
     ]);
-  });
-
-  it('includes Currencies in findById method result', async () => {
-    const currency = await givenCurrencyInstance(currencyRepository);
-    const user = await givenUserInstance(userRepository);
-
-    await givenUserCurrencyInstance(userCurrencyRepository, {
-      userId: user.id,
-      currencyId: currency.id,
-    });
-
-    const response = await controller.findById(user.id, {
-      include: ['currencies'],
-    });
-
-    expect(response).to.containDeep({
-      ...user,
-      currencies: [currency],
-    });
   });
 
   it('includes Friends in findById method result', async () => {
@@ -183,8 +127,7 @@ describe('UserControllerIntegration', () => {
     });
   });
 
-  it('includes Currencies, ActivityLogs, and Friends in findById method result', async () => {
-    const currency = await givenCurrencyInstance(currencyRepository);
+  it('includes ActivityLogs and Friends in findById method result', async () => {
     const user = await givenUserInstance(userRepository);
     const otherUser = await givenUserInstance(userRepository, {
       username: 'johndoe',
@@ -197,18 +140,12 @@ describe('UserControllerIntegration', () => {
       userId: user.id,
     });
 
-    await givenUserCurrencyInstance(userCurrencyRepository, {
-      userId: user.id,
-      currencyId: currency.id,
-    });
-
     const response = await controller.findById(user.id, {
-      include: ['currencies', 'friends', 'activityLogs'],
+      include: ['friends', 'activityLogs'],
     });
 
     expect(response).to.containDeep({
       ...user,
-      currencies: [currency],
       friends: [friend],
       activityLogs: [activityLog],
     });

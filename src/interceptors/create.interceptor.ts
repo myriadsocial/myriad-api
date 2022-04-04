@@ -17,19 +17,11 @@ import {
   ActivityLogType,
   FriendStatusType,
 } from '../enums';
-import {
-  Comment,
-  Credential,
-  DraftPost,
-  Transaction,
-  UserSocialMedia,
-  Wallet,
-} from '../models';
+import {Comment, Credential, DraftPost, Transaction, Wallet} from '../models';
 import {
   CommentRepository,
   ExperiencePostRepository,
   ReportRepository,
-  UserCurrencyRepository,
   UserReportRepository,
   UserRepository,
   WalletRepository,
@@ -39,6 +31,7 @@ import {
   CurrencyService,
   FriendService,
   MetricService,
+  NetworkService,
   NotificationService,
   PostService,
   TagService,
@@ -57,8 +50,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
-    @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
     @repository(UserRepository)
@@ -85,6 +76,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected friendService: FriendService,
     @service(PostService)
     protected postService: PostService,
+    @service(NetworkService)
+    protected networkService: NetworkService,
   ) {}
 
   /**
@@ -163,47 +156,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
         return;
       }
 
-      case ControllerType.CURRENCY: {
-        const data = invocationCtx.args[0];
-        const currencyId = data.id;
-        const found = await this.currencyService.currencyRepository.findOne({
-          where: {id: currencyId},
-        });
-
-        if (found)
-          throw new HttpErrors.UnprocessableEntity('Currency already exists');
-
-        invocationCtx.args[0] =
-          await this.currencyService.verifyRpcAddressConnection(data);
-
-        return;
-      }
-
       case ControllerType.FRIEND: {
         await this.friendService.handlePendingBlockedRequest(
           invocationCtx.args[0],
         );
-
-        return;
-      }
-
-      case ControllerType.USERCURRENCY: {
-        const {userId, currencyId} = invocationCtx.args[0];
-
-        await this.currencyService.currencyRepository.findById(currencyId);
-
-        const userCurrency = await this.userCurrencyRepository.findOne({
-          where: {userId, currencyId},
-        });
-        if (userCurrency)
-          throw new HttpErrors.UnprocessableEntity(
-            'User currency already exists',
-          );
-
-        const {count} = await this.userCurrencyRepository.count({userId});
-
-        invocationCtx.args[0].currencyId = currencyId;
-        invocationCtx.args[0].priority = count + 1;
 
         return;
       }
@@ -276,15 +232,20 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Data cannot be empty');
         }
 
-        // TODO: validate network
+        const networkExists =
+          await this.networkService.networkRepository.exists(networkType);
+
+        if (!networkExists) {
+          throw new HttpErrors.UnprocessableEntity('Network not exists');
+        }
 
         if (!data.id) {
           throw new HttpErrors.UnprocessableEntity('Id must included');
         }
 
-        const exists = await this.walletRepository.exists(data.id);
+        const walletExists = await this.walletRepository.exists(data.id);
 
-        if (exists)
+        if (walletExists)
           throw new HttpErrors.UnprocessableEntity('Wallet Id already exist');
 
         const wallet = await this.walletRepository.findOne({
@@ -311,6 +272,21 @@ export class CreateInterceptor implements Provider<Interceptor> {
           network: networkType,
           type: walletType,
         });
+
+        break;
+      }
+
+      case ControllerType.NETWORKCURRENCY: {
+        const [id, rawCurrency] = invocationCtx.args;
+        const {rpcURL} = await this.networkService.networkRepository.findById(
+          id,
+        );
+
+        invocationCtx.args[1] = await this.networkService.verifyContractAddress(
+          id,
+          rpcURL,
+          rawCurrency.referenceId,
+        );
 
         break;
       }
@@ -447,14 +423,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
         });
 
         return Object.assign(result, {totalReported: count});
-      }
-
-      case ControllerType.USERSOCIALMEDIA: {
-        this.currencyService.autoClaimTips(
-          result as UserSocialMedia,
-        ) as Promise<void>;
-
-        return result;
       }
 
       case ControllerType.VOTE: {

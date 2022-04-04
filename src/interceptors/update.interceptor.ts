@@ -113,23 +113,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     }
 
     switch (controllerName) {
-      case ControllerType.CURRENCY: {
-        const [currencyId, currency] = invocationCtx.args;
-        const currentCurrency =
-          await this.currencyService.currencyRepository.findById(currencyId);
-        const updatedCurrency = Object.assign(currentCurrency, {
-          ...currency,
-          updatedAt: new Date().toString(),
-        });
-
-        invocationCtx.args[1] =
-          await this.currencyService.verifyRpcAddressConnection(
-            updatedCurrency,
-          );
-
-        break;
-      }
-
       case ControllerType.FRIEND: {
         const status = invocationCtx.args[1].status;
 
@@ -290,16 +273,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         await this.notificationService.sendFriendAccept(requestorId);
         await this.metricService.userMetric(requestorId);
         await this.metricService.userMetric(requesteeId);
-        break;
-      }
-
-      case ControllerType.USERCURRENCY: {
-        const {userId, currencies} = invocationCtx.args[0];
-
-        await this.userRepository.updateById(userId, {
-          defaultCurrency: currencies[0],
-        });
-
         break;
       }
 

@@ -376,6 +376,7 @@ describe('CommentApplication', function () {
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
+      currencyId: '1',
     });
     const filter = {
       filter: {include: ['user', 'transactions', 'post']},

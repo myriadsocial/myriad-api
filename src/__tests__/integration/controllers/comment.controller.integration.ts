@@ -3,6 +3,7 @@ import {CommentController} from '../../../controllers';
 import {ReferenceType} from '../../../enums';
 import {
   CommentRepository,
+  CurrencyRepository,
   PostRepository,
   TransactionRepository,
   UserRepository,
@@ -10,6 +11,7 @@ import {
 import {
   givenComment,
   givenCommentInstance,
+  givenCurrencyInstance,
   givenEmptyDatabase,
   givenPostInstance,
   givenRepositories,
@@ -23,6 +25,7 @@ describe('CommentControllerIntegration', () => {
   let userRepository: UserRepository;
   let postRepository: PostRepository;
   let transactionRepository: TransactionRepository;
+  let currencyRepository: CurrencyRepository;
   let controller: CommentController;
 
   before(async () => {
@@ -31,6 +34,7 @@ describe('CommentControllerIntegration', () => {
       postRepository,
       transactionRepository,
       userRepository,
+      currencyRepository,
     } = await givenRepositories(testdb));
   });
 
@@ -43,6 +47,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('includes Transactions in find method result', async () => {
+    const currency = await givenCurrencyInstance(currencyRepository);
     const comment = await givenCommentInstance(commentRepository, {
       userId: '9999',
       postId: '1',
@@ -50,6 +55,7 @@ describe('CommentControllerIntegration', () => {
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
+      currencyId: currency.id,
     });
 
     const response = await controller.find({include: ['transactions']});
@@ -132,6 +138,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('includes Transaction, User, and two levels Comments in find method result', async () => {
+    const currency = await givenCurrencyInstance(currencyRepository);
     const post = await givenPostInstance(postRepository);
     const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
@@ -164,6 +171,7 @@ describe('CommentControllerIntegration', () => {
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
+      currencyId: currency.id,
     });
 
     const response = await controller.find({
@@ -199,6 +207,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('includes Transactions in findById method result', async () => {
+    const currency = await givenCurrencyInstance(currencyRepository);
     const comment = await givenCommentInstance(commentRepository, {
       userId: '9999',
       postId: '1',
@@ -206,6 +215,7 @@ describe('CommentControllerIntegration', () => {
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
+      currencyId: currency.id,
     });
 
     const response = await controller.findById(comment.id ?? '', {
@@ -286,6 +296,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   it('includes Transaction, User, and two levels Comments in findById method result', async () => {
+    const currency = await givenCurrencyInstance(currencyRepository);
     const post = await givenPostInstance(postRepository);
     const user = await givenUserInstance(userRepository);
     const comment = await givenCommentInstance(commentRepository, {
@@ -318,6 +329,7 @@ describe('CommentControllerIntegration', () => {
     const transaction = await givenTransactionInstance(transactionRepository, {
       referenceId: comment.id,
       type: ReferenceType.COMMENT,
+      currencyId: currency.id,
     });
 
     const response = await controller.findById(comment.id ?? '', {
