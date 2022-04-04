@@ -22,6 +22,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
+import {NetworkType, WalletType} from '../../enums';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('AuthenticationApplication', function () {
@@ -113,6 +114,38 @@ describe('AuthenticationApplication', function () {
     const updatedUser = await userRepository.findById(user.id);
 
     expect(updatedUser.nonce).to.not.equal(user.nonce);
+  });
+
+  it('uses different wallet when login', async () => {
+    const user = await givenUserInstance(userRepository, {username: 'johndoe'});
+    const primaryWallet = await givenWalletInstance(walletRepository, {
+      id: 'abdulhakim.testnet',
+      type: WalletType.NEAR,
+      network: NetworkType.NEAR,
+      primary: true,
+      userId: user.id,
+    });
+    const wallet = await givenWalletInstance(walletRepository, {
+      primary: false,
+      userId: user.id,
+    });
+    const credential = givenCredential({
+      nonce: user.nonce,
+      signature: u8aToHex(address.sign(numberToHex(user.nonce))),
+    });
+
+    await client.post('/login').send(credential).expect(200);
+
+    const updatedUser = await userRepository.findById(user.id);
+    const expectedPrimaryWallet = await walletRepository.findById(wallet.id);
+    const expectedWallet = await walletRepository.findById(primaryWallet.id);
+
+    primaryWallet.primary = false;
+    wallet.primary = true;
+
+    expect(updatedUser.nonce).to.not.equal(user.nonce);
+    expect(wallet).to.deepEqual(expectedPrimaryWallet);
+    expect(primaryWallet).to.deepEqual(expectedWallet);
   });
 
   it('checks authentication flow', async () => {
