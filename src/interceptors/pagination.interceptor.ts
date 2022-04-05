@@ -18,6 +18,7 @@ import {
   MethodType,
   OrderFieldType,
   OrderType,
+  ReferenceType,
   TimelineType,
   VisibilityType,
 } from '../enums';
@@ -399,29 +400,45 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.TRANSACTION: {
-        const {currencyId} = request.query;
-        const wallets = await this.walletRepository.find({
-          where: {
-            userId: this.currentUser[securityId],
-          },
-        });
+        const {referenceId, currencyId, referenceType} = request.query;
 
-        const walletIds = wallets.map(wallet => wallet.id);
+        switch (referenceType) {
+          case ReferenceType.POST:
+          case ReferenceType.COMMENT: {
+            if (!referenceId) {
+              throw new HttpErrors.UnprocessableEntity(
+                'Please input reference id',
+              );
+            }
+            filter.where = {referenceId, type: referenceType};
+            break;
+          }
 
-        filter.where = {
-          or: [
-            {
-              from: {
-                inq: walletIds,
+          default: {
+            const wallets = await this.walletRepository.find({
+              where: {
+                userId: this.currentUser[securityId],
               },
-            },
-            {
-              to: {
-                inq: walletIds,
-              },
-            },
-          ],
-        };
+            });
+
+            const walletIds = wallets.map(wallet => wallet.id);
+
+            filter.where = {
+              or: [
+                {
+                  from: {
+                    inq: walletIds,
+                  },
+                },
+                {
+                  to: {
+                    inq: walletIds,
+                  },
+                },
+              ],
+            };
+          }
+        }
 
         if (currencyId) {
           filter.where = Object.assign(filter.where, {currencyId});
