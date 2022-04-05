@@ -22,6 +22,7 @@ import {
   CommentRepository,
   ExperiencePostRepository,
   ReportRepository,
+  UserCurrencyRepository,
   UserReportRepository,
   UserRepository,
   WalletRepository,
@@ -54,6 +55,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected reportRepository: ReportRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(UserCurrencyRepository)
+    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
     @repository(ExperiencePostRepository)
@@ -382,10 +385,11 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERWALLET: {
-        const {userId} = invocationCtx.args[1].data;
+        const {userId, network} = invocationCtx.args[1].data;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
+        await this.currencyService.addUserCurrencies(userId, network);
         await this.userRepository.updateById(userId, {nonce: newNonce});
 
         return result;

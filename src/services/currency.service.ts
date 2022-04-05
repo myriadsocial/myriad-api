@@ -9,6 +9,7 @@ import {
   CurrencyRepository,
   QueueRepository,
   TransactionRepository,
+  UserCurrencyRepository,
   UserSocialMediaRepository,
   WalletRepository,
 } from '../repositories';
@@ -20,6 +21,7 @@ import {JWTService} from './authentication';
 import {TokenServiceBindings} from '../keys';
 import {BN} from '@polkadot/util';
 import {parseJSON} from '../utils/formated-balance';
+import {UserCurrency} from '../models';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class CurrencyService {
@@ -36,11 +38,82 @@ export class CurrencyService {
     protected queueRepository: QueueRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
+    @repository(UserCurrencyRepository)
+    protected userCurrencyRepository: UserCurrencyRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
   ) {}
+
+  async addUserCurrencies(userId: string, networkId: string): Promise<void> {
+    const currencies = await this.currencyRepository.find({
+      where: {networkId},
+      order: ['native DESC'],
+    });
+
+    await Promise.all(
+      currencies.map(async (currency, index) => {
+        return this.userCurrencyRepository.create({
+          userId: userId,
+          networkId: networkId,
+          currencyId: currency.id,
+          priority: index + 1,
+        });
+      }),
+    );
+  }
+
+  async updateUserCurrency(userId: string, networkId: string): Promise<void> {
+    if (!userId || !networkId) return;
+
+    const {count: countCurrency} = await this.currencyRepository.count({
+      networkId: networkId,
+    });
+
+    let {count: countUserCurrency} = await this.userCurrencyRepository.count({
+      networkId: networkId,
+      userId: userId,
+    });
+
+    if (countUserCurrency === 0) {
+      await this.addUserCurrencies(userId, networkId);
+      countUserCurrency = countCurrency;
+    }
+
+    if (countCurrency > countUserCurrency) {
+      const userCurrencies = await this.userCurrencyRepository.find({
+        where: {
+          networkId: networkId,
+          userId: userId,
+        },
+      });
+      const currencyIds = userCurrencies.map(
+        userCurrency => userCurrency.currencyId,
+      );
+      const currencies = await this.currencyRepository.find({
+        where: {
+          id: {nin: currencyIds},
+          networkId: networkId,
+        },
+      });
+
+      const newUserCurrencies: UserCurrency[] = [];
+
+      for (let i = 0; i < currencies.length; i++) {
+        const newUserCurrency = new UserCurrency({
+          userId: userId,
+          networkId: networkId,
+          currencyId: currencies[i].id,
+          priority: countUserCurrency + 1 + i,
+        });
+
+        newUserCurrencies.push(newUserCurrency);
+      }
+
+      await this.userCurrencyRepository.createAll(newUserCurrencies);
+    }
+  }
 
   async sendMyriadReward(address: string): Promise<void> {
     if (!address.startsWith('0x') && address.length !== 66) return;
