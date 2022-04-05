@@ -251,7 +251,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.USERSOCIALMEDIA: {
         if (typeof data === 'object') {
           const userSocialMedia = await this.walletRepository.user(
-            data.publicKey,
+            data.address,
           );
           userId = userSocialMedia.id;
         } else {

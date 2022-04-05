@@ -28,7 +28,7 @@ export class SocialMediaService {
     protected facebookService: Facebook,
   ) {}
 
-  async verifyToTwitter(username: string, publicKey: string): Promise<People> {
+  async verifyToTwitter(username: string, address: string): Promise<People> {
     let user = null;
     let tweets = null;
 
@@ -50,15 +50,12 @@ export class SocialMediaService {
       throw new HttpErrors.NotFound('Tweet not found/protected by user');
 
     // Verify that the publicKey is existing in user twitter
-    const foundTwitterPublicKey = tweets[0]?.text
+    const found = tweets[0]?.text
       .replace(/\n/g, ' ')
       .split(' ')
-      .find((tweet: string) => tweet === publicKey);
+      .find((tweet: string) => tweet === address);
 
-    if (!foundTwitterPublicKey)
-      throw new HttpErrors.NotFound('Cannot find specified post');
-
-    // await this.fetchTwitterFollowing(user.id);
+    if (!found) throw new HttpErrors.NotFound('Cannot find specified post');
 
     return new People({
       name: user.name,
@@ -69,7 +66,7 @@ export class SocialMediaService {
     });
   }
 
-  async verifyToReddit(username: string, publicKey: string): Promise<People> {
+  async verifyToReddit(username: string, address: string): Promise<People> {
     try {
       const {data: redditUser} = await this.redditService.getActions(
         `user/${username}/about.json`,
@@ -81,7 +78,7 @@ export class SocialMediaService {
       const found = redditPost?.children[0]?.data?.title
         .replace(/\n/g, ' ')
         .split(' ')
-        .find((post: string) => post === publicKey);
+        .find((post: string) => post === address);
 
       if (!found) throw new Error('PostNotFound');
 
@@ -98,32 +95,6 @@ export class SocialMediaService {
       });
     } catch {
       throw new HttpErrors.NotFound('Cannot find the specified post');
-    }
-  }
-
-  async fetchTwitterFollowing(platformAccountId: string): Promise<void> {
-    if (!platformAccountId) return;
-
-    const {data: following} = await this.twitterService.getActions(
-      `2/users/${platformAccountId}/following?user.fields=profile_image_url`,
-    );
-
-    for (const person of following) {
-      const foundPerson = await this.peopleRepository.findOne({
-        where: {
-          originUserId: person.id,
-        },
-      });
-
-      if (!foundPerson) {
-        await this.peopleRepository.create({
-          name: person.name,
-          username: person.username,
-          originUserId: person.id,
-          platform: PlatformType.TWITTER,
-          profilePictureURL: person.profile_image_url || '',
-        });
-      }
     }
   }
 

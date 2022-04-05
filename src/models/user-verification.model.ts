@@ -6,13 +6,8 @@ export class UserVerification extends Model {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
-    },
   })
-  publicKey: string;
+  address: string;
 
   @property({
     type: 'string',
