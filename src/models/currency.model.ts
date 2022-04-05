@@ -7,7 +7,6 @@ import {Network, NetworkWithRelations} from './network.model';
     mongodb: {
       collection: 'currencies',
     },
-    hiddenProperties: ['defaultUserCurrency'],
   },
 })
 export class Currency extends Entity {

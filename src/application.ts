@@ -226,7 +226,7 @@ export class MyriadApiApplication extends BootMixin(
       await this.doMigrateUser();
       await this.doMigrateNetwork();
       await this.doMigrateTransaction();
-      await this.doRemoveUserCurrency();
+      await this.doMigrateUserCurrency();
       return;
     }
   }
@@ -303,7 +303,7 @@ export class MyriadApiApplication extends BootMixin(
         walletType: WalletType.NEAR,
       },
     ];
-    const rawCurrencies = [
+    const rawCurrencies: Currency[] = [
       {
         name: 'myria',
         symbol: 'MYRIA',
@@ -344,7 +344,24 @@ export class MyriadApiApplication extends BootMixin(
         exchangeRate: true,
         networkId: 'near',
       },
-    ];
+    ].map(currency => new Currency(currency));
+
+    if (environment === 'mainnet') {
+      rawCurrencies.push(
+        new Currency({
+          name: 'myriad',
+          symbol: 'MYRIA',
+          image:
+            'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
+          decimal: 18,
+          native: false,
+          exchangeRate: false,
+          networkId: 'near',
+          referenceId: 'myriadcore.near',
+        }),
+      );
+    }
+
     await currencyRepository.deleteAll();
     await currencyRepository.createAll(rawCurrencies);
     await networkRepository.createAll(rawNetworks);
@@ -384,6 +401,7 @@ export class MyriadApiApplication extends BootMixin(
       notificationRepository,
       postRepository,
       reportRepository,
+      userCurrencyRepository,
       userExperienceRepository,
       userReportRepository,
       userSocMedRepository,
@@ -393,6 +411,8 @@ export class MyriadApiApplication extends BootMixin(
     } = await this.repositories();
     const {count} = await userRepository.count({id: /^0x/});
     const bar = this.initializeProgressBar('Alter user');
+
+    await userCurrencyRepository.deleteAll();
 
     let i = 0;
     const start = true;
@@ -431,6 +451,7 @@ export class MyriadApiApplication extends BootMixin(
         this.postMention(oldId, newId, postRepository),
         this.post(oldId, newId, postRepository),
         this.report(oldId, newId, reportRepository),
+        this.userCurrency(newId, userCurrencyRepository),
         this.userExperience(oldId, newId, userExperienceRepository),
         this.userReport(oldId, newId, userReportRepository),
         this.userSocialMedia(oldId, newId, userSocMedRepository),
@@ -446,11 +467,21 @@ export class MyriadApiApplication extends BootMixin(
     bar.stop();
   }
 
-  async doRemoveUserCurrency(): Promise<void> {
+  async doMigrateUserCurrency(): Promise<void> {
     if (this.options.drop.indexOf('userCurrency') === -1) return;
-    const {userCurrencyRepository} = await this.repositories();
+    const {currencyRepository, userCurrencyRepository} =
+      await this.repositories();
 
-    await userCurrencyRepository.deleteAll();
+    const currency = await currencyRepository.findOne({
+      where: {symbol: 'DOT'},
+    });
+
+    if (currency) {
+      await userCurrencyRepository.updateAll(
+        {currencyId: currency.id},
+        {currencyId: 'DOT'},
+      );
+    }
   }
 
   async accountSetting(
@@ -643,6 +674,18 @@ export class MyriadApiApplication extends BootMixin(
       {referenceId: newId},
       {referenceId: oldId},
     );
+  }
+
+  async userCurrency(
+    newId: string,
+    userCurrencyRepository: UserCurrencyRepository,
+  ) {
+    await userCurrencyRepository.create({
+      networkId: NetworkType.POLKADOT,
+      userId: newId,
+      priority: 1,
+      currencyId: 'DOT',
+    });
   }
 
   async userExperience(
