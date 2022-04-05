@@ -56,6 +56,7 @@ import {
   ReportRepository,
   TagRepository,
   TransactionRepository,
+  UserCurrencyRepository,
   UserExperienceRepository,
   UserReportRepository,
   UserRepository,
@@ -225,6 +226,7 @@ export class MyriadApiApplication extends BootMixin(
       await this.doMigrateUser();
       await this.doMigrateNetwork();
       await this.doMigrateTransaction();
+      await this.doMigrateUserCurrency();
       return;
     }
   }
@@ -272,6 +274,7 @@ export class MyriadApiApplication extends BootMixin(
         rpcURL: 'wss://rpc.polkadot.io',
         explorerURL:
           'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.polkadot.io#/explorer/query',
+        walletType: WalletType.POLKADOT,
       },
       {
         id: 'kusama',
@@ -280,6 +283,7 @@ export class MyriadApiApplication extends BootMixin(
         rpcURL: 'wss://kusama-rpc.polkadot.io',
         explorerURL:
           'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fkusama-rpc.polkadot.io#/explorer/query',
+        walletType: WalletType.POLKADOT,
       },
       {
         id: 'myriad',
@@ -288,6 +292,7 @@ export class MyriadApiApplication extends BootMixin(
         rpcURL: config.MYRIAD_RPC_WS_URL,
         explorerURL:
           'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fws-rpc.dev.myriad.social#/explorer/query',
+        walletType: WalletType.POLKADOT,
       },
       {
         id: 'near',
@@ -295,9 +300,10 @@ export class MyriadApiApplication extends BootMixin(
           'https://pbs.twimg.com/profile_images/1441304555841597440/YPwdd6cd_400x400.jpg',
         rpcURL: `https://rpc.${environment}.near.org`,
         explorerURL: `https://explorer.${environment}.near.org`,
+        walletType: WalletType.NEAR,
       },
     ];
-    const rawCurrencies = [
+    const rawCurrencies: Currency[] = [
       {
         name: 'myria',
         symbol: 'MYRIA',
@@ -338,7 +344,24 @@ export class MyriadApiApplication extends BootMixin(
         exchangeRate: true,
         networkId: 'near',
       },
-    ];
+    ].map(currency => new Currency(currency));
+
+    if (environment === 'mainnet') {
+      rawCurrencies.push(
+        new Currency({
+          name: 'myriad',
+          symbol: 'MYRIA',
+          image:
+            'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
+          decimal: 18,
+          native: false,
+          exchangeRate: false,
+          networkId: 'near',
+          referenceId: 'myriadcore.near',
+        }),
+      );
+    }
+
     await currencyRepository.deleteAll();
     await currencyRepository.createAll(rawCurrencies);
     await networkRepository.createAll(rawNetworks);
@@ -378,6 +401,7 @@ export class MyriadApiApplication extends BootMixin(
       notificationRepository,
       postRepository,
       reportRepository,
+      userCurrencyRepository,
       userExperienceRepository,
       userReportRepository,
       userSocMedRepository,
@@ -387,6 +411,8 @@ export class MyriadApiApplication extends BootMixin(
     } = await this.repositories();
     const {count} = await userRepository.count({id: /^0x/});
     const bar = this.initializeProgressBar('Alter user');
+
+    await userCurrencyRepository.deleteAll();
 
     let i = 0;
     const start = true;
@@ -425,6 +451,7 @@ export class MyriadApiApplication extends BootMixin(
         this.postMention(oldId, newId, postRepository),
         this.post(oldId, newId, postRepository),
         this.report(oldId, newId, reportRepository),
+        this.userCurrency(newId, userCurrencyRepository),
         this.userExperience(oldId, newId, userExperienceRepository),
         this.userReport(oldId, newId, userReportRepository),
         this.userSocialMedia(oldId, newId, userSocMedRepository),
@@ -438,6 +465,23 @@ export class MyriadApiApplication extends BootMixin(
     }
 
     bar.stop();
+  }
+
+  async doMigrateUserCurrency(): Promise<void> {
+    if (this.options.drop.indexOf('userCurrency') === -1) return;
+    const {currencyRepository, userCurrencyRepository} =
+      await this.repositories();
+
+    const currency = await currencyRepository.findOne({
+      where: {symbol: 'DOT'},
+    });
+
+    if (currency) {
+      await userCurrencyRepository.updateAll(
+        {currencyId: currency.id},
+        {currencyId: 'DOT'},
+      );
+    }
   }
 
   async accountSetting(
@@ -632,6 +676,18 @@ export class MyriadApiApplication extends BootMixin(
     );
   }
 
+  async userCurrency(
+    newId: string,
+    userCurrencyRepository: UserCurrencyRepository,
+  ) {
+    await userCurrencyRepository.create({
+      networkId: NetworkType.POLKADOT,
+      userId: newId,
+      priority: 1,
+      currencyId: 'DOT',
+    });
+  }
+
   async userExperience(
     oldId: string,
     newId: string,
@@ -710,6 +766,9 @@ export class MyriadApiApplication extends BootMixin(
       TransactionRepository,
     );
     const userRepository = await this.getRepository(UserRepository);
+    const userCurrencyRepository = await this.getRepository(
+      UserCurrencyRepository,
+    );
     const userExperienceRepository = await this.getRepository(
       UserExperienceRepository,
     );
@@ -739,6 +798,7 @@ export class MyriadApiApplication extends BootMixin(
       tagRepository,
       transactionRepository,
       userRepository,
+      userCurrencyRepository,
       userExperienceRepository,
       userReportRepository,
       userSocMedRepository,
