@@ -19,7 +19,6 @@ import {Credential, UserWallet, Wallet} from '../models';
 import {
   ActivityLogRepository,
   NetworkRepository,
-  UserCurrencyRepository,
   UserRepository,
   WalletRepository,
 } from '../repositories';
@@ -44,8 +43,6 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     protected networkRepository: NetworkRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @service(CurrencyService)
@@ -207,23 +204,9 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     if (methodName === MethodType.SIGNUP) {
       const wallet = invocationCtx.args[1] as Wallet;
-      const currency = await this.currencyService.currencyRepository.findOne({
-        where: {
-          networkId: wallet.network,
-          native: true,
-        },
-      });
-
-      if (currency) {
-        this.userCurrencyRepository.create({
-          userId: result.id,
-          currencyId: currency.id,
-          networkId: wallet.network,
-          priority: 1,
-        }) as Promise<AnyObject>;
-      }
 
       Promise.allSettled([
+        this.currencyService.addUserCurrencies(result.id, wallet.network),
         this.userRepository.accountSetting(result.id).create({}),
         this.userRepository.notificationSetting(result.id).create({}),
         this.userRepository.languageSetting(result.id).create({}),
@@ -242,16 +225,17 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       const {
         data: {id},
         walletType,
+        networkType,
       } = invocationCtx.args[0] as Credential;
       const ng = new NonceGenerator();
       const newNonce = ng.generate();
 
-      await this.userRepository.updateById(id, {nonce: newNonce});
-      await this.walletRepository.updateAll({primary: false}, {userId: id});
-      await this.walletRepository.updateAll(
-        {primary: true},
-        {type: walletType},
-      );
+      Promise.allSettled([
+        this.currencyService.updateUserCurrency(id, networkType),
+        this.userRepository.updateById(id, {nonce: newNonce}),
+        this.walletRepository.updateAll({primary: false}, {userId: id}),
+        this.walletRepository.updateAll({primary: true}, {type: walletType}),
+      ]) as Promise<AnyObject>;
     }
   }
 

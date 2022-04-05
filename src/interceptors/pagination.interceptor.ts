@@ -28,10 +28,10 @@ import {
   Post,
   PostWithRelations,
   User,
-  UserCurrency,
   UserExperienceWithRelations,
 } from '../models';
 import {
+  CurrencyService,
   ExperienceService,
   FriendService,
   MetricService,
@@ -78,6 +78,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected walletRepository: WalletRepository,
     @service(MetricService)
     protected metricService: MetricService,
+    @service(CurrencyService)
+    protected currencyService: CurrencyService,
     @service(ExperienceService)
     protected experienceService: ExperienceService,
     @service(TagService)
@@ -434,16 +436,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const wallet = await this.walletRepository.findOne({
           where: {
             userId: this.currentUser?.[securityId] ?? '',
+            primary: true,
           },
         });
 
         if (wallet?.network) networkId = wallet.network;
-        if (this.currentUser?.[securityId] && networkId) {
-          await this.updateUserCurrency(
-            this.currentUser[securityId],
-            networkId,
-          );
-        }
+
+        await this.currencyService.updateUserCurrency(
+          this.currentUser[securityId],
+          networkId,
+        );
 
         filter.order = ['priority ASC'];
         filter.where = Object.assign(filter.where, {
@@ -1092,48 +1094,5 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         ],
       },
     ];
-  }
-
-  async updateUserCurrency(userId: string, networkId: string): Promise<void> {
-    const {count: countCurrency} = await this.currencyRepository.count({
-      networkId: networkId,
-    });
-    const {count: countUserCurrency} = await this.userCurrencyRepository.count({
-      networkId: networkId,
-      userId: userId,
-    });
-
-    if (countCurrency !== countUserCurrency) {
-      const userCurrencies = await this.userCurrencyRepository.find({
-        where: {
-          networkId: networkId,
-          userId: userId,
-        },
-      });
-      const currencyIds = userCurrencies.map(
-        userCurrency => userCurrency.currencyId,
-      );
-      const currencies = await this.currencyRepository.find({
-        where: {
-          id: {nin: currencyIds},
-          networkId: networkId,
-        },
-      });
-
-      const newUserCurrencies: UserCurrency[] = [];
-
-      for (let i = 0; i < currencies.length; i++) {
-        const newUserCurrency = new UserCurrency({
-          userId: userId,
-          networkId: networkId,
-          currencyId: currencies[i].id,
-          priority: countUserCurrency + 1 + i,
-        });
-
-        newUserCurrencies.push(newUserCurrency);
-      }
-
-      await this.userCurrencyRepository.createAll(newUserCurrencies);
-    }
   }
 }

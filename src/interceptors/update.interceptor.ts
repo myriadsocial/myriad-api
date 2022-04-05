@@ -15,10 +15,11 @@ import {
   PlatformType,
   ReferenceType,
 } from '../enums';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {
   CurrencyRepository,
   ExperienceRepository,
+  NetworkRepository,
   UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
@@ -62,6 +63,8 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected walletRepository: WalletRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
     @service(CurrencyService)
@@ -252,10 +255,9 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       case ControllerType.USERNETWORK: {
         const [userId, credential] = invocationCtx.args;
         const {networkType: networkId, walletType} = credential as Credential;
-        const [publicAddress, nearAccount] =
-          credential.publicAddress.split('/');
+        const [publicAddress, near] = credential.publicAddress.split('/');
 
-        // TODO: validate network
+        await this.networkRepository.findById(networkId);
 
         const wallet = await this.walletRepository.findOne({
           where: {
@@ -268,7 +270,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Wallet not connected');
         }
 
-        if (wallet.id !== (nearAccount ?? publicAddress)) {
+        if (wallet.id !== (near ?? publicAddress)) {
           throw new HttpErrors.UnprocessableEntity('Wrong address');
         }
 
@@ -308,11 +310,14 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
-        await this.userRepository.updateById(userId, {nonce: newNonce});
-        await this.walletRepository.updateAll(
-          {primary: false},
-          {network: {nin: [network]}, userId},
-        );
+        Promise.allSettled([
+          this.currencyService.updateUserCurrency(userId, network),
+          this.userRepository.updateById(userId, {nonce: newNonce}),
+          this.walletRepository.updateAll(
+            {primary: false},
+            {network: {nin: [network]}, userId},
+          ),
+        ]) as Promise<AnyObject>;
 
         break;
       }
