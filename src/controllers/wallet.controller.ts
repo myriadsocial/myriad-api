@@ -1,11 +1,19 @@
 import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
+import {
+  del,
+  get,
+  getModelSchemaRef,
+  HttpErrors,
+  param,
+  response,
+} from '@loopback/rest';
 import {User, Wallet} from '../models';
 import {UserRepository, WalletRepository} from '../repositories';
 import {UserProfile, securityId} from '@loopback/security';
 import {inject, intercept} from '@loopback/core';
 import {DeleteInterceptor, PaginationInterceptor} from '../interceptors';
+import {assign} from 'lodash';
 
 export class WalletController {
   constructor(
@@ -104,9 +112,38 @@ export class WalletController {
   async getUser(
     @param.path.string('id') id: string,
     @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
-    filter?: Filter<User>,
+    filter = {} as Filter<User>,
   ): Promise<User> {
-    const wallet = await this.walletRepository.findById(id);
-    return this.userRepository.findById(wallet.userId, filter);
+    const {
+      userId,
+      primary,
+      network: currentNetwork,
+    } = await this.walletRepository.findById(id);
+
+    let network = currentNetwork;
+
+    if (!primary) {
+      const wallet = await this.walletRepository.findOne({
+        where: {userId, primary: true},
+      });
+
+      if (!wallet) throw new HttpErrors.NotFound('User not found');
+      network = wallet.network;
+    }
+
+    const include = filter?.include ?? [];
+
+    include.push({
+      relation: 'currencies',
+      scope: {
+        include: [{relation: 'network'}],
+        where: {
+          networkId: network,
+        },
+        order: ['priority ASC'],
+      },
+    });
+
+    return this.userRepository.findById(userId, assign(filter, {include}));
   }
 }
