@@ -82,10 +82,11 @@ jobs:
             SSH_USERNAME:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.DEV_GCP_PROJECT_ID }}/RPC_WS_URL
+            SERVER_ID:${{ secrets.DEV_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
+            ADMIN_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
-            REWARD_AMOUNT:${{ secrets.DEV_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            ESCROW_SECRET_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
+            FAUCET_AMOUNT:${{ secrets.DEV_GCP_PROJECT_ID }}/FAUCET_AMOUNT
             JWT_TOKEN_SECRET_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
             JWT_TOKEN_EXPIRES_IN:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
@@ -123,10 +124,11 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
+              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
-              --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
-              --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
+              --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
@@ -206,10 +208,11 @@ jobs:
             SSH_USERNAME:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.STG_GCP_PROJECT_ID }}/RPC_WS_URL
+            SERVER_ID:${{ secrets.STG_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
+            ADMIN_MNEMONIC:${{ secrets.STG_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.STG_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
-            REWARD_AMOUNT:${{ secrets.STG_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            ESCROW_SECRET_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
+            FAUCET_AMOUNT:${{ secrets.STG_GCP_PROJECT_ID }}/FAUCET_AMOUNT
             JWT_TOKEN_SECRET_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
             JWT_TOKEN_EXPIRES_IN:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
@@ -246,10 +249,11 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
+              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
-              --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
-              --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
+              --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
@@ -319,10 +323,11 @@ jobs:
             SSH_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.TESTNET_GCP_PROJECT_ID }}/RPC_WS_URL
+            SERVER_ID:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
+            ADMIN_MNEMONIC:${{ secrets.TESTNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
-            REWARD_AMOUNT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            ESCROW_SECRET_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
+            FAUCET_AMOUNT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
             JWT_TOKEN_SECRET_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
             JWT_TOKEN_EXPIRES_IN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
@@ -359,10 +364,11 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
+              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
-              --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
-              --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
+              --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
@@ -432,10 +438,11 @@ jobs:
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/RPC_WS_URL
+            SERVER_ID:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
+            ADMIN_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
-            REWARD_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            ESCROW_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
+            FAUCET_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
             JWT_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
             JWT_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
@@ -472,10 +479,11 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
+              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
-              --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
-              --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
+              --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
@@ -545,10 +553,11 @@ jobs:
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
             RPC_WS_URL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/RPC_WS_URL
+            SERVER_ID:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
+            ADMIN_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
-            REWARD_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REWARD_AMOUNT
-            ESCROW_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ESCROW_SECRET_KEY
+            FAUCET_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
             JWT_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
             JWT_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
@@ -585,10 +594,11 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
+              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
-              --set config.rewardAmount=${{ steps.secrets.outputs.REWARD_AMOUNT }} \
-              --set config.escrowSecretKey=${{ steps.secrets.outputs.ESCROW_SECRET_KEY }} \
+              --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
