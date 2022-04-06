@@ -1,15 +1,11 @@
 import {inject} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {get, HttpErrors, param, response} from '@loopback/rest';
-import {config} from '../config';
-import {PlatformType} from '../enums';
-import {TokenServiceBindings} from '../keys';
+import {NetworkType, PlatformType, ReferenceType, WalletType} from '../enums';
 import {PostRepository, WalletRepository} from '../repositories';
-import {JWTService} from '../services';
-import {BcryptHasher} from '../services/authentication/hash.password.service';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
+import {config} from '../config';
 
 @authenticate('jwt')
 export class PostWalletAddress {
@@ -18,8 +14,6 @@ export class PostWalletAddress {
     protected postRepository: PostRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
-    @inject(TokenServiceBindings.TOKEN_SERVICE)
-    protected jwtService: JWTService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
     protected currentUser: UserProfile,
   ) {}
@@ -51,23 +45,22 @@ export class PostWalletAddress {
     });
 
     if (!wallet) {
-      throw new HttpErrors.UnprocessableEntity('Wallet not exists');
+      throw new HttpErrors.NotFound('Wallet not exists');
     }
 
-    const {type} = wallet;
+    const {type, network} = wallet;
 
     const post = await this.postRepository.findById(id, {
       include: [
         {
           relation: 'people',
           scope: {
-            include: [{relation: 'userSocialMedia'}],
+            include: ['userSocialMedia'],
           },
         },
       ],
     });
 
-    const hasher = new BcryptHasher();
     const people = post.people;
 
     if (!people) {
@@ -82,33 +75,19 @@ export class PostWalletAddress {
         },
       });
 
-      if (!toWalletPost) {
-        if (type === 'near') {
-          throw new HttpErrors.UnprocessableEntity(
-            'Post near wallet not exists',
-          );
-        } else {
-          throw new HttpErrors.UnprocessableEntity(
-            'Post polkadot wallet not exists',
-          );
-          // TODO: Uncomment when escrow ready
-          // if (network === 'myriad') {
-          //   return {
-          //     referenceId: post.createdBy,
-          //     referenceType: 'user',
-          //   };
-          // } else {
-          //   throw new HttpErrors.UnprocessableEntity(
-          //     'Post polkadot wallet not exists',
-          //   );
-          // }
-        }
+      if (toWalletPost) {
+        return {
+          referenceId: toWalletPost.id,
+          referenceType: ReferenceType.WALLETADDRESS,
+        };
       }
 
-      return {
-        referenceId: toWalletPost.id,
-        referenceType: 'walletAddress',
-      };
+      return this.tipsBalanceInfo(
+        type,
+        network,
+        ReferenceType.USER,
+        post.createdBy,
+      );
     }
 
     if (people.userSocialMedia) {
@@ -118,60 +97,47 @@ export class PostWalletAddress {
         where: {userId, type},
       });
 
-      if (!toWalletUser) {
-        if (type === 'near') {
-          throw new HttpErrors.UnprocessableEntity(
-            'Post near wallet not exists',
-          );
-        } else {
-          throw new HttpErrors.UnprocessableEntity(
-            'Post polkadot wallet not exists',
-          );
-          // TODO: Uncomment when escrow ready
-          // if (network === 'myriad') {
-          //   return {
-          //     referenceId: post.createdBy,
-          //     referenceType: 'user',
-          //   };
-          // } else {
-          //   throw new HttpErrors.UnprocessableEntity(
-          //     'Post polkadot wallet not exists',
-          //   );
-          // }
-        }
+      if (toWalletUser) {
+        return {
+          referenceId: toWalletUser.id,
+          referenceType: ReferenceType.WALLETADDRESS,
+        };
       }
 
-      return {
-        referenceId: toWalletUser.id,
-        referenceType: 'walletAddress',
-      };
+      return this.tipsBalanceInfo(type, network, ReferenceType.USER, userId);
     }
 
-    if (!people.walletAddressPassword) {
-      throw new HttpErrors.Unauthorized('Not Authorized');
-    }
+    return this.tipsBalanceInfo(type, network, ReferenceType.PEOPLE, people.id);
+  }
 
-    const password = people.id + config.MYRIAD_ESCROW_SECRET_KEY;
-    const match = await hasher.comparePassword(
-      password,
-      people.walletAddressPassword,
-    );
-
-    if (!match) throw new HttpErrors.Unauthorized('Not Authorized');
-
-    const token = await this.jwtService.generateAnyToken({
-      id: people.id,
-      originUserId: people.originUserId,
-      platform: people.platform,
-      iat: new Date(people.createdAt ?? '').getTime(),
-    });
-
-    const {getKeyring, getHexPublicKey} = new PolkadotJs();
-    const newKey = getKeyring().addFromUri('//' + token);
-
-    return {
-      referenceId: getHexPublicKey(newKey),
-      referenceType: 'walletAddress',
+  tipsBalanceInfo(
+    walletType: WalletType,
+    networkType: NetworkType,
+    referenceType: ReferenceType,
+    referenceId: string,
+  ): AnyObject {
+    const tipsBalanceInfo = {
+      serverId: config.MYRIAD_SERVER_ID,
+      referenceType: referenceType,
+      referenceId: referenceId,
     };
+
+    switch (walletType) {
+      case WalletType.NEAR:
+        // TODO: implement near smartcontract
+        // return tipsBalanceInfo
+        throw new HttpErrors.NotFound('Post near wallet not exists');
+
+      case WalletType.POLKADOT: {
+        if (networkType === NetworkType.MYRIAD) {
+          return tipsBalanceInfo;
+        }
+
+        throw new HttpErrors.NotFound('Post polkadot wallet not exists');
+      }
+
+      default:
+        throw new HttpErrors.NotFound('Wallet not exists');
+    }
   }
 }
