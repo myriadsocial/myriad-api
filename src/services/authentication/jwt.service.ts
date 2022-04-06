@@ -4,8 +4,6 @@ import {securityId, UserProfile} from '@loopback/security';
 import {promisify} from 'util';
 import {TokenServiceBindings} from '../../keys';
 import {TokenService} from '@loopback/authentication';
-import {AnyObject} from '@loopback/repository';
-import {config} from '../../config';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -72,21 +70,5 @@ export class JWTService implements TokenService {
       throw new HttpErrors.Unauthorized(`Error verifying token:${err.message}`);
     }
     return userProfile;
-  }
-
-  async generateAnyToken(payload: AnyObject): Promise<string> {
-    if (!payload) {
-      throw new HttpErrors.Unauthorized(
-        'Error while generating token :payload is null',
-      );
-    }
-    let token: string;
-    try {
-      token = await signAsync(payload, config.MYRIAD_ESCROW_SECRET_KEY);
-    } catch (err) {
-      throw new HttpErrors.Unauthorized(`error generating token ${err}`);
-    }
-
-    return token;
   }
 }
