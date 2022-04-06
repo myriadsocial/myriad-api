@@ -1,40 +1,30 @@
 import {BindingScope, inject, injectable} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {Currency, Network} from '../models';
-import {
-  CurrencyRepository,
-  ExchangeRateRepository,
-  NetworkRepository,
-  UserSocialMediaRepository,
-} from '../repositories';
+import {CurrencyRepository, QueueRepository} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {CoinMarketCap} from './coin-market-cap.service';
 import {providers} from 'near-api-js';
-import {NetworkType} from '../enums';
+import {NetworkType, ReferenceType, WalletType} from '../enums';
 import {HttpErrors} from '@loopback/rest';
 import {ApiPromise} from '@polkadot/api';
-import {BcryptHasher} from './authentication/hash.password.service';
+import {parseJSON} from '../utils/formated-balance';
 import {config} from '../config';
-import {TokenServiceBindings} from '../keys';
-import {JWTService} from './authentication';
-import {formatedBalance, parseJSON} from '../utils/formated-balance';
+import {DateUtils} from '../utils/date-utils';
+
+const {polkadotApi, getKeyring} = new PolkadotJs();
+const dateUtils = new DateUtils();
 
 /* eslint-disable   @typescript-eslint/naming-convention */
 @injectable({scope: BindingScope.TRANSIENT})
 export class NetworkService {
   constructor(
-    @repository(NetworkRepository)
-    public networkRepository: NetworkRepository,
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
-    @repository(ExchangeRateRepository)
-    protected exchangeRateRepository: ExchangeRateRepository,
-    @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
+    @repository(QueueRepository)
+    protected queueRepository: QueueRepository,
     @inject('services.CoinMarketCap')
     protected coinMarketCapService: CoinMarketCap,
-    @inject(TokenServiceBindings.TOKEN_SERVICE)
-    protected jwtService: JWTService,
   ) {}
 
   async verifyPolkadotConnection(network: Network): Promise<Network | void> {
@@ -90,276 +80,6 @@ export class NetworkService {
       id: chainName.toLowerCase(),
       types: typesBundle,
     });
-  }
-
-  async nearAccountBalance(
-    accountId: string,
-    network: Network,
-    currencies: Currency[],
-  ): Promise<AnyObject[]> {
-    if (!accountId.endsWith('.near')) {
-      return currencies.map(currency => {
-        return {
-          ...currency,
-          balance: '0',
-          formattedBalance: '0',
-          priceInUSD: '0',
-          address: accountId,
-        };
-      });
-    }
-
-    const {rpcURL} = network;
-    const provider = new providers.JsonRpcProvider({url: rpcURL});
-
-    return Promise.all(
-      currencies.map(async currency => {
-        let balance = '0';
-        let formattedBalance = '0';
-        let priceInUSD = '0';
-
-        const {native, referenceId, decimal, symbol} = currency;
-        const exchangeRate = await this.exchangeRateRepository.get(symbol);
-
-        if (exchangeRate) priceInUSD = exchangeRate.price.toString();
-
-        try {
-          if (native) {
-            const nearAccount: AnyObject = await provider.query({
-              request_type: 'view_account',
-              account_id: accountId,
-              finality: 'final',
-            });
-
-            balance = nearAccount.amount;
-            formattedBalance = formatedBalance(balance, decimal);
-          } else {
-            const data = JSON.stringify({account_id: accountId});
-            const buff = Buffer.from(data);
-            const base64data = buff.toString('base64');
-            const result: AnyObject = await provider.query({
-              request_type: 'call_function',
-              account_id: referenceId,
-              method_name: 'ft_balance_of',
-              args_base64: base64data,
-              finality: 'final',
-            });
-
-            balance = JSON.parse(Buffer.from(result.result).toString());
-            formattedBalance = formatedBalance(balance, decimal);
-          }
-        } catch {
-          // ignore
-        }
-
-        return {...currency, balance, formattedBalance, priceInUSD, accountId};
-      }),
-    );
-  }
-
-  async polkadotAccountBalance(
-    accountId: string,
-    network: Network,
-    currencies: Currency[],
-  ): Promise<AnyObject[]> {
-    if (!accountId.startsWith('0x') && accountId.length !== 66) {
-      return currencies.map(currency => {
-        return {
-          ...currency,
-          balance: '0',
-          formattedBalance: '0',
-          priceInUSD: '0',
-          address: accountId,
-        };
-      });
-    }
-
-    const {rpcURL, types} = network;
-    const typesBundle = parseJSON(types);
-    const api = await this.connect(rpcURL, typesBundle);
-
-    const result = await Promise.all(
-      currencies.map(async currency => {
-        let balance = '0';
-        let formattedBalance = '0';
-        let priceInUSD = '0';
-
-        const {native, symbol, decimal} = currency;
-        const exchangeRate = await this.exchangeRateRepository.get(symbol);
-
-        if (exchangeRate) priceInUSD = exchangeRate.price.toString();
-
-        try {
-          if (native) {
-            const nativeBalance = await api.query.system.account(accountId);
-            balance = nativeBalance.data.free.toString();
-            formattedBalance = formatedBalance(balance, decimal);
-          } else {
-            const nonNativeBalance: AnyObject = await api.query.tokens.accounts(
-              accountId,
-              {Token: symbol},
-            );
-
-            balance = nonNativeBalance.toJSON().free.toString();
-            formattedBalance = formatedBalance(balance, decimal);
-          }
-        } catch {
-          // ignore
-        }
-
-        return {
-          ...currency,
-          balance,
-          formattedBalance,
-          priceInUSD,
-          address: accountId,
-        };
-      }),
-    );
-
-    await api.disconnect();
-
-    return result;
-  }
-
-  async nearEscrowBalance(
-    userId: string,
-    networkId: string,
-  ): Promise<AnyObject[]> {
-    const network = await this.networkRepository.findById(networkId, {
-      include: ['currencies'],
-    });
-
-    return Promise.all(
-      (network?.currencies ?? []).map(async currency => {
-        let priceInUSD = '0';
-
-        const exchangeRate = await this.exchangeRateRepository.get(
-          currency.symbol,
-        );
-
-        if (exchangeRate) priceInUSD = exchangeRate.price.toString();
-
-        return {
-          ...currency,
-          balance: '0',
-          priceInUSD: priceInUSD,
-        };
-      }),
-    );
-  }
-
-  async polkadotEscrowBalance(
-    userId: string,
-    networkId: string,
-  ): Promise<AnyObject[]> {
-    const network = await this.networkRepository.findById(networkId, {
-      include: ['currencies'],
-    });
-
-    if (network.currencies.length === 0) return [];
-    if (network.id !== 'myriad') {
-      return Promise.all(
-        (network?.currencies ?? []).map(async currency => {
-          let priceInUSD = '0';
-
-          const exchangeRate = await this.exchangeRateRepository.get(
-            currency.symbol,
-          );
-
-          if (exchangeRate) priceInUSD = exchangeRate.price.toString();
-
-          return {
-            ...currency,
-            balance: '0',
-            priceInUSD: priceInUSD,
-          };
-        }),
-      );
-    }
-    const {rpcURL, types} = network;
-    const {getKeyring} = new PolkadotJs();
-    const typesBundle = parseJSON(types);
-    const api = await this.connect(rpcURL, typesBundle);
-    const currencies = network.currencies;
-    const hasher = new BcryptHasher();
-
-    return Promise.all(
-      currencies.map(async (currency, index) => {
-        const {native, decimal, symbol} = currency;
-        const userSocialMedias = await this.userSocialMediaRepository.find({
-          where: {userId: userId},
-          include: ['people'],
-        });
-        const people = userSocialMedias.map(e => e.people);
-
-        let totalBalance = 0;
-        let priceInUSD = '0';
-
-        for (const person of people) {
-          if (!person) continue;
-
-          const {
-            id: peopleId,
-            originUserId,
-            platform,
-            createdAt,
-            walletAddressPassword: storedPassword,
-          } = person;
-
-          if (!storedPassword) continue;
-          const password = peopleId + config.MYRIAD_ESCROW_SECRET_KEY;
-          const match = await hasher.comparePassword(password, storedPassword);
-          if (!match) continue;
-          const token = await this.jwtService.generateAnyToken({
-            id: peopleId,
-            originUserId: originUserId,
-            platform: platform,
-            iat: new Date(createdAt ?? '').getTime(),
-          });
-          const address = getKeyring().addFromUri('//' + token);
-
-          if (native) {
-            const nativeBalance = await api.query.system.account(
-              address.address,
-            );
-            totalBalance += nativeBalance.data.free.toJSON();
-          } else {
-            const nonNativeBalance: AnyObject = await api.query.tokens.accounts(
-              address.publicKey,
-              {Token: symbol},
-            );
-            totalBalance += nonNativeBalance.toJSON().free;
-          }
-        }
-
-        const exchangeRate = await this.exchangeRateRepository.get(symbol);
-
-        if (exchangeRate) priceInUSD = exchangeRate.price.toString();
-        if (index === currencies.length - 1) await api.disconnect();
-
-        const balance = totalBalance.toString();
-
-        return {
-          ...currency,
-          priceInUSD,
-          balance: balance,
-          formattedBalance: formatedBalance(balance, decimal),
-        };
-      }),
-    );
-  }
-
-  async escrowBalance(userId: string, networkId: string): Promise<AnyObject[]> {
-    switch (networkId) {
-      case 'myriad':
-      case 'polkadot':
-      case 'kusama':
-        return this.polkadotEscrowBalance(userId, networkId);
-
-      default:
-        return this.nearEscrowBalance(userId, networkId);
-    }
   }
 
   async verifyNearContractAddress(
@@ -434,9 +154,100 @@ export class NetworkService {
     }
   }
 
-  async connect(rpcURL: string, types?: AnyObject): Promise<ApiPromise> {
-    const {polkadotApi} = new PolkadotJs();
+  async connectSocialMedia(
+    type: WalletType,
+    userId: string,
+    peopleId: string,
+    accountId: string | null,
+    ftIdentifier = 'native',
+  ): Promise<void> {
+    const tipsBalanceInfo = {
+      serverId: config.MYRIAD_SERVER_ID,
+      referenceType: ReferenceType.PEOPLE,
+      referenceId: peopleId.toString(),
+      ftIdentifier: ftIdentifier,
+    };
 
+    switch (type) {
+      case WalletType.POLKADOT:
+        return this.claimReference(tipsBalanceInfo, userId, accountId);
+
+      case WalletType.NEAR:
+      default:
+        throw new HttpErrors.UnprocessableEntity('Wallet not exist');
+    }
+  }
+
+  async connectAccount(
+    type: string,
+    userId: string,
+    accountId: string,
+    ftIdentifier = 'native',
+  ): Promise<void> {
+    const tipsBalanceInfo = {
+      serverId: config.MYRIAD_SERVER_ID,
+      referenceType: ReferenceType.USER,
+      referenceId: userId.toString(),
+      ftIdentifier: ftIdentifier,
+    };
+
+    switch (type) {
+      case WalletType.POLKADOT:
+        return this.claimReference(tipsBalanceInfo, userId, accountId);
+
+      case WalletType.NEAR:
+      default:
+        throw new HttpErrors.UnprocessableEntity('Wallet not exist');
+    }
+  }
+
+  async getQueueNumber(nonce: number, type: string): Promise<number> {
+    const queue = await this.queueRepository.get(type);
+
+    let priority = nonce;
+
+    if (queue?.priority >= priority) priority = queue.priority;
+    else priority = nonce;
+
+    await this.queueRepository.set(type, {priority: priority + 1});
+    await this.queueRepository.expire(type, 1 * dateUtils.hour);
+
+    return priority;
+  }
+
+  async claimReference(
+    tipsBalanceInfo: AnyObject,
+    userId: string,
+    accountId: string | null,
+  ) {
+    try {
+      const rpcURL = config.MYRIAD_RPC_WS_URL;
+      const api = await this.connect(rpcURL);
+      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+      const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+      const extrinsic = api.tx.tipping.claimReference(
+        tipsBalanceInfo,
+        ReferenceType.USER,
+        userId.toString(),
+        accountId,
+      );
+
+      const {nonce: currentNonce} = await api.query.system.account(
+        serverAdmin.address,
+      );
+      const nonce = await this.getQueueNumber(
+        currentNonce.toJSON(),
+        config.MYRIAD_SERVER_ID,
+      );
+
+      await extrinsic.signAndSend(serverAdmin, {nonce});
+      await api.disconnect();
+    } catch {
+      // ignore
+    }
+  }
+
+  async connect(rpcURL: string, types?: AnyObject): Promise<ApiPromise> {
     try {
       return await polkadotApi(rpcURL, types);
     } catch {

@@ -11,8 +11,6 @@ import {
   AccountSettingRepository,
 } from '../repositories';
 import {injectable, BindingScope, inject} from '@loopback/core';
-import {BcryptHasher} from './authentication/hash.password.service';
-import {config} from '../config';
 import {
   AccountSettingType,
   FriendStatusType,
@@ -66,15 +64,6 @@ export class PostService {
 
     if (!people) {
       people = await this.peopleRepository.create(platformUser);
-
-      const hasher = new BcryptHasher();
-      const hashPeopleId = await hasher.hashPassword(
-        people.id + config.MYRIAD_ESCROW_SECRET_KEY,
-      );
-
-      await this.peopleRepository.updateById(people.id, {
-        walletAddressPassword: hashPeopleId,
-      });
     } else {
       people.name = platformUser.name;
       people.profilePictureURL = platformUser.profilePictureURL;

@@ -6,16 +6,17 @@ export const config = {
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
 
   MYRIAD_RPC_WS_URL: process.env.MYRIAD_RPC_WS_URL ?? 'ws://127.0.0.1:9944',
+  MYRIAD_SERVER_ID: process.env.MYRIAD_SERVER_ID ?? 'server',
   MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY:
     process.env.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY ??
     '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
+  MYRIAD_ADMIN_MNEMONIC:
+    process.env.MYRIAD_ADMIN_MNEMONIC ??
+    'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
   MYRIAD_FAUCET_MNEMONIC:
     process.env.MYRIAD_FAUCET_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
-  MYRIAD_REWARD_AMOUNT: +(process.env.MYRIAD_REWARD_AMOUNT ?? 0),
-  MYRIAD_ESCROW_SECRET_KEY: !process.env.MYRIAD_ESCROW_SECRET_KEY
-    ? 's3cr3+<3y'
-    : process.env.MYRIAD_ESCROW_SECRET_KEY,
+  MYRIAD_FAUCET_AMOUNT: +(process.env.MYRIAD_FAUCET_AMOUNT ?? 0),
 
   JWT_TOKEN_SECRET_KEY: !process.env.JWT_TOKEN_SECRET_KEY
     ? 'tok3n'

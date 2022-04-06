@@ -448,8 +448,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERCURRENCY: {
-        let networkId = '';
-
         const wallet = await this.walletRepository.findOne({
           where: {
             userId: this.currentUser?.[securityId] ?? '',
@@ -457,7 +455,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           },
         });
 
-        if (wallet?.network) networkId = wallet.network;
+        const networkId = wallet?.network ?? '';
 
         await this.currencyService.updateUserCurrency(
           this.currentUser[securityId],

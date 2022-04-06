@@ -1,22 +1,7 @@
 import {Entity, model, property} from '@loopback/repository';
 
-@model({
-  settings: {
-    strictObjectIDCoercion: true,
-    mongodb: {
-      collection: 'queues',
-    },
-  },
-})
+@model()
 export class Queue extends Entity {
-  @property({
-    type: 'string',
-    id: true,
-    generated: false,
-    required: true,
-  })
-  id: string;
-
   @property({
     type: 'number',
     required: true,

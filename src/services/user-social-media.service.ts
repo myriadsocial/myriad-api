@@ -5,8 +5,6 @@ import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
 import {injectable, BindingScope, service, inject} from '@loopback/core';
 import {NotificationService} from './';
 import {HttpErrors} from '@loopback/rest';
-import {config} from '../config';
-import {BcryptHasher} from './authentication/hash.password.service';
 import {ActivityLogService} from './activity-log.service';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
@@ -49,14 +47,6 @@ export class UserSocialMediaService {
         originUserId,
         platform,
         profilePictureURL,
-      });
-
-      const hasher = new BcryptHasher();
-      const hashPeopleId = await hasher.hashPassword(
-        foundPeople.id + config.MYRIAD_ESCROW_SECRET_KEY,
-      );
-      await this.peopleRepository.updateById(foundPeople.id, {
-        walletAddressPassword: hashPeopleId,
       });
     } else {
       await this.peopleRepository.updateById(foundPeople.id, {

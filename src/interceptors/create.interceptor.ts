@@ -19,8 +19,8 @@ import {
 } from '../enums';
 import {Comment, Credential, DraftPost, Transaction, Wallet} from '../models';
 import {
-  CommentRepository,
   ExperiencePostRepository,
+  NetworkRepository,
   ReportRepository,
   UserCurrencyRepository,
   UserReportRepository,
@@ -49,8 +49,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${CreateInterceptor.name}`;
 
   constructor(
-    @repository(CommentRepository)
-    protected commentRepository: CommentRepository,
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
     @repository(UserRepository)
@@ -63,6 +61,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected experiencePostRepository: ExperiencePostRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -235,8 +235,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Data cannot be empty');
         }
 
-        const networkExists =
-          await this.networkService.networkRepository.exists(networkType);
+        const networkExists = await this.networkRepository.exists(networkType);
 
         if (!networkExists) {
           throw new HttpErrors.UnprocessableEntity('Network not exists');
@@ -281,9 +280,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.NETWORKCURRENCY: {
         const [id, rawCurrency] = invocationCtx.args;
-        const {rpcURL} = await this.networkService.networkRepository.findById(
-          id,
-        );
+        const {rpcURL} = await this.networkRepository.findById(id);
 
         invocationCtx.args[1] = await this.networkService.verifyContractAddress(
           id,
@@ -385,12 +382,15 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERWALLET: {
-        const {userId, network} = invocationCtx.args[1].data;
+        const {id, userId, network, type} = invocationCtx.args[1].data;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
-        await this.currencyService.addUserCurrencies(userId, network);
-        await this.userRepository.updateById(userId, {nonce: newNonce});
+        Promise.allSettled([
+          this.networkService.connectAccount(type, userId, id),
+          this.currencyService.addUserCurrencies(userId, network),
+          this.userRepository.updateById(userId, {nonce: newNonce}),
+        ]) as Promise<AnyObject>;
 
         return result;
       }
@@ -427,6 +427,26 @@ export class CreateInterceptor implements Provider<Interceptor> {
         });
 
         return Object.assign(result, {totalReported: count});
+      }
+
+      case ControllerType.USERSOCIALMEDIA: {
+        const {userId, peopleId} = invocationCtx.args[0];
+        const wallets = await this.walletRepository.find({
+          where: {userId},
+        });
+
+        Promise.allSettled(
+          wallets.map(wallet => {
+            return this.networkService.connectSocialMedia(
+              wallet.type,
+              userId,
+              peopleId,
+              wallet.id,
+            );
+          }),
+        ) as Promise<AnyObject>;
+
+        return result;
       }
 
       case ControllerType.VOTE: {
