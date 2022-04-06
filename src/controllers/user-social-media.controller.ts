@@ -12,7 +12,7 @@ import {
   patch,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
+import {PaginationInterceptor} from '../interceptors';
 import {UserSocialMedia, UserVerification} from '../models';
 import {
   NotificationService,
@@ -32,7 +32,6 @@ export class UserSocialMediaController {
     protected notificationService: NotificationService,
   ) {}
 
-  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/user-social-medias/verify')
   @response(200, {
     description: 'Verify User Social Media',
@@ -52,7 +51,7 @@ export class UserSocialMediaController {
     })
     userVerification: UserVerification,
   ): Promise<UserSocialMedia> {
-    const {publicKey, platform, username} = userVerification;
+    const {address, platform, username} = userVerification;
 
     let people = null;
 
@@ -60,7 +59,7 @@ export class UserSocialMediaController {
       case PlatformType.TWITTER:
         people = await this.socialMediaService.verifyToTwitter(
           username,
-          publicKey,
+          address,
         );
 
         break;
@@ -68,7 +67,7 @@ export class UserSocialMediaController {
       case PlatformType.REDDIT:
         people = await this.socialMediaService.verifyToReddit(
           username,
-          publicKey,
+          address,
         );
 
         break;

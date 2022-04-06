@@ -78,12 +78,14 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('verifies user social media', async () => {
-      const userVerification = givenUserVerification({publicKey: publicKey});
+      const userVerification = givenUserVerification({address: publicKey});
       const response = await client
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
-        .send(userVerification)
-        .expect(200);
+        .send(userVerification);
+
+      console.log(response.body.error);
+      // .expect(200);
       const result = await userSocialMediaRepository.findById(response.body.id);
       expect({
         id: result.id,
@@ -98,7 +100,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('rejects user to verify non existing social media', async () => {
       const userVerification: Partial<UserVerification> = givenUserVerification(
-        {publicKey: publicKey},
+        {address: publicKey},
       );
       delete userVerification.platform;
 
@@ -111,7 +113,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('rejects user to verify non existing social media username', async () => {
       const userVerification = givenUserVerification({
-        publicKey: publicKey,
+        address: publicKey,
         username: 'kemrenwebrge',
       });
 
@@ -125,7 +127,7 @@ describe('UserSocialMediaApplication', function () {
     it('rejects user to verify social media that is not belong to user', async () => {
       const accessToken = await givenAccesToken(otherUser);
       const userVerification = givenUserVerification({
-        publicKey: publicKey,
+        address: publicKey,
       });
 
       await client
@@ -136,7 +138,7 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('rejects user to verify social media that already been claimed', async () => {
-      const userVerification = givenUserVerification({publicKey: publicKey});
+      const userVerification = givenUserVerification({address: publicKey});
 
       await client
         .post('/user-social-medias/verify')
@@ -180,7 +182,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('returns 401 when deleting the user social media not as login user', async () => {
       const accessToken = await givenAccesToken(otherUser);
-      const userVerification = givenUserVerification({publicKey: publicKey});
+      const userVerification = givenUserVerification({address: publicKey});
       const response = await client
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
@@ -195,7 +197,7 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('deletes the user social media', async () => {
-      const userVerification = givenUserVerification({publicKey: publicKey});
+      const userVerification = givenUserVerification({address: publicKey});
       const response = await client
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)

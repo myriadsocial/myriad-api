@@ -518,7 +518,7 @@ export function givenUserVerification(
 ) {
   const data = Object.assign(
     {
-      publicKey:
+      address:
         '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
       platform: PlatformType.REDDIT,
       username: 'NetworkMyriad',
