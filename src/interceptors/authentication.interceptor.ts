@@ -211,7 +211,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         this.userRepository.notificationSetting(result.id).create({}),
         this.userRepository.languageSetting(result.id).create({}),
         this.userRepository.wallets(result.id).create(wallet),
-        this.currencyService.sendMyriadReward(wallet.id),
+        this.currencyService.sendMyriadReward(wallet.id, wallet.type),
         this.friendService.defaultFriend(result.id),
         this.activityLogRepository.create({
           type: ActivityLogType.NEWUSER,
