@@ -31,3 +31,4 @@ export * from './user-social-media.controller';
 export * from './user-wallet.controller';
 export * from './vote.controller';
 export * from './wallet.controller';
+export * from './server.controller';
