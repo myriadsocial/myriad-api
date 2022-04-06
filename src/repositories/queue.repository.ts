@@ -1,14 +1,10 @@
 import {inject} from '@loopback/core';
-import {DefaultCrudRepository} from '@loopback/repository';
-import {MongoDataSource} from '../datasources';
-import {Queue, QueueRelations} from '../models';
+import {DefaultKeyValueRepository} from '@loopback/repository';
+import {RedisDataSource} from '../datasources';
+import {Queue} from '../models';
 
-export class QueueRepository extends DefaultCrudRepository<
-  Queue,
-  typeof Queue.prototype.id,
-  QueueRelations
-> {
-  constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
+export class QueueRepository extends DefaultKeyValueRepository<Queue> {
+  constructor(@inject('datasources.redis') dataSource: RedisDataSource) {
     super(Queue, dataSource);
   }
 }
