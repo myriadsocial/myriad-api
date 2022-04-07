@@ -264,8 +264,6 @@ export class MyriadApiApplication extends BootMixin(
   async doMigrateNetwork(): Promise<void> {
     if (this.options.alter.indexOf('network') === -1) return;
     const {currencyRepository, networkRepository} = await this.repositories();
-    const environment =
-      process.env.NODE_ENV === 'production' ? 'mainnet' : 'testnet';
     const rawNetworks = [
       {
         id: 'polkadot',
@@ -293,16 +291,6 @@ export class MyriadApiApplication extends BootMixin(
         explorerURL:
           'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fws-rpc.dev.myriad.social#/explorer/query',
         walletType: WalletType.POLKADOT,
-      },
-      {
-        id: 'near',
-        image:
-          'https://pbs.twimg.com/profile_images/1441304555841597440/YPwdd6cd_400x400.jpg',
-        rpcURL: `https://rpc.${environment}.near.org`,
-        walletURL: `https://helper.${environment}.near.org`,
-        helperURL: `https://helper.${environment}.near.org`,
-        explorerURL: `https://explorer.${environment}.near.org`,
-        walletType: WalletType.NEAR,
       },
     ];
     const rawCurrencies: Currency[] = [
@@ -336,33 +324,7 @@ export class MyriadApiApplication extends BootMixin(
         exchangeRate: true,
         networkId: 'polkadot',
       },
-      {
-        name: 'near',
-        symbol: 'NEAR',
-        image:
-          'https://theme.zdassets.com/theme_assets/10318540/556218f30048c6bdaa7c26a4b05d827af5a0198c.png',
-        decimal: 24,
-        native: true,
-        exchangeRate: true,
-        networkId: 'near',
-      },
     ].map(currency => new Currency(currency));
-
-    if (environment === 'mainnet') {
-      rawCurrencies.push(
-        new Currency({
-          name: 'myriad',
-          symbol: 'MYRIA',
-          image:
-            'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
-          decimal: 18,
-          native: false,
-          exchangeRate: false,
-          networkId: 'near',
-          referenceId: 'myriadcore.near',
-        }),
-      );
-    }
 
     await currencyRepository.deleteAll();
     await currencyRepository.createAll(rawCurrencies);

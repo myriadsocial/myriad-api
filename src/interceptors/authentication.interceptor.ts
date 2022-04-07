@@ -12,6 +12,7 @@ import {HttpErrors} from '@loopback/rest';
 import {
   ActivityLogType,
   MethodType,
+  NetworkType,
   PermissionKeys,
   ReferenceType,
 } from '../enums';
@@ -107,7 +108,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       if (foundUser)
         throw new HttpErrors.UnprocessableEntity('User already exists');
 
-      this.validateWalletAddress(wallet.address);
+      await this.validateWalletAddress(wallet.address);
+
       this.validateUsername(username);
 
       invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
@@ -239,7 +241,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     }
   }
 
-  validateWalletAddress(id: string): void {
+  async validateWalletAddress(id: string): Promise<void> {
     if (id.length === 66) {
       if (!id.startsWith('0x')) {
         throw new HttpErrors.UnprocessableEntity('Invalid polkadot address');
@@ -253,21 +255,23 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
       return;
     } else {
-      const environment =
-        process.env.NODE_ENV === 'production' ? 'mainnet' : 'testnet';
+      const nearNetwork = await this.networkRepository.findById(
+        NetworkType.NEAR,
+      );
+      const environment = nearNetwork.rpcURL.split('.')[1];
 
       let nearId = '';
       let nearStatus = false;
 
       switch (environment) {
-        case 'mainnet':
-          nearStatus = id.endsWith('.near');
-          nearId = id.split('.near')[0];
+        case 'development':
+          nearStatus = id.endsWith('.testnet');
+          nearId = id.split('.testnet')[0];
           break;
 
         default:
-          nearStatus = id.endsWith('.testnet');
-          nearId = id.split('.testnet')[0];
+          nearStatus = id.endsWith('.near');
+          nearId = id.split('.near')[0];
           break;
       }
 
