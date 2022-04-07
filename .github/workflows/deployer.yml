@@ -124,9 +124,9 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
-              --set-string config.serverId="${{ steps.secrets.outputs.SERVER_ID }}" \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
-              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
+              --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
@@ -249,9 +249,9 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
-              --set-string config.serverId="${{ steps.secrets.outputs.SERVER_ID }}" \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
-              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
+              --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
@@ -364,9 +364,9 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
-              --set-string config.serverId="${{ steps.secrets.outputs.SERVER_ID }}" \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
-              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
+              --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
@@ -479,9 +479,9 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
-              --set-string config.serverId="${{ steps.secrets.outputs.SERVER_ID }}" \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
-              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
+              --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
@@ -594,9 +594,9 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
-              --set-string config.serverId="${{ steps.secrets.outputs.SERVER_ID }}" \
+              --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
-              --set-string config.adminMnemonic=${{ steps.secrets.outputs.ADMIN_MNEMONIC }} \
+              --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
