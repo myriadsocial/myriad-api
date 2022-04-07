@@ -56,6 +56,18 @@ export class Network extends Entity {
     type: 'string',
     required: false,
   })
+  walletURL?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  helperURL?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
   types?: string;
 
   @property({
