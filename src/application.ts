@@ -299,6 +299,8 @@ export class MyriadApiApplication extends BootMixin(
         image:
           'https://pbs.twimg.com/profile_images/1441304555841597440/YPwdd6cd_400x400.jpg',
         rpcURL: `https://rpc.${environment}.near.org`,
+        walletURL: `https://helper.${environment}.near.org`,
+        helperURL: `https://helper.${environment}.near.org`,
         explorerURL: `https://explorer.${environment}.near.org`,
         walletType: WalletType.NEAR,
       },
