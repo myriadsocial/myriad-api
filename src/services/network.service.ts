@@ -12,7 +12,6 @@ import {providers} from 'near-api-js';
 import {NetworkType, ReferenceType, WalletType} from '../enums';
 import {HttpErrors} from '@loopback/rest';
 import {ApiPromise} from '@polkadot/api';
-import {parseJSON} from '../utils/formated-balance';
 import {config} from '../config';
 import {DateUtils} from '../utils/date-utils';
 
@@ -34,10 +33,9 @@ export class NetworkService {
   ) {}
 
   async verifyPolkadotConnection(network: Network): Promise<Network | void> {
-    const {types, rpcURL} = network;
+    const {rpcURL} = network;
     const {getSystemParameters} = new PolkadotJs();
-    const typesBundle = parseJSON(types);
-    const api = await this.connect(rpcURL, typesBundle);
+    const api = await this.connect(rpcURL);
     const currencies: AnyObject[] = [];
     const {chainName, symbols, symbolsDecimals} = await getSystemParameters(
       api,
@@ -84,7 +82,6 @@ export class NetworkService {
 
     return Object.assign(network, {
       id: chainName.toLowerCase(),
-      types: typesBundle,
     });
   }
 
