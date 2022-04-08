@@ -283,15 +283,6 @@ export class MyriadApiApplication extends BootMixin(
           'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fkusama-rpc.polkadot.io#/explorer/query',
         walletType: WalletType.POLKADOT,
       },
-      {
-        id: 'myriad',
-        image:
-          'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_400x400.jpg',
-        rpcURL: config.MYRIAD_RPC_WS_URL,
-        explorerURL:
-          'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fws-rpc.dev.myriad.social#/explorer/query',
-        walletType: WalletType.POLKADOT,
-      },
     ];
     const rawCurrencies: Currency[] = [
       {
