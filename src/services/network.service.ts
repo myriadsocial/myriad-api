@@ -1,7 +1,11 @@
 import {BindingScope, inject, injectable} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {Currency, Network} from '../models';
-import {CurrencyRepository, QueueRepository} from '../repositories';
+import {
+  CurrencyRepository,
+  NetworkRepository,
+  QueueRepository,
+} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {CoinMarketCap} from './coin-market-cap.service';
 import {providers} from 'near-api-js';
@@ -19,6 +23,8 @@ const dateUtils = new DateUtils();
 @injectable({scope: BindingScope.TRANSIENT})
 export class NetworkService {
   constructor(
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
     @repository(QueueRepository)
@@ -221,7 +227,9 @@ export class NetworkService {
     accountId: string | null,
   ) {
     try {
-      const rpcURL = config.MYRIAD_RPC_WS_URL;
+      const {rpcURL} = await this.networkRepository.findById(
+        NetworkType.MYRIAD,
+      );
       const api = await this.connect(rpcURL);
       const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
       const serverAdmin = getKeyring().addFromMnemonic(mnemonic);

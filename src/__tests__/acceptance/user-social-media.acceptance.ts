@@ -82,10 +82,8 @@ describe('UserSocialMediaApplication', function () {
       const response = await client
         .post('/user-social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
-        .send(userVerification);
-
-      console.log(response.body.error);
-      // .expect(200);
+        .send(userVerification)
+        .expect(200);
       const result = await userSocialMediaRepository.findById(response.body.id);
       expect({
         id: result.id,
