@@ -264,7 +264,12 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       let nearStatus = false;
 
       switch (environment) {
-        case 'development':
+        case 'betanet':
+          nearStatus = id.endsWith('.betanet');
+          nearId = id.split('.betanet')[0];
+          break;
+
+        case 'testnet':
           nearStatus = id.endsWith('.testnet');
           nearId = id.split('.testnet')[0];
           break;
