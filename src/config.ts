@@ -5,7 +5,6 @@ export const config = {
   APPLICATION_HOST: process.env.HOST ?? 'localhost',
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
 
-  MYRIAD_RPC_WS_URL: process.env.MYRIAD_RPC_WS_URL ?? 'ws://127.0.0.1:9944',
   MYRIAD_SERVER_ID: process.env.MYRIAD_SERVER_ID ?? 'server',
   MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY:
     process.env.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY ??
