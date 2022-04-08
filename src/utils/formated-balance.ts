@@ -1,5 +1,3 @@
-import {AnyObject} from '@loopback/repository';
-
 export function formatedBalance(balance: string, decimal: number): string {
   if (balance === '0') return '0';
 
@@ -18,12 +16,4 @@ export function formatedBalance(balance: string, decimal: number): string {
   }
 
   return formatted;
-}
-
-export function parseJSON(data?: string): AnyObject | undefined {
-  try {
-    if (data) return JSON.parse(data);
-  } catch {
-    // ignore
-  }
 }

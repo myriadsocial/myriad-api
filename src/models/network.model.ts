@@ -29,10 +29,10 @@ export class Network extends Entity {
   id: string;
 
   @property({
-    type: 'number',
+    type: 'string',
     required: false,
   })
-  chainId?: number;
+  chainId?: string;
 
   @property({
     type: 'string',
@@ -63,12 +63,6 @@ export class Network extends Entity {
     required: false,
   })
   helperURL?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  types?: string;
 
   @property({
     type: 'string',
