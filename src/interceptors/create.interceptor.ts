@@ -430,7 +430,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERSOCIALMEDIA: {
-        const {userId, peopleId} = invocationCtx.args[0];
+        const {userId, peopleId} = result;
         const wallets = await this.walletRepository.find({
           where: {userId},
         });
@@ -439,7 +439,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           wallets.map(wallet => {
             return this.networkService.connectSocialMedia(
               wallet.type,
-              userId,
+              userId.toString(),
               peopleId,
               wallet.id,
             );
