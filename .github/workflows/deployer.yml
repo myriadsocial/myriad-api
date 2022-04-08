@@ -81,7 +81,6 @@ jobs:
             SSH_PORT:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_PORT
             SSH_USERNAME:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_KEY
-            RPC_WS_URL:${{ secrets.DEV_GCP_PROJECT_ID }}/RPC_WS_URL
             SERVER_ID:${{ secrets.DEV_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
@@ -123,7 +122,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }} \
-              --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
@@ -207,7 +205,6 @@ jobs:
             SSH_PORT:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_PORT
             SSH_USERNAME:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_KEY
-            RPC_WS_URL:${{ secrets.STG_GCP_PROJECT_ID }}/RPC_WS_URL
             SERVER_ID:${{ secrets.STG_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.STG_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
@@ -248,7 +245,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
@@ -322,7 +318,6 @@ jobs:
             SSH_PORT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_PORT
             SSH_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_KEY
-            RPC_WS_URL:${{ secrets.TESTNET_GCP_PROJECT_ID }}/RPC_WS_URL
             SERVER_ID:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.TESTNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
@@ -363,7 +358,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
@@ -437,7 +431,6 @@ jobs:
             SSH_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_PORT
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
-            RPC_WS_URL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/RPC_WS_URL
             SERVER_ID:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
@@ -478,7 +471,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
@@ -552,7 +544,6 @@ jobs:
             SSH_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_PORT
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
-            RPC_WS_URL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/RPC_WS_URL
             SERVER_ID:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SERVER_ID
             OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
@@ -593,7 +584,6 @@ jobs:
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
-              --set-string config.rpcWSURL=${{ steps.secrets.outputs.RPC_WS_URL }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
