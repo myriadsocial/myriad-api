@@ -1,5 +1,5 @@
 import {Model, model, property} from '@loopback/repository';
-import {WalletType, NetworkType} from '../enums';
+import {WalletType} from '../enums';
 
 @model()
 export class UserWallet extends Model {
@@ -42,11 +42,8 @@ export class UserWallet extends Model {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      enum: Object.values(NetworkType),
-    },
   })
-  network: NetworkType;
+  network: string;
 
   constructor(data?: Partial<UserWallet>) {
     super(data);

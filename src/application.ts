@@ -636,7 +636,7 @@ export class MyriadApiApplication extends BootMixin(
     userCurrencyRepository: UserCurrencyRepository,
   ) {
     await userCurrencyRepository.create({
-      networkId: NetworkType.POLKADOT,
+      networkId: NetworkType.MYRIAD,
       userId: newId,
       priority: 1,
       currencyId: 'DOT',
@@ -681,7 +681,7 @@ export class MyriadApiApplication extends BootMixin(
   ) {
     await walletRepository.create({
       id: oldId,
-      network: NetworkType.POLKADOT,
+      network: NetworkType.MYRIAD,
       type: WalletType.POLKADOT,
       primary: true,
       userId: newId,

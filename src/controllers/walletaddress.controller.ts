@@ -252,7 +252,7 @@ export class WalletAddressController {
 
   tipsBalanceInfo(
     walletType: WalletType,
-    networkType: NetworkType,
+    networkType: string,
     referenceType: ReferenceType,
     referenceId: string,
   ): AnyObject {
