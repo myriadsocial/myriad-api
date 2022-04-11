@@ -3,7 +3,6 @@ import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors, Request} from '@loopback/rest';
 import {UserProfile, securityId} from '@loopback/security';
-import {config} from '../../config';
 import {TokenServiceBindings} from '../../keys';
 import {UserRepository, WalletRepository} from '../../repositories';
 
@@ -65,9 +64,11 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   }
 
   async getMyriadUserId(): Promise<string> {
-    const publicAddress = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
-    const wallet = await this.walletRepository.findById(publicAddress);
-    return wallet.userId;
+    const user = await this.userRepository.findOne({
+      where: {username: 'myriad_official'},
+    });
+    if (!user) throw new HttpErrors.NotFound('User not found');
+    return user.id;
   }
 
   extractCredentials(request: Request): string {
