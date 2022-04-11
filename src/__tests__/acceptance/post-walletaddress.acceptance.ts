@@ -28,7 +28,7 @@ import {
 } from '../helpers';
 import {config} from '../../config';
 
-describe('PostWalletAddressApplication', function () {
+describe('WalletAddressApplication', function () {
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;
@@ -95,6 +95,8 @@ describe('PostWalletAddressApplication', function () {
 
   it('gets a post wallet address from people', async () => {
     await postRepository.updateById(post.id, {peopleId: people.id});
+
+    config.MYRIAD_SERVER_ID = 'server';
 
     const result = await client
       .get(`/posts/${post.id}/walletaddress`)

@@ -206,6 +206,7 @@ export async function givenRepositories(testdb: any) {
   const friendService = new FriendService(
     accountSettingRepository,
     friendRepository,
+    userRepository,
     walletRepository,
   );
 
