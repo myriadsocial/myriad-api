@@ -149,7 +149,7 @@ export function givenCredential(credential?: Partial<Credential>) {
     {
       publicAddress: id,
       walletType: WalletType.POLKADOT,
-      networkType: NetworkType.POLKADOT,
+      networkType: 'polkadot',
     },
     credential,
   );
@@ -771,7 +771,7 @@ export function givenWallet(wallet?: Partial<Wallet>) {
     {
       id: id,
       type: WalletType.POLKADOT,
-      network: NetworkType.POLKADOT,
+      network: NetworkType.MYRIAD,
     },
     wallet,
   );
@@ -793,7 +793,7 @@ export function givenUserWallet(userWallet?: Partial<UserWallet>) {
       name: 'Abdul Hakim',
       username: 'abdulhakim',
       address: id,
-      network: NetworkType.POLKADOT,
+      network: 'polkadot',
       type: WalletType.POLKADOT,
     },
     userWallet,

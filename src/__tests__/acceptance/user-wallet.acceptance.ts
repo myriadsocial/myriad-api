@@ -103,7 +103,7 @@ describe('UserWalletApplication', function () {
     const wallet = new Wallet({
       id: credential.publicAddress,
       userId: user.id,
-      network: NetworkType.POLKADOT,
+      network: NetworkType.MYRIAD,
       type: WalletType.POLKADOT,
       primary: true,
     });

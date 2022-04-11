@@ -254,7 +254,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             true,
           );
 
-          filter.where = Object.assign(filter.where, {
+          Object.assign(filter.where, {
             id: {
               nin: blockedFriendIds,
             },
@@ -270,7 +270,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       case ControllerType.REPORTUSER: {
         filter.include = ['reporter'];
         filter.order = this.orderSetting(request.query);
-        filter.where = Object.assign(filter.where, {
+
+        Object.assign(filter.where, {
           reportId: invocationCtx.args[0],
         });
 
@@ -441,7 +442,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         if (currencyId) {
-          filter.where = Object.assign(filter.where, {currencyId});
+          Object.assign(filter.where, {currencyId});
         }
 
         break;
@@ -463,10 +464,28 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         );
 
         filter.order = ['priority ASC'];
-        filter.where = Object.assign(filter.where, {
+
+        Object.assign(filter.where, {
           userId: wallet?.userId ?? '',
           networkId: networkId,
         });
+
+        const {q} = request.query;
+
+        // search experience
+        if (q) {
+          const pattern = new RegExp(q.toString(), 'i');
+          const currencies = await this.currencyRepository.find({
+            where: {
+              or: [{name: {regexp: pattern}}, {symbol: {regexp: pattern}}],
+            },
+          });
+          const currencyIds = currencies.map(currency => currency.id);
+
+          Object.assign(filter.where, {
+            currencyId: {inq: currencyIds},
+          });
+        }
 
         break;
       }
