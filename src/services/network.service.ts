@@ -164,6 +164,7 @@ export class NetworkService {
     accountId: string | null,
     ftIdentifier = 'native',
   ): Promise<void> {
+    if (!config.MYRIAD_SERVER_ID) return;
     const tipsBalanceInfo = {
       serverId: config.MYRIAD_SERVER_ID,
       referenceType: ReferenceType.PEOPLE,
@@ -187,6 +188,7 @@ export class NetworkService {
     accountId: string,
     ftIdentifier = 'native',
   ): Promise<void> {
+    if (!config.MYRIAD_SERVER_ID) return;
     const tipsBalanceInfo = {
       serverId: config.MYRIAD_SERVER_ID,
       referenceType: ReferenceType.USER,

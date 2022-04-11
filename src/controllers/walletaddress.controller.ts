@@ -256,6 +256,9 @@ export class WalletAddressController {
     referenceType: ReferenceType,
     referenceId: string,
   ): AnyObject {
+    if (!config.MYRIAD_SERVER_ID) {
+      throw new HttpErrors.NotFound('Not implemented');
+    }
     const tipsBalanceInfo = {
       serverId: config.MYRIAD_SERVER_ID,
       referenceType: referenceType,
