@@ -176,20 +176,16 @@ describe('TransactionApplication', function () {
     });
   });
 
-  it('includes fromUser, toUser, and currency in query result', async () => {
+  it('includes fromWallet, toWallet, and currency in query result', async () => {
     const otherUser = await givenUserInstance(userRepository, {
       name: 'husni',
-    });
-    const fromWallet = await givenWalletInstance(walletRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee63111',
-      userId: user.id,
     });
     const toWallet = await givenWalletInstance(walletRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61811',
       userId: otherUser.id,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
-      from: fromWallet.id,
+      from: wallet.id,
       to: toWallet.id,
       currencyId: currency.id,
     });
@@ -207,7 +203,7 @@ describe('TransactionApplication', function () {
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(transaction),
-      fromWallet: toJSON(fromWallet),
+      fromWallet: toJSON(wallet),
       toWallet: toJSON(toWallet),
       currency: toJSON(currency),
     });

@@ -5,11 +5,11 @@ import {Friend, FriendWithRelations, Post} from '../models';
 import {
   AccountSettingRepository,
   FriendRepository,
+  UserRepository,
   WalletRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 import {Filter} from '@loopback/repository';
-import {config} from '../config';
 import _ from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -19,6 +19,8 @@ export class FriendService {
     protected accountSettingRepository: AccountSettingRepository,
     @repository(FriendRepository)
     public friendRepository: FriendRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
   ) {}
@@ -335,8 +337,10 @@ export class FriendService {
   }
 
   async getMyriadUserId(): Promise<string> {
-    const publicAddress = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
-    const wallet = await this.walletRepository.findById(publicAddress);
-    return wallet.userId;
+    const user = await this.userRepository.findOne({
+      where: {username: 'myriad_official'},
+    });
+    if (!user) throw new HttpErrors.NotFound('User not found');
+    return user.id;
   }
 }

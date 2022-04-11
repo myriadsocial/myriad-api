@@ -401,7 +401,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.TRANSACTION: {
-        const {referenceId, currencyId, referenceType} = request.query;
+        const {referenceId, currencyId, referenceType, status} = request.query;
 
         switch (referenceType) {
           case ReferenceType.POST:
@@ -421,23 +421,35 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 userId: this.currentUser[securityId],
               },
             });
-
             const walletIds = wallets.map(wallet => wallet.id);
-
-            filter.where = {
-              or: [
-                {
-                  from: {
-                    inq: walletIds,
-                  },
+            if (status === 'received') {
+              Object.assign(filter.where, {
+                to: {
+                  inq: walletIds,
                 },
-                {
-                  to: {
-                    inq: walletIds,
-                  },
+              });
+            } else if (status === 'sent') {
+              Object.assign(filter.where, {
+                from: {
+                  inq: walletIds,
                 },
-              ],
-            };
+              });
+            } else {
+              Object.assign(filter.where, {
+                or: [
+                  {
+                    from: {
+                      inq: walletIds,
+                    },
+                  },
+                  {
+                    to: {
+                      inq: walletIds,
+                    },
+                  },
+                ],
+              });
+            }
           }
         }
 

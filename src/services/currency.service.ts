@@ -7,6 +7,7 @@ import {
   QueueRepository,
   TransactionRepository,
   UserCurrencyRepository,
+  UserRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {HttpErrors} from '@loopback/rest';
@@ -29,6 +30,8 @@ export class CurrencyService {
     protected queueRepository: QueueRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -156,15 +159,33 @@ export class CurrencyService {
       await api.disconnect();
 
       if (hash && typeof hash === 'string') {
-        const transaction = await this.transactionRepository.create({
-          hash: hash,
-          amount: rewardAmount / 10 ** decimal,
-          to: to,
-          from: config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY,
-          currencyId: id,
+        const user = await this.userRepository.findOne({
+          where: {
+            username: 'myriad_official',
+          },
+          include: [
+            {
+              relation: 'wallets',
+              scope: {
+                where: {
+                  type: WalletType.POLKADOT,
+                },
+              },
+            },
+          ],
         });
 
-        await this.notificationService.sendInitialTips(transaction);
+        if (user?.wallets[0]) {
+          const wallet = user.wallets[0];
+          const transaction = await this.transactionRepository.create({
+            hash: hash,
+            amount: rewardAmount / 10 ** decimal,
+            to: to,
+            from: wallet.id,
+            currencyId: id,
+          });
+          await this.notificationService.sendInitialTips(transaction);
+        }
       }
     } catch {
       // ignore

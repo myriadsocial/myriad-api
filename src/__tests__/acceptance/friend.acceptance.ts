@@ -39,6 +39,7 @@ describe('FriendApplication', function () {
   let activityLogRepository: ActivityLogRepository;
   let walletRepository: WalletRepository;
   let user: User;
+  let myriadOfficial: User;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -57,8 +58,16 @@ describe('FriendApplication', function () {
   before(async () => {
     user = await givenUserInstance(userRepository);
     token = await givenAccesToken(user);
+    myriadOfficial = await givenUserInstance(userRepository, {
+      name: 'Myriad Official',
+      username: 'myriad_official',
+    });
 
     await givenWalletInstance(walletRepository, {userId: user.id.toString()});
+    await givenWalletInstance(walletRepository, {
+      userId: myriadOfficial.id.toString(),
+      id: '0x06cc7aa22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+    });
   });
 
   beforeEach(async () => {

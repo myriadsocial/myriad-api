@@ -1,5 +1,5 @@
 import {AnyObject} from '@loopback/repository';
-import {get} from '@loopback/rest';
+import {get, HttpErrors} from '@loopback/rest';
 import {config} from '../config';
 
 export class ServerController {
@@ -20,6 +20,10 @@ export class ServerController {
     },
   })
   async find(): Promise<AnyObject> {
+    if (!config.MYRIAD_SERVER_ID) {
+      throw new HttpErrors.NotFound('Server not found');
+    }
+
     return {
       serverId: config.MYRIAD_SERVER_ID,
     };

@@ -1,6 +1,5 @@
 import {BindingScope, inject, injectable, service} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
-import {config} from '../config';
 import {
   NotificationType,
   PlatformType,
@@ -32,6 +31,7 @@ import {
 import {FCMService} from './fcm.service';
 import {UserProfile, securityId} from '@loopback/security';
 import {AuthenticationBindings} from '@loopback/authentication';
+import {HttpErrors} from '@loopback/rest';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class NotificationService {
@@ -870,8 +870,10 @@ export class NotificationService {
   }
 
   async getMyriadUserId(): Promise<string> {
-    const publicAddress = config.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY;
-    const user = await this.walletRepository.user(publicAddress);
+    const user = await this.userRepository.findOne({
+      where: {username: 'myriad_official'},
+    });
+    if (!user) throw new HttpErrors.NotFound('User not found');
     return user.id;
   }
 }

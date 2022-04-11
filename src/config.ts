@@ -5,10 +5,7 @@ export const config = {
   APPLICATION_HOST: process.env.HOST ?? 'localhost',
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
 
-  MYRIAD_SERVER_ID: process.env.MYRIAD_SERVER_ID ?? 'server',
-  MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY:
-    process.env.MYRIAD_OFFICIAL_ACCOUNT_PUBLIC_KEY ??
-    '0x48c145fb4a5aeb32075023a576180107ecc1e5470ab2ebdd1965b71a33dad363',
+  MYRIAD_SERVER_ID: process.env.MYRIAD_SERVER_ID ?? '',
   MYRIAD_ADMIN_MNEMONIC:
     process.env.MYRIAD_ADMIN_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
