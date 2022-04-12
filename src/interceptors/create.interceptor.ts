@@ -431,19 +431,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.USERSOCIALMEDIA: {
         const {userId, peopleId} = result;
-        const wallets = await this.walletRepository.find({
-          where: {userId},
-        });
 
-        Promise.allSettled(
-          wallets.map(wallet => {
-            return this.networkService.connectSocialMedia(
-              wallet.type,
-              userId.toString(),
-              peopleId,
-              wallet.id,
-            );
-          }),
+        this.networkService.connectSocialMedia(
+          userId,
+          peopleId,
         ) as Promise<AnyObject>;
 
         return result;

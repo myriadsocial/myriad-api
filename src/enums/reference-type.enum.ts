@@ -5,7 +5,7 @@ export enum ReferenceType {
   POST = 'post',
   TRANSACTION = 'transaction',
   USER = 'user',
-  WALLETADDRESS = 'walletAddress',
+  WALLETADDRESS = 'wallet_address',
 }
 
 export enum SectionType {
