@@ -9,14 +9,6 @@ export function validateAccount(credential: Credential): boolean {
   const publicKey = publicAddress.replace('0x', '');
 
   switch (walletType) {
-    case WalletType.NEAR: {
-      return nacl.sign.detached.verify(
-        Buffer.from(numberToHex(nonce)),
-        Buffer.from(hexToU8a(signature)),
-        Buffer.from(publicKey, 'hex'),
-      );
-    }
-
     case WalletType.POLKADOT: {
       const {isValid} = signatureVerify(
         numberToHex(nonce),
@@ -26,8 +18,12 @@ export function validateAccount(credential: Credential): boolean {
       return isValid;
     }
 
-    case WalletType.ETH: {
-      return false;
+    case WalletType.NEAR: {
+      return nacl.sign.detached.verify(
+        Buffer.from(numberToHex(nonce)),
+        Buffer.from(hexToU8a(signature)),
+        Buffer.from(publicKey, 'hex'),
+      );
     }
 
     default:

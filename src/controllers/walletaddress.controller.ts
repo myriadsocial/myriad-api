@@ -266,11 +266,6 @@ export class WalletAddressController {
     };
 
     switch (walletType) {
-      case WalletType.NEAR:
-        // TODO: implement near smartcontract
-        // return tipsBalanceInfo
-        throw new HttpErrors.NotFound('Near wallet not exists');
-
       case WalletType.POLKADOT: {
         if (networkType === NetworkType.MYRIAD) {
           return tipsBalanceInfo;
@@ -278,6 +273,11 @@ export class WalletAddressController {
 
         throw new HttpErrors.NotFound('Polkadot wallet not exists');
       }
+
+      case WalletType.NEAR:
+        // TODO: implement near smartcontract
+        // return tipsBalanceInfo
+        throw new HttpErrors.NotFound('Near wallet not exists');
 
       default:
         throw new HttpErrors.NotFound('Wallet not exists');
