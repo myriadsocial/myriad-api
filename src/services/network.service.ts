@@ -5,6 +5,7 @@ import {
   CurrencyRepository,
   NetworkRepository,
   QueueRepository,
+  WalletRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {CoinMarketCap} from './coin-market-cap.service';
@@ -28,6 +29,8 @@ export class NetworkService {
     protected currencyRepository: CurrencyRepository,
     @repository(QueueRepository)
     protected queueRepository: QueueRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @inject('services.CoinMarketCap')
     protected coinMarketCapService: CoinMarketCap,
   ) {}
@@ -158,12 +161,10 @@ export class NetworkService {
   }
 
   async connectSocialMedia(
-    type: WalletType,
     userId: string,
     peopleId: string,
-    accountId: string | null,
     ftIdentifier = 'native',
-  ): Promise<void> {
+  ): Promise<AnyObject | void> {
     if (!config.MYRIAD_SERVER_ID) return;
     const tipsBalanceInfo = {
       serverId: config.MYRIAD_SERVER_ID,
@@ -172,14 +173,20 @@ export class NetworkService {
       ftIdentifier: ftIdentifier,
     };
 
-    switch (type) {
-      case WalletType.POLKADOT:
-        return this.claimReference(tipsBalanceInfo, userId, accountId);
+    const wallets = await this.walletRepository.find({
+      where: {userId},
+    });
+    const polkadotWallet = wallets.find(
+      wallet => wallet.type === WalletType.POLKADOT,
+    );
 
-      case WalletType.NEAR:
-      default:
-        throw new HttpErrors.UnprocessableEntity('Wallet not exist');
-    }
+    return Promise.allSettled([
+      this.claimReferencePolkadot(
+        tipsBalanceInfo,
+        userId,
+        polkadotWallet?.id ?? null,
+      ),
+    ]);
   }
 
   async connectAccount(
@@ -198,7 +205,7 @@ export class NetworkService {
 
     switch (type) {
       case WalletType.POLKADOT:
-        return this.claimReference(tipsBalanceInfo, userId, accountId);
+        return this.claimReferencePolkadot(tipsBalanceInfo, userId, accountId);
 
       case WalletType.NEAR:
       default:
@@ -220,7 +227,7 @@ export class NetworkService {
     return priority;
   }
 
-  async claimReference(
+  async claimReferencePolkadot(
     tipsBalanceInfo: AnyObject,
     userId: string,
     accountId: string | null,
