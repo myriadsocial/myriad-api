@@ -18,6 +18,7 @@ import {
 } from '../models';
 import {
   CommentRepository,
+  CurrencyRepository,
   FriendRepository,
   NotificationRepository,
   NotificationSettingRepository,
@@ -56,6 +57,8 @@ export class NotificationService {
     public notificationSettingRepository: NotificationSettingRepository,
     @repository(WalletRepository)
     public walletRepository: WalletRepository,
+    @repository(CurrencyRepository)
+    public currencyRepository: CurrencyRepository,
     @service(FCMService)
     public fcmService: FCMService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -530,10 +533,11 @@ export class NotificationService {
     );
     if (!tipsActive) return;
 
+    const symbol = await this.getCurrencySymbol(transaction.currencyId);
     const notification = new Notification({
       from: this.currentUser[securityId],
       referenceId: transaction.id,
-      message: transaction.amount + ' ' + transaction.currencyId,
+      message: transaction.amount + ' ' + symbol,
     });
 
     if (type === ReferenceType.COMMENT && referenceId) {
@@ -590,11 +594,12 @@ export class NotificationService {
     );
     if (!tipsActive) return;
 
+    const symbol = await this.getCurrencySymbol(transaction.currencyId);
     const notification = new Notification({
       type: NotificationType.USER_REWARD,
       from: fromUser.id,
       referenceId: transaction.id,
-      message: transaction.amount + ' ' + transaction.currencyId,
+      message: transaction.amount + ' ' + symbol,
     });
 
     const title = 'Send Reward Success';
@@ -610,14 +615,15 @@ export class NotificationService {
     const fromUser = await this.walletRepository.user(from);
     const toUser = await this.walletRepository.user(to);
 
+    const symbol = await this.getCurrencySymbol(transaction.currencyId);
     const notification = new Notification({
       type: NotificationType.USER_INITIAL_TIPS,
       from: fromUser.id,
       referenceId: transaction.id,
-      message: transaction.amount + ' ' + transaction.currencyId,
+      message: transaction.amount + ' ' + symbol,
     });
 
-    const title = `Send Initial ${transaction.currencyId} Success`;
+    const title = `Send Initial ${symbol} Success`;
     const body = 'Myriad Official' + ' ' + notification.message;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
@@ -635,12 +641,13 @@ export class NotificationService {
     );
     if (!tipsActive) return false;
 
+    const symbol = await this.getCurrencySymbol(transaction.currencyId);
     const myriadUserId = await this.getMyriadUserId();
     const notification = new Notification({
       type: NotificationType.USER_CLAIM_TIPS,
       from: myriadUserId,
       referenceId: transaction.id,
-      message: transaction.amount + ' ' + transaction.currencyId,
+      message: transaction.amount + ' ' + symbol,
     });
 
     const title = 'Send Claim Tips Success';
@@ -875,5 +882,10 @@ export class NotificationService {
     });
     if (!user) throw new HttpErrors.NotFound('User not found');
     return user.id;
+  }
+
+  async getCurrencySymbol(currencyId: string): Promise<string> {
+    const currency = await this.currencyRepository.findById(currencyId);
+    return currency.symbol;
   }
 }
