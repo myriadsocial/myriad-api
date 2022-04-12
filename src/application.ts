@@ -71,7 +71,7 @@ import {
 } from 'loopback4-ratelimiter';
 import {omit} from 'lodash';
 import {DateUtils} from './utils/date-utils';
-import {Currency, Experience} from './models';
+import {Currency, Experience, Network} from './models';
 
 const date = new DateUtils();
 const jwt = require('jsonwebtoken');
@@ -423,20 +423,49 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   async doMigrateUserCurrency(): Promise<void> {
-    if (this.options.drop.indexOf('userCurrency') === -1) return;
-    const {currencyRepository, userCurrencyRepository} =
-      await this.repositories();
+    if (this.options.alter.indexOf('userCurrency') === -1) return;
+    const {
+      userRepository,
+      networkRepository,
+      currencyRepository,
+      userCurrencyRepository,
+    } = await this.repositories();
 
-    const currency = await currencyRepository.findOne({
-      where: {symbol: 'DOT'},
-    });
+    const networks = await networkRepository.find();
+    const {count} = await userRepository.count();
+    const bar = this.initializeProgressBar('Alter userCurrency');
 
-    if (currency) {
-      await userCurrencyRepository.updateAll(
-        {currencyId: currency.id},
-        {currencyId: 'DOT'},
+    bar.start(count, 0);
+    for (let i = 0; i < count; i++) {
+      bar.update(i + 1);
+      const [user] = await userRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      if (!user) continue;
+
+      await Promise.all(
+        networks.map(async (network: Network) => {
+          const currencies = await currencyRepository.find({
+            where: {networkId: network.id},
+            order: ['native DESC'],
+          });
+
+          return Promise.all(
+            currencies.map(async (currency: Currency, index: number) => {
+              return userCurrencyRepository.create({
+                userId: user.id.toString(),
+                networkId: network.id,
+                currencyId: currency.id,
+                priority: index + 1,
+              });
+            }),
+          );
+        }),
       );
     }
+    bar.stop();
   }
 
   async accountSetting(
