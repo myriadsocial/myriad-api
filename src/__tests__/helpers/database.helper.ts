@@ -199,6 +199,7 @@ export async function givenRepositories(testdb: any) {
     userReportRepository,
     notificationSettingRepository,
     walletRepository,
+    currencyRepository,
     fcmService,
     currentUser,
   );
