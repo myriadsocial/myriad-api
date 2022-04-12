@@ -468,6 +468,30 @@ export class MyriadApiApplication extends BootMixin(
     bar.stop();
   }
 
+  async doMigrateVote(): Promise<void> {
+    if (this.options.alter.indexOf('vote') === -1) return;
+    const {walletRepository, voteRepository} = await this.repositories();
+    const {count} = await walletRepository.count();
+    const bar = this.initializeProgressBar('Alter Vote');
+
+    bar.start(count, 0);
+    for (let i = 0; i < count; i++) {
+      bar.update(i + 1);
+      const [wallet] = await walletRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      if (!wallet) return;
+
+      await voteRepository.updateAll(
+        {toUserId: wallet.userId},
+        {toUserId: wallet.id},
+      );
+    }
+    bar.stop();
+  }
+
   async accountSetting(
     oldId: string,
     newId: string,
@@ -701,6 +725,7 @@ export class MyriadApiApplication extends BootMixin(
 
   async vote(oldId: string, newId: string, voteRepository: VoteRepository) {
     await voteRepository.updateAll({userId: newId}, {userId: oldId});
+    await voteRepository.updateAll({toUserId: newId}, {toUserId: oldId});
   }
 
   async wallet(
