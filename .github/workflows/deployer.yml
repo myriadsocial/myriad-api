@@ -82,7 +82,6 @@ jobs:
             SSH_USERNAME:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/SSH_KEY
             SERVER_ID:${{ secrets.DEV_GCP_PROJECT_ID }}/SERVER_ID
-            OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.DEV_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.DEV_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             FAUCET_AMOUNT:${{ secrets.DEV_GCP_PROJECT_ID }}/FAUCET_AMOUNT
@@ -123,7 +122,6 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.sha_short }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
-              --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
@@ -206,7 +204,6 @@ jobs:
             SSH_USERNAME:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/SSH_KEY
             SERVER_ID:${{ secrets.STG_GCP_PROJECT_ID }}/SERVER_ID
-            OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.STG_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.STG_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.STG_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             FAUCET_AMOUNT:${{ secrets.STG_GCP_PROJECT_ID }}/FAUCET_AMOUNT
@@ -246,7 +243,6 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
-              --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
@@ -319,7 +315,6 @@ jobs:
             SSH_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SSH_KEY
             SERVER_ID:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SERVER_ID
-            OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.TESTNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             FAUCET_AMOUNT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
@@ -359,7 +354,6 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
-              --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
@@ -432,7 +426,6 @@ jobs:
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
             SERVER_ID:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SERVER_ID
-            OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             FAUCET_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
@@ -472,7 +465,6 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
-              --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
@@ -545,7 +537,6 @@ jobs:
             SSH_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_USERNAME
             SSH_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SSH_KEY
             SERVER_ID:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SERVER_ID
-            OFFICIAL_ACCOUNT_PUBLIC_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/OFFICIAL_ACCOUNT_PUBLIC_KEY
             ADMIN_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             FAUCET_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
@@ -585,7 +576,6 @@ jobs:
               --install \
               --set-string image.tag=${{ needs.compute-build-info.outputs.latest_tag }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
-              --set-string config.officialAccountPublicKey=${{ steps.secrets.outputs.OFFICIAL_ACCOUNT_PUBLIC_KEY }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
