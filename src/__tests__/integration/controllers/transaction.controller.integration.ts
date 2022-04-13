@@ -5,6 +5,7 @@ import {
   UserRepository,
   WalletRepository,
   CurrencyRepository,
+  UserSocialMediaRepository,
 } from '../../../repositories';
 import {NotificationService} from '../../../services';
 import {
@@ -19,6 +20,7 @@ import {
 
 describe('TransactionControllerIntegration', () => {
   let transactionRepository: TransactionRepository;
+  let userSocialMediaRepository: UserSocialMediaRepository;
   let userRepository: UserRepository;
   let walletRepository: WalletRepository;
   let notificationService: NotificationService;
@@ -38,6 +40,7 @@ describe('TransactionControllerIntegration', () => {
   before(async () => {
     controller = new TransactionController(
       transactionRepository,
+      userSocialMediaRepository,
       notificationService,
     );
   });

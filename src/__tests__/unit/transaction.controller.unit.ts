@@ -7,12 +7,16 @@ import {
 } from '@loopback/testlab';
 import {TransactionController} from '../../controllers';
 import {Transaction} from '../../models';
-import {TransactionRepository} from '../../repositories';
+import {
+  TransactionRepository,
+  UserSocialMediaRepository,
+} from '../../repositories';
 import {NotificationService} from '../../services';
 import {givenTransaction} from '../helpers';
 
 describe('TransactionController', () => {
   let transactionRepository: StubbedInstanceWithSinonAccessor<TransactionRepository>;
+  let userSocialMediaRepository: StubbedInstanceWithSinonAccessor<UserSocialMediaRepository>;
   let notificationService: NotificationService;
   let controller: TransactionController;
   let aTransaction: Transaction;
@@ -73,6 +77,7 @@ describe('TransactionController', () => {
   });
 
   function resetRepositories() {
+    userSocialMediaRepository = createStubInstance(UserSocialMediaRepository);
     transactionRepository = createStubInstance(TransactionRepository);
     aTransaction = givenTransaction();
     aTransactionWithId = givenTransaction({
@@ -92,6 +97,7 @@ describe('TransactionController', () => {
 
     controller = new TransactionController(
       transactionRepository,
+      userSocialMediaRepository,
       notificationService,
     );
   }

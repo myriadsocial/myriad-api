@@ -1,24 +1,40 @@
 import {intercept, service} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {
+  AnyObject,
+  Filter,
+  FilterExcludingWhere,
+  repository,
+} from '@loopback/repository';
 import {
   get,
   getModelSchemaRef,
   param,
+  patch,
   post,
   requestBody,
   response,
 } from '@loopback/rest';
 import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {Transaction} from '../models';
-import {TransactionRepository} from '../repositories';
+import {
+  TransactionRepository,
+  UserSocialMediaRepository,
+} from '../repositories';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
+export interface TransactionInfo {
+  userId: string;
+  walletId: string;
+  currencyId: string;
+}
 @authenticate('jwt')
 export class TransactionController {
   constructor(
     @repository(TransactionRepository)
     protected transactionRepository: TransactionRepository,
+    @repository(UserSocialMediaRepository)
+    protected userSocialMediaRepository: UserSocialMediaRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -81,5 +97,50 @@ export class TransactionController {
     filter?: FilterExcludingWhere<Transaction>,
   ): Promise<Transaction> {
     return this.transactionRepository.findById(id, filter);
+  }
+
+  @patch('/transactions')
+  async patch(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              userId: {
+                type: 'string',
+              },
+              walletId: {
+                type: 'string',
+              },
+              currencyId: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    })
+    transactionInfo: TransactionInfo,
+  ): Promise<AnyObject> {
+    const {userId, walletId, currencyId} = transactionInfo;
+    const socialMedias = await this.userSocialMediaRepository.find({
+      where: {userId},
+    });
+
+    const promises: Promise<AnyObject>[] = [
+      this.transactionRepository.updateAll(
+        {to: walletId},
+        {to: userId, currencyId},
+      ),
+      ...socialMedias.map(e => {
+        return this.transactionRepository.updateAll(
+          {to: walletId},
+          {to: e.peopleId, currencyId},
+        );
+      }),
+    ];
+
+    return Promise.allSettled(promises);
   }
 }
