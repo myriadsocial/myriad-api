@@ -323,9 +323,10 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       if (countExperience === 0) {
         await this.experienceRepository.deleteById(experienceId);
       } else {
-        await this.experienceRepository.updateById(experienceId, {
-          subscribedCount: countExperience,
-        });
+        await this.experienceRepository.updateAll(
+          {subscribedCount: countExperience - 1},
+          {id: experienceId},
+        );
       }
 
       const {count: countUserExperience} =
