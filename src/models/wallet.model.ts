@@ -37,12 +37,6 @@ export class Wallet extends Entity {
   type: WalletType;
 
   @property({
-    type: 'string',
-    required: true,
-  })
-  networkId: string;
-
-  @property({
     type: 'boolean',
     required: false,
   })
@@ -70,6 +64,9 @@ export class Wallet extends Entity {
 
   @belongsTo(() => User)
   userId: string;
+
+  @belongsTo(() => Network, {}, {required: true})
+  networkId: string;
 
   constructor(data?: Partial<Wallet>) {
     super(data);
