@@ -468,7 +468,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           },
         });
 
-        const networkId = wallet?.network ?? '';
+        const networkId = wallet?.networkId ?? '';
 
         await this.currencyService.updateUserCurrency(
           this.currentUser[securityId],

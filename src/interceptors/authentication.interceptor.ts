@@ -112,13 +112,13 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
       this.validateUsername(username);
 
-      invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {
+      Object.assign(invocationCtx.args[0], {
         name: name.substring(0, 22),
       });
       invocationCtx.args[1] = new Wallet({
         id: wallet.address,
         type: wallet.type,
-        network: wallet.network,
+        networkId: wallet.network,
         primary: true,
       });
 
@@ -208,7 +208,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       const wallet = invocationCtx.args[1] as Wallet;
 
       Promise.allSettled([
-        this.currencyService.addUserCurrencies(result.id, wallet.network),
+        this.currencyService.addUserCurrencies(result.id, wallet.networkId),
         this.userRepository.accountSetting(result.id).create({}),
         this.userRepository.notificationSetting(result.id).create({}),
         this.userRepository.languageSetting(result.id).create({}),

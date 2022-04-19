@@ -44,7 +44,7 @@ export class WalletController {
         primary: true,
         userId: this.currentUser[securityId],
       },
-      include: ['user'],
+      include: ['user', 'network'],
     });
   }
 
@@ -117,10 +117,10 @@ export class WalletController {
     const {
       userId,
       primary,
-      network: currentNetwork,
+      networkId: currentNetwork,
     } = await this.walletRepository.findById(id);
 
-    let network = currentNetwork;
+    let networkId = currentNetwork;
 
     if (!primary) {
       const wallet = await this.walletRepository.findOne({
@@ -128,7 +128,7 @@ export class WalletController {
       });
 
       if (!wallet) throw new HttpErrors.NotFound('User not found');
-      network = wallet.network;
+      networkId = wallet.networkId;
     }
 
     const include = filter?.include ?? [];
@@ -138,7 +138,7 @@ export class WalletController {
       scope: {
         include: [{relation: 'network'}],
         where: {
-          networkId: network,
+          networkId: networkId,
         },
         order: ['priority ASC'],
       },

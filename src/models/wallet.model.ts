@@ -1,6 +1,7 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {WalletType} from '../enums';
 import {User, UserWithRelations} from './user.model';
+import {Network} from './network.model';
 
 @model({
   settings: {
@@ -39,7 +40,7 @@ export class Wallet extends Entity {
     type: 'string',
     required: true,
   })
-  network: string;
+  networkId: string;
 
   @property({
     type: 'boolean',

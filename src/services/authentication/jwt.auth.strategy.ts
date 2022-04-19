@@ -4,7 +4,7 @@ import {repository} from '@loopback/repository';
 import {HttpErrors, Request} from '@loopback/rest';
 import {UserProfile, securityId} from '@loopback/security';
 import {TokenServiceBindings} from '../../keys';
-import {UserRepository, WalletRepository} from '../../repositories';
+import {UserRepository} from '../../repositories';
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   name = 'jwt';
@@ -12,8 +12,6 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     public tokenService: TokenService,
   ) {}

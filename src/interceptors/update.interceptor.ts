@@ -26,7 +26,7 @@ import {
   WalletRepository,
 } from '../repositories';
 import {HttpErrors} from '@loopback/rest';
-import {Credential, Post, User} from '../models';
+import {Credential, Post, User, Wallet} from '../models';
 import {
   ActivityLogService,
   CurrencyService,
@@ -274,7 +274,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Wrong address');
         }
 
-        if (wallet.network === networkId && wallet.primary === true) {
+        if (wallet.networkId === networkId && wallet.primary === true) {
           throw new HttpErrors.UnprocessableEntity('Network already connected');
         }
 
@@ -284,7 +284,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Failed to verify');
         }
 
-        wallet.network = networkId;
+        wallet.networkId = networkId;
         wallet.primary = true;
         invocationCtx.args[1].data = wallet;
 
@@ -306,16 +306,16 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERNETWORK: {
-        const {network, userId} = invocationCtx.args[1].data;
+        const {networkId, userId} = invocationCtx.args[1].data as Wallet;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
         Promise.allSettled([
-          this.currencyService.updateUserCurrency(userId, network),
+          this.currencyService.updateUserCurrency(userId, networkId),
           this.userRepository.updateById(userId, {nonce: newNonce}),
           this.walletRepository.updateAll(
             {primary: false},
-            {network: {nin: [network]}, userId},
+            {networkId: {nin: [networkId]}, userId},
           ),
         ]) as Promise<AnyObject>;
 
