@@ -25,7 +25,7 @@ import {
 /* eslint-disable @typescript-eslint/no-invalid-this */
 /* eslint-disable @typescript-eslint/no-misused-promises*/
 describe('UserExperienceApplication', function () {
-  this.timeout(30000);
+  this.timeout(40000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -223,12 +223,14 @@ describe('UserExperienceApplication', function () {
         },
       };
 
-      const result = await userRepository.findById(user.id.toString());
-      result.nonce = user.nonce;
-      result.onTimeline = result.onTimeline.toString();
-      result.id = result.id.toString();
+      setTimeout(async () => {
+        const result = await userRepository.findById(user.id.toString());
+        result.nonce = user.nonce;
+        result.onTimeline = result.onTimeline.toString();
+        result.id = result.id.toString();
 
-      expect(result).to.containDeep(expected);
+        expect(result).to.containDeep(expected);
+      }, 10000);
     });
 
     it('rejects subscribe other user experience when experience already belong to user', async () => {

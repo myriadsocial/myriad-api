@@ -136,14 +136,14 @@ describe('AuthenticationApplication', function () {
     const primaryWallet = await givenWalletInstance(walletRepository, {
       id: 'abdulhakim.testnet',
       type: WalletType.NEAR,
-      network: NetworkType.NEAR,
+      networkId: NetworkType.NEAR,
       primary: true,
       userId: user.id,
     });
     const wallet = await givenWalletInstance(walletRepository, {
       primary: false,
       userId: user.id,
-      network: network.id as NetworkType,
+      networkId: network.id,
     });
     const credential = givenCredential({
       nonce: user.nonce,
