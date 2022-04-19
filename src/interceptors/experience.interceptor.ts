@@ -77,16 +77,16 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
   }
 
   async beforeExperience(invocationCtx: InvocationContext): Promise<void> {
-    let userId = invocationCtx.args[0];
-    let experienceId = invocationCtx.args[1];
-
+    const [userId, experienceId] = invocationCtx.args;
     const methodName = invocationCtx.methodName;
-    const userExperienceId = invocationCtx.args[0];
-
-    let numberOfUserExperience = 0;
-    let people = [];
-    let users = [];
-    let isBelongToUser = false;
+    const data = {
+      totalUserExp: 0,
+      people: [] as People[],
+      users: [] as People[],
+      isBelongToUser: false,
+      userId,
+      experienceId,
+    };
 
     switch (methodName) {
       case MethodType.CREATE: {
@@ -125,40 +125,34 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
           );
         }
 
-        people = expPeople.filter(e => e.platform !== PlatformType.MYRIAD);
-        users = expPeople.filter(e => e.platform === PlatformType.MYRIAD);
+        data.people = expPeople.filter(e => e.platform !== PlatformType.MYRIAD);
+        data.users = expPeople.filter(e => e.platform === PlatformType.MYRIAD);
+        data.totalUserExp = await this.validateNumberOfUserExperience(userId);
 
-        numberOfUserExperience = await this.validateNumberOfUserExperience(
-          userId,
-        );
-        invocationCtx.args[1] = Object.assign(experience, {
+        Object.assign(invocationCtx.args[1], {
           createdBy: userId,
-          people: people,
+          people: data.people,
           allowedTags: tagExperience.map(tag => formatTag(tag)),
         });
         break;
       }
 
       case MethodType.SUBSCRIBE: {
-        const {createdBy} = await this.experienceRepository.findById(
-          experienceId,
-        );
-        const found = await this.userExperienceRepository.findOne({
-          where: {
-            userId: userId,
-            experienceId: experienceId,
-          },
+        const userExperience = await this.userExperienceRepository.findOne({
+          where: {userId, experienceId},
+          include: ['experience'],
         });
 
-        if (found && userId === createdBy) {
+        const experienceCreator = userExperience?.experience?.createdBy;
+        if (userExperience && userId === experienceCreator) {
           throw new HttpErrors.UnprocessableEntity(
             'You already belong this experience!',
           );
         }
 
-        if (userId === createdBy) isBelongToUser = true;
+        if (userId === experienceCreator) data.isBelongToUser = true;
 
-        numberOfUserExperience = await this.validateSubscribeExperience(
+        data.totalUserExp = await this.validateSubscribeExperience(
           userId,
           experienceId,
         );
@@ -166,197 +160,167 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
 
       case MethodType.UPDATEEXPERIENCE: {
-        if (invocationCtx.args[2].people.length === 0) {
+        const people = invocationCtx.args[2].people as People[];
+        if (people.length === 0) {
           throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
         }
 
         await this.validateUpdateExperience(userId, experienceId);
-        await this.experienceUserRepository.deleteAll({
-          experienceId: experienceId,
-        });
+        await this.experienceUserRepository.deleteAll({experienceId});
 
-        people = invocationCtx.args[2].people.filter(
-          (e: People) => e.platform !== PlatformType.MYRIAD,
-        );
-        users = invocationCtx.args[2].people.filter(
-          (e: People) => e.platform === PlatformType.MYRIAD,
-        );
+        data.people = people.filter(e => e.platform !== PlatformType.MYRIAD);
+        data.users = people.filter(e => e.platform === PlatformType.MYRIAD);
 
-        invocationCtx.args[2] = Object.assign(invocationCtx.args[2], {
-          people: people,
-        });
-
+        Object.assign(invocationCtx.args[2], {people: data.people});
         break;
       }
 
       case MethodType.DELETEBYID: {
-        // Reassign userId to recounting userMetric
-        ({userId, experienceId} = await this.userExperienceRepository.findById(
-          userExperienceId,
-        ));
+        const id = invocationCtx.args[0];
+        const userExp = await this.userExperienceRepository.findById(id);
+        data.userId = userExp.userId;
+        data.experienceId = userExp.experienceId;
         break;
       }
     }
 
-    invocationCtx.args[3] = {
-      userId,
-      experienceId,
-      numberOfUserExperience,
-      users,
-      isBelongToUser,
-    };
+    invocationCtx.args[3] = data;
   }
 
   async afterExperience(
     invocationCtx: InvocationContext,
     result: AnyObject,
   ): Promise<AnyObject> {
+    const {users, userId, experienceId, totalUserExp, isBelongToUser} =
+      invocationCtx.args[3];
+
     const methodName = invocationCtx.methodName;
-    const {
-      users,
-      userId,
-      experienceId,
-      numberOfUserExperience,
-      isBelongToUser,
-    } = invocationCtx.args[3];
+    const expRepos = this.experienceRepository;
+    const expUserRepos = this.experienceUserRepository;
+    const userExpRepos = this.userExperienceRepository;
+    const userRepos = this.userRepository;
+    const promises: Promise<AnyObject | void>[] = [
+      this.metricService.userMetric(userId),
+    ];
 
-    if (
-      (methodName === MethodType.CREATE ||
-        methodName === MethodType.SUBSCRIBE) &&
-      numberOfUserExperience === 0
-    ) {
-      await this.userRepository.updateById(userId, {
-        onTimeline:
-          methodName === MethodType.SUBSCRIBE ? result.experienceId : result.id,
-      });
-    }
+    switch (methodName) {
+      case MethodType.CREATE: {
+        const createdExperience = result as Experience;
+        const allowedTags = createdExperience.allowedTags;
+        const prohibitedTags = createdExperience.prohibitedTags;
+        const tags = [...allowedTags, ...prohibitedTags];
+        const clonedId = invocationCtx.args[2];
+        const expId = result.id.toString();
 
-    if (methodName === MethodType.SUBSCRIBE && !isBelongToUser) {
-      const {count: currentNumberOfUserExperience} =
-        await this.userExperienceRepository.count({
-          experienceId,
-          subscribed: true,
-        });
-
-      await this.experienceRepository.updateById(experienceId, {
-        subscribedCount: currentNumberOfUserExperience,
-      });
-    }
-
-    if (
-      (methodName === MethodType.CREATE ||
-        methodName === MethodType.UPDATEEXPERIENCE) &&
-      users.length > 0
-    ) {
-      Promise.allSettled(
-        users.map(async (user: User) => {
-          return this.experienceUserRepository.create({
-            userId: user.id,
-            experienceId:
-              methodName === MethodType.UPDATEEXPERIENCE
-                ? experienceId
-                : result.id,
+        if (clonedId) {
+          const {count: clonedCount} = await userExpRepos.count({
+            clonedId,
           });
-        }),
-      ) as Promise<AnyObject>;
-    }
+          promises.push(
+            expRepos.updateById(clonedId, {clonedCount}),
+            userExpRepos.updateAll({clonedId}, {userId, experienceId: expId}),
+          );
+        }
 
-    if (methodName === MethodType.CREATE) {
-      const createdExperience = result as Experience;
-      const allowedTags = createdExperience.allowedTags;
-      const prohibitedTags = createdExperience.prohibitedTags;
-      const tags = [...allowedTags, ...prohibitedTags];
-      const clonedId = invocationCtx.args[2];
+        if (totalUserExp === 0) {
+          promises.push(userRepos.updateById(userId, {onTimeline: expId}));
+        }
 
-      if (clonedId) {
-        await this.userExperienceRepository.updateAll(
-          {clonedId},
-          {userId, experienceId: result.id.toString()},
+        if (users.length > 0) {
+          users.forEach((user: User) => {
+            promises.push(
+              expUserRepos.create({userId: user.id, experienceId: expId}),
+            );
+          });
+        }
+
+        promises.push(
+          this.tagService.createTags(tags, true),
+          this.activityLogService.createLog(
+            ActivityLogType.CREATEEXPERIENCE,
+            result.id,
+            ReferenceType.EXPERIENCE,
+          ),
         );
-        const {count: totalCloned} = await this.userExperienceRepository.count({
-          clonedId,
-        });
-        await this.experienceRepository.updateById(clonedId, {
-          clonedCount: totalCloned,
-        });
+
+        break;
       }
 
-      await this.tagService.createTags(tags, true);
-      await this.activityLogService.createLog(
-        ActivityLogType.CREATEEXPERIENCE,
-        result.id,
-        ReferenceType.EXPERIENCE,
-      );
-    }
+      case MethodType.SUBSCRIBE: {
+        if (totalUserExp === 0) {
+          const onTimeline = result.experienceId;
+          promises.push(userRepos.updateById(userId, {onTimeline}));
+        }
 
-    if (methodName === MethodType.SUBSCRIBE) {
-      if (isBelongToUser) {
-        await this.userExperienceRepository.updateById(result.id, {
-          subscribed: false,
-        });
+        const subscribed = !isBelongToUser;
+        if (isBelongToUser) {
+          promises.push(userExpRepos.updateById(result.id, {subscribed}));
+          Object.assign(result, {subscribed});
+        } else {
+          const {count: subscribedCount} = await userExpRepos.count({
+            experienceId,
+            subscribed,
+          });
 
-        result = Object.assign(result, {subscribed: false});
-      } else {
-        await this.activityLogService.createLog(
-          ActivityLogType.SUBSCRIBEEXPERIENCE,
-          result.experienceId,
-          ReferenceType.EXPERIENCE,
-        );
-      }
-    }
-
-    if (methodName === MethodType.DELETEBYID) {
-      const {count: countExperience} =
-        await this.userExperienceRepository.count({
-          or: [
-            {
-              experienceId,
-              subscribed: true,
-            },
-            {
-              experienceId,
-              subscribed: false,
-            },
-          ],
-        });
-
-      if (countExperience === 0) {
-        await this.experienceRepository.deleteById(experienceId);
-      } else {
-        await this.experienceRepository.updateAll(
-          {subscribedCount: countExperience - 1},
-          {id: experienceId},
-        );
+          promises.push(
+            expRepos.updateById(experienceId, {subscribedCount}),
+            this.activityLogService.createLog(
+              ActivityLogType.SUBSCRIBEEXPERIENCE,
+              result.experienceId,
+              ReferenceType.EXPERIENCE,
+            ),
+          );
+        }
+        break;
       }
 
-      const {count: countUserExperience} =
-        await this.userExperienceRepository.count({userId});
+      case MethodType.DELETEBYID: {
+        // Update experience subscribed count
+        // Removing experience when subscribed count zero
+        const [exists, {count: subscribedCount}] = await Promise.all([
+          expRepos.exists(experienceId),
+          userExpRepos.count({experienceId, subscribed: true}),
+        ]);
 
-      if (countUserExperience === 0) {
-        await this.userRepository.updateById(userId, {onTimeline: undefined});
-      } else {
-        try {
-          const user = await this.userRepository.findById(userId);
+        if (subscribedCount === 0 && exists) {
+          promises.push(expRepos.deleteById(experienceId));
+        } else {
+          promises.push(expRepos.updateById(experienceId, {subscribedCount}));
+        }
 
-          if (experienceId === user.onTimeline?.toString()) {
-            const userExperience = await this.userExperienceRepository.findOne({
+        // Update onTimeline for user
+        const {count: countUserExperience} = await userExpRepos.count({userId});
+
+        if (countUserExperience === 0) {
+          promises.push(userRepos.updateById(userId, {onTimeline: undefined}));
+        } else {
+          const user = await userRepos.findOne({where: {id: userId}});
+
+          if (experienceId === user?.onTimeline?.toString()) {
+            const userExperience = await userExpRepos.findOne({
               where: {userId},
             });
 
             if (userExperience) {
-              await this.userRepository.updateById(userId, {
-                onTimeline: userExperience.experienceId,
-              });
+              const onTimeline = userExperience.experienceId;
+              promises.push(userRepos.updateById(userId, {onTimeline}));
             }
           }
-        } catch {
-          // ignore
         }
+        break;
+      }
+
+      case MethodType.UPDATEEXPERIENCE: {
+        if (users.length > 0) {
+          users.forEach((user: User) => {
+            promises.push(expUserRepos.create({userId: user.id, experienceId}));
+          });
+        }
+        break;
       }
     }
 
-    // Recounting userMetric after create, clone, and subscribe
-    await this.metricService.userMetric(userId);
+    Promise.allSettled(promises) as AnyObject;
 
     return result;
   }
