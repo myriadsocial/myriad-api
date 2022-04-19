@@ -22,9 +22,10 @@ import {
   setupApplication,
 } from '../helpers';
 
-/* eslint-disable  @typescript-eslint/no-invalid-this */
+/* eslint-disable @typescript-eslint/no-invalid-this */
+/* eslint-disable @typescript-eslint/no-misused-promises*/
 describe('UserExperienceApplication', function () {
-  this.timeout(20000);
+  this.timeout(30000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -348,11 +349,13 @@ describe('UserExperienceApplication', function () {
         },
       };
 
-      const result = await userRepository.findById(user.id);
-      result.nonce = user.nonce;
-      result.onTimeline = result.onTimeline.toString();
+      setTimeout(async () => {
+        const result = await userRepository.findById(user.id);
+        result.nonce = user.nonce;
+        result.onTimeline = result.onTimeline.toString();
 
-      expect(result).to.containDeep(expected);
+        expect(result).to.containDeep(expected);
+      }, 10000);
     });
 
     it('rejects creates new experience when user has experience more than 10', async () => {
