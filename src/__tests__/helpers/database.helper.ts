@@ -151,6 +151,7 @@ export async function givenRepositories(testdb: any) {
   const walletRepository: WalletRepository = new WalletRepository(
     testdb,
     async () => userRepository,
+    async () => networkRepository,
   );
   const userCurrencyRepository: UserCurrencyRepository =
     new UserCurrencyRepository(
@@ -208,7 +209,6 @@ export async function givenRepositories(testdb: any) {
     accountSettingRepository,
     friendRepository,
     userRepository,
-    walletRepository,
   );
 
   const postService = new PostService(

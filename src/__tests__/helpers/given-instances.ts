@@ -771,7 +771,7 @@ export function givenWallet(wallet?: Partial<Wallet>) {
     {
       id: id,
       type: WalletType.POLKADOT,
-      network: NetworkType.MYRIAD,
+      networkId: NetworkType.MYRIAD,
     },
     wallet,
   );

@@ -72,7 +72,7 @@ describe('WalletAddressApplication', function () {
     await givenWalletInstance(walletRepository, {
       userId: user.id,
       primary: true,
-      network: NetworkType.MYRIAD,
+      networkId: NetworkType.MYRIAD,
     });
   });
 

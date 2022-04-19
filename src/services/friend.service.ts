@@ -6,7 +6,6 @@ import {
   AccountSettingRepository,
   FriendRepository,
   UserRepository,
-  WalletRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 import {Filter} from '@loopback/repository';
@@ -21,8 +20,6 @@ export class FriendService {
     public friendRepository: FriendRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
   ) {}
 
   async validatePendingFriendRequest(

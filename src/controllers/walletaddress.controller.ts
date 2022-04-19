@@ -63,7 +63,7 @@ export class WalletAddressController {
       throw new HttpErrors.NotFound('Wallet not exists');
     }
 
-    const {type, network} = wallet;
+    const {type, networkId} = wallet;
 
     const post = await this.postRepository.findById(id, {
       include: [
@@ -99,7 +99,7 @@ export class WalletAddressController {
 
       return this.tipsBalanceInfo(
         type,
-        network,
+        networkId,
         ReferenceType.USER,
         post.createdBy,
       );
@@ -119,10 +119,15 @@ export class WalletAddressController {
         };
       }
 
-      return this.tipsBalanceInfo(type, network, ReferenceType.USER, userId);
+      return this.tipsBalanceInfo(type, networkId, ReferenceType.USER, userId);
     }
 
-    return this.tipsBalanceInfo(type, network, ReferenceType.PEOPLE, people.id);
+    return this.tipsBalanceInfo(
+      type,
+      networkId,
+      ReferenceType.PEOPLE,
+      people.id,
+    );
   }
 
   @get('/comments/{id}/walletaddress')
@@ -161,7 +166,7 @@ export class WalletAddressController {
       throw new HttpErrors.NotFound('Wallet not exists');
     }
 
-    const {type, network} = wallet;
+    const {type, networkId} = wallet;
 
     const comment = await this.commentRepository.findById(id, {
       include: [
@@ -190,7 +195,7 @@ export class WalletAddressController {
       if (!user) {
         throw new HttpErrors.NotFound('User not found');
       }
-      return this.tipsBalanceInfo(type, network, ReferenceType.USER, user.id);
+      return this.tipsBalanceInfo(type, networkId, ReferenceType.USER, user.id);
     }
 
     return {
@@ -235,7 +240,7 @@ export class WalletAddressController {
       throw new HttpErrors.NotFound('Wallet not exists');
     }
 
-    const {type, network} = wallet;
+    const {type, networkId} = wallet;
     const toWalletUser = await this.walletRepository.findOne({
       where: {userId: id, type},
     });
@@ -247,7 +252,7 @@ export class WalletAddressController {
       };
     }
 
-    return this.tipsBalanceInfo(type, network, ReferenceType.USER, id);
+    return this.tipsBalanceInfo(type, networkId, ReferenceType.USER, id);
   }
 
   tipsBalanceInfo(

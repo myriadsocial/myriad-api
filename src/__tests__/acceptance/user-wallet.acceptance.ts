@@ -62,7 +62,7 @@ describe('UserWalletApplication', function () {
       givenWallet({
         id: 'abdulhakim.testnet',
         type: WalletType.NEAR,
-        network: NetworkType.NEAR,
+        networkId: NetworkType.NEAR,
       }),
     );
   });
@@ -103,7 +103,7 @@ describe('UserWalletApplication', function () {
     const wallet = new Wallet({
       id: credential.publicAddress,
       userId: user.id,
-      network: NetworkType.MYRIAD,
+      networkId: NetworkType.MYRIAD,
       type: WalletType.POLKADOT,
       primary: true,
     });

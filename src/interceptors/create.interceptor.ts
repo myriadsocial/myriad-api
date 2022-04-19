@@ -271,7 +271,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           ...data,
           userId: userId,
           primary: false,
-          network: networkType,
+          networkId: networkType,
           type: walletType,
         });
 
@@ -382,13 +382,14 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERWALLET: {
-        const {id, userId, network, type} = invocationCtx.args[1].data;
+        const {id, userId, networkId, type} = invocationCtx.args[1]
+          .data as Wallet;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
         Promise.allSettled([
           this.networkService.connectAccount(type, userId, id),
-          this.currencyService.addUserCurrencies(userId, network),
+          this.currencyService.addUserCurrencies(userId, networkId),
           this.userRepository.updateById(userId, {nonce: newNonce}),
         ]) as Promise<AnyObject>;
 
