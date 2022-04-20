@@ -4,13 +4,52 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '.github/**'
+      - '.maintain/**'
+      - '.dockerignore'
+      - '.env-template'
+      - 'LICENSE'
 
 concurrency:
   group: tester-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      test: ${{ steps.filter.outputs.test }}
+      markdown: ${{ steps.filter.outputs.markdown }}
+    steps:
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          test:
+            - '.husky'
+            - 'public/**'
+            - 'src/**'
+            - '.editorconfig'
+            - '.eslintignore'
+            - '.eslintrc.js'
+            - '.gitignore'
+            - '.lintstagedrc.json'
+            - '.mocharc.json'
+            - '.prettierignore'
+            - '.prettierrc.json'
+            - '.yo-rc.json'
+            - 'package.json'
+            - 'tsconfig.json'
+            - 'yarn.lock'
+          markdown:
+            - 'docs/**'
+            - 'DEVELOPING.md'
+            - 'README.md'
+
   test-code:
+    needs: changes
+    if: ${{ needs.changes.outputs.test == 'true' }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
@@ -28,6 +67,8 @@ jobs:
         run: yarn test
 
   check-link-markdown:
+    needs: changes
+    if: ${{ needs.changes.outputs.markdown == 'true' }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
