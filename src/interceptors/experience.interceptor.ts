@@ -81,11 +81,11 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName;
     const data = {
       totalUserExp: 0,
-      people: [] as People[],
       users: [] as People[],
       isBelongToUser: false,
       userId,
       experienceId,
+      experienceCreator: '',
     };
 
     switch (methodName) {
@@ -125,13 +125,15 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
           );
         }
 
-        data.people = expPeople.filter(e => e.platform !== PlatformType.MYRIAD);
+        const people = expPeople.filter(
+          e => e.platform !== PlatformType.MYRIAD,
+        );
         data.users = expPeople.filter(e => e.platform === PlatformType.MYRIAD);
         data.totalUserExp = await this.validateNumberOfUserExperience(userId);
 
         Object.assign(invocationCtx.args[1], {
           createdBy: userId,
-          people: data.people,
+          people: people,
           allowedTags: tagExperience.map(tag => formatTag(tag)),
         });
         break;
@@ -160,26 +162,31 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       }
 
       case MethodType.UPDATEEXPERIENCE: {
-        const people = invocationCtx.args[2].people as People[];
-        if (people.length === 0) {
+        const rawPeople = invocationCtx.args[2].people as People[];
+        if (rawPeople.length === 0) {
           throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
         }
 
         await this.validateUpdateExperience(userId, experienceId);
         await this.experienceUserRepository.deleteAll({experienceId});
 
-        data.people = people.filter(e => e.platform !== PlatformType.MYRIAD);
-        data.users = people.filter(e => e.platform === PlatformType.MYRIAD);
+        const people = rawPeople.filter(
+          e => e.platform !== PlatformType.MYRIAD,
+        );
+        data.users = rawPeople.filter(e => e.platform === PlatformType.MYRIAD);
 
-        Object.assign(invocationCtx.args[2], {people: data.people});
+        Object.assign(invocationCtx.args[2], {people: people});
         break;
       }
 
       case MethodType.DELETEBYID: {
         const id = invocationCtx.args[0];
-        const userExp = await this.userExperienceRepository.findById(id);
+        const userExp = await this.userExperienceRepository.findById(id, {
+          include: ['experience'],
+        });
         data.userId = userExp.userId;
         data.experienceId = userExp.experienceId;
+        data.experienceCreator = userExp.experience?.createdBy ?? '';
         break;
       }
     }
@@ -191,8 +198,14 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     result: AnyObject,
   ): Promise<AnyObject> {
-    const {users, userId, experienceId, totalUserExp, isBelongToUser} =
-      invocationCtx.args[3];
+    const {
+      users,
+      userId,
+      experienceId,
+      totalUserExp,
+      isBelongToUser,
+      experienceCreator,
+    } = invocationCtx.args[3];
 
     const methodName = invocationCtx.methodName;
     const expRepos = this.experienceRepository;
@@ -277,12 +290,12 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
       case MethodType.DELETEBYID: {
         // Update experience subscribed count
         // Removing experience when subscribed count zero
-        const [exists, {count: subscribedCount}] = await Promise.all([
-          expRepos.exists(experienceId),
-          userExpRepos.count({experienceId, subscribed: true}),
-        ]);
+        const {count: subscribedCount} = await userExpRepos.count({
+          experienceId,
+          subscribed: true,
+        });
 
-        if (subscribedCount === 0 && exists) {
+        if (subscribedCount === 0 && userId === experienceCreator) {
           promises.push(expRepos.deleteById(experienceId));
         } else {
           promises.push(expRepos.updateById(experienceId, {subscribedCount}));
