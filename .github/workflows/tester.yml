@@ -22,30 +22,30 @@ jobs:
       test: ${{ steps.filter.outputs.test }}
       markdown: ${{ steps.filter.outputs.markdown }}
     steps:
-    - uses: dorny/paths-filter@v2
-      id: filter
-      with:
-        filters: |
-          test:
-            - '.husky'
-            - 'public/**'
-            - 'src/**'
-            - '.editorconfig'
-            - '.eslintignore'
-            - '.eslintrc.js'
-            - '.gitignore'
-            - '.lintstagedrc.json'
-            - '.mocharc.json'
-            - '.prettierignore'
-            - '.prettierrc.json'
-            - '.yo-rc.json'
-            - 'package.json'
-            - 'tsconfig.json'
-            - 'yarn.lock'
-          markdown:
-            - 'docs/**'
-            - 'DEVELOPING.md'
-            - 'README.md'
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            test:
+              - '.husky'
+              - 'public/**'
+              - 'src/**'
+              - '.editorconfig'
+              - '.eslintignore'
+              - '.eslintrc.js'
+              - '.gitignore'
+              - '.lintstagedrc.json'
+              - '.mocharc.json'
+              - '.prettierignore'
+              - '.prettierrc.json'
+              - '.yo-rc.json'
+              - 'package.json'
+              - 'tsconfig.json'
+              - 'yarn.lock'
+            markdown:
+              - 'docs/**'
+              - 'DEVELOPING.md'
+              - 'README.md'
 
   test-code:
     needs: changes
