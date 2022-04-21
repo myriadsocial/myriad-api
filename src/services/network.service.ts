@@ -10,7 +10,7 @@ import {
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {CoinMarketCap} from './coin-market-cap.service';
 import {providers} from 'near-api-js';
-import {NetworkType, ReferenceType, WalletType} from '../enums';
+import {ReferenceType, WalletType} from '../enums';
 import {HttpErrors} from '@loopback/rest';
 import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
@@ -150,7 +150,7 @@ export class NetworkService {
     contractId: string,
   ): Promise<Currency> {
     switch (networkId) {
-      case NetworkType.NEAR:
+      case 'near':
         return this.verifyNearContractAddress(networkId, rpcURL, contractId);
 
       default:
@@ -233,9 +233,7 @@ export class NetworkService {
     accountId: string | null,
   ) {
     try {
-      const {rpcURL} = await this.networkRepository.findById(
-        NetworkType.MYRIAD,
-      );
+      const {rpcURL} = await this.networkRepository.findById('myriad');
       const api = await this.connect(rpcURL);
       const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
       const serverAdmin = getKeyring().addFromMnemonic(mnemonic);

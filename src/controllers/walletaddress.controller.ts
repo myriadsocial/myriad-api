@@ -1,7 +1,7 @@
 import {inject} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {get, HttpErrors, param, response} from '@loopback/rest';
-import {NetworkType, PlatformType, ReferenceType, WalletType} from '../enums';
+import {PlatformType, ReferenceType, WalletType} from '../enums';
 import {
   CommentRepository,
   PostRepository,
@@ -272,7 +272,7 @@ export class WalletAddressController {
 
     switch (walletType) {
       case WalletType.POLKADOT: {
-        if (networkType === NetworkType.MYRIAD) {
+        if (networkType === 'myriad') {
           return tipsBalanceInfo;
         }
 

@@ -22,7 +22,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
-import {NetworkType, WalletType} from '../../enums';
+import {WalletType} from '../../enums';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserWalletApplication', function () {
@@ -62,7 +62,7 @@ describe('UserWalletApplication', function () {
       givenWallet({
         id: 'abdulhakim.testnet',
         type: WalletType.NEAR,
-        networkId: NetworkType.NEAR,
+        networkId: 'near',
       }),
     );
   });
@@ -103,7 +103,7 @@ describe('UserWalletApplication', function () {
     const wallet = new Wallet({
       id: credential.publicAddress,
       userId: user.id,
-      networkId: NetworkType.MYRIAD,
+      networkId: 'myriad',
       type: WalletType.POLKADOT,
       primary: true,
     });

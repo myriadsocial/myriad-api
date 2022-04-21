@@ -25,7 +25,7 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
-import {NetworkType, WalletType} from '../../enums';
+import {WalletType} from '../../enums';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('AuthenticationApplication', function () {
@@ -136,7 +136,7 @@ describe('AuthenticationApplication', function () {
     const primaryWallet = await givenWalletInstance(walletRepository, {
       id: 'abdulhakim.testnet',
       type: WalletType.NEAR,
-      networkId: NetworkType.NEAR,
+      networkId: 'near',
       primary: true,
       userId: user.id,
     });
