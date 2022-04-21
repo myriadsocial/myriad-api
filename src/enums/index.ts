@@ -3,7 +3,6 @@ export * from './activity-log-type.enum';
 export * from './controller-type.enum';
 export * from './friendstatus-type.enum';
 export * from './method-type.enum';
-export * from './network-type.enum';
 export * from './notification-type.enum';
 export * from './permission-keys.enum';
 export * from './platform-type.enum';

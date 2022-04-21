@@ -8,7 +8,6 @@ import {
   AccountSettingType,
   PostStatus,
   WalletType,
-  NetworkType,
   PermissionKeys,
 } from '../../enums';
 import {
@@ -771,7 +770,7 @@ export function givenWallet(wallet?: Partial<Wallet>) {
     {
       id: id,
       type: WalletType.POLKADOT,
-      networkId: NetworkType.MYRIAD,
+      networkId: 'myriad',
     },
     wallet,
   );

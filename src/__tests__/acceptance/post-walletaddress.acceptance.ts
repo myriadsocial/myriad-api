@@ -1,6 +1,6 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {NetworkType, PlatformType, ReferenceType} from '../../enums';
+import {PlatformType, ReferenceType} from '../../enums';
 import {People, Post, User, UserSocialMedia, Wallet} from '../../models';
 import {
   PeopleRepository,
@@ -72,7 +72,7 @@ describe('WalletAddressApplication', function () {
     await givenWalletInstance(walletRepository, {
       userId: user.id,
       primary: true,
-      networkId: NetworkType.MYRIAD,
+      networkId: 'myriad',
     });
   });
 
