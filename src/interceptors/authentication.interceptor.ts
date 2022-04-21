@@ -12,7 +12,6 @@ import {HttpErrors} from '@loopback/rest';
 import {
   ActivityLogType,
   MethodType,
-  NetworkType,
   PermissionKeys,
   ReferenceType,
 } from '../enums';
@@ -86,16 +85,15 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     if (methodName === MethodType.SIGNUP) {
       const {name, username, ...wallet} = invocationCtx.args[0] as UserWallet;
-      const exist = await this.walletRepository.exists(wallet.address);
+      const {type, address, network} = wallet;
+      const exist = await this.walletRepository.exists(address);
 
       if (exist)
         throw new HttpErrors.UnprocessableEntity(
           'Wallet address already exists',
         );
 
-      const existingNetwork = await this.networkRepository.exists(
-        wallet.network,
-      );
+      const existingNetwork = await this.networkRepository.exists(network);
 
       if (!existingNetwork) {
         throw new HttpErrors.UnprocessableEntity('Network not exists');
@@ -108,7 +106,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       if (foundUser)
         throw new HttpErrors.UnprocessableEntity('User already exists');
 
-      await this.validateWalletAddress(wallet.address);
+      await this.validateWalletAddress(address);
 
       this.validateUsername(username);
 
@@ -116,9 +114,9 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         name: name.substring(0, 22),
       });
       invocationCtx.args[1] = new Wallet({
-        id: wallet.address,
-        type: wallet.type,
-        networkId: wallet.network,
+        id: address,
+        type,
+        networkId: network,
         primary: true,
       });
 
@@ -191,6 +189,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       };
 
       invocationCtx.args[0].data = userProfile;
+      invocationCtx.args[1] = wallet.id;
 
       return;
     } catch (err) {
@@ -224,19 +223,17 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       ]) as Promise<AnyObject>;
     } else {
       // Generate random nonce after login
-      const {
-        data: {id},
-        walletType,
-        networkType,
-      } = invocationCtx.args[0] as Credential;
+      const [credential, walletId] = invocationCtx.args;
+      const networkId = credential.networkType;
+      const userId = credential.data.id;
       const ng = new NonceGenerator();
       const newNonce = ng.generate();
 
+      await this.walletRepository.updateAll({primary: false}, {userId});
       Promise.allSettled([
-        this.currencyService.updateUserCurrency(id, networkType),
-        this.userRepository.updateById(id, {nonce: newNonce}),
-        this.walletRepository.updateAll({primary: false}, {userId: id}),
-        this.walletRepository.updateAll({primary: true}, {type: walletType}),
+        this.currencyService.updateUserCurrency(userId, networkId),
+        this.userRepository.updateById(userId, {nonce: newNonce}),
+        this.walletRepository.updateById(walletId, {primary: true, networkId}),
       ]) as Promise<AnyObject>;
     }
   }
@@ -255,9 +252,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
       return;
     } else {
-      const nearNetwork = await this.networkRepository.findById(
-        NetworkType.NEAR,
-      );
+      const nearNetwork = await this.networkRepository.findById('near');
       const environment = nearNetwork.rpcURL.split('.')[1];
 
       let nearId = '';
