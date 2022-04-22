@@ -67,11 +67,8 @@ export class Network extends Entity {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      enum: Object.values(WalletType),
-    },
   })
-  walletType: WalletType;
+  ecosystem: string;
 
   @hasMany(() => Currency)
   currencies: Currency[];

@@ -271,7 +271,7 @@ export class WalletAddressController {
     };
 
     switch (walletType) {
-      case WalletType.POLKADOT: {
+      case WalletType.SUBSTRATE: {
         if (networkType === 'myriad') {
           return tipsBalanceInfo;
         }

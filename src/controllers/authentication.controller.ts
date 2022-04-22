@@ -93,11 +93,10 @@ export class AuthenticationController {
       return {nonce};
     }
 
+    const ecosystem = walletType === WalletType.NEAR ? 'near' : 'substrate';
+
     const wallet = await this.walletRepository.findOne({
-      where: {
-        type: walletType,
-        userId: id,
-      },
+      where: {ecosystem, userId: id},
     });
 
     if (!wallet) return {nonce: 0};

@@ -72,6 +72,7 @@ import {DateUtils} from './utils/date-utils';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType, UploadType} from './enums';
 import {omit} from 'lodash';
+import {Wallet} from './models';
 
 const date = new DateUtils();
 const jwt = require('jsonwebtoken');
@@ -222,6 +223,9 @@ export class MyriadApiApplication extends BootMixin(
     await super.migrateSchema(options);
 
     if (options?.existingSchema === 'drop') return this.databaseSeeding();
+    await Promise.all([
+      this.doMigrateNetwork()
+    ]);
   }
 
   async databaseSeeding(): Promise<void> {
@@ -416,6 +420,23 @@ export class MyriadApiApplication extends BootMixin(
       bar.update(index);
     }
     bar.stop();
+  }
+
+  async doMigrateNetwork(): Promise<void> {
+    if (this.options.alter.indexOf('network') === -1) return;
+    const {walletRepository} = await this.repositories();
+
+    const collection = walletRepository.dataSource.connector.collection(
+      Wallet.modelName,
+    );
+
+    await collection.updateMany(
+      {},
+      {
+        $rename: {network: 'networkId'},
+        $unset: {networks: ''},
+      },
+    );
   }
 
   async repositories(): Promise<AnyObject> {

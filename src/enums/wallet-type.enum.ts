@@ -1,4 +1,4 @@
 export enum WalletType {
-  POLKADOT = 'polkadot',
+  POLKADOT = 'polkadot{.js}',
   NEAR = 'near',
 }

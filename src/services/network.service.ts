@@ -204,7 +204,7 @@ export class NetworkService {
     };
 
     switch (type) {
-      case WalletType.POLKADOT:
+      case WalletType.SUBSTRATE:
         return this.claimReferencePolkadot(tipsBalanceInfo, userId, accountId);
 
       case WalletType.NEAR:

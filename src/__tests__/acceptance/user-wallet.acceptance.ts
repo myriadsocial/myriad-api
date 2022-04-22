@@ -104,7 +104,7 @@ describe('UserWalletApplication', function () {
       id: credential.publicAddress,
       userId: user.id,
       networkId: 'myriad',
-      type: WalletType.POLKADOT,
+      type: WalletType.SUBSTRATE,
       primary: true,
     });
     credential.data = wallet;

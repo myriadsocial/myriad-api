@@ -147,7 +147,7 @@ export function givenCredential(credential?: Partial<Credential>) {
   const data = Object.assign(
     {
       publicAddress: id,
-      walletType: WalletType.POLKADOT,
+      walletType: WalletType.SUBSTRATE,
       networkType: 'polkadot',
     },
     credential,
@@ -769,7 +769,7 @@ export function givenWallet(wallet?: Partial<Wallet>) {
   const data = Object.assign(
     {
       id: id,
-      type: WalletType.POLKADOT,
+      type: WalletType.SUBSTRATE,
       networkId: 'myriad',
     },
     wallet,
@@ -793,7 +793,7 @@ export function givenUserWallet(userWallet?: Partial<UserWallet>) {
       username: 'abdulhakim',
       address: id,
       network: 'polkadot',
-      type: WalletType.POLKADOT,
+      type: WalletType.SUBSTRATE,
     },
     userWallet,
   );
@@ -809,7 +809,7 @@ export function givenNetwork(network?: Partial<Network>) {
       rpcURL: 'wss://rpc.polkadot.io',
       explorerURL:
         'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.polkadot.io#/explorer/query',
-      walletType: WalletType.POLKADOT,
+      walletType: WalletType.SUBSTRATE,
     },
     network,
   );
