@@ -10,11 +10,11 @@ import {
 import {FCSService} from '../services/fcs.service';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler} from '../types';
-import {config} from '../config';
 import {UploadType} from '../enums';
 import {authenticate} from '@loopback/authentication';
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {UserRepository} from '../repositories';
+import {UrlObject} from 'url';
 
 @authenticate('jwt')
 export class StorageController {
@@ -46,11 +46,13 @@ export class StorageController {
     @param.path.string('kind') kind: string,
     @requestBody.file() request: Request,
     @inject(RestBindings.Http.RESPONSE) response: Response,
-  ): Promise<object> {
-    return new Promise<object>((resolve, reject) => {
+  ): Promise<AnyObject> {
+    return new Promise<AnyObject>((resolve, reject) => {
       this.handler(request, response, (err: unknown) => {
-        if (err) reject(err);
-        else {
+        if (err) {
+          console.log(err);
+          reject(err);
+        } else {
           const targetDir = `users/${userId}/${kind}`;
           resolve(this.getFilesAndFields(targetDir, request));
         }
@@ -61,19 +63,18 @@ export class StorageController {
   private async getFilesAndFields(targetDir: string, request: Request) {
     const uploadedFiles = request.files;
     const mapper = async (file: globalThis.Express.Multer.File) => {
-      let fileURL: String = '';
-      if (config.FIREBASE_STORAGE_BUCKET) {
-        let uploadType = UploadType.IMAGE;
-        if (file.mimetype.toLowerCase().startsWith('video')) {
-          uploadType = UploadType.VIDEO;
-        }
-
-        fileURL = await this.fcsService.upload(
-          uploadType,
-          targetDir,
-          file.path,
-        );
+      let uploadType = UploadType.IMAGE;
+      if (file.mimetype.toLowerCase().startsWith('video')) {
+        uploadType = UploadType.VIDEO;
       }
+
+      const localURL = this.getFileURL(request, targetDir);
+      const fileURL = await this.fcsService.upload(
+        uploadType,
+        targetDir,
+        file.path,
+        localURL,
+      );
 
       return {
         fieldname: file.fieldname,
@@ -94,6 +95,19 @@ export class StorageController {
         files.push(...result);
       }
     }
+
     return {files, fields: request.body};
+  }
+
+  getFileURL(request: Request, targetDir: string): string {
+    const urlFrom = (urlObject: UrlObject) => {
+      return String(Object.assign(new URL('http://a.com'), urlObject));
+    };
+
+    return urlFrom({
+      protocol: request.protocol,
+      host: request.get('host'),
+      pathname: `storages/${targetDir}`,
+    });
   }
 }
