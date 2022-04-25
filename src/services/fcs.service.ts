@@ -1,9 +1,11 @@
 import {BindingScope, injectable} from '@loopback/core';
+import {AnyObject} from '@loopback/repository';
 import * as firebaseAdmin from 'firebase-admin';
-import fs from 'fs';
+import fs from 'fs-extra';
 import os from 'os';
 import path from 'path';
 import sharp from 'sharp';
+import {config} from '../config';
 import {UploadType} from '../enums';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -14,45 +16,16 @@ export class FCSService {
     type: UploadType,
     targetDir: string,
     filePath: string,
+    localURL: string,
   ): Promise<String> {
-    const bucket = firebaseAdmin.storage().bucket();
+    const bucket = config.FIREBASE_STORAGE_BUCKET
+      ? firebaseAdmin.storage().bucket()
+      : undefined;
+
     const tempDir = os.tmpdir();
     const baseName = path.parse(filePath).name;
     const extension = path.parse(filePath).ext;
-    let format = 'jpg';
-    let mutations = [
-      {
-        type: 'thumbnail',
-        suffix: '_thumbnail',
-        width: 200,
-      },
-      {
-        type: 'small',
-        suffix: '_small',
-        width: 400,
-      },
-      {
-        type: 'medium',
-        suffix: '_medium',
-        width: 600,
-      },
-      {
-        type: 'origin',
-        suffix: '',
-        width: 0,
-      },
-    ];
-
-    if (type === UploadType.VIDEO) {
-      format = 'mp4';
-      mutations = [
-        {
-          type: 'origin',
-          suffix: '',
-          width: 0,
-        },
-      ];
-    }
+    const {format, mutations} = this.getMutations(type);
 
     let result = '';
     for (const mutation of mutations) {
@@ -77,12 +50,26 @@ export class FCSService {
         }
       }
 
-      const [file] = await bucket.upload(formattedFilePath, {
-        resumable: false,
-        public: true,
-        destination: uploadFilePath,
-      });
-      result = file.publicUrl();
+      if (bucket) {
+        const [file] = await bucket.upload(formattedFilePath, {
+          resumable: false,
+          public: true,
+          destination: uploadFilePath,
+        });
+        result = file.publicUrl();
+      } else {
+        const folderPath = '../../storages';
+        const tmpSubFolderPath = `${folderPath}/${targetDir}`;
+        const tmpUpdatedFilePath = `${folderPath}/${uploadFilePath}`;
+        const subfolderPath = path.join(__dirname, tmpSubFolderPath);
+        const updatedFilePath = path.join(__dirname, tmpUpdatedFilePath);
+        if (!fs.existsSync(subfolderPath)) {
+          fs.mkdirSync(subfolderPath, {recursive: true});
+        }
+
+        fs.copyFileSync(formattedFilePath, updatedFilePath);
+        result = `${localURL}/${baseName}.${format}`;
+      }
 
       if (type === UploadType.IMAGE) fs.unlinkSync(formattedFilePath);
     }
@@ -90,5 +77,46 @@ export class FCSService {
     fs.unlinkSync(filePath);
 
     return result;
+  }
+
+  getMutations(type: UploadType): AnyObject {
+    if (type === UploadType.VIDEO) {
+      return {
+        format: 'mp4',
+        mutations: [
+          {
+            type: 'origin',
+            suffix: '',
+            width: 0,
+          },
+        ],
+      };
+    }
+
+    return {
+      format: 'jpg',
+      mutations: [
+        {
+          type: 'thumbnail',
+          suffix: '_thumbnail',
+          width: 200,
+        },
+        {
+          type: 'small',
+          suffix: '_small',
+          width: 400,
+        },
+        {
+          type: 'medium',
+          suffix: '_medium',
+          width: 600,
+        },
+        {
+          type: 'origin',
+          suffix: '',
+          width: 0,
+        },
+      ],
+    };
   }
 }

@@ -83,6 +83,8 @@ export class MyriadApiApplication extends BootMixin(
 
     // Set up default home page
     this.static('/', path.join(__dirname, '../public'));
+    // Set up local storages
+    this.static('/storages', path.join(__dirname, '../storages'));
     // Set up the custom sequence
     this.sequence(MyriadSequence);
     this.configureFileUpload();
