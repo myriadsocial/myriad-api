@@ -38,6 +38,8 @@ export const config = {
 
   FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ?? '',
 
+  STORAGE_URL: process.env.STORAGE_URL ?? '',
+
   SENTRY_DSN: process.env.SENTRY_DSN ?? '',
 
   TWITTER_API_KEY: process.env.TWITTER_API_KEY ?? '',
