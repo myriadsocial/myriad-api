@@ -14,7 +14,6 @@ import {UploadType} from '../enums';
 import {authenticate} from '@loopback/authentication';
 import {AnyObject, repository} from '@loopback/repository';
 import {UserRepository} from '../repositories';
-import {UrlObject} from 'url';
 
 @authenticate('jwt')
 export class StorageController {
@@ -68,12 +67,10 @@ export class StorageController {
         uploadType = UploadType.VIDEO;
       }
 
-      const localURL = this.getFileURL(request, targetDir);
       const fileURL = await this.fcsService.upload(
         uploadType,
         targetDir,
         file.path,
-        localURL,
       );
 
       return {
@@ -97,17 +94,5 @@ export class StorageController {
     }
 
     return {files, fields: request.body};
-  }
-
-  getFileURL(request: Request, targetDir: string): string {
-    const urlFrom = (urlObject: UrlObject) => {
-      return String(Object.assign(new URL('http://a.com'), urlObject));
-    };
-
-    return urlFrom({
-      protocol: request.protocol,
-      host: request.get('host'),
-      pathname: `storages/${targetDir}`,
-    });
   }
 }
