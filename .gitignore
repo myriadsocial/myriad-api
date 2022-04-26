@@ -83,8 +83,16 @@ prisma
 # misc
 *.pem
 
-# local storage
+# Storage
 storages
+
+# Seed data
+seed-data/*
+!seed-data/default-network-currencies.json
+!seed-data/default-user-wallet.json
+!seed-data/assets
+seed-data/assets/*
+!seed-data/assets/myriad.png
 
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json
