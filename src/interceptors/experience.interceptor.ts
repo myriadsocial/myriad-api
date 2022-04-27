@@ -175,7 +175,7 @@ export class ExperienceInterceptor implements Provider<Interceptor> {
         );
         data.users = rawPeople.filter(e => e.platform === PlatformType.MYRIAD);
 
-        Object.assign(invocationCtx.args[2], {people: people});
+        Object.assign(invocationCtx.args[2], {people});
         break;
       }
 

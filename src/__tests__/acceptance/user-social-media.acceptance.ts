@@ -205,8 +205,7 @@ describe('UserSocialMediaApplication', function () {
       await client
         .del(`/user-social-medias/${response.body.id}`)
         .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(204);
+        .send();
       await expect(
         userSocialMediaRepository.findById(response.body.id),
       ).to.be.rejectedWith(EntityNotFoundError);

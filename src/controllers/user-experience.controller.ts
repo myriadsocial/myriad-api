@@ -22,11 +22,7 @@ import {
   PaginationInterceptor,
 } from '../interceptors';
 import {Experience, UserExperience} from '../models';
-import {
-  ExperienceRepository,
-  UserExperienceRepository,
-  UserRepository,
-} from '../repositories';
+import {UserExperienceRepository, UserRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
@@ -36,8 +32,6 @@ export class UserExperienceController {
     protected userRepository: UserRepository,
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
-    @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)

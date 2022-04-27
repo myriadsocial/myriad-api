@@ -1,5 +1,5 @@
 import {intercept, service} from '@loopback/core';
-import {Filter, FilterExcludingWhere} from '@loopback/repository';
+import {AnyObject, Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   del,
   get,
@@ -27,7 +27,7 @@ export class UserSocialMediaController {
     @service(SocialMediaService)
     protected socialMediaService: SocialMediaService,
     @service(UserSocialMediaService)
-    protected userSocialMediaService: UserSocialMediaService,
+    protected userSocMedService: UserSocialMediaService,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -77,9 +77,7 @@ export class UserSocialMediaController {
         throw new HttpErrors.NotFound('Platform does not exist');
     }
 
-    const socialMedia = await this.userSocialMediaService.createSocialMedia(
-      people,
-    );
+    const socialMedia = await this.userSocMedService.createSocialMedia(people);
 
     await Promise.allSettled([
       this.notificationService.sendConnectedSocialMedia(socialMedia, people),
@@ -105,7 +103,7 @@ export class UserSocialMediaController {
     @param.filter(UserSocialMedia, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<UserSocialMedia>,
   ): Promise<UserSocialMedia[]> {
-    return this.userSocialMediaService.userSocialMediaRepository.find(filter);
+    return this.userSocMedService.userSocialMediaRepository.find(filter);
   }
 
   @get('/user-social-medias/{id}')
@@ -122,7 +120,7 @@ export class UserSocialMediaController {
     @param.filter(UserSocialMedia, {exclude: 'where'})
     filter?: FilterExcludingWhere<UserSocialMedia>,
   ): Promise<UserSocialMedia> {
-    return this.userSocialMediaService.userSocialMediaRepository.findById(
+    return this.userSocMedService.userSocialMediaRepository.findById(
       id,
       filter,
     );
@@ -134,30 +132,28 @@ export class UserSocialMediaController {
   })
   async updatePrimary(@param.path.string('id') id: string): Promise<void> {
     const {userId, platform} =
-      await this.userSocialMediaService.userSocialMediaRepository.findById(id);
+      await this.userSocMedService.userSocialMediaRepository.findById(id);
 
-    await this.userSocialMediaService.userSocialMediaRepository.updateAll(
-      {primary: false},
-      {userId: userId, platform},
-    );
-
-    await this.userSocialMediaService.userSocialMediaRepository.updateById(id, {
-      primary: true,
-      updatedAt: new Date().toString(),
-    });
+    await Promise.allSettled([
+      this.userSocMedService.userSocialMediaRepository.updateAll(
+        {primary: false},
+        {userId: userId, platform},
+      ),
+      this.userSocMedService.userSocialMediaRepository.updateById(id, {
+        primary: true,
+        updatedAt: new Date().toString(),
+      }),
+    ]);
   }
 
   @del('/user-social-medias/{id}')
   @response(204, {
     description: 'UserSocialMedia DELETE success',
   })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
-    try {
-      await this.notificationService.sendDisconnectedSocialMedia(id);
-    } catch {
-      // ignore
-    }
-
-    await this.userSocialMediaService.userSocialMediaRepository.deleteById(id);
+  async deleteById(@param.path.string('id') id: string): Promise<AnyObject> {
+    return Promise.all([
+      this.notificationService?.sendDisconnectedSocialMedia(id),
+      this.userSocMedService.userSocialMediaRepository.deleteById(id),
+    ]);
   }
 }

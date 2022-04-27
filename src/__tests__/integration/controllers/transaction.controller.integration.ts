@@ -7,7 +7,6 @@ import {
   CurrencyRepository,
   UserSocialMediaRepository,
 } from '../../../repositories';
-import {NotificationService} from '../../../services';
 import {
   givenCurrencyInstance,
   givenEmptyDatabase,
@@ -23,7 +22,6 @@ describe('TransactionControllerIntegration', () => {
   let userSocialMediaRepository: UserSocialMediaRepository;
   let userRepository: UserRepository;
   let walletRepository: WalletRepository;
-  let notificationService: NotificationService;
   let currencyRepository: CurrencyRepository;
   let controller: TransactionController;
 
@@ -33,7 +31,6 @@ describe('TransactionControllerIntegration', () => {
       userRepository,
       walletRepository,
       currencyRepository,
-      notificationService,
     } = await givenRepositories(testdb));
   });
 
@@ -41,7 +38,6 @@ describe('TransactionControllerIntegration', () => {
     controller = new TransactionController(
       transactionRepository,
       userSocialMediaRepository,
-      notificationService,
     );
   });
 

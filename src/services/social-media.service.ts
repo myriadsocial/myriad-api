@@ -1,10 +1,9 @@
 import {inject} from '@loopback/core';
-import {AnyObject, repository} from '@loopback/repository';
+import {AnyObject} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {ExtendedPost} from '../interfaces';
 import {Asset} from '../interfaces/asset.interface';
-import {PeopleRepository} from '../repositories';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import {injectable, BindingScope} from '@loopback/core';
@@ -18,8 +17,6 @@ const {validateURL, getOpenGraph} = urlUtils;
 @injectable({scope: BindingScope.TRANSIENT})
 export class SocialMediaService {
   constructor(
-    @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
     @inject('services.Twitter')
     protected twitterService: Twitter,
     @inject('services.Reddit')
@@ -68,13 +65,10 @@ export class SocialMediaService {
 
   async verifyToReddit(username: string, address: string): Promise<People> {
     try {
-      const {data: redditUser} = await this.redditService.getActions(
-        `user/${username}/about.json`,
-      );
-      const {data: redditPost} = await this.redditService.getActions(
-        `user/${username}/.json?limit=1`,
-      );
-
+      const [{data: redditUser}, {data: redditPost}] = await Promise.all([
+        this.redditService.getActions(`user/${username}/about.json`),
+        this.redditService.getActions(`user/${username}/.json?limit=1`),
+      ]);
       const found = redditPost?.children[0]?.data?.title
         .replace(/\n/g, ' ')
         .split(' ')

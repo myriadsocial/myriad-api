@@ -17,12 +17,18 @@ import {
   ActivityLogType,
   FriendStatusType,
 } from '../enums';
-import {Comment, Credential, DraftPost, Transaction, Wallet} from '../models';
+import {
+  Comment,
+  Credential,
+  DraftPost,
+  Friend,
+  Transaction,
+  Wallet,
+} from '../models';
 import {
   ExperiencePostRepository,
   NetworkRepository,
   ReportRepository,
-  UserCurrencyRepository,
   UserReportRepository,
   UserRepository,
   WalletRepository,
@@ -53,8 +59,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected reportRepository: ReportRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
     @repository(ExperiencePostRepository)
@@ -128,65 +132,55 @@ export class CreateInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       case ControllerType.TRANSACTION: {
         const transaction: Transaction = invocationCtx.args[0];
-        if (transaction.from === transaction.to) {
+        const {from, to, type, currencyId, referenceId} = transaction;
+        if (from === to) {
           throw new HttpErrors.UnprocessableEntity(
             'From and to address cannot be the same!',
           );
         }
 
-        if (
-          transaction.type === ReferenceType.POST ||
-          transaction.type === ReferenceType.COMMENT
-        ) {
-          if (!transaction.referenceId) {
+        if (type === ReferenceType.POST || type === ReferenceType.COMMENT) {
+          if (!referenceId) {
             throw new HttpErrors.UnprocessableEntity(
               'Please insert referenceId',
             );
           }
         }
 
-        await this.currencyService.currencyRepository.findById(
-          transaction.currencyId,
-        );
+        await this.currencyService.currencyRepository.findById(currencyId);
         return;
       }
 
       case ControllerType.COMMENT: {
         const {postId} = invocationCtx.args[0] as Comment;
-
         await this.postService.postRepository.findById(postId);
 
         return;
       }
 
       case ControllerType.FRIEND: {
-        await this.friendService.handlePendingBlockedRequest(
-          invocationCtx.args[0],
-        );
+        const friend = invocationCtx.args[0] as Friend;
+        await this.friendService.handlePendingBlockedRequest(friend);
 
         return;
       }
 
       case ControllerType.VOTE: {
-        const type = invocationCtx.args[0].type;
+        const voteDetail = invocationCtx.args[0];
+        const type = voteDetail.type;
         const data: AnyObject = {};
 
         if (type === ReferenceType.POST) {
-          const post = await this.voteService.validatePostVote(
-            invocationCtx.args[0],
-          );
-
-          data.toUserId = post.createdBy;
-          data.section = undefined;
+          const post = await this.voteService.validatePostVote(voteDetail);
+          Object.assign(data, {toUserId: post.createdBy, section: undefined});
         } else if (type === ReferenceType.COMMENT) {
-          const comment = await this.voteService.validateComment(
-            invocationCtx.args[0],
-          );
+          const comment = await this.voteService.validateComment(voteDetail);
+          Object.assign(data, {toUserId: comment.userId});
+        } else {
+          throw new HttpErrors.UnprocessableEntity('Type not found');
+        }
 
-          data.toUserId = comment.userId;
-        } else throw new HttpErrors.UnprocessableEntity('Type not found');
-
-        invocationCtx.args[0] = Object.assign(invocationCtx.args[0], data);
+        Object.assign(invocationCtx.args[0], data);
 
         break;
       }
@@ -201,28 +195,29 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         if (tag) throw new HttpErrors.UnprocessableEntity('Tag already exist');
 
-        invocationCtx.args[0] = Object.assign(invocationCtx.args[0], {id});
+        Object.assign(invocationCtx.args[0], {id});
 
         break;
       }
 
       case ControllerType.EXPERIENCEPOST: {
         const [experienceId, postId] = invocationCtx.args;
-        const post = await this.postService.postRepository.findById(postId);
+        const [post, experience] = await Promise.all([
+          this.postService.postRepository.findById(postId),
+          this.experiencePostRepository.findOne({
+            where: {postId, experienceId},
+          }),
+        ]);
 
-        const found = await this.experiencePostRepository.findOne({
-          where: {
-            postId: postId,
-            experienceId: experienceId,
-          },
-        });
-
-        if (found) {
+        if (experience) {
           throw new HttpErrors.UnprocessableEntity(
             'Already added to experience',
           );
         }
-        invocationCtx.args[2] = post?.experienceIndex ?? {};
+        const experienceIndex = post?.experienceIndex ?? {};
+        invocationCtx.args[2] = Object.assign(experienceIndex, {
+          [experienceId]: 1,
+        });
 
         break;
       }
@@ -359,21 +354,22 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.FRIEND: {
         if (result && result.status === FriendStatusType.PENDING) {
-          await this.createNotification(controllerName, result);
-          await this.activityLogService.createLog(
-            ActivityLogType.FRIENDREQUEST,
-            result.requesteeId,
-            ReferenceType.USER,
-          );
+          Promise.allSettled([
+            this.createNotification(controllerName, result),
+            this.activityLogService.createLog(
+              ActivityLogType.FRIENDREQUEST,
+              result.requesteeId,
+              ReferenceType.USER,
+            ),
+          ]) as Promise<AnyObject>;
         }
 
         return result;
       }
 
       case ControllerType.EXPERIENCEPOST: {
-        const [experienceId, postId] = invocationCtx.args;
+        const postId = invocationCtx.args[1];
         const experienceIndex = invocationCtx.args[2] as AnyObject;
-        experienceIndex[experienceId] = 1;
         await this.postService.postRepository.updateById(postId, {
           experienceIndex,
         });
@@ -398,7 +394,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.USERREPORT: {
         const reportDetail = invocationCtx.args[1];
-
         const found = await this.userReportRepository.findOne({
           where: {
             reportId: result.id,
@@ -444,12 +439,14 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case ControllerType.VOTE: {
         const {_id: id, referenceId, type} = result.value;
 
-        await this.voteService.updateVoteCounter(result.value);
-        await this.activityLogService.createLog(
-          ActivityLogType.GIVEVOTE,
-          referenceId,
-          type,
-        );
+        Promise.allSettled([
+          this.voteService.updateVoteCounter(result.value),
+          this.activityLogService.createLog(
+            ActivityLogType.GIVEVOTE,
+            referenceId,
+            type,
+          ),
+        ]) as Promise<AnyObject>;
 
         return Object.assign(result.value, {
           id: id,
@@ -466,33 +463,21 @@ export class CreateInterceptor implements Provider<Interceptor> {
     controllerName: ControllerType,
     result: AnyObject,
   ): Promise<void> {
-    try {
-      switch (controllerName) {
-        case ControllerType.COMMENT: {
-          await this.notificationService.sendPostComment(result as Comment);
-          break;
-        }
+    switch (controllerName) {
+      case ControllerType.COMMENT:
+        return this.notificationService.sendPostComment(result as Comment);
 
-        case ControllerType.FRIEND: {
-          await this.notificationService.sendFriendRequest(result.requesteeId);
-          break;
-        }
+      case ControllerType.FRIEND:
+        return this.notificationService.sendFriendRequest(result.requesteeId);
 
-        case ControllerType.POST: {
-          await this.notificationService.sendMention(
-            result.id,
-            result.mentions ?? [],
-          );
-          break;
-        }
+      case ControllerType.TRANSACTION:
+        return this.notificationService.sendTipsSuccess(result as Transaction);
 
-        case ControllerType.TRANSACTION: {
-          await this.notificationService.sendTipsSuccess(result as Transaction);
-          break;
-        }
-      }
-    } catch {
-      // ignore
+      case ControllerType.POST:
+        return this.notificationService.sendMention(
+          result.id,
+          result.mentions ?? [],
+        );
     }
   }
 }

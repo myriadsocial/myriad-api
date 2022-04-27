@@ -29,7 +29,6 @@ describe('UserExperienceControllerIntegration', () => {
     controller = new UserExperienceController(
       userRepository,
       userExperienceRepository,
-      experienceRepository,
     );
   });
 

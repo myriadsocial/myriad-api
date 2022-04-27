@@ -7,7 +7,7 @@ import {
   QueueRepository,
   TransactionRepository,
   UserCurrencyRepository,
-  UserRepository,
+  WalletRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {HttpErrors} from '@loopback/rest';
@@ -30,8 +30,8 @@ export class CurrencyService {
     protected queueRepository: QueueRepository,
     @repository(UserCurrencyRepository)
     protected userCurrencyRepository: UserCurrencyRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -57,26 +57,22 @@ export class CurrencyService {
   async updateUserCurrency(userId: string, networkId: string): Promise<void> {
     if (!userId || !networkId) return;
 
-    const {count: countCurrency} = await this.currencyRepository.count({
-      networkId: networkId,
-    });
-
-    let {count: countUserCurrency} = await this.userCurrencyRepository.count({
-      networkId: networkId,
-      userId: userId,
-    });
+    const [{count: countCurrency}, {count}] = await Promise.all([
+      this.currencyRepository.count({networkId}),
+      this.userCurrencyRepository.count({
+        networkId,
+        userId,
+      }),
+    ]);
+    const countUserCurrency = count === 0 ? countCurrency : count;
 
     if (countUserCurrency === 0) {
       await this.addUserCurrencies(userId, networkId);
-      countUserCurrency = countCurrency;
     }
 
     if (countCurrency > countUserCurrency) {
       const userCurrencies = await this.userCurrencyRepository.find({
-        where: {
-          networkId: networkId,
-          userId: userId,
-        },
+        where: {networkId, userId},
       });
       const currencyIds = userCurrencies.map(
         userCurrency => userCurrency.currencyId,
@@ -88,18 +84,14 @@ export class CurrencyService {
         },
       });
 
-      const newUserCurrencies: UserCurrency[] = [];
-
-      for (let i = 0; i < currencies.length; i++) {
-        const newUserCurrency = new UserCurrency({
-          userId: userId,
-          networkId: networkId,
-          currencyId: currencies[i].id,
-          priority: countUserCurrency + 1 + i,
+      const newUserCurrencies = currencies.map((currency, index) => {
+        return new UserCurrency({
+          userId,
+          networkId,
+          currencyId: currency.id,
+          priority: countUserCurrency + 1 + index,
         });
-
-        newUserCurrencies.push(newUserCurrency);
-      }
+      });
 
       await this.userCurrencyRepository.createAll(newUserCurrencies);
     }
@@ -113,82 +105,63 @@ export class CurrencyService {
     if (!config.MYRIAD_FAUCET_AMOUNT) return;
     if (config.MYRIAD_FAUCET_AMOUNT === 0) return;
 
-    try {
-      const currency = await this.currencyRepository.findOne({
-        where: {
-          networkId: 'myriad',
-          symbol: 'MYRIA',
-        },
-        include: ['network'],
-      });
+    const currency = await this.currencyRepository.findOne({
+      where: {
+        networkId: 'myriad',
+        symbol: 'MYRIA',
+      },
+      include: ['network'],
+    });
 
-      if (!currency || !currency.network) return;
-      const {
-        id,
-        decimal,
-        network: {rpcURL},
-      } = currency;
-      const {polkadotApi, getKeyring} = new PolkadotJs();
-      const api = await polkadotApi(rpcURL);
+    if (!currency || !currency.network) return;
+    const {id, decimal, network} = currency;
+    const rpcURL = network.rpcURL;
+    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
+    const api = await polkadotApi(rpcURL);
 
-      const mnemonic = config.MYRIAD_FAUCET_MNEMONIC;
-      const from = getKeyring().addFromMnemonic(mnemonic);
-      const to = address;
+    const mnemonic = config.MYRIAD_FAUCET_MNEMONIC;
+    const sender = getKeyring().addFromMnemonic(mnemonic);
+    const from = getHexPublicKey(sender);
+    const to = address;
 
-      const rewardAmount = config.MYRIAD_FAUCET_AMOUNT * 10 ** decimal;
+    const rewardAmount = config.MYRIAD_FAUCET_AMOUNT * 10 ** decimal;
 
-      const transfer = api.tx.balances.transfer(
-        to,
-        new BN(rewardAmount.toString()),
-      );
-      const {nonce} = await api.query.system.account(from.address);
-      const getNonce = await this.getQueueNumber(nonce.toJSON(), 'MYRIA');
+    const transfer = api.tx.balances.transfer(
+      to,
+      new BN(rewardAmount.toString()),
+    );
+    const {nonce} = await api.query.system.account(sender.address);
+    const getNonce = await this.getQueueNumber(nonce.toJSON(), 'MYRIA');
 
-      const hash = await new Promise((resolve, reject) => {
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        transfer.signAndSend(from, {nonce: getNonce}, ({status, isError}) => {
-          if (status.isFinalized) {
-            const blockHash = status.asFinalized.toHex();
-            resolve(blockHash);
-          } else if (isError) {
-            reject();
-          }
-        });
-      });
-
-      await api.disconnect();
-
-      if (hash && typeof hash === 'string') {
-        const user = await this.userRepository.findOne({
-          where: {
-            username: 'myriad_official',
-          },
-          include: [
-            {
-              relation: 'wallets',
-              scope: {
-                where: {
-                  type: WalletType.POLKADOT,
-                },
-              },
-            },
-          ],
-        });
-
-        if (user?.wallets[0]) {
-          const wallet = user.wallets[0];
-          const transaction = await this.transactionRepository.create({
-            hash: hash,
-            amount: rewardAmount / 10 ** decimal,
-            to: to,
-            from: wallet.id,
-            currencyId: id,
-          });
-          await this.notificationService.sendInitialTips(transaction);
+    const hash = await new Promise((resolve, reject) => {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      transfer.signAndSend(sender, {nonce: getNonce}, ({status, isError}) => {
+        if (status.isFinalized) {
+          const blockHash = status.asFinalized.toHex();
+          resolve(blockHash);
+        } else if (isError) {
+          reject();
         }
+      });
+    });
+
+    await api.disconnect();
+
+    if (hash && typeof hash === 'string') {
+      const wallet = await this.walletRepository.findOne({
+        where: {id: from},
+      });
+
+      if (wallet) {
+        const transaction = await this.transactionRepository.create({
+          hash: hash,
+          amount: rewardAmount / 10 ** decimal,
+          to: to,
+          from: wallet.id,
+          currencyId: id,
+        });
+        await this.notificationService.sendInitialTips(transaction);
       }
-    } catch {
-      // ignore
     }
   }
 
@@ -200,8 +173,10 @@ export class CurrencyService {
     if (queue?.priority >= priority) priority = queue.priority;
     else priority = nonce;
 
-    await this.queueRepository.set(type, {priority: priority + 1});
-    await this.queueRepository.expire(type, 1 * dateUtils.hour);
+    await Promise.all([
+      this.queueRepository.set(type, {priority: priority + 1}),
+      this.queueRepository.expire(type, 1 * dateUtils.hour),
+    ]);
 
     return priority;
   }

@@ -7,16 +7,11 @@ import {
 } from '@loopback/testlab';
 import {UserExperienceController} from '../../controllers/user-experience.controller';
 import {UserExperience} from '../../models';
-import {
-  ExperienceRepository,
-  UserExperienceRepository,
-  UserRepository,
-} from '../../repositories';
+import {UserExperienceRepository, UserRepository} from '../../repositories';
 import {givenUserExperience} from '../helpers';
 
 describe('UserExperienceController', () => {
   let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
-  let experienceRepository: StubbedInstanceWithSinonAccessor<ExperienceRepository>;
   let userExperienceRepository: StubbedInstanceWithSinonAccessor<UserExperienceRepository>;
   let controller: UserExperienceController;
   let aUserExperienceWithId: UserExperience;
@@ -73,7 +68,6 @@ describe('UserExperienceController', () => {
   function resetRepositories() {
     userRepository = createStubInstance(UserRepository);
     userExperienceRepository = createStubInstance(UserExperienceRepository);
-    experienceRepository = createStubInstance(ExperienceRepository);
     aUserExperienceWithId = givenUserExperience({id: '1'});
     aListOfUserExperiences = [
       aUserExperienceWithId,
@@ -88,7 +82,6 @@ describe('UserExperienceController', () => {
     controller = new UserExperienceController(
       userRepository,
       userExperienceRepository,
-      experienceRepository,
     );
   }
 });

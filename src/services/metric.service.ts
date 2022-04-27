@@ -87,16 +87,18 @@ export class MetricService {
 
     if (!exists) return {upvotes: 0, downvotes: 0};
 
-    const upvote = await this.voteRepository.count({
-      type: referenceType,
-      referenceId,
-      state: true,
-    });
-    const downvote = await this.voteRepository.count({
-      type: referenceType,
-      referenceId,
-      state: false,
-    });
+    const [upvote, downvote] = await Promise.all([
+      this.voteRepository.count({
+        type: referenceType,
+        referenceId,
+        state: true,
+      }),
+      this.voteRepository.count({
+        type: referenceType,
+        referenceId,
+        state: false,
+      }),
+    ]);
 
     const metric: Metric = {
       upvotes: upvote.count,
@@ -120,19 +122,16 @@ export class MetricService {
       return Object.assign(metric, {comments: countComment});
     }
 
-    const countDebate = await this.countComment(
-      [referenceId],
-      SectionType.DEBATE,
+    const [countDebate, countDiscussion, {count: countTip}] = await Promise.all(
+      [
+        this.countComment([referenceId], SectionType.DEBATE),
+        this.countComment([referenceId], SectionType.DISCUSSION),
+        this.transactionRepository.count({
+          referenceId: referenceId,
+          type: referenceType,
+        }),
+      ],
     );
-    const countDiscussion = await this.countComment(
-      [referenceId],
-      SectionType.DISCUSSION,
-    );
-
-    const {count: countTip} = await this.transactionRepository.count({
-      referenceId: referenceId,
-      type: referenceType,
-    });
 
     metric.debates = countDebate;
     metric.discussions = countDiscussion;
@@ -147,30 +146,27 @@ export class MetricService {
   async userMetric(userId: string): Promise<void> {
     if (!userId) return;
 
-    const {count: totalExperiences} = await this.userExpRepository.count({
-      userId: userId,
-      deletedAt: {exists: false},
-    });
-    const {count: totalFriends} = await this.friendRepository.count({
-      requestorId: userId,
-      status: FriendStatusType.APPROVED,
-      deletedAt: {exists: false},
-    });
-    const {count: totalPosts} = await this.postRepository.count({
-      createdBy: userId,
-      banned: false,
-      deletedAt: {exists: false},
-    });
-
-    const {count: totalUpvote} = await this.voteRepository.count({
-      state: true,
-      toUserId: userId,
-    });
-
-    const {count: totalDownvote} = await this.voteRepository.count({
-      state: false,
-      toUserId: userId,
-    });
+    const [
+      {count: totalUpvote},
+      {count: totalDownvote},
+      {count: totalExperiences},
+      {count: totalFriends},
+      {count: totalPosts},
+    ] = await Promise.all([
+      this.voteRepository.count({state: true, toUserId: userId}),
+      this.voteRepository.count({state: false, toUserId: userId}),
+      this.userExpRepository.count({userId, deletedAt: {exists: false}}),
+      this.friendRepository.count({
+        requestorId: userId,
+        status: FriendStatusType.APPROVED,
+        deletedAt: {exists: false},
+      }),
+      this.postRepository.count({
+        createdBy: userId,
+        banned: false,
+        deletedAt: {exists: false},
+      }),
+    ]);
 
     const userMetric = {
       totalPosts,
@@ -186,16 +182,16 @@ export class MetricService {
     if (tags.length === 0) return;
 
     for (const tag of tags) {
-      const {count} = await this.postRepository.count({
-        tags: {inq: [[tag], [tag.toUpperCase()], [tag.toLowerCase()]]},
-        deletedAt: {exists: false},
-      });
-
       const found = await this.tagRepository.findOne({
         where: {id: {regexp: new RegExp(`\\b${tag}\\b`, 'i')}},
       });
 
       if (!found) continue;
+      const {count} = await this.postRepository.count({
+        tags: {inq: [[tag], [tag.toUpperCase()], [tag.toLowerCase()]]},
+        deletedAt: {exists: false},
+      });
+
       await this.tagRepository.updateById(found.id, {
         count,
         updatedAt: new Date().toString(),
@@ -279,15 +275,15 @@ export class MetricService {
   async countPopularPost(postId: string): Promise<void> {
     const exists = await this.postRepository.exists(postId);
     if (!exists) return;
-    const {count: voteCount} = await this.voteRepository.count({
-      postId: postId,
-      state: true,
-    });
-    const {count: commentCount} = await this.commentRepository.count({
-      postId: postId,
-      deleteByUser: false,
-      deletedAt: {exists: false},
-    });
+
+    const [{count: voteCount}, {count: commentCount}] = await Promise.all([
+      this.voteRepository.count({postId, state: true}),
+      this.commentRepository.count({
+        postId: postId,
+        deleteByUser: false,
+        deletedAt: {exists: false},
+      }),
+    ]);
 
     await this.postRepository.updateById(postId, {
       popularCount: commentCount + voteCount,

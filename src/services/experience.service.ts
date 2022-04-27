@@ -15,7 +15,6 @@ import {
 import {
   ExperiencePostRepository,
   ExperienceRepository,
-  UserExperienceRepository,
   UserRepository,
 } from '../repositories';
 import {injectable, BindingScope, service} from '@loopback/core';
@@ -25,8 +24,6 @@ import {omit} from 'lodash';
 @injectable({scope: BindingScope.TRANSIENT})
 export class ExperienceService {
   constructor(
-    @repository(UserExperienceRepository)
-    public userExperienceRepository: UserExperienceRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
@@ -98,21 +95,17 @@ export class ExperienceService {
     const personIds = experience.people
       .filter((e: People) => e.platform !== PlatformType.MYRIAD)
       .map(e => e.id);
-    const blockedFriendIds = await this.friendService.getFriendIds(
-      userId,
-      FriendStatusType.BLOCKED,
-    );
-    const approvedFriendIds = await this.friendService.getFriendIds(
-      userId,
-      FriendStatusType.APPROVED,
-    );
-    const friends = await this.friendService.friendRepository.find({
-      where: {
-        requestorId: userId,
-        requesteeId: {inq: (experience.users ?? []).map(e => e.id)},
-        status: FriendStatusType.APPROVED,
-      },
-    });
+    const [blockedFriendIds, approvedFriendIds, friends] = await Promise.all([
+      this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
+      this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+      this.friendService.friendRepository.find({
+        where: {
+          requestorId: userId,
+          requesteeId: {inq: (experience.users ?? []).map(e => e.id)},
+          status: FriendStatusType.APPROVED,
+        },
+      }),
+    ]);
     const friendIds = friends.map(friend => friend.requesteeId);
     const blockedUserIds = blockedFriendIds.filter(
       id => ![...friendIds, ...approvedFriendIds].includes(id),

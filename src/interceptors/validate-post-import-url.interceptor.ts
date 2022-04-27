@@ -93,13 +93,15 @@ export class ValidatePostImportURL implements Provider<Interceptor> {
     result: AnyObject,
   ): Promise<AnyObject> {
     const importer = invocationCtx.args[0].importer;
-    const user = await this.userRepository.findOne({where: {id: importer}});
-    const {count} = await this.postService.postRepository.count({
-      originPostId: result.originPostId,
-      platform: result.platform,
-      banned: false,
-      deletedAt: {exists: false},
-    });
+    const [user, {count}] = await Promise.all([
+      this.userRepository.findOne({where: {id: importer}}),
+      this.postService.postRepository.count({
+        originPostId: result.originPostId,
+        platform: result.platform,
+        banned: false,
+        deletedAt: {exists: false},
+      }),
+    ]);
 
     Promise.allSettled([
       this.tagService.createTags(result.tags),

@@ -62,14 +62,10 @@ export class TagService {
 
     if (!trendingTopics.length) return;
 
-    const approvedFriendIds = await this.friendService.getFriendIds(
-      userId,
-      FriendStatusType.APPROVED,
-    );
-    const blockedFriendIds = await this.friendService.getFriendIds(
-      userId,
-      FriendStatusType.BLOCKED,
-    );
+    const [approvedFriendIds, blockedFriendIds] = await Promise.all([
+      this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+      this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
+    ]);
     const blockedUserIds = blockedFriendIds.filter(
       id => !approvedFriendIds.includes(id),
     );

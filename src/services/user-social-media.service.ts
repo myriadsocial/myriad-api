@@ -65,15 +65,13 @@ export class UserSocialMediaService {
 
     if (userSocialMedia) {
       if (userSocialMedia.userId !== this.currentUser[securityId]) {
-        try {
-          await this.notificationService.sendDisconnectedSocialMedia(
+        await Promise.allSettled([
+          this.notificationService.sendDisconnectedSocialMedia(
             userSocialMedia.id,
             this.currentUser[securityId],
-          );
-        } catch {
-          // ignore
-        }
-        await this.userSocialMediaRepository.deleteById(userSocialMedia.id);
+          ),
+          this.userSocialMediaRepository.deleteById(userSocialMedia.id),
+        ]);
       } else {
         throw new HttpErrors.UnprocessableEntity(
           `You already claimed this ${platform}`,

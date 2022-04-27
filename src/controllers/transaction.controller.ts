@@ -1,4 +1,4 @@
-import {intercept, service} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {
   AnyObject,
   Filter,
@@ -20,7 +20,6 @@ import {
   TransactionRepository,
   UserSocialMediaRepository,
 } from '../repositories';
-import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 export interface TransactionInfo {
@@ -35,8 +34,6 @@ export class TransactionController {
     protected transactionRepository: TransactionRepository,
     @repository(UserSocialMediaRepository)
     protected userSocialMediaRepository: UserSocialMediaRepository,
-    @service(NotificationService)
-    protected notificationService: NotificationService,
   ) {}
 
   @intercept(CreateInterceptor.BINDING_KEY)

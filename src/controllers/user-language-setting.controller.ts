@@ -20,7 +20,8 @@ import {UserRepository} from '../repositories';
 @authenticate('jwt')
 export class UserLanguageSettingController {
   constructor(
-    @repository(UserRepository) protected userRepository: UserRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
   ) {}
 
   @authenticate.skip()

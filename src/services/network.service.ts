@@ -221,8 +221,10 @@ export class NetworkService {
     if (queue?.priority >= priority) priority = queue.priority;
     else priority = nonce;
 
-    await this.queueRepository.set(type, {priority: priority + 1});
-    await this.queueRepository.expire(type, 1 * dateUtils.hour);
+    await Promise.all([
+      this.queueRepository.set(type, {priority: priority + 1}),
+      this.queueRepository.expire(type, 1 * dateUtils.hour),
+    ]);
 
     return priority;
   }

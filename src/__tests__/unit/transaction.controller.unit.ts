@@ -11,13 +11,11 @@ import {
   TransactionRepository,
   UserSocialMediaRepository,
 } from '../../repositories';
-import {NotificationService} from '../../services';
 import {givenTransaction} from '../helpers';
 
 describe('TransactionController', () => {
   let transactionRepository: StubbedInstanceWithSinonAccessor<TransactionRepository>;
   let userSocialMediaRepository: StubbedInstanceWithSinonAccessor<UserSocialMediaRepository>;
-  let notificationService: NotificationService;
   let controller: TransactionController;
   let aTransaction: Transaction;
   let aTransactionWithId: Transaction;
@@ -98,7 +96,6 @@ describe('TransactionController', () => {
     controller = new TransactionController(
       transactionRepository,
       userSocialMediaRepository,
-      notificationService,
     );
   }
 });

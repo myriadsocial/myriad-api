@@ -14,7 +14,6 @@ import {
   FriendRepository,
   PeopleRepository,
   PostRepository,
-  VoteRepository,
 } from '../../repositories';
 import {PostService} from '../../services';
 import {givenMyriadPost} from '../helpers';
@@ -26,7 +25,6 @@ describe('PostController', () => {
   let draftPostRepository: StubbedInstanceWithSinonAccessor<DraftPostRepository>;
   let peopleRepository: StubbedInstanceWithSinonAccessor<PeopleRepository>;
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
-  let voteRepository: StubbedInstanceWithSinonAccessor<VoteRepository>;
   let postService: PostService;
   let controller: PostController;
   let aPostWithId: Post;
@@ -86,7 +84,6 @@ describe('PostController', () => {
     postRepository = createStubInstance(PostRepository);
     draftPostRepository = createStubInstance(DraftPostRepository);
     peopleRepository = createStubInstance(PeopleRepository);
-    voteRepository = createStubInstance(VoteRepository);
     aPostWithId = givenMyriadPost({
       id: '1',
     });
@@ -111,7 +108,6 @@ describe('PostController', () => {
       draftPostRepository,
       peopleRepository,
       friendRepository,
-      voteRepository,
       accountSettingRepository,
       {[securityId]: ''},
     );
