@@ -1,0 +1,23 @@
+[
+  {
+    "network": {
+      "id": "myriad",
+      "sourceImageFileName": "myriad",
+      "targetImagePath": "general/networks",
+      "rpcURL": "wss://ws-rpc.myriad.social",
+      "explorerURL": "https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fws-rpc.myriad.social#/explorer/query",
+      "walletType": "polkadot"
+    },
+    "currencies": [
+      {
+        "name": "myria",
+        "symbol": "MYRIA",
+        "sourceImageFileName": "myriad",
+        "targetImagePath": "general/currencies",
+        "decimal": 18,
+        "native": true,
+        "exchangeRate": false
+      }
+    ]
+  }
+]

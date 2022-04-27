@@ -37,7 +37,6 @@ import * as Sentry from '@sentry/node';
 import multer from 'multer';
 import {v4 as uuid} from 'uuid';
 import {FILE_UPLOAD_SERVICE} from './keys';
-import {FCSService} from './services/fcs.service';
 import {
   AccountSettingRepository,
   ActivityLogRepository,
@@ -68,7 +67,11 @@ import {
   RateLimiterComponent,
   RateLimitSecurityBindings,
 } from 'loopback4-ratelimiter';
+import {getFilePathFromSeedData, upload} from './utils/upload';
 import {DateUtils} from './utils/date-utils';
+import fs, {existsSync} from 'fs';
+import {FriendStatusType, UploadType} from './enums';
+import {omit} from 'lodash';
 
 const date = new DateUtils();
 const jwt = require('jsonwebtoken');
@@ -180,7 +183,6 @@ export class MyriadApiApplication extends BootMixin(
 
     // 3rd party service
     this.service(FCMService);
-    this.service(FCSService);
   }
 
   registerJob() {
@@ -218,6 +220,202 @@ export class MyriadApiApplication extends BootMixin(
 
   async migrateSchema(options?: SchemaMigrationOptions): Promise<void> {
     await super.migrateSchema(options);
+
+    if (options?.existingSchema === 'drop') return this.databaseSeeding();
+  }
+
+  async databaseSeeding(): Promise<void> {
+    const directory = path.join(__dirname, '../seed-data');
+
+    if (!existsSync(directory)) return;
+
+    const {
+      currencyRepository,
+      friendRepository,
+      networkRepository,
+      userRepository,
+      userCurrencyRepository,
+      walletRepository,
+    } = await this.repositories();
+
+    const bar = this.initializeProgressBar('Start Seeding');
+    const files = fs.readdirSync(directory);
+
+    bar.start(files.length - 1, 0);
+    for (const [index, file] of files.entries()) {
+      if (file.endsWith('.json')) {
+        const dataDirectory = path.join(directory, file);
+        const stringifyJSON = fs.readFileSync(dataDirectory, 'utf-8');
+        const data = JSON.parse(stringifyJSON);
+
+        switch (file) {
+          case 'network-currencies.json':
+          case 'default-network-currencies.json': {
+            await Promise.all(
+              data.map(async (networkCurrency: AnyObject) => {
+                const {network, currencies} = networkCurrency;
+                const filePath = getFilePathFromSeedData(
+                  network.sourceImageFileName,
+                );
+                const targetDir = `${network.targetImagePath}/${network.id}`;
+                const networkImageURL = await upload(
+                  UploadType.IMAGE,
+                  targetDir,
+                  filePath,
+                );
+
+                if (!networkImageURL) return;
+
+                const rawNetwork = Object.assign(
+                  omit(network, ['targetImagePath', 'sourceImageFileName']),
+                  {
+                    image: networkImageURL,
+                  },
+                );
+
+                const updatedCurrencies = await Promise.all(
+                  currencies.map(async (currency: AnyObject) => {
+                    const sourceImageFileName = currency.sourceImageFileName;
+                    const currencyFilePath =
+                      getFilePathFromSeedData(sourceImageFileName);
+                    const currencyTargetDir = `${currency.targetImagePath}/${currency.name}`;
+                    const currencyImageURL = await upload(
+                      UploadType.IMAGE,
+                      currencyTargetDir,
+                      currencyFilePath,
+                    );
+
+                    if (!currencyImageURL) return;
+
+                    return Object.assign(
+                      omit(currency, [
+                        'targetImagePath',
+                        'sourceImageFileName',
+                      ]),
+                      {
+                        image: currencyImageURL,
+                        networkId: rawNetwork.id,
+                      },
+                    );
+                  }),
+                );
+
+                const rawCurrencies = updatedCurrencies.filter(
+                  e => e !== undefined,
+                );
+
+                if (currencies.length === 0) return;
+
+                await currencyRepository.createAll(rawCurrencies);
+                await networkRepository.create(rawNetwork);
+              }),
+            );
+            break;
+          }
+
+          case 'user-wallet.json':
+          case 'default-user-wallet.json': {
+            const wallets = await Promise.all(
+              data.map(async (e: AnyObject) => {
+                const {user, wallet} = e;
+                const rawUser = omit(user, [
+                  'sourceImageFileName',
+                  'targetImagePath',
+                ]);
+
+                if (user.username === 'myriad_official') {
+                  Object.assign(rawUser, {
+                    verified: true,
+                    bio: 'A social metaverse & metasocial network on web3, pulling content from mainstream social media and turning every post into a tipping wallet.',
+                    websiteURL: 'https://www.myriad.social/',
+                  });
+                }
+
+                const {id} = await userRepository.create(rawUser);
+                const filePath = getFilePathFromSeedData(
+                  user.sourceImageFileName,
+                );
+                const targetDir = `users/${id}/image`;
+                const profilePictureURL = await upload(
+                  UploadType.IMAGE,
+                  targetDir,
+                  filePath,
+                );
+
+                await userRepository.updateById(id, {profilePictureURL});
+
+                Object.assign(wallet, {primary: true});
+
+                return userRepository.wallets(id).create(wallet);
+              }),
+            );
+
+            const myriadWallet = wallets.find(e => {
+              return (
+                e.id ===
+                '0xecfeabd53afba60983271c8fc13c133ae7e904ba90a7c5dee1f43523559fee5f'
+              );
+            });
+            const promises = [];
+            for (const wallet of wallets) {
+              const userId = wallet.userId;
+              const networkId = wallet.networkId;
+              const [exists, currencies] = await Promise.all([
+                networkRepository.exists(networkId),
+                currencyRepository.find({
+                  where: {networkId},
+                  order: ['native DESC'],
+                }),
+              ]);
+
+              if (currencies.length === 0 || !exists) {
+                await Promise.all([
+                  userRepository.deleteAll(),
+                  currencyRepository.deleteAll(),
+                  walletRepository.deleteAll(),
+                ]);
+
+                throw new Error('Currency/Network Not Found');
+              }
+
+              if (myriadWallet && userId !== myriadWallet.userId) {
+                promises.push(
+                  friendRepository.create({
+                    status: FriendStatusType.APPROVED,
+                    requestorId: userId,
+                    requesteeId: myriadWallet.userId,
+                  }),
+                );
+              }
+
+              promises.push(
+                userRepository.accountSetting(userId).create({}),
+                userRepository.notificationSetting(userId).create({}),
+                userRepository.languageSetting(userId).create({}),
+                currencies.map((currency: AnyObject, idx: number) =>
+                  userCurrencyRepository.create({
+                    currencyId: currency.id,
+                    networkId,
+                    userId,
+                    priority: idx + 1,
+                  }),
+                ),
+              );
+            }
+
+            await Promise.allSettled(promises);
+
+            break;
+          }
+
+          default:
+            return;
+        }
+      }
+
+      bar.update(index);
+    }
+    bar.stop();
   }
 
   async repositories(): Promise<AnyObject> {

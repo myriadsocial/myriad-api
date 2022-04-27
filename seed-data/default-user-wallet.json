@@ -1,0 +1,14 @@
+[
+  {
+    "user": {
+      "name": "Myriad Official",
+      "username": "myriad_official",
+      "sourceImageFileName": "myriad"
+    },
+    "wallet": {
+      "id": "0xecfeabd53afba60983271c8fc13c133ae7e904ba90a7c5dee1f43523559fee5f",
+      "networkId": "myriad",
+      "type": "polkadot"
+    }
+  }
+]
