@@ -37,7 +37,6 @@ import * as Sentry from '@sentry/node';
 import multer from 'multer';
 import {v4 as uuid} from 'uuid';
 import {FILE_UPLOAD_SERVICE} from './keys';
-import {FCSService} from './services/fcs.service';
 import {
   AccountSettingRepository,
   ActivityLogRepository,
@@ -68,10 +67,10 @@ import {
   RateLimiterComponent,
   RateLimitSecurityBindings,
 } from 'loopback4-ratelimiter';
-import {upload} from './utils/upload';
+import {getFilePathFromSeedData, upload} from './utils/upload';
 import {DateUtils} from './utils/date-utils';
 import fs, {existsSync} from 'fs';
-import {FriendStatusType} from './enums';
+import {FriendStatusType, UploadType} from './enums';
 import {omit} from 'lodash';
 
 const date = new DateUtils();
@@ -184,7 +183,6 @@ export class MyriadApiApplication extends BootMixin(
 
     // 3rd party service
     this.service(FCMService);
-    this.service(FCSService);
   }
 
   registerJob() {
@@ -197,7 +195,6 @@ export class MyriadApiApplication extends BootMixin(
     const multerOptions: multer.Options = {
       storage: multer.diskStorage({
         filename: (req, file, cb) => {
-          console.log(path.extname(file.originalname));
           cb(null, `${uuid()}${path.extname(file.originalname)}`);
         },
       }),
@@ -232,16 +229,14 @@ export class MyriadApiApplication extends BootMixin(
 
     if (!existsSync(directory)) return;
 
-    const repositories = await this.repositories();
-    const currencyRepository =
-      repositories.currencyRepository as CurrencyRepository;
-    const friendRepository = repositories.friendRepository as FriendRepository;
-    const networkRepository =
-      repositories.networkRepository as NetworkRepository;
-    const userRepository = repositories.userRepository as UserRepository;
-    const userCurrencyRepository =
-      repositories.userCurrencyRepository as UserCurrencyRepository;
-    const walletRepository = repositories.walletRepository as WalletRepository;
+    const {
+      currencyRepository,
+      friendRepository,
+      networkRepository,
+      userRepository,
+      userCurrencyRepository,
+      walletRepository,
+    } = await this.repositories();
 
     const bar = this.initializeProgressBar('Start Seeding');
     const files = fs.readdirSync(directory);
@@ -259,12 +254,20 @@ export class MyriadApiApplication extends BootMixin(
             await Promise.all(
               data.map(async (networkCurrency: AnyObject) => {
                 const {network, currencies} = networkCurrency;
-                const networkImageURL = await upload(network, network.id);
+                const filePath = getFilePathFromSeedData(
+                  network.sourceImageFileName,
+                );
+                const targetDir = `${network.targetImagePath}/${network.id}`;
+                const networkImageURL = await upload(
+                  UploadType.IMAGE,
+                  targetDir,
+                  filePath,
+                );
 
                 if (!networkImageURL) return;
 
                 const rawNetwork = Object.assign(
-                  omit(network, ['imagePath', 'imageFileName']),
+                  omit(network, ['targetImagePath', 'sourceImageFileName']),
                   {
                     image: networkImageURL,
                   },
@@ -272,15 +275,23 @@ export class MyriadApiApplication extends BootMixin(
 
                 const updatedCurrencies = await Promise.all(
                   currencies.map(async (currency: AnyObject) => {
+                    const sourceImageFileName = currency.sourceImageFileName;
+                    const currencyFilePath =
+                      getFilePathFromSeedData(sourceImageFileName);
+                    const currencyTargetDir = `${currency.targetImagePath}/${currency.name}`;
                     const currencyImageURL = await upload(
-                      currency,
-                      currency.name,
+                      UploadType.IMAGE,
+                      currencyTargetDir,
+                      currencyFilePath,
                     );
 
                     if (!currencyImageURL) return;
 
                     return Object.assign(
-                      omit(currency, ['imagePath', 'imageFileName']),
+                      omit(currency, [
+                        'targetImagePath',
+                        'sourceImageFileName',
+                      ]),
                       {
                         image: currencyImageURL,
                         networkId: rawNetwork.id,
@@ -307,7 +318,10 @@ export class MyriadApiApplication extends BootMixin(
             const wallets = await Promise.all(
               data.map(async (e: AnyObject) => {
                 const {user, wallet} = e;
-                const rawUser = omit(user, ['imageFileName', 'imagePath']);
+                const rawUser = omit(user, [
+                  'sourceImageFileName',
+                  'targetImagePath',
+                ]);
 
                 if (user.username === 'myriad_official') {
                   Object.assign(rawUser, {
@@ -318,10 +332,15 @@ export class MyriadApiApplication extends BootMixin(
                 }
 
                 const {id} = await userRepository.create(rawUser);
-
-                Object.assign(user, {imagePath: `users/${id}`});
-
-                const profilePictureURL = await upload(user, 'image');
+                const filePath = getFilePathFromSeedData(
+                  user.sourceImageFileName,
+                );
+                const targetDir = `users/${id}/image`;
+                const profilePictureURL = await upload(
+                  UploadType.IMAGE,
+                  targetDir,
+                  filePath,
+                );
 
                 await userRepository.updateById(id, {profilePictureURL});
 
@@ -341,7 +360,6 @@ export class MyriadApiApplication extends BootMixin(
             for (const wallet of wallets) {
               const userId = wallet.userId;
               const networkId = wallet.networkId;
-
               const [exists, currencies] = await Promise.all([
                 networkRepository.exists(networkId),
                 currencyRepository.find({
@@ -374,9 +392,9 @@ export class MyriadApiApplication extends BootMixin(
                 userRepository.accountSetting(userId).create({}),
                 userRepository.notificationSetting(userId).create({}),
                 userRepository.languageSetting(userId).create({}),
-                currencies.map(({id: currencyId}, idx) =>
+                currencies.map((currency: AnyObject, idx: number) =>
                   userCurrencyRepository.create({
-                    currencyId,
+                    currencyId: currency.id,
                     networkId,
                     userId,
                     priority: idx + 1,

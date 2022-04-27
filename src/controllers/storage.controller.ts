@@ -1,4 +1,4 @@
-import {inject, service} from '@loopback/core';
+import {inject} from '@loopback/core';
 import {
   post,
   requestBody,
@@ -7,23 +7,18 @@ import {
   RestBindings,
   param,
 } from '@loopback/rest';
-import {FCSService} from '../services/fcs.service';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler} from '../types';
 import {UploadType} from '../enums';
 import {authenticate} from '@loopback/authentication';
-import {AnyObject, repository} from '@loopback/repository';
-import {UserRepository} from '../repositories';
+import {AnyObject} from '@loopback/repository';
+import {upload} from '../utils/upload';
 
 @authenticate('jwt')
 export class StorageController {
   constructor(
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
     @inject(FILE_UPLOAD_SERVICE)
     private handler: FileUploadHandler,
-    @service(FCSService)
-    private fcsService: FCSService,
   ) {}
 
   @post('/buckets/{userId}/{kind}', {
@@ -49,7 +44,6 @@ export class StorageController {
     return new Promise<AnyObject>((resolve, reject) => {
       this.handler(request, response, (err: unknown) => {
         if (err) {
-          console.log(err);
           reject(err);
         } else {
           const targetDir = `users/${userId}/${kind}`;
@@ -67,11 +61,7 @@ export class StorageController {
         uploadType = UploadType.VIDEO;
       }
 
-      const fileURL = await this.fcsService.upload(
-        uploadType,
-        targetDir,
-        file.path,
-      );
+      const fileURL = await upload(uploadType, targetDir, file.path);
 
       return {
         fieldname: file.fieldname,
