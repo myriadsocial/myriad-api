@@ -6,12 +6,10 @@ import {
 import {VoteController} from '../../controllers';
 import {Vote} from '../../models';
 import {VoteRepository} from '../../repositories';
-import {NotificationService} from '../../services';
 import {givenVote} from '../helpers';
 
 describe('VoteController', () => {
   let voteRepository: StubbedInstanceWithSinonAccessor<VoteRepository>;
-  let notificationService: NotificationService;
   let controller: VoteController;
   let aVoteWithId: Vote;
 
@@ -33,6 +31,6 @@ describe('VoteController', () => {
       id: '1',
     });
 
-    controller = new VoteController(voteRepository, notificationService);
+    controller = new VoteController(voteRepository);
   }
 });

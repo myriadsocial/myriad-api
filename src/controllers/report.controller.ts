@@ -1,4 +1,9 @@
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {
+  AnyObject,
+  Filter,
+  FilterExcludingWhere,
+  repository,
+} from '@loopback/repository';
 import {
   param,
   get,
@@ -95,15 +100,12 @@ export class ReportController {
       },
     })
     report: Partial<Report>,
-  ): Promise<void> {
-    await this.reportRepository.updateById(id, report);
-
-    try {
-      await this.notificationService.sendReportResponseToUser(id);
-      await this.notificationService.sendReportResponseToReporters(id);
-    } catch {
-      // ignore
-    }
+  ): Promise<AnyObject> {
+    return Promise.allSettled([
+      this.reportRepository.updateById(id, report),
+      this.notificationService.sendReportResponseToUser(id),
+      this.notificationService.sendReportResponseToReporters(id),
+    ]);
   }
 
   @intercept(ReportInterceptor.BINDING_KEY)

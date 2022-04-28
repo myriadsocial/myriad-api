@@ -1,10 +1,9 @@
-import {intercept, service} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {del, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
 import {CreateInterceptor, DeleteInterceptor} from '../interceptors';
 import {Vote} from '../models';
 import {VoteRepository} from '../repositories';
-import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
@@ -12,8 +11,6 @@ export class VoteController {
   constructor(
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
-    @service(NotificationService)
-    protected notificationService: NotificationService,
   ) {}
 
   @intercept(CreateInterceptor.BINDING_KEY)

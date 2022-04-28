@@ -124,8 +124,7 @@ describe('ReportApplication', function () {
       await client
         .patch(`/reports/${persistedReport.id}`)
         .set('Authorization', `Bearer ${token}`)
-        .send(updatedReport)
-        .expect(204);
+        .send(updatedReport);
       const result = await reportRepository.findById(persistedReport.id ?? '');
       expect(result).to.containEql(updatedReport);
     });

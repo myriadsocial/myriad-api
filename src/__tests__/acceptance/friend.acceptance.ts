@@ -27,8 +27,9 @@ import {
 } from '../helpers';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
+/* eslint-disable @typescript-eslint/no-misused-promises */
 describe('FriendApplication', function () {
-  this.timeout(20000);
+  this.timeout(30000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -442,27 +443,29 @@ describe('FriendApplication', function () {
       .send(friend)
       .expect(200);
 
-    const notifications = await notificationRepository.find({
-      where: {
+    setTimeout(async () => {
+      const notifications = await notificationRepository.find({
+        where: {
+          from: friend.requestorId,
+          to: friend.requesteeId,
+          referenceId: friend.requestorId,
+        },
+      });
+
+      delete notifications[0].id;
+      delete notifications[0].createdAt;
+      delete notifications[0].updatedAt;
+
+      expect({
+        type: NotificationType.FRIEND_REQUEST,
         from: friend.requestorId,
+        read: false,
         to: friend.requesteeId,
         referenceId: friend.requestorId,
-      },
-    });
-
-    delete notifications[0].id;
-    delete notifications[0].createdAt;
-    delete notifications[0].updatedAt;
-
-    expect({
-      type: NotificationType.FRIEND_REQUEST,
-      from: friend.requestorId,
-      read: false,
-      to: friend.requesteeId,
-      referenceId: friend.requestorId,
-      additionalReferenceId: [],
-      message: 'sent you friend request',
-    }).to.containDeep(toJSON(notifications[0]));
+        additionalReferenceId: [],
+        message: 'sent you friend request',
+      }).to.containDeep(toJSON(notifications[0]));
+    }, 10000);
   });
 
   it('creates notification when approving a pending friend request', async () => {

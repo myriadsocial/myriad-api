@@ -1,4 +1,4 @@
-import {service, intercept} from '@loopback/core';
+import {intercept} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {
   response,
@@ -16,10 +16,8 @@ import {
   PostRepository,
   CommentRepository,
   UserRepository,
-  UserSocialMediaRepository,
   UserReportRepository,
 } from '../repositories';
-import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
 
 @authenticate('jwt')
@@ -33,12 +31,8 @@ export class UserReportController {
     protected commentRepository: CommentRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
-    @service(NotificationService)
-    protected notificationService: NotificationService,
   ) {}
 
   @intercept(CreateInterceptor.BINDING_KEY)
@@ -70,33 +64,27 @@ export class UserReportController {
 
   async getReport(id: string, reportDetail: ReportDetail): Promise<Report> {
     const {referenceId, referenceType, type} = reportDetail;
-    const reported = await this.validateReporter(
-      referenceId,
-      referenceType,
-      id,
-      type,
-    );
+    const [reported, report] = await Promise.all([
+      this.validateReporter(referenceId, referenceType, id, type),
+      this.reportRepository.findOne({
+        where: {
+          referenceId,
+          referenceType,
+          type,
+        },
+      }),
+    ]);
 
-    let report = await this.reportRepository.findOne({
-      where: {
-        referenceId,
-        referenceType,
-        type,
-      },
-    });
-
-    if (!report) {
-      const reportedDetail = this.getReportedDetail(reported, referenceType);
-
-      report = await this.reportRepository.create({
-        reportedDetail,
+    const currentReport =
+      report ??
+      (await this.reportRepository.create({
+        reportedDetail: this.getReportedDetail(reported, referenceType),
         referenceType,
         referenceId,
         type,
-      });
-    }
+      }));
 
-    return this.updateReportStatus(report);
+    return this.updateReportStatus(currentReport);
   }
 
   async validateReporter(
@@ -201,17 +189,10 @@ export class UserReportController {
   }
 
   async updateReportStatus(report: Report): Promise<Report> {
-    switch (report.status) {
+    const {id: reportId, status} = report;
+    switch (status) {
       case ReportStatusType.PENDING:
-        break;
-
-      case ReportStatusType.IGNORED: {
-        await this.userReportRepository.deleteAll({
-          reportId: report.id,
-        });
-        report.status = ReportStatusType.PENDING;
-        break;
-      }
+        return report;
 
       case ReportStatusType.REMOVED: {
         throw new HttpErrors.UnprocessableEntity(
@@ -219,14 +200,11 @@ export class UserReportController {
         );
       }
 
+      case ReportStatusType.IGNORED:
       default: {
-        await this.userReportRepository.deleteAll({
-          reportId: report.id,
-        });
-        report.status = ReportStatusType.PENDING;
+        await this.userReportRepository.deleteAll({reportId});
+        return Object.assign(report, {status: ReportStatusType.PENDING});
       }
     }
-
-    return report;
   }
 }

@@ -4,15 +4,13 @@ import {Filter, repository} from '@loopback/repository';
 import {get, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
 import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {Credential, User, Wallet} from '../models';
-import {UserRepository, WalletRepository} from '../repositories';
+import {UserRepository} from '../repositories';
 
 @authenticate('jwt')
 export class UserWalletController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)

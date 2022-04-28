@@ -36,7 +36,6 @@ import {
   ExperienceService,
   FriendService,
   MetricService,
-  NetworkService,
   PostService,
   TagService,
 } from '../services';
@@ -46,9 +45,8 @@ import {
   ExperiencePostRepository,
   CurrencyRepository,
   UserRepository,
-  ExchangeRateRepository,
   WalletRepository,
-  UserCurrencyRepository,
+  UserExperienceRepository,
 } from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
@@ -65,16 +63,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
-    @repository(ExchangeRateRepository)
-    protected exchangeRateRepository: ExchangeRateRepository,
     @repository(ExperiencePostRepository)
     protected experiencePostRepository: ExperiencePostRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
-    @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
+    @repository(UserExperienceRepository)
+    protected userExperienceRepository: UserExperienceRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @service(MetricService)
@@ -89,8 +85,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected friendService: FriendService,
     @service(PostService)
     protected postService: PostService,
-    @service(NetworkService)
-    protected networkService: NetworkService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
     protected currentUser: UserProfile,
   ) {}
@@ -545,11 +539,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           );
 
           if (request.query.experienceId) {
-            const {count} =
-              await this.experienceService.userExperienceRepository.count({
-                userId: this.currentUser[securityId],
-                experienceId: request.query.experienceId.toString(),
-              });
+            const {count} = await this.userExperienceRepository.count({
+              userId: this.currentUser[securityId],
+              experienceId: request.query.experienceId.toString(),
+            });
 
             if (count === 1) {
               await this.userRepository.updateById(
@@ -779,16 +772,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   }
 
   async getPostByQuery(q: string): Promise<Where<Post>> {
-    const approvedFriendIds = await this.friendService.getFriendIds(
-      this.currentUser[securityId],
-      FriendStatusType.APPROVED,
+    const currentUser = this.currentUser[securityId];
+    const [approvedFriendIds, blockedFriends] = await Promise.all([
+      this.friendService.getFriendIds(currentUser, FriendStatusType.APPROVED),
+      this.friendService.getFriendIds(currentUser, FriendStatusType.BLOCKED),
+    ]);
+    const blockedFriendIds = blockedFriends.filter(
+      userId => !approvedFriendIds.includes(userId),
     );
-    const blockedFriendIds = (
-      await this.friendService.getFriendIds(
-        this.currentUser[securityId],
-        FriendStatusType.BLOCKED,
-      )
-    ).filter(userId => !approvedFriendIds.includes(userId));
     const filterPost = await this.initializeFilter(
       approvedFriendIds,
       blockedFriendIds,
@@ -897,16 +888,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
   async getTopicByQuery(topic: string): Promise<Where<Post>> {
     const hashtag = topic.toLowerCase();
-    const approvedFriendIds = await this.friendService.getFriendIds(
-      this.currentUser[securityId],
-      FriendStatusType.APPROVED,
+    const currentUser = this.currentUser[securityId];
+    const [approvedFriendIds, blockedFriends] = await Promise.all([
+      this.friendService.getFriendIds(currentUser, FriendStatusType.APPROVED),
+      this.friendService.getFriendIds(currentUser, FriendStatusType.BLOCKED),
+    ]);
+    const blockedFriendIds = blockedFriends.filter(
+      userId => !approvedFriendIds.includes(userId),
     );
-    const blockedFriendIds = (
-      await this.friendService.getFriendIds(
-        this.currentUser[securityId],
-        FriendStatusType.BLOCKED,
-      )
-    ).filter(userId => !approvedFriendIds.includes(userId));
 
     return {
       or: [
@@ -963,13 +952,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return this.friendService.friendsTimeline(userId);
 
       case TimelineType.ALL: {
-        const approvedFriendIds = await this.friendService.getFriendIds(
-          userId,
-          FriendStatusType.APPROVED,
-        );
-        const trendingTopics = await this.tagService.trendingTopics();
-
-        const experience = await this.experienceService.getExperience(userId);
+        const [approvedFriendIds, trendingTopics, experience] =
+          await Promise.all([
+            this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+            this.tagService.trendingTopics(),
+            this.experienceService.getExperience(userId),
+          ]);
         const experienceTopics = experience ? experience.allowedTags : [];
         const prohibitedTopics = experience ? experience.prohibitedTags : [];
         const postIds = experience
@@ -1057,16 +1045,18 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
   ): Promise<Where<User> | void> {
     if (!q || (!q && typeof q === 'string')) return;
-    const requestor = await this.userRepository.findById(userId);
-    const friends = await this.friendService.friendRepository.find({
-      where: <AnyObject>{
-        requestorId: userId,
-        status: FriendStatusType.APPROVED,
-        deletedAt: {
-          $exists: false,
+    const [requestor, friends] = await Promise.all([
+      this.userRepository.findById(userId),
+      this.friendService.friendRepository.find({
+        where: <AnyObject>{
+          requestorId: userId,
+          status: FriendStatusType.APPROVED,
+          deletedAt: {
+            $exists: false,
+          },
         },
-      },
-    });
+      }),
+    ]);
 
     if (friends.length === 0) return;
     if (q) {

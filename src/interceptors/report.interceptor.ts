@@ -81,10 +81,10 @@ export class ReportInterceptor implements Provider<Interceptor> {
     invocationCtx: InvocationContext,
     next: () => ValueOrPromise<InvocationResult>,
   ) {
-    const report = invocationCtx.args[1];
+    const [reportId, report] = invocationCtx.args;
     const methodName = invocationCtx.methodName as MethodType;
     const {referenceId, referenceType} = await this.reportRepository.findById(
-      invocationCtx.args[0],
+      reportId,
     );
 
     let updated = true;

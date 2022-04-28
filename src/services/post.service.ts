@@ -6,7 +6,6 @@ import {
   PeopleRepository,
   PostRepository,
   FriendRepository,
-  VoteRepository,
   DraftPostRepository,
   AccountSettingRepository,
 } from '../repositories';
@@ -39,8 +38,6 @@ export class PostService {
     protected peopleRepository: PeopleRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
-    @repository(VoteRepository)
-    protected voteRepository: VoteRepository,
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})

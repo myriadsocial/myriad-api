@@ -20,7 +20,6 @@ import {
   CurrencyRepository,
   ExperienceRepository,
   NetworkRepository,
-  UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
   WalletRepository,
@@ -61,8 +60,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected userRepository: UserRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
-    @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(NetworkRepository)
     protected networkRepository: NetworkRepository,
     @service(ActivityLogService)
@@ -212,14 +209,11 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.USERCURRENCY: {
         const {networkId, currencyIds} = invocationCtx.args[0];
-        const {count: countCurrency} = await this.currencyRepository.count({
-          id: {inq: currencyIds},
-          networkId: networkId,
-        });
-        const {count: countCurrencyNetwork} =
-          await this.currencyRepository.count({
-            networkId: networkId,
-          });
+        const [{count: countCurrency}, {count: countCurrencyNetwork}] =
+          await Promise.all([
+            this.currencyRepository.count({id: {inq: currencyIds}, networkId}),
+            this.currencyRepository.count({networkId}),
+          ]);
 
         if (
           countCurrency !== currencyIds.length ||

@@ -24,10 +24,12 @@ import {
   givenAccesToken,
   deleteAllRepository,
 } from '../helpers';
+import {omit} from 'lodash';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
+/* eslint-disable  @typescript-eslint/no-misused-promises */
 describe('VoteApplication', function () {
-  this.timeout(30000);
+  this.timeout(100000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -163,9 +165,8 @@ describe('VoteApplication', function () {
         true,
       )
     ).ops[0];
-    const post = Object.assign(postResponse, {
+    const post = Object.assign(omit(postResponse, ['_id']), {
       id: postResponse._id.toString(),
-      _id: undefined,
     });
 
     const upvote = givenVote({
@@ -178,9 +179,11 @@ describe('VoteApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .send(upvote);
 
-    const resultPost = await postRepository.findById(response.body.postId);
-    post.metric.upvotes = post.metric.upvotes + 1;
-    expect(resultPost).to.containDeep(post);
+    setTimeout(async () => {
+      const resultPost = await postRepository.findById(response.body.postId);
+      post.metric.upvotes = post.metric.upvotes + 1;
+      expect(resultPost).to.containDeep(post);
+    }, 10000);
   });
 
   it('rejects to downvote the post if user has not comment in debate section', async () => {

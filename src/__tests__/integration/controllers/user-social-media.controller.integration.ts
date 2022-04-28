@@ -58,7 +58,6 @@ describe('UserSocialMediaControllerIntegration', function () {
 
   before(async () => {
     socialMediaService = new SocialMediaService(
-      peopleRepository,
       twitterService,
       redditService,
       facebookService,
