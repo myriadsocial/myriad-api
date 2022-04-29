@@ -5,6 +5,7 @@ import {
   property,
   hasOne,
   belongsTo,
+  AnyObject,
 } from '@loopback/repository';
 import {PermissionKeys} from '../enums';
 import {UserMetric} from '../interfaces';
@@ -35,7 +36,7 @@ import {UserCurrency} from './user-currency.model';
         },
       },
     },
-    hiddenProperties: ['nonce', 'permissions'],
+    hiddenProperties: ['nonce', 'permissions', 'friendIndex'],
   },
 })
 export class User extends Entity {
@@ -141,6 +142,13 @@ export class User extends Entity {
     default: [PermissionKeys.USER],
   })
   permissions: PermissionKeys[];
+
+  @property({
+    type: 'object',
+    required: false,
+    default: {},
+  })
+  friendIndex: AnyObject;
 
   @property({
     type: 'date',
