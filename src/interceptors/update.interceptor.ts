@@ -325,10 +325,27 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.FRIEND: {
-        const {requestorId, requesteeId} = invocationCtx.args[2];
-        await this.notificationService.sendFriendAccept(requestorId);
-        await this.metricService.userMetric(requestorId);
-        await this.metricService.userMetric(requesteeId);
+        const {requestor, requestee} = invocationCtx.args[2];
+        const {friendIndex: requestorFriendIndex} = requestor as User;
+        const {friendIndex: requesteeFriendIndex} = requestee as User;
+
+        Promise.allSettled([
+          this.notificationService.sendFriendAccept(requestor.id),
+          this.metricService.userMetric(requestor.id),
+          this.metricService.userMetric(requestee.id),
+          this.userRepository.updateById(requestor.id, {
+            friendIndex: {
+              ...requestorFriendIndex,
+              [requestee.id]: 1,
+            },
+          }),
+          this.userRepository.updateById(requestee.id, {
+            friendIndex: {
+              ...requesteeFriendIndex,
+              [requestor.id]: 1,
+            },
+          }),
+        ]) as Promise<AnyObject>;
         break;
       }
 

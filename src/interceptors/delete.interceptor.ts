@@ -32,6 +32,7 @@ import {
 import {CommentWithRelations} from '../models';
 import {omit} from 'lodash';
 import {HttpErrors} from '@loopback/rest';
+import {User} from '@sentry/node';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -200,21 +201,35 @@ export class DeleteInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.FRIEND: {
-        const {requesteeId, requestorId} = invocationCtx.args[1];
-        await this.notificationService.cancelFriendRequest(
-          requestorId,
-          requesteeId,
-        );
-        await this.metricService.userMetric(requesteeId);
-        await this.metricService.userMetric(requestorId);
+        const {requestee, requestor} = invocationCtx.args[1];
+        const {friendIndex: requestorFriendIndex} = requestor as User;
+        const {friendIndex: requesteeFriendIndex} = requestee as User;
+
+        Promise.allSettled([
+          this.metricService.userMetric(requestee.id),
+          this.metricService.userMetric(requestor.id),
+          this.userRepository.updateById(requestor.id, {
+            friendIndex: omit(requestorFriendIndex, [requestee.id]),
+          }),
+          this.userRepository.updateById(requestee.id, {
+            friendIndex: omit(requesteeFriendIndex, [requestor.id]),
+          }),
+          this.notificationService.cancelFriendRequest(
+            requestor.id,
+            requestee.id,
+          ),
+        ]) as Promise<AnyObject>;
         return;
       }
 
       case ControllerType.POST: {
         const [id, post] = invocationCtx.args;
-        await this.commentRepository.deleteAll({postId: id});
-        await this.metricService.userMetric(post.createdBy);
-        await this.metricService.countTags(post.tags);
+
+        Promise.allSettled([
+          this.commentRepository.deleteAll({postId: id}),
+          this.commentRepository.deleteAll({postId: id}),
+          this.metricService.countTags(post.tags),
+        ]) as Promise<AnyObject>;
         return;
       }
 
