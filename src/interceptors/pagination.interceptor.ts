@@ -194,9 +194,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     filter.where = filter.where ?? {};
 
     switch (controllerName) {
-      // Use for search unblock user
       case ControllerType.USER: {
-        const {requestorId, requesteeId, friendsName, userId} = request.query;
+        const {requestorId, requesteeId, friendsName, userId, name} =
+          request.query;
         const hasWhere =
           Object.keys(filter.where as Where<AnyObject>).length > 0;
         if (
@@ -247,6 +247,30 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             FriendStatusType.BLOCKED,
             true,
           );
+
+          if (name) {
+            Object.assign(filter.where, {
+              or: [
+                {
+                  username: {
+                    like: `.*${name.toString()}`,
+                    options: 'i',
+                  },
+                },
+                {
+                  name: {
+                    like: `.*${name.toString()}`,
+                    options: 'i',
+                  },
+                },
+              ],
+            });
+
+            filter.order = [
+              `friendIndex.${this.currentUser[securityId]} DESC`,
+              'name ASC',
+            ];
+          }
 
           Object.assign(filter.where, {
             id: {
