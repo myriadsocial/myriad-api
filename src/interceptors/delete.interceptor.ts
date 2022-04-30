@@ -81,14 +81,12 @@ export class DeleteInterceptor implements Provider<Interceptor> {
   ) {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
-    try {
-      await this.beforeDelete(invocationCtx);
-      await next();
-      await this.afterDelete(invocationCtx);
-      if (controllerName === ControllerType.COMMENT)
-        return invocationCtx.args[1];
-    } catch {
-      // ignore
+    await this.beforeDelete(invocationCtx);
+    await next();
+    await this.afterDelete(invocationCtx);
+
+    if (controllerName === ControllerType.COMMENT) {
+      return invocationCtx.args[1];
     }
   }
 
@@ -98,17 +96,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       case ControllerType.FRIEND: {
         await this.friendService.removedFriend(invocationCtx.args[1]);
-        break;
-      }
-
-      case ControllerType.VOTE: {
-        const vote = await this.voteRepository.findById(invocationCtx.args[0]);
-        invocationCtx.args[1] = {
-          referenceId: vote.referenceId,
-          toUserId: vote.toUserId,
-          type: vote.type,
-          postId: vote.postId,
-        };
         break;
       }
 
@@ -173,7 +160,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
           post: post,
         };
 
-        break;
+        return;
       }
 
       case ControllerType.EXPERIENCEPOST: {
@@ -181,10 +168,9 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         const {id, experienceIndex} = await this.postRepository.findById(
           postId,
         );
-        await this.postRepository.updateById(id, {
+        return this.postRepository.updateById(id, {
           experienceIndex: omit(experienceIndex, [experienceId]),
         });
-        break;
       }
 
       case ControllerType.FRIEND: {
@@ -195,7 +181,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         );
         await this.metricService.userMetric(requesteeId);
         await this.metricService.userMetric(requestorId);
-        break;
+        return;
       }
 
       case ControllerType.POST: {
@@ -203,13 +189,12 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         await this.commentRepository.deleteAll({postId: id});
         await this.metricService.userMetric(post.createdBy);
         await this.metricService.countTags(post.tags);
-        break;
+        return;
       }
 
       case ControllerType.VOTE: {
-        await this.voteService.updateVoteCounter(invocationCtx.args[1]);
-
-        break;
+        if (!invocationCtx.args[1]) return;
+        return this.voteService.updateVoteCounter(invocationCtx.args[1]);
       }
     }
   }
