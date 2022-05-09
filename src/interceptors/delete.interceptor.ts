@@ -188,8 +188,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
           deleteByUser: true,
           post: post,
         };
-
-        break;
+        return;
       }
 
       case ControllerType.EXPERIENCEPOST: {
@@ -197,10 +196,9 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         const {id, experienceIndex} = await this.postRepository.findById(
           postId,
         );
-        await this.postRepository.updateById(id, {
+        return this.postRepository.updateById(id, {
           experienceIndex: omit(experienceIndex, [experienceId]),
         });
-        break;
       }
 
       case ControllerType.FRIEND: {
@@ -211,7 +209,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         );
         await this.metricService.userMetric(requesteeId);
         await this.metricService.userMetric(requestorId);
-        break;
+        return;
       }
 
       case ControllerType.POST: {
@@ -219,13 +217,13 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         await this.commentRepository.deleteAll({postId: id});
         await this.metricService.userMetric(post.createdBy);
         await this.metricService.countTags(post.tags);
-        break;
+        return;
       }
 
       case ControllerType.REPORT: {
         const reportRepository = this.reportService.reportRepository;
         await reportRepository.deleteAll(invocationCtx.args[1]);
-        break;
+        return;
       }
 
       case ControllerType.USEREXPERIENCE: {
@@ -244,7 +242,13 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         if (subscribedCount === 0 && userId === experienceCreator) {
           promises.push(expRepos.deleteById(experienceId));
         } else {
-          promises.push(expRepos.updateById(experienceId, {subscribedCount}));
+          const {count: clonedCount} = await userExpRepos.count({
+            clonedId: experienceId,
+          });
+          const trendCount = subscribedCount + clonedCount;
+          promises.push(
+            expRepos.updateById(experienceId, {subscribedCount, trendCount}),
+          );
         }
 
         // Update onTimeline for user
@@ -268,13 +272,12 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         }
 
         Promise.allSettled(promises) as Promise<AnyObject>;
-        break;
+        return;
       }
 
       case ControllerType.VOTE: {
-        await this.voteService.updateVoteCounter(invocationCtx.args[1]);
-
-        break;
+        if (!invocationCtx.args[1]) return;
+        return this.voteService.updateVoteCounter(invocationCtx.args[1]);
       }
     }
   }

@@ -605,12 +605,20 @@ export class CreateInterceptor implements Provider<Interceptor> {
         );
 
         if (clonedId) {
-          const {count: clonedCount} = await userExpRepos.count({
-            clonedId,
-          });
+          await userExpRepos.updateAll(
+            {clonedId},
+            {userId, experienceId: expId},
+          );
+
+          const [{count: clonedCount}, {count: subscribedCount}] =
+            await Promise.all([
+              userExpRepos.count({clonedId}),
+              userExpRepos.count({experienceId: clonedId, subscribed: true}),
+            ]);
+          const trendCount = clonedCount + subscribedCount;
+
           promises.push(
-            expRepos.updateById(clonedId, {clonedCount}),
-            userExpRepos.updateAll({clonedId}, {userId, experienceId: expId}),
+            expRepos.updateById(clonedId, {clonedCount, trendCount}),
           );
         }
 
@@ -640,13 +648,15 @@ export class CreateInterceptor implements Provider<Interceptor> {
           promises.push(userExpRepos.updateById(result.id, {subscribed}));
           Object.assign(result, {subscribed});
         } else {
-          const {count: subscribedCount} = await userExpRepos.count({
-            experienceId,
-            subscribed,
-          });
+          const [{count: subscribedCount}, {count: clonedCount}] =
+            await Promise.all([
+              userExpRepos.count({experienceId, subscribed}),
+              userExpRepos.count({clonedId: experienceId}),
+            ]);
+          const trendCount = subscribedCount + clonedCount;
 
           promises.push(
-            expRepos.updateById(experienceId, {subscribedCount}),
+            expRepos.updateById(experienceId, {subscribedCount, trendCount}),
             this.activityLogService.createLog(
               ActivityLogType.SUBSCRIBEEXPERIENCE,
               result.experienceId,
