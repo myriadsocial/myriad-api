@@ -22,7 +22,6 @@ export enum MethodType {
   RESTORE = 'restore',
   SEARCH = 'search',
   SELECTCURRENCY = 'selectCurrency',
-  SELECTEXPERIENCE = 'selectExperience',
   SIGNUP = 'signup',
   SUBSCRIBE = 'subscribe',
   TIMELINE = 'getTimeline',

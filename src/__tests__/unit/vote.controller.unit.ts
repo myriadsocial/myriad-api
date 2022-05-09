@@ -19,7 +19,7 @@ describe('VoteController', () => {
     it('successfully deletes existing items', async () => {
       const deleteById = voteRepository.stubs.deleteById;
       deleteById.resolves();
-      await controller.deleteById(aVoteWithId.id as string);
+      await controller.deleteById(aVoteWithId.id as string, {});
       sinon.assert.calledWith(deleteById, aVoteWithId.id);
     });
   });

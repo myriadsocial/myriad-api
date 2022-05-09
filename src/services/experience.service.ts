@@ -15,19 +15,23 @@ import {
 import {
   ExperiencePostRepository,
   ExperienceRepository,
+  UserExperienceRepository,
   UserRepository,
 } from '../repositories';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {FriendService} from './friend.service';
 import {omit} from 'lodash';
+import {HttpErrors} from '@loopback/rest';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class ExperienceService {
   constructor(
     @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
+    public experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
-    protected experiencePostRepository: ExperiencePostRepository,
+    public experiencePostRepository: ExperiencePostRepository,
+    @repository(UserExperienceRepository)
+    public userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @service(FriendService)
@@ -295,5 +299,63 @@ export class ExperienceService {
 
       return omit(userExperience, ['users']) as UserExperienceWithRelations;
     });
+  }
+
+  async validateSubscribeExperience(
+    userId: string,
+    experienceId: string,
+  ): Promise<number> {
+    // Check if user has been subscribed this experience
+    const subscribed = await this.userExperienceRepository.findOne({
+      where: {userId, experienceId, subscribed: true},
+    });
+
+    if (subscribed)
+      throw new HttpErrors.UnprocessableEntity(
+        'You already subscribed this experience!',
+      );
+
+    return this.validateNumberOfUserExperience(userId);
+  }
+
+  async validateNumberOfUserExperience(userId: string): Promise<number> {
+    // Check if user has experiences less than equal 10
+    const {count} = await this.userExperienceRepository.count({userId});
+
+    if (count >= 10)
+      throw new HttpErrors.UnprocessableEntity(
+        'Experience must not exceed 10 experiences',
+      );
+
+    return count;
+  }
+
+  async validateUpdateExperience(
+    userId: string,
+    experienceId: string,
+  ): Promise<void> {
+    const userExperience = await this.userExperienceRepository.findOne({
+      where: {
+        userId,
+        experienceId,
+      },
+      include: ['experience'],
+    });
+
+    if (!userExperience)
+      throw new HttpErrors.UnprocessableEntity('Experience not found');
+
+    if (userExperience.subscribed)
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot update other user experience',
+      );
+
+    if (
+      userExperience.experience &&
+      userExperience.experience.createdBy !== userId
+    )
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot update other user experience',
+      );
   }
 }

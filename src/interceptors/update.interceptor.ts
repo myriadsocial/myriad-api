@@ -14,24 +14,29 @@ import {
   MethodType,
   PlatformType,
   ReferenceType,
+  ReportStatusType,
 } from '../enums';
 import {AnyObject, repository} from '@loopback/repository';
 import {
   CurrencyRepository,
   ExperienceRepository,
+  ExperienceUserRepository,
   NetworkRepository,
+  ReportRepository,
   UserExperienceRepository,
   UserRepository,
   WalletRepository,
 } from '../repositories';
 import {HttpErrors} from '@loopback/rest';
-import {Credential, Post, User, Wallet} from '../models';
+import {Credential, People, Post, User, Wallet} from '../models';
 import {
   ActivityLogService,
   CurrencyService,
+  ExperienceService,
   FriendService,
   MetricService,
   NotificationService,
+  ReportService,
 } from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import {validateAccount} from '../utils/validate-account';
@@ -54,6 +59,10 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected currencyRepository: CurrencyRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
+    @repository(ExperienceUserRepository)
+    protected experienceUserRepository: ExperienceUserRepository,
+    @repository(ReportRepository)
+    protected reportRepository: ReportRepository,
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
@@ -64,6 +73,8 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected networkRepository: NetworkRepository,
     @service(ActivityLogService)
     protected activityLogService: ActivityLogService,
+    @service(ExperienceService)
+    protected experienceService: ExperienceService,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
     @service(FriendService)
@@ -72,6 +83,8 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected metricService: MetricService,
     @service(NotificationService)
     protected notificationService: NotificationService,
+    @service(ReportService)
+    protected reportService: ReportService,
   ) {}
 
   /**
@@ -207,6 +220,22 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.REPORT: {
+        const [reportId, report] = invocationCtx.args;
+        const {referenceId, referenceType} =
+          await this.reportRepository.findById(reportId);
+
+        if (report.status === ReportStatusType.REMOVED) {
+          await this.reportService.updateReport(
+            referenceId,
+            referenceType,
+            false,
+          );
+        }
+
+        break;
+      }
+
       case ControllerType.USERCURRENCY: {
         const {networkId, currencyIds} = invocationCtx.args[0];
         const [{count: countCurrency}, {count: countCurrencyNetwork}] =
@@ -226,22 +255,26 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USEREXPERIENCE: {
-        if (methodName === MethodType.SELECTEXPERIENCE) {
-          const userId = invocationCtx.args[0];
-          const experienceId = invocationCtx.args[1];
+        const [userId, experienceId, experience] = invocationCtx.args;
+        const rawPeople = experience.people as People[];
 
-          await this.experienceRepository.findById(experienceId);
-
-          const userExperience = await this.userExperienceRepository.findOne({
-            where: {userId, experienceId},
-          });
-
-          if (!userExperience) {
-            throw new HttpErrors.UnprocessableEntity(
-              "You don't have this experience",
-            );
-          }
+        if (rawPeople.length === 0) {
+          throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
         }
+
+        await Promise.all([
+          this.experienceService.validateUpdateExperience(userId, experienceId),
+          this.experienceUserRepository.deleteAll({experienceId}),
+        ]);
+
+        const people = rawPeople.filter(
+          e => e.platform !== PlatformType.MYRIAD,
+        );
+        invocationCtx.args[3] = rawPeople.filter(
+          e => e.platform === PlatformType.MYRIAD,
+        );
+
+        Object.assign(invocationCtx.args[2], {people});
 
         break;
       }
@@ -296,6 +329,23 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         await this.notificationService.sendFriendAccept(requestorId);
         await this.metricService.userMetric(requestorId);
         await this.metricService.userMetric(requesteeId);
+        break;
+      }
+
+      case ControllerType.USEREXPERIENCE: {
+        const [userId, experienceId] = invocationCtx.args;
+        const users = invocationCtx.args[3] ?? [];
+        if (users.length > 0) {
+          Promise.allSettled([
+            this.metricService.userMetric(userId),
+            ...users.map((user: User) => {
+              return this.experienceUserRepository.create({
+                userId: user.id,
+                experienceId,
+              });
+            }),
+          ]) as Promise<AnyObject>;
+        }
         break;
       }
 

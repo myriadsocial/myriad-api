@@ -17,7 +17,6 @@ import {
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
-import {ValidatePostImportURL} from '../interceptors/validate-post-import-url.interceptor';
 import {DraftPost, Post, User} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {PostService} from '../services';
@@ -49,7 +48,7 @@ export class PostController {
     return this.postService.createDraftPost(draftPost);
   }
 
-  @intercept(ValidatePostImportURL.BINDING_KEY)
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/posts/import')
   @response(200, {
     description: 'Post',

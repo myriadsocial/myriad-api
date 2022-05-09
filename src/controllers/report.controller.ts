@@ -16,8 +16,11 @@ import {
 import {Report} from '../models';
 import {ReportRepository} from '../repositories';
 import {intercept} from '@loopback/context';
-import {PaginationInterceptor} from '../interceptors';
-import {ReportInterceptor} from '../interceptors/report.interceptor';
+import {
+  DeleteInterceptor,
+  PaginationInterceptor,
+  UpdateInterceptor,
+} from '../interceptors';
 import {service} from '@loopback/core';
 import {NotificationService} from '../services';
 import {authenticate} from '@loopback/authentication';
@@ -82,7 +85,7 @@ export class ReportController {
     return this.reportRepository.findById(id, filter);
   }
 
-  @intercept(ReportInterceptor.BINDING_KEY)
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/reports/{id}')
   @response(204, {
     description: 'Report PATCH success',
@@ -108,7 +111,7 @@ export class ReportController {
     ]);
   }
 
-  @intercept(ReportInterceptor.BINDING_KEY)
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/reports/{id}')
   @response(204, {
     description: 'Report DELETE success',

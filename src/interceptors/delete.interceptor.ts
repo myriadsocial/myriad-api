@@ -15,7 +15,10 @@ import {ControllerType, ReferenceType, SectionType} from '../enums';
 import {
   CommentLinkRepository,
   CommentRepository,
+  ExperienceRepository,
   PostRepository,
+  UserExperienceRepository,
+  UserRepository,
   VoteRepository,
   WalletRepository,
 } from '../repositories';
@@ -23,6 +26,7 @@ import {
   FriendService,
   MetricService,
   NotificationService,
+  ReportService,
   VoteService,
 } from '../services';
 import {CommentWithRelations} from '../models';
@@ -42,8 +46,14 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     protected commentRepository: CommentRepository,
     @repository(CommentLinkRepository)
     protected commentLinkRepository: CommentLinkRepository,
+    @repository(ExperienceRepository)
+    protected experienceRepository: ExperienceRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
+    @repository(UserRepository)
+    protected userRepository: UserRepository,
+    @repository(UserExperienceRepository)
+    protected userExperienceRepository: UserExperienceRepository,
     @repository(VoteRepository)
     protected voteRepository: VoteRepository,
     @repository(WalletRepository)
@@ -52,6 +62,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     protected friendService: FriendService,
     @service(MetricService)
     protected metricService: MetricService,
+    @service(ReportService)
+    protected reportService: ReportService,
     @service(NotificationService)
     protected notificationService: NotificationService,
     @service(VoteService)
@@ -81,15 +93,10 @@ export class DeleteInterceptor implements Provider<Interceptor> {
   ) {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
 
-    try {
-      await this.beforeDelete(invocationCtx);
-      await next();
-      await this.afterDelete(invocationCtx);
-      if (controllerName === ControllerType.COMMENT)
-        return invocationCtx.args[1];
-    } catch {
-      // ignore
-    }
+    await this.beforeDelete(invocationCtx);
+    await next();
+    await this.afterDelete(invocationCtx);
+    if (controllerName === ControllerType.COMMENT) return invocationCtx.args[1];
   }
 
   async beforeDelete(invocationCtx: InvocationContext): Promise<void> {
@@ -98,6 +105,15 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       case ControllerType.FRIEND: {
         await this.friendService.removedFriend(invocationCtx.args[1]);
+        break;
+      }
+
+      case ControllerType.REPORT: {
+        const id = invocationCtx.args[0];
+        const reportRepos = this.reportService.reportRepository;
+        const {referenceId, referenceType} = await reportRepos.findById(id);
+        await this.reportService.updateReport(referenceId, referenceType, true);
+        invocationCtx.args[1] = {referenceId, referenceType};
         break;
       }
 
@@ -172,8 +188,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
           deleteByUser: true,
           post: post,
         };
-
-        break;
+        return;
       }
 
       case ControllerType.EXPERIENCEPOST: {
@@ -181,10 +196,9 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         const {id, experienceIndex} = await this.postRepository.findById(
           postId,
         );
-        await this.postRepository.updateById(id, {
+        return this.postRepository.updateById(id, {
           experienceIndex: omit(experienceIndex, [experienceId]),
         });
-        break;
       }
 
       case ControllerType.FRIEND: {
@@ -195,7 +209,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         );
         await this.metricService.userMetric(requesteeId);
         await this.metricService.userMetric(requestorId);
-        break;
+        return;
       }
 
       case ControllerType.POST: {
@@ -203,13 +217,67 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         await this.commentRepository.deleteAll({postId: id});
         await this.metricService.userMetric(post.createdBy);
         await this.metricService.countTags(post.tags);
-        break;
+        return;
+      }
+
+      case ControllerType.REPORT: {
+        const reportRepository = this.reportService.reportRepository;
+        await reportRepository.deleteAll(invocationCtx.args[1]);
+        return;
+      }
+
+      case ControllerType.USEREXPERIENCE: {
+        // Update experience subscribed count
+        // Removing experience when subscribed count zero
+        const promises: Promise<void>[] = [];
+        const expRepos = this.experienceRepository;
+        const userRepos = this.userRepository;
+        const userExpRepos = this.userExperienceRepository;
+        const {userId, experienceId, experienceCreator} = invocationCtx.args[3];
+        const {count: subscribedCount} = await userExpRepos.count({
+          experienceId,
+          subscribed: true,
+        });
+
+        if (subscribedCount === 0 && userId === experienceCreator) {
+          promises.push(expRepos.deleteById(experienceId));
+        } else {
+          const {count: clonedCount} = await userExpRepos.count({
+            clonedId: experienceId,
+          });
+          const trendCount = subscribedCount + clonedCount;
+          promises.push(
+            expRepos.updateById(experienceId, {subscribedCount, trendCount}),
+          );
+        }
+
+        // Update onTimeline for user
+        const {count: countUserExperience} = await userExpRepos.count({userId});
+
+        if (countUserExperience === 0) {
+          promises.push(userRepos.updateById(userId, {onTimeline: undefined}));
+        } else {
+          const user = await userRepos.findOne({where: {id: userId}});
+
+          if (experienceId === user?.onTimeline?.toString()) {
+            const userExperience = await userExpRepos.findOne({
+              where: {userId},
+            });
+
+            if (userExperience) {
+              const onTimeline = userExperience.experienceId;
+              promises.push(userRepos.updateById(userId, {onTimeline}));
+            }
+          }
+        }
+
+        Promise.allSettled(promises) as Promise<AnyObject>;
+        return;
       }
 
       case ControllerType.VOTE: {
-        await this.voteService.updateVoteCounter(invocationCtx.args[1]);
-
-        break;
+        if (!invocationCtx.args[1]) return;
+        return this.voteService.updateVoteCounter(invocationCtx.args[1]);
       }
     }
   }

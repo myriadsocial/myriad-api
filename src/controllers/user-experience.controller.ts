@@ -17,9 +17,11 @@ import {
   response,
 } from '@loopback/rest';
 import {
-  ExperienceInterceptor,
+  CreateInterceptor,
+  DeleteInterceptor,
   FindByIdInterceptor,
   PaginationInterceptor,
+  UpdateInterceptor,
 } from '../interceptors';
 import {Experience, UserExperience} from '../models';
 import {UserExperienceRepository, UserRepository} from '../repositories';
@@ -77,7 +79,7 @@ export class UserExperienceController {
     return this.userExperienceRepository.findById(id, filter);
   }
 
-  @intercept(ExperienceInterceptor.BINDING_KEY)
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/users/{userId}/subscribe/{experienceId}', {
     responses: {
       '200': {
@@ -102,7 +104,7 @@ export class UserExperienceController {
   }
 
   // Create new experience
-  @intercept(ExperienceInterceptor.BINDING_KEY)
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/users/{id}/experiences', {
     responses: {
       '200': {
@@ -129,7 +131,7 @@ export class UserExperienceController {
     return this.userRepository.experiences(id).create(experience);
   }
 
-  @intercept(ExperienceInterceptor.BINDING_KEY)
+  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/users/{userId}/experiences/{experienceId}', {
     responses: {
       '204': {
@@ -155,7 +157,7 @@ export class UserExperienceController {
       .patch(experience, {id: experienceId});
   }
 
-  @intercept(ExperienceInterceptor.BINDING_KEY)
+  @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/user-experiences/{id}', {
     responses: {
       '200': {
