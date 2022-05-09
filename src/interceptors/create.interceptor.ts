@@ -16,17 +16,22 @@ import {
   PostStatus,
   ActivityLogType,
   FriendStatusType,
+  PlatformType,
+  MethodType,
+  VisibilityType,
 } from '../enums';
 import {
   Comment,
   Credential,
   DraftPost,
+  Experience,
   Friend,
   Transaction,
+  User,
   Wallet,
 } from '../models';
 import {
-  ExperiencePostRepository,
+  ExperienceUserRepository,
   NetworkRepository,
   ReportRepository,
   UserReportRepository,
@@ -36,15 +41,22 @@ import {
 import {
   ActivityLogService,
   CurrencyService,
+  ExperienceService,
   FriendService,
   MetricService,
   NetworkService,
   NotificationService,
   PostService,
+  SocialMediaService,
   TagService,
   VoteService,
 } from '../services';
 import {validateAccount} from '../utils/validate-account';
+import {intersection} from 'lodash';
+import {formatTag} from '../utils/format-tag';
+import {PlatformPost} from '../models/platform-post.model';
+import {ExtendedPost} from '../interfaces';
+import {UrlUtils} from '../utils/url.utils';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -55,14 +67,14 @@ export class CreateInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${CreateInterceptor.name}`;
 
   constructor(
+    @repository(ExperienceUserRepository)
+    protected experienceUserRepository: ExperienceUserRepository,
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
-    @repository(ExperiencePostRepository)
-    protected experiencePostRepository: ExperiencePostRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @repository(NetworkRepository)
@@ -71,6 +83,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected metricService: MetricService,
     @service(CurrencyService)
     protected currencyService: CurrencyService,
+    @service(ExperienceService)
+    protected experienceService: ExperienceService,
     @service(TagService)
     protected tagService: TagService,
     @service(NotificationService)
@@ -85,6 +99,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected postService: PostService,
     @service(NetworkService)
     protected networkService: NetworkService,
+    @service(SocialMediaService)
+    protected socialMediaService: SocialMediaService,
   ) {}
 
   /**
@@ -204,7 +220,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
         const [experienceId, postId] = invocationCtx.args;
         const [post, experience] = await Promise.all([
           this.postService.postRepository.findById(postId),
-          this.experiencePostRepository.findOne({
+          this.experienceService.experiencePostRepository.findOne({
             where: {postId, experienceId},
           }),
         ]);
@@ -220,6 +236,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
         });
 
         break;
+      }
+
+      case ControllerType.USEREXPERIENCE: {
+        return this.beforeHandleExperience(invocationCtx);
       }
 
       case ControllerType.USERWALLET: {
@@ -286,6 +306,24 @@ export class CreateInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.POST: {
+        if (invocationCtx.methodName !== MethodType.IMPORT) return;
+        const urlUtils = new UrlUtils(invocationCtx.args[0].url);
+        const platform = urlUtils.getPlatform();
+        const originPostId = urlUtils.getOriginPostId();
+        const username = urlUtils.getUsername();
+        const platformPost = Object.assign(invocationCtx.args[0], {
+          url: [platform, originPostId, username].join(','),
+        });
+
+        await this.postService.validateImportedPost(platformPost);
+
+        const rawPost = await this.getSocialMediaPost(platformPost);
+
+        invocationCtx.args[0].rawPost = rawPost;
+        return;
+      }
+
       default:
         return;
     }
@@ -315,23 +353,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.POST: {
-        if (result.status === PostStatus.PUBLISHED) {
-          result = await this.postService.createPublishPost(
-            result as DraftPost,
-          );
-
-          Promise.allSettled([
-            this.tagService.createTags(result.tags),
-            this.createNotification(controllerName, result),
-            this.metricService.userMetric(result.createdBy),
-            this.activityLogService.createLog(
-              ActivityLogType.CREATEPOST,
-              result.createdBy,
-              ReferenceType.POST,
-            ),
-          ]) as Promise<AnyObject>;
-        }
-        return result;
+        return this.afterHandlePost(invocationCtx, result);
       }
 
       case ControllerType.COMMENT: {
@@ -375,6 +397,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
         });
 
         return result;
+      }
+
+      case ControllerType.USEREXPERIENCE: {
+        return this.afterHandleExperience(invocationCtx, result);
       }
 
       case ControllerType.USERWALLET: {
@@ -457,6 +483,288 @@ export class CreateInterceptor implements Provider<Interceptor> {
       default:
         return result;
     }
+  }
+
+  async beforeHandleExperience(
+    invocationCtx: InvocationContext,
+  ): Promise<void> {
+    const data: AnyObject = {};
+    const expService = this.experienceService;
+    const methodName = invocationCtx.methodName;
+
+    switch (methodName) {
+      case MethodType.CREATE: {
+        const [userId, experience] = invocationCtx.args as [string, Experience];
+        const tagExperience = experience.allowedTags.filter(e => e !== '');
+        const prohibitedTags = experience.prohibitedTags;
+        const intersectionTags = intersection(tagExperience, prohibitedTags);
+        const expPeople = experience.people.filter(e => {
+          if (
+            e.id === '' ||
+            e.name === '' ||
+            e.username === '' ||
+            !e.platform
+          ) {
+            return false;
+          }
+
+          const platforms = [
+            PlatformType.MYRIAD,
+            PlatformType.REDDIT,
+            PlatformType.TWITTER,
+          ];
+
+          if (platforms.includes(e.platform)) return true;
+          return false;
+        });
+        if (expPeople.length === 0) {
+          throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
+        }
+        if (tagExperience.length === 0) {
+          throw new HttpErrors.UnprocessableEntity('Tags cannot be empty!');
+        }
+        if (intersectionTags.length > 0) {
+          throw new HttpErrors.UnprocessableEntity(
+            'You cannot insert same hashtag in allowed and prohibited tags',
+          );
+        }
+
+        data.users = expPeople.filter(e => e.platform === PlatformType.MYRIAD);
+        data.totalExp = await expService.validateNumberOfUserExperience(userId);
+
+        Object.assign(invocationCtx.args[1], {
+          createdBy: userId,
+          people: expPeople.filter(e => e.platform !== PlatformType.MYRIAD),
+          allowedTags: tagExperience.map(tag => formatTag(tag)),
+        });
+        break;
+      }
+
+      case MethodType.SUBSCRIBE: {
+        const [userId, experienceId] = invocationCtx.args as [string, string];
+        const userExpRepos = expService.userExperienceRepository;
+        const userExperience = await userExpRepos.findOne({
+          where: {userId, experienceId},
+          include: ['experience'],
+        });
+
+        const experienceCreator = userExperience?.experience?.createdBy;
+        if (userExperience && userId === experienceCreator) {
+          throw new HttpErrors.UnprocessableEntity(
+            'You already belong this experience!',
+          );
+        }
+
+        if (userId === experienceCreator) data.isBelongToUser = true;
+
+        data.totalExp = await expService.validateSubscribeExperience(
+          userId,
+          experienceId,
+        );
+        break;
+      }
+
+      default:
+        throw new HttpErrors.UnprocessableEntity('Unknown method');
+    }
+
+    invocationCtx.args[3] = data;
+  }
+
+  async afterHandleExperience(
+    invocationCtx: InvocationContext,
+    result: AnyObject,
+  ): Promise<AnyObject> {
+    const userId = invocationCtx.args[0];
+    const {users, totalExp, isBelongToUser} = invocationCtx.args[3];
+    const userRepos = this.userRepository;
+    const expRepos = this.experienceService.experienceRepository;
+    const expUserRepos = this.experienceUserRepository;
+    const userExpRepos = this.experienceService.userExperienceRepository;
+    const methodName = invocationCtx.methodName;
+    const promises: Promise<AnyObject | void>[] = [
+      this.metricService.userMetric(userId),
+    ];
+
+    switch (methodName) {
+      case MethodType.CREATE: {
+        const createdExperience = result as Experience;
+        const allowedTags = createdExperience.allowedTags;
+        const prohibitedTags = createdExperience.prohibitedTags;
+        const tags = [...allowedTags, ...prohibitedTags];
+        const clonedId = invocationCtx.args[2];
+        const expId = result.id.toString();
+
+        promises.push(
+          this.tagService.createTags(tags, true),
+          this.activityLogService.createLog(
+            ActivityLogType.CREATEEXPERIENCE,
+            result.id,
+            ReferenceType.EXPERIENCE,
+          ),
+        );
+
+        if (clonedId) {
+          const {count: clonedCount} = await userExpRepos.count({
+            clonedId,
+          });
+          promises.push(
+            expRepos.updateById(clonedId, {clonedCount}),
+            userExpRepos.updateAll({clonedId}, {userId, experienceId: expId}),
+          );
+        }
+
+        if (totalExp === 0) {
+          promises.push(userRepos.updateById(userId, {onTimeline: expId}));
+        }
+
+        if (users.length > 0) {
+          users.forEach((user: User) => {
+            promises.push(
+              expUserRepos.create({userId: user.id, experienceId: expId}),
+            );
+          });
+        }
+        break;
+      }
+
+      case MethodType.SUBSCRIBE: {
+        const experienceId = invocationCtx.args[1];
+        if (totalExp === 0) {
+          const onTimeline = result.experienceId;
+          promises.push(userRepos.updateById(userId, {onTimeline}));
+        }
+
+        const subscribed = !isBelongToUser;
+        if (isBelongToUser) {
+          promises.push(userExpRepos.updateById(result.id, {subscribed}));
+          Object.assign(result, {subscribed});
+        } else {
+          const {count: subscribedCount} = await userExpRepos.count({
+            experienceId,
+            subscribed,
+          });
+
+          promises.push(
+            expRepos.updateById(experienceId, {subscribedCount}),
+            this.activityLogService.createLog(
+              ActivityLogType.SUBSCRIBEEXPERIENCE,
+              result.experienceId,
+              ReferenceType.EXPERIENCE,
+            ),
+          );
+        }
+
+        break;
+      }
+
+      default:
+        throw new HttpErrors.UnprocessableEntity('Unknown method');
+    }
+
+    Promise.allSettled(promises) as Promise<AnyObject>;
+
+    return result;
+  }
+
+  async afterHandlePost(
+    invocationCtx: InvocationContext,
+    result: AnyObject,
+  ): Promise<AnyObject> {
+    const controllerName = invocationCtx.targetClass.name as ControllerType;
+    const methodName = invocationCtx.methodName;
+
+    switch (methodName) {
+      case MethodType.CREATE: {
+        if (result.status === PostStatus.PUBLISHED) {
+          result = await this.postService.createPublishPost(
+            result as DraftPost,
+          );
+
+          Promise.allSettled([
+            this.tagService.createTags(result.tags),
+            this.createNotification(controllerName, result),
+            this.metricService.userMetric(result.createdBy),
+            this.activityLogService.createLog(
+              ActivityLogType.CREATEPOST,
+              result.createdBy,
+              ReferenceType.POST,
+            ),
+          ]) as Promise<AnyObject>;
+        }
+        return result;
+      }
+
+      case MethodType.IMPORT: {
+        const importer = invocationCtx.args[0].importer;
+        const [user, {count}] = await Promise.all([
+          this.userRepository.findOne({where: {id: importer}}),
+          this.postService.postRepository.count({
+            originPostId: result.originPostId,
+            platform: result.platform,
+            banned: false,
+            deletedAt: {exists: false},
+          }),
+        ]);
+
+        Promise.allSettled([
+          this.tagService.createTags(result.tags),
+          this.activityLogService.createLog(
+            ActivityLogType.IMPORTPOST,
+            result.createdBy,
+            result.id,
+          ),
+        ]) as Promise<AnyObject>;
+
+        return {
+          ...result,
+          importers: user ? [Object.assign(user, {name: 'You'})] : [],
+          totalImporter: count,
+        };
+      }
+
+      default:
+        throw new HttpErrors.UnprocessableEntity('Invalid method');
+    }
+  }
+
+  async getSocialMediaPost(platformPost: PlatformPost): Promise<ExtendedPost> {
+    const [platform, originPostId] = platformPost.url.split(',');
+
+    let rawPost = null;
+    switch (platform) {
+      case PlatformType.TWITTER:
+        rawPost = await this.socialMediaService.fetchTweet(originPostId);
+        break;
+
+      case PlatformType.REDDIT:
+        rawPost = await this.socialMediaService.fetchRedditPost(originPostId);
+        break;
+
+      default:
+        throw new HttpErrors.NotFound('Cannot find the platform!');
+    }
+
+    if (!rawPost)
+      throw new HttpErrors.NotFound('Cannot find the specified post');
+    rawPost.visibility = platformPost.visibility ?? VisibilityType.PUBLIC;
+    rawPost.tags = this.getImportedTags(rawPost.tags, platformPost.tags ?? []);
+    rawPost.createdBy = platformPost.importer;
+    rawPost.isNSFW = Boolean(platformPost.NSFWTag);
+    rawPost.NSFWTag = platformPost.NSFWTag;
+
+    return rawPost;
+  }
+
+  getImportedTags(socialTags: string[], importedTags: string[]): string[] {
+    if (!socialTags) socialTags = [];
+    if (!importedTags) importedTags = [];
+
+    const postTags = [...socialTags, ...importedTags]
+      .map(tag => formatTag(tag))
+      .filter(tag => Boolean(tag));
+
+    return [...new Set(postTags)];
   }
 
   async createNotification(

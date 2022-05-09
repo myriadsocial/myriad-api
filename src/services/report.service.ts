@@ -1,20 +1,6 @@
-import {
-  /* inject, */
-  injectable,
-  Interceptor,
-  InvocationContext,
-  InvocationResult,
-  Provider,
-  service,
-  ValueOrPromise,
-} from '@loopback/core';
+import {BindingScope, injectable, service} from '@loopback/core';
 import {AnyObject, Count, repository} from '@loopback/repository';
-import {
-  MethodType,
-  PlatformType,
-  ReferenceType,
-  ReportStatusType,
-} from '../enums';
+import {PlatformType, ReferenceType} from '../enums';
 import {
   CommentRepository,
   ExperienceRepository,
@@ -27,87 +13,34 @@ import {
   UserRepository,
   UserSocialMediaRepository,
 } from '../repositories';
-import {MetricService} from '../services';
+import {MetricService} from './metric.service';
 
-/**
- * This class will be bound to the application as an `Interceptor` during
- * `boot`
- */
-@injectable({tags: {key: ReportInterceptor.BINDING_KEY}})
-export class ReportInterceptor implements Provider<Interceptor> {
-  static readonly BINDING_KEY = `interceptors.${ReportInterceptor.name}`;
-
+@injectable({scope: BindingScope.TRANSIENT})
+export class ReportService {
   constructor(
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
-    @repository(PostRepository)
-    protected postRepository: PostRepository,
-    @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
-    @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
     @repository(ReportRepository)
-    protected reportRepository: ReportRepository,
+    public reportRepository: ReportRepository,
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
+    @repository(ExperienceRepository)
+    protected experienceRepository: ExperienceRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
+    @repository(PeopleRepository)
+    protected peopleRepository: PeopleRepository,
+    @repository(PostRepository)
+    protected postRepository: PostRepository,
+    @repository(UserExperienceRepository)
+    protected userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(UserReportRepository)
     protected userReportRepository: UserReportRepository,
-    @repository(UserExperienceRepository)
-    protected userExperienceRepository: UserExperienceRepository,
     @repository(UserSocialMediaRepository)
     protected userSocialMediaRepository: UserSocialMediaRepository,
     @service(MetricService)
     protected metricService: MetricService,
   ) {}
-
-  /**
-   * This method is used by LoopBack context to produce an interceptor function
-   * for the binding.
-   *
-   * @returns An interceptor function
-   */
-  value() {
-    return this.intercept.bind(this);
-  }
-
-  /**
-   * The logic to intercept an invocation
-   * @param invocationCtx - Invocation context
-   * @param next - A function to invoke next interceptor or the target method
-   */
-  async intercept(
-    invocationCtx: InvocationContext,
-    next: () => ValueOrPromise<InvocationResult>,
-  ) {
-    const [reportId, report] = invocationCtx.args;
-    const methodName = invocationCtx.methodName as MethodType;
-    const {referenceId, referenceType} = await this.reportRepository.findById(
-      reportId,
-    );
-
-    let updated = true;
-    let restored = true;
-
-    if (methodName === MethodType.UPDATEBYID) {
-      if (report.status === ReportStatusType.REMOVED) restored = false;
-      else updated = false;
-    }
-
-    if (updated) await this.updateReport(referenceId, referenceType, restored);
-
-    const result = await next();
-
-    if (methodName === MethodType.RESTORE) {
-      await this.reportRepository.deleteAll({
-        referenceId,
-        referenceType,
-      });
-    }
-
-    return result;
-  }
 
   async updateReport(
     referenceId: string,

@@ -111,7 +111,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case MethodType.READNOTIFICATION:
       case MethodType.READMULTIPLENOTIFICATION:
       case MethodType.SELECTCURRENCY:
-      case MethodType.SELECTEXPERIENCE:
       case MethodType.UPDATEEXPERIENCE:
       case MethodType.UPDATEPRIMARY:
       case MethodType.DELETEBYID:
@@ -247,7 +246,15 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.USEREXPERIENCE: {
         if (methodName !== MethodType.DELETEBYID) userId = data;
         else {
-          ({userId} = await this.userExperienceRepository.findById(data));
+          const userExp = await this.userExperienceRepository.findById(data, {
+            include: ['experience'],
+          });
+          userId = userExp.userId;
+          invocationCtx.args[3] = {
+            userId,
+            experienceId: userExp.experienceId,
+            experienceCreator: userExp.experience?.createdBy ?? '',
+          };
         }
         break;
       }

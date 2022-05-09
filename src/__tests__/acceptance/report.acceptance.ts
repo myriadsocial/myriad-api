@@ -26,7 +26,7 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('ReportApplication', function () {
-  this.timeout(20000);
+  this.timeout(50000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -154,6 +154,7 @@ describe('ReportApplication', function () {
       await client
         .del(`/reports/99999`)
         .set('Authorization', `Bearer ${token}`)
+        .send()
         .expect(404);
     });
   });

@@ -23,6 +23,7 @@ import {
   MetricService,
   NotificationService,
   PostService,
+  ReportService,
   SocialMediaService,
   TagService,
   TransactionService,
@@ -173,6 +174,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(TransactionService);
     this.service(SocialMediaService);
     this.service(CurrencyService);
+    this.service(ReportService);
     this.service(PostService);
     this.service(TagService);
     this.service(ExperienceService);
