@@ -99,6 +99,12 @@ export class Experience extends Entity {
   clonedCount: number;
 
   @property({
+    type: 'number',
+    default: 0,
+  })
+  trendCount: number;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
