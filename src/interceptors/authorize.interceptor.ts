@@ -280,7 +280,13 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         if (typeof data === 'object') {
           userId = data.userId;
         } else {
-          ({userId} = await this.voteRepository.findById(data));
+          const [result] = await Promise.allSettled([
+            this.voteRepository.findById(data),
+          ]);
+          const vote = result.status === 'fulfilled' ? result.value : undefined;
+
+          userId = vote?.userId ?? this.currentUser[securityId];
+          invocationCtx.args[1] = vote ?? undefined;
         }
         break;
       }
