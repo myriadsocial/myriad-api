@@ -1,9 +1,10 @@
 import {inject} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {get, HttpErrors, param, response} from '@loopback/rest';
-import {PlatformType, ReferenceType, WalletType} from '../enums';
+import {PlatformType, ReferenceType} from '../enums';
 import {
   CommentRepository,
+  NetworkRepository,
   PostRepository,
   UserRepository,
   WalletRepository,
@@ -21,6 +22,8 @@ export class WalletAddressController {
     protected postRepository: PostRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -52,19 +55,8 @@ export class WalletAddressController {
   async getPostWalletAddress(
     @param.path.string('id') id: string,
   ): Promise<AnyObject> {
-    const wallet = await this.walletRepository.findOne({
-      where: {
-        userId: this.currentUser[securityId],
-        primary: true,
-      },
-    });
-
-    if (!wallet) {
-      throw new HttpErrors.NotFound('Wallet not exists');
-    }
-
-    const {type, networkId} = wallet;
-
+    const {networkId, blockchainPlatform, networkIds} =
+      await this.getCurrentUserNetwork();
     const post = await this.postRepository.findById(id, {
       include: [
         {
@@ -86,7 +78,7 @@ export class WalletAddressController {
       const toWalletPost = await this.walletRepository.findOne({
         where: {
           userId: post.createdBy,
-          type: type,
+          networkId: {inq: networkIds},
         },
       });
 
@@ -98,7 +90,7 @@ export class WalletAddressController {
       }
 
       return this.tipsBalanceInfo(
-        type,
+        blockchainPlatform,
         networkId,
         ReferenceType.USER,
         post.createdBy,
@@ -107,9 +99,8 @@ export class WalletAddressController {
 
     if (people.userSocialMedia) {
       const userId = people.userSocialMedia.userId;
-
       const toWalletUser = await this.walletRepository.findOne({
-        where: {userId, type},
+        where: {userId, networkId: {inq: networkIds}},
       });
 
       if (toWalletUser) {
@@ -119,11 +110,16 @@ export class WalletAddressController {
         };
       }
 
-      return this.tipsBalanceInfo(type, networkId, ReferenceType.USER, userId);
+      return this.tipsBalanceInfo(
+        blockchainPlatform,
+        networkId,
+        ReferenceType.USER,
+        userId,
+      );
     }
 
     return this.tipsBalanceInfo(
-      type,
+      blockchainPlatform,
       networkId,
       ReferenceType.PEOPLE,
       people.id,
@@ -155,19 +151,8 @@ export class WalletAddressController {
   async getCommentWalletAddress(
     @param.path.string('id') id: string,
   ): Promise<AnyObject> {
-    const wallet = await this.walletRepository.findOne({
-      where: {
-        userId: this.currentUser[securityId],
-        primary: true,
-      },
-    });
-
-    if (!wallet) {
-      throw new HttpErrors.NotFound('Wallet not exists');
-    }
-
-    const {type, networkId} = wallet;
-
+    const {networkId, blockchainPlatform, networkIds} =
+      await this.getCurrentUserNetwork();
     const comment = await this.commentRepository.findById(id, {
       include: [
         {
@@ -178,7 +163,7 @@ export class WalletAddressController {
                 relation: 'wallets',
                 scope: {
                   where: {
-                    type: type,
+                    networkId: {inq: networkIds},
                   },
                 },
               },
@@ -195,7 +180,12 @@ export class WalletAddressController {
       if (!user) {
         throw new HttpErrors.NotFound('User not found');
       }
-      return this.tipsBalanceInfo(type, networkId, ReferenceType.USER, user.id);
+      return this.tipsBalanceInfo(
+        blockchainPlatform,
+        networkId,
+        ReferenceType.USER,
+        user.id,
+      );
     }
 
     return {
@@ -229,20 +219,10 @@ export class WalletAddressController {
   async getUserWalletAddress(
     @param.path.string('id') id: string,
   ): Promise<AnyObject> {
-    const wallet = await this.walletRepository.findOne({
-      where: {
-        userId: this.currentUser[securityId],
-        primary: true,
-      },
-    });
-
-    if (!wallet) {
-      throw new HttpErrors.NotFound('Wallet not exists');
-    }
-
-    const {type, networkId} = wallet;
+    const {networkId, blockchainPlatform, networkIds} =
+      await this.getCurrentUserNetwork();
     const toWalletUser = await this.walletRepository.findOne({
-      where: {userId: id, type},
+      where: {userId: id, networkId: {inq: networkIds}},
     });
 
     if (toWalletUser) {
@@ -252,11 +232,42 @@ export class WalletAddressController {
       };
     }
 
-    return this.tipsBalanceInfo(type, networkId, ReferenceType.USER, id);
+    return this.tipsBalanceInfo(
+      blockchainPlatform,
+      networkId,
+      ReferenceType.USER,
+      id,
+    );
+  }
+
+  async getCurrentUserNetwork(): Promise<AnyObject> {
+    const wallet = await this.walletRepository.findOne({
+      where: {
+        userId: this.currentUser[securityId],
+        primary: true,
+      },
+      include: ['network'],
+    });
+
+    if (!wallet?.network) {
+      throw new HttpErrors.NotFound('Wallet not exists');
+    }
+
+    const {id: networkId, blockchainPlatform} = wallet.network;
+    const networks = await this.networkRepository.find({
+      where: {blockchainPlatform},
+    });
+    const networkIds = networks.map(network => network.id);
+
+    return {
+      networkId,
+      blockchainPlatform,
+      networkIds,
+    };
   }
 
   tipsBalanceInfo(
-    walletType: WalletType,
+    blockchainPlatform: string,
     networkType: string,
     referenceType: ReferenceType,
     referenceId: string,
@@ -270,8 +281,8 @@ export class WalletAddressController {
       referenceId: referenceId,
     };
 
-    switch (walletType) {
-      case WalletType.POLKADOT: {
+    switch (blockchainPlatform) {
+      case 'substrate': {
         if (networkType === 'myriad') {
           return tipsBalanceInfo;
         }
@@ -279,7 +290,7 @@ export class WalletAddressController {
         throw new HttpErrors.NotFound('Polkadot wallet not exists');
       }
 
-      case WalletType.NEAR:
+      case 'near':
         // TODO: implement near smartcontract
         // return tipsBalanceInfo
         throw new HttpErrors.NotFound('Near wallet not exists');

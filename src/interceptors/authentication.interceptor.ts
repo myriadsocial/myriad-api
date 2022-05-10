@@ -85,7 +85,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     if (methodName === MethodType.SIGNUP) {
       const {name, username, ...wallet} = invocationCtx.args[0] as UserWallet;
-      const {type, address, network} = wallet;
+      const {address, network} = wallet;
       const exist = await this.walletRepository.exists(address);
 
       if (exist)
@@ -115,7 +115,6 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       });
       invocationCtx.args[1] = new Wallet({
         id: address,
-        type,
         networkId: network,
         primary: true,
       });
@@ -126,21 +125,20 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     try {
       // Verify login process
       const credential = invocationCtx.args[0] as Credential;
-      const {nonce, walletType, networkType} = credential;
+      const {nonce, networkType} = credential;
       const [publicAddress, nearAccount] = credential.publicAddress.split('/');
 
       if (nonce === 0 || !nonce) throw new Error('Invalid nonce!');
 
-      const exists = await this.networkRepository.exists(networkType);
-
-      if (!exists) {
-        throw new HttpErrors.UnprocessableEntity('Network not exists');
-      }
-
+      const currentNetwork = await this.networkRepository.findById(networkType);
+      const networks = await this.networkRepository.find({
+        where: {blockchainPlatform: currentNetwork.blockchainPlatform},
+      });
+      const networkIds = networks.map(network => network.id);
       const wallet = await this.walletRepository.findOne({
         where: {
           id: nearAccount ?? publicAddress,
-          type: walletType,
+          networkId: {inq: networkIds},
         },
         include: ['user'],
       });
@@ -212,7 +210,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         this.userRepository.notificationSetting(result.id).create({}),
         this.userRepository.languageSetting(result.id).create({}),
         this.userRepository.wallets(result.id).create(wallet),
-        this.currencyService.sendMyriadReward(wallet.id, wallet.type),
+        this.currencyService.sendMyriadReward(wallet.id, wallet.networkId),
         this.friendService.defaultFriend(result.id),
         this.activityLogRepository.create({
           type: ActivityLogType.NEWUSER,

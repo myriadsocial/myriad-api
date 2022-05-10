@@ -1,5 +1,4 @@
 import {Model, model, property} from '@loopback/repository';
-import {WalletType} from '../enums';
 
 @model()
 export class UserWallet extends Model {
@@ -29,15 +28,6 @@ export class UserWallet extends Model {
     required: true,
   })
   address: string;
-
-  @property({
-    type: 'string',
-    required: true,
-    jsonSchema: {
-      enum: Object.values(WalletType),
-    },
-  })
-  type: WalletType;
 
   @property({
     type: 'string',

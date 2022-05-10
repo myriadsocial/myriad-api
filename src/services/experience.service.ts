@@ -220,7 +220,7 @@ export class ExperienceService {
           privateUserExperience.private = true;
         }
 
-        return privateUserExperience;
+        return omit(privateUserExperience, ['clonedId']);
       }),
     );
   }

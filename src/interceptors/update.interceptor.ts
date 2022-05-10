@@ -281,17 +281,17 @@ export class UpdateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.USERNETWORK: {
         const [userId, credential] = invocationCtx.args;
-        const {networkType: networkId, walletType} = credential as Credential;
+        const {networkType: networkId} = credential as Credential;
         const [publicAddress, near] = credential.publicAddress.split('/');
-
-        await this.networkRepository.findById(networkId);
-
-        const wallet = await this.walletRepository.findOne({
-          where: {
-            type: walletType,
-            userId: userId,
-          },
-        });
+        const [_, wallet] = await Promise.all([
+          this.networkRepository.findById(networkId),
+          this.walletRepository.findOne({
+            where: {
+              id: near ?? publicAddress,
+              userId: userId,
+            },
+          }),
+        ]);
 
         if (!wallet) {
           throw new HttpErrors.UnprocessableEntity('Wallet not connected');
@@ -384,7 +384,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       );
     }
 
-    if (user.bannerImageUrl) {
+    if (user.bannerImageURL) {
       await this.activityLogService.createLog(
         ActivityLogType.UPLOADBANNER,
         userId,

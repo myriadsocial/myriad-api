@@ -12,17 +12,22 @@ import {UserProfile} from '@loopback/security';
 import {RefreshGrant, TokenObject} from '../interfaces';
 import {RefreshTokenServiceBindings, TokenServiceBindings} from '../keys';
 import {Credential, User, UserWallet} from '../models';
-import {UserRepository, WalletRepository} from '../repositories';
+import {
+  NetworkRepository,
+  UserRepository,
+  WalletRepository,
+} from '../repositories';
 import {RefreshtokenService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
 import {AuthenticationInterceptor} from '../interceptors';
 import {pick} from 'lodash';
-import {WalletType} from '../enums';
 
 export class AuthenticationController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
@@ -86,18 +91,19 @@ export class AuthenticationController {
   })
   async getNonceByUser(
     @param.path.string('id') id: string,
-    @param.query.string('walletType') walletType?: WalletType,
+    @param.query.string('platform') platform?: string,
   ): Promise<{nonce: number}> {
-    if (!walletType) {
+    if (!platform) {
       const {nonce} = await this.userRepository.findById(id);
       return {nonce};
     }
 
+    const networks = await this.networkRepository.find({
+      where: {blockchainPlatform: platform},
+    });
+    const networkIds = networks.map(network => network.id);
     const wallet = await this.walletRepository.findOne({
-      where: {
-        type: walletType,
-        userId: id,
-      },
+      where: {networkId: {inq: networkIds}, userId: id},
     });
 
     if (!wallet) return {nonce: 0};

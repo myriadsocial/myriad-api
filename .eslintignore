@@ -3,3 +3,7 @@ dist/
 node_modules/
 .eslintrc.js
 *.tsbuildinfo
+src/airdrop.ts
+src/index.ts
+src/migrate.ts
+src/openapi-spec.ts

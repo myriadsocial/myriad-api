@@ -244,7 +244,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.USERWALLET: {
         const [userId, credential] = invocationCtx.args;
-        const {data, walletType, networkType} = credential as Credential;
+        const {data, networkType} = credential as Credential;
+        const {id} = data;
 
         if (!data) {
           throw new HttpErrors.UnprocessableEntity('Data cannot be empty');
@@ -256,20 +257,18 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Network not exists');
         }
 
-        if (!data.id) {
+        if (!id) {
           throw new HttpErrors.UnprocessableEntity('Id must included');
         }
 
-        const walletExists = await this.walletRepository.exists(data.id);
+        const address = await this.walletRepository.exists(data.id);
 
-        if (walletExists)
-          throw new HttpErrors.UnprocessableEntity('Wallet Id already exist');
+        if (address) {
+          throw new HttpErrors.UnprocessableEntity('Address already exist');
+        }
 
         const wallet = await this.walletRepository.findOne({
-          where: {
-            type: walletType,
-            userId: userId,
-          },
+          where: {id, userId},
         });
 
         if (wallet) {
@@ -287,7 +286,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
           userId: userId,
           primary: false,
           networkId: networkType,
-          type: walletType,
         });
 
         break;
@@ -404,13 +402,12 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERWALLET: {
-        const {id, userId, networkId, type} = invocationCtx.args[1]
-          .data as Wallet;
+        const {id, userId, networkId} = invocationCtx.args[1].data as Wallet;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
         Promise.allSettled([
-          this.networkService.connectAccount(type, userId, id),
+          this.networkService.connectAccount(networkId, userId, id),
           this.currencyService.addUserCurrencies(userId, networkId),
           this.userRepository.updateById(userId, {nonce: newNonce}),
         ]) as Promise<AnyObject>;

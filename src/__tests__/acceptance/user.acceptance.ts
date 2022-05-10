@@ -189,7 +189,7 @@ describe('UserApplication', function () {
     it('queries users with a filter', async () => {
       const userInProgress = await givenUserInstance(userRepository, {
         username: 'husni',
-        bannerImageUrl: '',
+        bannerImageURL: '',
         fcmTokens: [],
       });
 

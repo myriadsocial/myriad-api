@@ -3,6 +3,7 @@ import {MyriadApiApplication} from '../../application';
 import {PlatformType, ReferenceType} from '../../enums';
 import {People, Post, User, UserSocialMedia, Wallet} from '../../models';
 import {
+  NetworkRepository,
   PeopleRepository,
   PostRepository,
   UserRepository,
@@ -13,6 +14,8 @@ import {
   deleteAllRepository,
   givenAccesToken,
   givenMyriadPostInstance,
+  givenNetworkInstance,
+  givenNetworkRepository,
   givenOtherUser,
   givenPeopleInstance,
   givenPeopleRepository,
@@ -37,6 +40,7 @@ describe('WalletAddressApplication', function () {
   let peopleRepository: PeopleRepository;
   let userRepository: UserRepository;
   let walletRepository: WalletRepository;
+  let networkRepository: NetworkRepository;
   let people: People;
   let post: Post;
   let myriadPost: Post;
@@ -57,6 +61,7 @@ describe('WalletAddressApplication', function () {
     peopleRepository = await givenPeopleRepository(app);
     userRepository = await givenUserRepository(app);
     walletRepository = await givenWalletRepository(app);
+    networkRepository = await givenNetworkRepository(app);
   });
 
   before(async () => {
@@ -67,8 +72,14 @@ describe('WalletAddressApplication', function () {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       userId: otherUser.id,
       primary: true,
+      networkId: 'polkadot',
     });
 
+    await givenNetworkInstance(networkRepository);
+    await givenNetworkInstance(networkRepository, {
+      id: 'myriad',
+      rpcURL: 'wss://ws-rpc.dev.myriad.social',
+    });
     await givenWalletInstance(walletRepository, {
       userId: user.id,
       primary: true,

@@ -59,7 +59,7 @@ export class VoteController {
   })
   async deleteById(
     @param.path.string('id') id: string,
-    @requestBody() vote?: AnyObject,
+    @param.query.string('vote') vote?: AnyObject,
   ): Promise<void> {
     if (vote) {
       return this.voteRepository.deleteById(id);

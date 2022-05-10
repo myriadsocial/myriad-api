@@ -121,12 +121,13 @@ export class MyriadApiApplication extends BootMixin(
 
     if (this.options.test) return;
     if (config.REDIS_CONNECTOR !== 'kv-redis') return;
+
     this.component(RateLimiterComponent);
     this.bind(RateLimitSecurityBindings.CONFIG).to({
       name: 'redis',
       type: 'RedisStore',
       windowMs: 15 * date.minute,
-      max: (req: Request, res: Response) => {
+      max: (req: Request, _: Response) => {
         switch (req.method) {
           case 'GET':
             return 900;
@@ -144,7 +145,7 @@ export class MyriadApiApplication extends BootMixin(
             return 900;
         }
       },
-      keyGenerator: (req: Request, res: Response) => {
+      keyGenerator: (req: Request, _: Response) => {
         const token = req.headers?.authorization?.replace(/bearer /i, '');
         const decryptedToken = token
           ? jwt.verify(token, config.JWT_TOKEN_SECRET_KEY)
@@ -154,7 +155,7 @@ export class MyriadApiApplication extends BootMixin(
 
         return key;
       },
-      handler: (req: Request, res: Response) => {
+      handler: (_: Request, res: Response) => {
         res.status(429).send({
           error: {
             statusCode: 429,
@@ -196,7 +197,7 @@ export class MyriadApiApplication extends BootMixin(
     if (this.options.test) return;
     const multerOptions: multer.Options = {
       storage: multer.diskStorage({
-        filename: (req, file, cb) => {
+        filename: (_, file, cb) => {
           cb(null, `${uuid()}${path.extname(file.originalname)}`);
         },
       }),

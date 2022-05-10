@@ -126,7 +126,7 @@ export class UserExperienceController {
       },
     })
     experience: Omit<Experience, 'id'>,
-    @param.query.string('experienceId') experienceId?: string,
+    @param.query.string('experienceId') _experienceId?: string,
   ): Promise<Experience> {
     return this.userRepository.experiences(id).create(experience);
   }

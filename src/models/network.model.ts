@@ -1,5 +1,4 @@
 import {Entity, model, property, hasMany} from '@loopback/repository';
-import {WalletType} from '../enums';
 import {Currency} from './currency.model';
 
 @model({
@@ -67,11 +66,8 @@ export class Network extends Entity {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      enum: Object.values(WalletType),
-    },
   })
-  walletType: WalletType;
+  blockchainPlatform: string;
 
   @hasMany(() => Currency)
   currencies: Currency[];

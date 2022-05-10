@@ -1,4 +1,3 @@
-import {WalletType} from '../enums';
 import {Credential} from '../models';
 import {numberToHex, hexToU8a} from '@polkadot/util';
 import {signatureVerify} from '@polkadot/util-crypto';
@@ -9,7 +8,7 @@ export function validateAccount(credential: Credential): boolean {
   const publicKey = publicAddress.replace('0x', '');
 
   switch (walletType) {
-    case WalletType.POLKADOT: {
+    case 'polkadot{.js}': {
       const {isValid} = signatureVerify(
         numberToHex(nonce),
         signature,
@@ -18,7 +17,7 @@ export function validateAccount(credential: Credential): boolean {
       return isValid;
     }
 
-    case WalletType.NEAR: {
+    case 'near': {
       return nacl.sign.detached.verify(
         Buffer.from(numberToHex(nonce)),
         Buffer.from(hexToU8a(signature)),

@@ -117,17 +117,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.VOTE: {
-        const vote = await this.voteRepository.findById(invocationCtx.args[0]);
-        invocationCtx.args[1] = {
-          referenceId: vote.referenceId,
-          toUserId: vote.toUserId,
-          type: vote.type,
-          postId: vote.postId,
-        };
-        break;
-      }
-
       case ControllerType.WALLET: {
         const {userId, primary} = invocationCtx.args[1];
         const {count} = await this.walletRepository.count({userId});
