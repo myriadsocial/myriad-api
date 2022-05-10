@@ -4,6 +4,7 @@ export interface Metric {
   discussions?: number;
   debates?: number;
   comments?: number;
+  deletedComments?: number; // total deleted comment by user
   tips?: number;
 }
 

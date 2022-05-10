@@ -83,6 +83,7 @@ export class Comment extends Entity {
       upvotes: 0,
       downvotes: 0,
       comments: 0,
+      deletedComments: 0, // total deleted comment by user
     },
   })
   metric: Metric;

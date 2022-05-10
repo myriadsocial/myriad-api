@@ -29,6 +29,7 @@ import {
   UserCurrencyRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
+
 @injectable({scope: BindingScope.TRANSIENT})
 export class MetricService {
   constructor(
@@ -77,6 +78,9 @@ export class MetricService {
   async publicMetric(
     referenceType: ReferenceType,
     referenceId: string,
+    recountComment = true,
+    totalDiscussions = 0,
+    totalDebate = 0,
   ): Promise<Metric> {
     let exists = false;
     if (referenceType === ReferenceType.POST) {
@@ -106,37 +110,55 @@ export class MetricService {
     };
 
     if (referenceType === ReferenceType.COMMENT) {
-      const {count: countComment} = await this.commentRepository.count({
-        referenceId,
-        deleteByUser: false,
-        deletedAt: {exists: false},
-      });
+      const [{count: deletedComments}, {count: countComment}] =
+        await Promise.all([
+          this.commentRepository.count({
+            referenceId,
+            deleteByUser: true,
+            deletedAt: {exists: true},
+          }),
+          this.commentRepository.count({
+            referenceId,
+            deleteByUser: false,
+            deletedAt: {exists: false},
+          }),
+        ]);
 
       await this.commentRepository.updateById(referenceId, {
         metric: {
           ...metric,
+          deletedComments,
           comments: countComment,
         },
       });
 
-      return Object.assign(metric, {comments: countComment});
+      return Object.assign(metric, {comments: countComment, deletedComments});
     }
 
-    const [countDebate, countDiscussion, {count: countTip}] = await Promise.all(
-      [
+    const {count: countTip} = await this.transactionRepository.count({
+      referenceId: referenceId,
+      type: referenceType,
+    });
+
+    Object.assign(metric, {
+      debates: totalDebate,
+      discussions: totalDiscussions,
+      comments: totalDebate + totalDiscussions,
+      tips: countTip,
+    });
+
+    if (recountComment) {
+      const [countDebate, countDiscussion] = await Promise.all([
         this.countComment([referenceId], SectionType.DEBATE),
         this.countComment([referenceId], SectionType.DISCUSSION),
-        this.transactionRepository.count({
-          referenceId: referenceId,
-          type: referenceType,
-        }),
-      ],
-    );
+      ]);
 
-    metric.debates = countDebate;
-    metric.discussions = countDiscussion;
-    metric.comments = (countDebate ?? 0) + (countDiscussion ?? 0);
-    metric.tips = countTip;
+      Object.assign(metric, {
+        debates: countDebate,
+        discussions: countDiscussion,
+        comments: (countDebate ?? 0) + (countDiscussion ?? 0),
+      });
+    }
 
     await this.postRepository.updateById(referenceId, {metric});
 
