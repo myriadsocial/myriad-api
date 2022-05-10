@@ -154,33 +154,45 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     switch (controllerName) {
       case ControllerType.COMMENT: {
         const comment: CommentWithRelations = invocationCtx.args[1];
-        const {referenceId, postId, post, section} = comment;
-
-        Promise.allSettled([
+        const {referenceId, postId, post} = comment;
+        const promises = [
           this.metricService.countPopularPost(postId),
-          this.metricService.publicMetric(ReferenceType.POST, postId),
           this.metricService.publicMetric(ReferenceType.COMMENT, referenceId),
-        ]) as Promise<AnyObject>;
+        ];
 
         if (post?.metric) {
           const metric = post.metric;
+          const [countDebate, countDiscussion] = await Promise.all([
+            this.metricService.countComment([referenceId], SectionType.DEBATE),
+            this.metricService.countComment(
+              [referenceId],
+              SectionType.DISCUSSION,
+            ),
+          ]);
 
-          let totalDiscussions = post.metric.discussions ?? 0;
-          let totalDebate = post.metric.debates ?? 0;
-
-          if (section === SectionType.DISCUSSION && totalDiscussions > 0) {
-            totalDiscussions -= 1;
-          } else if (section === SectionType.DISCUSSION && totalDebate > 0) {
-            totalDebate -= 1;
-          }
+          promises.push(
+            this.metricService.publicMetric(
+              ReferenceType.POST,
+              postId,
+              false,
+              countDiscussion,
+              countDebate,
+            ),
+          );
 
           post.metric = {
             ...metric,
-            discussions: totalDiscussions,
-            debates: totalDebate,
-            comments: totalDiscussions + totalDebate,
+            discussions: countDiscussion,
+            debates: countDebate,
+            comments: countDiscussion + countDebate,
           };
+        } else {
+          promises.push(
+            this.metricService.publicMetric(ReferenceType.POST, postId),
+          );
         }
+
+        Promise.allSettled(promises) as Promise<AnyObject>;
 
         invocationCtx.args[1] = {
           ...invocationCtx.args[1],

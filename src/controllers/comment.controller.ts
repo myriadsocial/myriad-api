@@ -144,7 +144,7 @@ export class CommentController {
     },
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
-    await this.commentRepository.updateById(id, {
+    return this.commentRepository.updateById(id, {
       deletedAt: new Date().toString(),
       deleteByUser: true,
     });
