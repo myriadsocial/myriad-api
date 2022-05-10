@@ -10,7 +10,7 @@ import {
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {CoinMarketCap} from './coin-market-cap.service';
 import {providers} from 'near-api-js';
-import {ReferenceType, WalletType} from '../enums';
+import {ReferenceType} from '../enums';
 import {HttpErrors} from '@loopback/rest';
 import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
@@ -175,22 +175,23 @@ export class NetworkService {
 
     const wallets = await this.walletRepository.find({
       where: {userId},
+      include: ['network'],
     });
-    const polkadotWallet = wallets.find(
-      wallet => wallet.type === WalletType.POLKADOT,
+    const substrateWallet = wallets.find(
+      wallet => wallet?.network?.blockchainPlatform === 'substrate',
     );
 
     return Promise.allSettled([
-      this.claimReferencePolkadot(
+      this.claimReferenceMyriad(
         tipsBalanceInfo,
         userId,
-        polkadotWallet?.id ?? null,
+        substrateWallet?.id ?? null,
       ),
     ]);
   }
 
   async connectAccount(
-    type: string,
+    networkId: string,
     userId: string,
     accountId: string,
     ftIdentifier = 'native',
@@ -203,11 +204,11 @@ export class NetworkService {
       ftIdentifier: ftIdentifier,
     };
 
-    switch (type) {
-      case WalletType.POLKADOT:
-        return this.claimReferencePolkadot(tipsBalanceInfo, userId, accountId);
+    switch (networkId) {
+      case 'myriad':
+        return this.claimReferenceMyriad(tipsBalanceInfo, userId, accountId);
 
-      case WalletType.NEAR:
+      case 'near':
       default:
         throw new HttpErrors.UnprocessableEntity('Wallet not exist');
     }
@@ -229,7 +230,7 @@ export class NetworkService {
     return priority;
   }
 
-  async claimReferencePolkadot(
+  async claimReferenceMyriad(
     tipsBalanceInfo: AnyObject,
     userId: string,
     accountId: string | null,

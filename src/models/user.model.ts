@@ -82,7 +82,7 @@ export class User extends Entity {
     default:
       'https://res.cloudinary.com/dsget80gs/background/profile-default-bg.png',
   })
-  bannerImageUrl?: string;
+  bannerImageURL?: string;
 
   @property({
     type: 'string',

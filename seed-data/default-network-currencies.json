@@ -6,7 +6,7 @@
       "targetImagePath": "general/networks",
       "rpcURL": "wss://ws-rpc.myriad.social",
       "explorerURL": "https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fws-rpc.myriad.social#/explorer/query",
-      "walletType": "polkadot"
+      "blockchainPlatform": "substrate"
     },
     "currencies": [
       {

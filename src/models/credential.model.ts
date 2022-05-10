@@ -1,5 +1,4 @@
 import {AnyObject, Model, model, property} from '@loopback/repository';
-import {WalletType} from '../enums';
 
 @model()
 export class Credential extends Model {
@@ -24,11 +23,8 @@ export class Credential extends Model {
   @property({
     type: 'string',
     required: true,
-    jsonSchema: {
-      enum: Object.values(WalletType),
-    },
   })
-  walletType: WalletType;
+  walletType: string;
 
   @property({
     type: 'string',

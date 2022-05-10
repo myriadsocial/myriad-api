@@ -4,6 +4,7 @@ import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
 import {
   CurrencyRepository,
+  NetworkRepository,
   QueueRepository,
   TransactionRepository,
   UserCurrencyRepository,
@@ -14,7 +15,6 @@ import {HttpErrors} from '@loopback/rest';
 import {NotificationService} from './notification.service';
 import {BN} from '@polkadot/util';
 import {UserCurrency} from '../models';
-import {WalletType} from '../enums';
 import {DateUtils} from '../utils/date-utils';
 
 const dateUtils = new DateUtils();
@@ -32,6 +32,8 @@ export class CurrencyService {
     protected userCurrencyRepository: UserCurrencyRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
     @service(NotificationService)
     protected notificationService: NotificationService,
   ) {}
@@ -97,11 +99,8 @@ export class CurrencyService {
     }
   }
 
-  async sendMyriadReward(
-    address: string,
-    walletType: WalletType,
-  ): Promise<void> {
-    if (walletType !== WalletType.POLKADOT) return;
+  async sendMyriadReward(address: string, networkType: string): Promise<void> {
+    if (networkType !== 'myriad') return;
     if (!config.MYRIAD_FAUCET_AMOUNT) return;
     if (config.MYRIAD_FAUCET_AMOUNT === 0) return;
 
@@ -145,23 +144,16 @@ export class CurrencyService {
       });
     });
 
-    await api.disconnect();
-
     if (hash && typeof hash === 'string') {
-      const wallet = await this.walletRepository.findOne({
-        where: {id: from},
+      const wallet = await this.walletRepository.findById(from);
+      const transaction = await this.transactionRepository.create({
+        hash: hash,
+        amount: rewardAmount / 10 ** decimal,
+        to: to,
+        from: wallet.id,
+        currencyId: id,
       });
-
-      if (wallet) {
-        const transaction = await this.transactionRepository.create({
-          hash: hash,
-          amount: rewardAmount / 10 ** decimal,
-          to: to,
-          from: wallet.id,
-          currencyId: id,
-        });
-        await this.notificationService.sendInitialTips(transaction);
-      }
+      await this.notificationService.sendInitialTips(transaction);
     }
   }
 

@@ -25,7 +25,6 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
-import {WalletType} from '../../enums';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('AuthenticationApplication', function () {
@@ -115,9 +114,10 @@ describe('AuthenticationApplication', function () {
 
   it('changes user nonce after login', async () => {
     await givenNetworkInstance(networkRepository);
+    await givenNetworkInstance(networkRepository, {id: 'myriad'});
 
     const user = await givenUserInstance(userRepository, {username: 'johndoe'});
-    await givenWalletInstance(walletRepository, {userId: user.id});
+    const _ = await givenWalletInstance(walletRepository, {userId: user.id});
     const credential = givenCredential({
       nonce: user.nonce,
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),
@@ -135,7 +135,6 @@ describe('AuthenticationApplication', function () {
     const network = await givenNetworkInstance(networkRepository);
     const primaryWallet = await givenWalletInstance(walletRepository, {
       id: 'abdulhakim.testnet',
-      type: WalletType.NEAR,
       networkId: 'near',
       primary: true,
       userId: user.id,

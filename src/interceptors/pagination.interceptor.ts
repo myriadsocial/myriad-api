@@ -386,11 +386,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERWALLET: {
-        const userWalletFilter = invocationCtx.args[1] ?? {};
-
-        filter.where = Object.assign(userWalletFilter.where ?? {}, {
-          userId: invocationCtx.args[0],
-        });
+        Object.assign(filter, invocationCtx.args[1] ?? {});
         break;
       }
 

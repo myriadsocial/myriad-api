@@ -22,7 +22,6 @@ import {
 } from '../helpers';
 import {u8aToHex, numberToHex} from '@polkadot/util';
 import {KeyringPair} from '@polkadot/keyring/types';
-import {WalletType} from '../../enums';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserWalletApplication', function () {
@@ -61,7 +60,6 @@ describe('UserWalletApplication', function () {
     defaultWallet = await userRepository.wallets(user.id).create(
       givenWallet({
         id: 'abdulhakim.testnet',
-        type: WalletType.NEAR,
         networkId: 'near',
       }),
     );
@@ -104,7 +102,6 @@ describe('UserWalletApplication', function () {
       id: credential.publicAddress,
       userId: user.id,
       networkId: 'myriad',
-      type: WalletType.POLKADOT,
       primary: true,
     });
     credential.data = wallet;
