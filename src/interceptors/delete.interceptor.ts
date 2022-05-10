@@ -163,11 +163,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         if (post?.metric) {
           const metric = post.metric;
           const [countDebate, countDiscussion] = await Promise.all([
-            this.metricService.countComment([referenceId], SectionType.DEBATE),
-            this.metricService.countComment(
-              [referenceId],
-              SectionType.DISCUSSION,
-            ),
+            this.metricService.countComment([postId], SectionType.DEBATE),
+            this.metricService.countComment([postId], SectionType.DISCUSSION),
           ]);
 
           promises.push(
