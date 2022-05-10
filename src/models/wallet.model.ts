@@ -1,7 +1,6 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
-import {WalletType} from '../enums';
 import {User, UserWithRelations} from './user.model';
-import {Network} from './network.model';
+import {Network, NetworkWithRelations} from './network.model';
 
 @model({
   settings: {
@@ -26,15 +25,6 @@ export class Wallet extends Entity {
     required: true,
   })
   id: string;
-
-  @property({
-    type: 'string',
-    required: true,
-    jsonSchema: {
-      enum: Object.values(WalletType),
-    },
-  })
-  type: WalletType;
 
   @property({
     type: 'boolean',
@@ -76,6 +66,7 @@ export class Wallet extends Entity {
 export interface WalletRelations {
   // describe navigational properties here
   user?: UserWithRelations;
+  network?: NetworkWithRelations;
 }
 
 export type WalletWithRelations = Wallet & WalletRelations;
