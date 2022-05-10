@@ -29,7 +29,7 @@ import {
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 describe('FriendApplication', function () {
-  this.timeout(30000);
+  this.timeout(50000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -488,26 +488,28 @@ describe('FriendApplication', function () {
       .send(updatedFriend)
       .expect(204);
 
-    const notifications = await notificationRepository.find({
-      where: {
-        from: user.id.toString(),
-        to: requestor.id.toString(),
-        referenceId: friend.requesteeId.toString(),
-      },
-    });
+    setTimeout(async () => {
+      const notifications = await notificationRepository.find({
+        where: {
+          from: user.id.toString(),
+          to: requestor.id.toString(),
+          referenceId: friend.requesteeId.toString(),
+        },
+      });
 
-    delete notifications[0].id;
-    delete notifications[0].createdAt;
-    delete notifications[0].updatedAt;
+      delete notifications[0].id;
+      delete notifications[0].createdAt;
+      delete notifications[0].updatedAt;
 
-    expect({
-      type: NotificationType.FRIEND_ACCEPT,
-      from: friend.requesteeId,
-      read: false,
-      to: friend.requestorId,
-      referenceId: friend.requesteeId,
-      additionalReferenceId: [],
-      message: 'accept your friend request',
-    }).to.containEql(toJSON(notifications[0]));
+      expect({
+        type: NotificationType.FRIEND_ACCEPT,
+        from: friend.requesteeId,
+        read: false,
+        to: friend.requestorId,
+        referenceId: friend.requesteeId,
+        additionalReferenceId: [],
+        message: 'accept your friend request',
+      }).to.containEql(toJSON(notifications[0]));
+    }, 10000);
   });
 });
