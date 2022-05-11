@@ -142,6 +142,7 @@ export class ExperienceService {
         {
           and: [
             {peopleId: {inq: personIds}},
+            {tags: {nin: prohibitedTags}},
             {createdBy: {nin: blockedUserIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
@@ -150,6 +151,7 @@ export class ExperienceService {
           and: [
             {id: {inq: postIds}},
             {createdBy: {nin: blockedUserIds}},
+            {tags: {nin: prohibitedTags}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
@@ -157,6 +159,7 @@ export class ExperienceService {
           and: [
             {id: {inq: postIds}},
             {createdBy: {inq: friendIds}},
+            {tags: {nin: prohibitedTags}},
             {visibility: VisibilityType.FRIEND},
           ],
         },
@@ -170,17 +173,23 @@ export class ExperienceService {
         {
           and: [
             {createdBy: {inq: userIds}},
+            {tags: {nin: prohibitedTags}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
           and: [
             {createdBy: {inq: friendIds}},
+            {tags: {nin: prohibitedTags}},
             {visibility: VisibilityType.FRIEND},
           ],
         },
         {
-          and: [{peopleId: {inq: personIds}}, {createdBy: userId}],
+          and: [
+            {peopleId: {inq: personIds}},
+            {tags: {nin: prohibitedTags}},
+            {createdBy: userId},
+          ],
         },
       ],
       experienceId: experience.id,
