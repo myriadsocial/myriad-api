@@ -133,6 +133,7 @@ export class NotificationService {
       comment: {
         id: comment.id,
         postId: comment.postId,
+        section: comment.section,
         user: {
           id: this.currentUser[securityId],
           name: this.currentUser.name ?? '',
