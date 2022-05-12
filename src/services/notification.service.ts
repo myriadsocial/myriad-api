@@ -412,6 +412,7 @@ export class NotificationService {
         comment: {
           id: toComment.id,
           postId: toComment.postId,
+          section: toComment.section,
           user: {
             id: toComment.user?.id,
             name: toComment.user?.name,
@@ -471,6 +472,7 @@ export class NotificationService {
         comment: {
           id: comment.id,
           postId: comment.postId,
+          section: comment.section,
           user: {
             id: comment.user?.id,
             name: comment.user?.name,
