@@ -1,11 +1,13 @@
 export enum OrderFieldType {
   COMMENT = 'comment',
   COUNT = 'count',
+  NAME = 'name',
   LATEST = 'latest',
   POPULAR = 'popular',
   TIP = 'tip',
   UPDATEDAT = 'updatedAt',
   UPVOTE = 'upvote',
+  USERNAME = 'username',
 }
 
 export enum OrderType {

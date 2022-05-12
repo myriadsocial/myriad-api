@@ -177,6 +177,7 @@ describe('UserApplication', function () {
         .expect(200);
 
       const expectedUser = response.body.data.map((e: Partial<User>) => {
+        e.friendIndex = {};
         return omit(e, ['updatedAt']);
       });
       const responseUser = persistedUsers.map((e: Partial<User>) => {
@@ -234,6 +235,7 @@ describe('UserApplication', function () {
     const filter =
       'filter=' +
       JSON.stringify({
+        where: {username: 'abdulhakim'},
         include: ['friends', 'activityLogs'],
       });
 

@@ -168,6 +168,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         sortBy = 'createdAt';
         break;
 
+      case OrderFieldType.NAME:
+        sortBy = 'name';
+        break;
+
+      case OrderFieldType.USERNAME:
+        sortBy = 'username';
+        break;
+
       default:
         sortBy = 'createdAt';
     }
@@ -176,6 +184,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     if (hasExperience) {
       return [`experienceIndex.${hasExperience} DESC`, sortBy + ' ' + order];
     }
+
+    if (query.name) {
+      return [
+        `friendIndex.${this.currentUser[securityId]} DESC`,
+        sortBy + ' ' + order,
+      ];
+    }
+
     return [sortBy + ' ' + order];
   }
 
@@ -194,9 +210,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     filter.where = filter.where ?? {};
 
     switch (controllerName) {
-      // Use for search unblock user
       case ControllerType.USER: {
-        const {requestorId, requesteeId, friendsName, userId} = request.query;
+        const {requestorId, requesteeId, friendsName, userId, name} =
+          request.query;
         const hasWhere =
           Object.keys(filter.where as Where<AnyObject>).length > 0;
         if (
@@ -242,18 +258,42 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           filter.where = searchQuery;
           filter.fields = ['id', 'name', 'username', 'profilePictureURL'];
         } else {
+          const nameStr = name?.toString();
           const blockedFriendIds = await this.friendService.getFriendIds(
             this.currentUser[securityId],
             FriendStatusType.BLOCKED,
             true,
           );
 
-          Object.assign(filter.where, {
-            id: {
-              nin: blockedFriendIds,
-            },
-            deletedAt: {
-              $exists: false,
+          if (nameStr) {
+            Object.assign(filter.where, {
+              or: [
+                {
+                  username: {
+                    like: `.*${nameStr}`,
+                    options: 'i',
+                  },
+                },
+                {
+                  name: {
+                    like: `.*${nameStr}`,
+                    options: 'i',
+                  },
+                },
+              ],
+            });
+          }
+
+          Object.assign(filter, {
+            order: this.orderSetting(request.query),
+            where: {
+              ...filter.where,
+              id: {
+                nin: blockedFriendIds,
+              },
+              deletedAt: {
+                $exists: false,
+              },
             },
           });
         }
@@ -699,7 +739,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               user.name = '[user banned]';
               user.username = '[user banned]';
             }
-            return user;
+            return omit(user, ['friendIndex', 'nonce', 'permissions']);
           });
         }
 
