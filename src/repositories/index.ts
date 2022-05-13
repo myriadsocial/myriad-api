@@ -27,3 +27,4 @@ export * from './user-report.repository';
 export * from './vote.repository';
 export * from './wallet.repository';
 export * from './user-currency.repository';
+export * from './server.repository';
