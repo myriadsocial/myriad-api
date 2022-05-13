@@ -25,6 +25,7 @@ export enum MethodType {
   SIGNUP = 'signup',
   SUBSCRIBE = 'subscribe',
   TIMELINE = 'getTimeline',
+  UPDATE = 'update',
   UPDATEBYID = 'updateById',
   UPDATEEXPERIENCE = 'updateExperience',
   UPDATEPRIMARY = 'updatePrimary',

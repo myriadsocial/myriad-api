@@ -27,8 +27,10 @@ import {
   WalletRepository,
   NetworkRepository,
   UserCurrencyRepository,
+  ServerRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
+import {config} from '../config';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class MetricService {
@@ -57,6 +59,8 @@ export class MetricService {
     protected experiencePostRepository: ExperiencePostRepository,
     @repository(UserSocialMediaRepository)
     protected userSocialMediaRepository: UserSocialMediaRepository,
+    @repository(ServerRepository)
+    protected serverRepository: ServerRepository,
     @repository(TagRepository)
     protected tagRepository: TagRepository,
     @repository(UserCurrencyRepository)
@@ -219,6 +223,19 @@ export class MetricService {
         updatedAt: new Date().toString(),
       });
     }
+  }
+
+  async countServerMetric(): Promise<void> {
+    const server = await this.serverRepository.findOne({
+      where: {id: config.MYRIAD_SERVER_ID},
+    });
+    if (!server) return;
+    const [{count: totalUsers}, {count: totalPosts}] = await Promise.all([
+      this.userRepository.count(),
+      this.postRepository.count(),
+    ]);
+    const metric = {totalPosts, totalUsers};
+    return this.serverRepository.updateById(server.id, {metric});
   }
 
   async countData(

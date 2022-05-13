@@ -683,23 +683,24 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     switch (methodName) {
       case MethodType.CREATE: {
-        if (result.status === PostStatus.PUBLISHED) {
-          result = await this.postService.createPublishPost(
-            result as DraftPost,
-          );
+        if (result.status === PostStatus.DRAFT) return result;
+        const publishedPost = await this.postService.createPublishPost(
+          result as DraftPost,
+        );
 
-          Promise.allSettled([
-            this.tagService.createTags(result.tags),
-            this.createNotification(controllerName, result),
-            this.metricService.userMetric(result.createdBy),
-            this.activityLogService.createLog(
-              ActivityLogType.CREATEPOST,
-              result.createdBy,
-              ReferenceType.POST,
-            ),
-          ]) as Promise<AnyObject>;
-        }
-        return result;
+        Promise.allSettled([
+          this.tagService.createTags(publishedPost.tags),
+          this.createNotification(controllerName, publishedPost),
+          this.metricService.userMetric(publishedPost.createdBy),
+          this.metricService.countServerMetric(),
+          this.activityLogService.createLog(
+            ActivityLogType.CREATEPOST,
+            publishedPost.createdBy,
+            ReferenceType.POST,
+          ),
+        ]) as Promise<AnyObject>;
+
+        return publishedPost;
       }
 
       case MethodType.IMPORT: {

@@ -54,6 +54,7 @@ import {
   PeopleRepository,
   PostRepository,
   ReportRepository,
+  ServerRepository,
   TagRepository,
   TransactionRepository,
   UserCurrencyRepository,
@@ -236,10 +237,13 @@ export class MyriadApiApplication extends BootMixin(
       currencyRepository,
       friendRepository,
       networkRepository,
+      serverRepository,
       userRepository,
       userCurrencyRepository,
       walletRepository,
     } = await this.repositories();
+
+    if (!config.MYRIAD_SERVER_ID) throw new Error('Server not found');
 
     const bar = this.initializeProgressBar('Start Seeding');
     const files = fs.readdirSync(directory);
@@ -418,6 +422,10 @@ export class MyriadApiApplication extends BootMixin(
 
       bar.update(index);
     }
+    await serverRepository.create({
+      id: config.MYRIAD_SERVER_ID,
+      name: `${config.MYRIAD_SERVER_ID}#${Math.floor(Math.random() * 10000)}`,
+    });
     bar.stop();
   }
 
@@ -449,6 +457,7 @@ export class MyriadApiApplication extends BootMixin(
     const peopleRepository = await this.getRepository(PeopleRepository);
     const postRepository = await this.getRepository(PostRepository);
     const reportRepository = await this.getRepository(ReportRepository);
+    const serverRepository = await this.getRepository(ServerRepository);
     const tagRepository = await this.getRepository(TagRepository);
     const transactionRepository = await this.getRepository(
       TransactionRepository,
@@ -483,6 +492,7 @@ export class MyriadApiApplication extends BootMixin(
       peopleRepository,
       postRepository,
       reportRepository,
+      serverRepository,
       tagRepository,
       transactionRepository,
       userRepository,

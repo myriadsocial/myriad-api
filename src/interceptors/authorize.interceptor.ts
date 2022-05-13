@@ -34,6 +34,10 @@ import {
 import {HttpErrors} from '@loopback/rest';
 import {RequiredPermissions} from '../interfaces';
 import {intersection} from 'lodash';
+import {config} from '../config';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
+
+const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -106,6 +110,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case MethodType.FILEUPLOAD:
       case MethodType.CLAIMTIPS:
       case MethodType.SUBSCRIBE:
+      case MethodType.UPDATE:
       case MethodType.UPDATEBYID:
       case MethodType.PATCH:
       case MethodType.READNOTIFICATION:
@@ -150,10 +155,11 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
 
       case ControllerType.ADMIN:
       case ControllerType.NETWORKCURRENCY:
+      case ControllerType.SERVER:
       case ControllerType.TAG:
       case ControllerType.REPORT:
       case ControllerType.PEOPLE: {
-        userId = this.admin(controllerName);
+        userId = await this.admin(controllerName);
         break;
       }
 
@@ -309,17 +315,32 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     }
   }
 
-  admin(controllerName?: ControllerType): string {
+  async admin(controllerName?: ControllerType): Promise<string> {
+    const keyring = getKeyring().addFromMnemonic(config.MYRIAD_ADMIN_MNEMONIC);
+    const adminAddress = getHexPublicKey(keyring);
+    const [result] = await Promise.allSettled([
+      this.walletRepository.findById(adminAddress),
+    ]);
+
+    if (
+      result.status === 'fulfilled' &&
+      this.currentUser[securityId] === result.value.userId
+    ) {
+      return result.value.userId;
+    }
+
     const requiredPermissions =
       (this.metadata[0].options as RequiredPermissions) ?? {};
     const user = this.currentUser;
-    const result = intersection(
+    const exists = intersection(
       user.permissions,
       requiredPermissions.required ?? [],
     ).length;
+
+    if (exists <= 0) throw new HttpErrors.Forbidden('Invalid access');
     if (
       requiredPermissions.required !== undefined &&
-      result !== requiredPermissions.required.length
+      exists !== requiredPermissions.required.length
     ) {
       throw new HttpErrors.Forbidden('Invalid access');
     }
