@@ -224,12 +224,12 @@ export class DeleteInterceptor implements Provider<Interceptor> {
 
       case ControllerType.POST: {
         const [id, post] = invocationCtx.args;
-
-        Promise.allSettled([
+        await Promise.all([
           this.commentRepository.deleteAll({postId: id}),
-          this.commentRepository.deleteAll({postId: id}),
+          this.metricService.userMetric(post.createdBy),
           this.metricService.countTags(post.tags),
-        ]) as Promise<AnyObject>;
+          this.metricService.countServerMetric(),
+        ]);
         return;
       }
 
@@ -306,11 +306,13 @@ export class DeleteInterceptor implements Provider<Interceptor> {
 
     const commentIds = comments.map(comment => comment.id ?? '');
 
-    await this.commentRepository.deleteAll({id: {inq: commentIds}});
-    await this.commentLinkRepository.deleteAll({
-      fromCommentId: {inq: referenceIds},
-      toCommentId: {inq: commentIds},
-    });
+    Promise.allSettled([
+      this.commentRepository.deleteAll({id: {inq: commentIds}}),
+      this.commentLinkRepository.deleteAll({
+        fromCommentId: {inq: referenceIds},
+        toCommentId: {inq: commentIds},
+      }),
+    ]) as Promise<AnyObject>;
 
     return this.removeComment(commentIds);
   }

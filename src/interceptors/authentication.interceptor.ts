@@ -22,7 +22,7 @@ import {
   UserRepository,
   WalletRepository,
 } from '../repositories';
-import {CurrencyService, FriendService} from '../services';
+import {CurrencyService, FriendService, MetricService} from '../services';
 import {securityId, UserProfile} from '@loopback/security';
 import {assign, intersection} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
@@ -49,6 +49,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     protected currencyService: CurrencyService,
     @service(FriendService)
     protected friendService: FriendService,
+    @service(MetricService)
+    protected metricService: MetricService,
   ) {}
 
   /**
@@ -211,6 +213,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         this.userRepository.languageSetting(result.id).create({}),
         this.userRepository.wallets(result.id).create(wallet),
         this.currencyService.sendMyriadReward(wallet.id, wallet.networkId),
+        this.metricService.countServerMetric(),
         this.friendService.defaultFriend(result.id),
         this.activityLogRepository.create({
           type: ActivityLogType.NEWUSER,
