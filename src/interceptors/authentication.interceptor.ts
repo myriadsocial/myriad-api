@@ -228,8 +228,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       const newNonce = ng.generate();
 
       await this.walletRepository.updateAll({primary: false}, {userId});
+      await this.currencyService.updateUserCurrency(userId, networkId);
       Promise.allSettled([
-        this.currencyService.updateUserCurrency(userId, networkId),
         this.userRepository.updateById(userId, {nonce: newNonce}),
         this.walletRepository.updateById(walletId, {primary: true, networkId}),
       ]) as Promise<AnyObject>;
