@@ -14,6 +14,7 @@ export enum ControllerType {
   POST = 'PostController',
   REPORT = 'ReportController',
   REPORTUSER = 'ReportUserController',
+  SERVER = 'ServerController',
   STORAGE = 'StorageController',
   TAG = 'TagController',
   TIP = 'TipController',
