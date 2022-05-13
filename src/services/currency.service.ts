@@ -59,17 +59,16 @@ export class CurrencyService {
   async updateUserCurrency(userId: string, networkId: string): Promise<void> {
     if (!userId || !networkId) return;
 
-    const [{count: countCurrency}, {count}] = await Promise.all([
-      this.currencyRepository.count({networkId}),
-      this.userCurrencyRepository.count({
-        networkId,
-        userId,
-      }),
-    ]);
-    const countUserCurrency = count === 0 ? countCurrency : count;
-
+    const [{count: countCurrency}, {count: countUserCurrency}] =
+      await Promise.all([
+        this.currencyRepository.count({networkId}),
+        this.userCurrencyRepository.count({
+          networkId,
+          userId,
+        }),
+      ]);
     if (countUserCurrency === 0) {
-      await this.addUserCurrencies(userId, networkId);
+      return this.addUserCurrencies(userId, networkId);
     }
 
     if (countCurrency > countUserCurrency) {
@@ -96,6 +95,7 @@ export class CurrencyService {
       });
 
       await this.userCurrencyRepository.createAll(newUserCurrencies);
+      return;
     }
   }
 

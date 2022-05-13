@@ -406,9 +406,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
+        await this.currencyService.addUserCurrencies(userId, networkId);
         Promise.allSettled([
           this.networkService.connectAccount(networkId, userId, id),
-          this.currencyService.addUserCurrencies(userId, networkId),
           this.userRepository.updateById(userId, {nonce: newNonce}),
         ]) as Promise<AnyObject>;
 

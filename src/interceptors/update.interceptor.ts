@@ -371,8 +371,8 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
+        await this.currencyService.updateUserCurrency(userId, networkId);
         Promise.allSettled([
-          this.currencyService.updateUserCurrency(userId, networkId),
           this.userRepository.updateById(userId, {nonce: newNonce}),
           this.walletRepository.updateAll(
             {primary: false},
