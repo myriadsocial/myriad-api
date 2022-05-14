@@ -57,6 +57,7 @@ import {formatTag} from '../utils/format-tag';
 import {PlatformPost} from '../models/platform-post.model';
 import {ExtendedPost} from '../interfaces';
 import {UrlUtils} from '../utils/url.utils';
+import {omit} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -217,23 +218,26 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.EXPERIENCEPOST: {
-        const [experienceId, postId] = invocationCtx.args;
-        const [post, experience] = await Promise.all([
+        const [data, postId] = invocationCtx.args;
+        const experienceIds = typeof data === 'string' ? [data] : data;
+        const param = typeof data === 'string' ? [data] : undefined;
+
+        const [post, deletedIds] = await Promise.all([
           this.postService.postRepository.findById(postId),
-          this.experienceService.experiencePostRepository.findOne({
-            where: {postId, experienceId},
-          }),
+          this.experienceService.removeExperiencePost(postId, param),
         ]);
 
-        if (experience) {
-          throw new HttpErrors.UnprocessableEntity(
-            'Already added to experience',
-          );
-        }
-        const experienceIndex = post?.experienceIndex ?? {};
-        invocationCtx.args[2] = Object.assign(experienceIndex, {
-          [experienceId]: 1,
+        const experienceIndex = omit(post?.experienceIndex ?? {}, deletedIds);
+        const newExperienceIndex: AnyObject = {};
+
+        experienceIds.forEach((experienceId: string) => {
+          newExperienceIndex[experienceId] = 1;
         });
+
+        invocationCtx.args[2] = {
+          postId: postId,
+          experienceIndex: Object.assign(experienceIndex, newExperienceIndex),
+        };
 
         break;
       }
@@ -388,8 +392,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.EXPERIENCEPOST: {
-        const postId = invocationCtx.args[1];
-        const experienceIndex = invocationCtx.args[2] as AnyObject;
+        const {postId, experienceIndex} = invocationCtx.args[2] as AnyObject;
         await this.postService.postRepository.updateById(postId, {
           experienceIndex,
         });
