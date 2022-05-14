@@ -18,10 +18,12 @@ import {
   UserExperienceRepository,
   UserRepository,
 } from '../repositories';
-import {injectable, BindingScope, service} from '@loopback/core';
+import {injectable, BindingScope, service, inject} from '@loopback/core';
 import {FriendService} from './friend.service';
 import {omit} from 'lodash';
 import {HttpErrors} from '@loopback/rest';
+import {AuthenticationBindings} from '@loopback/authentication';
+import {UserProfile, securityId} from '@loopback/security';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class ExperienceService {
@@ -36,6 +38,8 @@ export class ExperienceService {
     protected userRepository: UserRepository,
     @service(FriendService)
     protected friendService: FriendService,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    protected currentUser: UserProfile,
   ) {}
 
   async getExperience(
@@ -273,6 +277,34 @@ export class ExperienceService {
       where: {experienceId},
     });
     return experiencePosts.map(e => e.postId?.toString());
+  }
+
+  async removeExperiencePost(
+    postId: string,
+    otherExperienceIds?: string[],
+  ): Promise<string[]> {
+    if (otherExperienceIds) {
+      await this.experiencePostRepository.deleteAll({
+        experienceId: {inq: otherExperienceIds},
+        postId: postId,
+      });
+
+      return otherExperienceIds;
+    }
+
+    if (!this.currentUser?.[securityId]) return [];
+    const experiences = await this.experienceRepository.find({
+      where: {
+        createdBy: this.currentUser[securityId],
+      },
+    });
+    const experienceIds = experiences.map(experience => experience?.id ?? '');
+    if (experienceIds.length === 0) return [];
+    await this.experiencePostRepository.deleteAll({
+      experienceId: {inq: experienceIds},
+      postId: postId,
+    });
+    return experienceIds;
   }
 
   combinePeopleAndUser(

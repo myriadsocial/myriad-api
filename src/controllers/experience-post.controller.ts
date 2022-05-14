@@ -1,7 +1,14 @@
 import {authenticate} from '@loopback/authentication';
 import {intercept} from '@loopback/core';
 import {Count, CountSchema, Filter, repository} from '@loopback/repository';
-import {del, get, getModelSchemaRef, param, post} from '@loopback/rest';
+import {
+  del,
+  get,
+  getModelSchemaRef,
+  param,
+  post,
+  requestBody,
+} from '@loopback/rest';
 import {
   CreateInterceptor,
   DeleteInterceptor,
@@ -61,6 +68,45 @@ export class ExperiencePostController {
     @param.path.string('postId') postId: string,
   ): Promise<ExperiencePost> {
     return this.experiencePostRepository.create({postId, experienceId});
+  }
+
+  @intercept(CreateInterceptor.BINDING_KEY)
+  @post('/experiences/post/{postId}', {
+    responses: {
+      '200': {
+        description: 'create a ExperiencePost model instance',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'array',
+              items: getModelSchemaRef(ExperiencePost),
+            },
+          },
+        },
+      },
+    },
+  })
+  async createBatch(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    })
+    experienceIds: string[],
+    @param.path.string('postId') postId: string,
+  ): Promise<ExperiencePost[]> {
+    const experiencePosts = experienceIds.map(experienceId => {
+      return new ExperiencePost({experienceId, postId});
+    });
+
+    return this.experiencePostRepository.createAll(experiencePosts);
   }
 
   @intercept(DeleteInterceptor.BINDING_KEY)

@@ -106,6 +106,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
 
     switch (methodName) {
       case MethodType.CREATE:
+      case MethodType.CREATEBATCH:
       case MethodType.IMPORT:
       case MethodType.FILEUPLOAD:
       case MethodType.CLAIMTIPS:
@@ -164,7 +165,21 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.EXPERIENCEPOST:
-        ({createdBy: userId} = await this.experienceRepository.findById(data));
+        if (methodName === MethodType.CREATEBATCH) {
+          const experienceIds = invocationCtx.args[0];
+          const experiences = await this.experienceRepository.find({
+            where: {
+              id: {inq: experienceIds},
+              createdBy: this.currentUser[securityId],
+            },
+          });
+          if (experiences.length !== experienceIds.length) userId = '';
+          else userId = this.currentUser[securityId];
+        } else {
+          ({createdBy: userId} = await this.experienceRepository.findById(
+            data,
+          ));
+        }
         break;
 
       case ControllerType.FRIEND: {
