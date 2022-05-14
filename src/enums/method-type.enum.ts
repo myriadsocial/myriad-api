@@ -2,7 +2,7 @@ export enum MethodType {
   ADMINLOGIN = 'adminLogin',
   CLAIMTIPS = 'claimTips',
   CREATE = 'create',
-  CREATENEW = 'createNew',
+  CREATEBATCH = 'createBatch',
   DELETE = 'delete',
   DELETEBYID = 'deleteById',
   DELETEDPOSTLIST = 'deletedPostList',
