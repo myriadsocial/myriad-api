@@ -42,7 +42,6 @@ import {
 import {pageMetadata} from '../utils/page-metadata.utils';
 import {
   AccountSettingRepository,
-  ExperiencePostRepository,
   CurrencyRepository,
   UserRepository,
   WalletRepository,
@@ -63,8 +62,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
-    @repository(ExperiencePostRepository)
-    protected experiencePostRepository: ExperiencePostRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(CurrencyRepository)
@@ -417,6 +414,22 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           filter.where = await this.getExperienceByQuery(experienceQuery);
           filter.where.deletedAt = {$exists: false};
         }
+
+        // get by createdBy
+        if (filter?.where?.createdBy) {
+          const userExperiences = await this.userExperienceRepository.find({
+            where: {
+              userId: filter.where.createdBy,
+              subscribed: false,
+            },
+          });
+          const experienceIds = userExperiences.map(
+            userExperience => userExperience.experienceId,
+          );
+          Object.assign(filter.where, {
+            id: {inq: experienceIds},
+          });
+        }
         break;
       }
 
@@ -744,31 +757,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         }
 
         break;
-      }
-
-      case ControllerType.EXPERIENCE: {
-        const {postId} = request.query;
-        const experiences = result as Experience[];
-
-        if (postId) {
-          result = await Promise.all(
-            experiences.map(async experience => {
-              const experiencePost =
-                await this.experiencePostRepository.findOne({
-                  where: {
-                    postId: postId.toString(),
-                    experienceId: experience.id,
-                  },
-                });
-
-              if (!experiencePost) return experience;
-              return {
-                ...experience,
-                addedToPost: true,
-              };
-            }),
-          );
-        }
       }
     }
 
