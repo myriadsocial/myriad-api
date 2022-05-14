@@ -592,9 +592,14 @@ export function givenExperienceInstance(
 
 export async function givenMultipleExperienceInstances(
   experienceRepository: ExperienceRepository,
+  createdBy?: string,
 ) {
   return Promise.all([
-    givenExperienceInstance(experienceRepository),
+    givenExperienceInstance(experienceRepository, {
+      createdBy:
+        createdBy ??
+        '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
+    }),
     givenExperienceInstance(experienceRepository, {
       name: 'cryptocurrency',
       allowedTags: ['cryptocurrency'],
@@ -611,6 +616,7 @@ export async function givenMultipleExperienceInstances(
       ],
       description: 'best projects in cryptoverse',
       createdBy:
+        createdBy ??
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61821',
     }),
   ]);
