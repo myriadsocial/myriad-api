@@ -415,21 +415,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           filter.where.deletedAt = {$exists: false};
         }
 
-        // get by createdBy
-        if (filter?.where?.createdBy) {
-          const userExperiences = await this.userExperienceRepository.find({
-            where: {
-              userId: filter.where.createdBy,
-              subscribed: false,
-            },
-          });
-          const experienceIds = userExperiences.map(
-            userExperience => userExperience.experienceId,
-          );
-          Object.assign(filter.where, {
-            id: {inq: experienceIds},
-          });
-        }
         break;
       }
 
