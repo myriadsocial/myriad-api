@@ -632,6 +632,18 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.EXPERIENCEPOST: {
+        result = await Promise.all(
+          result.map(async (post: Post) =>
+            this.postService.getPostImporterInfo(
+              post,
+              this.currentUser[securityId],
+            ),
+          ),
+        );
+        break;
+      }
+
       // include total mutual friend in friend collection
       case ControllerType.FRIEND: {
         if (request.query.mutual === 'true') {

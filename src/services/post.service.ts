@@ -95,10 +95,10 @@ export class PostService {
       importer.name = 'You';
     }
 
-    return omit(
-      {...post, importers: [importer], totalImporter: count},
+    return omit({...post, importers: [importer], totalImporter: count}, [
       'rawText',
-    );
+      'experienceIndex',
+    ]);
   }
 
   async createDraftPost(draftPost: DraftPost): Promise<DraftPost> {
