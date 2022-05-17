@@ -242,46 +242,34 @@ export class DeleteInterceptor implements Provider<Interceptor> {
       case ControllerType.USEREXPERIENCE: {
         // Update experience subscribed count
         // Removing experience when subscribed count zero
-        const promises: Promise<void>[] = [];
+        const promises: Promise<void | AnyObject>[] = [];
         const expRepos = this.experienceRepository;
         const userRepos = this.userRepository;
         const userExpRepos = this.userExperienceRepository;
         const {userId, experienceId, experienceCreator} = invocationCtx.args[3];
-        const {count: subscribedCount} = await userExpRepos.count({
-          experienceId,
-          subscribed: true,
-        });
 
-        if (subscribedCount === 0 && userId === experienceCreator) {
-          promises.push(expRepos.deleteById(experienceId));
-        } else {
-          const {count: clonedCount} = await userExpRepos.count({
-            clonedId: experienceId,
-          });
-          const trendCount = subscribedCount + clonedCount;
+        if (experienceCreator === userId) {
           promises.push(
-            expRepos.updateById(experienceId, {subscribedCount, trendCount}),
+            userExpRepos.deleteAll({experienceId}),
+            expRepos.deleteById(experienceId),
           );
         }
 
-        // Update onTimeline for user
-        const {count: countUserExperience} = await userExpRepos.count({userId});
+        const user = await userRepos.findOne({
+          where: {onTimeline: experienceId},
+        });
 
-        if (countUserExperience === 0) {
-          promises.push(userRepos.updateById(userId, {onTimeline: undefined}));
-        } else {
-          const user = await userRepos.findOne({where: {id: userId}});
-
-          if (experienceId === user?.onTimeline?.toString()) {
-            const userExperience = await userExpRepos.findOne({
-              where: {userId},
-            });
-
-            if (userExperience) {
-              const onTimeline = userExperience.experienceId;
-              promises.push(userRepos.updateById(userId, {onTimeline}));
-            }
-          }
+        if (user) {
+          const [latest] = await userExpRepos.find({
+            where: {userId},
+            limit: 1,
+            order: ['createdAt DESC'],
+          });
+          promises.push(
+            userRepos.updateById(userId, {
+              onTimeline: latest?.experienceId,
+            }),
+          );
         }
 
         Promise.allSettled(promises) as Promise<AnyObject>;

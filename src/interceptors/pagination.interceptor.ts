@@ -415,21 +415,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           filter.where.deletedAt = {$exists: false};
         }
 
-        // get by createdBy
-        if (filter?.where?.createdBy) {
-          const userExperiences = await this.userExperienceRepository.find({
-            where: {
-              userId: filter.where.createdBy,
-              subscribed: false,
-            },
-          });
-          const experienceIds = userExperiences.map(
-            userExperience => userExperience.experienceId,
-          );
-          Object.assign(filter.where, {
-            id: {inq: experienceIds},
-          });
-        }
         break;
       }
 
@@ -644,6 +629,18 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             )
           ).filter(e => e);
         }
+        break;
+      }
+
+      case ControllerType.EXPERIENCEPOST: {
+        result = await Promise.all(
+          result.map(async (post: Post) =>
+            this.postService.getPostImporterInfo(
+              post,
+              this.currentUser[securityId],
+            ),
+          ),
+        );
         break;
       }
 
