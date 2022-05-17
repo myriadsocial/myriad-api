@@ -354,7 +354,6 @@ describe('PostApplication', function () {
       banned: false,
       totalImporter: 1,
       popularCount: 0,
-      experienceIndex: {},
       user: toJSON(user),
       people: toJSON(people),
       comments: [toJSON(comment)],
