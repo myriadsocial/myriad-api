@@ -15,3 +15,11 @@ export interface UserMetric {
   totalFriends: number;
   totalActivity?: number;
 }
+
+export interface ServerMetric {
+  totalPosts: number;
+  totalUsers: number;
+  totalUpvotes: number;
+  totalTransactions: number;
+  totalExperiences: number;
+}
