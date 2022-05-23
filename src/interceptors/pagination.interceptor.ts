@@ -478,6 +478,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 ],
               });
             }
+
+            if (referenceType === ReferenceType.USER) {
+              Object.assign(filter.where, {
+                type: {
+                  nin: [ReferenceType.POST, ReferenceType.COMMENT],
+                },
+              });
+            }
           }
         }
 
