@@ -1,9 +1,5 @@
 import {Entity, model, property} from '@loopback/repository';
-
-interface ServerMetric {
-  totalPosts: number;
-  totalUsers: number;
-}
+import {ServerMetric} from '../interfaces';
 
 @model({
   settings: {
@@ -40,6 +36,9 @@ export class Server extends Entity {
     default: {
       totalPosts: 0,
       totalUsers: 0,
+      totalUpvotes: 0,
+      totalTransactions: 0,
+      totalExperiences: 0,
     },
   })
   metric: ServerMetric;

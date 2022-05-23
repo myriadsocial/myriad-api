@@ -5,7 +5,7 @@ import {
   ReferenceType,
   SectionType,
 } from '../enums';
-import {Metric} from '../interfaces';
+import {Metric, ServerMetric} from '../interfaces';
 import {
   ActivityLogRepository,
   CommentRepository,
@@ -230,11 +230,26 @@ export class MetricService {
       where: {id: config.MYRIAD_SERVER_ID},
     });
     if (!server) return;
-    const [{count: totalUsers}, {count: totalPosts}] = await Promise.all([
+    const [
+      {count: totalUsers},
+      {count: totalPosts},
+      {count: totalUpvotes},
+      {count: totalTransactions},
+      {count: totalExperiences},
+    ] = await Promise.all([
       this.userRepository.count(),
       this.postRepository.count(),
+      this.voteRepository.count({state: true}),
+      this.transactionRepository.count(),
+      this.experienceRepository.count(),
     ]);
-    const metric = {totalPosts, totalUsers};
+    const metric: ServerMetric = {
+      totalPosts,
+      totalUsers,
+      totalUpvotes,
+      totalTransactions,
+      totalExperiences,
+    };
     return this.serverRepository.updateById(server.id, {metric});
   }
 
