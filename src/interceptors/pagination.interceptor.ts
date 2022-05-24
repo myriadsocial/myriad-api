@@ -444,9 +444,19 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           default: {
+            let userId;
+            if (referenceType === ReferenceType.USER && referenceId) {
+              Object.assign(filter.where, {
+                type: {
+                  nin: [ReferenceType.POST],
+                },
+              });
+              userId = referenceId ? referenceId.toString() : undefined;
+            }
+
             const wallets = await this.walletRepository.find({
               where: {
-                userId: this.currentUser[securityId],
+                userId: userId ?? this.currentUser[securityId],
               },
             });
             const walletIds = wallets.map(wallet => wallet.id);
@@ -476,14 +486,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                     },
                   },
                 ],
-              });
-            }
-
-            if (referenceType === ReferenceType.USER) {
-              Object.assign(filter.where, {
-                type: {
-                  nin: [ReferenceType.POST, ReferenceType.COMMENT],
-                },
               });
             }
           }
