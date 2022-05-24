@@ -817,8 +817,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       q,
     );
 
-    if (q[0] === '#') {
-      const hashtag = q.replace('#', '').trim();
+    if (q.startsWith('#')) {
+      const hashtag = q.replace('#', '').trim().toLowerCase();
 
       filterPost.push(
         {
@@ -842,7 +842,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           ],
         },
       );
-    } else if (q[0] === '@') {
+    } else if (q.startsWith('@')) {
       const mention = q.replace('@', '').trim();
 
       filterPost.push(
