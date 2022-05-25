@@ -92,15 +92,15 @@ export class ExperienceService {
     userId: string,
     experienceId?: string,
   ): Promise<Where<Post> | undefined> {
-    const experience = await this.getExperience(userId, experienceId);
+    const exp = await this.getExperience(userId, experienceId);
 
-    if (!experience) return;
+    if (!exp) return;
 
-    const postIds = await this.getExperiencePostId(experience.id ?? '');
+    const postIds = await this.getExperiencePostId(exp.id ?? '');
     const userIds: string[] = [];
-    const allowedTags = experience.allowedTags;
-    const prohibitedTags = experience.prohibitedTags;
-    const personIds = experience.people
+    const allowedTags = exp.allowedTags.map(tag => tag.toLowerCase());
+    const prohibitedTags = exp.prohibitedTags.map(tag => tag.toLowerCase());
+    const personIds = exp.people
       .filter((e: People) => e.platform !== PlatformType.MYRIAD)
       .map(e => e.id);
     const [blockedFriendIds, approvedFriendIds, friends] = await Promise.all([
@@ -109,7 +109,7 @@ export class ExperienceService {
       this.friendService.friendRepository.find({
         where: {
           requestorId: userId,
-          requesteeId: {inq: (experience.users ?? []).map(e => e.id)},
+          requesteeId: {inq: (exp.users ?? []).map(e => e.id)},
           status: FriendStatusType.APPROVED,
         },
       }),
@@ -119,8 +119,8 @@ export class ExperienceService {
       id => ![...friendIds, ...approvedFriendIds].includes(id),
     );
 
-    if (experience?.users) {
-      for (const user of experience.users) {
+    if (exp?.users) {
+      for (const user of exp.users) {
         const accountPrivacy = user?.accountSetting.accountPrivacy;
         const privateSetting = AccountSettingType.PRIVATE;
 
@@ -196,7 +196,7 @@ export class ExperienceService {
           ],
         },
       ],
-      experienceId: experience.id,
+      experienceId: exp.id,
     } as Where<Post>;
   }
 
