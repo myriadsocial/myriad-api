@@ -5,10 +5,11 @@ import nacl from 'tweetnacl';
 
 export function validateAccount(credential: Credential): boolean {
   const {nonce, signature, publicAddress, walletType} = credential;
-  const publicKey = publicAddress.replace('0x', '');
 
   switch (walletType) {
     case 'polkadot{.js}': {
+      if (!signature.startsWith('0x')) return false;
+      if (signature.length !== 130) return false;
       const {isValid} = signatureVerify(
         numberToHex(nonce),
         signature,
@@ -18,6 +19,7 @@ export function validateAccount(credential: Credential): boolean {
     }
 
     case 'near': {
+      const publicKey = publicAddress.replace('0x', '');
       return nacl.sign.detached.verify(
         Buffer.from(numberToHex(nonce)),
         Buffer.from(hexToU8a(signature)),
