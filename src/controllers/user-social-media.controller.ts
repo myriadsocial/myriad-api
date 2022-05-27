@@ -12,7 +12,7 @@ import {
   patch,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
+import {PaginationInterceptor} from '../interceptors';
 import {UserSocialMedia, UserVerification} from '../models';
 import {
   NotificationService,
@@ -32,7 +32,6 @@ export class UserSocialMediaController {
     protected notificationService: NotificationService,
   ) {}
 
-  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/user-social-medias/verify')
   @response(200, {
     description: 'Verify User Social Media',
@@ -137,7 +136,7 @@ export class UserSocialMediaController {
     await Promise.allSettled([
       this.userSocMedService.userSocialMediaRepository.updateAll(
         {primary: false},
-        {userId: userId, platform},
+        {userId, platform},
       ),
       this.userSocMedService.userSocialMediaRepository.updateById(id, {
         primary: true,

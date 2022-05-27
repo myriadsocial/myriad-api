@@ -717,19 +717,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         const {friendsName, mutual} = request.query;
 
         if (friendsName) {
-          const userIds = invocationCtx.args[1];
-          const requestor = invocationCtx.args[2];
+          const [_, userIds, requestor] = invocationCtx.args;
           result = Promise.all(
             result.map(async (user: User) => {
-              let totalMutual = 0;
-
-              if (mutual === 'true') {
-                ({count: totalMutual} = await this.friendService.countMutual(
-                  requestor.id,
-                  user.id,
-                ));
-              }
-
               const friend: AnyObject = {
                 id: userIds[user.id],
                 requestorId: requestor.id,
@@ -749,7 +739,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 },
               };
 
-              if (mutual === 'true') friend.mutual = totalMutual;
+              if (mutual === 'true') {
+                friend.mutual = await this.friendService.countMutual(
+                  requestor.id,
+                  user.id,
+                );
+              }
               return friend;
             }),
           );

@@ -1,6 +1,4 @@
-import {AuthenticationBindings} from '@loopback/authentication';
 import {
-  inject,
   injectable,
   Interceptor,
   InvocationContext,
@@ -10,13 +8,13 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
-import {UserProfile} from '@loopback/security';
 import {ControllerType, ReferenceType, SectionType} from '../enums';
 import {
   CommentLinkRepository,
   CommentRepository,
   ExperienceRepository,
   PostRepository,
+  UserCurrencyRepository,
   UserExperienceRepository,
   UserRepository,
   VoteRepository,
@@ -29,7 +27,7 @@ import {
   ReportService,
   VoteService,
 } from '../services';
-import {CommentWithRelations} from '../models';
+import {CommentWithRelations, Wallet} from '../models';
 import {omit} from 'lodash';
 import {HttpErrors} from '@loopback/rest';
 import {User} from '@sentry/node';
@@ -53,6 +51,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     protected postRepository: PostRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(UserCurrencyRepository)
+    protected userCurrencyRepository: UserCurrencyRepository,
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
     @repository(VoteRepository)
@@ -69,8 +69,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     protected notificationService: NotificationService,
     @service(VoteService)
     protected voteService: VoteService,
-    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
   ) {}
 
   /**
@@ -119,7 +117,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.WALLET: {
-        const {userId, primary} = invocationCtx.args[1];
+        const {userId, primary} = invocationCtx.args[1] as Wallet;
         const {count} = await this.walletRepository.count({userId});
 
         if (count === 1) {
@@ -279,6 +277,12 @@ export class DeleteInterceptor implements Provider<Interceptor> {
       case ControllerType.VOTE: {
         if (!invocationCtx.args[1]) return;
         return this.voteService.updateVoteCounter(invocationCtx.args[1]);
+      }
+
+      case ControllerType.WALLET: {
+        const {userId, networkId} = invocationCtx.args[1] as Wallet;
+        await this.userCurrencyRepository.deleteAll({userId, networkId});
+        return;
       }
     }
   }

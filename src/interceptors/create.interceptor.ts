@@ -405,13 +405,12 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERWALLET: {
-        const {id, userId, networkId} = invocationCtx.args[1].data as Wallet;
+        const {userId, networkId} = invocationCtx.args[1].data as Wallet;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
         await this.currencyService.addUserCurrencies(userId, networkId);
         Promise.allSettled([
-          this.networkService.connectAccount(networkId, userId, id),
           this.userRepository.updateById(userId, {nonce: newNonce}),
         ]) as Promise<AnyObject>;
 
@@ -449,17 +448,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
         });
 
         return Object.assign(result, {totalReported: count});
-      }
-
-      case ControllerType.USERSOCIALMEDIA: {
-        const {userId, peopleId} = result;
-
-        this.networkService.connectSocialMedia(
-          userId,
-          peopleId,
-        ) as Promise<AnyObject>;
-
-        return result;
       }
 
       case ControllerType.VOTE: {

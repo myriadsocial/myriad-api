@@ -88,6 +88,7 @@ export class WalletController {
     return this.walletRepository.findById(id, filter);
   }
 
+  @authenticate('jwt')
   @intercept(DeleteInterceptor.BINDING_KEY)
   @del('/wallets/{id}')
   @response(204, {

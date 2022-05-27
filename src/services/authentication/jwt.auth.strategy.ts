@@ -41,6 +41,10 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
       throw err;
     }
 
+    if (!userProfile?.[securityId] || !userProfile?.username) {
+      throw new HttpErrors.Unauthorized('Unauthorized user');
+    }
+
     const user = await this.userRepository.findOne({
       where: {
         id: userProfile[securityId],

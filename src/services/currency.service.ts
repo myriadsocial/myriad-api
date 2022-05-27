@@ -46,6 +46,16 @@ export class CurrencyService {
 
     await Promise.all(
       currencies.map(async (currency, index) => {
+        const found = await this.userCurrencyRepository.findOne({
+          where: {
+            userId,
+            networkId,
+            currencyId: currency.id,
+          },
+        });
+
+        if (found) return;
+
         return this.userCurrencyRepository.create({
           userId: userId,
           networkId: networkId,
