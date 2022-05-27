@@ -64,7 +64,7 @@ export class UserSocialMediaService {
 
     if (userSocialMedia) {
       const verified = userSocialMedia.userId === this.currentUser[securityId];
-      if (verified) return userSocialMedia;
+      if (verified) return Object.assign(userSocialMedia, {connected: true});
 
       await Promise.allSettled([
         this.notificationService.sendDisconnectedSocialMedia(

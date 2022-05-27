@@ -124,7 +124,14 @@ export class CreateInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     try {
+      const controllerName = invocationCtx.targetClass.name as ControllerType;
+
       await this.beforeCreate(invocationCtx);
+
+      if (controllerName === ControllerType.USERWALLET) {
+        const [_, {data}, connected] = invocationCtx.args;
+        if (connected) return data;
+      }
 
       const result = await next();
 
@@ -265,18 +272,14 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Id must included');
         }
 
-        const address = await this.walletRepository.exists(data.id);
-
-        if (address) {
-          throw new HttpErrors.UnprocessableEntity('Address already exist');
-        }
-
         const wallet = await this.walletRepository.findOne({
-          where: {id, userId},
+          where: {id},
         });
 
-        if (wallet) {
-          throw new HttpErrors.UnprocessableEntity('Wallet already connected');
+        if (wallet && wallet.userId !== userId) {
+          throw new HttpErrors.UnprocessableEntity(
+            'Already belong to other user',
+          );
         }
 
         const verified = validateAccount(credential);
@@ -285,6 +288,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Failed to verify');
         }
 
+        invocationCtx.args[2] = wallet ? true : false;
         invocationCtx.args[1].data = new Wallet({
           ...data,
           userId: userId,

@@ -34,6 +34,7 @@ import {User} from './user.model';
         },
       },
     },
+    hiddenProperties: ['connected'],
   },
 })
 export class UserSocialMedia extends Entity {

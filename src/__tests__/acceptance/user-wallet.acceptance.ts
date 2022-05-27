@@ -92,26 +92,6 @@ describe('UserWalletApplication', function () {
     expect(result).to.containDeep(wallet);
   });
 
-  it('returns 422 when creating duplicate wallet id', async () => {
-    await givenWalletInstance(walletRepository, givenWallet({userId: user.id}));
-    const credential = givenCredential({
-      nonce: user.nonce,
-      signature: u8aToHex(address.sign(numberToHex(user.nonce))),
-    });
-    const wallet = new Wallet({
-      id: credential.publicAddress,
-      userId: user.id,
-      networkId: 'myriad',
-      primary: true,
-    });
-    credential.data = wallet;
-    await client
-      .post(`/users/${user.id}/wallets`)
-      .set('Authorization', `Bearer ${token}`)
-      .send(credential)
-      .expect(422);
-  });
-
   context('when dealing with multiple persisted wallets', () => {
     let persistedWallets: Wallet[];
 

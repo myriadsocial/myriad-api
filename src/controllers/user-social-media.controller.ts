@@ -77,10 +77,13 @@ export class UserSocialMediaController {
     }
 
     const socialMedia = await this.userSocMedService.createSocialMedia(people);
+    const connected = (socialMedia as AnyObject).connected;
 
-    await Promise.allSettled([
-      this.notificationService.sendConnectedSocialMedia(socialMedia, people),
-    ]);
+    if (!connected) {
+      await Promise.allSettled([
+        this.notificationService.sendConnectedSocialMedia(socialMedia, people),
+      ]);
+    }
 
     return socialMedia;
   }
