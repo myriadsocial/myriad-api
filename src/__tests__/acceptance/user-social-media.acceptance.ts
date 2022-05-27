@@ -134,21 +134,6 @@ describe('UserSocialMediaApplication', function () {
         .send(userVerification)
         .expect(401);
     });
-
-    it('rejects user to verify social media that already been claimed', async () => {
-      const userVerification = givenUserVerification({address: publicKey});
-
-      await client
-        .post('/user-social-medias/verify')
-        .set('Authorization', `Bearer ${token}`)
-        .send(userVerification)
-        .expect(200);
-      await client
-        .post('/user-social-medias/verify')
-        .set('Authorization', `Bearer ${token}`)
-        .send(userVerification)
-        .expect(422);
-    });
   });
 
   context('when dealing with a single persisted user social media', () => {

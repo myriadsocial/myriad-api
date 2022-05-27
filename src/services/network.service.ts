@@ -4,20 +4,15 @@ import {Currency, Network} from '../models';
 import {
   CurrencyRepository,
   NetworkRepository,
-  QueueRepository,
   WalletRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {CoinMarketCap} from './coin-market-cap.service';
 import {providers} from 'near-api-js';
-import {ReferenceType} from '../enums';
 import {HttpErrors} from '@loopback/rest';
 import {ApiPromise} from '@polkadot/api';
-import {config} from '../config';
-import {DateUtils} from '../utils/date-utils';
 
-const {polkadotApi, getKeyring} = new PolkadotJs();
-const dateUtils = new DateUtils();
+const {polkadotApi} = new PolkadotJs();
 
 /* eslint-disable   @typescript-eslint/naming-convention */
 @injectable({scope: BindingScope.TRANSIENT})
@@ -27,8 +22,6 @@ export class NetworkService {
     protected networkRepository: NetworkRepository,
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
-    @repository(QueueRepository)
-    protected queueRepository: QueueRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @inject('services.CoinMarketCap')
@@ -157,108 +150,6 @@ export class NetworkService {
         throw new HttpErrors.UnprocessableEntity(
           `Contract address ${contractId} not found in network ${networkId}`,
         );
-    }
-  }
-
-  async connectSocialMedia(
-    userId: string,
-    peopleId: string,
-    ftIdentifier = 'native',
-  ): Promise<AnyObject | void> {
-    if (!config.MYRIAD_SERVER_ID) return;
-    const tipsBalanceInfo = {
-      serverId: config.MYRIAD_SERVER_ID,
-      referenceType: ReferenceType.PEOPLE,
-      referenceId: peopleId.toString(),
-      ftIdentifier: ftIdentifier,
-    };
-
-    const wallets = await this.walletRepository.find({
-      where: {userId},
-      include: ['network'],
-    });
-    const substrateWallet = wallets.find(
-      wallet => wallet?.network?.blockchainPlatform === 'substrate',
-    );
-
-    return Promise.allSettled([
-      this.claimReferenceMyriad(
-        tipsBalanceInfo,
-        userId,
-        substrateWallet?.id ?? null,
-      ),
-    ]);
-  }
-
-  async connectAccount(
-    networkId: string,
-    userId: string,
-    accountId: string,
-    ftIdentifier = 'native',
-  ): Promise<void> {
-    if (!config.MYRIAD_SERVER_ID) return;
-    const tipsBalanceInfo = {
-      serverId: config.MYRIAD_SERVER_ID,
-      referenceType: ReferenceType.USER,
-      referenceId: userId.toString(),
-      ftIdentifier: ftIdentifier,
-    };
-
-    switch (networkId) {
-      case 'myriad':
-        return this.claimReferenceMyriad(tipsBalanceInfo, userId, accountId);
-
-      case 'near':
-      default:
-        throw new HttpErrors.UnprocessableEntity('Wallet not exist');
-    }
-  }
-
-  async getQueueNumber(nonce: number, type: string): Promise<number> {
-    const queue = await this.queueRepository.get(type);
-
-    let priority = nonce;
-
-    if (queue?.priority >= priority) priority = queue.priority;
-    else priority = nonce;
-
-    await Promise.all([
-      this.queueRepository.set(type, {priority: priority + 1}),
-      this.queueRepository.expire(type, 1 * dateUtils.hour),
-    ]);
-
-    return priority;
-  }
-
-  async claimReferenceMyriad(
-    tipsBalanceInfo: AnyObject,
-    userId: string,
-    accountId: string | null,
-  ) {
-    try {
-      const {rpcURL} = await this.networkRepository.findById('myriad');
-      const api = await this.connect(rpcURL);
-      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
-      const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
-      const extrinsic = api.tx.tipping.claimReference(
-        tipsBalanceInfo,
-        ReferenceType.USER,
-        userId.toString(),
-        accountId,
-      );
-
-      const {nonce: currentNonce} = await api.query.system.account(
-        serverAdmin.address,
-      );
-      const nonce = await this.getQueueNumber(
-        currentNonce.toJSON(),
-        config.MYRIAD_SERVER_ID,
-      );
-
-      await extrinsic.signAndSend(serverAdmin, {nonce});
-      await api.disconnect();
-    } catch {
-      // ignore
     }
   }
 

@@ -4,7 +4,6 @@ import {People, UserSocialMedia} from '../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
 import {injectable, BindingScope, service, inject} from '@loopback/core';
 import {NotificationService} from './';
-import {HttpErrors} from '@loopback/rest';
 import {ActivityLogService} from './activity-log.service';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
@@ -64,19 +63,16 @@ export class UserSocialMediaService {
     });
 
     if (userSocialMedia) {
-      if (userSocialMedia.userId !== this.currentUser[securityId]) {
-        await Promise.allSettled([
-          this.notificationService.sendDisconnectedSocialMedia(
-            userSocialMedia.id,
-            this.currentUser[securityId],
-          ),
-          this.userSocialMediaRepository.deleteById(userSocialMedia.id),
-        ]);
-      } else {
-        throw new HttpErrors.UnprocessableEntity(
-          `You already claimed this ${platform}`,
-        );
-      }
+      const verified = userSocialMedia.userId === this.currentUser[securityId];
+      if (verified) return userSocialMedia;
+
+      await Promise.allSettled([
+        this.notificationService.sendDisconnectedSocialMedia(
+          userSocialMedia.id,
+          this.currentUser[securityId],
+        ),
+        this.userSocialMediaRepository.deleteById(userSocialMedia.id),
+      ]);
     }
 
     const {count} = await this.userSocialMediaRepository.count({
