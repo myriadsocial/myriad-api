@@ -24,6 +24,7 @@ export class VoteService {
       this.metricService.countPopularPost(referenceId),
       this.metricService.publicMetric(type, referenceId),
       this.metricService.userMetric(toUserId),
+      this.metricService.countServerMetric(),
     ]);
   }
 
