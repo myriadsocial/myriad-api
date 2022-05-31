@@ -99,10 +99,17 @@ export class SocialMediaService {
       data = await this.twitterService.getActions(
         `1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`,
       );
-    } catch {
-      throw new HttpErrors.UnprocessableEntity(
-        'Tweet not found/protected by user',
-      );
+    } catch (err) {
+      switch (err.statusCode) {
+        case 403:
+          throw new HttpErrors.Forbidden('Tweet protected by user');
+
+        case 404:
+          throw new HttpErrors.BadRequest('Invalid tweet url');
+
+        default:
+          throw new HttpErrors.BadRequest('Invalid tweet url');
+      }
     }
 
     const {
@@ -233,7 +240,7 @@ export class SocialMediaService {
     try {
       [data] = await this.redditService.getActions(textId + '.json');
     } catch {
-      throw new HttpErrors.UnprocessableEntity('Post not found');
+      throw new HttpErrors.BadRequest('Invalid reddit url');
     }
 
     const redditPost = data.data.children[0].data;
@@ -313,7 +320,9 @@ export class SocialMediaService {
         'user/' + redditUser + '/about.json',
       ));
     } catch {
-      throw new HttpErrors.UnprocessableEntity('User not found');
+      throw new HttpErrors.BadRequest(
+        'This reddit post not belong to any user',
+      );
     }
 
     const redditText = text.replace(/&(amp;)*#x200B;*/, '').trim();

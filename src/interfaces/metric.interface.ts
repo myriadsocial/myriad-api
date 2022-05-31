@@ -19,7 +19,7 @@ export interface UserMetric {
 export interface ServerMetric {
   totalPosts: number;
   totalUsers: number;
-  totalUpvotes: number;
+  totalVotes: number;
   totalTransactions: number;
   totalExperiences: number;
 }
