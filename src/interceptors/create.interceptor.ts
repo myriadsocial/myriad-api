@@ -392,6 +392,26 @@ export class CreateInterceptor implements Provider<Interceptor> {
           ]) as Promise<AnyObject>;
         }
 
+        if (result && result.status === FriendStatusType.BLOCKED) {
+          const {requesteeId, requestorId} = result as Friend;
+          const [
+            {friendIndex: requestorFriendIndex},
+            {friendIndex: requesteeFriendIndex},
+          ] = await Promise.all([
+            this.userRepository.findById(requestorId),
+            this.userRepository.findById(requesteeId),
+          ]);
+
+          Promise.allSettled([
+            this.userRepository.updateById(requestorId, {
+              friendIndex: omit(requestorFriendIndex, [requesteeId]),
+            }),
+            this.userRepository.updateById(requesteeId, {
+              friendIndex: omit(requesteeFriendIndex, [requestorId]),
+            }),
+          ]) as Promise<AnyObject>;
+        }
+
         return result;
       }
 

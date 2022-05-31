@@ -430,6 +430,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       case ControllerType.TRANSACTION: {
         const {referenceId, currencyId, referenceType, status} = request.query;
+        const profile = referenceType === ReferenceType.USER && referenceId;
 
         switch (referenceType) {
           case ReferenceType.POST:
@@ -445,7 +446,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
           default: {
             let userId;
-            if (referenceType === ReferenceType.USER && referenceId) {
+            if (profile) {
               Object.assign(filter.where, {
                 type: {
                   nin: [ReferenceType.POST],
@@ -460,7 +461,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               },
             });
             const walletIds = wallets.map(wallet => wallet.id);
-            if (status === 'received') {
+            if (status === 'received' || profile) {
               Object.assign(filter.where, {
                 to: {
                   inq: walletIds,
