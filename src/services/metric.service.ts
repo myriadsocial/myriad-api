@@ -233,20 +233,20 @@ export class MetricService {
     const [
       {count: totalUsers},
       {count: totalPosts},
-      {count: totalUpvotes},
+      {count: totalVotes},
       {count: totalTransactions},
       {count: totalExperiences},
     ] = await Promise.all([
       this.userRepository.count(),
       this.postRepository.count(),
-      this.voteRepository.count({state: true}),
+      this.voteRepository.count(),
       this.transactionRepository.count(),
       this.experienceRepository.count(),
     ]);
     const metric: ServerMetric = {
       totalPosts,
       totalUsers,
-      totalUpvotes,
+      totalVotes,
       totalTransactions,
       totalExperiences,
     };

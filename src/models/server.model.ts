@@ -36,7 +36,7 @@ export class Server extends Entity {
     default: {
       totalPosts: 0,
       totalUsers: 0,
-      totalUpvotes: 0,
+      totalVotes: 0,
       totalTransactions: 0,
       totalExperiences: 0,
     },

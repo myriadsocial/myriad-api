@@ -412,8 +412,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           filter.where = await this.getExperienceByQuery(experienceQuery);
-          filter.where.deletedAt = {$exists: false};
         }
+
+        filter.where.deletedAt = {$exists: false};
 
         break;
       }
