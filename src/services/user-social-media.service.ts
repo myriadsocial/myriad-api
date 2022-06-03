@@ -7,8 +7,6 @@ import {NotificationService} from './';
 import {ActivityLogService} from './activity-log.service';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
-import {HttpErrors} from '@loopback/rest';
-import {capitalize} from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
@@ -66,11 +64,7 @@ export class UserSocialMediaService {
 
     if (userSocialMedia) {
       const verified = userSocialMedia.userId === this.currentUser[securityId];
-      if (verified) {
-        throw new HttpErrors.UnprocessableEntity(
-          `${capitalize(platform)} account already exists`,
-        );
-      }
+      if (verified) return Object.assign(userSocialMedia, {connected: true});
 
       await Promise.allSettled([
         this.notificationService.sendDisconnectedSocialMedia(
