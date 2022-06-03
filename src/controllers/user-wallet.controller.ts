@@ -52,6 +52,7 @@ export class UserWalletController {
       },
     })
     credential: Credential,
+    @param.query.boolean('blockchain') _?: boolean,
   ): Promise<Wallet> {
     return this.userRepository.wallets(id).create(credential.data);
   }
