@@ -424,19 +424,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
         return this.afterHandleExperience(invocationCtx, result);
       }
 
-      case ControllerType.USERWALLET: {
-        const {userId, networkId} = invocationCtx.args[1].data as Wallet;
-        const ng = new NonceGenerator();
-        const newNonce = ng.generate();
-
-        await this.currencyService.addUserCurrencies(userId, networkId);
-        Promise.allSettled([
-          this.userRepository.updateById(userId, {nonce: newNonce}),
-        ]) as Promise<AnyObject>;
-
-        return result;
-      }
-
       case ControllerType.USERREPORT: {
         const reportDetail = invocationCtx.args[1];
         const found = await this.userReportRepository.findOne({
@@ -468,6 +455,41 @@ export class CreateInterceptor implements Provider<Interceptor> {
         });
 
         return Object.assign(result, {totalReported: count});
+      }
+
+      case ControllerType.USERSOCIALMEDIA: {
+        if (!invocationCtx.args[1]) return result;
+
+        const {userId, peopleId} = result;
+
+        this.networkService.connectSocialMedia(
+          userId,
+          peopleId,
+        ) as Promise<AnyObject>;
+
+        return result;
+      }
+
+      case ControllerType.USERWALLET: {
+        const {id, userId, networkId} = invocationCtx.args[1].data as Wallet;
+        const ng = new NonceGenerator();
+        const newNonce = ng.generate();
+
+        await this.currencyService.addUserCurrencies(userId, networkId);
+
+        const promises = [
+          this.userRepository.updateById(userId, {nonce: newNonce}),
+        ];
+
+        if (invocationCtx.args[2]) {
+          promises.push(
+            this.networkService.connectAccount(networkId, userId, id),
+          );
+        }
+
+        Promise.allSettled(promises) as Promise<AnyObject>;
+
+        return result;
       }
 
       case ControllerType.VOTE: {

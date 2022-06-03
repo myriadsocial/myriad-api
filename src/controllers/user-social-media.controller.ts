@@ -12,7 +12,7 @@ import {
   patch,
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
-import {PaginationInterceptor} from '../interceptors';
+import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {UserSocialMedia, UserVerification} from '../models';
 import {
   NotificationService,
@@ -32,6 +32,7 @@ export class UserSocialMediaController {
     protected notificationService: NotificationService,
   ) {}
 
+  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/user-social-medias/verify')
   @response(200, {
     description: 'Verify User Social Media',
@@ -50,6 +51,7 @@ export class UserSocialMediaController {
       },
     })
     userVerification: UserVerification,
+    @param.query.boolean('blockchain') _?: boolean,
   ): Promise<UserSocialMedia> {
     const {address, platform, username} = userVerification;
 
