@@ -5,6 +5,7 @@ import {HttpErrors, Request} from '@loopback/rest';
 import {UserProfile, securityId} from '@loopback/security';
 import {TokenServiceBindings} from '../../keys';
 import {UserRepository} from '../../repositories';
+import {generateObjectId} from '../../utils/generate-object-id';
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   name = 'jwt';
@@ -33,9 +34,10 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
         wallet !== 'wallet' &&
         walletAddress !== 'walletaddress'
       ) {
-        const myriadUserId = await this.getMyriadUserId();
+        const randomUserId = generateObjectId();
+
         return {
-          [securityId]: myriadUserId,
+          [securityId]: randomUserId,
         };
       }
       throw err;
@@ -63,14 +65,6 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
         'You cannot create, update, or delete',
       );
     return userProfile;
-  }
-
-  async getMyriadUserId(): Promise<string> {
-    const user = await this.userRepository.findOne({
-      where: {username: 'myriad_official'},
-    });
-    if (!user) throw new HttpErrors.NotFound('User not found');
-    return user.id;
   }
 
   extractCredentials(request: Request): string {
