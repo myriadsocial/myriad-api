@@ -980,10 +980,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return this.friendService.friendsTimeline(userId);
 
       case TimelineType.ALL: {
-        const blockedFriendIds = await this.friendService.getFriendIds(
-          userId,
-          FriendStatusType.BLOCKED,
-        );
+        const [friends, blockedFriendIds] = await Promise.all([
+          this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+          this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
+        ]);
 
         return {
           or: [
@@ -991,6 +991,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               and: [
                 {createdBy: {nin: blockedFriendIds}},
                 {visibility: VisibilityType.PUBLIC},
+              ],
+            },
+            {
+              and: [
+                {createdBy: {inq: friends}},
+                {visibility: VisibilityType.FRIEND},
               ],
             },
             {createdBy: userId},
