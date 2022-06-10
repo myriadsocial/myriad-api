@@ -272,7 +272,9 @@ export class ExperienceService {
     return privateExperience;
   }
 
-  async getExperiencePostId(experienceId: string): Promise<string[]> {
+  async getExperiencePostId(experienceId?: string): Promise<string[]> {
+    if (!experienceId) return [];
+
     const experiencePosts = await this.experiencePostRepository.find({
       where: {experienceId},
     });

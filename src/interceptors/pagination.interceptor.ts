@@ -980,84 +980,21 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return this.friendService.friendsTimeline(userId);
 
       case TimelineType.ALL: {
-        const [approvedFriendIds, trendingTopics, experience] =
-          await Promise.all([
-            this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
-            this.tagService.trendingTopics(),
-            this.experienceService.getExperience(userId),
-          ]);
-        const experienceTopics = experience ? experience.allowedTags : [];
-        const prohibitedTopics = experience ? experience.prohibitedTags : [];
-        const postIds = experience
-          ? await this.experienceService.getExperiencePostId(
-              experience.id ?? '',
-            )
-          : [];
-        const experiencePersonIds = experience
-          ? experience.people.map(e => e.id)
-          : [];
-        const experienceUserIds = experience
-          ? (experience.users ?? [])
-              .filter(user => {
-                const accountPrivacy = user?.accountSetting.accountPrivacy;
-                const privateSetting = AccountSettingType.PRIVATE;
+        const [blockedFriendIds, accounts] = await Promise.all([
+          this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
+          this.accountSettingRepository.find({
+            where: {accountPrivacy: AccountSettingType.PRIVATE},
+          }),
+        ]);
 
-                return !(accountPrivacy === privateSetting);
-              })
-              .map(e => e.id)
-          : [];
-        const blockedFriendIds = await this.friendService.getFriendIds(
-          userId,
-          FriendStatusType.BLOCKED,
-        );
-
-        const friends = [...approvedFriendIds, userId];
-        const topics = [...trendingTopics, ...experienceTopics];
-        const personIds = experiencePersonIds;
-
-        if (!friends.length && !topics.length && !personIds.length) return;
+        const privacyIds = accounts.map(e => e.userId);
 
         return {
           or: [
             {
               and: [
-                {tags: {inq: topics}},
-                {tags: {nin: prohibitedTopics}},
-                {createdBy: {nin: blockedFriendIds}},
+                {createdBy: {nin: [...blockedFriendIds, ...privacyIds]}},
                 {visibility: VisibilityType.PUBLIC},
-              ],
-            },
-            {
-              and: [
-                {id: {inq: postIds}},
-                {createdBy: {nin: blockedFriendIds}},
-                {visibility: VisibilityType.PUBLIC},
-              ],
-            },
-            {
-              and: [
-                {peopleId: {inq: personIds}},
-                {createdBy: {nin: blockedFriendIds}},
-                {visibility: VisibilityType.PUBLIC},
-              ],
-            },
-            {
-              and: [
-                {id: {inq: postIds}},
-                {createdBy: {inq: friends}},
-                {visibility: VisibilityType.FRIEND},
-              ],
-            },
-            {
-              and: [
-                {createdBy: {inq: [...friends, ...experienceUserIds]}},
-                {visibility: VisibilityType.PUBLIC},
-              ],
-            },
-            {
-              and: [
-                {createdBy: {inq: friends}},
-                {visibility: VisibilityType.FRIEND},
               ],
             },
             {createdBy: userId},
