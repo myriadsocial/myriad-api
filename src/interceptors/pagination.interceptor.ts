@@ -980,20 +980,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return this.friendService.friendsTimeline(userId);
 
       case TimelineType.ALL: {
-        const [blockedFriendIds, accounts] = await Promise.all([
-          this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
-          this.accountSettingRepository.find({
-            where: {accountPrivacy: AccountSettingType.PRIVATE},
-          }),
-        ]);
-
-        const privacyIds = accounts.map(e => e.userId);
+        const blockedFriendIds = await this.friendService.getFriendIds(
+          userId,
+          FriendStatusType.BLOCKED,
+        );
 
         return {
           or: [
             {
               and: [
-                {createdBy: {nin: [...blockedFriendIds, ...privacyIds]}},
+                {createdBy: {nin: blockedFriendIds}},
                 {visibility: VisibilityType.PUBLIC},
               ],
             },

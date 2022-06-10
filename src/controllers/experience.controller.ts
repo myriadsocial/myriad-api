@@ -1,6 +1,17 @@
 import {intercept} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {get, getModelSchemaRef, param, response} from '@loopback/rest';
+import {
+  AnyObject,
+  Filter,
+  FilterExcludingWhere,
+  repository,
+} from '@loopback/repository';
+import {
+  get,
+  getModelSchemaRef,
+  HttpErrors,
+  param,
+  response,
+} from '@loopback/rest';
 import {FindByIdInterceptor, PaginationInterceptor} from '../interceptors';
 import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
@@ -48,6 +59,18 @@ export class ExperienceController {
     @param.filter(Experience, {exclude: 'where'})
     filter?: FilterExcludingWhere<Experience>,
   ): Promise<Experience> {
-    return this.experienceRepository.findById(id, filter);
+    const experience = await this.experienceRepository.findOne(<AnyObject>{
+      ...filter,
+      where: {
+        id,
+        deletetAt: {
+          $exists: false,
+        },
+      },
+    });
+
+    if (!experience) throw new HttpErrors.NotFound('Experience not found');
+
+    return experience;
   }
 }
