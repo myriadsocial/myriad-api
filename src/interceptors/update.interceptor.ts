@@ -172,17 +172,16 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           platform === PlatformType.REDDIT ||
           platform === PlatformType.FACEBOOK
         ) {
-          currentPost.updatedAt = payload.updatedAt;
+          const importedPayload: AnyObject = {
+            updatedAt: new Date().toString(),
+          };
 
-          if (payload.visibility) currentPost.visibility = payload.visibility;
-          if (payload.isNSFW) currentPost.isNSFW = payload.isNSFW;
-          if (payload.NSFWTag) currentPost.NSFWTag = payload.NSFWTag;
+          if (payload.visibility)
+            importedPayload.visibility = payload.visibility;
+          if (payload.isNSFW) importedPayload.isNSFW = payload.isNSFW;
+          if (payload.NSFWTag) importedPayload.NSFWTag = payload.NSFWTag;
 
-          const updatedPost: Partial<Post> = currentPost;
-
-          delete updatedPost.id;
-
-          invocationCtx.args[1] = updatedPost;
+          invocationCtx.args[1] = importedPayload;
 
           break;
         }
