@@ -6,16 +6,21 @@ import {
   givenExperienceInstance,
   givenRepositories,
   givenUserInstance,
-  testdb,
+  testDBMongo,
 } from '../../helpers';
 
-describe('ExperienceControllerIntegration', () => {
+/* eslint-disable  @typescript-eslint/no-invalid-this */
+describe('ExperienceControllerIntegration', function () {
+  this.timeout(100000);
+
   let userRepository: UserRepository;
   let experienceRepository: ExperienceRepository;
   let controller: ExperienceController;
 
   before(async () => {
-    ({userRepository, experienceRepository} = await givenRepositories(testdb));
+    ({userRepository, experienceRepository} = await givenRepositories(
+      testDBMongo,
+    ));
   });
 
   before(async () => {
@@ -23,15 +28,17 @@ describe('ExperienceControllerIntegration', () => {
   });
 
   beforeEach(async () => {
-    await givenEmptyDatabase(testdb);
+    await givenEmptyDatabase(testDBMongo);
   });
 
   it('includes User in find method result', async () => {
     const user = await givenUserInstance(userRepository);
-
     const experience = await givenExperienceInstance(experienceRepository, {
       createdBy: user.id,
     });
+
+    user.id = user.id.toString();
+    experience.id = experience.id?.toString();
 
     const response = await controller.find({include: ['user']});
 
@@ -45,10 +52,13 @@ describe('ExperienceControllerIntegration', () => {
 
   it('includes User in findById method result', async () => {
     const user = await givenUserInstance(userRepository);
-
     const experience = await givenExperienceInstance(experienceRepository, {
       createdBy: user.id,
     });
+
+    user.id = user.id.toString();
+    experience.id = experience.id?.toString();
+
     const response = await controller.findById(experience.id ?? '', {
       include: ['user'],
     });

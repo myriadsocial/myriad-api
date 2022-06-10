@@ -19,17 +19,6 @@ describe('ExperienceController', () => {
 
   beforeEach(resetRepositories);
 
-  describe('findExperiencerById', () => {
-    it('returns a experience if it exists', async () => {
-      const findById = experienceRepository.stubs.findById;
-      findById.resolves(aExperienceWithId);
-      expect(await controller.findById(aExperienceWithId.id as string)).to.eql(
-        aExperienceWithId,
-      );
-      sinon.assert.calledWith(findById, aExperienceWithId.id);
-    });
-  });
-
   describe('findExperiences', () => {
     it('returns multiple experiences if they exist', async () => {
       const find = experienceRepository.stubs.find;

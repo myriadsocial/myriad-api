@@ -27,7 +27,6 @@ import {ExperienceService, PostService} from '../services';
 import {AccountSettingRepository, FriendRepository} from '../repositories';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
-import {HttpErrors} from '@loopback/rest';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -73,7 +72,9 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
     const result = await next();
 
-    return this.afterFindById(invocationCtx, result);
+    const afterResult = await this.afterFindById(invocationCtx, result);
+
+    return afterResult;
   }
 
   async beforeFindById(invocationCtx: InvocationContext): Promise<void> {
@@ -170,8 +171,6 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.EXPERIENCE: {
-        if (result.deletedAt)
-          throw new HttpErrors.NotFound('Experience not found');
         const users = result.users ?? [];
         const userToPeople = users.map((user: User) => {
           return new People({
@@ -199,14 +198,10 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.POST: {
-        if (result.deletedAt || result.banned)
-          throw new HttpErrors.NotFound('Post not found');
-        const post = await this.postService.restrictedPost(result as Post);
-        const postDetail = await this.postService.getPostImporterInfo(
-          post,
+        return this.postService.getPostImporterInfo(
+          result as Post,
           this.currentUser[securityId],
         );
-        return postDetail;
       }
 
       case ControllerType.USER: {

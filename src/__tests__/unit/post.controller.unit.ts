@@ -33,17 +33,6 @@ describe('PostController', () => {
 
   beforeEach(resetRepositories);
 
-  describe('findPostById', () => {
-    it('returns a post if it exists', async () => {
-      const findById = postRepository.stubs.findById;
-      findById.resolves(aPostWithId);
-      expect(await controller.findById(aPostWithId.id as string)).to.eql(
-        aPostWithId,
-      );
-      sinon.assert.calledWith(findById, aPostWithId.id);
-    });
-  });
-
   describe('findPosts', () => {
     it('returns multiple posts if they exist', async () => {
       const find = postRepository.stubs.find;

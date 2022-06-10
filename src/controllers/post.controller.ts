@@ -128,7 +128,14 @@ export class PostController {
     @param.path.string('id') id: string,
     @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
   ): Promise<Post> {
-    return this.postService.postRepository.findById(id, filter);
+    const currentPost = await this.postService.postRepository.findById(
+      id,
+      filter,
+    );
+
+    await this.postService.validateUnrestrictedPost(currentPost);
+
+    return currentPost;
   }
 
   @intercept(UpdateInterceptor.BINDING_KEY)
