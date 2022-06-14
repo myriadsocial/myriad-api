@@ -207,8 +207,8 @@ export class ExperienceService {
     return Promise.all(
       userExperiences.map(async userExperience => {
         const accountSetting = userExperience.experience?.user?.accountSetting;
-        const privateUserExperience = {
-          ...userExperience,
+        const privateUserExperience: AnyObject = {
+          id: userExperience.id,
           private: false,
           friend: false,
         };
@@ -231,6 +231,12 @@ export class ExperienceService {
           friend === null
         ) {
           privateUserExperience.private = true;
+        }
+
+        const {private: isPrivate, friend: isFriend} = privateUserExperience;
+
+        if (isFriend || (!isPrivate && !isFriend)) {
+          Object.assign(privateUserExperience, {...userExperience});
         }
 
         return omit(privateUserExperience, ['clonedId']);
@@ -309,41 +315,6 @@ export class ExperienceService {
     return experienceIds;
   }
 
-  combinePeopleAndUser(
-    result: UserExperienceWithRelations[],
-  ): UserExperienceWithRelations[] {
-    return result.map((userExperience: UserExperienceWithRelations) => {
-      const users = userExperience.experience?.users;
-
-      if (!users) return userExperience;
-
-      const newExperience: Partial<Experience> = {
-        ...userExperience.experience,
-      };
-
-      const userToPeople = users.map(user => {
-        return new People({
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          platform: PlatformType.MYRIAD,
-          originUserId: user.id,
-          profilePictureURL: user.profilePictureURL,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          deletedAt: user.deletedAt,
-        });
-      });
-
-      const people = userExperience.experience?.people ?? [];
-
-      newExperience.people = [...userToPeople, ...people];
-      userExperience.experience = newExperience as Experience;
-
-      return omit(userExperience, ['users']) as UserExperienceWithRelations;
-    });
-  }
-
   async validateSubscribeExperience(
     userId: string,
     experienceId: string,
@@ -400,5 +371,56 @@ export class ExperienceService {
       throw new HttpErrors.UnprocessableEntity(
         'You cannot update other user experience',
       );
+  }
+
+  async validatePrivateExperience(experience: ExperienceWithRelations) {
+    if (!experience?.user?.accountSetting) return;
+    const {accountPrivacy} = experience.user.accountSetting;
+
+    if (accountPrivacy === AccountSettingType.PUBLIC) return;
+    const friend = await this.friendService.friendRepository.findOne({
+      where: {
+        requestorId: this.currentUser[securityId],
+        requesteeId: experience.createdBy,
+        status: FriendStatusType.APPROVED,
+      },
+    });
+    if (friend) return;
+    throw new HttpErrors.Forbidden('PrivateExperience');
+  }
+
+  combinePeopleAndUser(
+    result: UserExperienceWithRelations[],
+  ): UserExperienceWithRelations[] {
+    return result.map((userExperience: UserExperienceWithRelations) => {
+      const users = userExperience.experience?.users;
+
+      if (!users) return userExperience;
+
+      const newExperience: Partial<Experience> = {
+        ...userExperience.experience,
+      };
+
+      const userToPeople = users.map(user => {
+        return new People({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          platform: PlatformType.MYRIAD,
+          originUserId: user.id,
+          profilePictureURL: user.profilePictureURL,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          deletedAt: user.deletedAt,
+        });
+      });
+
+      const people = userExperience.experience?.people ?? [];
+
+      newExperience.people = [...userToPeople, ...people];
+      userExperience.experience = newExperience as Experience;
+
+      return omit(userExperience, ['users']) as UserExperienceWithRelations;
+    });
   }
 }

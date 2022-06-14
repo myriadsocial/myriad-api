@@ -1,4 +1,4 @@
-import {intercept} from '@loopback/core';
+import {intercept, service} from '@loopback/core';
 import {
   AnyObject,
   Filter,
@@ -16,12 +16,15 @@ import {FindByIdInterceptor, PaginationInterceptor} from '../interceptors';
 import {Experience} from '../models';
 import {ExperienceRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {ExperienceService} from '../services';
 
 @authenticate('jwt')
 export class ExperienceController {
   constructor(
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
+    @service(ExperienceService)
+    protected experienceService: ExperienceService,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -70,6 +73,8 @@ export class ExperienceController {
     });
 
     if (!experience) throw new HttpErrors.NotFound('Experience not found');
+
+    await this.experienceService?.validatePrivateExperience(experience);
 
     return experience;
   }

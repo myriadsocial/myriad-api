@@ -49,7 +49,7 @@ import {
 } from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
-import {omit} from 'lodash';
+import {omit, pull} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -412,6 +412,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           filter.where = await this.getExperienceByQuery(experienceQuery);
+        } else {
+          const userId = this.currentUser?.[securityId];
+          const [blockedFriendIds, approvedFriendIds] = await Promise.all([
+            this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
+            this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+          ]);
+          const userIds = pull(blockedFriendIds, ...approvedFriendIds);
+
+          filter.where.createdBy = {nin: userIds};
         }
 
         filter.where.deletedAt = {$exists: false};
@@ -952,14 +961,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   }
 
   async getExperienceByQuery(q: string): Promise<Where<Experience>> {
-    const blockedFriendIds = await this.friendService.getFriendIds(
-      this.currentUser[securityId],
-      FriendStatusType.BLOCKED,
-    );
+    const userId = this.currentUser?.[securityId];
+    const [blockedFriendIds, approvedFriendIds] = await Promise.all([
+      this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
+      this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+    ]);
+    const userIds = pull(blockedFriendIds, ...approvedFriendIds);
 
     const pattern = new RegExp(q, 'i');
     return {
-      and: [{name: {regexp: pattern}}, {createdBy: {nin: blockedFriendIds}}],
+      and: [{name: {regexp: pattern}}, {createdBy: {nin: userIds}}],
     };
   }
 

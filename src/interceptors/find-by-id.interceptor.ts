@@ -15,13 +15,7 @@ import {
   FriendStatusType,
   PlatformType,
 } from '../enums';
-import {
-  Experience,
-  People,
-  Post,
-  User,
-  UserExperienceWithRelations,
-} from '../models';
+import {People, Post, User, UserExperienceWithRelations} from '../models';
 import {omit} from 'lodash';
 import {ExperienceService, PostService} from '../services';
 import {AccountSettingRepository, FriendRepository} from '../repositories';
@@ -188,13 +182,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
         result.people = [...result.people, ...userToPeople];
 
-        const privateExperience =
-          await this.experienceService.privateExperience(
-            this.currentUser[securityId],
-            result as Experience,
-          );
-
-        return omit(privateExperience, ['users']);
+        return omit(result, ['users']);
       }
 
       case ControllerType.POST: {
