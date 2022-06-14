@@ -82,6 +82,7 @@ describe('UserExperienceApplication', function () {
         ...persistedUserExperience,
         private: false,
         friend: false,
+        blocked: false,
       });
 
       expect(result.body).to.deepEqual(expected);
@@ -142,6 +143,7 @@ describe('UserExperienceApplication', function () {
               ...userExperience,
               private: false,
               friend: false,
+              blocked: false,
             }),
           ],
           meta: {
