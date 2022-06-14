@@ -1,6 +1,7 @@
 import {expect} from '@loopback/testlab';
 import {ExperienceController} from '../../../controllers';
 import {ExperienceRepository, UserRepository} from '../../../repositories';
+import {ExperienceService} from '../../../services';
 import {
   givenEmptyDatabase,
   givenExperienceInstance,
@@ -15,16 +16,19 @@ describe('ExperienceControllerIntegration', function () {
 
   let userRepository: UserRepository;
   let experienceRepository: ExperienceRepository;
+  let experienceService: ExperienceService;
   let controller: ExperienceController;
 
   before(async () => {
-    ({userRepository, experienceRepository} = await givenRepositories(
-      testDBMongo,
-    ));
+    ({userRepository, experienceRepository, experienceService} =
+      await givenRepositories(testDBMongo));
   });
 
   before(async () => {
-    controller = new ExperienceController(experienceRepository);
+    controller = new ExperienceController(
+      experienceRepository,
+      experienceService,
+    );
   });
 
   beforeEach(async () => {

@@ -9,10 +9,12 @@ import {ExperienceController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {Experience, People} from '../../models';
 import {ExperienceRepository} from '../../repositories';
+import {ExperienceService} from '../../services';
 import {givenExperience} from '../helpers';
 
 describe('ExperienceController', () => {
   let experienceRepository: StubbedInstanceWithSinonAccessor<ExperienceRepository>;
+  let experienceService: ExperienceService;
   let controller: ExperienceController;
   let aExperienceWithId: Experience;
   let aListOfExperiences: Experience[];
@@ -72,6 +74,9 @@ describe('ExperienceController', () => {
       }),
     ] as Experience[];
 
-    controller = new ExperienceController(experienceRepository);
+    controller = new ExperienceController(
+      experienceRepository,
+      experienceService,
+    );
   }
 });
