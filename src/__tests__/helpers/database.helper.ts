@@ -29,6 +29,7 @@ import {
 } from '../../repositories';
 import {
   ActivityLogService,
+  ExperienceService,
   FCMService,
   FriendService,
   MetricService,
@@ -238,6 +239,15 @@ export async function givenRepositories(testdb: any) {
     currentUser,
   );
 
+  const experienceService = new ExperienceService(
+    experienceRepository,
+    experiencePostRepository,
+    userExperienceRepository,
+    userRepository,
+    friendService,
+    currentUser,
+  );
+
   return {
     userRepository,
     userSocialMediaRepository,
@@ -257,6 +267,7 @@ export async function givenRepositories(testdb: any) {
     userReportRepository,
     accountSettingRepository,
     notificationSettingRepository,
+    experienceService,
     tagRepository,
     metricService,
     notificationService,

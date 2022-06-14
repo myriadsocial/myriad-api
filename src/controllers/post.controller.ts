@@ -128,12 +128,10 @@ export class PostController {
     @param.path.string('id') id: string,
     @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
   ): Promise<Post> {
-    const currentPost = await this.postService.postRepository.findById(
-      id,
-      filter,
-    );
+    const postService = this.postService;
+    const currentPost = await postService.postRepository.findById(id, filter);
 
-    await this.postService.validateUnrestrictedPost(currentPost);
+    await postService.validateUnrestrictedPost(currentPost);
 
     return currentPost;
   }

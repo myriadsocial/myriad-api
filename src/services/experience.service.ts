@@ -207,33 +207,43 @@ export class ExperienceService {
     return Promise.all(
       userExperiences.map(async userExperience => {
         const accountSetting = userExperience.experience?.user?.accountSetting;
-        const privateUserExperience = {
+        const privateUserExp: AnyObject = {
           ...userExperience,
           private: false,
           friend: false,
+          blocked: false,
         };
 
         const friend = await this.friendService.friendRepository.findOne({
           where: <AnyObject>{
-            requestorId: userId,
-            requesteeId: accountSetting?.userId ?? '',
-            status: FriendStatusType.APPROVED,
+            or: [
+              {
+                requestorId: userId,
+                requesteeId: accountSetting?.userId ?? '',
+              },
+              {
+                requesteeId: userId,
+                requestorId: accountSetting?.userId ?? '',
+              },
+            ],
             deletedAt: {
               $exists: false,
             },
           },
         });
 
-        if (friend) privateUserExperience.friend = true;
+        const status = friend?.status;
+        if (status === FriendStatusType.APPROVED) privateUserExp.friend = true;
+        if (status === FriendStatusType.BLOCKED) privateUserExp.blocked = true;
         if (
           accountSetting?.accountPrivacy === AccountSettingType.PRIVATE &&
           accountSetting?.userId !== userId &&
           friend === null
         ) {
-          privateUserExperience.private = true;
+          privateUserExp.private = true;
         }
 
-        return omit(privateUserExperience, ['clonedId']);
+        return omit(privateUserExp, ['clonedId']);
       }),
     );
   }
@@ -309,41 +319,6 @@ export class ExperienceService {
     return experienceIds;
   }
 
-  combinePeopleAndUser(
-    result: UserExperienceWithRelations[],
-  ): UserExperienceWithRelations[] {
-    return result.map((userExperience: UserExperienceWithRelations) => {
-      const users = userExperience.experience?.users;
-
-      if (!users) return userExperience;
-
-      const newExperience: Partial<Experience> = {
-        ...userExperience.experience,
-      };
-
-      const userToPeople = users.map(user => {
-        return new People({
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          platform: PlatformType.MYRIAD,
-          originUserId: user.id,
-          profilePictureURL: user.profilePictureURL,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          deletedAt: user.deletedAt,
-        });
-      });
-
-      const people = userExperience.experience?.people ?? [];
-
-      newExperience.people = [...userToPeople, ...people];
-      userExperience.experience = newExperience as Experience;
-
-      return omit(userExperience, ['users']) as UserExperienceWithRelations;
-    });
-  }
-
   async validateSubscribeExperience(
     userId: string,
     experienceId: string,
@@ -400,5 +375,66 @@ export class ExperienceService {
       throw new HttpErrors.UnprocessableEntity(
         'You cannot update other user experience',
       );
+  }
+
+  async validatePrivateExperience(experience: ExperienceWithRelations) {
+    if (!experience?.user?.accountSetting) return;
+    if (experience.createdBy === this.currentUser[securityId]) return;
+    const {accountPrivacy} = experience.user.accountSetting;
+    const friend = await this.friendService.friendRepository.findOne({
+      where: {
+        or: [
+          {
+            requestorId: this.currentUser[securityId],
+            requesteeId: experience.createdBy,
+          },
+          {
+            requesteeId: this.currentUser[securityId],
+            requestorId: experience.createdBy,
+          },
+        ],
+      },
+    });
+    const isPublic = accountPrivacy === AccountSettingType.PUBLIC;
+    const isNotBlocked = friend?.status !== FriendStatusType.BLOCKED;
+    const isValid = isPublic && isNotBlocked;
+    if (friend?.status === FriendStatusType.APPROVED) return;
+    if (isValid) return;
+    throw new HttpErrors.Forbidden('PrivateExperience');
+  }
+
+  combinePeopleAndUser(
+    result: UserExperienceWithRelations[],
+  ): UserExperienceWithRelations[] {
+    return result.map((userExperience: UserExperienceWithRelations) => {
+      const users = userExperience.experience?.users;
+
+      if (!users) return userExperience;
+
+      const newExperience: Partial<Experience> = {
+        ...userExperience.experience,
+      };
+
+      const userToPeople = users.map(user => {
+        return new People({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          platform: PlatformType.MYRIAD,
+          originUserId: user.id,
+          profilePictureURL: user.profilePictureURL,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          deletedAt: user.deletedAt,
+        });
+      });
+
+      const people = userExperience.experience?.people ?? [];
+
+      newExperience.people = [...userToPeople, ...people];
+      userExperience.experience = newExperience as Experience;
+
+      return omit(userExperience, ['users']) as UserExperienceWithRelations;
+    });
   }
 }

@@ -172,16 +172,15 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           platform === PlatformType.REDDIT ||
           platform === PlatformType.FACEBOOK
         ) {
-          const importedPayload: AnyObject = {
+          const body: Partial<Post> = {
             updatedAt: new Date().toString(),
           };
 
-          if (payload.visibility)
-            importedPayload.visibility = payload.visibility;
-          if (payload.isNSFW) importedPayload.isNSFW = payload.isNSFW;
-          if (payload.NSFWTag) importedPayload.NSFWTag = payload.NSFWTag;
+          if (payload.visibility) body.visibility = payload.visibility;
+          if (payload.isNSFW) body.isNSFW = payload.isNSFW;
+          if (payload.NSFWTag) body.NSFWTag = payload.NSFWTag;
 
-          invocationCtx.args[1] = importedPayload;
+          invocationCtx.args[1] = body;
 
           break;
         }
@@ -209,12 +208,10 @@ export class UpdateInterceptor implements Provider<Interceptor> {
             // ignore
           }
 
-          if (embeddedURL) {
-            payload.embeddedURL = embeddedURL;
-
-            invocationCtx.args[1] = payload;
-          }
+          if (embeddedURL) payload.embeddedURL = embeddedURL;
         }
+
+        invocationCtx.args[1] = payload;
 
         break;
       }
