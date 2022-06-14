@@ -135,9 +135,18 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       result,
     );
 
+    const updatedMeta =
+      meta.totalItemCount === updatedResult.length
+        ? meta
+        : pageMetadata([
+            meta.currentPage,
+            meta.itemsPerPage,
+            updatedResult.length,
+          ]);
+
     return {
       data: updatedResult,
-      meta: meta,
+      meta: updatedMeta,
     };
   }
 
@@ -420,7 +429,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           ]);
           const userIds = pull(blockedFriendIds, ...approvedFriendIds);
 
-          filter.where.createdBy = {nin: userIds};
+          if (!filter?.where?.createdBy) {
+            filter.where.createdBy = {nin: userIds};
+          }
         }
 
         filter.where.deletedAt = {$exists: false};
@@ -572,10 +583,21 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             result as UserExperienceWithRelations[],
           );
 
-          result = await this.experienceService.privateUserExperience(
-            this.currentUser[securityId],
-            userExperiences,
-          );
+          const privateUserExp =
+            await this.experienceService.privateUserExperience(
+              this.currentUser[securityId],
+              userExperiences,
+            );
+
+          result = privateUserExp.filter((e: AnyObject) => {
+            if (e.private) {
+              if (e.friend) return true;
+              return false;
+            } else {
+              if (!e.blocked) return true;
+              return false;
+            }
+          });
         }
 
         break;

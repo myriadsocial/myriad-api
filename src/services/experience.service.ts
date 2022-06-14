@@ -207,39 +207,43 @@ export class ExperienceService {
     return Promise.all(
       userExperiences.map(async userExperience => {
         const accountSetting = userExperience.experience?.user?.accountSetting;
-        const privateUserExperience: AnyObject = {
-          id: userExperience.id,
+        const privateUserExp: AnyObject = {
+          ...userExperience,
           private: false,
           friend: false,
+          blocked: false,
         };
 
         const friend = await this.friendService.friendRepository.findOne({
           where: <AnyObject>{
-            requestorId: userId,
-            requesteeId: accountSetting?.userId ?? '',
-            status: FriendStatusType.APPROVED,
+            or: [
+              {
+                requestorId: userId,
+                requesteeId: accountSetting?.userId ?? '',
+              },
+              {
+                requesteeId: userId,
+                requestorId: accountSetting?.userId ?? '',
+              },
+            ],
             deletedAt: {
               $exists: false,
             },
           },
         });
 
-        if (friend) privateUserExperience.friend = true;
+        const status = friend?.status;
+        if (status === FriendStatusType.APPROVED) privateUserExp.friend = true;
+        if (status === FriendStatusType.BLOCKED) privateUserExp.blocked = true;
         if (
           accountSetting?.accountPrivacy === AccountSettingType.PRIVATE &&
           accountSetting?.userId !== userId &&
           friend === null
         ) {
-          privateUserExperience.private = true;
+          privateUserExp.private = true;
         }
 
-        const {private: isPrivate, friend: isFriend} = privateUserExperience;
-
-        if (isFriend || (!isPrivate && !isFriend)) {
-          Object.assign(privateUserExperience, {...userExperience});
-        }
-
-        return omit(privateUserExperience, ['clonedId']);
+        return omit(privateUserExp, ['clonedId']);
       }),
     );
   }
@@ -375,17 +379,27 @@ export class ExperienceService {
 
   async validatePrivateExperience(experience: ExperienceWithRelations) {
     if (!experience?.user?.accountSetting) return;
+    if (experience.createdBy === this.currentUser[securityId]) return;
     const {accountPrivacy} = experience.user.accountSetting;
-
-    if (accountPrivacy === AccountSettingType.PUBLIC) return;
     const friend = await this.friendService.friendRepository.findOne({
       where: {
-        requestorId: this.currentUser[securityId],
-        requesteeId: experience.createdBy,
-        status: FriendStatusType.APPROVED,
+        or: [
+          {
+            requestorId: this.currentUser[securityId],
+            requesteeId: experience.createdBy,
+          },
+          {
+            requesteeId: this.currentUser[securityId],
+            requestorId: experience.createdBy,
+          },
+        ],
       },
     });
-    if (friend) return;
+    const isPublic = accountPrivacy === AccountSettingType.PUBLIC;
+    const isNotBlocked = friend?.status !== FriendStatusType.BLOCKED;
+    const isValid = isPublic && isNotBlocked;
+    if (friend?.status === FriendStatusType.APPROVED) return;
+    if (isValid) return;
     throw new HttpErrors.Forbidden('PrivateExperience');
   }
 
