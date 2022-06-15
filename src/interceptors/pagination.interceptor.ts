@@ -135,18 +135,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       result,
     );
 
-    const updatedMeta =
-      meta.totalItemCount === updatedResult.length
-        ? meta
-        : pageMetadata([
-            meta.currentPage,
-            meta.itemsPerPage,
-            updatedResult.length,
-          ]);
-
     return {
       data: updatedResult,
-      meta: updatedMeta,
+      meta: meta,
     };
   }
 
