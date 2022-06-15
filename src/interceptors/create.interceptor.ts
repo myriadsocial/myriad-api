@@ -787,11 +787,13 @@ export class CreateInterceptor implements Provider<Interceptor> {
         break;
 
       default:
-        throw new HttpErrors.NotFound('Cannot find the platform!');
+        throw new HttpErrors.BadRequest('Cannot find the platform!');
     }
 
-    if (!rawPost)
-      throw new HttpErrors.NotFound('Cannot find the specified post');
+    if (!rawPost) {
+      throw new HttpErrors.BadRequest('Cannot find the specified post');
+    }
+
     rawPost.visibility = platformPost.visibility ?? VisibilityType.PUBLIC;
     rawPost.tags = this.getImportedTags(rawPost.tags, platformPost.tags ?? []);
     rawPost.createdBy = platformPost.importer;
