@@ -201,7 +201,9 @@ export class PostService {
     const hasBeenDeleted = posts.find(e => e.deletedAt);
 
     if (hasBeenDeleted) {
-      throw new HttpErrors.NotFound('You cannot import deleted post');
+      throw new HttpErrors.UnprocessableEntity(
+        'You cannot import deleted post',
+      );
     }
 
     const hasImported = posts.find(e => e.createdBy === importer);
@@ -210,7 +212,7 @@ export class PostService {
       throw new HttpErrors.Conflict('You have already import this post');
     }
 
-    if (posts.length === 0) return undefined;
+    if (posts.length === 0) return;
   }
 
   async validateUnrestrictedPost(post: Post): Promise<void> {

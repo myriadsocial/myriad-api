@@ -105,7 +105,7 @@ export class SocialMediaService {
           throw new HttpErrors.Forbidden('Tweet protected by user');
 
         case 404:
-          throw new HttpErrors.BadRequest('Invalid tweet url');
+          throw new HttpErrors.NotFound('Tweet not found');
 
         default:
           throw new HttpErrors.BadRequest('Invalid tweet url');
