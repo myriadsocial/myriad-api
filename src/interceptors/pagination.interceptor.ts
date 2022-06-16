@@ -1009,11 +1009,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
         ]);
 
+        const blocked = pull(blockedFriendIds, ...friends);
+
         return {
           or: [
             {
               and: [
-                {createdBy: {nin: blockedFriendIds}},
+                {createdBy: {nin: blocked}},
                 {visibility: VisibilityType.PUBLIC},
               ],
             },
