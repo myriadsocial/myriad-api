@@ -9,6 +9,7 @@ import {Post} from '../models';
 import {PostRepository, TagRepository} from '../repositories';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {FriendService} from './friend.service';
+import {pull} from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class TagService {
@@ -66,16 +67,15 @@ export class TagService {
       this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
       this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
     ]);
-    const blockedUserIds = blockedFriendIds.filter(
-      id => !approvedFriendIds.includes(id),
-    );
+
+    const blocked = pull(blockedFriendIds, ...approvedFriendIds);
 
     return {
       or: [
         {
           and: [
             {tags: {inq: trendingTopics}},
-            {createdBy: {nin: blockedUserIds}},
+            {createdBy: {nin: blocked}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },

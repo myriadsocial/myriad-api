@@ -24,6 +24,7 @@ import {omit} from 'lodash';
 import {HttpErrors} from '@loopback/rest';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
+import {pull} from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class ExperienceService {
@@ -115,9 +116,7 @@ export class ExperienceService {
       }),
     ]);
     const friendIds = friends.map(friend => friend.requesteeId);
-    const blockedUserIds = blockedFriendIds.filter(
-      id => ![...friendIds, ...approvedFriendIds].includes(id),
-    );
+    const blocked = pull(blockedFriendIds, ...friendIds, ...approvedFriendIds);
 
     if (exp?.users) {
       for (const user of exp.users) {
@@ -139,7 +138,7 @@ export class ExperienceService {
           and: [
             {tags: {inq: allowedTags}},
             {tags: {nin: prohibitedTags}},
-            {createdBy: {nin: blockedUserIds}},
+            {createdBy: {nin: blocked}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
@@ -147,14 +146,14 @@ export class ExperienceService {
           and: [
             {peopleId: {inq: personIds}},
             {tags: {nin: prohibitedTags}},
-            {createdBy: {nin: blockedUserIds}},
+            {createdBy: {nin: blocked}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
           and: [
             {id: {inq: postIds}},
-            {createdBy: {nin: blockedUserIds}},
+            {createdBy: {nin: blocked}},
             {tags: {nin: prohibitedTags}},
             {visibility: VisibilityType.PUBLIC},
           ],
