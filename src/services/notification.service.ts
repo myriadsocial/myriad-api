@@ -33,6 +33,7 @@ import {FCMService} from './fcm.service';
 import {UserProfile, securityId} from '@loopback/security';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {HttpErrors} from '@loopback/rest';
+import {capitalize} from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class NotificationService {
@@ -80,7 +81,7 @@ export class NotificationService {
     });
 
     const title = 'Friend Request Accepted';
-    const body = this.currentUser.name + ' ' + notification.message;
+    const body = `${this.currentUser.name} ${notification.message}`;
 
     await this.sendNotificationToUser(notification, to, title, body);
 
@@ -94,11 +95,11 @@ export class NotificationService {
       type: NotificationType.FRIEND_ACCEPT,
       from: this.currentUser[securityId],
       referenceId: this.currentUser[securityId],
-      message: 'accept your friend request',
+      message: 'accepted your friend request',
     });
 
     const title = 'Friend Request Accepted';
-    const body = this.currentUser.name + ' ' + notification.message;
+    const body = `${this.currentUser.name} ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
 
@@ -156,7 +157,7 @@ export class NotificationService {
     // FCM messages
     const title = 'New Comment';
     const body = `${this.currentUser.name} ${
-      comment.type === ReferenceType.COMMENT ? 'reply' : 'commented'
+      comment.type === ReferenceType.COMMENT ? 'replied to' : 'commented to'
     } your ${comment.type}`;
 
     let userId = null;
@@ -258,7 +259,7 @@ export class NotificationService {
 
     const reporterIds = reporters.map(reporter => reporter.reportedBy);
     const title = 'Report Approved';
-    const body = 'Myriad Official ' + notification.message;
+    const body = `Myriad Official ${notification.message}`;
 
     await this.sendNotificationToMultipleUsers(
       notification,
@@ -306,7 +307,7 @@ export class NotificationService {
           notification,
           comment.userId,
           'Comment Removed',
-          'Myriad Official ' + notification.message,
+          `Myriad Official ${notification.message}`,
         );
 
         break;
@@ -351,7 +352,7 @@ export class NotificationService {
               notification,
               e.createdBy,
               'Post Removed',
-              'Myriad Official ' + notification.message,
+              `Myriad Official ${notification.message}`,
             );
           }),
         );
@@ -376,7 +377,7 @@ export class NotificationService {
           notification,
           referenceId,
           'User Removed',
-          'Myriad Official ' + notification.message,
+          `Myriad Official ${notification.message}`,
         );
 
         break;
@@ -499,7 +500,7 @@ export class NotificationService {
 
     // FCM messages
     const title = 'New Mention';
-    const body = this.currentUser.name + ' ' + notification.message;
+    const body = `${this.currentUser.name} ${notification.message}`;
 
     const users = mentions.filter(
       mention => mention.id !== this.currentUser[securityId],
@@ -579,7 +580,7 @@ export class NotificationService {
     } else notification.type = NotificationType.USER_TIPS;
 
     const title = 'Send Tips Success';
-    const body = this.currentUser.name + ' ' + notification.message;
+    const body = `${this.currentUser.name} tipped ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
 
@@ -606,7 +607,7 @@ export class NotificationService {
     });
 
     const title = 'Send Reward Success';
-    const body = 'Myriad Official' + ' ' + notification.message;
+    const body = `Myriad Official tipped ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
 
@@ -627,7 +628,7 @@ export class NotificationService {
     });
 
     const title = `Send Initial ${symbol} Success`;
-    const body = 'Myriad Official' + ' ' + notification.message;
+    const body = `Myriad Official tipped ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
 
@@ -654,7 +655,7 @@ export class NotificationService {
     });
 
     const title = 'Send Claim Tips Success';
-    const body = 'You ' + notification.message;
+    const body = `You claimed ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
 
@@ -671,7 +672,7 @@ export class NotificationService {
       type: NotificationType.CONNECTED_SOCIAL_MEDIA,
       from: userId,
       referenceId: userId,
-      message: `connected your ${platform} social media`,
+      message: `connected to your ${capitalize(platform)}`,
       additionalReferenceId: {
         people: {
           id: people.id,
@@ -685,7 +686,7 @@ export class NotificationService {
     const title = `Connected ${
       platform[0].toUpperCase() + platform.substring(1)
     } Success`;
-    const body = 'You ' + notification.message;
+    const body = `You ${notification.message}`;
 
     await this.sendNotificationToUser(notification, userId, title, body);
 
@@ -704,7 +705,7 @@ export class NotificationService {
       type: NotificationType.DISCONNECTED_SOCIAL_MEDIA,
       from: fromUserId,
       referenceId: fromUserId,
-      message: `disconnected your ${platform} social media`,
+      message: `disconnected from your ${capitalize(platform)}`,
       additionalReferenceId: {
         people: {
           id: people?.id,
@@ -718,7 +719,7 @@ export class NotificationService {
     const title = `Disconnected ${
       platform[0].toUpperCase() + platform.substring(1)
     } Success`;
-    const body = 'You ' + notification.message;
+    const body = `You ${notification.message}`;
 
     await this.sendNotificationToUser(notification, userId, title, body);
 

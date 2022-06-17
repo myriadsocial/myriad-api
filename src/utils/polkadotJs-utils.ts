@@ -1,8 +1,12 @@
 import {AnyObject} from '@loopback/repository';
 import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 import {KeyringPair} from '@polkadot/keyring/types';
-import {u8aToHex} from '@polkadot/util';
-import {mnemonicGenerate, encodeAddress} from '@polkadot/util-crypto';
+import {u8aToHex, hexToU8a, isHex} from '@polkadot/util';
+import {
+  mnemonicGenerate,
+  encodeAddress,
+  decodeAddress,
+} from '@polkadot/util-crypto';
 import {KeypairType} from '@polkadot/util-crypto/types';
 
 export class PolkadotJs {
@@ -79,5 +83,21 @@ export class PolkadotJs {
 
   addressToPublicKey(address: string): string {
     return encodeAddress(address);
+  }
+
+  validatePolkadotAddress(address: string): boolean {
+    const valid = false;
+    try {
+      const addressToU8a = isHex(address)
+        ? hexToU8a(address)
+        : decodeAddress(address);
+      const validAddress = encodeAddress(addressToU8a);
+
+      return Boolean(validAddress);
+    } catch {
+      // ignore
+    }
+
+    return valid;
   }
 }

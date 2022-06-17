@@ -27,6 +27,8 @@ import {securityId, UserProfile} from '@loopback/security';
 import {assign, intersection} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
 import {validateAccount} from '../utils/validate-account';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {isHex} from '@polkadot/util';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -88,7 +90,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     if (methodName === MethodType.SIGNUP) {
       const {name, username, ...wallet} = invocationCtx.args[0] as UserWallet;
       const {address, network} = wallet;
-      const exist = await this.walletRepository.exists(address);
+      const fixedAddress = isHex(`0x${address}`) ? `0x${address}` : address;
+      const exist = await this.walletRepository.exists(fixedAddress);
 
       if (exist)
         throw new HttpErrors.UnprocessableEntity(
@@ -108,7 +111,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       if (foundUser)
         throw new HttpErrors.UnprocessableEntity('User already exists');
 
-      await this.validateWalletAddress(address);
+      await this.validateWalletAddress(network, fixedAddress);
 
       this.validateUsername(username);
 
@@ -116,7 +119,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         name: name.substring(0, 22),
       });
       invocationCtx.args[1] = new Wallet({
-        id: address,
+        id: fixedAddress,
         networkId: network,
         primary: true,
       });
@@ -128,7 +131,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       // Verify login process
       const credential = invocationCtx.args[0] as Credential;
       const {nonce, networkType} = credential;
-      const [publicAddress, nearAccount] = credential.publicAddress.split('/');
+      const [publicAddress, account] = credential.publicAddress.split('/');
+      const nearAccount = isHex(`0x${account}`) ? `0x${account}` : account;
 
       if (nonce === 0 || !nonce) throw new Error('Invalid nonce!');
 
@@ -239,53 +243,68 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     }
   }
 
-  async validateWalletAddress(id: string): Promise<void> {
-    if (id.length === 66) {
-      if (!id.startsWith('0x')) {
-        throw new HttpErrors.UnprocessableEntity('Invalid polkadot address');
+  async validateWalletAddress(network: string, id: string): Promise<void> {
+    switch (network) {
+      case 'near':
+        return this.validateNearAddress(id);
+
+      case 'ethereum': {
+        if (id.length !== 42 && !isHex(id)) {
+          throw new HttpErrors.UnprocessableEntity('Invalid ethereum address');
+        }
+
+        return;
       }
+      default: {
+        const polkadotJs = new PolkadotJs();
+        const valid = polkadotJs.validatePolkadotAddress(id);
 
-      return;
-    } else if (id.length === 42) {
-      if (!id.startsWith('0x')) {
-        throw new HttpErrors.UnprocessableEntity('Invalid ethereum address');
-      }
+        if (id.length !== 66 && !valid) {
+          throw new HttpErrors.UnprocessableEntity('Invalid polkadot address');
+        }
 
-      return;
-    } else {
-      const nearNetwork = await this.networkRepository.findById('near');
-      const environment = nearNetwork.rpcURL.split('.')[1];
-
-      let nearId = '';
-      let nearStatus = false;
-
-      switch (environment) {
-        case 'betanet':
-          nearStatus = id.endsWith('.betanet');
-          nearId = id.split('.betanet')[0];
-          break;
-
-        case 'testnet':
-          nearStatus = id.endsWith('.testnet');
-          nearId = id.split('.testnet')[0];
-          break;
-
-        default:
-          nearStatus = id.endsWith('.near');
-          nearId = id.split('.near')[0];
-          break;
-      }
-
-      if (!nearStatus) {
-        throw new HttpErrors.UnprocessableEntity('Invalid near id');
-      }
-
-      if (!nearId.match('^[a-z0-9_-]+$')) {
-        throw new HttpErrors.UnprocessableEntity(
-          'Only allowed ascii letter (a-z), number (0-9), dash(-) and underscore(_)',
-        );
+        return;
       }
     }
+  }
+
+  async validateNearAddress(id: string): Promise<void> {
+    if (isHex(id)) return;
+
+    const nearNetwork = await this.networkRepository.findById('near');
+    const environment = nearNetwork.rpcURL.split('.')[1];
+
+    let nearId = '';
+    let nearStatus = false;
+
+    switch (environment) {
+      case 'betanet':
+        nearStatus = id.endsWith('.betanet');
+        nearId = id.split('.betanet')[0];
+        break;
+
+      case 'testnet':
+        nearStatus = id.endsWith('.testnet');
+        nearId = id.split('.testnet')[0];
+        break;
+
+      default:
+        nearStatus = id.endsWith('.near');
+        nearId = id.split('.near')[0];
+        break;
+    }
+
+    if (!nearStatus) {
+      throw new HttpErrors.UnprocessableEntity('Invalid near id');
+    }
+
+    if (!nearId.match('^[a-z0-9_-]+$')) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Only allowed ascii letter (a-z), number (0-9), dash(-) and underscore(_)',
+      );
+    }
+
+    return;
   }
 
   validateUsername(username: string): void {

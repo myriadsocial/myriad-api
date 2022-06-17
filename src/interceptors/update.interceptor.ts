@@ -42,6 +42,7 @@ import {UrlUtils} from '../utils/url.utils';
 import {validateAccount} from '../utils/validate-account';
 import {assign} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
+import {isHex} from '@polkadot/util';
 
 const urlUtils = new UrlUtils();
 const {validateURL, getOpenGraph} = urlUtils;
@@ -279,11 +280,12 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         const [userId, credential] = invocationCtx.args;
         const {networkType: networkId} = credential as Credential;
         const [publicAddress, near] = credential.publicAddress.split('/');
+        const nearAccount = isHex(`0x${near}`) ? `0x${near}` : near;
         const [_, wallet] = await Promise.all([
           this.networkRepository.findById(networkId),
           this.walletRepository.findOne({
             where: {
-              id: near ?? publicAddress,
+              id: nearAccount ?? publicAddress,
               userId: userId,
             },
           }),
@@ -293,7 +295,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Wallet not connected');
         }
 
-        if (wallet.id !== (near ?? publicAddress)) {
+        if (wallet.id !== (nearAccount ?? publicAddress)) {
           throw new HttpErrors.UnprocessableEntity('Wrong address');
         }
 
