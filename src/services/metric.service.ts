@@ -309,7 +309,8 @@ export class MetricService {
 
       case ControllerType.EXPERIENCEPOST: {
         const experienceId = additionalData;
-        return this.experiencePostRepository.count({experienceId});
+        const additionalWhere = {experienceId, deletedAt: {exists: false}};
+        return this.experiencePostRepository.count(additionalWhere);
       }
 
       case ControllerType.USERCURRENCY:

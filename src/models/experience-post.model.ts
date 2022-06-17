@@ -41,6 +41,12 @@ export class ExperiencePost extends Entity {
   })
   postId: string;
 
+  @property({
+    type: 'date',
+    required: false,
+  })
+  deletedAt?: string;
+
   constructor(data?: Partial<ExperiencePost>) {
     super(data);
   }

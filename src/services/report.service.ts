@@ -3,6 +3,7 @@ import {AnyObject, Count, repository} from '@loopback/repository';
 import {PlatformType, ReferenceType} from '../enums';
 import {
   CommentRepository,
+  ExperiencePostRepository,
   ExperienceRepository,
   FriendRepository,
   PeopleRepository,
@@ -24,6 +25,8 @@ export class ReportService {
     protected commentRepository: CommentRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
+    @repository(ExperiencePostRepository)
+    protected experiencePostRepository: ExperiencePostRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
     @repository(PeopleRepository)
@@ -76,9 +79,18 @@ export class ReportService {
         );
         if (platform === PlatformType.MYRIAD) {
           await this.postRepository.updateById(referenceId, data);
+          await this.experiencePostRepository.updateAll(data, {
+            postId: referenceId,
+          });
         } else {
           if (url) {
+            const posts = await this.postRepository.find({where: {url}});
+            const postIds = posts.map(post => post.id);
+
             await this.postRepository.updateAll(data, {url: url});
+            await this.experiencePostRepository.updateAll(data, {
+              postId: {inq: postIds},
+            });
           }
         }
 
