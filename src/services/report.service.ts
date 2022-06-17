@@ -131,6 +131,13 @@ export class ReportService {
         where: {userId},
       })
     ).map(e => e.peopleId);
+    const postIds = (
+      await this.postRepository.find(<AnyObject>{
+        where: {
+          createdBy: userId,
+        },
+      })
+    ).map(post => post.id);
     const comment = await this.commentRepository.findOne({
       where: {userId},
     });
@@ -142,6 +149,20 @@ export class ReportService {
       this.postRepository.updateAll({banned: !restored}, {createdBy: userId}),
       this.metricService.userMetric(userId),
       this.peopleRepository.updateAll(data, {id: {inq: peopleIds}}),
+      this.experiencePostRepository.updateAll(data, {
+        or: [
+          {
+            postId: {
+              inq: postIds,
+            },
+          },
+          {
+            id: {
+              inq: experienceIds,
+            },
+          },
+        ],
+      }),
       this.userExperienceRepository.updateAll(data, {
         experienceId: {inq: experienceIds},
         subscribed: false,
