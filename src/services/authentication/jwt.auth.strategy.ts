@@ -60,10 +60,12 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
     userProfile.profilePictureURL = user.profilePictureURL;
 
     if (request.method === 'GET') return userProfile;
-    if (user.deletedAt)
+    if (user.deletedAt) {
       throw new HttpErrors.UnprocessableEntity(
         'You cannot create, update, or delete',
       );
+    }
+
     return userProfile;
   }
 

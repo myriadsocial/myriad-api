@@ -431,6 +431,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.EXPERIENCEPOST: {
+        filter.where.deletedAt = {$exists: false};
         filter.include = invocationCtx.args[1]?.include ?? [];
         break;
       }
