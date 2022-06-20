@@ -168,6 +168,7 @@ describe('PostApplication', function () {
       });
 
       delete updatedPost.createdBy;
+      delete updatedPost.id;
 
       await client
         .patch(`/posts/${persistedPost.id}`)
@@ -186,6 +187,7 @@ describe('PostApplication', function () {
       });
 
       delete updatedPost.createdBy;
+      delete updatedPost.id;
 
       await client
         .patch(`/posts/${newPost.id}`)
@@ -200,6 +202,7 @@ describe('PostApplication', function () {
       });
 
       delete updatedPost.createdBy;
+      delete updatedPost.id;
 
       return client
         .patch('/posts/99999')
@@ -369,8 +372,6 @@ describe('PostApplication', function () {
   });
 
   describe('when dealing with imported post', function () {
-    let peopleId: string;
-
     beforeEach(async () => {
       await postRepository.deleteAll();
     });
@@ -383,11 +384,17 @@ describe('PostApplication', function () {
         .send(platformPost)
         .expect(200);
 
-      const result = await postRepository.findById(response.body.id, {
-        include: ['people'],
-      });
+      const result: Partial<Post> = await postRepository.findById(
+        response.body.id,
+        {
+          include: ['people'],
+        },
+      );
 
-      peopleId = response.body.peopleId;
+      result.originCreatedAt = response.body.originCreatedAt;
+      result.createdAt = response.body.createdAt;
+      result.updatedAt = response.body.updatedAt;
+
       result.totalImporter = 1;
       response.body.importers[0].metric.totalPosts = 0;
       response.body.importers[0].metric.totalFriends = 1;
@@ -414,14 +421,6 @@ describe('PostApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .send(platformPost)
         .expect(401);
-    });
-
-    it('creates people when creates a post from social media', async () => {
-      const response = await client
-        .get(`/people/${peopleId}`)
-        .set('Authorization', `Bearer ${token}`);
-      const result = await peopleRepository.findById(peopleId);
-      expect(toJSON(result)).to.containDeep(toJSON(response.body));
     });
 
     it('rejects request to create a post from social media if importer alreay imported', async () => {

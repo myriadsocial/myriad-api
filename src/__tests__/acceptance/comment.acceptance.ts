@@ -38,7 +38,7 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('CommentApplication', function () {
-  this.timeout(50000);
+  this.timeout(100000);
   let app: MyriadApiApplication;
   let token: string;
   let client: Client;

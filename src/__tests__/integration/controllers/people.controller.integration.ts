@@ -1,7 +1,6 @@
 import {expect} from '@loopback/testlab';
 import {PeopleController} from '../../../controllers';
 import {
-  FriendRepository,
   PeopleRepository,
   PostRepository,
   UserRepository,
@@ -16,13 +15,14 @@ import {
   testdb,
 } from '../../helpers';
 import {securityId} from '@loopback/security';
+import {FriendService} from '../../../services';
 
 describe('PeopleControllerIntegration', () => {
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let userRepository: UserRepository;
   let postRepository: PostRepository;
-  let friendRepository: FriendRepository;
+  let friendService: FriendService;
   let controller: PeopleController;
 
   before(async () => {
@@ -31,7 +31,7 @@ describe('PeopleControllerIntegration', () => {
       userSocialMediaRepository,
       postRepository,
       userRepository,
-      friendRepository,
+      friendService,
     } = await givenRepositories(testdb));
   });
 
@@ -39,7 +39,7 @@ describe('PeopleControllerIntegration', () => {
     controller = new PeopleController(
       peopleRepository,
       userRepository,
-      friendRepository,
+      friendService,
       {[securityId]: ''},
     );
   });

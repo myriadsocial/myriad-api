@@ -8,18 +8,15 @@ import {
 import {PeopleController} from '../../controllers';
 import {PlatformType} from '../../enums';
 import {People} from '../../models';
-import {
-  FriendRepository,
-  PeopleRepository,
-  UserRepository,
-} from '../../repositories';
+import {PeopleRepository, UserRepository} from '../../repositories';
 import {givenPeople} from '../helpers';
 import {securityId} from '@loopback/security';
+import {FriendService} from '../../services';
 
 describe('PeopleController', () => {
   let peopleRepository: StubbedInstanceWithSinonAccessor<PeopleRepository>;
   let userRepository: StubbedInstanceWithSinonAccessor<UserRepository>;
-  let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
+  let friendService: FriendService;
   let controller: PeopleController;
   let aPeopleWithId: People;
   let aListOfPeople: People[];
@@ -75,7 +72,6 @@ describe('PeopleController', () => {
   function resetRepositories() {
     peopleRepository = createStubInstance(PeopleRepository);
     userRepository = createStubInstance(UserRepository);
-    friendRepository = createStubInstance(FriendRepository);
     aPeopleWithId = givenPeople({
       id: '1',
     });
@@ -95,7 +91,7 @@ describe('PeopleController', () => {
     controller = new PeopleController(
       peopleRepository,
       userRepository,
-      friendRepository,
+      friendService,
       {[securityId]: ''},
     );
   }
