@@ -198,7 +198,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   ): Promise<Filter<AnyObject> | void> {
     const methodName = invocationCtx.methodName as MethodType;
     const controllerName = invocationCtx.targetClass.name as ControllerType;
-
     const filter =
       invocationCtx.args[0] && typeof invocationCtx.args[0] === 'object'
         ? invocationCtx.args[0]
@@ -433,8 +432,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.EXPERIENCEPOST: {
-        filter.where.deletedAt = {$exists: false};
         filter.include = invocationCtx.args[1]?.include ?? [];
+        filter.where = {
+          deletedAt: {$exists: false},
+          banned: false,
+        };
         break;
       }
 
