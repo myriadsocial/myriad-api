@@ -7,7 +7,7 @@ import {Asset} from '../interfaces/asset.interface';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import {injectable, BindingScope} from '@loopback/core';
-import {formatRawText} from '../utils/format-tag';
+import {formatRawText} from '../utils/formatted';
 import {EmbeddedURL, Media} from '../models';
 import {People} from '../models';
 

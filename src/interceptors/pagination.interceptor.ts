@@ -359,10 +359,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           // get timeline
           if (!timelineType && typeof timelineType === 'string') return;
           if (timelineType) {
-            const whereTimeline = (await this.getTimeline(
+            const whereTimeline = await this.getTimeline(
               timelineType as TimelineType,
               experienceId?.toString(),
-            )) ?? {id: ''};
+            );
+
+            if (!whereTimeline) return;
 
             hasExperience = (whereTimeline as AnyObject).experienceId;
             filter.where = omit(whereTimeline, ['experienceId']);
@@ -830,9 +832,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       this.friendService.getFriendIds(currentUser, FriendStatusType.APPROVED),
       this.friendService.getFriendIds(currentUser, FriendStatusType.BLOCKED),
     ]);
-    const blockedFriendIds = blockedFriends.filter(
-      userId => !approvedFriendIds.includes(userId),
-    );
+
+    const blockedFriendIds = pull(blockedFriends, ...approvedFriendIds);
     const filterPost = await this.initializeFilter(
       approvedFriendIds,
       blockedFriendIds,
@@ -946,10 +947,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       this.friendService.getFriendIds(currentUser, FriendStatusType.APPROVED),
       this.friendService.getFriendIds(currentUser, FriendStatusType.BLOCKED),
     ]);
-    const blockedFriendIds = blockedFriends.filter(
-      userId => !approvedFriendIds.includes(userId),
-    );
 
+    const blockedFriendIds = pull(blockedFriends, ...approvedFriendIds);
     return {
       or: [
         {
@@ -982,9 +981,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
       this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
     ]);
-    const userIds = pull(blockedFriendIds, ...approvedFriendIds);
 
     const pattern = new RegExp(q, 'i');
+    const userIds = pull(blockedFriendIds, ...approvedFriendIds);
+
     return {
       and: [{name: {regexp: pattern}}, {createdBy: {nin: userIds}}],
     };
@@ -1007,30 +1007,30 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return this.friendService.friendsTimeline(userId);
 
       case TimelineType.ALL: {
-        const [friends, blockedFriendIds] = await Promise.all([
+        return Promise.all([
           this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
           this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
-        ]);
+        ]).then(([friends, blockedFriendIds]) => {
+          const blocked = pull(blockedFriendIds, ...friends);
 
-        const blocked = pull(blockedFriendIds, ...friends);
-
-        return {
-          or: [
-            {
-              and: [
-                {createdBy: {nin: blocked}},
-                {visibility: VisibilityType.PUBLIC},
-              ],
-            },
-            {
-              and: [
-                {createdBy: {inq: friends}},
-                {visibility: VisibilityType.FRIEND},
-              ],
-            },
-            {createdBy: userId},
-          ],
-        } as Where<Post>;
+          return {
+            or: [
+              {
+                and: [
+                  {createdBy: {nin: blocked}},
+                  {visibility: VisibilityType.PUBLIC},
+                ],
+              },
+              {
+                and: [
+                  {createdBy: {inq: friends}},
+                  {visibility: VisibilityType.FRIEND},
+                ],
+              },
+              {createdBy: userId},
+            ],
+          } as Where<Post>;
+        });
       }
     }
   }

@@ -1,69 +1,72 @@
 import {AnyObject, repository} from '@loopback/repository';
-import {SectionType} from '../enums';
-import {CommentRepository, PostRepository} from '../repositories';
+import {ReferenceType, SectionType} from '../enums';
+import {
+  CommentRepository,
+  PostRepository,
+  VoteRepository,
+} from '../repositories';
 import {injectable, BindingScope, service} from '@loopback/core';
 import {MetricService} from './metric.service';
-import {PostWithRelations, Comment} from '../models';
 import {HttpErrors} from '@loopback/rest';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class VoteService {
   constructor(
+    @repository(CommentRepository)
+    public commentRepository: CommentRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
-    @repository(CommentRepository)
-    protected commentRepository: CommentRepository,
+    @repository(VoteRepository)
+    protected voteRepository: VoteRepository,
     @service(MetricService)
     protected metricService: MetricService,
   ) {}
 
-  async updateVoteCounter(voteDetail: AnyObject): Promise<void> {
-    const {referenceId, type, toUserId} = voteDetail;
+  async updateVoteCounter(
+    voteDetail: AnyObject,
+    toUserId: string,
+  ): Promise<void> {
+    const {id, referenceId, type} = voteDetail;
 
     await Promise.allSettled([
       this.metricService.countPopularPost(referenceId),
       this.metricService.publicMetric(type, referenceId),
-      this.metricService.userMetric(toUserId),
       this.metricService.countServerMetric(),
+      this.voteRepository
+        .updateById(id.toString(), {toUserId})
+        .then(() => this.metricService.userMetric(toUserId)),
     ]);
   }
 
-  async validatePostVote(voteDetail: AnyObject): Promise<PostWithRelations> {
-    const {userId, referenceId, type, state} = voteDetail;
-    const post = await this.postRepository.findById(referenceId, {
-      include: [
-        {
-          relation: 'comments',
-          scope: {
-            where: {
-              userId,
-              referenceId,
-              type,
-              section: SectionType.DEBATE,
-            },
-          },
-        },
-      ],
-    });
+  async validateVote(voteDetail: AnyObject): Promise<void> {
+    const {userId, referenceId, type, state, section} = voteDetail;
 
-    if (!state) {
-      if (!post.comments || (post.comments && post.comments.length === 0)) {
+    switch (type) {
+      case ReferenceType.POST: {
+        if (state) return;
+
+        const comment = await this.commentRepository.findOne({
+          where: {
+            userId,
+            referenceId,
+            type,
+            section: SectionType.DEBATE,
+          },
+        });
+
+        if (comment) return;
         throw new Error('CommentFirst');
       }
+
+      case ReferenceType.COMMENT: {
+        if (section) return;
+        throw new HttpErrors.UnprocessableEntity(
+          'Section cannot empty when you upvote/downvote comment',
+        );
+      }
+
+      default:
+        throw new HttpErrors.UnprocessableEntity('Type not found');
     }
-
-    return post;
-  }
-
-  async validateComment(voteDetail: AnyObject): Promise<Comment> {
-    const {referenceId, section} = voteDetail;
-
-    if (!section) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Section cannot empty when you upvote/downvote comment',
-      );
-    }
-
-    return this.commentRepository.findById(referenceId);
   }
 }

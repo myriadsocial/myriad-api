@@ -5,7 +5,7 @@ import {HttpErrors, Request} from '@loopback/rest';
 import {UserProfile, securityId} from '@loopback/security';
 import {TokenServiceBindings} from '../../keys';
 import {UserRepository} from '../../repositories';
-import {generateObjectId} from '../../utils/generate-object-id';
+import {generateObjectId} from '../../utils/formatted';
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   name = 'jwt';

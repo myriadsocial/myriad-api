@@ -59,6 +59,9 @@ export class ExperienceService {
                 include: [{relation: 'accountSetting'}],
               },
             },
+            {
+              relation: 'posts',
+            },
           ],
         });
       } else {
@@ -73,6 +76,9 @@ export class ExperienceService {
                     scope: {
                       include: [{relation: 'accountSetting'}],
                     },
+                  },
+                  {
+                    relation: 'posts',
                   },
                 ],
               },
@@ -97,7 +103,7 @@ export class ExperienceService {
 
     if (!exp) return;
 
-    const postIds = await this.getExperiencePostId(exp.id ?? '');
+    const postIds = exp.posts?.map(post => post.id) ?? [];
     const userIds: string[] = [];
     const allowedTags = exp.allowedTags.map(tag => tag.toLowerCase());
     const prohibitedTags = exp.prohibitedTags.map(tag => tag.toLowerCase());

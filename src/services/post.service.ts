@@ -3,8 +3,10 @@ import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
 import {
   AccountSetting,
+  defaultPost,
   DraftPost,
   Friend,
+  People,
   Post,
   PostWithRelations,
   User,
@@ -24,11 +26,10 @@ import {
   VisibilityType,
 } from '../enums';
 import {UrlUtils} from '../utils/url.utils';
-import _ from 'lodash';
 import {PlatformPost} from '../models/platform-post.model';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
-import {formatTag} from '../utils/format-tag';
+import {formatTag, generateObjectId} from '../utils/formatted';
 import {omit} from 'lodash';
 
 const urlUtils = new UrlUtils();
@@ -52,34 +53,46 @@ export class PostService {
   ) {}
 
   async createPost(post: Omit<ExtendedPost, 'id'>): Promise<PostWithRelations> {
-    if (!post)
-      throw new HttpErrors.UnprocessableEntity('Cannot find specified post');
     const {platformUser, platform} = post;
 
-    if (!platformUser)
-      throw new HttpErrors.NotFound('Platform user not found!');
-
-    let people = await this.peopleRepository.findOne({
-      where: {
-        originUserId: platformUser.originUserId,
-        platform: platform,
-      },
-    });
-
-    if (!people) {
-      people = await this.peopleRepository.create(platformUser);
-    } else {
-      people.name = platformUser.name;
-      people.profilePictureURL = platformUser.profilePictureURL;
-
-      await this.peopleRepository.updateById(people.id, _.omit(people, ['id']));
+    if (!post) {
+      throw new HttpErrors.UnprocessableEntity('Cannot find specified post');
     }
 
-    const newPost: PostWithRelations = await this.postRepository.create(
-      Object.assign(_.omit(post, ['platformUser']), {peopleId: people.id}),
-    );
+    if (!platformUser) {
+      throw new HttpErrors.NotFound('Platform user not found!');
+    }
 
-    return Object.assign(newPost, {people: people});
+    const peopleId = generateObjectId();
+    const people =
+      (await this.peopleRepository.findOne({
+        where: {
+          originUserId: platformUser.originUserId,
+          platform: platform,
+        },
+      })) ?? new People({...platformUser, id: peopleId});
+
+    Object.assign(people, {
+      name: platformUser.name,
+      profilePictureURL: platformUser.profilePictureURL,
+    });
+
+    const postId = generateObjectId();
+    const rawPost = defaultPost(omit(post, ['platformUser']));
+
+    Promise.allSettled([
+      people.id === peopleId
+        ? this.peopleRepository.create(people)
+        : this.peopleRepository.updateById(people.id, people),
+    ]) as Promise<AnyObject>;
+
+    await this.postRepository.create({
+      ...rawPost,
+      id: postId,
+      peopleId: people.id,
+    });
+
+    return Object.assign(rawPost, {id: postId, people: people});
   }
 
   async getPostImporterInfo(
@@ -143,29 +156,44 @@ export class PostService {
       });
     }
 
-    const found = await this.draftPostRepository.findOne({
-      where: {
-        createdBy: draftPost.createdBy,
-      },
-    });
+    const exist = [false];
+    const createDraftPost = await this.draftPostRepository
+      .findOne({
+        where: {
+          createdBy: draftPost.createdBy,
+        },
+      })
+      .then(draft => {
+        if (draft) {
+          exist[0] = true;
+          return draft;
+        }
+        return this.draftPostRepository.create(draftPost);
+      });
 
-    if (found) {
-      await this.draftPostRepository.updateById(found.id, draftPost);
-
-      return Object.assign(draftPost, {id: found.id});
+    if (exist[0]) {
+      this.draftPostRepository.updateById(
+        createDraftPost.id,
+        draftPost,
+      ) as Promise<void>;
     }
 
-    return this.draftPostRepository.create(draftPost);
+    return createDraftPost;
   }
 
-  async createPublishPost(draftPost: DraftPost): Promise<Post> {
-    await this.draftPostRepository.deleteById(draftPost.id);
-
-    const newPost = _.omit(draftPost, ['id', 'status']);
-    return this.postRepository.create({
-      ...newPost,
-      platform: PlatformType.MYRIAD,
-    });
+  async createPublishPost(
+    postId: string,
+    draftPostId: string,
+    newPost: Post,
+  ): Promise<AnyObject> {
+    return Promise.allSettled([
+      this.draftPostRepository.deleteById(draftPostId),
+      this.postRepository.create({
+        ...newPost,
+        id: postId,
+        platform: PlatformType.MYRIAD,
+      }),
+    ]);
   }
 
   async validateImportedPost(platformPost: PlatformPost): Promise<void> {
@@ -184,7 +212,6 @@ export class PostService {
             platform: platform as PlatformType,
             createdBy: importer,
           },
-
           <AnyObject>{
             originPostId,
             platform: platform as PlatformType,
@@ -194,9 +221,10 @@ export class PostService {
           },
         ],
       },
-      include: ['people'],
       limit: 5,
     });
+
+    if (posts.length === 0) return;
 
     const hasBeenDeleted = posts.find(e => e.deletedAt);
 
@@ -209,8 +237,6 @@ export class PostService {
     if (hasImported) {
       throw new HttpErrors.Conflict('You have already import this post');
     }
-
-    if (posts.length === 0) return;
   }
 
   async validateUnrestrictedPost(post: Post): Promise<void> {

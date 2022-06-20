@@ -23,9 +23,10 @@ import {
 import {
   Comment,
   Credential,
-  DraftPost,
+  defaultPost,
   Experience,
   Friend,
+  Post,
   Transaction,
   User,
   Wallet,
@@ -53,7 +54,7 @@ import {
 } from '../services';
 import {validateAccount} from '../utils/validate-account';
 import {intersection} from 'lodash';
-import {formatTag} from '../utils/format-tag';
+import {formatTag, generateObjectId} from '../utils/formatted';
 import {PlatformPost} from '../models/platform-post.model';
 import {ExtendedPost} from '../interfaces';
 import {UrlUtils} from '../utils/url.utils';
@@ -192,19 +193,12 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case ControllerType.VOTE: {
         const voteDetail = invocationCtx.args[0];
         const type = voteDetail.type;
-        const data: AnyObject = {};
 
-        if (type === ReferenceType.POST) {
-          const post = await this.voteService.validatePostVote(voteDetail);
-          Object.assign(data, {toUserId: post.createdBy, section: undefined});
-        } else if (type === ReferenceType.COMMENT) {
-          const comment = await this.voteService.validateComment(voteDetail);
-          Object.assign(data, {toUserId: comment.userId});
-        } else {
-          throw new HttpErrors.UnprocessableEntity('Type not found');
-        }
+        await this.voteService.validateVote(voteDetail);
 
-        Object.assign(invocationCtx.args[0], data);
+        if (type === ReferenceType.POST) voteDetail.section = undefined;
+
+        invocationCtx.args[0] = voteDetail;
 
         break;
       }
@@ -262,14 +256,14 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Data cannot be empty');
         }
 
+        if (!id) {
+          throw new HttpErrors.UnprocessableEntity('Id must included');
+        }
+
         const networkExists = await this.networkRepository.exists(networkType);
 
         if (!networkExists) {
           throw new HttpErrors.UnprocessableEntity('Network not exists');
-        }
-
-        if (!id) {
-          throw new HttpErrors.UnprocessableEntity('Id must included');
         }
 
         const wallet = await this.walletRepository.findOne({
@@ -394,21 +388,22 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         if (result && result.status === FriendStatusType.BLOCKED) {
           const {requesteeId, requestorId} = result as Friend;
-          const [
-            {friendIndex: requestorFriendIndex},
-            {friendIndex: requesteeFriendIndex},
-          ] = await Promise.all([
-            this.userRepository.findById(requestorId),
-            this.userRepository.findById(requesteeId),
-          ]);
 
           Promise.allSettled([
-            this.userRepository.updateById(requestorId, {
-              friendIndex: omit(requestorFriendIndex, [requesteeId]),
-            }),
-            this.userRepository.updateById(requesteeId, {
-              friendIndex: omit(requesteeFriendIndex, [requestorId]),
-            }),
+            this.userRepository
+              .findById(requestorId)
+              .then(({friendIndex: requestorFriendIndex}) => {
+                return this.userRepository.updateById(requestorId, {
+                  friendIndex: omit(requestorFriendIndex, [requesteeId]),
+                });
+              }),
+            this.userRepository
+              .findById(requesteeId)
+              .then(({friendIndex: requesteeFriendIndex}) => {
+                return this.userRepository.updateById(requesteeId, {
+                  friendIndex: omit(requesteeFriendIndex, [requestorId]),
+                });
+              }),
           ]) as Promise<AnyObject>;
         }
 
@@ -430,35 +425,37 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.USERREPORT: {
         const reportDetail = invocationCtx.args[1];
-        const found = await this.userReportRepository.findOne({
-          where: {
-            reportId: result.id,
-            reportedBy: invocationCtx.args[0],
-          },
-        });
 
-        if (found)
-          throw new HttpErrors.UnprocessableEntity(
-            'You have report this user/post/comment',
-          );
+        this.userReportRepository
+          .findOne({
+            where: {
+              reportId: result.id,
+              reportedBy: invocationCtx.args[0],
+            },
+          })
+          .then(userReport => {
+            if (userReport) return;
+            return this.userReportRepository.create({
+              referenceType: reportDetail.referenceType,
+              description: reportDetail.description,
+              reportedBy: invocationCtx.args[0],
+              reportId: result.id,
+            });
+          })
+          .then(userReport => {
+            if (!userReport) return {count: 0};
+            return this.userReportRepository.count({
+              reportId: result.id.toString(),
+            });
+          })
+          .then(({count}) => {
+            return this.reportRepository.updateById(result.id, {
+              totalReported: count,
+              status: result.status,
+            });
+          }) as Promise<void>;
 
-        await this.userReportRepository.create({
-          referenceType: reportDetail.referenceType,
-          description: reportDetail.description,
-          reportedBy: invocationCtx.args[0],
-          reportId: result.id,
-        });
-
-        const {count} = await this.userReportRepository.count({
-          reportId: result.id.toString(),
-        });
-
-        await this.reportRepository.updateById(result.id, {
-          totalReported: count,
-          status: result.status,
-        });
-
-        return Object.assign(result, {totalReported: count});
+        return result;
       }
 
       case ControllerType.USERSOCIALMEDIA: {
@@ -478,10 +475,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
         const {id, userId, networkId} = invocationCtx.args[1].data as Wallet;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
-
-        await this.currencyService.addUserCurrencies(userId, networkId);
-
         const promises = [
+          this.currencyService.addUserCurrencies(userId, networkId),
           this.userRepository.updateById(userId, {nonce: newNonce}),
         ];
 
@@ -498,9 +493,33 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.VOTE: {
         const {_id: id, referenceId, type} = result.value;
+        const creator: Promise<string> = new Promise(resolve => {
+          if (type === ReferenceType.POST) {
+            this.postService.postRepository
+              .findById(referenceId)
+              .then(({createdBy}) => {
+                resolve(createdBy);
+              })
+              .catch(() => resolve(''));
+          } else {
+            this.voteService.commentRepository
+              .findById(referenceId)
+              .then(({userId}) => {
+                resolve(userId);
+              })
+              .catch(() => resolve(''));
+          }
+        });
+
+        Object.assign(result.value, {
+          id: id,
+          _id: undefined,
+        });
 
         Promise.allSettled([
-          this.voteService.updateVoteCounter(result.value),
+          creator.then(toUserId => {
+            return this.voteService.updateVoteCounter(result.value, toUserId);
+          }),
           this.activityLogService.createLog(
             ActivityLogType.GIVEVOTE,
             referenceId,
@@ -508,10 +527,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           ),
         ]) as Promise<AnyObject>;
 
-        return Object.assign(result.value, {
-          id: id,
-          _id: undefined,
-        });
+        return result.value;
       }
 
       default:
@@ -639,20 +655,22 @@ export class CreateInterceptor implements Provider<Interceptor> {
         );
 
         if (clonedId) {
-          await userExpRepos.updateAll(
-            {clonedId},
-            {userId, experienceId: expId},
-          );
-
-          const [{count: clonedCount}, {count: subscribedCount}] =
-            await Promise.all([
-              userExpRepos.count({clonedId}),
-              userExpRepos.count({experienceId: clonedId, subscribed: true}),
-            ]);
-          const trendCount = clonedCount + subscribedCount;
-
           promises.push(
-            expRepos.updateById(clonedId, {clonedCount, trendCount}),
+            userExpRepos
+              .updateAll({clonedId}, {userId, experienceId: expId})
+              .then(() =>
+                Promise.all([
+                  userExpRepos.count({clonedId}),
+                  userExpRepos.count({
+                    experienceId: clonedId,
+                    subscribed: true,
+                  }),
+                ]),
+              )
+              .then(([{count: clonedCount}, {count: subscribedCount}]) => {
+                const trendCount = clonedCount + subscribedCount;
+                return expRepos.updateById(clonedId, {clonedCount, trendCount});
+              }),
           );
         }
 
@@ -682,15 +700,17 @@ export class CreateInterceptor implements Provider<Interceptor> {
           promises.push(userExpRepos.updateById(result.id, {subscribed}));
           Object.assign(result, {subscribed});
         } else {
-          const [{count: subscribedCount}, {count: clonedCount}] =
-            await Promise.all([
+          promises.push(
+            Promise.all([
               userExpRepos.count({experienceId, subscribed}),
               userExpRepos.count({clonedId: experienceId}),
-            ]);
-          const trendCount = subscribedCount + clonedCount;
-
-          promises.push(
-            expRepos.updateById(experienceId, {subscribedCount, trendCount}),
+            ]).then(([{count: subscribedCount}, {count: clonedCount}]) => {
+              const trendCount = subscribedCount + clonedCount;
+              return expRepos.updateById(experienceId, {
+                subscribedCount,
+                trendCount,
+              });
+            }),
             this.activityLogService.createLog(
               ActivityLogType.SUBSCRIBEEXPERIENCE,
               result.experienceId,
@@ -721,23 +741,28 @@ export class CreateInterceptor implements Provider<Interceptor> {
     switch (methodName) {
       case MethodType.CREATE: {
         if (result.status === PostStatus.DRAFT) return result;
-        const publishedPost = await this.postService.createPublishPost(
-          result as DraftPost,
-        );
+        const id = generateObjectId();
+        const draftPostId = result.Id;
+        const newPost = omit(result, ['id', 'status']) as Post;
 
         Promise.allSettled([
-          this.tagService.createTags(publishedPost.tags),
-          this.createNotification(controllerName, publishedPost),
-          this.metricService.userMetric(publishedPost.createdBy),
+          this.postService.createPublishPost(id, draftPostId, newPost),
+          this.tagService.createTags(result.tags),
+          this.createNotification(controllerName, result),
+          this.metricService.userMetric(result.createdBy),
           this.metricService.countServerMetric(),
           this.activityLogService.createLog(
             ActivityLogType.CREATEPOST,
-            publishedPost.createdBy,
+            result.createdBy,
             ReferenceType.POST,
           ),
         ]) as Promise<AnyObject>;
 
-        return publishedPost;
+        return defaultPost({
+          ...newPost,
+          id,
+          platform: PlatformType.MYRIAD,
+        });
       }
 
       case MethodType.IMPORT: {

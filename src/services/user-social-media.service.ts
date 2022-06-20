@@ -1,4 +1,4 @@
-import {repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {ActivityLogType, PlatformType, ReferenceType} from '../enums';
 import {People, UserSocialMedia} from '../models';
 import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
@@ -7,6 +7,8 @@ import {NotificationService} from './';
 import {ActivityLogService} from './activity-log.service';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
+import {generateObjectId} from '../utils/formatted';
+import {omit} from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
@@ -32,47 +34,38 @@ export class UserSocialMediaService {
       verified: true,
     };
 
-    let foundPeople = await this.peopleRepository.findOne({
-      where: {
-        originUserId: originUserId,
-        platform: platform,
-      },
+    const existPeople = await this.peopleRepository.findOne({
+      where: {originUserId, platform},
     });
 
-    if (!foundPeople) {
-      foundPeople = await this.peopleRepository.create({
-        name,
-        username,
-        originUserId,
-        platform,
-        profilePictureURL,
-      });
-    } else {
-      await this.peopleRepository.updateById(foundPeople.id, {
-        name,
-        username,
-        profilePictureURL,
-      });
-    }
-
+    const peopleId = generateObjectId();
+    const found = existPeople ?? new People({...people, id: peopleId});
     const userSocialMedia = await this.userSocialMediaRepository.findOne({
       where: {
-        peopleId: foundPeople.id,
+        peopleId: found.id,
         platform: platform as PlatformType,
       },
     });
+
+    Object.assign(found, {name, username, profilePictureURL});
+
+    Promise.allSettled([
+      found.id === peopleId
+        ? this.peopleRepository.create(found)
+        : this.peopleRepository.updateById(found.id, omit(found, ['id'])),
+    ]) as Promise<AnyObject>;
 
     if (userSocialMedia) {
       const verified = userSocialMedia.userId === this.currentUser[securityId];
       if (verified) return Object.assign(userSocialMedia, {connected: true});
 
-      await Promise.allSettled([
+      Promise.allSettled([
         this.notificationService.sendDisconnectedSocialMedia(
           userSocialMedia.id,
           this.currentUser[securityId],
         ),
         this.userSocialMediaRepository.deleteById(userSocialMedia.id),
-      ]);
+      ]) as Promise<AnyObject>;
     }
 
     const {count} = await this.userSocialMediaRepository.count({
@@ -82,14 +75,14 @@ export class UserSocialMediaService {
 
     if (count === 0) newUserSocialMedia.primary = true;
 
-    await this.activityLogService.createLog(
+    this.activityLogService.createLog(
       ActivityLogType.CLAIMSOCIAL,
-      foundPeople.id,
+      found.id,
       ReferenceType.PEOPLE,
-    );
+    ) as Promise<void>;
 
     return this.peopleRepository
-      .userSocialMedia(foundPeople.id)
+      .userSocialMedia(found.id)
       .create(newUserSocialMedia);
   }
 }
