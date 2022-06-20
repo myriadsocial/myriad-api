@@ -9,7 +9,7 @@ import {
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
 import {Filter} from '@loopback/repository';
-import _ from 'lodash';
+import {union, pull} from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class FriendService {
@@ -203,8 +203,8 @@ export class FriendService {
     const requesteeIds = friends.map(friend => friend.requesteeId);
     const requestorIds = friends.map(friend => friend.requestorId);
 
-    const friendIds = _.union(requesteeIds, requestorIds, privateIds);
-    return _.pull(friendIds, id);
+    const friendIds = union(requesteeIds, requestorIds, privateIds);
+    return pull(friendIds, id);
   }
 
   async friendsTimeline(userId: string): Promise<Where<Post> | undefined> {

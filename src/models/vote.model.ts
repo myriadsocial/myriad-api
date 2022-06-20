@@ -95,11 +95,6 @@ export class Vote extends Entity {
   @property({
     type: 'string',
     required: false,
-    jsonSchema: {
-      maxLength: 66,
-      minLength: 66,
-      pattern: '^0x',
-    },
   })
   toUserId: string;
 

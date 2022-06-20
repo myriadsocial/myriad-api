@@ -1,5 +1,5 @@
 import {BindingScope, injectable, service} from '@loopback/core';
-import {AnyObject, Count, repository} from '@loopback/repository';
+import {AnyObject, repository} from '@loopback/repository';
 import {PlatformType, ReferenceType} from '../enums';
 import {
   CommentRepository,
@@ -50,65 +50,66 @@ export class ReportService {
     referenceType: ReferenceType,
     restored: boolean,
   ): Promise<void> {
-    let data: AnyObject = {
-      $unset: {
-        deletedAt: '',
-      },
-    };
+    const data = !restored
+      ? {deletedAt: new Date().toString()}
+      : {$unset: {deletedAt: ''}};
 
-    if (!restored) data = {deletedAt: new Date().toString()};
-    else {
-      const reports = await this.reportRepository.find({
-        where: {
-          referenceType,
-          referenceId,
-        },
-      });
-
-      const reportIds = reports.map(report => report.id ?? '');
-
-      await this.userReportRepository.deleteAll({
-        reportId: {inq: reportIds},
-      });
+    if (restored) {
+      this.reportRepository
+        .find({
+          where: {
+            referenceType,
+            referenceId,
+          },
+        })
+        .then(reports => {
+          const reportIds = reports.map(report => report.id ?? '');
+          return this.userReportRepository.deleteAll({
+            reportId: {inq: reportIds},
+          });
+        }) as Promise<AnyObject>;
     }
 
     switch (referenceType) {
       case ReferenceType.POST: {
-        const {platform, url, createdBy} = await this.postRepository.findById(
-          referenceId,
-        );
-        if (platform === PlatformType.MYRIAD) {
-          await this.postRepository.updateById(referenceId, data);
-          await this.experiencePostRepository.updateAll(data, {
-            postId: referenceId,
-          });
-        } else {
-          if (url) {
-            const posts = await this.postRepository.find({where: {url}});
-            const postIds = posts.map(post => post.id);
+        let postId = '';
+        let importedURL = '';
+        let userId = '';
 
-            await this.postRepository.updateAll(data, {url: url});
-            await this.experiencePostRepository.updateAll(data, {
-              postId: {inq: postIds},
+        return this.postRepository
+          .findById(referenceId)
+          .then(({platform, url, createdBy}) => {
+            if (platform === PlatformType.MYRIAD) postId = referenceId;
+            else if (url) importedURL = url;
+
+            userId = createdBy;
+
+            return this.postRepository.updateAll(data, {
+              or: [{id: postId}, {url: importedURL}],
             });
-          }
-        }
+          })
+          .then(() => {
+            if (importedURL) {
+              return this.postRepository.find({where: {url: importedURL}});
+            }
 
-        await this.metricService.userMetric(createdBy);
-
-        break;
+            return [];
+          })
+          .then(posts => {
+            const postIds = posts.map(post => post.id);
+            return this.experiencePostRepository.updateAll(data, {
+              postId: {inq: [...postIds, referenceId]},
+            });
+          })
+          .then(() => this.metricService.userMetric(userId));
       }
 
       case ReferenceType.COMMENT: {
-        await this.commentRepository.updateById(referenceId, data);
-
-        break;
+        return this.commentRepository.updateById(referenceId, data);
       }
 
       case ReferenceType.USER: {
-        await this.handleUserReports(referenceId, data, restored);
-
-        break;
+        return this.handleUserReports(referenceId, data, restored);
       }
     }
   }
@@ -118,72 +119,65 @@ export class ReportService {
     data: AnyObject,
     restored: boolean,
   ): Promise<void> {
-    const experienceIds = (
-      await this.experienceRepository.find({
-        where: {createdBy: userId},
-      })
-    ).map(e => e.id ?? '');
-    const friends = await this.friendRepository.find({
-      where: {requesteeId: userId},
-    });
-    const peopleIds = (
-      await this.userSocialMediaRepository.find({
-        where: {userId},
-      })
-    ).map(e => e.peopleId);
-    const postIds = (
-      await this.postRepository.find(<AnyObject>{
-        where: {
-          createdBy: userId,
-        },
-      })
-    ).map(post => post.id);
-    const comment = await this.commentRepository.findOne({
-      where: {userId},
-    });
-
     Promise.allSettled([
       this.userRepository.updateById(userId, data),
       this.friendRepository.updateAll(data, {requesteeId: userId}),
       this.experienceRepository.updateAll(data, {createdBy: userId}),
-      this.postRepository.updateAll({banned: !restored}, {createdBy: userId}),
       this.metricService.userMetric(userId),
-      this.peopleRepository.updateAll(data, {id: {inq: peopleIds}}),
-      this.experiencePostRepository.updateAll(data, {
-        or: [
-          {
-            postId: {
-              inq: postIds,
-            },
-          },
-          {
-            id: {
-              inq: experienceIds,
-            },
-          },
-        ],
+      this.userSocialMediaRepository.find({where: {userId}}).then(people => {
+        const peopleIds = people.map(e => e.id);
+        return this.peopleRepository.updateAll(data, {id: {inq: peopleIds}});
       }),
-      this.userExperienceRepository.updateAll(data, {
-        experienceId: {inq: experienceIds},
-        subscribed: false,
+      this.experienceRepository
+        .find({where: {createdBy: userId}})
+        .then(experiences => {
+          const experienceIds = experiences.map(e => e?.id ?? '');
+          const promises = !restored
+            ? [
+                this.userExperienceRepository.deleteAll({
+                  experienceId: {inq: experienceIds},
+                  subscribed: true,
+                }),
+              ]
+            : [];
+
+          promises.push(
+            this.userExperienceRepository.updateAll(data, {
+              experienceId: {inq: experienceIds},
+              subscribed: false,
+            }),
+          );
+          return Promise.all(promises);
+        }),
+      this.postRepository.find({where: {createdBy: userId}}).then(posts => {
+        const postIds = posts.map(e => e.id);
+        return Promise.all([
+          this.postRepository.updateAll(
+            {banned: !restored},
+            {id: {inq: postIds}},
+          ),
+          this.experiencePostRepository.updateAll(data, {
+            postId: {inq: postIds},
+          }),
+        ]);
       }),
-      ...friends.map(async friend => {
-        return this.metricService.userMetric(friend.requestorId);
+      this.friendRepository
+        .find({where: {requesteeId: userId}})
+        .then(friends => {
+          return Promise.all(
+            friends.map(({requestorId}) => {
+              return this.metricService.userMetric(requestorId);
+            }),
+          );
+        }),
+      this.commentRepository.findOne({where: {userId}}).then(comment => {
+        if (comment) {
+          return Promise.all([
+            this.commentRepository.updateAll(data, {userId: userId}),
+            this.metricService.publicMetric(ReferenceType.POST, comment.postId),
+          ]);
+        }
       }),
     ]) as Promise<AnyObject>;
-
-    if (!restored) {
-      this.userExperienceRepository.deleteAll({
-        experienceId: {inq: experienceIds},
-        subscribed: true,
-      }) as Promise<Count>;
-    }
-
-    if (comment) {
-      Promise.allSettled([
-        this.commentRepository.updateAll(data, {userId: userId}),
-        this.metricService.publicMetric(ReferenceType.POST, comment.postId),
-      ]) as Promise<AnyObject>;
-    }
   }
 }

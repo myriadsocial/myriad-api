@@ -154,10 +154,10 @@ export class UserSocialMediaController {
   @response(204, {
     description: 'UserSocialMedia DELETE success',
   })
-  async deleteById(@param.path.string('id') id: string): Promise<AnyObject> {
-    return Promise.all([
+  async deleteById(@param.path.string('id') id: string): Promise<void> {
+    Promise.allSettled([
       this.notificationService?.sendDisconnectedSocialMedia(id),
       this.userSocMedService.userSocialMediaRepository.deleteById(id),
-    ]);
+    ]) as Promise<AnyObject>;
   }
 }

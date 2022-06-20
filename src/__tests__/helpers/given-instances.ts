@@ -65,6 +65,7 @@ import {AnyObject} from '@loopback/repository';
 import {UserProfile, securityId} from '@loopback/security';
 import {promisify} from 'util';
 import {config} from '../../config';
+import {generateObjectId} from '../../utils/formatted';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -155,8 +156,10 @@ export function givenCredential(credential?: Partial<Credential>) {
 }
 
 export function givenPeople(people?: Partial<People>) {
+  const id = generateObjectId();
   const data = Object.assign(
     {
+      id,
       name: 'Elon Musk',
       username: 'elonmusk',
       platform: 'twitter',
@@ -240,8 +243,10 @@ export function givenPost(post?: Partial<DraftPost>) {
 }
 
 export function givenImportedPost(post?: Partial<Post>) {
+  const id = generateObjectId();
   const data = Object.assign(
     {
+      id,
       tags: [],
       platform: PlatformType.TWITTER,
       title: '',
@@ -260,8 +265,10 @@ export function givenImportedPost(post?: Partial<Post>) {
 }
 
 export function givenMyriadPost(post?: Partial<Post>) {
+  const id = generateObjectId();
   const data = Object.assign(
     {
+      id,
       tags: ['hello'],
       text: 'hello world',
       createdBy:

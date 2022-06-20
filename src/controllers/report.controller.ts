@@ -103,12 +103,12 @@ export class ReportController {
       },
     })
     report: Partial<Report>,
-  ): Promise<AnyObject> {
-    return Promise.allSettled([
+  ): Promise<void> {
+    Promise.allSettled([
       this.reportRepository.updateById(id, report),
       this.notificationService.sendReportResponseToUser(id),
       this.notificationService.sendReportResponseToReporters(id),
-    ]);
+    ]) as Promise<AnyObject>;
   }
 
   @intercept(DeleteInterceptor.BINDING_KEY)

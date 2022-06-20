@@ -150,10 +150,9 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USER: {
-        await this.updateUserProfileActivityLog(
-          invocationCtx.args[0],
-          invocationCtx.args[1],
-        );
+        if (invocationCtx.args[1].username) {
+          throw new HttpErrors.UnprocessableEntity('Cannot update username');
+        }
 
         break;
       }
@@ -213,22 +212,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         }
 
         invocationCtx.args[1] = payload;
-
-        break;
-      }
-
-      case ControllerType.REPORT: {
-        const [reportId, report] = invocationCtx.args;
-        const {referenceId, referenceType} =
-          await this.reportRepository.findById(reportId);
-
-        if (report.status === ReportStatusType.REMOVED) {
-          await this.reportService.updateReport(
-            referenceId,
-            referenceType,
-            false,
-          );
-        }
 
         break;
       }
@@ -347,6 +330,24 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.REPORT: {
+        const [reportId, report] = invocationCtx.args;
+
+        if (report.status !== ReportStatusType.REMOVED) return;
+
+        this.reportRepository
+          .findById(reportId)
+          .then(({referenceId, referenceType}) => {
+            return this.reportService.updateReport(
+              referenceId,
+              referenceType,
+              false,
+            );
+          }) as Promise<void>;
+
+        break;
+      }
+
       case ControllerType.USEREXPERIENCE: {
         const [userId, experienceId] = invocationCtx.args;
         const users = invocationCtx.args[3] ?? [];
@@ -369,16 +370,26 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
-        await this.currencyService.updateUserCurrency(userId, networkId);
         Promise.allSettled([
-          this.userRepository.updateById(userId, {nonce: newNonce}),
-          this.walletRepository.updateAll(
-            {primary: false},
-            {networkId: {nin: [networkId]}, userId},
-          ),
+          this.currencyService
+            .updateUserCurrency(userId, networkId)
+            .then(() => {
+              return Promise.all([
+                this.userRepository.updateById(userId, {nonce: newNonce}),
+                this.walletRepository.updateAll(
+                  {primary: false},
+                  {networkId: {nin: [networkId]}, userId},
+                ),
+              ]);
+            }),
         ]) as Promise<AnyObject>;
 
         break;
+      }
+
+      case ControllerType.USER: {
+        const [userId, user] = invocationCtx.args;
+        this.updateUserProfileActivityLog(userId, user) as Promise<void>;
       }
     }
   }
@@ -387,10 +398,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     userId: string,
     user: Partial<User>,
   ): Promise<void> {
-    if (user.username) {
-      throw new HttpErrors.UnprocessableEntity('Cannot update username');
-    }
-
     if (user.profilePictureURL) {
       await this.activityLogService.createLog(
         ActivityLogType.UPLOADPROFILEPICTURE,

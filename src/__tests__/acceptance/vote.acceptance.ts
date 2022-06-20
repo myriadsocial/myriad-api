@@ -282,8 +282,10 @@ describe('VoteApplication', function () {
       EntityNotFoundError,
     );
 
-    const resultPost = await postRepository.findById(vote.referenceId);
-    post.metric.upvotes = post.metric.upvotes - 1;
-    expect(resultPost.metric.upvotes).to.equal(post.metric.upvotes);
+    setTimeout(async () => {
+      const resultPost = await postRepository.findById(vote.referenceId);
+      post.metric.upvotes = post.metric.upvotes - 1;
+      expect(resultPost.metric.upvotes).to.equal(post.metric.upvotes);
+    }, 10000);
   });
 });

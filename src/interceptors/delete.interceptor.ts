@@ -111,7 +111,13 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         const id = invocationCtx.args[0];
         const reportRepos = this.reportService.reportRepository;
         const {referenceId, referenceType} = await reportRepos.findById(id);
-        await this.reportService.updateReport(referenceId, referenceType, true);
+
+        this.reportService.updateReport(
+          referenceId,
+          referenceType,
+          true,
+        ) as Promise<void>;
+
         invocationCtx.args[1] = {referenceId, referenceType};
         break;
       }
@@ -190,12 +196,14 @@ export class DeleteInterceptor implements Provider<Interceptor> {
 
       case ControllerType.EXPERIENCEPOST: {
         const [experienceId, postId] = invocationCtx.args;
-        const {id, experienceIndex} = await this.postRepository.findById(
-          postId,
-        );
-        return this.postRepository.updateById(id, {
-          experienceIndex: omit(experienceIndex, [experienceId]),
-        });
+
+        this.postRepository.findById(postId).then(({id, experienceIndex}) => {
+          return this.postRepository.updateById(id, {
+            experienceIndex: omit(experienceIndex, [experienceId]),
+          });
+        }) as Promise<void>;
+
+        return;
       }
 
       case ControllerType.FRIEND: {
@@ -253,22 +261,23 @@ export class DeleteInterceptor implements Provider<Interceptor> {
           );
         }
 
-        const user = await userRepos.findOne({
-          where: {onTimeline: experienceId},
-        });
-
-        if (user) {
-          const [latest] = await userExpRepos.find({
-            where: {userId},
-            limit: 1,
-            order: ['createdAt DESC'],
-          });
-          promises.push(
-            userRepos.updateById(userId, {
-              onTimeline: latest?.experienceId,
-            }),
-          );
-        }
+        promises.push(
+          userRepos
+            .findOne({where: {onTimeline: experienceId}})
+            .then(user => {
+              if (!user) return [];
+              return userExpRepos.find({
+                where: {userId},
+                limit: 1,
+                order: ['createdAt DESC'],
+              });
+            })
+            .then(([latest]) =>
+              userRepos.updateById(userId, {
+                onTimeline: latest?.experienceId,
+              }),
+            ),
+        );
 
         Promise.allSettled(promises) as Promise<AnyObject>;
         return;
@@ -276,12 +285,20 @@ export class DeleteInterceptor implements Provider<Interceptor> {
 
       case ControllerType.VOTE: {
         if (!invocationCtx.args[1]) return;
-        return this.voteService.updateVoteCounter(invocationCtx.args[1]);
+        const voteInfo = invocationCtx.args[1];
+        this.voteService.updateVoteCounter(
+          voteInfo,
+          voteInfo.toUserId,
+        ) as Promise<void>;
+        return;
       }
 
       case ControllerType.WALLET: {
         const {userId, networkId} = invocationCtx.args[1] as Wallet;
-        await this.userCurrencyRepository.deleteAll({userId, networkId});
+        this.userCurrencyRepository.deleteAll({
+          userId,
+          networkId,
+        }) as Promise<AnyObject>;
         return;
       }
     }
