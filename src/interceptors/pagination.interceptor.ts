@@ -765,10 +765,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               };
 
               if (mutual === 'true') {
-                friend.mutual = await this.friendService.countMutual(
+                const {count} = await this.friendService.countMutual(
                   requestor.id,
                   user.id,
                 );
+
+                friend.totalMutual = count;
               }
               return friend;
             }),
