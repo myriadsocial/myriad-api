@@ -216,7 +216,7 @@ export class PostService {
             originPostId,
             platform: platform as PlatformType,
             deletedAt: {
-              $exists: true,
+              $type: ['string', 'date'],
             },
           },
         ],
