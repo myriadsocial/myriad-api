@@ -32,8 +32,7 @@ import {UserProfile, securityId} from '@loopback/security';
 import {formatTag, generateObjectId} from '../utils/formatted';
 import {omit} from 'lodash';
 
-const urlUtils = new UrlUtils();
-const {validateURL, getOpenGraph} = urlUtils;
+const {validateURL, getOpenGraph} = UrlUtils;
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class PostService {
