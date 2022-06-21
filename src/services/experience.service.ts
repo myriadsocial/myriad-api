@@ -232,7 +232,7 @@ export class ExperienceService {
               },
             ],
             deletedAt: {
-              $exists: false,
+              $eq: null,
             },
           },
         });
@@ -270,7 +270,7 @@ export class ExperienceService {
         requesteeId: accountSetting?.userId ?? '',
         status: FriendStatusType.APPROVED,
         deletedAt: {
-          $exists: false,
+          $eq: null,
         },
       },
     });

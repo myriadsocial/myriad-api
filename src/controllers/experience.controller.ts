@@ -67,7 +67,7 @@ export class ExperienceController {
       where: {
         id,
         deletetAt: {
-          $exists: false,
+          $eq: null,
         },
       },
     });

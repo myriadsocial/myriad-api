@@ -88,7 +88,7 @@ export class PeopleController {
                 },
               ],
               deletedAt: {
-                $exists: false,
+                $eq: null,
               },
             },
             order: ['createdAt DESC'],
@@ -109,7 +109,7 @@ export class PeopleController {
                 },
               ],
               deletedAt: {
-                $exists: false,
+                $eq: null,
               },
             },
             include: ['userSocialMedia'],

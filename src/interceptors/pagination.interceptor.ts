@@ -239,7 +239,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           filter.where = {
             id: {inq: userIds},
             deletedAt: {
-              $exists: false,
+              $eq: null,
             },
           };
         } else if (friendsName) {
@@ -288,7 +288,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 nin: blockedFriendIds,
               },
               deletedAt: {
-                $exists: false,
+                $eq: null,
               },
             },
           });
@@ -370,7 +370,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           filter.where.banned = false;
-          filter.where.deletedAt = {$exists: false};
+          filter.where.deletedAt = {$eq: null};
           filter.include = filter.include
             ? [...filter.include, 'user']
             : ['user'];
@@ -426,7 +426,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
         }
 
-        filter.where.deletedAt = {$exists: false};
+        filter.where.deletedAt = {$eq: null};
 
         break;
       }
@@ -434,7 +434,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       case ControllerType.EXPERIENCEPOST: {
         filter.include = invocationCtx.args[1]?.include ?? [];
         filter.where = {
-          deletedAt: {$exists: false},
+          deletedAt: {$eq: null},
           banned: false,
         };
         break;
@@ -650,7 +650,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                         requesteeId: e.createdBy,
                         status: FriendStatusType.APPROVED,
                         deletedAt: {
-                          $exists: false,
+                          $eq: null,
                         },
                       },
                     });
@@ -725,7 +725,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                   requesteeId: comment.userId,
                   status: FriendStatusType.APPROVED,
                   deletedAt: {
-                    $exists: false,
+                    $eq: null,
                   },
                 },
               });
@@ -1050,7 +1050,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           requestorId: userId,
           status: FriendStatusType.APPROVED,
           deletedAt: {
-            $exists: false,
+            $eq: null,
           },
         },
       }),
@@ -1073,7 +1073,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           options: 'i',
         },
         deletedAt: {
-          $exists: false,
+          $eq: null,
         },
       } as Where<User>;
     }
@@ -1105,7 +1105,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         },
       );
     }
-    const nonDeletedUser = {or: filterUser, deletedAt: {$exists: false}};
+    const nonDeletedUser = {or: filterUser, deletedAt: {$eq: null}};
     const users = await this.userRepository.find({where: nonDeletedUser});
     const friendUserIds = users
       .filter(user => approvedFriendIds.includes(user.id))

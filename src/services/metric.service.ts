@@ -355,7 +355,7 @@ export class MetricService {
         section: section,
         deleteByUser: false,
         deletedAt: {
-          $exists: false,
+          $eq: null,
         },
       },
     });

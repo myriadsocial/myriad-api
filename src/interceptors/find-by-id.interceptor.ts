@@ -154,7 +154,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
               requesteeId: result.userId,
               status: FriendStatusType.APPROVED,
               deletedAt: {
-                $exists: false,
+                $eq: null,
               },
             },
           });
