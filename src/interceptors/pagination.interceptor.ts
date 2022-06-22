@@ -432,6 +432,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.EXPERIENCEPOST: {
+        filter.order = this.orderSetting(request.query);
         filter.include = invocationCtx.args[1]?.include ?? [];
         filter.where = {
           deletedAt: {$eq: null},
