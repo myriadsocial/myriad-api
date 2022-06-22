@@ -309,16 +309,16 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case ControllerType.POST: {
         if (invocationCtx.methodName !== MethodType.IMPORT) return;
         const urlUtils = new UrlUtils(invocationCtx.args[0].url);
+        const pathname = urlUtils.getPathname();
         const platform = urlUtils.getPlatform();
         const originPostId = urlUtils.getOriginPostId();
-        const username = urlUtils.getUsername();
         const platformPost = Object.assign(invocationCtx.args[0], {
-          url: [platform, originPostId, username].join(','),
+          url: [platform, originPostId].join(','),
         });
 
         await this.postService.validateImportedPost(platformPost);
 
-        const rawPost = await this.getSocialMediaPost(platformPost);
+        const rawPost = await this.getSocialMediaPost(platformPost, pathname);
 
         invocationCtx.args[0].rawPost = rawPost;
         return;
@@ -798,7 +798,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
     }
   }
 
-  async getSocialMediaPost(platformPost: PlatformPost): Promise<ExtendedPost> {
+  async getSocialMediaPost(
+    platformPost: PlatformPost,
+    pathname = '',
+  ): Promise<ExtendedPost> {
     const [platform, originPostId] = platformPost.url.split(',');
 
     let rawPost = null;
@@ -808,7 +811,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
         break;
 
       case PlatformType.REDDIT:
-        rawPost = await this.socialMediaService.fetchRedditPost(originPostId);
+        rawPost = await this.socialMediaService.fetchRedditPost(
+          originPostId,
+          pathname,
+        );
         break;
 
       default:

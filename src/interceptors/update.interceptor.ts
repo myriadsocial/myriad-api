@@ -44,8 +44,7 @@ import {assign} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
 import {isHex} from '@polkadot/util';
 
-const urlUtils = new UrlUtils();
-const {validateURL, getOpenGraph} = urlUtils;
+const {validateURL, getOpenGraph} = UrlUtils;
 
 /**
  * This class will be bound to the application as an `Interceptor` during

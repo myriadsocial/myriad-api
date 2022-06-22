@@ -11,8 +11,7 @@ import {formatRawText} from '../utils/formatted';
 import {EmbeddedURL, Media} from '../models';
 import {People} from '../models';
 
-const urlUtils = new UrlUtils();
-const {validateURL, getOpenGraph} = urlUtils;
+const {validateURL, getOpenGraph} = UrlUtils;
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class SocialMediaService {
@@ -234,11 +233,16 @@ export class SocialMediaService {
     } as ExtendedPost;
   }
 
-  async fetchRedditPost(textId: string): Promise<ExtendedPost> {
+  async fetchRedditPost(
+    textId: string,
+    pathname: string,
+  ): Promise<ExtendedPost> {
     let data = null;
 
     try {
-      [data] = await this.redditService.getActions(textId + '.json');
+      const encodedPath = encodeURIComponent(`${pathname}.json`);
+
+      [data] = await this.redditService.getActions(encodedPath);
     } catch {
       throw new HttpErrors.BadRequest('Invalid reddit url');
     }

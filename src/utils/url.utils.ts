@@ -7,34 +7,27 @@ import {AnyObject} from '@loopback/repository';
 import {omit} from 'lodash';
 
 export class UrlUtils {
-  detail: string[];
+  private url: URL;
 
-  constructor(socialMediaURL = '') {
-    this.detail = this.getDetail(socialMediaURL);
+  constructor(socialMediaURL: string) {
+    this.url = new URL(socialMediaURL);
   }
 
-  getDetail(socialMediaURL: string): string[] {
-    return socialMediaURL
-      ? socialMediaURL
-          .replace(/(https?:\/\/)?(www.)?/i, '')
-          .replace(new RegExp(/\/user\/|\/u\/|\/r\//), '/')
-          .split('/')
-      : [];
+  getPathname(): string {
+    return this.url.pathname.substring(1);
   }
 
   getPlatform(): PlatformType {
-    return this.detail[0].split('.')[0] as PlatformType;
+    return this.url.host.replace(/www./gi, '').split('.')[0] as PlatformType;
   }
 
   getOriginPostId(): string {
-    return this.detail[3];
+    return this.url.pathname
+      .replace(new RegExp(/\/user\/|\/u\/|\/r\//), '/')
+      .split('/')[3];
   }
 
-  getUsername(): string {
-    return this.detail[1];
-  }
-
-  async getOpenGraph(url: string): Promise<EmbeddedURL | null> {
+  static async getOpenGraph(url: string): Promise<EmbeddedURL | null> {
     const {result} = await ogs({url});
     const embeddedURL = new EmbeddedURL();
     const embedded: AnyObject = result;
@@ -55,7 +48,7 @@ export class UrlUtils {
   }
 
   /* eslint-disable   @typescript-eslint/naming-convention */
-  validateURL(url?: string): void {
+  static validateURL(url?: string): void {
     if (!url) return;
 
     const isURL = validator.isURL(url, {
