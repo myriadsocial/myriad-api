@@ -23,7 +23,6 @@ import {
   VisibilityType,
 } from '../enums';
 import {
-  Comment,
   Experience,
   Friend,
   Post,
@@ -46,6 +45,7 @@ import {
   UserRepository,
   WalletRepository,
   UserExperienceRepository,
+  ReportRepository,
 } from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
@@ -68,6 +68,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     protected currencyRepository: CurrencyRepository,
     @repository(UserExperienceRepository)
     protected userExperienceRepository: UserExperienceRepository,
+    @repository(ReportRepository)
+    protected reportRepository: ReportRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @service(MetricService)
@@ -711,8 +713,19 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       // Changed comment text to [comment removed] when comment is deleted
       case ControllerType.COMMENT: {
         result = await Promise.all(
-          result.map(async (comment: Comment) => {
-            if (comment.deletedAt) comment.text = '[comment removed]';
+          result.map(async (comment: AnyObject) => {
+            if (comment.deletedAt) {
+              const report = await this.reportRepository.findOne({
+                where: {
+                  referenceId: result.id,
+                  referenceType: ReferenceType.COMMENT,
+                },
+              });
+
+              comment.text = '[comment removed]';
+              comment.reportType = report?.type;
+            }
+
             if (this.currentUser[securityId] === comment.userId) return comment;
             const accountSetting = await this.accountSettingRepository.findOne({
               where: {
@@ -733,6 +746,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
               if (!friend)
                 comment.text = '[This comment is from a private account]';
+              comment.privacy = 'private';
             }
 
             return comment;

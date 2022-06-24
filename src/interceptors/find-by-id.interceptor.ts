@@ -14,11 +14,16 @@ import {
   ControllerType,
   FriendStatusType,
   PlatformType,
+  ReferenceType,
 } from '../enums';
 import {People, Post, User, UserExperienceWithRelations} from '../models';
 import {omit} from 'lodash';
 import {ExperienceService, PostService} from '../services';
-import {AccountSettingRepository, FriendRepository} from '../repositories';
+import {
+  AccountSettingRepository,
+  FriendRepository,
+  ReportRepository,
+} from '../repositories';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
 
@@ -35,6 +40,8 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
     protected accountSettingRepository: AccountSettingRepository,
     @repository(FriendRepository)
     protected friendRepository: FriendRepository,
+    @repository(ReportRepository)
+    protected reportRepository: ReportRepository,
     @service(ExperienceService)
     protected experienceService: ExperienceService,
     @service(PostService)
@@ -140,7 +147,18 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.COMMENT: {
-        if (result.deletedAt) result.text = '[comment removed]';
+        if (result.deletedAt) {
+          const report = await this.reportRepository.findOne({
+            where: {
+              referenceId: result.id,
+              referenceType: ReferenceType.COMMENT,
+            },
+          });
+
+          result.text = '[comment removed]';
+          result.reportType = report?.type;
+        }
+
         if (this.currentUser[securityId] === result.userId) return result;
         const accountSetting = await this.accountSettingRepository.findOne({
           where: {
@@ -159,7 +177,10 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
             },
           });
 
-          if (!friend) result.text = '[This comment is from a private account]';
+          if (!friend) {
+            result.text = '[This comment is from a private account]';
+            result.privacy = 'private';
+          }
         }
         return result;
       }
