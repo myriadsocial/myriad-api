@@ -742,7 +742,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case MethodType.CREATE: {
         if (result.status === PostStatus.DRAFT) return result;
         const id = generateObjectId();
-        const draftPostId = result.Id;
+        const draftPostId = result.id;
         const newPost = omit(result, ['id', 'status']) as Post;
 
         Promise.allSettled([

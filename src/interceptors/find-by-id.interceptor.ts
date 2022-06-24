@@ -182,7 +182,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
             result.privacy = 'private';
           }
         }
-        return result;
+        return {...result};
       }
 
       case ControllerType.EXPERIENCE: {
