@@ -749,7 +749,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               comment.privacy = 'private';
             }
 
-            return comment;
+            return {...comment};
           }),
         );
 
