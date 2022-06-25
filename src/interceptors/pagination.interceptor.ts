@@ -717,7 +717,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             if (comment.deletedAt) {
               const report = await this.reportRepository.findOne({
                 where: {
-                  referenceId: result.id,
+                  referenceId: comment.id,
                   referenceType: ReferenceType.COMMENT,
                 },
               });
@@ -744,9 +744,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 },
               });
 
-              if (!friend)
+              if (!friend) {
                 comment.text = '[This comment is from a private account]';
-              comment.privacy = 'private';
+                comment.privacy = 'private';
+              }
             }
 
             return {...comment};
