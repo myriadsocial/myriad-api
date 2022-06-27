@@ -78,9 +78,6 @@ describe('ExperiencePostApplication', () => {
     expect(response.body).to.containDeep(data);
     const result = await experiencePostRepository.findById(response.body.id);
     expect(result).to.containDeep(data);
-    const updatedPost = await postRepository.findById(post.id);
-    const experienceIndex = {[data?.experienceId ?? '']: 1};
-    expect(updatedPost.experienceIndex).to.containDeep(experienceIndex);
   });
 
   it('returns 401 when adding a post to experience not as login user', async () => {
@@ -108,9 +105,6 @@ describe('ExperiencePostApplication', () => {
     await expect(
       experiencePostRepository.findById(experiencePost.id),
     ).to.be.rejectedWith(EntityNotFoundError);
-
-    const updatedPost = await postRepository.findById(post.id);
-    expect(updatedPost.experienceIndex).to.be.empty();
   });
 
   it('adds post to multiple experiences', async () => {
@@ -118,13 +112,7 @@ describe('ExperiencePostApplication', () => {
       createdBy: user.id,
     });
 
-    if (experiences[0]?.id) {
-      await postRepository.updateById(post.id, {
-        experienceIndex: {[experiences[0].id]: 1},
-      });
-    }
-
-    const experiencePost = await experiencePostRepository.create({
+    await experiencePostRepository.create({
       experienceId: experiences[0].id,
       postId: post.id,
     });
@@ -137,16 +125,6 @@ describe('ExperiencePostApplication', () => {
 
     const experiencePosts = await experiencePostRepository.find();
     expect(response.body).to.containDeep(toJSON(experiencePosts));
-    const updatedPost = await postRepository.findById(post.id);
-    const experienceIndex = {
-      [experiences[1]?.id ?? '']: 1,
-      [newExperience?.id ?? '']: 1,
-    };
-    expect(updatedPost.experienceIndex).to.containDeep(experienceIndex);
-
-    await expect(
-      experiencePostRepository.findById(experiencePost.id),
-    ).to.be.rejectedWith(EntityNotFoundError);
   });
 
   it('returns 401 when adding post to multiple experiences that not belong to user', async () => {
