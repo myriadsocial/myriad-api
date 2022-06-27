@@ -194,18 +194,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         return;
       }
 
-      case ControllerType.EXPERIENCEPOST: {
-        const [experienceId, postId] = invocationCtx.args;
-
-        this.postRepository.findById(postId).then(({id, experienceIndex}) => {
-          return this.postRepository.updateById(id, {
-            experienceIndex: omit(experienceIndex, [experienceId]),
-          });
-        }) as Promise<void>;
-
-        return;
-      }
-
       case ControllerType.FRIEND: {
         const {requestee, requestor} = invocationCtx.args[1];
         const {friendIndex: requestorFriendIndex} = requestor as User;

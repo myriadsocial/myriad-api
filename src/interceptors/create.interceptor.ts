@@ -23,10 +23,8 @@ import {
 import {
   Comment,
   Credential,
-  defaultPost,
   Experience,
   Friend,
-  Post,
   Transaction,
   User,
   Wallet,
@@ -54,7 +52,7 @@ import {
 } from '../services';
 import {validateAccount} from '../utils/validate-account';
 import {intersection} from 'lodash';
-import {formatTag, generateObjectId} from '../utils/formatted';
+import {formatTag} from '../utils/formatted';
 import {PlatformPost} from '../models/platform-post.model';
 import {ExtendedPost} from '../interfaces';
 import {UrlUtils} from '../utils/url.utils';
@@ -220,25 +218,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.EXPERIENCEPOST: {
         const [data, postId] = invocationCtx.args;
-        const experienceIds = typeof data === 'string' ? [data] : data;
         const param = typeof data === 'string' ? [data] : undefined;
 
-        const [post, deletedIds] = await Promise.all([
-          this.postService.postRepository.findById(postId),
-          this.experienceService.removeExperiencePost(postId, param),
-        ]);
-
-        const experienceIndex = omit(post?.experienceIndex ?? {}, deletedIds);
-        const newExperienceIndex: AnyObject = {};
-
-        experienceIds.forEach((experienceId: string) => {
-          newExperienceIndex[experienceId] = 1;
-        });
-
-        invocationCtx.args[2] = {
-          postId: postId,
-          experienceIndex: Object.assign(experienceIndex, newExperienceIndex),
-        };
+        await this.experienceService.removeExperiencePost(postId, param);
 
         break;
       }
@@ -406,15 +388,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
               }),
           ]) as Promise<AnyObject>;
         }
-
-        return result;
-      }
-
-      case ControllerType.EXPERIENCEPOST: {
-        const {postId, experienceIndex} = invocationCtx.args[2] as AnyObject;
-        await this.postService.postRepository.updateById(postId, {
-          experienceIndex,
-        });
 
         return result;
       }
@@ -741,28 +714,25 @@ export class CreateInterceptor implements Provider<Interceptor> {
     switch (methodName) {
       case MethodType.CREATE: {
         if (result.status === PostStatus.DRAFT) return result;
-        const id = generateObjectId();
-        const draftPostId = result.id;
-        const newPost = omit(result, ['id', 'status']) as Post;
+
+        const rawPost = omit(result, ['status']);
+        const published = await this.postService.postRepository.create(rawPost);
+        const {createdBy: userId, tags} = published;
 
         Promise.allSettled([
-          this.postService.createPublishPost(id, draftPostId, newPost),
-          this.tagService.createTags(result.tags),
-          this.createNotification(controllerName, result),
-          this.metricService.userMetric(result.createdBy),
+          this.postService.draftPostRepository.delete(userId),
+          this.tagService.createTags(tags),
+          this.createNotification(controllerName, published),
+          this.metricService.userMetric(userId),
           this.metricService.countServerMetric(),
           this.activityLogService.createLog(
             ActivityLogType.CREATEPOST,
-            result.createdBy,
+            userId,
             ReferenceType.POST,
           ),
         ]) as Promise<AnyObject>;
 
-        return defaultPost({
-          ...newPost,
-          id,
-          platform: PlatformType.MYRIAD,
-        });
+        return published;
       }
 
       case MethodType.IMPORT: {

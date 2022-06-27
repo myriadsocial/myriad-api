@@ -98,10 +98,10 @@ export class ExperienceService {
   async experienceTimeline(
     userId: string,
     experienceId?: string,
-  ): Promise<Where<Post> | undefined> {
+  ): Promise<Where<Post>> {
     const exp = await this.getExperience(userId, experienceId);
 
-    if (!exp) return;
+    if (!exp) return {id: ''};
 
     const postIds = exp.posts?.map(post => post.id) ?? [];
     const userIds: string[] = [];
@@ -201,7 +201,6 @@ export class ExperienceService {
           ],
         },
       ],
-      experienceId: exp.id,
     } as Where<Post>;
   }
 
@@ -299,29 +298,28 @@ export class ExperienceService {
   async removeExperiencePost(
     postId: string,
     otherExperienceIds?: string[],
-  ): Promise<string[]> {
+  ): Promise<void> {
     if (otherExperienceIds) {
       await this.experiencePostRepository.deleteAll({
         experienceId: {inq: otherExperienceIds},
         postId: postId,
       });
-
-      return otherExperienceIds;
+      return;
     }
 
-    if (!this.currentUser?.[securityId]) return [];
+    if (!this.currentUser?.[securityId]) return;
     const experiences = await this.experienceRepository.find({
       where: {
         createdBy: this.currentUser[securityId],
       },
     });
     const experienceIds = experiences.map(experience => experience?.id ?? '');
-    if (experienceIds.length === 0) return [];
+    if (experienceIds.length === 0) return;
     await this.experiencePostRepository.deleteAll({
       experienceId: {inq: experienceIds},
       postId: postId,
     });
-    return experienceIds;
+    return;
   }
 
   async validateSubscribeExperience(
