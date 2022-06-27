@@ -207,13 +207,13 @@ export class FriendService {
     return pull(friendIds, id);
   }
 
-  async friendsTimeline(userId: string): Promise<Where<Post> | undefined> {
+  async friendsTimeline(userId: string): Promise<Where<Post>> {
     const approvedFriendIds = await this.getFriendIds(
       userId,
       FriendStatusType.APPROVED,
     );
 
-    if (!approvedFriendIds.length) return;
+    if (!approvedFriendIds.length) return {id: ''};
 
     return {
       createdBy: {inq: approvedFriendIds},
