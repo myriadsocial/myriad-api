@@ -1,14 +1,10 @@
 import {inject} from '@loopback/core';
-import {DefaultCrudRepository} from '@loopback/repository';
-import {MongoDataSource} from '../datasources';
-import {DraftPost, DraftPostRelations} from '../models';
+import {DefaultKeyValueRepository} from '@loopback/repository';
+import {RedisDataSource} from '../datasources';
+import {DraftPost} from '../models';
 
-export class DraftPostRepository extends DefaultCrudRepository<
-  DraftPost,
-  typeof DraftPost.prototype.id,
-  DraftPostRelations
-> {
-  constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
+export class DraftPostRepository extends DefaultKeyValueRepository<DraftPost> {
+  constructor(@inject('datasources.redis') dataSource: RedisDataSource) {
     super(DraftPost, dataSource);
   }
 }

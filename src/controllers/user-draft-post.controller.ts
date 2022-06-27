@@ -1,4 +1,4 @@
-import {Count, CountSchema, repository} from '@loopback/repository';
+import {CountSchema, repository} from '@loopback/repository';
 import {del, get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {DraftPost} from '../models';
 import {DraftPostRepository} from '../repositories';
@@ -24,11 +24,7 @@ export class UserDraftPostController {
   async getDraftPost(
     @param.path.string('userId') userId: string,
   ): Promise<DraftPost | null> {
-    return this.draftPostRepository.findOne({
-      where: {
-        createdBy: userId,
-      },
-    });
+    return this.draftPostRepository.get(userId);
   }
 
   @del('/users/{userId}/draft')
@@ -38,9 +34,7 @@ export class UserDraftPostController {
   })
   async deleteDraftPost(
     @param.path.string('userId') userId: string,
-  ): Promise<Count> {
-    return this.draftPostRepository.deleteAll({
-      createdBy: userId,
-    });
+  ): Promise<void> {
+    return this.draftPostRepository.delete(userId);
   }
 }

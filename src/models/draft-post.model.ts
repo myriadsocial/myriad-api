@@ -2,35 +2,8 @@ import {Entity, model, property} from '@loopback/repository';
 import {EmbeddedURL, MentionUser} from '.';
 import {PostStatus, VisibilityType} from '../enums';
 
-@model({
-  settings: {
-    strictObjectIDCoercion: true,
-    mongodb: {
-      collection: 'draftPosts',
-    },
-    indexes: {
-      uniqueCreatedByIndex: {
-        keys: {
-          createdBy: 1,
-        },
-        options: {
-          unique: true,
-        },
-      },
-    },
-    hiddenProperties: ['rawText'],
-  },
-})
+@model()
 export class DraftPost extends Entity {
-  @property({
-    type: 'string',
-    id: true,
-    mongodb: {
-      dataType: 'ObjectId',
-    },
-  })
-  id: string;
-
   @property({
     type: 'array',
     itemType: 'string',
