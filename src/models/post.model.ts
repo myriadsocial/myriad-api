@@ -1,5 +1,4 @@
 import {
-  AnyObject,
   belongsTo,
   Entity,
   hasMany,
@@ -37,14 +36,14 @@ import {UserWithRelations} from './';
         },
       },
     },
-    hiddenProperties: ['popularCount', 'rawText', 'banned', 'experienceIndex'],
+    hiddenProperties: ['popularCount', 'rawText', 'banned'],
   },
 })
 export class Post extends Entity {
   @property({
     type: 'string',
     id: true,
-    required: true,
+    generated: true,
     mongodb: {
       dataType: 'ObjectId',
     },
@@ -65,6 +64,7 @@ export class Post extends Entity {
     jsonSchema: {
       enum: Object.values(PlatformType),
     },
+    default: PlatformType.MYRIAD,
   })
   platform?: PlatformType;
 
@@ -185,13 +185,6 @@ export class Post extends Entity {
   banned: boolean;
 
   @property({
-    type: 'object',
-    required: false,
-    default: {},
-  })
-  experienceIndex: AnyObject;
-
-  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
@@ -241,25 +234,3 @@ export interface PostRelations {
 }
 
 export type PostWithRelations = Post & PostRelations;
-
-export const defaultPost = (post: Partial<Post>): Post => {
-  return new Post({
-    ...post,
-    tags: post?.tags ?? [],
-    visibility: post?.visibility ?? VisibilityType.PUBLIC,
-    isNSFW: post?.isNSFW ?? false,
-    banned: false,
-    metric: {
-      upvotes: 0,
-      downvotes: 0,
-      discussions: 0,
-      debates: 0,
-      comments: 0,
-      tips: 0,
-    },
-    mentions: post?.mentions ?? [],
-    originCreatedAt: post?.originCreatedAt ?? new Date().toString(),
-    createdAt: new Date().toString(),
-    updatedAt: new Date().toString(),
-  });
-};

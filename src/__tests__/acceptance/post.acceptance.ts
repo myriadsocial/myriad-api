@@ -147,7 +147,6 @@ describe('PostApplication', function () {
 
       const expected = {
         ...toJSON(persistedPost),
-        experienceIndex: {},
         popularCount: 0,
         banned: false,
       };

@@ -3,7 +3,6 @@ import {HttpErrors} from '@loopback/rest';
 import {ExtendedPost} from '../interfaces';
 import {
   AccountSetting,
-  defaultPost,
   DraftPost,
   Friend,
   People,
@@ -63,21 +62,24 @@ export class PostService {
     }
 
     const peopleId = generateObjectId();
-    const people =
-      (await this.peopleRepository.findOne({
+    const people = await this.peopleRepository
+      .findOne({
         where: {
           originUserId: platformUser.originUserId,
           platform: platform,
         },
-      })) ?? new People({...platformUser, id: peopleId});
+      })
+      .then(found => {
+        if (!found) return new People({...platformUser, id: peopleId});
+        return found;
+      });
 
     Object.assign(people, {
       name: platformUser.name,
       profilePictureURL: platformUser.profilePictureURL,
     });
 
-    const postId = generateObjectId();
-    const rawPost = defaultPost(omit(post, ['platformUser']));
+    const rawPost = omit(post, ['platformUser']);
 
     Promise.allSettled([
       people.id === peopleId
@@ -85,13 +87,12 @@ export class PostService {
         : this.peopleRepository.updateById(people.id, people),
     ]) as Promise<AnyObject>;
 
-    await this.postRepository.create({
+    const createdPost = await this.postRepository.create({
       ...rawPost,
-      id: postId,
       peopleId: people.id,
     });
 
-    return Object.assign(rawPost, {id: postId, people: people});
+    return Object.assign(createdPost, {people});
   }
 
   async getPostImporterInfo(
@@ -116,7 +117,6 @@ export class PostService {
 
     return omit({...post, importers: [importer], totalImporter: count}, [
       'rawText',
-      'experienceIndex',
     ]);
   }
 
@@ -155,44 +155,9 @@ export class PostService {
       });
     }
 
-    const exist = [false];
-    const createDraftPost = await this.draftPostRepository
-      .findOne({
-        where: {
-          createdBy: draftPost.createdBy,
-        },
-      })
-      .then(draft => {
-        if (draft) {
-          exist[0] = true;
-          return draft;
-        }
-        return this.draftPostRepository.create(draftPost);
-      });
+    await this.draftPostRepository.set(this.currentUser[securityId], draftPost);
 
-    if (exist[0]) {
-      this.draftPostRepository.updateById(
-        createDraftPost.id,
-        draftPost,
-      ) as Promise<void>;
-    }
-
-    return createDraftPost;
-  }
-
-  async createPublishPost(
-    postId: string,
-    draftPostId: string,
-    newPost: Post,
-  ): Promise<AnyObject> {
-    return Promise.allSettled([
-      this.draftPostRepository.deleteById(draftPostId),
-      this.postRepository.create({
-        ...newPost,
-        id: postId,
-        platform: PlatformType.MYRIAD,
-      }),
-    ]);
+    return draftPost;
   }
 
   async validateImportedPost(platformPost: PlatformPost): Promise<void> {

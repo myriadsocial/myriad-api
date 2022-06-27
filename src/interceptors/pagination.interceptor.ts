@@ -143,7 +143,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     };
   }
 
-  orderSetting(query: AnyObject, hasExperience = null): string[] {
+  orderSetting(query: AnyObject): string[] {
     let {sortBy, order} = query;
 
     switch (sortBy) {
@@ -180,10 +180,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
 
     if (!order) order = OrderType.DESC;
-    if (hasExperience) {
-      return [`experienceIndex.${hasExperience} DESC`, sortBy + ' ' + order];
-    }
-
     if (query.name) {
       return [
         `friendIndex.${this.currentUser[securityId]} DESC`,
@@ -313,7 +309,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       // Set where filter when using timeline
       // Both Where filter and timeline cannot be used together
       case ControllerType.POST: {
-        let hasExperience = null;
         if (methodName === MethodType.TIMELINE) {
           const {experienceId, timelineType, q, topic} = request.query;
           const hasWhere =
@@ -360,15 +355,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           // get timeline
           if (!timelineType && typeof timelineType === 'string') return;
           if (timelineType) {
-            const whereTimeline = await this.getTimeline(
+            filter.where = await this.getTimeline(
               timelineType as TimelineType,
               experienceId?.toString(),
             );
-
-            if (!whereTimeline) return;
-
-            hasExperience = (whereTimeline as AnyObject).experienceId;
-            filter.where = omit(whereTimeline, ['experienceId']);
           }
 
           filter.where.banned = false;
@@ -390,7 +380,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           };
         }
 
-        filter.order = this.orderSetting(request.query, hasExperience);
+        filter.order = this.orderSetting(request.query);
 
         break;
       }
@@ -726,7 +716,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               comment.reportType = report?.type;
             }
 
-            if (this.currentUser[securityId] === comment.userId) return comment;
+            if (this.currentUser[securityId] === comment.userId)
+              return {...comment};
             const accountSetting = await this.accountSettingRepository.findOne({
               where: {
                 userId: comment.userId,
@@ -1011,7 +1002,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   async getTimeline(
     timelineType: TimelineType,
     experienceId?: string,
-  ): Promise<Where<Post> | undefined> {
+  ): Promise<Where<Post>> {
     const userId = this.currentUser[securityId];
 
     switch (timelineType) {

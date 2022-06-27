@@ -58,10 +58,10 @@ export class TagService {
     return trendingTopic.map(tag => tag.id);
   }
 
-  async trendingTimeline(userId: string): Promise<Where<Post> | undefined> {
+  async trendingTimeline(userId: string): Promise<Where<Post>> {
     const trendingTopics = await this.trendingTopics();
 
-    if (!trendingTopics.length) return;
+    if (!trendingTopics.length) return {id: ''};
 
     const [approvedFriendIds, blockedFriendIds] = await Promise.all([
       this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),

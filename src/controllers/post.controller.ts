@@ -165,7 +165,6 @@ export class PostController {
               'title',
               'asset',
               'createdAt',
-              'experienceIndex',
             ],
           }),
         },

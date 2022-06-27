@@ -243,10 +243,8 @@ export function givenPost(post?: Partial<DraftPost>) {
 }
 
 export function givenImportedPost(post?: Partial<Post>) {
-  const id = generateObjectId();
   const data = Object.assign(
     {
-      id,
       tags: [],
       platform: PlatformType.TWITTER,
       title: '',
@@ -265,10 +263,8 @@ export function givenImportedPost(post?: Partial<Post>) {
 }
 
 export function givenMyriadPost(post?: Partial<Post>) {
-  const id = generateObjectId();
   const data = Object.assign(
     {
-      id,
       tags: ['hello'],
       text: 'hello world',
       createdBy:
