@@ -49,7 +49,7 @@ import {
 } from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
-import {omit, pull} from 'lodash';
+import {pull} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -748,7 +748,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      // Changed user name and username to [user banned] when user is deleted
       case ControllerType.USER: {
         const {friendsName, mutual} = request.query;
 
@@ -786,14 +785,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               return friend;
             }),
           );
-        } else {
-          result = result.map((user: User) => {
-            if (user.deletedAt) {
-              user.name = '[user banned]';
-              user.username = '[user banned]';
-            }
-            return omit(user, ['friendIndex', 'nonce', 'permissions']);
-          });
         }
 
         break;

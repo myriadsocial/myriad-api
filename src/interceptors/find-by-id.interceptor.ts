@@ -230,10 +230,6 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
           },
         });
 
-        if (result.deletedAt) {
-          result.name = '[user banned]';
-          result.username = '[user banned]';
-        }
         if (!blockedFriend) return result;
         return {
           ...result,
