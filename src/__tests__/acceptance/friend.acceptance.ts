@@ -463,7 +463,7 @@ describe('FriendApplication', function () {
         to: friend.requesteeId,
         referenceId: friend.requestorId,
         additionalReferenceId: [],
-        message: 'sent you friend request',
+        message: 'sent you a friend request',
       }).to.containDeep(toJSON(notifications[0]));
     }, 10000);
   });

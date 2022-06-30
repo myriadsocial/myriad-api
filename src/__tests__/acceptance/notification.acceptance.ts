@@ -71,7 +71,7 @@ describe('NotificationApplication', function () {
       await givenNotificationInstance(notificationRepository, {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
-        message: 'sent you friend request',
+        message: 'sent you a friend request',
         referenceId: '1',
         from: '2',
         to: '1',
@@ -86,7 +86,7 @@ describe('NotificationApplication', function () {
       await givenNotificationInstance(notificationRepository, {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
-        message: 'sent you friend request',
+        message: 'sent you a friend request',
         referenceId: '4',
         from: '3',
         to: '4',
@@ -145,7 +145,7 @@ describe('NotificationApplication', function () {
         {
           type: NotificationType.FRIEND_REQUEST,
           read: false,
-          message: 'sent you friend request',
+          message: 'sent you a friend request',
           referenceId: '5',
           from: '6',
           to: '5',
@@ -178,7 +178,7 @@ describe('NotificationApplication', function () {
       await givenNotificationInstance(notificationRepository, {
         type: NotificationType.FRIEND_REQUEST,
         read: false,
-        message: 'sent you friend request',
+        message: 'sent you a friend request',
         referenceId: '7',
         from: '8',
         to: '7',
@@ -203,7 +203,7 @@ describe('NotificationApplication', function () {
         {
           type: NotificationType.FRIEND_REQUEST,
           read: false,
-          message: 'sent you friend request',
+          message: 'sent you a friend request',
           referenceId: to.id,
           from: from.id,
           to: to.id,
