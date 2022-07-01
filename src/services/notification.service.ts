@@ -77,10 +77,10 @@ export class NotificationService {
       type: NotificationType.FRIEND_REQUEST,
       from: this.currentUser[securityId],
       referenceId: this.currentUser[securityId],
-      message: 'sent you friend request',
+      message: 'sent you a friend request',
     });
 
-    const title = 'Friend Request Accepted';
+    const title = 'New Friend Request';
     const body = `${this.currentUser.name} ${notification.message}`;
 
     await this.sendNotificationToUser(notification, to, title, body);
@@ -98,7 +98,7 @@ export class NotificationService {
       message: 'accepted your friend request',
     });
 
-    const title = 'Friend Request Accepted';
+    const title = 'New Friend Request';
     const body = `${this.currentUser.name} ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
@@ -579,7 +579,7 @@ export class NotificationService {
       };
     } else notification.type = NotificationType.USER_TIPS;
 
-    const title = 'Send Tips Success';
+    const title = 'Tips Received';
     const body = `${this.currentUser.name} tipped ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
@@ -606,8 +606,8 @@ export class NotificationService {
       message: transaction.amount + ' ' + symbol,
     });
 
-    const title = 'Send Reward Success';
-    const body = `Myriad Official tipped ${notification.message}`;
+    const title = 'Reward Received';
+    const body = `Myriad Official sent you ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
 
@@ -627,8 +627,8 @@ export class NotificationService {
       message: transaction.amount + ' ' + symbol,
     });
 
-    const title = `Send Initial ${symbol} Success`;
-    const body = `Myriad Official tipped ${notification.message}`;
+    const title = `Welcome to Myriad`;
+    const body = `Myriad Official sent you ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
 
@@ -654,7 +654,7 @@ export class NotificationService {
       message: transaction.amount + ' ' + symbol,
     });
 
-    const title = 'Send Claim Tips Success';
+    const title = 'Claim Tips Success';
     const body = `You claimed ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
@@ -672,7 +672,7 @@ export class NotificationService {
       type: NotificationType.CONNECTED_SOCIAL_MEDIA,
       from: userId,
       referenceId: userId,
-      message: `connected to your ${capitalize(platform)}`,
+      message: `connected to your ${capitalize(platform)} account`,
       additionalReferenceId: {
         people: {
           id: people.id,
@@ -683,10 +683,10 @@ export class NotificationService {
       },
     });
 
-    const title = `Connected ${
+    const title = `Connected to ${
       platform[0].toUpperCase() + platform.substring(1)
     } Success`;
-    const body = `You ${notification.message}`;
+    const body = `Your Myriad account is now ${notification.message}`;
 
     await this.sendNotificationToUser(notification, userId, title, body);
 
@@ -705,7 +705,7 @@ export class NotificationService {
       type: NotificationType.DISCONNECTED_SOCIAL_MEDIA,
       from: fromUserId,
       referenceId: fromUserId,
-      message: `disconnected from your ${capitalize(platform)}`,
+      message: `disconnected from your ${capitalize(platform)} account`,
       additionalReferenceId: {
         people: {
           id: people?.id,
@@ -716,10 +716,10 @@ export class NotificationService {
       },
     });
 
-    const title = `Disconnected ${
+    const title = `Disconnected from ${
       platform[0].toUpperCase() + platform.substring(1)
     } Success`;
-    const body = `You ${notification.message}`;
+    const body = `Your Myriad account is now ${notification.message}`;
 
     await this.sendNotificationToUser(notification, userId, title, body);
 

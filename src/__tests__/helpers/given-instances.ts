@@ -393,7 +393,7 @@ export function givenNotification(notification?: Partial<Notification>) {
     {
       type: NotificationType.FRIEND_REQUEST,
       read: false,
-      message: 'sent you friend request',
+      message: 'sent you a friend request',
       referenceId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61864',
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
@@ -419,7 +419,7 @@ export async function givenMultipleNotificationInstances(
     givenNotificationInstance(notificationRepository, {
       type: NotificationType.FRIEND_REQUEST,
       read: false,
-      message: 'sent you friend request',
+      message: 'sent you a friend request',
       referenceId:
         '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61865',
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61866',
