@@ -4,6 +4,7 @@ import {
   DefaultCrudRepository,
   HasManyRepositoryFactory,
   repository,
+  HasManyThroughRepositoryFactory,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {
@@ -14,12 +15,16 @@ import {
   PostRelations,
   Transaction,
   User,
+  Experience,
+  ExperiencePost,
 } from '../models';
 import {CommentRepository} from './comment.repository';
 import {VoteRepository} from './vote.repository';
 import {PeopleRepository} from './people.repository';
 import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
+import {ExperiencePostRepository} from './experience-post.repository';
+import {ExperienceRepository} from './experience.repository';
 
 export class PostRepository extends DefaultCrudRepository<
   Post,
@@ -45,6 +50,13 @@ export class PostRepository extends DefaultCrudRepository<
     typeof Post.prototype.id
   >;
 
+  public readonly experiences: HasManyThroughRepositoryFactory<
+    Experience,
+    typeof Experience.prototype.id,
+    ExperiencePost,
+    typeof Post.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('PeopleRepository')
@@ -57,8 +69,21 @@ export class PostRepository extends DefaultCrudRepository<
     protected transactionRepositoryGetter: Getter<TransactionRepository>,
     @repository.getter('VoteRepository')
     protected voteRepositoryGetter: Getter<VoteRepository>,
+    @repository.getter('ExperiencePostRepository')
+    protected experiencePostRepositoryGetter: Getter<ExperiencePostRepository>,
+    @repository.getter('ExperienceRepository')
+    protected experienceRepositoryGetter: Getter<ExperienceRepository>,
   ) {
     super(Post, dataSource);
+    this.experiences = this.createHasManyThroughRepositoryFactoryFor(
+      'experiences',
+      experienceRepositoryGetter,
+      experiencePostRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'experiences',
+      this.experiences.inclusionResolver,
+    );
     this.transactions = this.createHasManyRepositoryFactoryFor(
       'transactions',
       transactionRepositoryGetter,
