@@ -12,6 +12,7 @@ export enum ControllerType {
   NOTIFICATION = 'NotificationController',
   PEOPLE = 'PeopleController',
   POST = 'PostController',
+  POSTEXPERIENCE = 'PostExperienceController',
   REPORT = 'ReportController',
   REPORTUSER = 'ReportUserController',
   SERVER = 'ServerController',
