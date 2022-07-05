@@ -37,11 +37,10 @@ import {
   givenUserRepository,
   setupApplication,
   givenActivityLogRepository,
-  givenOtherUser,
   deleteAllRepository,
   givenAccesToken,
 } from '../helpers';
-import {EntityNotFoundError} from '@loopback/repository';
+import {AnyObject, EntityNotFoundError} from '@loopback/repository';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('PostApplication', function () {
@@ -147,6 +146,7 @@ describe('PostApplication', function () {
 
       const expected = {
         ...toJSON(persistedPost),
+        totalExperience: 0,
         popularCount: 0,
         banned: false,
       };
@@ -264,38 +264,6 @@ describe('PostApplication', function () {
       expect(response.body.data).to.containDeep(toJSON(persistedPosts));
     });
 
-    it('queries posts with a filter', async () => {
-      const anotherUser = await givenUserInstance(
-        userRepository,
-        givenOtherUser(),
-      );
-      const postInProgress: PostWithRelations = await givenMyriadPostInstance(
-        postRepository,
-        {
-          text: "what's up, docs!",
-          createdBy: anotherUser.id,
-          platform: PlatformType.MYRIAD,
-        },
-      );
-      postInProgress.user = anotherUser as UserWithRelations;
-
-      const response = await client
-        .get('/posts')
-        .set('Authorization', `Bearer ${token}`)
-        .query('filter=' + JSON.stringify({where: {text: "what's up, docs!"}}))
-        .expect(200);
-
-      expect(response.body).to.containDeep({
-        data: [toJSON(postInProgress)],
-        meta: {
-          currentPage: 1,
-          itemsPerPage: 1,
-          totalItemCount: 1,
-          totalPageCount: 1,
-        },
-      });
-    });
-
     it('exploded filter conditions work', async () => {
       await givenMyriadPostInstance(postRepository, {
         text: 'this is it',
@@ -355,6 +323,7 @@ describe('PostApplication', function () {
       ...toJSON(post as Post),
       banned: false,
       totalImporter: 1,
+      totalExperience: 0,
       popularCount: 0,
       user: toJSON(user),
       people: toJSON(people),
@@ -383,7 +352,7 @@ describe('PostApplication', function () {
         .send(platformPost)
         .expect(200);
 
-      const result: Partial<Post> = await postRepository.findById(
+      const result: AnyObject = await postRepository.findById(
         response.body.id,
         {
           include: ['people'],
