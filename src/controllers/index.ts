@@ -11,6 +11,7 @@ export * from './network-currency.controller';
 export * from './notification.controller';
 export * from './people.controller';
 export * from './post.controller';
+export * from './post-experience.controller';
 export * from './report.controller';
 export * from './report-user.controller';
 export * from './storage.controller';

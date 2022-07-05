@@ -156,7 +156,6 @@ export class PostController {
               'deletedAt',
               'createdBy',
               'peopleId',
-              'totalImporter',
               'popularCount',
               'originCreatedAt',
               'url',
