@@ -248,6 +248,11 @@ export class MyriadApiApplication extends BootMixin(
     const bar = this.initializeProgressBar('Start Seeding');
     const files = fs.readdirSync(directory);
 
+    await serverRepository.create({
+      id: config.MYRIAD_SERVER_ID,
+      name: `${config.MYRIAD_SERVER_ID}#${Math.floor(Math.random() * 10000)}`,
+    });
+
     bar.start(files.length - 1, 0);
     for (const [index, file] of files.entries()) {
       if (file.endsWith('.json')) {
@@ -380,6 +385,7 @@ export class MyriadApiApplication extends BootMixin(
                   userRepository.deleteAll(),
                   currencyRepository.deleteAll(),
                   walletRepository.deleteAll(),
+                  serverRepository.deleteAll(),
                 ]);
 
                 throw new Error('Currency/Network Not Found');
@@ -422,10 +428,7 @@ export class MyriadApiApplication extends BootMixin(
 
       bar.update(index);
     }
-    await serverRepository.create({
-      id: config.MYRIAD_SERVER_ID,
-      name: `${config.MYRIAD_SERVER_ID}#${Math.floor(Math.random() * 10000)}`,
-    });
+
     bar.stop();
   }
 
