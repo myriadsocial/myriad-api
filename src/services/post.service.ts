@@ -16,6 +16,7 @@ import {
   FriendRepository,
   DraftPostRepository,
   AccountSettingRepository,
+  ExperiencePostRepository,
 } from '../repositories';
 import {injectable, BindingScope, inject} from '@loopback/core';
 import {
@@ -38,14 +39,16 @@ export class PostService {
   constructor(
     @repository(PostRepository)
     public postRepository: PostRepository,
-    @repository(DraftPostRepository)
-    public draftPostRepository: DraftPostRepository,
-    @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
-    @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
     @repository(AccountSettingRepository)
     protected accountSettingRepository: AccountSettingRepository,
+    @repository(DraftPostRepository)
+    public draftPostRepository: DraftPostRepository,
+    @repository(ExperiencePostRepository)
+    protected experiencePostRepository: ExperiencePostRepository,
+    @repository(FriendRepository)
+    protected friendRepository: FriendRepository,
+    @repository(PeopleRepository)
+    protected peopleRepository: PeopleRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
     protected currentUser: UserProfile,
   ) {}
@@ -99,12 +102,19 @@ export class PostService {
     post: AnyObject,
     userId?: string,
   ): Promise<AnyObject> {
+    const {count} = await this.experiencePostRepository.count({
+      postId: post.id,
+      deletedAt: {exists: false},
+    });
+
+    post.totalExperience = count;
+
     if (post.platform === PlatformType.MYRIAD) return omit(post, 'rawText');
     if (!post.user) return post;
     if (!userId) return post;
 
     const importer = new User({...post.user});
-    const {count} = await this.postRepository.count({
+    const {count: totalImporter} = await this.postRepository.count({
       originPostId: post.originPostId,
       platform: post.platform,
       banned: false,
@@ -115,9 +125,7 @@ export class PostService {
       importer.name = 'You';
     }
 
-    return omit({...post, importers: [importer], totalImporter: count}, [
-      'rawText',
-    ]);
+    return omit({...post, importers: [importer], totalImporter}, ['rawText']);
   }
 
   async createDraftPost(draftPost: DraftPost): Promise<DraftPost> {

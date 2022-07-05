@@ -81,6 +81,8 @@ export async function givenRepositories(testdb: any) {
     async () => commentRepository,
     async () => transactionRepository,
     async () => voteRepository,
+    async () => experiencePostRepository,
+    async () => experienceRepository,
   );
   const networkRepository: NetworkRepository = new NetworkRepository(
     testdb,
@@ -217,10 +219,11 @@ export async function givenRepositories(testdb: any) {
 
   const postService = new PostService(
     postRepository,
-    draftPostRepository,
-    peopleRepository,
-    friendRepository,
     accountSettingRepository,
+    draftPostRepository,
+    experiencePostRepository,
+    friendRepository,
+    peopleRepository,
     currentUser,
   );
 

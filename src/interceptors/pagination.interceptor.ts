@@ -354,18 +354,31 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
           // get timeline
           if (!timelineType && typeof timelineType === 'string') return;
-          if (timelineType) {
+          if (timelineType || (!q && !topic && !timelineType)) {
             filter.where = await this.getTimeline(
-              timelineType as TimelineType,
+              (timelineType ?? TimelineType.ALL) as TimelineType,
               experienceId?.toString(),
             );
           }
 
+          const experience = {
+            relation: 'experiences',
+            scope: {
+              limit: 1,
+              order: ['name ASC'],
+              where: {
+                deletedAt: {
+                  $exists: false,
+                },
+              },
+            },
+          };
+
           filter.where.banned = false;
           filter.where.deletedAt = {$eq: null};
           filter.include = filter.include
-            ? [...filter.include, 'user']
-            : ['user'];
+            ? [...filter.include, 'user', experience]
+            : ['user', experience];
         }
 
         if (methodName === MethodType.GETIMPORTERS) {
@@ -423,13 +436,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         break;
       }
 
+      case ControllerType.POSTEXPERIENCE:
       case ControllerType.EXPERIENCEPOST: {
         filter.order = this.orderSetting(request.query);
         filter.include = invocationCtx.args[1]?.include ?? [];
         filter.where = {
           deletedAt: {$eq: null},
-          banned: false,
         };
+
+        if (controllerName === ControllerType.EXPERIENCEPOST) {
+          filter.where.banned = false;
+        }
         break;
       }
 
@@ -596,28 +613,35 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         // include importers in post collection
         if (methodName === MethodType.TIMELINE) {
           result = await Promise.all(
-            result.map(async (post: Post) =>
-              this.postService.getPostImporterInfo(
-                post,
-                this.currentUser[securityId],
-              ),
-            ),
+            result.map(async (post: Post) => {
+              const postWithImportedInfo =
+                await this.postService.getPostImporterInfo(
+                  post,
+                  this.currentUser[securityId],
+                );
+
+              return postWithImportedInfo;
+            }),
           );
 
           if (request.query.experienceId) {
-            const {count} = await this.userExperienceRepository.count({
-              userId: this.currentUser[securityId],
-              experienceId: request.query.experienceId.toString(),
-            });
-
-            if (count === 1) {
-              await this.userRepository.updateById(
-                this.currentUser[securityId],
-                {
-                  onTimeline: request.query.experienceId.toString(),
-                },
-              );
-            }
+            Promise.allSettled([
+              this.userExperienceRepository
+                .count({
+                  userId: this.currentUser[securityId],
+                  experienceId: request.query.experienceId.toString(),
+                })
+                .then(({count}) => {
+                  if (count === 1 && request.query.experienceId) {
+                    return this.userRepository.updateById(
+                      this.currentUser[securityId],
+                      {
+                        onTimeline: request.query.experienceId.toString(),
+                      },
+                    );
+                  }
+                }),
+            ]) as Promise<AnyObject>;
           }
         }
 
@@ -816,7 +840,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     if (
       controllerName === ControllerType.REPORTUSER ||
       controllerName === ControllerType.USERWALLET ||
-      controllerName === ControllerType.EXPERIENCEPOST
+      controllerName === ControllerType.EXPERIENCEPOST ||
+      controllerName === ControllerType.POSTEXPERIENCE
     )
       invocationCtx.args[1] = paginationFilter;
     else if (methodName === MethodType.GETIMPORTERS)
