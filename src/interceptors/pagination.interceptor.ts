@@ -354,7 +354,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
           // get timeline
           if (!timelineType && typeof timelineType === 'string') return;
-          if (timelineType || (!q && !topic && !timelineType)) {
+          if (timelineType || (!q && !topic && !timelineType && !hasWhere)) {
             filter.where = await this.getTimeline(
               (timelineType ?? TimelineType.ALL) as TimelineType,
               experienceId?.toString(),
