@@ -1,6 +1,7 @@
 export * from './activity-log.controller';
 export * from './admin.controller';
 export * from './authentication.controller';
+export * from './claim-reference.controller';
 export * from './comment.controller';
 export * from './currency.controller';
 export * from './exchange-rate.controller';
