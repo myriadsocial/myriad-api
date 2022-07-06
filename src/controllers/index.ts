@@ -1,6 +1,7 @@
 export * from './activity-log.controller';
 export * from './admin.controller';
 export * from './authentication.controller';
+export * from './claim-reference.controller';
 export * from './comment.controller';
 export * from './currency.controller';
 export * from './exchange-rate.controller';
@@ -11,6 +12,7 @@ export * from './network-currency.controller';
 export * from './notification.controller';
 export * from './people.controller';
 export * from './post.controller';
+export * from './post-experience.controller';
 export * from './report.controller';
 export * from './report-user.controller';
 export * from './storage.controller';

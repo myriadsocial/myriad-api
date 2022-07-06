@@ -1,4 +1,4 @@
-import {Entity, model, property} from '@loopback/repository';
+import {AnyObject, Entity, model, property} from '@loopback/repository';
 import {ServerMetric} from '../interfaces';
 
 @model({
@@ -50,6 +50,13 @@ export class Server extends Entity {
     default: ['myriad'],
   })
   categories: string[];
+
+  @property({
+    type: 'object',
+    required: false,
+    default: {},
+  })
+  accountId?: AnyObject;
 
   constructor(data?: Partial<Server>) {
     super(data);

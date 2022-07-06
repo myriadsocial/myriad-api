@@ -11,6 +11,7 @@ import {Post} from '../../models';
 import {
   AccountSettingRepository,
   DraftPostRepository,
+  ExperiencePostRepository,
   FriendRepository,
   PeopleRepository,
   PostRepository,
@@ -25,6 +26,7 @@ describe('PostController', () => {
   let draftPostRepository: StubbedInstanceWithSinonAccessor<DraftPostRepository>;
   let peopleRepository: StubbedInstanceWithSinonAccessor<PeopleRepository>;
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
+  let experiencePostRepository: StubbedInstanceWithSinonAccessor<ExperiencePostRepository>;
   let postService: PostService;
   let controller: PostController;
   let aPostWithId: Post;
@@ -73,6 +75,7 @@ describe('PostController', () => {
     postRepository = createStubInstance(PostRepository);
     draftPostRepository = createStubInstance(DraftPostRepository);
     peopleRepository = createStubInstance(PeopleRepository);
+    experiencePostRepository = createStubInstance(ExperiencePostRepository);
     aPostWithId = givenMyriadPost({
       id: '1',
     });
@@ -94,10 +97,11 @@ describe('PostController', () => {
 
     postService = new PostService(
       postRepository,
-      draftPostRepository,
-      peopleRepository,
-      friendRepository,
       accountSettingRepository,
+      draftPostRepository,
+      experiencePostRepository,
+      friendRepository,
+      peopleRepository,
       {[securityId]: ''},
     );
     controller = new PostController(postService);

@@ -79,13 +79,20 @@ export class ServerController {
         'application/json': {
           schema: getModelSchemaRef(Server, {
             partial: true,
-            exclude: ['metric'],
+            exclude: ['id', 'metric'],
           }),
         },
       },
     })
-    server: Server,
+    server: Partial<Server>,
   ): Promise<void> {
+    if (server.accountId) {
+      const oldServer = await this.serverRepository.findById(
+        config.MYRIAD_SERVER_ID,
+      );
+      server.accountId = {...oldServer.accountId, ...server.accountId};
+    }
+
     await this.serverRepository.updateById(config.MYRIAD_SERVER_ID, server);
   }
 

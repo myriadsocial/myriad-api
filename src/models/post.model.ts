@@ -16,6 +16,8 @@ import {Transaction} from './transaction.model';
 import {User} from './user.model';
 import {MentionUser} from './mention-user.model';
 import {UserWithRelations} from './';
+import {Experience} from './experience.model';
+import {ExperiencePost} from './experience-post.model';
 
 @model({
   settings: {
@@ -172,12 +174,6 @@ export class Post extends Entity {
   popularCount: number;
 
   @property({
-    type: 'number',
-    required: false,
-  })
-  totalImporter?: number;
-
-  @property({
     type: 'boolean',
     required: false,
     default: false,
@@ -221,6 +217,9 @@ export class Post extends Entity {
 
   @hasMany(() => Transaction, {keyTo: 'referenceId'})
   transactions: Transaction[];
+
+  @hasMany(() => Experience, {through: {model: () => ExperiencePost}})
+  experiences: Experience[];
 
   constructor(data?: Partial<Post>) {
     super(data);

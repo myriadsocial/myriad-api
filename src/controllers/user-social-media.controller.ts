@@ -51,7 +51,6 @@ export class UserSocialMediaController {
       },
     })
     userVerification: UserVerification,
-    @param.query.boolean('blockchain') _?: boolean,
   ): Promise<UserSocialMedia> {
     const {address, platform, username} = userVerification;
 

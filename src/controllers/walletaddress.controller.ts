@@ -291,9 +291,7 @@ export class WalletAddressController {
       }
 
       case 'near':
-        // TODO: implement near smartcontract
-        // return tipsBalanceInfo
-        throw new HttpErrors.NotFound('Near wallet not exists');
+        return tipsBalanceInfo;
 
       default:
         throw new HttpErrors.NotFound('Wallet not exists');

@@ -103,10 +103,22 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
       case ControllerType.POST: {
         const filter = invocationCtx.args[1] ?? {};
+        const experience = {
+          relation: 'experiences',
+          scope: {
+            limit: 1,
+            order: ['name ASC'],
+            where: {
+              deletedAt: {
+                $exists: false,
+              },
+            },
+          },
+        };
 
         filter.include = filter.include
-          ? [...filter.include, 'user']
-          : ['user'];
+          ? [...filter.include, 'user', experience]
+          : ['user', experience];
 
         invocationCtx.args[1] = filter;
         break;

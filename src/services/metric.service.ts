@@ -307,9 +307,15 @@ export class MetricService {
       case ControllerType.NETWORK:
         return this.networkRepository.count(where);
 
+      case ControllerType.POSTEXPERIENCE:
       case ControllerType.EXPERIENCEPOST: {
-        const experienceId = additionalData;
-        const additionalWhere = {experienceId, deletedAt: {exists: false}};
+        const field =
+          controller === ControllerType.EXPERIENCEPOST
+            ? 'experienceId'
+            : 'postId';
+
+        const id = additionalData;
+        const additionalWhere = {[field]: id, deletedAt: {exists: false}};
         return this.experiencePostRepository.count(additionalWhere);
       }
 
