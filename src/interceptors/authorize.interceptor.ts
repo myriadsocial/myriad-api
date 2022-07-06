@@ -280,11 +280,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.USERCURRENCY: {
-        userId = invocationCtx.args[0].userId;
-        break;
-      }
-
       case ControllerType.USERSOCIALMEDIA: {
         if (typeof data === 'object') {
           const userSocialMedia = await this.walletRepository.user(

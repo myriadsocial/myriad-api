@@ -14,9 +14,9 @@ import {UserCurrency} from '../models';
 import {UserCurrencyRepository} from '../repositories';
 
 interface UserCurrencyPriority {
-  userId: string;
-  networkId: string;
   currencyIds: string[];
+  userId?: string;
+  networkId?: string;
 }
 
 @authenticate('jwt')
