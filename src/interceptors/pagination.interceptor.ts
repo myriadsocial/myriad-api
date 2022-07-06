@@ -613,15 +613,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         // include importers in post collection
         if (methodName === MethodType.TIMELINE) {
           result = await Promise.all(
-            result.map(async (post: Post) => {
-              const postWithImportedInfo =
-                await this.postService.getPostImporterInfo(
-                  post,
-                  this.currentUser[securityId],
-                );
-
-              return postWithImportedInfo;
-            }),
+            result.map(async (post: Post) =>
+              this.postService.getPostImporterInfo(
+                post,
+                this.currentUser[securityId],
+              ),
+            ),
           );
 
           if (request.query.experienceId) {
