@@ -1,4 +1,5 @@
 import {
+  inject,
   injectable,
   Interceptor,
   InvocationContext,
@@ -43,6 +44,8 @@ import {validateAccount} from '../utils/validate-account';
 import {assign} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
 import {isHex} from '@polkadot/util';
+import {AuthenticationBindings} from '@loopback/authentication';
+import {UserProfile, securityId} from '@loopback/security';
 
 const {validateURL, getOpenGraph} = UrlUtils;
 
@@ -85,6 +88,8 @@ export class UpdateInterceptor implements Provider<Interceptor> {
     protected notificationService: NotificationService,
     @service(ReportService)
     protected reportService: ReportService,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    protected currentUser: UserProfile,
   ) {}
 
   /**
@@ -216,7 +221,17 @@ export class UpdateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERCURRENCY: {
-        const {networkId, currencyIds} = invocationCtx.args[0];
+        const {currencyIds} = invocationCtx.args[0];
+        const wallet = await this.walletRepository.findOne({
+          where: {
+            userId: this.currentUser?.[securityId] ?? '',
+            primary: true,
+          },
+        });
+
+        if (!wallet) throw new HttpErrors.UnprocessableEntity('WalletNotFound');
+
+        const {userId, networkId} = wallet;
         const [{count: countCurrency}, {count: countCurrencyNetwork}] =
           await Promise.all([
             this.currencyRepository.count({id: {inq: currencyIds}, networkId}),
@@ -229,6 +244,12 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         ) {
           throw new HttpErrors.UnprocessableEntity('Total currency not match');
         }
+
+        invocationCtx.args[0] = {
+          userId,
+          networkId,
+          currencyIds,
+        };
 
         break;
       }

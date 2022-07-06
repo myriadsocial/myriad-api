@@ -96,11 +96,13 @@ export class ClaimReferenceController {
         throw new HttpErrors.UnprocessableEntity('ContractIdEmpty');
       }
 
-      const [{rpcURL}, {accountId: account}] = await Promise.all([
+      const [{rpcURL}, {accountId: account}, socialMedia] = await Promise.all([
         this.networkRepository.findById('near'),
         this.serverRepository.findById(config.MYRIAD_SERVER_ID),
+        this.userSocialMediaRepository.find({where: {userId: mainReferenceId}}),
       ]);
 
+      const referenceIds = socialMedia.map(e => e.peopleId);
       const serverId = account?.['near'] ?? 'myriad';
       const provider = new providers.JsonRpcProvider({url: rpcURL});
       const tipsBalanceInfo = {
@@ -152,7 +154,7 @@ export class ClaimReferenceController {
           Buffer.from(
             JSON.stringify({
               reference_type: 'people',
-              reference_ids: claimReference.referenceIds,
+              reference_ids: referenceIds,
               main_ref_type: 'user',
               main_ref_id: this.currentUser[securityId],
               account_id: accountId,
