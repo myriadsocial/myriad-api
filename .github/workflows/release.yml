@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release:
-        description: "RELEASE"
+        description: 'RELEASE'
         required: true
         type: string
 
