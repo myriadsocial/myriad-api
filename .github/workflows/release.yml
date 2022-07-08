@@ -116,7 +116,7 @@ jobs:
             helm repo update
             helm upgrade myriad-api myriadsocial/myriad-api \
               --install \
-              --set-string image.tag=${{ needs.release.outputs.release_name }}
+              --set-string image.tag=${{ needs.release.outputs.release_name }} \
               --set-string config.serverId=${{ steps.secrets.outputs.SERVER_ID }} \
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
