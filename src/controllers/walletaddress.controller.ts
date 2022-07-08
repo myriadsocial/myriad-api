@@ -6,6 +6,7 @@ import {
   CommentRepository,
   NetworkRepository,
   PostRepository,
+  ServerRepository,
   UserRepository,
   WalletRepository,
 } from '../repositories';
@@ -24,6 +25,8 @@ export class WalletAddressController {
     protected userRepository: UserRepository,
     @repository(NetworkRepository)
     protected networkRepository: NetworkRepository,
+    @repository(ServerRepository)
+    protected serverRepository: ServerRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -266,17 +269,18 @@ export class WalletAddressController {
     };
   }
 
-  tipsBalanceInfo(
+  async tipsBalanceInfo(
     blockchainPlatform: string,
     networkType: string,
     referenceType: ReferenceType,
     referenceId: string,
-  ): AnyObject {
+  ): Promise<AnyObject> {
     if (!config.MYRIAD_SERVER_ID) {
       throw new HttpErrors.NotFound('Not implemented');
     }
+    const myriadServerId = config.MYRIAD_SERVER_ID;
     const tipsBalanceInfo = {
-      serverId: config.MYRIAD_SERVER_ID,
+      serverId: myriadServerId,
       referenceType: referenceType,
       referenceId: referenceId,
     };
@@ -290,8 +294,13 @@ export class WalletAddressController {
         throw new HttpErrors.NotFound('Polkadot wallet not exists');
       }
 
-      case 'near':
-        return tipsBalanceInfo;
+      case 'near': {
+        const server = await this.serverRepository.findById(myriadServerId);
+        const serverId = server.accountId?.[networkType];
+        if (!serverId) throw new HttpErrors.NotFound('ServerNotFound');
+
+        return Object.assign(tipsBalanceInfo, {serverId});
+      }
 
       default:
         throw new HttpErrors.NotFound('Wallet not exists');
