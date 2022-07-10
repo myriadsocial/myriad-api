@@ -113,8 +113,8 @@ export class TransactionController {
               currencyIds: {
                 type: 'array',
                 items: {
-                  type: 'string'
-                }
+                  type: 'string',
+                },
               },
             },
           },
