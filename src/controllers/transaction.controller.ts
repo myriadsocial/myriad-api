@@ -25,7 +25,7 @@ import {authenticate} from '@loopback/authentication';
 export interface TransactionInfo {
   userId: string;
   walletId: string;
-  currencyId: string;
+  currencyIds: string[];
 }
 @authenticate('jwt')
 export class TransactionController {
@@ -110,8 +110,11 @@ export class TransactionController {
               walletId: {
                 type: 'string',
               },
-              currencyId: {
-                type: 'string',
+              currencyIds: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
               },
             },
           },
@@ -120,7 +123,7 @@ export class TransactionController {
     })
     transactionInfo: TransactionInfo,
   ): Promise<AnyObject> {
-    const {userId, walletId, currencyId} = transactionInfo;
+    const {userId, walletId, currencyIds} = transactionInfo;
     const socialMedias = await this.userSocialMediaRepository.find({
       where: {userId},
     });
@@ -128,12 +131,12 @@ export class TransactionController {
     const promises: Promise<AnyObject>[] = [
       this.transactionRepository.updateAll(
         {to: walletId},
-        {to: userId, currencyId},
+        {to: userId, currencyId: {inq: currencyIds}},
       ),
       ...socialMedias.map(e => {
         return this.transactionRepository.updateAll(
           {to: walletId},
-          {to: e.peopleId, currencyId},
+          {to: e.peopleId, currencyId: {inq: currencyIds}},
         );
       }),
     ];
