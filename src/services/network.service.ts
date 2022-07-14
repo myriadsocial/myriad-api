@@ -1,38 +1,60 @@
 import {BindingScope, inject, injectable} from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
-import {Currency, Network} from '../models';
+import {ClaimReference, Currency, Network} from '../models';
 import {
   CurrencyRepository,
   NetworkRepository,
   QueueRepository,
+  ServerRepository,
+  UserSocialMediaRepository,
   WalletRepository,
 } from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {CoinMarketCap} from './coin-market-cap.service';
-import {providers} from 'near-api-js';
+import {providers, transactions, utils} from 'near-api-js';
 import {HttpErrors} from '@loopback/rest';
 import {ApiPromise} from '@polkadot/api';
 import {config} from '../config';
-import {ReferenceType} from '../enums';
 import {DateUtils} from '../utils/date-utils';
+import {AuthenticationBindings} from '@loopback/authentication';
+import {UserProfile, securityId} from '@loopback/security';
+import {BN} from '@polkadot/util';
+import {sha256} from 'js-sha256';
+import {Transaction} from '../interfaces';
 
+const nearSeedPhrase = require('near-seed-phrase');
 const {polkadotApi, getKeyring} = new PolkadotJs();
 const dateUtils = new DateUtils();
+
+interface ClaimReferenceData {
+  rpcURL: string;
+  serverId: string;
+  accountId: string;
+  txFee: string;
+  referenceIds: string[];
+  contractId?: string;
+}
 
 /* eslint-disable   @typescript-eslint/naming-convention */
 @injectable({scope: BindingScope.TRANSIENT})
 export class NetworkService {
   constructor(
-    @repository(NetworkRepository)
-    protected networkRepository: NetworkRepository,
     @repository(CurrencyRepository)
     protected currencyRepository: CurrencyRepository,
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
     @repository(QueueRepository)
     protected queueRepository: QueueRepository,
+    @repository(ServerRepository)
+    protected serverRepository: ServerRepository,
+    @repository(UserSocialMediaRepository)
+    protected userSocialMediaRepository: UserSocialMediaRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @inject('services.CoinMarketCap')
     protected coinMarketCapService: CoinMarketCap,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    protected currentUser: UserProfile,
   ) {}
 
   async verifyPolkadotConnection(network: Network): Promise<Network | void> {
@@ -160,91 +182,250 @@ export class NetworkService {
     }
   }
 
-  async connectAccount(
-    networkId: string,
-    userId: string,
-    accountId: string,
-    ftIdentifier = 'native',
-  ): Promise<void> {
-    if (!config.MYRIAD_SERVER_ID) return;
-    const tipsBalanceInfo = {
-      serverId: config.MYRIAD_SERVER_ID,
-      referenceType: ReferenceType.USER,
-      referenceId: userId.toString(),
-      ftIdentifier: ftIdentifier,
+  async claimReference(claimReference: ClaimReference): Promise<Transaction> {
+    const userId = this.currentUser?.[securityId];
+    const txFee = claimReference.txFee;
+    const contractId = claimReference.tippingContractId;
+
+    if (!userId) {
+      throw new HttpErrors.Forbidden('UnathorizedUser');
+    }
+
+    if (parseInt(txFee) === 0) {
+      throw new HttpErrors.UnprocessableEntity('TxFeeMustLargerThanZero');
+    }
+
+    const wallet = await this.walletRepository.findOne({
+      where: {
+        userId: this.currentUser[securityId],
+        primary: true,
+      },
+      include: ['network'],
+    });
+
+    if (!wallet?.network) throw new HttpErrors.NotFound('WalletNotFound');
+
+    const [server, socialMedia] = await Promise.all([
+      this.serverRepository.findById(config.MYRIAD_SERVER_ID),
+      this.userSocialMediaRepository.find({where: {userId}}),
+    ]);
+
+    const accountId = wallet.id;
+    const networkId = wallet.networkId;
+    const referenceIds = socialMedia.map(e => e.peopleId);
+    const claimReferenceData = {
+      rpcURL: wallet.network.rpcURL,
+      serverId: server.id,
+      accountId,
+      txFee,
+      referenceIds,
+      contractId,
     };
 
     switch (networkId) {
-      case 'polkadot':
-      case 'myriad':
-      case 'kusama':
-        return this.claimReferenceMyriad(tipsBalanceInfo, userId, accountId);
+      case 'near': {
+        const serverId = server?.accountId?.[networkId];
 
-      case 'near':
+        if (!serverId) {
+          throw new HttpErrors.UnprocessableEntity('ServerNotExists');
+        }
+
+        return this.claimReferenceNear({...claimReferenceData, serverId});
+      }
+
+      case 'myriad':
+        return this.claimReferenceMyriad(claimReferenceData);
+
       default:
-        throw new HttpErrors.UnprocessableEntity('Wallet not exist');
+        throw new HttpErrors.NotFound('WalletNotFound');
     }
   }
 
-  async connectSocialMedia(
-    userId: string,
-    peopleId: string,
-    ftIdentifier = 'native',
-  ): Promise<AnyObject | void> {
-    if (!config.MYRIAD_SERVER_ID) return;
-    const tipsBalanceInfo = {
-      serverId: config.MYRIAD_SERVER_ID,
-      referenceType: ReferenceType.PEOPLE,
-      referenceId: peopleId.toString(),
-      ftIdentifier: ftIdentifier,
-    };
+  async claimReferenceNear(
+    claimReferenceData: ClaimReferenceData,
+  ): Promise<Transaction> {
+    try {
+      const {serverId, accountId, rpcURL, txFee, contractId, referenceIds} =
+        claimReferenceData;
 
-    const wallets = await this.walletRepository.find({
-      where: {userId},
-      include: ['network'],
-    });
-    const substrateWallet = wallets.find(
-      wallet => wallet?.network?.blockchainPlatform === 'substrate',
-    );
+      const mainReferenceType = 'user';
+      const mainReferenceId = this.currentUser[securityId];
 
-    return Promise.allSettled([
-      this.claimReferenceMyriad(
-        tipsBalanceInfo,
-        userId,
-        substrateWallet?.id ?? null,
-      ),
-    ]);
+      if (!contractId) {
+        throw new HttpErrors.UnprocessableEntity('ContractIdEmpty');
+      }
+
+      const provider = new providers.JsonRpcProvider({url: rpcURL});
+      const tipsBalanceInfo = {
+        server_id: serverId,
+        reference_type: mainReferenceType,
+        reference_id: mainReferenceId,
+        ft_identifier: 'native',
+      };
+      const data = JSON.stringify({tips_balance_info: tipsBalanceInfo});
+      const buff = Buffer.from(data);
+      const base64data = buff.toString('base64');
+      const [{gas_price}, rawResult] = await Promise.all([
+        provider.gasPrice(null),
+        provider.query({
+          request_type: 'call_function',
+          account_id: contractId,
+          method_name: 'get_tips_balance',
+          args_base64: base64data,
+          finality: 'final',
+        }),
+      ]);
+
+      const result = JSON.parse(
+        Buffer.from((rawResult as AnyObject).result).toString(),
+      );
+
+      const amount = result?.tips_balance?.amount ?? '0';
+      const GAS = BigInt(300000000000000);
+      const currentTxFee = GAS * BigInt(gas_price);
+
+      if (BigInt(amount) < currentTxFee || BigInt(txFee) < currentTxFee) {
+        throw new HttpErrors.UnprocessableEntity('TxFeeInsufficient');
+      }
+
+      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+      const seedData = nearSeedPhrase.parseSeedPhrase(mnemonic);
+      const privateKey = seedData.secretKey;
+      const keyPair = utils.key_pair.KeyPairEd25519.fromString(privateKey);
+      const publicKey = keyPair.getPublicKey();
+      const sender = serverId;
+      const receiverId = contractId;
+      const args = `access_key/${sender}/${publicKey.toString()}`;
+      const accessKey = await provider.query(args, '');
+      const {nonce, block_hash} = accessKey as AnyObject;
+      const recentBlockHash = utils.serialize.base_decode(block_hash);
+      const actions = [
+        transactions.functionCall(
+          'batch_claim_references',
+          Buffer.from(
+            JSON.stringify({
+              reference_type: 'people',
+              reference_ids: referenceIds,
+              main_ref_type: 'user',
+              main_ref_id: this.currentUser[securityId],
+              account_id: accountId,
+              tx_fee: txFee,
+            }),
+          ),
+          new BN('300000000000000'),
+          new BN('1'),
+        ),
+      ];
+      const transaction = transactions.createTransaction(
+        sender,
+        publicKey,
+        receiverId,
+        nonce + 1,
+        actions,
+        recentBlockHash,
+      );
+      const serializedTx = utils.serialize.serialize(
+        transactions.SCHEMA,
+        transaction,
+      );
+      const serializedTxHash = new Uint8Array(sha256.array(serializedTx));
+      const signature = keyPair.sign(serializedTxHash);
+      const signedTransaction = new transactions.SignedTransaction({
+        transaction,
+        signature: new transactions.Signature({
+          keyType: transaction.publicKey.keyType,
+          data: signature.signature,
+        }),
+      });
+
+      const txHash = await provider.sendTransactionAsync(signedTransaction);
+
+      return {hash: txHash.toString()};
+    } catch (err) {
+      if (err.type) {
+        throw new HttpErrors.UnprocessableEntity(err.type);
+      }
+
+      throw err;
+    }
   }
 
   async claimReferenceMyriad(
-    tipsBalanceInfo: AnyObject,
-    userId: string,
-    accountId: string | null,
-  ) {
+    claimReferenceData: ClaimReferenceData,
+  ): Promise<Transaction> {
+    let api: ApiPromise | null = null;
+
     try {
-      const {rpcURL} = await this.networkRepository.findById('myriad');
-      const api = await this.connect(rpcURL);
-      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
-      const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
-      const extrinsic = api.tx.tipping.claimReference(
-        tipsBalanceInfo,
-        ReferenceType.USER,
-        userId.toString(),
-        accountId,
+      const {serverId, accountId, rpcURL, txFee, referenceIds} =
+        claimReferenceData;
+
+      const mainReferenceType = 'user';
+      const mainReferenceId = this.currentUser[securityId];
+
+      api = await this.connect(rpcURL);
+
+      const rawTipsBalance = await api.query.tipping.tipsBalanceByReference(
+        serverId,
+        mainReferenceType,
+        mainReferenceId,
+        'native',
       );
 
+      const stringifyTipsBalance = rawTipsBalance.toString();
+
+      if (!stringifyTipsBalance) {
+        throw new HttpErrors.UnprocessableEntity('TxFeeInsufficient');
+      }
+
+      const tipsBalance = JSON.parse(rawTipsBalance.toString());
+      const balance = parseInt(tipsBalance.amount).toString();
+      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+      const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+      const {partialFee} = await api.tx.tipping
+        .batchClaimReference(
+          serverId,
+          {referenceType: 'people', referenceIds},
+          {referenceType: 'user', referenceIds: [mainReferenceId]},
+          ['native'],
+          accountId,
+          new BN(txFee),
+        )
+        .paymentInfo(serverAdmin.address);
+
+      const transactionFee = partialFee.toBn();
+      const serverAddress = serverAdmin.address;
+      const notSufficientBalance = new BN(balance).lt(new BN(txFee));
+      const notSufficientFee = new BN(txFee).lt(transactionFee);
+
+      if (notSufficientBalance || notSufficientFee) {
+        throw new HttpErrors.UnprocessableEntity('TxFeeInsufficient');
+      }
+
       const {nonce: currentNonce} = await api.query.system.account(
-        serverAdmin.address,
+        serverAddress,
       );
+
       const nonce = await this.getQueueNumber(
         currentNonce.toJSON(),
         config.MYRIAD_SERVER_ID,
       );
 
-      await extrinsic.signAndSend(serverAdmin, {nonce});
-      await api.disconnect();
+      const extrinsic = api.tx.tipping.batchClaimReference(
+        serverId,
+        {referenceType: 'people', referenceIds},
+        {referenceType: 'user', referenceIds: [mainReferenceId]},
+        ['native'],
+        accountId,
+        new BN(txFee),
+      );
+
+      const txHash = await extrinsic.signAndSend(serverAdmin, {nonce});
+
+      return {hash: txHash.toString()};
     } catch {
-      // ignore
+      throw new HttpErrors.UnprocessableEntity('FailedToVerify');
+    } finally {
+      if (api) await api.disconnect();
     }
   }
 
