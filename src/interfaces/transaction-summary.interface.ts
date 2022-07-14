@@ -8,6 +8,10 @@ export interface UserTransactionSummary {
   received: TransactionDetail[];
 }
 
+export interface Transaction {
+  hash: string;
+}
+
 export type PostTransactionSummary = TransactionDetail;
 
 export type CommentTransactionSummary = TransactionDetail;
