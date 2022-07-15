@@ -66,7 +66,7 @@ export class ExperienceController {
       ...filter,
       where: {
         id,
-        deletetAt: {
+        deletedAt: {
           $eq: null,
         },
       },
