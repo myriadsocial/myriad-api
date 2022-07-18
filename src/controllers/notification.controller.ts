@@ -7,14 +7,7 @@ import {
   repository,
   Where,
 } from '@loopback/repository';
-import {
-  get,
-  getModelSchemaRef,
-  param,
-  patch,
-  requestBody,
-  response,
-} from '@loopback/rest';
+import {get, getModelSchemaRef, param, patch, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {Notification} from '../models';
 import {NotificationRepository} from '../repositories';
@@ -97,30 +90,13 @@ export class NotificationController {
     description: 'Read multiple Notification PATCH success',
   })
   async readMultipleNotification(
-    @requestBody({
-      description: 'The input of multiple read notification',
-      required: true,
-      content: {
-        'application/json': {
-          schema: {
-            type: 'array',
-            items: {
-              title: 'NotificationId',
-              type: 'string',
-            },
-          },
-        },
-      },
-    })
-    notificationIds: string[],
+    @param.query.string('userId') userId?: string,
   ): Promise<Count> {
+    if (!userId) return {count: 0};
+
     return this.notificationRepository.updateAll(
       {read: true, updatedAt: new Date().toString()},
-      {
-        id: {
-          inq: notificationIds,
-        },
-      },
+      {to: userId, read: false},
     );
   }
 }
