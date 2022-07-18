@@ -529,7 +529,9 @@ export class NotificationService {
 
   async sendTipsSuccess(transaction: Transaction): Promise<void> {
     const {to, type, referenceId} = transaction;
-    const toUser = await this.walletRepository.user(to);
+    const toUser = await this.walletRepository
+      .user(to)
+      .catch(() => this.userRepository.findById(to));
 
     const tipsActive = await this.checkNotificationSetting(
       toUser.id,

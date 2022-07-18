@@ -218,11 +218,8 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         if (typeof data === 'string') {
           ({to: userId} = await this.notificationRepository.findById(data));
         } else {
-          for (const id of data) {
-            ({to: userId} = await this.notificationRepository.findById(id));
-
-            if (userId !== this.currentUser[securityId]) break;
-          }
+          userId = this.currentUser[securityId];
+          invocationCtx.args[0] = userId;
         }
         break;
       }
