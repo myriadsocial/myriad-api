@@ -533,7 +533,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
         }
 
         data.users = expPeople.filter(e => e.platform === PlatformType.MYRIAD);
-        data.totalExp = await expService.validateNumberOfUserExperience(userId);
+        data.totalExp = await expService.validateCreatedExperience(userId);
 
         Object.assign(invocationCtx.args[1], {
           createdBy: userId,
@@ -560,7 +560,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         if (userId === experienceCreator) data.isBelongToUser = true;
 
-        data.totalExp = await expService.validateSubscribeExperience(
+        data.totalExp = await expService.validateSubscribedExperience(
           userId,
           experienceId,
         );

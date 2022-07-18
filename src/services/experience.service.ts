@@ -322,7 +322,7 @@ export class ExperienceService {
     return;
   }
 
-  async validateSubscribeExperience(
+  async validateSubscribedExperience(
     userId: string,
     experienceId: string,
   ): Promise<number> {
@@ -331,24 +331,25 @@ export class ExperienceService {
       where: {userId, experienceId, subscribed: true},
     });
 
-    if (subscribed)
-      throw new HttpErrors.UnprocessableEntity(
-        'You already subscribed this experience!',
-      );
+    if (subscribed) {
+      throw new HttpErrors.UnprocessableEntity('AlreadySubscribed');
+    }
 
-    return this.validateNumberOfUserExperience(userId);
+    const {count} = await this.userExperienceRepository.count({userId});
+    return count;
   }
 
-  async validateNumberOfUserExperience(userId: string): Promise<number> {
+  async validateCreatedExperience(userId: string): Promise<number> {
     // Check if user has experiences less than equal 10
-    const {count} = await this.userExperienceRepository.count({userId});
+    const createdBy = userId;
+    const {count} = await this.experienceRepository.count({createdBy});
 
-    if (count >= 10)
-      throw new HttpErrors.UnprocessableEntity(
-        'Experience must not exceed 10 experiences',
-      );
+    if (count >= 10) {
+      throw new HttpErrors.UnprocessableEntity('ExperiencesExceeded');
+    }
 
-    return count;
+    const {count: total} = await this.userExperienceRepository.count({userId});
+    return total;
   }
 
   async validateUpdateExperience(

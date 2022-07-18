@@ -268,24 +268,6 @@ describe('UserExperienceApplication', function () {
         .send()
         .expect(422);
     });
-
-    it('rejects subscribe other user experience when user has experience more than 10', async () => {
-      for (let i = 0; i < 10; i++) {
-        await givenUserExperienceInstance(userExperienceRepository, {
-          userId: user.id,
-          experienceId: `${i + 1}`,
-          subscribed: true,
-        });
-      }
-
-      const experience = await givenExperienceInstance(experienceRepository);
-
-      await client
-        .post(`/users/${user.id}/subscribe/${experience.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(422);
-    });
   });
 
   context('when user create a new experience', () => {
@@ -364,14 +346,12 @@ describe('UserExperienceApplication', function () {
 
     it('rejects creates new experience when user has experience more than 10', async () => {
       for (let i = 0; i < 10; i++) {
-        await givenUserExperienceInstance(userExperienceRepository, {
-          userId: user.id,
-          experienceId: `${i + 1}`,
-          subscribed: true,
+        await givenExperienceInstance(experienceRepository, {
+          createdBy: user.id,
         });
       }
 
-      const experience = givenExperience();
+      const experience = givenExperience({createdBy: user.id});
 
       await client
         .post(`/users/${user.id}/experiences`)
