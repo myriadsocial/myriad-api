@@ -729,6 +729,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         Promise.allSettled([
           this.tagService.createTags(result.tags),
+          this.metricService.userMetric(user?.id ?? ''),
+          this.metricService.countServerMetric(),
           this.activityLogService.createLog(
             ActivityLogType.IMPORTPOST,
             result.createdBy,
