@@ -23,4 +23,18 @@ export class UserVerification extends Model {
     },
   })
   platform: PlatformType;
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 1000,
+  })
+  delay?: number;
+
+  @property({
+    type: 'number',
+    required: false,
+    default: 10,
+  })
+  triesLeft?: number;
 }
