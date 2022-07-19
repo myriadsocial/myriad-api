@@ -13,7 +13,7 @@ import {
 } from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
-import {UserSocialMedia, UserVerification} from '../models';
+import {People, UserSocialMedia, UserVerification} from '../models';
 import {
   NotificationService,
   SocialMediaService,
@@ -52,31 +52,8 @@ export class UserSocialMediaController {
     })
     userVerification: UserVerification,
   ): Promise<UserSocialMedia> {
-    const {address, platform, username} = userVerification;
-
-    let people = null;
-
-    switch (platform) {
-      case PlatformType.TWITTER:
-        people = await this.socialMediaService.verifyToTwitter(
-          username,
-          address,
-        );
-
-        break;
-
-      case PlatformType.REDDIT:
-        people = await this.socialMediaService.verifyToReddit(
-          username,
-          address,
-        );
-
-        break;
-
-      default:
-        throw new HttpErrors.NotFound('Platform does not exist');
-    }
-
+    const {delay, triesLeft} = userVerification;
+    const people = await this.fetchPeople(userVerification, delay, triesLeft);
     const socialMedia = await this.userSocMedService.createSocialMedia(people);
     const connected = (socialMedia as AnyObject).connected;
 
@@ -158,5 +135,46 @@ export class UserSocialMediaController {
       this.notificationService?.sendDisconnectedSocialMedia(id),
       this.userSocMedService.userSocialMediaRepository.deleteById(id),
     ]) as Promise<AnyObject>;
+  }
+
+  /* eslint-disable @typescript-eslint/no-misused-promises */
+  async fetchPeople(
+    userVerification: UserVerification,
+    delay = 1000,
+    triesLeft = 10,
+  ): Promise<People> {
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(async () => {
+        if (triesLeft <= 1) {
+          reject(new HttpErrors.NotFound('Cannot find specified post'));
+          clearInterval(interval);
+        }
+
+        try {
+          const people = await this.verifySocialMedia(userVerification);
+          resolve(people);
+          clearInterval(interval);
+        } catch {
+          // ignore
+        }
+
+        triesLeft--;
+      }, delay);
+    });
+  }
+
+  async verifySocialMedia(userVerification: UserVerification): Promise<People> {
+    const {address, platform, username} = userVerification;
+
+    switch (platform) {
+      case PlatformType.TWITTER:
+        return this.socialMediaService.verifyToTwitter(username, address);
+
+      case PlatformType.REDDIT:
+        return this.socialMediaService.verifyToReddit(username, address);
+
+      default:
+        throw new HttpErrors.NotFound('Platform does not exist');
+    }
   }
 }
