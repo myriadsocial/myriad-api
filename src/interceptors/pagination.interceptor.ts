@@ -828,6 +828,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       where,
       invocationCtx.args[0],
     );
+
     const meta = pageMetadata([...pageDetail, count]);
     const paginationFilter = Object.assign(filter, {
       offset: ((meta.currentPage ?? 1) - 1) * meta.itemsPerPage,
@@ -844,6 +845,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     else if (methodName === MethodType.GETIMPORTERS)
       invocationCtx.args[2] = paginationFilter;
     else invocationCtx.args[0] = paginationFilter;
+
+    if (controllerName === ControllerType.USEREXPERIENCE) {
+      const {count: totalOwnedExp} = await this.userExperienceRepository.count({
+        userId: this.currentUser[securityId],
+        subscribed: false,
+      });
+
+      meta.additionalData = {
+        totalOwnedExperience: totalOwnedExp,
+      };
+    }
 
     return meta;
   }
