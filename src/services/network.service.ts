@@ -381,21 +381,31 @@ export class NetworkService {
       const balance = parseInt(tipsBalance.amount).toString();
       const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
       const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+      const currencies = await this.currencyRepository.find(<AnyObject>{
+        where: {
+          networkId: 'myriad',
+          referenceId: {
+            $neq: null,
+          },
+        },
+      });
+
+      const ftIdentifierIds = currencies.map(currency => currency.referenceId);
       const {partialFee} = await api.tx.tipping
-        .batchClaimReference(
+        .claimReference(
           serverId,
           {referenceType: 'people', referenceIds},
           {referenceType: 'user', referenceIds: [mainReferenceId]},
-          ['native'],
+          ['native', ...ftIdentifierIds],
           accountId,
-          new BN(txFee),
+          new BN('1'),
         )
         .paymentInfo(serverAdmin.address);
 
-      const transactionFee = partialFee.toBn();
+      const estimateTxFee = partialFee.toBn();
       const serverAddress = serverAdmin.address;
       const notSufficientBalance = new BN(balance).lt(new BN(txFee));
-      const notSufficientFee = new BN(txFee).lt(transactionFee);
+      const notSufficientFee = new BN(txFee).lt(estimateTxFee);
 
       if (notSufficientBalance || notSufficientFee) {
         throw new HttpErrors.UnprocessableEntity('TxFeeInsufficient');
@@ -410,11 +420,11 @@ export class NetworkService {
         config.MYRIAD_SERVER_ID,
       );
 
-      const extrinsic = api.tx.tipping.batchClaimReference(
+      const extrinsic = api.tx.tipping.claimReference(
         serverId,
         {referenceType: 'people', referenceIds},
         {referenceType: 'user', referenceIds: [mainReferenceId]},
-        ['native'],
+        ['native', ...ftIdentifierIds],
         accountId,
         new BN(txFee),
       );
