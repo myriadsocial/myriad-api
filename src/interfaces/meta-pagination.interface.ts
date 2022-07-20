@@ -1,3 +1,5 @@
+import {AnyObject} from '@loopback/repository';
+
 export interface MetaPagination {
   totalItemCount: number;
   totalPageCount: number;
@@ -5,4 +7,5 @@ export interface MetaPagination {
   currentPage?: number;
   nextPage?: number;
   previousPage?: number;
+  additionalData?: AnyObject;
 }

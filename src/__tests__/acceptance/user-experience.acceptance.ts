@@ -151,6 +151,9 @@ describe('UserExperienceApplication', function () {
             itemsPerPage: 1,
             totalItemCount: 1,
             totalPageCount: 1,
+            additionalData: {
+              totalOwnedExperience: 0,
+            },
           },
         });
     });
