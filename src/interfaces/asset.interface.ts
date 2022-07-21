@@ -1,4 +1,12 @@
 export interface Asset {
-  images: string[];
+  images: Sizes[] | string[];
   videos: string[];
+}
+
+export interface Sizes {
+  original: string;
+  thumbnail: string;
+  small: string;
+  medium: string;
+  large: string;
 }

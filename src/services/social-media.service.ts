@@ -3,7 +3,7 @@ import {AnyObject} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../enums';
 import {ExtendedPost} from '../interfaces';
-import {Asset} from '../interfaces/asset.interface';
+import {Asset, Sizes} from '../interfaces/asset.interface';
 import {Facebook, Reddit, Twitter} from '../services';
 import {UrlUtils} from '../utils/url.utils';
 import {injectable, BindingScope} from '@loopback/core';
@@ -138,12 +138,21 @@ export class SocialMediaService {
     let text: String = fullText.substring(startWith);
     if (extendedEntities) {
       const medias = extendedEntities.media;
+      const images: Sizes[] = [];
 
       for (const media of medias) {
         text = text.replace(media.url, '');
 
         if (media.type === 'photo') {
-          asset.images.push(media.media_url_https);
+          const imageURL = media.media_url_https;
+
+          images.push({
+            original: imageURL,
+            thumbnail: `${imageURL}?name=thumb`,
+            small: `${imageURL}?name=small`,
+            medium: `${imageURL}?name=medium`,
+            large: `${imageURL}?name=large`,
+          });
         } else {
           const videoInfo = media.video_info.variants;
 
@@ -155,6 +164,8 @@ export class SocialMediaService {
           }
         }
       }
+
+      if (images.length > 0) asset.images = images;
     }
 
     for (const entity of entities.urls as AnyObject[]) {
@@ -281,19 +292,55 @@ export class SocialMediaService {
     }
 
     if (redditPost.media_metadata) {
+      const images: Sizes[] = [];
       for (const img in redditPost.media_metadata) {
-        if (redditPost.media_metadata[img].e === 'Image') {
-          asset.images.push(
-            redditPost.media_metadata[img].s.u.replace(/amp;/g, ''),
-          );
+        const rawAsset = redditPost.media_metadata[img];
+        if (rawAsset.e === 'Image') {
+          const originalImage = rawAsset.s.u.replace(/amp;/g, '');
+          const image: Sizes = {
+            original: originalImage,
+            thumbnail: originalImage,
+            small: originalImage,
+            medium: originalImage,
+            large: originalImage,
+          };
+
+          for (let i = 0; i < rawAsset.p.length; i++) {
+            let size = null;
+            switch (i) {
+              case 0:
+                size = 'thumbnail';
+                break;
+
+              case 1:
+                size = 'small';
+                break;
+
+              case 2:
+                size = 'medium';
+                break;
+
+              case 3:
+                size = 'large';
+                break;
+            }
+
+            if (size) {
+              image[size as keyof Sizes] = rawAsset[i].u.replace(/amp;/g, '');
+            }
+          }
+
+          images.push(image);
         }
 
-        if (redditPost.media_metadata[img].e === 'RedditVideo') {
+        if (rawAsset.e === 'RedditVideo') {
           asset.videos.push(
             `https://reddit.com/link/${textId}/video/${redditPost.media_metadata[img].id}/player`,
           );
         }
       }
+
+      if (images.length) asset.images = images;
     }
 
     let embedded = null;
@@ -313,6 +360,58 @@ export class SocialMediaService {
           // ignore
         }
       }
+    }
+
+    if (
+      asset.images.length > 0 &&
+      typeof asset.images[0] === 'string' &&
+      !redditPost.media_metadata &&
+      redditPost.preview
+    ) {
+      const previewImages = redditPost.preview?.images ?? [];
+      const images: Sizes[] = [];
+
+      for (const previewImage of previewImages) {
+        const originalImage = previewImage.source.url.replace(/amp;/g, '');
+        const image: Sizes = {
+          original: originalImage,
+          thumbnail: originalImage,
+          small: originalImage,
+          medium: originalImage,
+          large: originalImage,
+        };
+
+        const imageResolution = previewImage?.resolutions ?? [];
+        for (let j = 0; j < imageResolution.length; j++) {
+          let size = null;
+          switch (j) {
+            case 0:
+              size = 'thumbnail';
+              break;
+
+            case 1:
+              size = 'small';
+              break;
+
+            case 2:
+              size = 'medium';
+              break;
+
+            case 3:
+              size = 'large';
+              break;
+          }
+
+          if (size) {
+            const processImage = imageResolution[j].url.replace(/amp;/g, '');
+            image[size as keyof Sizes] = processImage;
+          }
+        }
+
+        images.push(image);
+      }
+
+      if (images.length > 0) asset.images = images;
     }
 
     const redditUser = redditPost.author;
