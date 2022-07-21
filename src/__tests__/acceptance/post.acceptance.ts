@@ -370,6 +370,10 @@ describe('PostApplication', function () {
       expect(
         toJSON({
           ...result,
+          people: {
+            ...result.people,
+            userSocialMedia: null,
+          },
           text: result.text,
           title: result.title,
           importers: [
