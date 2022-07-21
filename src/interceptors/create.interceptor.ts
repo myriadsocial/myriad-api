@@ -35,6 +35,7 @@ import {
   ReportRepository,
   UserReportRepository,
   UserRepository,
+  UserSocialMediaRepository,
   WalletRepository,
 } from '../repositories';
 import {
@@ -79,6 +80,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected walletRepository: WalletRepository,
     @repository(NetworkRepository)
     protected networkRepository: NetworkRepository,
+    @repository(UserSocialMediaRepository)
+    protected userSocialMediaRepository: UserSocialMediaRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -717,8 +720,11 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case MethodType.IMPORT: {
         const importer = invocationCtx.args[0].importer;
-        const [user, {count}] = await Promise.all([
+        const [user, userSocialMedia, {count}] = await Promise.all([
           this.userRepository.findOne({where: {id: importer}}),
+          this.userSocialMediaRepository.findOne({
+            where: {peopleId: result?.peopleId ?? ''},
+          }),
           this.postService.postRepository.count({
             originPostId: result.originPostId,
             platform: result.platform,
@@ -726,6 +732,11 @@ export class CreateInterceptor implements Provider<Interceptor> {
             deletedAt: {exists: false},
           }),
         ]);
+
+        const people = {
+          ...result.people,
+          userSocialMedia,
+        };
 
         Promise.allSettled([
           this.tagService.createTags(result.tags),
@@ -740,6 +751,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         return {
           ...result,
+          people,
           importers: user ? [Object.assign(user, {name: 'You'})] : [],
           totalImporter: count,
         };
