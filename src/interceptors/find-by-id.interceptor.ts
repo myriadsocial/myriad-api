@@ -16,7 +16,13 @@ import {
   PlatformType,
   ReferenceType,
 } from '../enums';
-import {People, Post, User, UserExperienceWithRelations} from '../models';
+import {
+  People,
+  Post,
+  User,
+  UserCurrencyWithRelations,
+  UserExperienceWithRelations,
+} from '../models';
 import {omit} from 'lodash';
 import {ExperienceService, PostService} from '../services';
 import {
@@ -261,6 +267,23 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         );
 
         return result;
+      }
+
+      case ControllerType.WALLET: {
+        const user = result as User;
+
+        if (user?.userCurrencies) {
+          const userCurrencies =
+            user.userCurrencies as UserCurrencyWithRelations[];
+          const currencies = userCurrencies.map(e => e.currency);
+
+          return {
+            ...omit(user, ['userCurrencies']),
+            currencies,
+          };
+        }
+
+        return user;
       }
 
       default:

@@ -12,7 +12,11 @@ import {User, Wallet} from '../models';
 import {UserRepository, WalletRepository} from '../repositories';
 import {UserProfile, securityId} from '@loopback/security';
 import {inject, intercept} from '@loopback/core';
-import {DeleteInterceptor, PaginationInterceptor} from '../interceptors';
+import {
+  DeleteInterceptor,
+  FindByIdInterceptor,
+  PaginationInterceptor,
+} from '../interceptors';
 import {assign} from 'lodash';
 
 export class WalletController {
@@ -98,6 +102,7 @@ export class WalletController {
     await this.walletRepository.deleteById(id);
   }
 
+  @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/wallets/{id}/user', {
     responses: {
       '200': {
@@ -135,12 +140,10 @@ export class WalletController {
     const include = filter?.include ?? [];
 
     include.push({
-      relation: 'currencies',
+      relation: 'userCurrencies',
       scope: {
-        include: [{relation: 'network'}],
-        where: {
-          networkId: networkId,
-        },
+        include: [{relation: 'currency'}],
+        where: {networkId},
         order: ['priority ASC'],
       },
     });
