@@ -15,6 +15,9 @@ import {
   Transaction,
   UserSocialMedia,
   Vote,
+  Wallet,
+  WalletWithRelations,
+  User,
 } from '../models';
 import {
   CommentRepository,
@@ -527,11 +530,30 @@ export class NotificationService {
     return;
   }
 
-  async sendTipsSuccess(transaction: Transaction): Promise<void> {
+  async sendTipsSuccess(
+    transaction: Transaction,
+    toWallet = false,
+  ): Promise<void> {
     const {to, type, referenceId} = transaction;
     const toUser = await this.walletRepository
-      .user(to)
-      .catch(() => this.userRepository.findById(to));
+      .findById(to, {include: ['user']})
+      .catch(() => this.userRepository.findById(to))
+      .then(result => {
+        if (result.constructor.name === 'User') return new User(result);
+        if (result.constructor.name === 'Wallet') {
+          const wallet = new Wallet(result) as WalletWithRelations;
+
+          if (!wallet?.user) {
+            throw new HttpErrors.NotFound('UserNotFound');
+          }
+
+          toWallet = true;
+
+          return wallet.user;
+        }
+
+        throw new HttpErrors.NotFound('UserNotFound');
+      });
 
     const tipsActive = await this.checkNotificationSetting(
       toUser.id,
@@ -551,7 +573,10 @@ export class NotificationService {
         include: ['user'],
       });
 
-      notification.type = NotificationType.COMMENT_TIPS;
+      notification.type = toWallet
+        ? NotificationType.COMMENT_TIPS
+        : NotificationType.COMMENT_TIPS_UNCLAIMED;
+
       notification.additionalReferenceId = {
         comment: {
           id: comment.id,
@@ -568,10 +593,14 @@ export class NotificationService {
         include: ['user'],
       });
 
-      notification.type = NotificationType.POST_TIPS;
+      notification.type = toWallet
+        ? NotificationType.POST_TIPS
+        : NotificationType.POST_TIPS_UNCLAIMED;
+
       notification.additionalReferenceId = {
         post: {
           id: post.id,
+          platform: post.platform,
           user: {
             id: post.user?.id,
             name: post.user?.name,
@@ -579,14 +608,16 @@ export class NotificationService {
           },
         },
       };
-    } else notification.type = NotificationType.USER_TIPS;
+    } else {
+      notification.type = toWallet
+        ? NotificationType.USER_TIPS
+        : NotificationType.USER_TIPS_UNCLAIMED;
+    }
 
     const title = 'Tips Received';
     const body = `${this.currentUser.name} tipped ${notification.message}`;
 
     await this.sendNotificationToUser(notification, toUser.id, title, body);
-
-    return;
   }
 
   async sendRewardSuccess(transaction: Transaction): Promise<void> {
