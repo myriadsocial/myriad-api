@@ -206,6 +206,9 @@ export class User extends Entity {
   @hasMany(() => Currency, {through: {model: () => UserCurrency}})
   currencies: Currency[];
 
+  @hasMany(() => UserCurrency)
+  userCurrencies: UserCurrency[];
+
   constructor(data?: Partial<User>) {
     super(data);
   }
