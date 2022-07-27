@@ -99,6 +99,11 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
+  public readonly userCurrencies: HasManyRepositoryFactory<
+    UserCurrency,
+    typeof User.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
@@ -127,6 +132,14 @@ export class UserRepository extends DefaultCrudRepository<
     protected currencyRepositoryGetter: Getter<CurrencyRepository>,
   ) {
     super(User, dataSource);
+    this.userCurrencies = this.createHasManyRepositoryFactoryFor(
+      'userCurrencies',
+      userCurrencyRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'userCurrencies',
+      this.userCurrencies.inclusionResolver,
+    );
     this.currencies = this.createHasManyThroughRepositoryFactoryFor(
       'currencies',
       currencyRepositoryGetter,

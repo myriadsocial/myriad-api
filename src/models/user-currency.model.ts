@@ -1,6 +1,6 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {User} from './user.model';
-import {Currency} from './currency.model';
+import {Currency, CurrencyWithRelations} from './currency.model';
 import {Network} from './network.model';
 
 @model({
@@ -55,6 +55,7 @@ export class UserCurrency extends Entity {
 
 export interface UserCurrencyRelations {
   // describe navigational properties here
+  currency?: CurrencyWithRelations;
 }
 
 export type UserCurrencyWithRelations = UserCurrency & UserCurrencyRelations;
