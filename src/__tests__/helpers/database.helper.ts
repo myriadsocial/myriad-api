@@ -73,6 +73,7 @@ export async function givenRepositories(testdb: any) {
     testdb,
     async () => userSocialMediaRepository,
     async () => postRepository,
+    async () => userRepository,
   );
   const postRepository: PostRepository = new PostRepository(
     testdb,

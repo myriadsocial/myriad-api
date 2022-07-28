@@ -25,7 +25,7 @@ export class CurrencyService {
     @repository(CurrencyRepository)
     public currencyRepository: CurrencyRepository,
     @repository(TransactionRepository)
-    protected transactionRepository: TransactionRepository,
+    public transactionRepository: TransactionRepository,
     @repository(QueueRepository)
     protected queueRepository: QueueRepository,
     @repository(UserCurrencyRepository)

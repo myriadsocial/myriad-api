@@ -18,6 +18,7 @@ import {
   MethodType,
   OrderFieldType,
   OrderType,
+  PlatformType,
   ReferenceType,
   TimelineType,
   VisibilityType,
@@ -49,7 +50,7 @@ import {
 } from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
-import {pull} from 'lodash';
+import {pull, uniqBy} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -205,21 +206,41 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.USER: {
-        const {requestorId, requesteeId, friendsName, userId, name} =
+        const {requestorId, requesteeId, friendsName, userId, name, airdrop} =
           request.query;
         const hasWhere =
           Object.keys(filter.where as Where<AnyObject>).length > 0;
         if (
-          (friendsName && (requestorId || requesteeId || hasWhere)) ||
-          ((requestorId || requesteeId) && (friendsName || hasWhere)) ||
-          (hasWhere && (friendsName || requestorId || requesteeId))
+          (airdrop &&
+            (requestorId || requesteeId || hasWhere || friendsName)) ||
+          (friendsName &&
+            (requestorId || requesteeId || hasWhere || airdrop)) ||
+          ((requestorId || requesteeId) &&
+            (friendsName || hasWhere || airdrop)) ||
+          (hasWhere && (friendsName || requestorId || requesteeId || airdrop))
         ) {
           throw new HttpErrors.UnprocessableEntity(
             'Cannot used where filter together with friendsName and (requesteeId, requestorId)',
           );
         }
 
-        if (requestorId || requesteeId) {
+        if (airdrop === 'true' || airdrop === '1') {
+          const {endDate} = request.query;
+          const userAidropIds = await this.getOnboardUserRewardList(
+            invocationCtx,
+            endDate?.toString(),
+          );
+
+          filter.order = this.orderSetting(request.query);
+          filter.where = {
+            id: {
+              inq: userAidropIds,
+              deletedAt: {
+                $eq: null,
+              },
+            },
+          };
+        } else if (requestorId || requesteeId) {
           if (!requestorId)
             throw new HttpErrors.UnprocessableEntity(
               'Please input requesteeId',
@@ -857,6 +878,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       };
     }
 
+    if (controllerName === ControllerType.USER) {
+      const airdropPeriod = invocationCtx.args[1];
+      if (airdropPeriod) meta.additionalData = {airdropPeriod};
+    }
+
     return meta;
   }
 
@@ -1066,6 +1092,103 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           } as Where<Post>;
         });
       }
+    }
+  }
+
+  async getOnboardUserRewardList(
+    invocationCtx: InvocationContext,
+    endDate?: string,
+  ): Promise<string[]> {
+    try {
+      const end = (endDate ? new Date(endDate) : new Date()).getTime();
+      const start = end - 7 * 24 * 60 * 60 * 1000;
+      const posts = await this.postService.postRepository.find({
+        where: {
+          and: [
+            {
+              platform: {
+                nin: [PlatformType.MYRIAD],
+              },
+            },
+            {
+              createdAt: {
+                gte: new Date(start).toString(),
+              },
+            },
+            {
+              createdAt: {
+                lt: new Date(end).toString(),
+              },
+            },
+          ],
+        },
+        include: [
+          {relation: 'user'},
+          {
+            relation: 'people',
+            scope: {
+              include: [{relation: 'users'}],
+            },
+          },
+        ],
+      });
+
+      const postIds: string[] = [];
+      const importer = posts
+        .filter(post => {
+          const person = post?.people;
+          const [newUser] = person?.users ?? [];
+
+          if (!newUser) return false;
+          if (newUser.id === post.createdBy) return false;
+
+          const validConnectedDate =
+            new Date(person?.connectedDate ?? 0).getTime() >= start &&
+            new Date(person?.connectedDate ?? 0).getTime() < end;
+
+          const validPeriod =
+            new Date(newUser.createdAt ?? 0).getTime() >= start &&
+            new Date(newUser.createdAt ?? 0).getTime() < end;
+
+          if (!validConnectedDate) return false;
+          if (!validPeriod) return false;
+
+          return true;
+        })
+        .map(post => {
+          postIds.push(post.id);
+          return post?.user;
+        });
+
+      const trxs = await this.currencyService.transactionRepository.find({
+        where: {
+          type: ReferenceType.POST,
+          referenceId: {
+            inq: postIds,
+          },
+        },
+        include: [
+          {
+            relation: 'fromWallet',
+            scope: {
+              include: ['user'],
+            },
+          },
+        ],
+      });
+
+      const userTip = trxs.map(trx => trx?.fromWallet?.user ?? new User());
+      const users = [...userTip, ...importer];
+
+      invocationCtx.args[1] = `${new Date(start)}-${new Date(end)}`;
+
+      return uniqBy(users, 'id').map(user => user?.id ?? '');
+    } catch (err) {
+      if (err.message === 'Invalid date: Invalid Date') {
+        throw new HttpErrors.UnprocessableEntity('InvalidDate');
+      }
+
+      throw err;
     }
   }
 

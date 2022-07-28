@@ -2,6 +2,7 @@ import {Entity, hasMany, hasOne, model, property} from '@loopback/repository';
 import {PlatformType} from '../enums';
 import {Post} from './post.model';
 import {UserSocialMedia} from './user-social-media.model';
+import {User} from './user.model';
 
 @model({
   settings: {
@@ -77,15 +78,18 @@ export class People extends Entity {
   deletedAt?: string;
 
   @property({
-    type: 'string',
+    type: 'date',
   })
-  walletAddressPassword?: string;
+  connectedDate?: string;
 
   @hasOne(() => UserSocialMedia)
   userSocialMedia: UserSocialMedia;
 
   @hasMany(() => Post)
   posts: Post[];
+
+  @hasMany(() => User, {through: {model: () => UserSocialMedia}})
+  users: User[];
 
   constructor(data?: Partial<People>) {
     super(data);

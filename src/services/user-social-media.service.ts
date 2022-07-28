@@ -34,12 +34,12 @@ export class UserSocialMediaService {
       verified: true,
     };
 
-    const existPeople = await this.peopleRepository.findOne({
+    const exist = await this.peopleRepository.findOne({
       where: {originUserId, platform},
     });
 
     const peopleId = generateObjectId();
-    const found = existPeople ?? new People({...people, id: peopleId});
+    const found = exist ?? new People({...people, id: peopleId});
     const userSocialMedia = await this.userSocialMediaRepository.findOne({
       where: {
         peopleId: found.id,
@@ -47,13 +47,15 @@ export class UserSocialMediaService {
       },
     });
 
+    if (!found.connectedDate) found.connectedDate = new Date().toString();
+
     Object.assign(found, {name, username, profilePictureURL});
 
-    Promise.allSettled([
+    await Promise.allSettled([
       found.id === peopleId
         ? this.peopleRepository.create(found)
         : this.peopleRepository.updateById(found.id, omit(found, ['id'])),
-    ]) as Promise<AnyObject>;
+    ]);
 
     if (userSocialMedia) {
       const verified = userSocialMedia.userId === this.currentUser[securityId];
