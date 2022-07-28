@@ -1,7 +1,7 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {ReferenceType} from '../enums/reference-type.enum';
 import {Currency} from './currency.model';
-import {Wallet} from './wallet.model';
+import {Wallet, WalletWithRelations} from './wallet.model';
 
 @model({
   settings: {
@@ -102,6 +102,7 @@ export class Transaction extends Entity {
 
 export interface TransactionRelations {
   // describe navigational properties here
+  fromWallet?: WalletWithRelations;
 }
 
 export type TransactionWithRelations = Transaction & TransactionRelations;
