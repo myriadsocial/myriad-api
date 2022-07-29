@@ -775,8 +775,7 @@ export class NotificationService {
 
     await this.fcmService.sendNotification(user.fcmTokens, title, body, {
       ...createdNotification,
-      image:
-        'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_normal.jpg',
+      icon: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_normal.jpg',
     });
   }
 
@@ -819,8 +818,7 @@ export class NotificationService {
         if (found) {
           return this.fcmService.sendNotification(user.fcmTokens, title, body, {
             ...found,
-            image:
-              'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_normal.jpg',
+            icon: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_normal.jpg',
           });
         }
 
