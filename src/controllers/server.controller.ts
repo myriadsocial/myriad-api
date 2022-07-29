@@ -86,11 +86,12 @@ export class ServerController {
     })
     server: Partial<Server>,
   ): Promise<void> {
-    if (server.accountId) {
+    if (server.accountId || server.images) {
       const oldServer = await this.serverRepository.findById(
         config.MYRIAD_SERVER_ID,
       );
       server.accountId = {...oldServer.accountId, ...server.accountId};
+      server.images = {...oldServer.images, ...server.images};
     }
 
     await this.serverRepository.updateById(config.MYRIAD_SERVER_ID, server);
