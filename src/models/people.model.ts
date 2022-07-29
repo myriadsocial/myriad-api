@@ -10,7 +10,6 @@ import {User} from './user.model';
     mongodb: {
       collection: 'people',
     },
-    hiddenProperties: ['walletAddressPassword'],
   },
 })
 export class People extends Entity {
