@@ -58,6 +58,13 @@ export class Server extends Entity {
   })
   accountId?: AnyObject;
 
+  @property({
+    type: 'object',
+    required: false,
+    default: {},
+  })
+  images?: AnyObject;
+
   constructor(data?: Partial<Server>) {
     super(data);
   }
