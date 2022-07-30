@@ -22,7 +22,12 @@ export class FCMService {
       notification: {
         title: title,
         body: body,
-        icon: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_normal.jpg',
+      },
+      webpush: {
+        headers: {
+          image:
+            'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_normal.jpg',
+        },
       },
     };
 
