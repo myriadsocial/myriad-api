@@ -773,10 +773,12 @@ export class NotificationService {
 
     if (!createdNotification) return;
 
-    await this.fcmService.sendNotification(user.fcmTokens, title, body, {
-      ...createdNotification,
-      icon: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_normal.jpg',
-    });
+    await this.fcmService.sendNotification(
+      user.fcmTokens,
+      title,
+      body,
+      createdNotification,
+    );
   }
 
   async sendNotificationToMultipleUsers(
@@ -814,15 +816,13 @@ export class NotificationService {
     await Promise.all(
       users.map(user => {
         const found = createdNotifications.find(notif => notif.to === user.id);
-
-        if (found) {
-          return this.fcmService.sendNotification(user.fcmTokens, title, body, {
-            ...found,
-            icon: 'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_normal.jpg',
-          });
-        }
-
-        return;
+        if (!found) return;
+        return this.fcmService.sendNotification(
+          user.fcmTokens,
+          title,
+          body,
+          found,
+        );
       }),
     );
   }
