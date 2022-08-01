@@ -19,7 +19,7 @@ export class FCMService {
       data: {
         title: `${title}`,
         body: `${body}`,
-        data: JSON.stringify(`${data}`),
+        data: JSON.stringify(data),
       },
     };
 
