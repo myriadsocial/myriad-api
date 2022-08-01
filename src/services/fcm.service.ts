@@ -17,17 +17,9 @@ export class FCMService {
     const message = {
       tokens: fcmTokens,
       data: {
-        body: JSON.stringify(data),
-      },
-      notification: {
-        title: title,
-        body: body,
-      },
-      webpush: {
-        headers: {
-          image:
-            'https://pbs.twimg.com/profile_images/1407599051579617281/-jHXi6y5_normal.jpg',
-        },
+        title: `${title}`,
+        body: `${body}`,
+        data: JSON.stringify(`${data}`),
       },
     };
 
