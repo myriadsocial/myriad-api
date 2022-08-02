@@ -325,8 +325,8 @@ export class SocialMediaService {
                 break;
             }
 
-            if (size) {
-              image[size as keyof Sizes] = rawAsset[i].u.replace(/amp;/g, '');
+            if (size && rawAsset?.p?.[i]?.u) {
+              image[size as keyof Sizes] = rawAsset.p[i].u.replace(/amp;/g, '');
             }
           }
 
@@ -402,7 +402,7 @@ export class SocialMediaService {
               break;
           }
 
-          if (size) {
+          if (size && imageResolution?.[j]?.url) {
             const processImage = imageResolution[j].url.replace(/amp;/g, '');
             image[size as keyof Sizes] = processImage;
           }
