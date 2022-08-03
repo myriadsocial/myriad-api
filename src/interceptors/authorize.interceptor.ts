@@ -193,16 +193,12 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
             include: ['requestee', 'requestor'],
           });
           if (methodName === MethodType.DELETEBYID) {
-            if (friend.status === FriendStatusType.PENDING) {
-              userId = friend.requesteeId;
-            } else {
-              if (this.currentUser[securityId] === friend.requestorId) {
-                userId = friend.requestorId;
-              }
+            if (this.currentUser[securityId] === friend.requestorId) {
+              userId = friend.requestorId;
+            }
 
-              if (this.currentUser[securityId] === friend.requesteeId) {
-                userId = friend.requesteeId;
-              }
+            if (this.currentUser[securityId] === friend.requesteeId) {
+              userId = friend.requesteeId;
             }
 
             invocationCtx.args[1] = friend;
