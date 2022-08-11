@@ -25,6 +25,7 @@ import {
   Credential,
   Experience,
   Friend,
+  Report,
   Transaction,
   User,
   Wallet,
@@ -402,34 +403,37 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case ControllerType.USERREPORT: {
         const reportDetail = invocationCtx.args[1];
 
-        this.userReportRepository
-          .findOne({
-            where: {
-              reportId: result.id,
-              reportedBy: invocationCtx.args[0],
-            },
-          })
-          .then(userReport => {
-            if (userReport) return;
-            return this.userReportRepository.create({
-              referenceType: reportDetail.referenceType,
-              description: reportDetail.description,
-              reportedBy: invocationCtx.args[0],
-              reportId: result.id,
-            });
-          })
-          .then(userReport => {
-            if (!userReport) return {count: 0};
-            return this.userReportRepository.count({
-              reportId: result.id.toString(),
-            });
-          })
-          .then(({count}) => {
-            return this.reportRepository.updateById(result.id, {
-              totalReported: count,
-              status: result.status,
-            });
-          }) as Promise<void>;
+        Promise.allSettled([
+          this.createNotification(controllerName, result),
+          this.userReportRepository
+            .findOne({
+              where: {
+                reportId: result.id,
+                reportedBy: invocationCtx.args[0],
+              },
+            })
+            .then(userReport => {
+              if (userReport) return;
+              return this.userReportRepository.create({
+                referenceType: reportDetail.referenceType,
+                description: reportDetail.description,
+                reportedBy: invocationCtx.args[0],
+                reportId: result.id,
+              });
+            })
+            .then(userReport => {
+              if (!userReport) return {count: 0};
+              return this.userReportRepository.count({
+                reportId: result.id.toString(),
+              });
+            })
+            .then(({count}) => {
+              return this.reportRepository.updateById(result.id, {
+                totalReported: count,
+                status: result.status,
+              });
+            }),
+        ]) as Promise<AnyObject>;
 
         return result;
       }
@@ -822,6 +826,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.TRANSACTION:
         return this.notificationService.sendTipsSuccess(result as Transaction);
+
+      case ControllerType.USERREPORT:
+        return this.notificationService.sendReport(result as Report);
 
       case ControllerType.POST:
         return this.notificationService.sendMention(
