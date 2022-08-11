@@ -18,6 +18,7 @@ import {
   Wallet,
   WalletWithRelations,
   User,
+  Report,
 } from '../models';
 import {
   CommentRepository,
@@ -185,6 +186,46 @@ export class NotificationService {
     }
 
     return;
+  }
+
+  async sendReport(report: Report): Promise<void> {
+    const [fromUser, toUser] = await Promise.all([
+      this.userRepository.findById(this.currentUser[securityId]),
+      this.userRepository.findById(report?.reportedDetail?.user?.id ?? ''),
+    ]);
+
+    let notificationType = null;
+    let message = null;
+
+    switch (report.referenceType) {
+      case ReferenceType.USER:
+        notificationType = NotificationType.REPORT_USER;
+        message = `${toUser.name} was reported by ${fromUser.name}`;
+        break;
+
+      case ReferenceType.POST:
+        notificationType = NotificationType.REPORT_POST;
+        message = `${toUser.name}'s post was reported by ${fromUser.name}`;
+        break;
+
+      case ReferenceType.COMMENT:
+        notificationType = NotificationType.REPORT_COMMENT;
+        message = `${toUser.name}'s comment was reported by ${fromUser.name}`;
+        break;
+
+      default:
+        return;
+    }
+
+    const notification = new Notification({
+      type: notificationType,
+      from: fromUser.id,
+      to: toUser.id,
+      referenceId: report.id,
+      message,
+    });
+
+    await this.notificationRepository.create(notification);
   }
 
   async sendReportResponseToReporters(reportId: string): Promise<void> {
