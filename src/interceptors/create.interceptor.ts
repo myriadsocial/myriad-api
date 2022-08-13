@@ -235,7 +235,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
       case ControllerType.USERWALLET: {
         const [userId, credential] = invocationCtx.args;
-        const {data, networkType} = credential as Credential;
+        const {data, networkType: networkId} = credential as Credential;
         const {id} = data;
 
         if (!data) {
@@ -246,12 +246,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Id must included');
         }
 
-        const networkExists = await this.networkRepository.exists(networkType);
-
-        if (!networkExists) {
-          throw new HttpErrors.UnprocessableEntity('Network not exists');
-        }
-
+        const network = await this.networkRepository.findById(networkId);
         const wallet = await this.walletRepository.findOne({
           where: {id},
         });
@@ -262,7 +257,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           );
         }
 
-        const verified = validateAccount(credential);
+        const verified = await validateAccount(credential, network, id);
 
         if (!verified) {
           throw new HttpErrors.UnprocessableEntity('Failed to verify');
@@ -271,9 +266,9 @@ export class CreateInterceptor implements Provider<Interceptor> {
         invocationCtx.args[2] = wallet ? true : false;
         invocationCtx.args[1].data = new Wallet({
           ...data,
-          userId: userId,
+          userId,
+          networkId,
           primary: false,
-          networkId: networkType,
         });
 
         break;

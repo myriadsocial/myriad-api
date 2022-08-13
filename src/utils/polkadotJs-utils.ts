@@ -1,15 +1,32 @@
 import {AnyObject} from '@loopback/repository';
 import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 import {KeyringPair} from '@polkadot/keyring/types';
-import {u8aToHex, hexToU8a, isHex} from '@polkadot/util';
+import {numberToHex, u8aToHex, hexToU8a, isHex} from '@polkadot/util';
 import {
   mnemonicGenerate,
   encodeAddress,
   decodeAddress,
 } from '@polkadot/util-crypto';
 import {KeypairType} from '@polkadot/util-crypto/types';
+import {signatureVerify} from '@polkadot/util-crypto';
+import {Credential} from '../models';
 
 export class PolkadotJs {
+  static signatureVerify(credential: Credential): boolean {
+    const {nonce, signature, publicAddress} = credential;
+
+    if (!signature.startsWith('0x')) return false;
+    if (signature.length !== 130) return false;
+
+    const {isValid} = signatureVerify(
+      numberToHex(nonce),
+      signature,
+      publicAddress,
+    );
+
+    return isValid;
+  }
+
   async polkadotApi(
     wssProvider: string,
     typesBundle?: AnyObject,

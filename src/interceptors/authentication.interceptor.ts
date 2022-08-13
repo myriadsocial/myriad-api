@@ -159,7 +159,11 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         throw new Error('Invalid nonce!');
       }
 
-      const verified = validateAccount(assign(credential, {publicAddress}));
+      const verified = await validateAccount(
+        assign(credential, {publicAddress}),
+        currentNetwork,
+        wallet.id,
+      );
 
       if (!verified) {
         throw new Error('Failed to verified!');
