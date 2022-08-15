@@ -284,7 +284,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         const {networkType: networkId} = credential as Credential;
         const [publicAddress, near] = credential.publicAddress.split('/');
         const nearAccount = isHex(`0x${near}`) ? `0x${near}` : near;
-        const [_, wallet] = await Promise.all([
+        const [network, wallet] = await Promise.all([
           this.networkRepository.findById(networkId),
           this.walletRepository.findOne({
             where: {
@@ -306,7 +306,11 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Network already connected');
         }
 
-        const verified = validateAccount(assign(credential, {publicAddress}));
+        const verified = await validateAccount(
+          assign(credential, {publicAddress}),
+          network,
+          wallet.id,
+        );
 
         if (!verified) {
           throw new HttpErrors.UnprocessableEntity('Failed to verify');

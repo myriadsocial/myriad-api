@@ -1,30 +1,31 @@
-import {Credential} from '../models';
-import {numberToHex, hexToU8a} from '@polkadot/util';
-import {signatureVerify} from '@polkadot/util-crypto';
-import nacl from 'tweetnacl';
+import {Credential, Network} from '../models';
+import {PolkadotJs} from './polkadotJs-utils';
+import {Near} from './near-api-js';
 
-export function validateAccount(credential: Credential): boolean {
-  const {nonce, signature, publicAddress, walletType} = credential;
+export async function validateAccount(
+  credential: Credential,
+  network?: Network,
+  walletId?: string,
+): Promise<boolean> {
+  const {walletType} = credential;
 
   switch (walletType) {
     case 'polkadot{.js}': {
-      if (!signature.startsWith('0x')) return false;
-      if (signature.length !== 130) return false;
-      const {isValid} = signatureVerify(
-        numberToHex(nonce),
-        signature,
-        publicAddress,
-      );
-      return isValid;
+      return PolkadotJs.signatureVerify(credential);
     }
 
     case 'near': {
-      const publicKey = publicAddress.replace('0x', '');
-      return nacl.sign.detached.verify(
-        Buffer.from(numberToHex(nonce)),
-        Buffer.from(hexToU8a(signature)),
-        Buffer.from(publicKey, 'hex'),
+      if (!network || !walletId) return false;
+
+      const verifyAccessKey = await Near.verifyAccessKey(
+        credential,
+        network.rpcURL,
+        walletId,
       );
+
+      if (!verifyAccessKey) return verifyAccessKey;
+
+      return Near.signatureVerify(credential);
     }
 
     default:

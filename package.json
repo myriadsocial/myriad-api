@@ -63,6 +63,7 @@
     "@sentry/tracing": "^6.16.1",
     "a-nonce-generator": "^2.0.1",
     "bcryptjs": "^2.4.3",
+    "bs58": "^5.0.0",
     "bson-objectid": "^2.0.3",
     "dotenv": "^16.0.0",
     "firebase-admin": "^10.0.0",
