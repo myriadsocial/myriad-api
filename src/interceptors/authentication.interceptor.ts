@@ -163,7 +163,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         assign(credential, {publicAddress}),
         currentNetwork,
         wallet.id,
-        'auth'
+        'auth',
       );
 
       if (!verified) {

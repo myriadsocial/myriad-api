@@ -16,11 +16,17 @@ export async function validateAccount(
     }
 
     case 'near': {
-      console.log(`[validate] [${caller}] credential`, `${JSON.stringify(credential)}`)
+      console.log(
+        `[validate] [${caller}] credential`,
+        `${JSON.stringify(credential)}`,
+      );
 
       if (!network || !walletId) {
-        console.log(`[validate] [${caller}] network`, `${JSON.stringify(network)}`)
-        console.log(`[validate] [${caller}] walletId`, `${walletId}`)
+        console.log(
+          `[validate] [${caller}] network`,
+          `${JSON.stringify(network)}`,
+        );
+        console.log(`[validate] [${caller}] walletId`, `${walletId}`);
         return false;
       }
 
@@ -28,7 +34,7 @@ export async function validateAccount(
         credential,
         network.rpcURL,
         walletId,
-        caller
+        caller,
       );
 
       if (!verifyAccessKey) return false;

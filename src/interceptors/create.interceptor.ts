@@ -257,7 +257,12 @@ export class CreateInterceptor implements Provider<Interceptor> {
           );
         }
 
-        const verified = await validateAccount(credential, network, id, 'create');
+        const verified = await validateAccount(
+          credential,
+          network,
+          id,
+          'create',
+        );
 
         if (!verified) {
           throw new HttpErrors.UnprocessableEntity('[create] Failed to verify');

@@ -310,7 +310,7 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           assign(credential, {publicAddress}),
           network,
           wallet.id,
-          'update'
+          'update',
         );
 
         if (!verified) {

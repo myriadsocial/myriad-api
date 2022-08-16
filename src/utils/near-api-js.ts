@@ -24,16 +24,22 @@ export class Near {
         finality: 'final',
       });
 
-      console.log(`[near-api-js] [${caller}] [verifyAccessKey] result`, `${JSON.stringify(result)}`)
+      console.log(
+        `[near-api-js] [${caller}] [verifyAccessKey] result`,
+        `${JSON.stringify(result)}`,
+      );
       return Boolean(result);
-    } catch(e) {
-      console.error(`[near-api-js] [${caller}]`, e)
+    } catch (e) {
+      console.error(`[near-api-js] [${caller}]`, e);
       return false;
     }
   }
 
   static signatureVerify(credential: Credential, caller?: string): boolean {
-    console.log(`[near-api-js] [${caller}] [signatureVerify] credential`, `${JSON.stringify(credential)}`)
+    console.log(
+      `[near-api-js] [${caller}] [signatureVerify] credential`,
+      `${JSON.stringify(credential)}`,
+    );
 
     const {nonce, signature, publicAddress} = credential;
     const publicKey = publicAddress.replace('0x', '');
