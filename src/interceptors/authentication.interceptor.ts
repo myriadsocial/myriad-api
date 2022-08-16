@@ -163,10 +163,11 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         assign(credential, {publicAddress}),
         currentNetwork,
         wallet.id,
+        'auth'
       );
 
       if (!verified) {
-        throw new Error('Failed to verified!');
+        throw new Error('[auth] Failed to verified!');
       }
 
       if (methodName === MethodType.ADMINLOGIN) {
