@@ -257,10 +257,15 @@ export class CreateInterceptor implements Provider<Interceptor> {
           );
         }
 
-        const verified = await validateAccount(credential, network, id);
+        const verified = await validateAccount(
+          credential,
+          network,
+          id,
+          'create',
+        );
 
         if (!verified) {
-          throw new HttpErrors.UnprocessableEntity('Failed to verify');
+          throw new HttpErrors.UnprocessableEntity('[create] Failed to verify');
         }
 
         invocationCtx.args[2] = wallet ? true : false;

@@ -310,10 +310,11 @@ export class UpdateInterceptor implements Provider<Interceptor> {
           assign(credential, {publicAddress}),
           network,
           wallet.id,
+          'update',
         );
 
         if (!verified) {
-          throw new HttpErrors.UnprocessableEntity('Failed to verify');
+          throw new HttpErrors.UnprocessableEntity('[update] Failed to verify');
         }
 
         wallet.networkId = networkId;
