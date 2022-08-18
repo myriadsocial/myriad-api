@@ -50,7 +50,7 @@ import {
 } from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
-import {pull, uniqBy} from 'lodash';
+import {pull} from 'lodash';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -224,11 +224,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           );
         }
 
-        if (airdrop === 'true' || airdrop === '1') {
-          const {endDate} = request.query;
+        if (airdrop === 'onboarding') {
+          let {month, year} = request.query;
+          month = month ? month.toString() : new Date().getMonth().toString();
+          year = year ? year.toString() : new Date().getFullYear().toString();
           const userAidropIds = await this.getOnboardUserRewardList(
-            invocationCtx,
-            endDate?.toString(),
+            parseInt(month),
+            parseInt(year),
           );
 
           filter.order = this.orderSetting(request.query);
@@ -878,11 +880,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       };
     }
 
-    if (controllerName === ControllerType.USER) {
-      const airdropPeriod = invocationCtx.args[1];
-      if (airdropPeriod) meta.additionalData = {airdropPeriod};
-    }
-
     return meta;
   }
 
@@ -1096,93 +1093,94 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   }
 
   async getOnboardUserRewardList(
-    invocationCtx: InvocationContext,
-    endDate?: string,
+    month: number,
+    year: number,
   ): Promise<string[]> {
     try {
-      const end = (endDate ? new Date(endDate) : new Date()).getTime();
-      const start = end - 7 * 24 * 60 * 60 * 1000;
-      const posts = await this.postService.postRepository.find({
+      const newUsers = await this.userRepository.find({
         where: {
           and: [
             {
-              platform: {
-                nin: [PlatformType.MYRIAD],
+              createdAt: {
+                gt: new Date(year, month, 1).toString(),
               },
             },
             {
               createdAt: {
-                gte: new Date(start).toString(),
-              },
-            },
-            {
-              createdAt: {
-                lt: new Date(end).toString(),
+                lt: new Date(year, month + 1, 0).toString(),
               },
             },
           ],
         },
         include: [
-          {relation: 'user'},
           {
             relation: 'people',
-            scope: {
-              include: [{relation: 'users'}],
-            },
           },
         ],
       });
 
-      const postIds: string[] = [];
-      const importer = posts
-        .filter(post => {
-          const person = post?.people;
-          const [newUser] = person?.users ?? [];
+      const newUsersConnectedSocialMedia = newUsers.filter(
+        user => user.people?.length >= 1,
+      );
 
-          if (!newUser) return false;
-          if (newUser.id === post.createdBy) return false;
-
-          const validConnectedDate =
-            new Date(person?.connectedDate ?? 0).getTime() >= start &&
-            new Date(person?.connectedDate ?? 0).getTime() < end;
-
-          const validPeriod =
-            new Date(newUser.createdAt ?? 0).getTime() >= start &&
-            new Date(newUser.createdAt ?? 0).getTime() < end;
-
-          if (!validConnectedDate) return false;
-          if (!validPeriod) return false;
-
-          return true;
-        })
-        .map(post => {
-          postIds.push(post.id);
-          return post?.user;
+      let importers: string[] = [];
+      let tippers: string[] = [];
+      for (const user of newUsersConnectedSocialMedia) {
+        const posts = await this.postService.postRepository.find({
+          where: {
+            and: [
+              {
+                platform: {
+                  nin: [PlatformType.MYRIAD],
+                },
+              },
+              {
+                peopleId: {
+                  inq: user.people.map(people => people.id),
+                },
+              },
+              {
+                createdAt: {
+                  lt: user.createdAt,
+                },
+              },
+            ],
+          },
         });
 
-      const trxs = await this.currencyService.transactionRepository.find({
-        where: {
-          type: ReferenceType.POST,
-          referenceId: {
-            inq: postIds,
-          },
-        },
-        include: [
-          {
-            relation: 'fromWallet',
-            scope: {
-              include: ['user'],
+        const trxs = await this.currencyService.transactionRepository.find({
+          where: {
+            type: ReferenceType.POST,
+            referenceId: {
+              inq: posts.map(post => post.id),
+            },
+            createdAt: {
+              lt: user.createdAt,
             },
           },
-        ],
-      });
+          include: [
+            {
+              relation: 'fromWallet',
+              scope: {
+                include: ['user'],
+              },
+            },
+          ],
+        });
 
-      const userTip = trxs.map(trx => trx?.fromWallet?.user ?? new User());
-      const users = [...userTip, ...importer];
+        const importer = Array.from(new Set(posts.map(post => post.createdBy)));
+        importers = Array.from(new Set([...importers, ...importer]));
+        const tipper = Array.from(
+          new Set(
+            trxs
+              .map(trx => trx.fromWallet?.user?.id ?? '')
+              .filter(id => id !== ''),
+          ),
+        );
+        tippers = [...new Set([...tippers, ...tipper])];
+      }
 
-      invocationCtx.args[1] = `${new Date(start)}-${new Date(end)}`;
-
-      return uniqBy(users, 'id').map(user => user?.id ?? '');
+      return Array.from(new Set([...importers, ...tippers]));
     } catch (err) {
       if (err.message === 'Invalid date: Invalid Date') {
         throw new HttpErrors.UnprocessableEntity('InvalidDate');
