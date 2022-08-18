@@ -55,13 +55,13 @@ export class Network extends Entity {
     type: 'string',
     required: false,
   })
-  walletURL1?: string;
+  walletURL?: string;
 
   @property({
     type: 'string',
     required: false,
   })
-  walletURL2?: string;
+  additionalWalletURL?: string;
 
   @property({
     type: 'string',
