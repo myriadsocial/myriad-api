@@ -160,7 +160,7 @@ export class AuthenticationController {
     })
     userWallet: UserWallet,
   ): Promise<User> {
-    const user = pick(userWallet, ['name', 'username']);
+    const user = pick(userWallet, ['name', 'username', 'permissions']);
     return this.userRepository.create(user);
   }
 
