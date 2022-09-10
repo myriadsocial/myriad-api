@@ -206,16 +206,24 @@ export class NetworkService {
     if (!wallet?.network) throw new HttpErrors.NotFound('WalletNotFound');
 
     const [server, socialMedia] = await Promise.all([
-      this.serverRepository.findById(config.MYRIAD_SERVER_ID),
+      this.serverRepository.findOne(),
       this.userSocialMediaRepository.find({where: {userId}}),
     ]);
 
-    const accountId = wallet.id;
+    if (!server) throw new HttpErrors.NotFound('ServerNotFound');
+
     const networkId = wallet.networkId;
+    const serverId = server?.accountId?.[networkId];
+
+    if (!serverId) {
+      throw new HttpErrors.UnprocessableEntity('ServerNotExists');
+    }
+
+    const accountId = wallet.id;
     const referenceIds = socialMedia.map(e => e.peopleId);
     const claimReferenceData = {
       rpcURL: wallet.network.rpcURL,
-      serverId: server.id,
+      serverId,
       accountId,
       txFee,
       referenceIds,
@@ -223,15 +231,8 @@ export class NetworkService {
     };
 
     switch (networkId) {
-      case 'near': {
-        const serverId = server?.accountId?.[networkId];
-
-        if (!serverId) {
-          throw new HttpErrors.UnprocessableEntity('ServerNotExists');
-        }
-
-        return this.claimReferenceNear({...claimReferenceData, serverId});
-      }
+      case 'near':
+        return this.claimReferenceNear(claimReferenceData);
 
       case 'myriad':
         return this.claimReferenceMyriad(claimReferenceData);
@@ -417,7 +418,7 @@ export class NetworkService {
 
       const nonce = await this.getQueueNumber(
         currentNonce.toJSON(),
-        config.MYRIAD_SERVER_ID,
+        claimReferenceData.serverId,
       );
 
       const extrinsic = api.tx.tipping.claimReference(
