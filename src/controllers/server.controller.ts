@@ -5,7 +5,6 @@ import {
   get,
   getModelSchemaRef,
   patch,
-  del,
   requestBody,
   response,
   HttpErrors,
@@ -14,6 +13,9 @@ import {config} from '../config';
 import {PermissionKeys} from '../enums';
 import {Server} from '../models';
 import {ServerRepository} from '../repositories';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
+
+const {getKeyring} = new PolkadotJs();
 
 @authenticate({strategy: 'jwt', options: {required: [PermissionKeys.ADMIN]}})
 export class ServerController {
@@ -35,8 +37,10 @@ export class ServerController {
       },
     },
   })
-  async find(): Promise<AnyObject> {
-    return this.serverRepository.findById(config.MYRIAD_SERVER_ID);
+  async find(): Promise<Server> {
+    const server = await this.getServer();
+    if (!server) throw new HttpErrors.NotFound('ServerNotFound');
+    return server;
   }
 
   @post('/server')
@@ -57,16 +61,13 @@ export class ServerController {
     })
     server: Omit<Server, 'id'>,
   ): Promise<Server> {
-    const exists = await this.serverRepository.exists(config.MYRIAD_SERVER_ID);
+    const exists = await this.getServer();
 
-    if (exists)
-      throw new HttpErrors.UnprocessableEntity('Server already exists');
+    if (exists) {
+      throw new HttpErrors.UnprocessableEntity('ServerExist');
+    }
 
-    return this.serverRepository.create(
-      Object.assign(server, {
-        id: config.MYRIAD_SERVER_ID,
-      }),
-    );
+    return this.serverRepository.create(server);
   }
 
   @patch('/server')
@@ -86,22 +87,34 @@ export class ServerController {
     })
     server: Partial<Server>,
   ): Promise<void> {
-    if (server.accountId || server.images) {
-      const oldServer = await this.serverRepository.findById(
-        config.MYRIAD_SERVER_ID,
-      );
-      server.accountId = {...oldServer.accountId, ...server.accountId};
-      server.images = {...oldServer.images, ...server.images};
+    const currentServer = await this.getServer();
+
+    if (!currentServer) {
+      throw new HttpErrors.UnprocessableEntity('ServerNotExist');
     }
 
-    await this.serverRepository.updateById(config.MYRIAD_SERVER_ID, server);
+    const serverId = currentServer.id;
+
+    if (server.accountId || server.images) {
+      server.accountId = {...currentServer.accountId, ...server.accountId};
+      server.images = {...currentServer.images, ...server.images};
+    }
+
+    return this.serverRepository.updateById(serverId, server);
   }
 
-  @del('/server')
-  @response(204, {
-    description: 'Server DELETE success',
-  })
-  async delete(): Promise<void> {
-    await this.serverRepository.deleteById(config.MYRIAD_SERVER_ID);
+  async getServer(): Promise<Server | null> {
+    const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+
+    if (!mnemonic) throw new HttpErrors.NotFound('MnemonicNotFound');
+
+    const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+    const address = serverAdmin.address;
+
+    return this.serverRepository.findOne(<AnyObject>{
+      where: {
+        'accountId.myriad': address,
+      },
+    });
   }
 }
