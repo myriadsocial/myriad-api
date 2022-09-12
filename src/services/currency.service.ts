@@ -143,15 +143,16 @@ export class CurrencyService {
     const getNonce = await this.getQueueNumber(nonce.toJSON(), 'MYRIA');
 
     const hash = await new Promise((resolve, reject) => {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      transfer.signAndSend(sender, {nonce: getNonce}, ({status, isError}) => {
-        if (status.isFinalized) {
-          const blockHash = status.asFinalized.toHex();
-          resolve(blockHash);
-        } else if (isError) {
-          reject();
-        }
-      });
+      transfer
+        .signAndSend(sender, {nonce: getNonce}, ({status, isError}) => {
+          if (status.isFinalized) {
+            const blockHash = status.asFinalized.toHex();
+            resolve(blockHash);
+          } else if (isError) {
+            reject();
+          }
+        })
+        .catch(() => reject());
     });
 
     await api.disconnect();
