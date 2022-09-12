@@ -25,6 +25,7 @@ import {
   Post,
   Report,
   ReportDetail,
+  Server,
   Tag,
   Transaction,
   User,
@@ -50,6 +51,7 @@ import {
   PeopleRepository,
   PostRepository,
   ReportRepository,
+  ServerRepository,
   TagRepository,
   TransactionRepository,
   UserExperienceRepository,
@@ -826,4 +828,30 @@ export function givenNetworkInstance(
   network?: Partial<Network>,
 ) {
   return networkRepository.create(givenNetwork(network));
+}
+
+export function givenServer(server?: Partial<Server>) {
+  const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+  const serverId = serverAdmin.address;
+
+  const data = Object.assign(
+    {
+      name: 'Myriad Social',
+      serverImageURL: 'https://',
+      description: 'Welcome to myriad social',
+      accountId: {
+        myriad: serverId,
+      },
+    },
+    server,
+  );
+
+  return new Server(data);
+}
+
+export function givenServerInstance(
+  serverRepository: ServerRepository,
+  server?: Partial<Server>,
+) {
+  return serverRepository.create(givenServer(server));
 }

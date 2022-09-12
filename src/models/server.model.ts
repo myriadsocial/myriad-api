@@ -35,7 +35,6 @@ export class Server extends Entity {
   @property({
     type: 'string',
     required: true,
-    default: 'Welcome to myriad social!',
   })
   description: string;
 
