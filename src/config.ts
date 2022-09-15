@@ -5,7 +5,6 @@ export const config = {
   APPLICATION_HOST: process.env.HOST ?? 'localhost',
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
 
-  MYRIAD_SERVER_ID: process.env.MYRIAD_SERVER_ID ?? '',
   MYRIAD_ADMIN_MNEMONIC:
     process.env.MYRIAD_ADMIN_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',

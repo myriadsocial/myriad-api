@@ -243,15 +243,8 @@ export class MyriadApiApplication extends BootMixin(
       walletRepository,
     } = await this.repositories();
 
-    if (!config.MYRIAD_SERVER_ID) throw new Error('Server not found');
-
     const bar = this.initializeProgressBar('Start Seeding');
     const files = fs.readdirSync(directory);
-
-    await serverRepository.create({
-      id: config.MYRIAD_SERVER_ID,
-      name: `${config.MYRIAD_SERVER_ID}#${Math.floor(Math.random() * 10000)}`,
-    });
 
     bar.start(files.length - 1, 0);
     for (const [index, file] of files.entries()) {

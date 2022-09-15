@@ -3,6 +3,7 @@ import {ServerMetric} from '../interfaces';
 
 @model({
   settings: {
+    strictObjectIDCoercion: true,
     mongodb: {
       collection: 'servers',
     },
@@ -12,10 +13,12 @@ export class Server extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: false,
-    required: true,
+    generated: true,
+    mongodb: {
+      dataType: 'ObjectId',
+    },
   })
-  id: string;
+  id?: string;
 
   @property({
     type: 'string',
@@ -25,8 +28,13 @@ export class Server extends Entity {
 
   @property({
     type: 'string',
-    required: false,
-    default: 'Welcome to myriad social!',
+    required: true,
+  })
+  serverImageURL: string;
+
+  @property({
+    type: 'string',
+    required: true,
   })
   description: string;
 
@@ -53,10 +61,10 @@ export class Server extends Entity {
 
   @property({
     type: 'object',
-    required: false,
+    required: true,
     default: {},
   })
-  accountId?: AnyObject;
+  accountId: AnyObject;
 
   @property({
     type: 'object',

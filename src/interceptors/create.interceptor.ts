@@ -19,6 +19,7 @@ import {
   PlatformType,
   MethodType,
   VisibilityType,
+  PermissionKeys,
 } from '../enums';
 import {
   Comment,
@@ -59,6 +60,8 @@ import {PlatformPost} from '../models/platform-post.model';
 import {ExtendedPost} from '../interfaces';
 import {UrlUtils} from '../utils/url.utils';
 import {omit} from 'lodash';
+import {config} from '../config';
+import {PolkadotJs} from '../utils/polkadotJs-utils';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -439,11 +442,12 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERWALLET: {
-        const {userId, networkId} = invocationCtx.args[1].data as Wallet;
+        const {id, userId, networkId} = invocationCtx.args[1].data as Wallet;
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
         Promise.allSettled([
+          this.userPermissions(userId, id),
           this.currencyService.addUserCurrencies(userId, networkId),
           this.userRepository.updateById(userId, {nonce: newNonce}),
         ]) as Promise<AnyObject>;
@@ -835,6 +839,30 @@ export class CreateInterceptor implements Provider<Interceptor> {
           result.id,
           result.mentions ?? [],
         );
+    }
+  }
+
+  async userPermissions(
+    userId: string,
+    registeredAddress: string,
+  ): Promise<void> {
+    try {
+      const {getKeyring, getHexPublicKey} = new PolkadotJs();
+      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+
+      const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+      const address = getHexPublicKey(serverAdmin);
+
+      if (registeredAddress !== address) return;
+      await this.userRepository.updateById(userId, {
+        permissions: [
+          PermissionKeys.MASTER,
+          PermissionKeys.ADMIN,
+          PermissionKeys.USER,
+        ],
+      });
+    } catch {
+      // ignore
     }
   }
 }

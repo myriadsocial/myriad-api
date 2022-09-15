@@ -12,7 +12,6 @@ import {
 } from '../repositories';
 import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
-import {config} from '../config';
 
 @authenticate('jwt')
 export class WalletAddressController {
@@ -58,8 +57,7 @@ export class WalletAddressController {
   async getPostWalletAddress(
     @param.path.string('id') id: string,
   ): Promise<AnyObject> {
-    const {networkId, blockchainPlatform, networkIds} =
-      await this.getCurrentUserNetwork();
+    const {networkId, networkIds} = await this.getCurrentUserNetwork();
     const post = await this.postRepository.findById(id, {
       include: [
         {
@@ -93,7 +91,6 @@ export class WalletAddressController {
       }
 
       return this.tipsBalanceInfo(
-        blockchainPlatform,
         networkId,
         ReferenceType.USER,
         post.createdBy,
@@ -113,20 +110,10 @@ export class WalletAddressController {
         };
       }
 
-      return this.tipsBalanceInfo(
-        blockchainPlatform,
-        networkId,
-        ReferenceType.USER,
-        userId,
-      );
+      return this.tipsBalanceInfo(networkId, ReferenceType.USER, userId);
     }
 
-    return this.tipsBalanceInfo(
-      blockchainPlatform,
-      networkId,
-      ReferenceType.PEOPLE,
-      people.id,
-    );
+    return this.tipsBalanceInfo(networkId, ReferenceType.PEOPLE, people.id);
   }
 
   @get('/comments/{id}/walletaddress')
@@ -154,8 +141,7 @@ export class WalletAddressController {
   async getCommentWalletAddress(
     @param.path.string('id') id: string,
   ): Promise<AnyObject> {
-    const {networkId, blockchainPlatform, networkIds} =
-      await this.getCurrentUserNetwork();
+    const {networkId, networkIds} = await this.getCurrentUserNetwork();
     const comment = await this.commentRepository.findById(id, {
       include: [
         {
@@ -183,12 +169,7 @@ export class WalletAddressController {
       if (!user) {
         throw new HttpErrors.NotFound('User not found');
       }
-      return this.tipsBalanceInfo(
-        blockchainPlatform,
-        networkId,
-        ReferenceType.USER,
-        user.id,
-      );
+      return this.tipsBalanceInfo(networkId, ReferenceType.USER, user.id);
     }
 
     return {
@@ -222,8 +203,7 @@ export class WalletAddressController {
   async getUserWalletAddress(
     @param.path.string('id') id: string,
   ): Promise<AnyObject> {
-    const {networkId, blockchainPlatform, networkIds} =
-      await this.getCurrentUserNetwork();
+    const {networkId, networkIds} = await this.getCurrentUserNetwork();
     const toWalletUser = await this.walletRepository.findOne({
       where: {userId: id, networkId: {inq: networkIds}},
     });
@@ -235,12 +215,7 @@ export class WalletAddressController {
       };
     }
 
-    return this.tipsBalanceInfo(
-      blockchainPlatform,
-      networkId,
-      ReferenceType.USER,
-      id,
-    );
+    return this.tipsBalanceInfo(networkId, ReferenceType.USER, id);
   }
 
   async getCurrentUserNetwork(): Promise<AnyObject> {
@@ -264,46 +239,26 @@ export class WalletAddressController {
 
     return {
       networkId,
-      blockchainPlatform,
       networkIds,
     };
   }
 
   async tipsBalanceInfo(
-    blockchainPlatform: string,
     networkType: string,
     referenceType: ReferenceType,
     referenceId: string,
   ): Promise<AnyObject> {
-    if (!config.MYRIAD_SERVER_ID) {
-      throw new HttpErrors.NotFound('Not implemented');
-    }
-    const myriadServerId = config.MYRIAD_SERVER_ID;
+    const server = await this.serverRepository.findOne();
+    const serverId = server?.accountId?.[networkType];
+
+    if (!serverId) throw new HttpErrors.NotFound('Wallet not exists');
+
     const tipsBalanceInfo = {
-      serverId: myriadServerId,
+      serverId: serverId,
       referenceType: referenceType,
       referenceId: referenceId,
     };
 
-    switch (blockchainPlatform) {
-      case 'substrate': {
-        if (networkType === 'myriad') {
-          return tipsBalanceInfo;
-        }
-
-        throw new HttpErrors.NotFound('Polkadot wallet not exists');
-      }
-
-      case 'near': {
-        const server = await this.serverRepository.findById(myriadServerId);
-        const serverId = server.accountId?.[networkType];
-        if (!serverId) throw new HttpErrors.NotFound('ServerNotFound');
-
-        return Object.assign(tipsBalanceInfo, {serverId});
-      }
-
-      default:
-        throw new HttpErrors.NotFound('Wallet not exists');
-    }
+    return tipsBalanceInfo;
   }
 }

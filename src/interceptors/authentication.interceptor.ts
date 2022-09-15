@@ -29,6 +29,9 @@ import NonceGenerator from 'a-nonce-generator';
 import {validateAccount} from '../utils/validate-account';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {isHex} from '@polkadot/util';
+import {config} from '../config';
+
+const {getKeyring, getHexPublicKey} = new PolkadotJs();
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -115,8 +118,11 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
       this.validateUsername(username);
 
+      const permissions = await this.getPermissions(fixedAddress);
+
       Object.assign(invocationCtx.args[0], {
         name: name.substring(0, 22),
+        permissions,
       });
       invocationCtx.args[1] = new Wallet({
         id: fixedAddress,
@@ -330,5 +336,24 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         'Only allowed ascii letter (a-z), number (0-9), and underscore(_)',
       );
     }
+  }
+
+  async getPermissions(registeredAddress: string): Promise<PermissionKeys[]> {
+    const permissions: PermissionKeys[] = [PermissionKeys.USER];
+
+    try {
+      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+
+      const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+      const address = getHexPublicKey(serverAdmin);
+
+      if (registeredAddress === address) {
+        permissions.push(PermissionKeys.MASTER, PermissionKeys.ADMIN);
+      }
+    } catch {
+      // ignore
+    }
+
+    return permissions;
   }
 }

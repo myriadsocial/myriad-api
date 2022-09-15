@@ -1,11 +1,19 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType, ReferenceType} from '../../enums';
-import {People, Post, User, UserSocialMedia, Wallet} from '../../models';
+import {
+  People,
+  Post,
+  Server,
+  User,
+  UserSocialMedia,
+  Wallet,
+} from '../../models';
 import {
   NetworkRepository,
   PeopleRepository,
   PostRepository,
+  ServerRepository,
   UserRepository,
   UserSocialMediaRepository,
   WalletRepository,
@@ -21,6 +29,8 @@ import {
   givenPeopleRepository,
   givenPostInstance,
   givenPostRepository,
+  givenServerInstance,
+  givenServerRepository,
   givenUserInstance,
   givenUserRepository,
   givenUserSocialMediaInstance,
@@ -29,7 +39,6 @@ import {
   givenWalletRepository,
   setupApplication,
 } from '../helpers';
-import {config} from '../../config';
 
 describe('WalletAddressApplication', function () {
   let app: MyriadApiApplication;
@@ -41,6 +50,7 @@ describe('WalletAddressApplication', function () {
   let userRepository: UserRepository;
   let walletRepository: WalletRepository;
   let networkRepository: NetworkRepository;
+  let serverRepository: ServerRepository;
   let people: People;
   let post: Post;
   let myriadPost: Post;
@@ -48,6 +58,7 @@ describe('WalletAddressApplication', function () {
   let user: User;
   let otherUser: User;
   let wallet: Wallet;
+  let server: Server;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -62,9 +73,11 @@ describe('WalletAddressApplication', function () {
     userRepository = await givenUserRepository(app);
     walletRepository = await givenWalletRepository(app);
     networkRepository = await givenNetworkRepository(app);
+    serverRepository = await givenServerRepository(app);
   });
 
   before(async () => {
+    server = await givenServerInstance(serverRepository);
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
     user = await givenUserInstance(userRepository);
     token = await givenAccesToken(user);
@@ -107,8 +120,6 @@ describe('WalletAddressApplication', function () {
   it('gets a post wallet address from people', async () => {
     await postRepository.updateById(post.id, {peopleId: people.id});
 
-    config.MYRIAD_SERVER_ID = 'server';
-
     const result = await client
       .get(`/posts/${post.id}/walletaddress`)
       .set('Authorization', `Bearer ${token}`)
@@ -116,7 +127,7 @@ describe('WalletAddressApplication', function () {
       .expect(200);
 
     expect(result.body).to.deepEqual({
-      serverId: config.MYRIAD_SERVER_ID,
+      serverId: server.accountId['myriad'],
       referenceId: people.id,
       referenceType: ReferenceType.PEOPLE,
     });

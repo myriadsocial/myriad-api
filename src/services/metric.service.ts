@@ -30,7 +30,6 @@ import {
   ServerRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
-import {config} from '../config';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class MetricService {
@@ -226,9 +225,7 @@ export class MetricService {
   }
 
   async countServerMetric(): Promise<void> {
-    const server = await this.serverRepository.findOne({
-      where: {id: config.MYRIAD_SERVER_ID},
-    });
+    const server = await this.serverRepository.findOne();
     if (!server) return;
     const [
       {count: totalUsers},
