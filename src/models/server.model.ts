@@ -28,13 +28,15 @@ export class Server extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
   serverImageURL: string;
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
+    default:
+      'A decentralized (web3+federated) metasocial network on top of your mainstream social media.',
   })
   description: string;
 

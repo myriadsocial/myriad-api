@@ -2,7 +2,7 @@ import {AnyObject} from '@loopback/repository';
 import {config} from '../config';
 import {v4 as uuid} from 'uuid';
 import * as firebaseAdmin from 'firebase-admin';
-import sharp from 'sharp';
+import sharp, {FormatEnum} from 'sharp';
 import fs, {existsSync} from 'fs';
 import path from 'path';
 import os from 'os';
@@ -22,7 +22,10 @@ export async function upload(
   const tmpDir = os.tmpdir();
   const baseName = path.parse(filePath).name;
   const extension = path.parse(filePath).ext;
-  const {format, mutations} = getMutations(UploadType.IMAGE);
+  const {format, mutations} = getMutations(
+    UploadType.IMAGE,
+    extension.substring(1),
+  );
 
   let result = '';
   for (const mutation of mutations) {
@@ -30,20 +33,26 @@ export async function upload(
     let uploadFilePath = `${targetDir}/${baseName}${extension}`;
 
     if (type === UploadType.IMAGE) {
-      formattedFilePath = `${tmpDir}/${baseName}${mutation.suffix}_formatted.${format}`;
-      uploadFilePath = `${targetDir}/${baseName}${mutation.suffix}.${format}`;
+      const suffix = format === 'svg' ? '' : mutation.suffix;
 
-      if (mutation.type === 'origin') {
-        await sharp(filePath)
-          .withMetadata()
-          .toFormat('jpg')
-          .toFile(formattedFilePath);
+      formattedFilePath = `${tmpDir}/${baseName}${suffix}_formatted.${format}`;
+      uploadFilePath = `${targetDir}/${baseName}${suffix}.${format}`;
+
+      if (format === 'svg') {
+        fs.copyFileSync(filePath, formattedFilePath);
       } else {
-        await sharp(filePath)
-          .resize({width: mutation.width})
-          .withMetadata()
-          .toFormat('jpg')
-          .toFile(formattedFilePath);
+        if (mutation.type === 'origin') {
+          await sharp(filePath)
+            .withMetadata()
+            .toFormat(format as keyof FormatEnum)
+            .toFile(formattedFilePath);
+        } else {
+          await sharp(filePath)
+            .resize({width: mutation.width})
+            .withMetadata()
+            .toFormat(format as keyof FormatEnum)
+            .toFile(formattedFilePath);
+        }
       }
     }
 
@@ -77,6 +86,7 @@ export async function upload(
     }
 
     if (type === UploadType.IMAGE) fs.unlinkSync(formattedFilePath);
+    if (format === 'svg') break;
   }
 
   fs.unlinkSync(filePath);
@@ -86,12 +96,11 @@ export async function upload(
 
 export function getFilePathFromSeedData(sourceImageFileName: string) {
   const assetPath = path.join(__dirname, `../../seed-data/assets`);
-
   if (!existsSync(assetPath)) return '';
 
   const files = fs.readdirSync(assetPath);
   const file = files.find(e => {
-    const [imageFile] = e.split(/\.(jpeg|jpg|gif|png)$/);
+    const [imageFile] = e.split(/\.(jpeg|jpg|gif|png|svg)$/);
     if (imageFile === sourceImageFileName) return true;
     return false;
   });
@@ -108,7 +117,7 @@ export function getFilePathFromSeedData(sourceImageFileName: string) {
   return targetImagePath;
 }
 
-function getMutations(type: UploadType): AnyObject {
+function getMutations(type: UploadType, extension = 'jpg'): AnyObject {
   if (type === UploadType.VIDEO) {
     return {
       format: 'mp4',
@@ -123,7 +132,7 @@ function getMutations(type: UploadType): AnyObject {
   }
 
   return {
-    format: 'jpg',
+    format: extension,
     mutations: [
       {
         type: 'thumbnail',
