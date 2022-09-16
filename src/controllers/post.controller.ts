@@ -84,7 +84,7 @@ export class PostController {
     },
   })
   async getTimeline(
-    @param.filter(Post, {exclude: ['limit', 'skip', 'offset']})
+    @param.filter(Post, {exclude: ['limit', 'skip', 'offset', 'where']})
     filter?: Filter<Post>,
   ): Promise<Post[]> {
     return this.postService.postRepository.find(filter);

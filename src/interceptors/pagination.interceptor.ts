@@ -51,6 +51,7 @@ import {
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
 import {pull} from 'lodash';
+import {Query} from 'express-serve-static-core';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -334,14 +335,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       case ControllerType.POST: {
         if (methodName === MethodType.TIMELINE) {
           const {experienceId, timelineType, q, topic} = request.query;
-          const hasWhere =
-            Object.keys(filter.where as Where<AnyObject>).length > 0;
 
           if (
-            (q && (topic || timelineType || hasWhere)) ||
-            (topic && (q || timelineType || hasWhere)) ||
-            (timelineType && (q || topic || hasWhere)) ||
-            (hasWhere && (q || topic || timelineType))
+            (q && (topic || timelineType)) ||
+            (topic && (q || timelineType)) ||
+            (timelineType && (q || topic))
           ) {
             throw new HttpErrors.UnprocessableEntity(
               'Cannot used where filter together with q, topic, and timelineType',
@@ -376,11 +374,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           // get timeline
-          if (!timelineType && typeof timelineType === 'string') return;
-          if (timelineType || (!q && !topic && !timelineType && !hasWhere)) {
+          if (timelineType || (!q && !topic && !timelineType)) {
             filter.where = await this.getTimeline(
-              (timelineType ?? TimelineType.ALL) as TimelineType,
+              (timelineType ?? TimelineType.PROFILE) as TimelineType,
               experienceId?.toString(),
+              request.query,
             );
           }
 
@@ -1050,6 +1048,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   async getTimeline(
     timelineType: TimelineType,
     experienceId?: string,
+    query?: Query,
   ): Promise<Where<Post>> {
     const userId = this.currentUser[securityId];
 
@@ -1088,6 +1087,51 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             ],
           } as Where<Post>;
         });
+      }
+
+      default: {
+        const where: AnyObject = {};
+
+        if (query) {
+          const {platform, owner} = query;
+
+          if (platform === 'myriad') {
+            where.platform = PlatformType.MYRIAD;
+          }
+
+          if (platform === 'imported') {
+            where.platform = {
+              inq: [
+                PlatformType.TWITTER,
+                PlatformType.REDDIT,
+                PlatformType.FACEBOOK,
+              ],
+            };
+          }
+
+          if (owner) {
+            where.createdBy = owner;
+
+            if (owner !== userId) {
+              const asFriend = await this.friendService.asFriend(
+                owner.toString(),
+                userId,
+              );
+
+              if (asFriend) {
+                where.visibility = {
+                  inq: [VisibilityType.FRIEND, VisibilityType.PUBLIC],
+                };
+              } else {
+                where.visibility = VisibilityType.PUBLIC;
+              }
+            }
+          }
+        } else {
+          where.visibility = VisibilityType.PUBLIC;
+        }
+
+        return where as Where<Post>;
       }
     }
   }
