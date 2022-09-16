@@ -1,0 +1,12 @@
+{
+  "name": "Instance",
+  "sourceImageFileName": "profile",
+  "targetImagePath": "general/servers",
+  "description": "A decentralized (web3+federated) metasocial network on top of your mainstream social media.",
+  "categories": ["myriad"],
+  "images": {
+    "sourceImageFileName": "banner",
+    "targetImagePath": "general/servers"
+  }
+}
+

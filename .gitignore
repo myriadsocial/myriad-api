@@ -90,9 +90,12 @@ storages
 seed-data/*
 !seed-data/default-network-currencies.json
 !seed-data/default-user-wallet.json
+!seed-data/server.json
 !seed-data/assets
 seed-data/assets/*
 !seed-data/assets/myriad.png
+!seed-data/assets/profile.png
+!seed-data/assets/banner.svg
 
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json

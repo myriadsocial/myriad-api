@@ -74,12 +74,14 @@ import {DateUtils} from './utils/date-utils';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType, UploadType} from './enums';
 import {omit} from 'lodash';
+import {PolkadotJs} from './utils/polkadotJs-utils';
 
 const date = new DateUtils();
 const jwt = require('jsonwebtoken');
 
 export {ApplicationConfig};
 
+/* eslint-disable  @typescript-eslint/naming-convention */
 export class MyriadApiApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
 ) {
@@ -411,6 +413,61 @@ export class MyriadApiApplication extends BootMixin(
 
             await Promise.allSettled(promises);
 
+            break;
+          }
+
+          case 'server.json': {
+            const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+
+            if (!mnemonic) throw new Error('MnemonicNotFound');
+
+            const {getKeyring} = new PolkadotJs();
+            const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+            const address = serverAdmin.address;
+            const filePathProfile = getFilePathFromSeedData(
+              data.sourceImageFileName,
+            );
+            const filePathBanner = getFilePathFromSeedData(
+              data.images.sourceImageFileName,
+            );
+            const targetDirProfile = data.targetImagePath;
+            const targetDirBanner = data.images.targetImagePath;
+            const [serverImageURL, logoBannerURL] = await Promise.all([
+              upload(UploadType.IMAGE, targetDirProfile, filePathProfile),
+              upload(UploadType.IMAGE, targetDirBanner, filePathBanner),
+            ]);
+
+            if (!serverImageURL || !logoBannerURL) {
+              await Promise.all([
+                userRepository.deleteAll(),
+                currencyRepository.deleteAll(),
+                walletRepository.deleteAll(),
+                serverRepository.deleteAll(),
+              ]);
+
+              throw new Error('Image server not exists');
+            }
+
+            const serverName =
+              data.name === 'Instance'
+                ? `${data.name} ${Math.floor(Math.random() * 1000)}`
+                : data.name;
+
+            const rawServer = Object.assign(
+              omit(data, ['sourceImageFileName', 'targetImagePath']),
+              {
+                name: serverName,
+                serverImageURL: serverImageURL,
+                accountId: {
+                  myriad: address,
+                },
+                images: {
+                  logo_banner: logoBannerURL,
+                },
+              },
+            );
+
+            await serverRepository.create(rawServer);
             break;
           }
 
