@@ -333,6 +333,27 @@ export class FriendService {
     ).map((user: AnyObject) => user._id);
   }
 
+  async asFriend(requestorId: string, requesteeId: string): Promise<boolean> {
+    const friend = await this.friendRepository.findOne({
+      where: {
+        or: [
+          {
+            requesteeId: requesteeId,
+            requestorId: requestorId,
+            status: FriendStatusType.APPROVED,
+          },
+          {
+            requestorId: requesteeId,
+            requesteeId: requestorId,
+            status: FriendStatusType.APPROVED,
+          },
+        ],
+      },
+    });
+
+    return Boolean(friend);
+  }
+
   async getMyriadUserId(): Promise<string> {
     const user = await this.userRepository.findOne({
       where: {username: 'myriad_official'},

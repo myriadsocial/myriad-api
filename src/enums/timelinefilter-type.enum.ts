@@ -20,4 +20,5 @@ export enum TimelineType {
   EXPERIENCE = 'experience',
   FRIEND = 'friend',
   TRENDING = 'trending',
+  PROFILE = 'profile',
 }
