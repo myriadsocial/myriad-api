@@ -588,6 +588,56 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
         break;
       }
+
+      case ControllerType.FRIEND: {
+        const {requesteeId, requestorId, status} = request.query;
+
+        Object.assign(filter.where, {status, deletedAt: {$eq: null}});
+
+        switch (status) {
+          case FriendStatusType.PENDING: {
+            if (!requesteeId) return;
+            const accountSetting = await this.accountSettingRepository.findOne({
+              where: {userId: requesteeId?.toString()},
+            });
+
+            if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE)
+              return;
+
+            Object.assign(filter.where, {requesteeId});
+
+            break;
+          }
+          case FriendStatusType.BLOCKED: {
+            if (requesteeId !== requestorId) return;
+
+            Object.assign(filter.where, {
+              or: [{requesteeId}, {requestorId}],
+            });
+
+            break;
+          }
+
+          case FriendStatusType.APPROVED: {
+            if (!requestorId) return;
+            const accountSetting = await this.accountSettingRepository.findOne({
+              where: {userId: requesteeId?.toString()},
+            });
+
+            if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE)
+              return;
+
+            Object.assign(filter.where, {requestorId});
+
+            break;
+          }
+
+          default:
+            return;
+        }
+
+        break;
+      }
     }
 
     return filter;
