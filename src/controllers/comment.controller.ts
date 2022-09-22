@@ -1,5 +1,5 @@
 import {intercept} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {Filter, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -13,7 +13,6 @@ import {ReferenceType} from '../enums';
 import {
   CreateInterceptor,
   DeleteInterceptor,
-  FindByIdInterceptor,
   PaginationInterceptor,
   UpdateInterceptor,
 } from '../interceptors';
@@ -45,31 +44,10 @@ export class CommentController {
     },
   })
   async find(
-    @param.filter(Comment, {exclude: ['limit', 'skip', 'offset']})
+    @param.filter(Comment, {exclude: ['limit', 'skip', 'offset', 'where']})
     filter?: Filter<Comment>,
   ): Promise<Comment[]> {
     return this.commentRepository.find(filter);
-  }
-
-  @intercept(FindByIdInterceptor.BINDING_KEY)
-  @get('/comments/{id}', {
-    responses: {
-      '200': {
-        description: 'Comment model instances',
-        content: {
-          'application/json': {
-            schema: getModelSchemaRef(Comment, {includeRelations: true}),
-          },
-        },
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(Comment, {exclude: 'where'})
-    filter?: FilterExcludingWhere<Comment>,
-  ): Promise<Comment> {
-    return this.commentRepository.findById(id, filter);
   }
 
   @intercept(CreateInterceptor.BINDING_KEY)

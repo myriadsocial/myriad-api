@@ -20,6 +20,7 @@ import {
   OrderType,
   PlatformType,
   ReferenceType,
+  SectionType,
   TimelineType,
   VisibilityType,
 } from '../enums';
@@ -588,6 +589,21 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
         break;
       }
+
+      case ControllerType.COMMENT: {
+        const {userId, referenceId, section} = request.query;
+
+        if (userId) {
+          filter.where = {userId: userId.toString()};
+        } else {
+          filter.where = {
+            referenceId: !referenceId ? '' : referenceId,
+            section: !section ? SectionType.DISCUSSION : section,
+          };
+        }
+
+        break;
+      }
     }
 
     return filter;
@@ -756,28 +772,88 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
               comment.text = '[comment removed]';
               comment.reportType = report?.type;
+
+              return {...comment};
             }
 
-            if (this.currentUser[securityId] === comment.userId)
+            if (this.currentUser[securityId] === comment?.post?.createdBy) {
+              if (this.currentUser[securityId] === comment?.userId) {
+                return {...comment};
+              }
+
+              const accountSetting =
+                await this.accountSettingRepository.findOne({
+                  where: {
+                    userId: comment.userId,
+                  },
+                });
+
+              if (
+                accountSetting?.accountPrivacy === AccountSettingType.PRIVATE
+              ) {
+                const asFriend = await this.friendService.asFriend(
+                  this.currentUser[securityId],
+                  comment.userId,
+                );
+
+                if (!asFriend) {
+                  comment.text = '[This comment is from a private account]';
+                  comment.privacy = 'private';
+                }
+              }
+
               return {...comment};
+            }
+
+            const visibility = comment?.post?.visibility;
+
+            if (!visibility || visibility === VisibilityType.PRIVATE) {
+              if (this.currentUser[securityId] !== comment?.userId) {
+                comment.text = '[This comment is from a private post]';
+                comment.privacy = 'private';
+              } else {
+                if (comment?.post?.text) {
+                  comment.post = {
+                    ...comment.post,
+                    text: '[This is a private post]',
+                    rawText: '[This is a private post]',
+                  };
+                }
+              }
+
+              return {...comment};
+            }
+
+            if (this.currentUser[securityId] === comment?.userId) {
+              return {...comment};
+            }
+
+            if (visibility === VisibilityType.FRIEND) {
+              const asFriend = await this.friendService.asFriend(
+                this.currentUser[securityId],
+                comment.post.createdBy,
+              );
+
+              if (!asFriend) {
+                comment.text = '[This comment is from an private post]';
+                comment.privacy = 'private';
+              }
+
+              return {...comment};
+            }
+
             const accountSetting = await this.accountSettingRepository.findOne({
               where: {
                 userId: comment.userId,
               },
             });
             if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE) {
-              const friend = await this.friendService.friendRepository.findOne({
-                where: <AnyObject>{
-                  requestorId: this.currentUser[securityId],
-                  requesteeId: comment.userId,
-                  status: FriendStatusType.APPROVED,
-                  deletedAt: {
-                    $eq: null,
-                  },
-                },
-              });
+              const asFriend = await this.friendService.asFriend(
+                this.currentUser[securityId],
+                comment.userId,
+              );
 
-              if (!friend) {
+              if (!asFriend) {
                 comment.text = '[This comment is from a private account]';
                 comment.privacy = 'private';
               }
