@@ -184,24 +184,6 @@ describe('CommentApplication', function () {
       });
     });
 
-    it('gets a comment by ID', async () => {
-      const result = await client
-        .get(`/comments/${persistedComment.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(200);
-      const expected = toJSON(persistedComment);
-
-      expect(result.body).to.deepEqual(expected);
-    });
-
-    it('returns 404 when getting a comment that does not exist', () => {
-      return client
-        .get('/comments/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
-    });
-
     it('updates the comments by ID ', async () => {
       const updatedComment: Partial<Comment> = givenComment({
         text: 'Apa kabar dunia',
@@ -310,43 +292,11 @@ describe('CommentApplication', function () {
 
     it('finds all comments', async () => {
       const response = await client
-        .get('/comments')
+        .get(`/comments?postId=${post.id}&referenceId=${post.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       expect(response.body.data).to.containDeep(toJSON(persistedComments));
-    });
-
-    it('queries comments with a filter', async () => {
-      const commentInProgress = await givenCommentInstance(commentRepository, {
-        text: 'wow',
-        userId: user.id,
-        postId: post.id,
-        referenceId: post.id,
-        type: ReferenceType.POST,
-      });
-
-      const filter = {
-        filter: {
-          where: {
-            text: 'wow',
-          },
-        },
-      };
-
-      await client
-        .get('/comments')
-        .set('Authorization', `Bearer ${token}`)
-        .query(filter)
-        .expect(200, {
-          data: [toJSON(commentInProgress)],
-          meta: {
-            currentPage: 1,
-            itemsPerPage: 1,
-            totalItemCount: 1,
-            totalPageCount: 1,
-          },
-        });
     });
 
     it('exploded filter conditions work', async () => {
@@ -359,7 +309,7 @@ describe('CommentApplication', function () {
       });
 
       const response = await client
-        .get('/comments')
+        .get(`/comments?postId=${post.id}&referenceId=${post.id}`)
         .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
@@ -383,7 +333,7 @@ describe('CommentApplication', function () {
     };
 
     const response = await client
-      .get('/comments/')
+      .get(`/comments?postId=${post.id}&referenceId=${post.id}`)
       .set('Authorization', `Bearer ${token}`)
       .query(filter);
 

@@ -334,18 +334,24 @@ export class FriendService {
   }
 
   async asFriend(requestorId: string, requesteeId: string): Promise<boolean> {
-    const friend = await this.friendRepository.findOne({
+    const friend = await this.friendRepository.findOne(<AnyObject>{
       where: {
         or: [
           {
             requesteeId: requesteeId,
             requestorId: requestorId,
             status: FriendStatusType.APPROVED,
+            deletedAt: {
+              $eq: null,
+            },
           },
           {
             requestorId: requesteeId,
             requesteeId: requestorId,
             status: FriendStatusType.APPROVED,
+            deletedAt: {
+              $eq: null,
+            },
           },
         ],
       },
