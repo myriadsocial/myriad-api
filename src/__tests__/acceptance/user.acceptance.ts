@@ -85,7 +85,7 @@ describe('UserApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
-      const expected = toJSON(user);
+      const expected = toJSON({...user, status: 'owned'});
 
       expect(result.body).to.deepEqual(expected);
     });
