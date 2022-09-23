@@ -232,7 +232,14 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USER: {
-        const blockedFriend = await this.friendRepository.findOne({
+        if (this.currentUser[securityId] === invocationCtx.args[0]) {
+          return {
+            ...result,
+            status: 'owned',
+          };
+        }
+
+        const friend = await this.friendRepository.findOne(<AnyObject>{
           where: {
             or: [
               {
@@ -244,16 +251,25 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
                 requestorId: invocationCtx.args[0],
               },
             ],
-            status: FriendStatusType.BLOCKED,
           },
         });
 
-        if (!blockedFriend) return result;
-        return {
+        if (!friend) return result;
+
+        const userWithFriendStatus = {
           ...result,
-          status: 'blocked',
-          blocker: blockedFriend.requestorId,
+          friendId: friend.id,
+          status: friend.status,
         };
+
+        if (friend.status !== FriendStatusType.APPROVED) {
+          Object.assign(userWithFriendStatus, {
+            requestee: friend.requesteeId,
+            requester: friend.requestorId,
+          });
+        }
+
+        return userWithFriendStatus;
       }
 
       case ControllerType.USEREXPERIENCE: {
