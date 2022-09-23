@@ -1186,14 +1186,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           }
 
           if (owner) {
-            const accountSetting = await this.accountSettingRepository.findOne({
-              where: {
-                userId: owner.toString(),
-                accountPrivacy: AccountSettingType.PRIVATE,
-              },
-            });
+            where.createdBy = owner;
 
-            if (!accountSetting && owner !== userId) {
+            if (owner !== userId) {
               const asFriend = await this.friendService.asFriend(
                 owner.toString(),
                 userId,
@@ -1204,10 +1199,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                   inq: [VisibilityType.FRIEND, VisibilityType.PUBLIC],
                 };
               } else {
-                where.visibility = VisibilityType.PUBLIC;
+                const isPrivate = await this.accountSettingRepository.findOne({
+                  where: {
+                    userId: owner.toString(),
+                    accountPrivacy: AccountSettingType.PRIVATE,
+                  },
+                });
+
+                if (isPrivate) where.id = '';
+                else where.visibility = VisibilityType.PUBLIC;
               }
-            } else {
-              where.id = '';
             }
           }
         } else {
