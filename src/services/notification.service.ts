@@ -663,8 +663,8 @@ export class NotificationService {
 
   async sendRewardSuccess(transaction: Transaction): Promise<void> {
     const {from, to} = transaction;
-    const fromUser = await this.walletRepository.user(from);
-    const toUser = await this.walletRepository.user(to);
+    const fromUser = await this.userRepository.findById(from);
+    const toUser = await this.userRepository.findById(to);
 
     const tipsActive = await this.checkNotificationSetting(
       toUser.id,
@@ -690,8 +690,8 @@ export class NotificationService {
 
   async sendInitialTips(transaction: Transaction): Promise<void> {
     const {from, to} = transaction;
-    const fromUser = await this.walletRepository.user(from);
-    const toUser = await this.walletRepository.user(to);
+    const fromUser = await this.userRepository.findById(from);
+    const toUser = await this.userRepository.findById(to);
 
     const symbol = await this.getCurrencySymbol(transaction.currencyId);
     const notification = new Notification({
@@ -711,7 +711,7 @@ export class NotificationService {
 
   async sendClaimTips(transaction: Transaction): Promise<boolean> {
     const {to} = transaction;
-    const toUser = await this.walletRepository.user(to);
+    const toUser = await this.userRepository.findById(to);
 
     const tipsActive = await this.checkNotificationSetting(
       toUser.id,

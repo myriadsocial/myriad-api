@@ -123,23 +123,17 @@ export class TransactionController {
     })
     transactionInfo: TransactionInfo,
   ): Promise<AnyObject> {
-    const {userId, walletId, currencyIds} = transactionInfo;
+    const {userId, currencyIds} = transactionInfo;
     const socialMedias = await this.userSocialMediaRepository.find({
       where: {userId},
     });
 
-    const promises: Promise<AnyObject>[] = [
-      this.transactionRepository.updateAll(
-        {to: walletId},
-        {to: userId, currencyId: {inq: currencyIds}},
-      ),
-      ...socialMedias.map(e => {
-        return this.transactionRepository.updateAll(
-          {to: walletId},
-          {to: e.peopleId, currencyId: {inq: currencyIds}},
-        );
-      }),
-    ];
+    const promises: Promise<AnyObject>[] = socialMedias.map(e => {
+      return this.transactionRepository.updateAll(
+        {to: userId},
+        {to: e.peopleId, currencyId: {inq: currencyIds}},
+      );
+    });
 
     return Promise.allSettled(promises);
   }

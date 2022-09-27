@@ -5,22 +5,22 @@ import {
   repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Currency, Transaction, TransactionRelations, Wallet} from '../models';
+import {Currency, Transaction, TransactionRelations, User} from '../models';
 import {CurrencyRepository} from './currency.repository';
-import {WalletRepository} from './wallet.repository';
+import {UserRepository} from './user.repository';
 
 export class TransactionRepository extends DefaultCrudRepository<
   Transaction,
   typeof Transaction.prototype.id,
   TransactionRelations
 > {
-  public readonly fromWallet: BelongsToAccessor<
-    Wallet,
+  public readonly fromUser: BelongsToAccessor<
+    User,
     typeof Transaction.prototype.id
   >;
 
-  public readonly toWallet: BelongsToAccessor<
-    Wallet,
+  public readonly toUser: BelongsToAccessor<
+    User,
     typeof Transaction.prototype.id
   >;
 
@@ -31,25 +31,22 @@ export class TransactionRepository extends DefaultCrudRepository<
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
-    @repository.getter('WalletRepository')
-    protected walletRepositoryGetter: Getter<WalletRepository>,
+    @repository.getter('UserRepository')
+    protected userRepositoryGetter: Getter<UserRepository>,
     @repository.getter('CurrencyRepository')
     protected currencyRepositoryGetter: Getter<CurrencyRepository>,
   ) {
     super(Transaction, dataSource);
-    this.fromWallet = this.createBelongsToAccessorFor(
-      'fromWallet',
-      walletRepositoryGetter,
+    this.fromUser = this.createBelongsToAccessorFor(
+      'fromUser',
+      userRepositoryGetter,
     );
-    this.registerInclusionResolver(
-      'fromWallet',
-      this.fromWallet.inclusionResolver,
+    this.registerInclusionResolver('fromUser', this.fromUser.inclusionResolver);
+    this.toUser = this.createBelongsToAccessorFor(
+      'toUser',
+      userRepositoryGetter,
     );
-    this.toWallet = this.createBelongsToAccessorFor(
-      'toWallet',
-      walletRepositoryGetter,
-    );
-    this.registerInclusionResolver('toWallet', this.toWallet.inclusionResolver);
+    this.registerInclusionResolver('toUser', this.toUser.inclusionResolver);
     this.currency = this.createBelongsToAccessorFor(
       'currency',
       currencyRepositoryGetter,
