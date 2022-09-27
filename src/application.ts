@@ -228,6 +228,7 @@ export class MyriadApiApplication extends BootMixin(
     await super.migrateSchema(options);
 
     if (options?.existingSchema === 'drop') return this.databaseSeeding();
+    await Promise.allSettled([this.doMigrateTransaction()]);
   }
 
   async databaseSeeding(): Promise<void> {
@@ -482,7 +483,49 @@ export class MyriadApiApplication extends BootMixin(
     bar.stop();
   }
 
-  async repositories(): Promise<AnyObject> {
+  async doMigrateTransaction(): Promise<void> {
+    const {transactionRepository, walletRepository} = await this.repositories();
+    const {count: totalTransaction} = await transactionRepository.count();
+    const bar = this.initializeProgressBar('Start Migrate Transaction');
+    const promises = [];
+
+    bar.start(totalTransaction - 1, 0);
+    for (let i = 0; i < totalTransaction; i++) {
+      const [transaction] = await transactionRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      if (!transaction) continue;
+      const {from, to} = transaction;
+      const [fromWallet, toWallet] = await Promise.all([
+        walletRepository.findOne({where: {id: from}}),
+        walletRepository.findOne({where: {id: to}}),
+      ]);
+
+      const updatedTransaction = {};
+
+      if (fromWallet) {
+        Object.assign(updatedTransaction, {from: fromWallet.userId});
+      }
+
+      if (toWallet) {
+        Object.assign(updatedTransaction, {to: toWallet.userId});
+      }
+
+      promises.push(
+        transactionRepository.updateById(transaction.id, updatedTransaction),
+      );
+
+      bar.update(i);
+    }
+
+    await Promise.allSettled(promises);
+
+    bar.stop();
+  }
+
+  async repositories(): Promise<Repositories> {
     const accountSettingRepository = await this.getRepository(
       AccountSettingRepository,
     );
@@ -573,4 +616,32 @@ export class MyriadApiApplication extends BootMixin(
       synchronousUpdate: true,
     });
   }
+}
+
+interface Repositories {
+  accountSettingRepository: AccountSettingRepository;
+  activityLogRepository: ActivityLogRepository;
+  commentRepository: CommentRepository;
+  currencyRepository: CurrencyRepository;
+  draftPostRepository: DraftPostRepository;
+  experienceUserRepository: ExperienceUserRepository;
+  experienceRepository: ExperienceRepository;
+  friendRepository: FriendRepository;
+  languageSettingRepository: LanguageSettingRepository;
+  networkRepository: NetworkRepository;
+  notificationRepository: NotificationRepository;
+  notificationSettingRepository: NotificationSettingRepository;
+  peopleRepository: PeopleRepository;
+  postRepository: PostRepository;
+  reportRepository: ReportRepository;
+  serverRepository: ServerRepository;
+  tagRepository: TagRepository;
+  transactionRepository: TransactionRepository;
+  userRepository: UserRepository;
+  userCurrencyRepository: UserCurrencyRepository;
+  userExperienceRepository: UserExperienceRepository;
+  userReportRepository: UserReportRepository;
+  userSocMedRepository: UserSocialMediaRepository;
+  voteRepository: VoteRepository;
+  walletRepository: WalletRepository;
 }
