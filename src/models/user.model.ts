@@ -104,10 +104,13 @@ export class User extends Entity {
     type: 'object',
     required: false,
     default: {
+      totalComments: 0,
       totalPosts: 0,
       totalKudos: 0,
+      totalSubscriptions: 0,
       totalFriends: 1,
       totalExperiences: 0,
+      totalTransactions: 0,
     },
   })
   metric: UserMetric;

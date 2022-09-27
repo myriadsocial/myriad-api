@@ -379,7 +379,11 @@ describe('PostApplication', function () {
           importers: [
             Object.assign(user, {
               name: 'You',
-              metric: Object.assign(user.metric, {totalFriends: 1}),
+              metric: Object.assign(user.metric, {
+                totalFriends: 1,
+                totalComments: 1,
+                totalTransactions: 1,
+              }),
             }),
           ],
         }),

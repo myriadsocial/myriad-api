@@ -15,6 +15,7 @@ import {PlatformType} from '../enums';
 import {CreateInterceptor, PaginationInterceptor} from '../interceptors';
 import {People, UserSocialMedia, UserVerification} from '../models';
 import {
+  MetricService,
   NotificationService,
   SocialMediaService,
   UserSocialMediaService,
@@ -30,6 +31,8 @@ export class UserSocialMediaController {
     protected userSocMedService: UserSocialMediaService,
     @service(NotificationService)
     protected notificationService: NotificationService,
+    @service(MetricService)
+    protected metricService: MetricService,
   ) {}
 
   @intercept(CreateInterceptor.BINDING_KEY)
@@ -56,12 +59,15 @@ export class UserSocialMediaController {
     const people = await this.fetchPeople(userVerification, delay, triesLeft);
     const socialMedia = await this.userSocMedService.createSocialMedia(people);
     const connected = (socialMedia as AnyObject).connected;
+    const promises = [this.metricService?.countServerMetric()];
 
     if (!connected) {
-      await Promise.allSettled([
+      promises.push(
         this.notificationService.sendConnectedSocialMedia(socialMedia, people),
-      ]);
+      );
     }
+
+    Promise.allSettled(promises) as Promise<AnyObject>;
 
     return socialMedia;
   }
@@ -134,6 +140,7 @@ export class UserSocialMediaController {
     Promise.allSettled([
       this.notificationService?.sendDisconnectedSocialMedia(id),
       this.userSocMedService.userSocialMediaRepository.deleteById(id),
+      this.metricService?.countServerMetric(),
     ]) as Promise<AnyObject>;
   }
 

@@ -328,6 +328,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case ControllerType.TRANSACTION: {
         Promise.allSettled([
           this.createNotification(controllerName, result),
+          this.metricService.userMetric(result.from),
+          this.metricService.countServerMetric(),
           this.metricService.publicMetric(
             ReferenceType.POST,
             result.referenceId,
@@ -346,13 +348,15 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.COMMENT: {
-        const {referenceId, postId} = result as Comment;
+        const {referenceId, postId, userId} = result as Comment;
 
         Promise.allSettled([
           this.createNotification(controllerName, result),
           this.metricService.countPopularPost(postId),
           this.metricService.publicMetric(ReferenceType.POST, postId),
           this.metricService.publicMetric(ReferenceType.COMMENT, referenceId),
+          this.metricService.userMetric(userId),
+          this.metricService.countServerMetric(),
           this.activityLogService.createLog(
             ActivityLogType.CREATECOMMENT,
             result.userId,
@@ -598,6 +602,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName;
     const promises: Promise<AnyObject | void>[] = [
       this.metricService.userMetric(userId),
+      this.metricService.countServerMetric(),
     ];
 
     switch (methodName) {

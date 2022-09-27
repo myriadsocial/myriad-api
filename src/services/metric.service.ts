@@ -2,10 +2,11 @@ import {AnyObject, Count, repository, Where} from '@loopback/repository';
 import {
   ControllerType,
   FriendStatusType,
+  PlatformType,
   ReferenceType,
   SectionType,
 } from '../enums';
-import {Metric, ServerMetric} from '../interfaces';
+import {Metric, ServerMetric, UserMetric} from '../interfaces';
 import {
   ActivityLogRepository,
   CommentRepository,
@@ -172,15 +173,20 @@ export class MetricService {
     if (!userId) return;
 
     const [
+      {count: totalComments},
       {count: totalUpvote},
       {count: totalDownvote},
       {count: totalExperiences},
+      {count: totalTransactions},
       {count: totalFriends},
       {count: totalPosts},
+      {count: totalSubscriptions},
     ] = await Promise.all([
+      this.commentRepository.count({userId, deletedAt: {exists: false}}),
       this.voteRepository.count({state: true, toUserId: userId}),
       this.voteRepository.count({state: false, toUserId: userId}),
       this.userExpRepository.count({userId, deletedAt: {exists: false}}),
+      this.transactionRepository.count({from: userId}),
       this.friendRepository.count({
         requestorId: userId,
         status: FriendStatusType.APPROVED,
@@ -191,12 +197,20 @@ export class MetricService {
         banned: false,
         deletedAt: {exists: false},
       }),
+      this.userExpRepository.count({
+        userId,
+        subscribed: true,
+        deletedAt: {exists: false},
+      }),
     ]);
 
-    const userMetric = {
+    const userMetric: UserMetric = {
+      totalComments,
       totalPosts,
+      totalSubscriptions,
       totalExperiences,
       totalFriends,
+      totalTransactions,
       totalKudos: totalUpvote - totalDownvote,
     };
 
@@ -230,22 +244,39 @@ export class MetricService {
     const [
       {count: totalUsers},
       {count: totalPosts},
+      {count: totalComments},
       {count: totalVotes},
       {count: totalTransactions},
       {count: totalExperiences},
+      {count: totalSubscriptions},
+      {count: totalMyriad},
+      {count: totalTwitter},
+      {count: totalReddit},
     ] = await Promise.all([
       this.userRepository.count(),
       this.postRepository.count(),
+      this.commentRepository.count(),
       this.voteRepository.count(),
       this.transactionRepository.count(),
       this.experienceRepository.count(),
+      this.userExpRepository.count({subscribed: true}),
+      this.postRepository.count({platform: PlatformType.MYRIAD}),
+      this.postRepository.count({platform: PlatformType.TWITTER}),
+      this.postRepository.count({platform: PlatformType.REDDIT}),
     ]);
     const metric: ServerMetric = {
+      totalComments,
       totalPosts,
       totalUsers,
       totalVotes,
       totalTransactions,
       totalExperiences,
+      totalSubscriptions,
+      totalConnectedSocials: {
+        totalMyriad,
+        totalTwitter,
+        totalReddit,
+      },
     };
     return this.serverRepository.updateById(server.id, {metric});
   }

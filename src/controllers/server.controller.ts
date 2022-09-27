@@ -8,11 +8,12 @@ import {
   requestBody,
   response,
   HttpErrors,
+  param,
 } from '@loopback/rest';
 import {config} from '../config';
 import {PermissionKeys} from '../enums';
 import {Server} from '../models';
-import {ServerRepository} from '../repositories';
+import {ServerRepository, UserRepository} from '../repositories';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 
 const {getKeyring} = new PolkadotJs();
@@ -22,6 +23,8 @@ export class ServerController {
   constructor(
     @repository(ServerRepository)
     public serverRepository: ServerRepository,
+    @repository(UserRepository)
+    public userRepository: UserRepository,
   ) {}
 
   @authenticate.skip()
@@ -37,9 +40,65 @@ export class ServerController {
       },
     },
   })
-  async find(): Promise<Server> {
+  async find(@param.query.boolean('median') median?: boolean): Promise<Server> {
     const server = await this.getServer();
     if (!server) throw new HttpErrors.NotFound('ServerNotFound');
+
+    if (median) {
+      const [
+        userPost,
+        userComment,
+        userExperience,
+        userTransaction,
+        userSubscription,
+      ] = await Promise.all([
+        this.userRepository.find({
+          order: ['metric.totalPosts ASC'],
+          skip: Math.ceil(server.metric.totalPosts / 2),
+          limit: 1,
+        }),
+        this.userRepository.find({
+          order: ['metric.totalComments ASC'],
+          skip: Math.ceil(server.metric.totalComments / 2),
+          limit: 1,
+        }),
+        this.userRepository.find({
+          order: ['metric.totalExperiences ASC'],
+          skip: Math.ceil(server.metric.totalExperiences / 2),
+          limit: 1,
+        }),
+        this.userRepository.find({
+          order: ['metric.totalTransactions ASC'],
+          skip: Math.ceil(server.metric.totalTransactions / 2),
+          limit: 1,
+        }),
+        this.userRepository.find({
+          order: ['metric.totalSubscriptions ASC'],
+          skip: Math.ceil(server.metric.totalSubscriptions / 2),
+          limit: 1,
+        }),
+      ]);
+
+      const medianPost = userPost?.[0]?.metric?.totalPosts ?? 0;
+      const medianComment = userComment?.[0]?.metric?.totalComments ?? 0;
+      const medianExperience =
+        userExperience?.[0]?.metric?.totalExperiences ?? 0;
+      const medianTransaction =
+        userTransaction?.[0]?.metric?.totalTransactions ?? 0;
+      const medianSubscription =
+        userSubscription?.[0]?.metric?.totalSubscriptions ?? 0;
+
+      Object.assign(server, {
+        median: {
+          medianPost,
+          medianComment,
+          medianExperience,
+          medianTransaction,
+          medianSubscription,
+        },
+      });
+    }
+
     return server;
   }
 
@@ -54,7 +113,7 @@ export class ServerController {
         'application/json': {
           schema: getModelSchemaRef(Server, {
             title: 'NewServer',
-            exclude: ['id', 'metric'],
+            exclude: ['id', 'metric', 'median'],
           }),
         },
       },
@@ -80,7 +139,7 @@ export class ServerController {
         'application/json': {
           schema: getModelSchemaRef(Server, {
             partial: true,
-            exclude: ['id', 'metric'],
+            exclude: ['id', 'metric', 'median'],
           }),
         },
       },

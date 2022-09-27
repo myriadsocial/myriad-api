@@ -44,14 +44,27 @@ export class Server extends Entity {
     type: 'object',
     required: false,
     default: {
+      totalComments: 0,
       totalPosts: 0,
       totalUsers: 0,
       totalVotes: 0,
       totalTransactions: 0,
       totalExperiences: 0,
+      totalSubscriptions: 0,
+      totalConnectedSocials: {
+        totalReddit: 0,
+        totalTwitter: 0,
+        totalMyriad: 0,
+      },
     },
   })
   metric: ServerMetric;
+
+  @property({
+    type: 'object',
+    required: false,
+  })
+  median: AnyObject;
 
   @property({
     type: 'array',

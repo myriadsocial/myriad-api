@@ -124,6 +124,7 @@ export class ReportService {
       this.friendRepository.updateAll(data, {requesteeId: userId}),
       this.experienceRepository.updateAll(data, {createdBy: userId}),
       this.metricService.userMetric(userId),
+      this.metricService.countServerMetric(),
       this.userSocialMediaRepository.find({where: {userId}}).then(people => {
         const peopleIds = people.map(e => e.id);
         return this.peopleRepository.updateAll(data, {id: {inq: peopleIds}});
