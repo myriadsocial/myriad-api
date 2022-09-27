@@ -764,7 +764,7 @@ export class NotificationService {
 
     await this.sendNotificationToUser(notification, userId, title, body);
 
-    return true;
+    return;
   }
 
   async sendDisconnectedSocialMedia(id: string, fromUserId?: string) {

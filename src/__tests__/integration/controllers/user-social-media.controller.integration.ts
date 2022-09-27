@@ -8,6 +8,7 @@ import {
 } from '../../../repositories';
 import {
   Facebook,
+  MetricService,
   NotificationService,
   Reddit,
   RedditProvider,
@@ -31,6 +32,7 @@ describe('UserSocialMediaControllerIntegration', function () {
   let userSocialMediaRepository: UserSocialMediaRepository;
   let userSocialMediaService: UserSocialMediaService;
   let socialMediaService: SocialMediaService;
+  let metricService: MetricService;
   let twitterService: Twitter;
   let redditService: Reddit;
   let facebookService: Facebook;
@@ -66,6 +68,7 @@ describe('UserSocialMediaControllerIntegration', function () {
       socialMediaService,
       userSocialMediaService,
       notificationService,
+      metricService,
     );
   });
 
