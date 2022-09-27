@@ -34,6 +34,7 @@ import {
 import {
   ExperienceUserRepository,
   NetworkRepository,
+  PeopleRepository,
   ReportRepository,
   UserReportRepository,
   UserRepository,
@@ -86,6 +87,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected networkRepository: NetworkRepository,
     @repository(UserSocialMediaRepository)
     protected userSocialMediaRepository: UserSocialMediaRepository,
+    @repository(PeopleRepository)
+    protected peopleRepository: PeopleRepository,
     @service(MetricService)
     protected metricService: MetricService,
     @service(CurrencyService)
@@ -161,6 +164,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.TRANSACTION: {
+        invocationCtx.args[1] = {...invocationCtx.args[0]};
+
         const transaction: Transaction = invocationCtx.args[0];
         const {from, to, type, currencyId, referenceId} = transaction;
         if (from === to) {
@@ -178,6 +183,46 @@ export class CreateInterceptor implements Provider<Interceptor> {
         }
 
         await this.currencyService.currencyRepository.findById(currencyId);
+
+        const [fromWallet, toWallet] = await Promise.all([
+          this.walletRepository
+            .findById(from)
+            .catch(() => this.userRepository.findById(from))
+            .catch(() => this.peopleRepository.findById(from))
+            .then(result => {
+              if (result.constructor.name === 'Wallet') {
+                return new Wallet(result);
+              }
+
+              return null;
+            })
+            .catch(() => {
+              throw new HttpErrors.NotFound('UserNotFound');
+            }),
+          this.walletRepository
+            .findById(to)
+            .catch(() => this.userRepository.findById(to))
+            .catch(() => this.peopleRepository.findById(to))
+            .then(result => {
+              if (result.constructor.name === 'Wallet') {
+                return new Wallet(result);
+              }
+
+              return null;
+            })
+            .catch(() => {
+              throw new HttpErrors.NotFound('UserNotFound');
+            }),
+        ]);
+
+        if (fromWallet) {
+          Object.assign(invocationCtx.args[0], {from: fromWallet.userId});
+        }
+
+        if (toWallet) {
+          Object.assign(invocationCtx.args[0], {to: toWallet.userId});
+        }
+
         return;
       }
 
@@ -326,10 +371,15 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.TRANSACTION: {
+        // use wallet address to create notification
+        const transaction: Transaction = {
+          ...invocationCtx.args[1],
+          id: result.id,
+        };
+
         Promise.allSettled([
-          this.createNotification(controllerName, result),
+          this.createNotification(controllerName, transaction),
           this.metricService.userMetric(result.from),
-          this.metricService.countServerMetric(),
           this.metricService.publicMetric(
             ReferenceType.POST,
             result.referenceId,

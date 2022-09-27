@@ -504,37 +504,19 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               userId = referenceId ? referenceId.toString() : undefined;
             }
 
-            const wallets = await this.walletRepository.find({
-              where: {
-                userId: userId ?? this.currentUser[securityId],
-              },
-            });
-            const walletIds = wallets.map(wallet => wallet.id);
             if (status === 'received' || profile) {
               Object.assign(filter.where, {
-                to: {
-                  inq: walletIds,
-                },
+                to: userId ?? this.currentUser[securityId],
               });
             } else if (status === 'sent') {
               Object.assign(filter.where, {
-                from: {
-                  inq: walletIds,
-                },
+                from: userId ?? this.currentUser[securityId],
               });
             } else {
               Object.assign(filter.where, {
                 or: [
-                  {
-                    from: {
-                      inq: walletIds,
-                    },
-                  },
-                  {
-                    to: {
-                      inq: walletIds,
-                    },
-                  },
+                  {from: userId ?? this.currentUser[securityId]},
+                  {to: userId ?? this.currentUser[securityId]},
                 ],
               });
             }
@@ -1296,10 +1278,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           },
           include: [
             {
-              relation: 'fromWallet',
-              scope: {
-                include: ['user'],
-              },
+              relation: 'fromUser',
             },
           ],
         });
@@ -1308,9 +1287,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         importers = Array.from(new Set([...importers, ...importer]));
         const tipper = Array.from(
           new Set(
-            trxs
-              .map(trx => trx.fromWallet?.user?.id ?? '')
-              .filter(id => id !== ''),
+            trxs.map(trx => trx.fromUser?.id ?? '').filter(id => id !== ''),
           ),
         );
         tippers = [...new Set([...tippers, ...tipper])];
