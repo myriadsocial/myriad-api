@@ -48,22 +48,23 @@ describe('TransactionControllerIntegration', () => {
   it('includes fromWallet in find method result', async () => {
     const user = await givenUserInstance(userRepository);
     const currency = await givenCurrencyInstance(currencyRepository);
-    const wallet = await givenWalletInstance(walletRepository, {
+
+    await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
 
     const transaction = await givenTransactionInstance(transactionRepository, {
-      from: wallet.id,
+      from: user.id,
       to: '9999',
       currencyId: currency.id,
     });
 
-    const response = await controller.find({include: ['fromWallet']});
+    const response = await controller.find({include: ['fromUser']});
 
     expect(response).to.containDeep([
       {
         ...transaction,
-        fromWallet: wallet,
+        fromUser: user,
       },
     ]);
   });
@@ -71,20 +72,21 @@ describe('TransactionControllerIntegration', () => {
   it('includes toWallet in find method result', async () => {
     const user = await givenUserInstance(userRepository);
     const currency = await givenCurrencyInstance(currencyRepository);
-    const wallet = await givenWalletInstance(walletRepository, {
+
+    await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
-      to: wallet.id,
+      to: user.id,
       from: '9999',
       currencyId: currency.id,
     });
-    const response = await controller.find({include: ['toWallet']});
+    const response = await controller.find({include: ['toUser']});
 
     expect(response).to.containDeep([
       {
         ...transaction,
-        toWallet: wallet,
+        toUser: user,
       },
     ]);
   });
@@ -95,72 +97,72 @@ describe('TransactionControllerIntegration', () => {
     const otherUser = await givenUserInstance(userRepository, {
       username: 'johndoe',
     });
-    const fromWallet = await givenWalletInstance(walletRepository, {
+    await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
-    const toWallet = await givenWalletInstance(walletRepository, {
+    await givenWalletInstance(walletRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       userId: otherUser.id,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
-      from: fromWallet.id,
-      to: toWallet.id,
+      from: user.id,
+      to: otherUser.id,
       currencyId: currency.id,
     });
     const response = await controller.find({
-      include: ['fromWallet', 'toWallet'],
+      include: ['fromUser', 'toUser'],
     });
 
     expect(response).to.containDeep([
       {
         ...transaction,
-        fromWallet: fromWallet,
-        toWallet: toWallet,
+        fromUser: user,
+        toUser: otherUser,
       },
     ]);
   });
 
   it('includes fromWallet in findById method result', async () => {
     const user = await givenUserInstance(userRepository);
-    const wallet = await givenWalletInstance(walletRepository, {
+    await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
     const currency = await givenCurrencyInstance(currencyRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
-      from: wallet.id,
+      from: user.id,
       to: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
       currencyId: currency.id,
     });
 
     const response = await controller.findById(transaction.id ?? '', {
-      include: ['fromWallet'],
+      include: ['fromUser'],
     });
 
     expect(response).to.containDeep({
       ...transaction,
-      fromWallet: wallet,
+      fromUser: user,
     });
   });
 
   it('includes toWallet in findById method result', async () => {
     const user = await givenUserInstance(userRepository);
-    const wallet = await givenWalletInstance(walletRepository, {
+    await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
     const currency = await givenCurrencyInstance(currencyRepository);
     const transaction = await givenTransactionInstance(transactionRepository, {
-      to: wallet.id,
+      to: user.id,
       from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee618ac',
       currencyId: currency.id,
     });
 
     const response = await controller.findById(transaction.id ?? '', {
-      include: ['toWallet'],
+      include: ['toUser'],
     });
 
     expect(response).to.containDeep({
       ...transaction,
-      toWallet: wallet,
+      toUser: user,
     });
   });
 
@@ -170,26 +172,26 @@ describe('TransactionControllerIntegration', () => {
     const otherUser = await givenUserInstance(userRepository, {
       username: '9999',
     });
-    const fromWallet = await givenWalletInstance(walletRepository, {
+    await givenWalletInstance(walletRepository, {
       userId: user.id,
     });
-    const toWallet = await givenWalletInstance(walletRepository, {
+    await givenWalletInstance(walletRepository, {
       id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
       userId: otherUser.id,
     });
     const transaction = await givenTransactionInstance(transactionRepository, {
-      from: fromWallet.id,
-      to: toWallet.id,
+      from: user.id,
+      to: otherUser.id,
       currencyId: currency.id,
     });
     const response = await controller.findById(transaction.id ?? '', {
-      include: ['fromWallet', 'toWallet'],
+      include: ['fromUser', 'toUser'],
     });
 
     expect(response).to.containDeep({
       ...transaction,
-      fromWallet: fromWallet,
-      toWallet: toWallet,
+      fromUser: user,
+      toUser: otherUser,
     });
   });
 });

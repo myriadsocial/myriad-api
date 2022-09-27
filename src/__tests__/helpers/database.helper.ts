@@ -119,7 +119,7 @@ export async function givenRepositories(testdb: any) {
   const transactionRepository: TransactionRepository =
     new TransactionRepository(
       testdb,
-      async () => walletRepository,
+      async () => userRepository,
       async () => currencyRepository,
     );
   const voteRepository: VoteRepository = new VoteRepository(
