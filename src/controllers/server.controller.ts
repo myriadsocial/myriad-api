@@ -54,7 +54,7 @@ export class ServerController {
       ] = await Promise.all([
         this.userRepository.find({
           order: ['metric.totalPosts ASC'],
-          skip: Math.ceil(server.metric.totalPosts / 2),
+          skip: Math.ceil(server.metric.totalPosts.totalAll / 2),
           limit: 1,
         }),
         this.userRepository.find({
