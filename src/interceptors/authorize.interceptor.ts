@@ -310,7 +310,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         const wallet = await this.walletRepository.findById(data);
 
         userId = wallet.userId;
-        invocationCtx.args[1] = wallet;
+        invocationCtx.args[2] = wallet;
         break;
       }
     }

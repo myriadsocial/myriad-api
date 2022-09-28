@@ -6,9 +6,10 @@ import {
   getModelSchemaRef,
   HttpErrors,
   param,
+  requestBody,
   response,
 } from '@loopback/rest';
-import {User, Wallet} from '../models';
+import {Credential, User, Wallet} from '../models';
 import {UserRepository, WalletRepository} from '../repositories';
 import {UserProfile, securityId} from '@loopback/security';
 import {inject, intercept} from '@loopback/core';
@@ -98,7 +99,17 @@ export class WalletController {
   @response(204, {
     description: 'Wallet DELETE success',
   })
-  async deleteById(@param.path.string('id') id: string): Promise<void> {
+  async deleteById(
+    @param.path.string('id') id: string,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Credential),
+        },
+      },
+    })
+    _credential: Credential,
+  ): Promise<void> {
     await this.walletRepository.deleteById(id);
   }
 

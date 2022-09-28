@@ -13,6 +13,7 @@ import {
   CommentLinkRepository,
   CommentRepository,
   ExperienceRepository,
+  NetworkRepository,
   PostRepository,
   UserCurrencyRepository,
   UserExperienceRepository,
@@ -27,10 +28,11 @@ import {
   ReportService,
   VoteService,
 } from '../services';
-import {CommentWithRelations, Wallet} from '../models';
+import {CommentWithRelations, Credential, Wallet} from '../models';
 import {omit} from 'lodash';
 import {HttpErrors} from '@loopback/rest';
 import {User} from '@sentry/node';
+import {validateAccount} from '../utils/validate-account';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -47,6 +49,8 @@ export class DeleteInterceptor implements Provider<Interceptor> {
     protected commentLinkRepository: CommentLinkRepository,
     @repository(ExperienceRepository)
     protected experienceRepository: ExperienceRepository,
+    @repository(NetworkRepository)
+    protected networkRepository: NetworkRepository,
     @repository(PostRepository)
     protected postRepository: PostRepository,
     @repository(UserRepository)
@@ -123,16 +127,30 @@ export class DeleteInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.WALLET: {
-        const {userId, primary} = invocationCtx.args[1] as Wallet;
+        const [walletId, credential, wallet] = invocationCtx.args;
+        const {networkType} = credential as Credential;
+        const {userId, primary} = wallet as Wallet;
         const {count} = await this.walletRepository.count({userId});
 
         let errMessage = null;
 
         if (count === 1) errMessage = 'DeletionFailedOnlyWallet';
         if (primary) errMessage = 'DeletionFailedPrimaryWallet';
+        if (errMessage) throw new HttpErrors.UnprocessableEntity(errMessage);
 
-        if (!errMessage) break;
-        throw new HttpErrors.UnprocessableEntity(errMessage);
+        const network = await this.networkRepository.findById(networkType);
+        const verified = await validateAccount(
+          credential,
+          network,
+          walletId,
+          'delete',
+        );
+
+        if (!verified) {
+          throw new HttpErrors.UnprocessableEntity('[delete] Failed to verify');
+        }
+
+        break;
       }
     }
   }
