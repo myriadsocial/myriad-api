@@ -266,17 +266,17 @@ export class MetricService {
     ]);
     const metric: ServerMetric = {
       totalComments,
-      totalPosts,
+      totalPosts: {
+        totalMyriad,
+        totalTwitter,
+        totalReddit,
+        totalAll: totalPosts,
+      },
       totalUsers,
       totalVotes,
       totalTransactions,
       totalExperiences,
       totalSubscriptions,
-      totalConnectedSocials: {
-        totalMyriad,
-        totalTwitter,
-        totalReddit,
-      },
     };
     return this.serverRepository.updateById(server.id, {metric});
   }

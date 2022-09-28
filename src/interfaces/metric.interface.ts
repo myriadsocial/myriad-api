@@ -21,17 +21,17 @@ export interface UserMetric {
 
 export interface ServerMetric {
   totalComments: number;
-  totalPosts: number;
+  totalPosts: DetailTotalPost;
   totalUsers: number;
   totalVotes: number;
   totalTransactions: number;
   totalExperiences: number;
   totalSubscriptions: number;
-  totalConnectedSocials: ConnectedSocial;
 }
 
-export interface ConnectedSocial {
+export interface DetailTotalPost {
   totalReddit: number;
   totalTwitter: number;
   totalMyriad: number;
+  totalAll: number;
 }
