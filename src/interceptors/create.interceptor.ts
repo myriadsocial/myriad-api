@@ -30,6 +30,7 @@ import {
   Transaction,
   User,
   Wallet,
+  WalletWithRelations,
 } from '../models';
 import {
   ExperienceUserRepository,
@@ -68,6 +69,8 @@ import {PolkadotJs} from '../utils/polkadotJs-utils';
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
  */
+
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 @injectable({tags: {key: CreateInterceptor.BINDING_KEY}})
 export class CreateInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${CreateInterceptor.name}`;
@@ -164,8 +167,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.TRANSACTION: {
-        invocationCtx.args[1] = {...invocationCtx.args[0]};
-
         const transaction: Transaction = invocationCtx.args[0];
         const {from, to, type, currencyId, referenceId} = transaction;
         if (from === to) {
@@ -184,14 +185,19 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
         await this.currencyService.currencyRepository.findById(currencyId);
 
+        let toWalletId = false;
+
         const [fromWallet, toWallet] = await Promise.all([
           this.walletRepository
-            .findById(from)
+            .findById(from, {include: ['user']})
             .catch(() => this.userRepository.findById(from))
             .catch(() => this.peopleRepository.findById(from))
             .then(result => {
               if (result.constructor.name === 'Wallet') {
-                return new Wallet(result);
+                const wallet = new Wallet(result) as WalletWithRelations;
+
+                if (!wallet?.user) throw new Error('UserNotFound');
+                return wallet;
               }
 
               return null;
@@ -200,12 +206,17 @@ export class CreateInterceptor implements Provider<Interceptor> {
               throw new HttpErrors.NotFound('UserNotFound');
             }),
           this.walletRepository
-            .findById(to)
+            .findById(to, {include: ['user']})
             .catch(() => this.userRepository.findById(to))
             .catch(() => this.peopleRepository.findById(to))
             .then(result => {
               if (result.constructor.name === 'Wallet') {
-                return new Wallet(result);
+                const wallet = new Wallet(result) as WalletWithRelations;
+
+                toWalletId = true;
+
+                if (!wallet?.user) throw new Error('UserNotFound');
+                return wallet;
               }
 
               return null;
@@ -222,6 +233,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
         if (toWallet) {
           Object.assign(invocationCtx.args[0], {to: toWallet.userId});
         }
+
+        invocationCtx.args[1] = toWalletId;
 
         return;
       }
@@ -371,14 +384,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.TRANSACTION: {
-        // use wallet address to create notification
-        const transaction: Transaction = {
-          ...invocationCtx.args[1],
-          id: result.id,
-        };
+        const toWallet = invocationCtx.args[1];
 
         Promise.allSettled([
-          this.createNotification(controllerName, transaction),
+          this.createNotification(controllerName, result, toWallet),
           this.metricService.userMetric(result.from),
           this.metricService.publicMetric(
             ReferenceType.POST,
@@ -875,6 +884,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
   async createNotification(
     controllerName: ControllerType,
     result: AnyObject,
+    opt?: any,
   ): Promise<void> {
     switch (controllerName) {
       case ControllerType.COMMENT:
@@ -883,9 +893,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
       case ControllerType.FRIEND:
         return this.notificationService.sendFriendRequest(result.requesteeId);
 
-      case ControllerType.TRANSACTION:
-        return this.notificationService.sendTipsSuccess(result as Transaction);
-
       case ControllerType.USERREPORT:
         return this.notificationService.sendReport(result as Report);
 
@@ -893,6 +900,12 @@ export class CreateInterceptor implements Provider<Interceptor> {
         return this.notificationService.sendMention(
           result.id,
           result.mentions ?? [],
+        );
+
+      case ControllerType.TRANSACTION:
+        return this.notificationService.sendTipsSuccess(
+          result as Transaction,
+          opt,
         );
     }
   }

@@ -15,9 +15,6 @@ import {
   Transaction,
   UserSocialMedia,
   Vote,
-  Wallet,
-  WalletWithRelations,
-  User,
   Report,
 } from '../models';
 import {
@@ -575,29 +572,9 @@ export class NotificationService {
     transaction: Transaction,
     toWallet = false,
   ): Promise<void> {
-    const {to, type, referenceId} = transaction;
-    const toUser = await this.walletRepository
-      .findById(to, {include: ['user']})
-      .catch(() => this.userRepository.findById(to))
-      .then(result => {
-        if (result.constructor.name === 'User') return new User(result);
-        if (result.constructor.name === 'Wallet') {
-          const wallet = new Wallet(result) as WalletWithRelations;
-
-          if (!wallet?.user) {
-            throw new HttpErrors.NotFound('UserNotFound');
-          }
-
-          toWallet = true;
-
-          return wallet.user;
-        }
-
-        throw new HttpErrors.NotFound('UserNotFound');
-      });
-
+    const {to: toUserId, type, referenceId} = transaction;
     const tipsActive = await this.checkNotificationSetting(
-      toUser.id,
+      toUserId,
       NotificationType.POST_TIPS,
     );
     if (!tipsActive) return;
@@ -658,7 +635,7 @@ export class NotificationService {
     const title = 'Tips Received';
     const body = `${this.currentUser.name} tipped ${notification.message}`;
 
-    await this.sendNotificationToUser(notification, toUser.id, title, body);
+    await this.sendNotificationToUser(notification, toUserId, title, body);
   }
 
   async sendRewardSuccess(transaction: Transaction): Promise<void> {
