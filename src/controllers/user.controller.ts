@@ -24,6 +24,23 @@ export class UserController {
     protected userRepository: UserRepository,
   ) {}
 
+  @intercept(FindByIdInterceptor.BINDING_KEY)
+  @get('/user')
+  @response(200, {
+    description: 'Current User model instances',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: true}),
+      },
+    },
+  })
+  async getUser(
+    @param.filter(User, {exclude: ['limit', 'skip', 'offset', 'where']})
+    filter?: Filter<User>,
+  ): Promise<User | null> {
+    return this.userRepository.findOne(filter);
+  }
+
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/users')
   @response(200, {
