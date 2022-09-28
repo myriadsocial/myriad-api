@@ -12,6 +12,7 @@ export enum MethodType {
   FINDBYID = 'findById',
   FILEUPLOAD = 'fileUpload',
   GETIMPORTERS = 'getImporters',
+  GETUSER = 'getUser',
   IMPORT = 'import',
   LOGIN = 'login',
   PATCH = 'patch',

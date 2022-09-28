@@ -13,6 +13,7 @@ import {
   AccountSettingType,
   ControllerType,
   FriendStatusType,
+  MethodType,
   PlatformType,
   ReferenceType,
 } from '../enums';
@@ -86,6 +87,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
   async beforeFindById(invocationCtx: InvocationContext): Promise<void> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
+    const methodName = invocationCtx.methodName as MethodType;
 
     switch (controllerName) {
       case ControllerType.EXPERIENCE: {
@@ -154,6 +156,24 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         invocationCtx.args[1] = filter;
         break;
       }
+
+      case ControllerType.USER: {
+        if (methodName !== MethodType.GETUSER) break;
+
+        const filter = invocationCtx.args[0] ?? {};
+        const where = filter.where ?? {};
+
+        Object.assign(filter, {
+          where: {
+            ...where,
+            id: this.currentUser[securityId],
+          },
+        });
+
+        invocationCtx.args[0] = filter;
+
+        break;
+      }
     }
   }
 
@@ -162,6 +182,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
     result: AnyObject,
   ): Promise<AnyObject> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
+    const methodName = invocationCtx.methodName as MethodType;
 
     switch (controllerName) {
       case ControllerType.COMMENT: {
@@ -232,6 +253,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USER: {
+        if (methodName === MethodType.GETUSER) return result;
         const blockedFriend = await this.friendRepository.findOne({
           where: {
             or: [
