@@ -126,18 +126,13 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         const {userId, primary} = invocationCtx.args[1] as Wallet;
         const {count} = await this.walletRepository.count({userId});
 
-        if (count === 1) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You cannot delete your only wallet',
-          );
-        }
+        let errMessage = null;
 
-        if (primary) {
-          throw new HttpErrors.UnprocessableEntity(
-            'You cannot delete your primary account',
-          );
-        }
-        break;
+        if (count === 1) errMessage = 'DeletionFailedOnlyWallet';
+        if (primary) errMessage = 'DeletionFailedPrimaryWallet';
+
+        if (!errMessage) break;
+        throw new HttpErrors.UnprocessableEntity(errMessage);
       }
     }
   }
@@ -278,15 +273,6 @@ export class DeleteInterceptor implements Provider<Interceptor> {
           voteInfo,
           voteInfo.toUserId,
         ) as Promise<void>;
-        return;
-      }
-
-      case ControllerType.WALLET: {
-        const {userId, networkId} = invocationCtx.args[1] as Wallet;
-        this.userCurrencyRepository.deleteAll({
-          userId,
-          networkId,
-        }) as Promise<AnyObject>;
         return;
       }
     }
