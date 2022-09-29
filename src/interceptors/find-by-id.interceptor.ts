@@ -30,9 +30,11 @@ import {
   AccountSettingRepository,
   FriendRepository,
   ReportRepository,
+  WalletRepository,
 } from '../repositories';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
+import {HttpErrors} from '@loopback/rest';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -49,6 +51,8 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
     protected friendRepository: FriendRepository,
     @repository(ReportRepository)
     protected reportRepository: ReportRepository,
+    @repository(WalletRepository)
+    protected walletRepository: WalletRepository,
     @service(ExperienceService)
     protected experienceService: ExperienceService,
     @service(PostService)
@@ -160,14 +164,36 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       case ControllerType.USER: {
         if (methodName !== MethodType.GETUSER) break;
 
+        const wallet = await this.walletRepository.findOne({
+          where: {
+            userId: this.currentUser?.[securityId] ?? '',
+            primary: true,
+          },
+        });
+
+        if (!wallet) throw new HttpErrors.NotFound('UserNotFound');
+
+        const networkId = wallet.networkId;
         const filter = invocationCtx.args[0] ?? {};
         const where = filter.where ?? {};
+        const include = filter?.include ?? [];
+
+        include.push({
+          relation: 'userCurrencies',
+          scope: {
+            include: [{relation: 'currency'}],
+            where: {networkId},
+            order: ['priority ASC'],
+            limit: 10,
+          },
+        });
 
         Object.assign(filter, {
           where: {
             ...where,
             id: this.currentUser[securityId],
           },
+          include,
         });
 
         invocationCtx.args[0] = filter;
@@ -253,7 +279,23 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USER: {
-        if (methodName === MethodType.GETUSER) return result;
+        if (methodName === MethodType.GETUSER) {
+          const user = result as User;
+
+          if (user?.userCurrencies) {
+            const userCurrencies =
+              user.userCurrencies as UserCurrencyWithRelations[];
+            const currencies = userCurrencies.map(e => e.currency);
+
+            return {
+              ...omit(user, ['userCurrencies']),
+              currencies,
+            };
+          }
+
+          return user;
+        }
+
         const blockedFriend = await this.friendRepository.findOne({
           where: {
             or: [
