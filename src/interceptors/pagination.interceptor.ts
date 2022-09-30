@@ -460,14 +460,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       case ControllerType.POSTEXPERIENCE:
       case ControllerType.EXPERIENCEPOST: {
+        const userId = this.currentUser?.[securityId];
+
         filter.order = this.orderSetting(request.query);
         filter.include = invocationCtx.args[1]?.include ?? [];
-        filter.where = {
-          deletedAt: {$eq: null},
-        };
+        filter.where = {deletedAt: {$eq: null}};
 
         if (controllerName === ControllerType.EXPERIENCEPOST) {
-          filter.where.banned = false;
+          const experienceId = invocationCtx.args[0];
+          const where = await this.getExperincePostQuery(userId, experienceId);
+
+          Object.assign(filter.where, {...where, banned: false});
         }
         break;
       }
@@ -1101,6 +1104,40 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     return {
       and: [{name: {regexp: pattern}}, {createdBy: {nin: userIds}}],
     };
+  }
+
+  async getExperincePostQuery(
+    userId: string,
+    experienceId: string,
+  ): Promise<Where<Post>> {
+    return Promise.all([
+      this.experienceService.getExperiencePostId(experienceId),
+      this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+      this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
+    ]).then(([postIds, friends, blockedFriendIds]) => {
+      const blocked = pull(blockedFriendIds, ...friends);
+      return {
+        or: [
+          {
+            and: [
+              {id: {inq: postIds}},
+              {createdBy: {nin: blocked}},
+              {visibility: VisibilityType.PUBLIC},
+            ],
+          },
+          {
+            and: [
+              {id: {inq: postIds}},
+              {createdBy: {inq: friends}},
+              {visibility: VisibilityType.FRIEND},
+            ],
+          },
+          {
+            and: [{id: {inq: postIds}}, {createdBy: {inq: [userId]}}],
+          },
+        ],
+      } as Where<Post>;
+    });
   }
 
   async getTimeline(

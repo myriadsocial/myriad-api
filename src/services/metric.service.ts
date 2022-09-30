@@ -290,6 +290,7 @@ export class MetricService {
       case ControllerType.USER:
         return this.userRepository.count(where);
 
+      case ControllerType.EXPERIENCEPOST:
       case ControllerType.POST:
         return this.postRepository.count(where);
 
@@ -335,15 +336,9 @@ export class MetricService {
       case ControllerType.NETWORK:
         return this.networkRepository.count(where);
 
-      case ControllerType.POSTEXPERIENCE:
-      case ControllerType.EXPERIENCEPOST: {
-        const field =
-          controller === ControllerType.EXPERIENCEPOST
-            ? 'experienceId'
-            : 'postId';
-
+      case ControllerType.POSTEXPERIENCE: {
         const id = additionalData;
-        const additionalWhere = {[field]: id, deletedAt: {exists: false}};
+        const additionalWhere = {postId: id, deletedAt: {exists: false}};
         return this.experiencePostRepository.count(additionalWhere);
       }
 

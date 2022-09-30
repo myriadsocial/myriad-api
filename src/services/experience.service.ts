@@ -105,6 +105,7 @@ export class ExperienceService {
 
     const postIds = exp.posts?.map(post => post.id) ?? [];
     const userIds: string[] = [];
+    const currentUserIds: string[] = [];
     const allowedTags = exp.allowedTags.map(tag => tag.toLowerCase());
     const prohibitedTags = exp.prohibitedTags.map(tag => tag.toLowerCase());
     const personIds = exp.people
@@ -135,6 +136,8 @@ export class ExperienceService {
         } else {
           userIds.push(user.id);
         }
+
+        if (user.id === userId) currentUserIds.push(userId);
       }
     }
 
@@ -198,6 +201,12 @@ export class ExperienceService {
             {peopleId: {inq: personIds}},
             {tags: {nin: prohibitedTags}},
             {createdBy: userId},
+          ],
+        },
+        {
+          and: [
+            {tags: {nin: prohibitedTags}},
+            {createdBy: {inq: currentUserIds}},
           ],
         },
       ],
