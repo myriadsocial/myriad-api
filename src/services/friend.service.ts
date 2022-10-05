@@ -360,6 +360,49 @@ export class FriendService {
     return Boolean(friend);
   }
 
+  async getFriendInfo(currentUser: string, requesteeId: string) {
+    let friendId = null;
+    let friendStatus = null;
+
+    const friend = await this.friendRepository.findOne({
+      where: {
+        or: [
+          {
+            requesteeId,
+            requestorId: currentUser,
+          },
+          {
+            requestorId: requesteeId,
+            requesteeId: currentUser,
+          },
+        ],
+      },
+    });
+
+    if (!friend) return;
+
+    friendId = friend.id;
+
+    switch (friend.status) {
+      case FriendStatusType.APPROVED:
+        friendStatus = 'friends';
+        break;
+
+      case FriendStatusType.PENDING:
+        if (currentUser === friend.requestorId) {
+          friendStatus = 'requested';
+        } else {
+          friendStatus = 'respond';
+        }
+        break;
+    }
+
+    return {
+      id: friendId,
+      status: friendStatus,
+    };
+  }
+
   async getMyriadUserId(): Promise<string> {
     const user = await this.userRepository.findOne({
       where: {username: 'myriad_official'},
