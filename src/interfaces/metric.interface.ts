@@ -27,6 +27,8 @@ export interface ServerMetric {
   totalTransactions: number;
   totalExperiences: number;
   totalSubscriptions: number;
+  totalWallets: DetailTotalWallet;
+  totalConnectedSocials: DetailTotalConnectedSocial;
 }
 
 export interface DetailTotalPost {
@@ -34,4 +36,14 @@ export interface DetailTotalPost {
   totalTwitter: number;
   totalMyriad: number;
   totalAll: number;
+}
+
+export interface DetailTotalWallet {
+  totalSubstrateWallet: number;
+  totalNearWallet: number;
+}
+
+export interface DetailTotalConnectedSocial {
+  totalConnectedReddit: number;
+  totalConnectedTwitter: number;
 }
