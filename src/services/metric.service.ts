@@ -31,6 +31,7 @@ import {
   ServerRepository,
 } from '../repositories';
 import {injectable, BindingScope} from '@loopback/core';
+import {UserSocialMedia} from '../models';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class MetricService {
@@ -241,9 +242,13 @@ export class MetricService {
   async countServerMetric(): Promise<void> {
     const server = await this.serverRepository.findOne();
     if (!server) return;
+
+    const userSocialMediaCollection = (
+      this.userSocialMediaRepository.dataSource.connector as AnyObject
+    ).collection(UserSocialMedia.modelName);
+
     const [
       {count: totalUsers},
-      {count: totalPosts},
       {count: totalComments},
       {count: totalVotes},
       {count: totalTransactions},
@@ -252,9 +257,11 @@ export class MetricService {
       {count: totalMyriad},
       {count: totalTwitter},
       {count: totalReddit},
+      {count: totalNearWallet},
+      {count: totalSubstrateWallet},
+      connectedSocials,
     ] = await Promise.all([
       this.userRepository.count(),
-      this.postRepository.count(),
       this.commentRepository.count(),
       this.voteRepository.count(),
       this.transactionRepository.count(),
@@ -263,21 +270,59 @@ export class MetricService {
       this.postRepository.count({platform: PlatformType.MYRIAD}),
       this.postRepository.count({platform: PlatformType.TWITTER}),
       this.postRepository.count({platform: PlatformType.REDDIT}),
+      this.walletRepository.count({networkId: 'near'}),
+      this.walletRepository.count({
+        networkId: {inq: ['myriad', 'kusama', 'polkadot']},
+      }),
+      userSocialMediaCollection
+        .aggregate([
+          {
+            $group: {
+              _id: {platform: '$platform', userId: '$userId'},
+            },
+          },
+          {
+            $group: {
+              _id: '$_id.platform',
+              count: {$sum: 1},
+            },
+          },
+        ])
+        .get(),
     ]);
+
+    let totalConnectedReddit = 0;
+    let totalConnectedTwitter = 0;
+
+    for (const social of connectedSocials) {
+      switch (social._id) {
+        case PlatformType.TWITTER:
+          totalConnectedTwitter = social.count;
+          break;
+
+        case PlatformType.REDDIT:
+          totalConnectedReddit = social.count;
+          break;
+      }
+    }
+
     const metric: ServerMetric = {
       totalComments,
       totalPosts: {
         totalMyriad,
         totalTwitter,
         totalReddit,
-        totalAll: totalPosts,
+        totalAll: totalMyriad + totalTwitter + totalReddit,
       },
       totalUsers,
       totalVotes,
       totalTransactions,
       totalExperiences,
       totalSubscriptions,
+      totalWallets: {totalNearWallet, totalSubstrateWallet},
+      totalConnectedSocials: {totalConnectedReddit, totalConnectedTwitter},
     };
+
     return this.serverRepository.updateById(server.id, {metric});
   }
 

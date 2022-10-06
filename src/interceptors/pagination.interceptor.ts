@@ -51,7 +51,7 @@ import {
 } from '../repositories';
 import {MetaPagination} from '../interfaces';
 import {UserProfile, securityId} from '@loopback/security';
-import {pull} from 'lodash';
+import {pull, omit} from 'lodash';
 import {Query} from 'express-serve-static-core';
 
 /**
@@ -111,7 +111,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const request = await invocationCtx.get(RestBindings.Http.REQUEST);
-    const {pageNumber, pageLimit} = request.query;
+    const {pageNumber, pageLimit, top5Currencies} = request.query;
 
     const filter = await this.beforePagination(invocationCtx, request);
 
@@ -132,6 +132,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     ]);
 
     const result = await next();
+
+    if (top5Currencies) return result;
 
     const updatedResult = await this.afterPagination(
       invocationCtx,
@@ -933,12 +935,15 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           result = await Promise.all(
             result.map(async (user: User) => {
               if (currentUser === user.id) {
-                return {
-                  ...user,
-                  friendInfo: {
-                    status: 'owner',
+                return omit(
+                  {
+                    ...user,
+                    friendInfo: {
+                      status: 'owner',
+                    },
                   },
-                };
+                  ['nonce', 'permissions', 'friendIndex'],
+                );
               }
 
               const friendInfo = await this.friendService.getFriendInfo(
@@ -948,10 +953,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
               if (!friendInfo) return user;
 
-              return {
-                ...user,
-                friendInfo,
-              };
+              return omit(
+                {
+                  ...user,
+                  friendInfo,
+                },
+                ['nonce', 'permissions', 'friendIndex'],
+              );
             }),
           );
         }
