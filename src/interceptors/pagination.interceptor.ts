@@ -26,7 +26,7 @@ import {
 } from '../enums';
 import {
   Experience,
-  Friend,
+  FriendWithRelations,
   Post,
   PostWithRelations,
   User,
@@ -725,16 +725,35 @@ export class PaginationInterceptor implements Provider<Interceptor> {
           const where = JSON.stringify(filter.where);
 
           if (where.match(/approved/gi) || where.match(/pending/gi)) {
+            const currentUser = this.currentUser?.[securityId] ?? '';
+
             result = await Promise.all(
-              result.map(async (friend: Friend) => {
-                const {requestorId, requesteeId} = friend;
+              result.map(async (friend: FriendWithRelations) => {
+                const {requestorId, requesteeId, requestee} = friend;
                 const {count: totalMutual} =
                   await this.friendService.countMutual(
                     requestorId,
                     requesteeId,
                   );
 
-                return Object.assign(friend, {totalMutual: totalMutual});
+                if (!requestee || requestorId === currentUser) {
+                  return Object.assign(friend, {totalMutual});
+                }
+
+                const friendInfo = await this.friendService.getFriendInfo(
+                  currentUser,
+                  requestorId,
+                );
+
+                if (!friendInfo) return Object.assign(friend, {totalMutual});
+
+                return {
+                  ...friend,
+                  requestee: {
+                    ...requestee,
+                    friendInfo,
+                  },
+                };
               }),
             );
           }
@@ -852,10 +871,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USER: {
-        const {friendsName, mutual} = request.query;
+        const {friendsName, mutual, name} = request.query;
 
         if (friendsName) {
           const [_, userIds, requestor] = invocationCtx.args;
+          const currentUser = this.currentUser?.[securityId] ?? '';
+
           result = Promise.all(
             result.map(async (user: User) => {
               const friend: AnyObject = {
@@ -885,7 +906,52 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
                 friend.totalMutual = count;
               }
-              return friend;
+
+              if (currentUser === friend.requestorId) return friend;
+
+              const friendInfo = await this.friendService.getFriendInfo(
+                currentUser,
+                user.id,
+              );
+
+              if (!friendInfo) return friend;
+
+              return {
+                ...friend,
+                requestee: {
+                  ...friend.requestee,
+                  friendInfo,
+                },
+              };
+            }),
+          );
+        }
+
+        if (name) {
+          const currentUser = this.currentUser?.[securityId] ?? '';
+
+          result = await Promise.all(
+            result.map(async (user: User) => {
+              if (currentUser === user.id) {
+                return {
+                  ...user,
+                  friendInfo: {
+                    status: 'owner',
+                  },
+                };
+              }
+
+              const friendInfo = await this.friendService.getFriendInfo(
+                currentUser,
+                user.id,
+              );
+
+              if (!friendInfo) return user;
+
+              return {
+                ...user,
+                friendInfo,
+              };
             }),
           );
         }
