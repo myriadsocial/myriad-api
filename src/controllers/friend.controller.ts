@@ -49,7 +49,6 @@ export class FriendController {
     return this.friendRepository.create(friend);
   }
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/friends')
   @response(200, {

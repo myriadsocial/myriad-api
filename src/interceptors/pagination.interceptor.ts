@@ -742,7 +742,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
                 const friendInfo = await this.friendService.getFriendInfo(
                   currentUser,
-                  requestorId,
+                  requesteeId,
                 );
 
                 if (!friendInfo) return Object.assign(friend, {totalMutual});
