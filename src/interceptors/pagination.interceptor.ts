@@ -111,7 +111,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     const request = await invocationCtx.get(RestBindings.Http.REQUEST);
-    const {pageNumber, pageLimit, top5Currencies} = request.query;
+    const {pageNumber, pageLimit} = request.query;
 
     const filter = await this.beforePagination(invocationCtx, request);
 
@@ -132,8 +132,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     ]);
 
     const result = await next();
-
-    if (top5Currencies) return result;
 
     const updatedResult = await this.afterPagination(
       invocationCtx,
@@ -744,7 +742,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
                 const friendInfo = await this.friendService.getFriendInfo(
                   currentUser,
-                  requestorId,
+                  requesteeId,
                 );
 
                 if (!friendInfo) return Object.assign(friend, {totalMutual});

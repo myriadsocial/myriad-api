@@ -7,12 +7,11 @@ import {
 } from '@loopback/testlab';
 import {CurrencyController} from '../../controllers';
 import {Currency} from '../../models';
-import {CurrencyRepository, TransactionRepository} from '../../repositories';
+import {CurrencyRepository} from '../../repositories';
 import {givenCurrency} from '../helpers';
 
 describe('CurrencyControllers', () => {
   let currencyRepository: StubbedInstanceWithSinonAccessor<CurrencyRepository>;
-  let transactionRepository: StubbedInstanceWithSinonAccessor<TransactionRepository>;
   let controller: CurrencyController;
   let aCurrencyWithId: Currency;
   let aListOfCurrencies: Currency[];
@@ -58,7 +57,6 @@ describe('CurrencyControllers', () => {
 
   function resetRepositories() {
     currencyRepository = createStubInstance(CurrencyRepository);
-    transactionRepository = createStubInstance(TransactionRepository);
     aCurrencyWithId = givenCurrency({
       id: '1',
     });
@@ -75,9 +73,6 @@ describe('CurrencyControllers', () => {
       }),
     ] as Currency[];
 
-    controller = new CurrencyController(
-      currencyRepository,
-      transactionRepository,
-    );
+    controller = new CurrencyController(currencyRepository);
   }
 });

@@ -15,6 +15,7 @@ export * from './post.controller';
 export * from './post-experience.controller';
 export * from './report.controller';
 export * from './report-user.controller';
+export * from './statistic.controller';
 export * from './storage.controller';
 export * from './tag.controller';
 export * from './transaction-summary.controller';
