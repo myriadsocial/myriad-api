@@ -64,7 +64,13 @@ export class Server extends Entity {
     type: 'object',
     required: false,
   })
-  median: AnyObject;
+  median?: AnyObject;
+
+  @property({
+    type: 'object',
+    required: false,
+  })
+  average?: AnyObject;
 
   @property({
     type: 'array',

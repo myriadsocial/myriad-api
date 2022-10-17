@@ -31,6 +31,7 @@ import {
   ActivityLogService,
   VoteService,
   NetworkService,
+  ServerService,
 } from './services';
 import {UpdateExchangeRateJob, UpdatePeopleProfileJob} from './jobs';
 import {CronComponent} from '@loopback/cron';
@@ -186,6 +187,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(ActivityLogService);
     this.service(VoteService);
     this.service(NetworkService);
+    this.service(ServerService);
 
     // 3rd party service
     this.service(FCMService);
