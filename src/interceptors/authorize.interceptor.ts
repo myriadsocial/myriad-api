@@ -108,7 +108,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case MethodType.CREATE:
       case MethodType.CREATEBATCH:
       case MethodType.IMPORT:
-      case MethodType.FILEUPLOAD:
       case MethodType.CLAIMTIPS:
       case MethodType.SUBSCRIBE:
       case MethodType.UPDATE:
@@ -236,7 +235,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         }
         break;
 
-      case ControllerType.STORAGE:
       case ControllerType.TIP:
       case ControllerType.USERACCOUNTSETTING:
       case ControllerType.USERDRAFTPOST:

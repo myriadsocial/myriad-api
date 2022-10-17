@@ -6,22 +6,26 @@ import {
   Response,
   RestBindings,
   param,
+  HttpErrors,
 } from '@loopback/rest';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler} from '../types';
 import {UploadType} from '../enums';
-import {authenticate} from '@loopback/authentication';
+import {authenticate, AuthenticationBindings} from '@loopback/authentication';
 import {AnyObject} from '@loopback/repository';
 import {upload} from '../utils/upload';
+import {UserProfile, securityId} from '@loopback/security';
 
 @authenticate('jwt')
 export class StorageController {
   constructor(
     @inject(FILE_UPLOAD_SERVICE)
     private handler: FileUploadHandler,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    public currentUser: UserProfile,
   ) {}
 
-  @post('/buckets/{userId}/{kind}', {
+  @post('/buckets/{kind}', {
     responses: {
       200: {
         content: {
@@ -36,11 +40,16 @@ export class StorageController {
     },
   })
   async fileUpload(
-    @param.path.string('userId') userId: string,
     @param.path.string('kind') kind: string,
     @requestBody.file() request: Request,
     @inject(RestBindings.Http.RESPONSE) response: Response,
   ): Promise<AnyObject> {
+    const userId = this.currentUser?.[securityId];
+
+    if (!userId) {
+      throw new HttpErrors.Unauthorized('UnknownUser');
+    }
+
     return new Promise<AnyObject>((resolve, reject) => {
       this.handler(request, response, (err: unknown) => {
         if (err) {
