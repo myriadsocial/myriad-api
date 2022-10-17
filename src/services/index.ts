@@ -12,6 +12,7 @@ export * from './notification.service';
 export * from './platform';
 export * from './post.service';
 export * from './report.service';
+export * from './server.service';
 export * from './social-media.service';
 export * from './tag.service';
 export * from './transaction.service';
