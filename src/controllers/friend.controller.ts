@@ -1,5 +1,5 @@
 import {intercept} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {Filter, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -63,28 +63,10 @@ export class FriendController {
     },
   })
   async find(
-    @param.filter(Friend, {exclude: ['limit', 'skip', 'offset']})
+    @param.filter(Friend, {exclude: ['limit', 'skip', 'offset', 'where']})
     filter?: Filter<Friend>,
   ): Promise<Friend[]> {
     return this.friendRepository.find(filter);
-  }
-
-  @authenticate.skip()
-  @get('/friends/{id}')
-  @response(200, {
-    description: 'Friend model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Friend, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(Friend, {exclude: 'where'})
-    filter?: FilterExcludingWhere<Friend>,
-  ): Promise<Friend> {
-    return this.friendRepository.findById(id, filter);
   }
 
   @intercept(UpdateInterceptor.BINDING_KEY)

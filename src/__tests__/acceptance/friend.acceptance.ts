@@ -17,7 +17,6 @@ import {
   givenFriend,
   givenFriendInstance,
   givenFriendRepository,
-  givenMultipleFriendInstances,
   givenNotificationRepository,
   givenUserInstance,
   givenUserRepository,
@@ -187,33 +186,6 @@ describe('FriendApplication', function () {
   });
 
   context('when dealing with a single persisted friend', () => {
-    let persistedFriend: Friend;
-
-    beforeEach(async () => {
-      persistedFriend = await givenFriendInstance(friendRepository, {
-        requesteeId: '1',
-        requestorId: '2',
-      });
-    });
-
-    it('gets a friends by ID', async () => {
-      const result = await client
-        .get(`/friends/${persistedFriend.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(200);
-      const expected = toJSON(persistedFriend);
-
-      expect(result.body).to.deepEqual(expected);
-    });
-
-    it('returns 404 when getting a friend that does not exist', () => {
-      return client
-        .get('/friends/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
-    });
-
     it('updates the friend by ID ', async () => {
       const requestor = await givenUserInstance(userRepository, {
         username: 'black',
@@ -326,93 +298,39 @@ describe('FriendApplication', function () {
   });
 
   context('when dealing with multiple persisted friends', () => {
-    let persistedFriends: Friend[];
-
-    beforeEach(async () => {
-      persistedFriends = await givenMultipleFriendInstances(friendRepository);
-    });
-
-    it('finds all friends', async () => {
-      const response = await client
-        .get('/friends')
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(200);
-      expect(response.body.data).to.containDeep(toJSON(persistedFriends));
-    });
-
     it('finds all blocked friends', async () => {
       const requestee = await givenUserInstance(userRepository, {
         username: 'roger',
       });
-      const requestor = await givenUserInstance(userRepository, {
-        username: 'rayleigh',
-      });
       const blockedFriends = await givenFriendInstance(friendRepository, {
         requesteeId: requestee.id,
-        requestorId: requestor.id,
+        requestorId: user.id,
         status: FriendStatusType.BLOCKED,
       });
       const response = await client
-        .get('/friends?filter[where][status]=blocked')
+        .get(`/friends?status=${FriendStatusType.BLOCKED}&userId=${user.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
       expect(response.body.data).to.containDeep(toJSON([blockedFriends]));
     });
-
-    it('queries friends with a filter', async () => {
-      const friendInProgress = await givenFriendInstance(friendRepository, {
-        status: FriendStatusType.APPROVED,
-        requesteeId: '5',
-        requestorId: '6',
-      });
-
-      await client
-        .get('/friends')
-        .set('Authorization', `Bearer ${token}`)
-        .query(
-          'filter=' +
-            JSON.stringify({where: {status: FriendStatusType.APPROVED}}),
-        )
-        .expect(200, {
-          data: [toJSON(friendInProgress)],
-          meta: {
-            currentPage: 1,
-            itemsPerPage: 1,
-            totalItemCount: 1,
-            totalPageCount: 1,
-          },
-        });
-    });
-
-    it('exploded filter conditions work', async () => {
-      await givenFriendInstance(friendRepository, {
-        requesteeId: '11',
-        requestorId: '12',
-      });
-
-      const response = await client
-        .get('/friends')
-        .set('Authorization', `Bearer ${token}`)
-        .query('pageLimit=2');
-      expect(response.body.data).to.have.length(2);
-    });
   });
 
   it('includes requestee and requestor in query result', async () => {
-    const requestor = await givenUserInstance(userRepository, {
-      name: 'imam',
-    });
     const requestee = await givenUserInstance(userRepository, {
       name: 'muchtar',
     });
     const friend = await givenFriendInstance(friendRepository, {
       requesteeId: requestee.id,
-      requestorId: requestor.id,
+      requestorId: user.id,
+      status: FriendStatusType.APPROVED,
     });
     const filter =
-      'filter=' + JSON.stringify({include: ['requestor', 'requestee']});
+      'filter=' +
+      JSON.stringify({
+        include: ['requestor', 'requestee'],
+      }) +
+      `&status=${FriendStatusType.APPROVED}&userId=${user.id}`;
 
     const response = await client
       .get('/friends')
@@ -423,7 +341,7 @@ describe('FriendApplication', function () {
     expect(response.body.data[0]).to.deepEqual({
       ...toJSON(friend),
       requestee: toJSON(requestee),
-      requestor: toJSON(requestor),
+      requestor: toJSON(user),
     });
   });
 

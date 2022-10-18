@@ -30,17 +30,6 @@ describe('FriendControllers', () => {
     });
   });
 
-  describe('findFriendById', () => {
-    it('returns a friend if it exists', async () => {
-      const findById = friendRepository.stubs.findById;
-      findById.resolves(aFriendWithId);
-      expect(await controller.findById(aFriendWithId.id as string)).to.eql(
-        aFriendWithId,
-      );
-      sinon.assert.calledWith(findById, aFriendWithId.id);
-    });
-  });
-
   describe('findFriends', () => {
     it('returns multiple friends if they exist', async () => {
       const find = friendRepository.stubs.find;
