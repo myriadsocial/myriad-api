@@ -45,30 +45,19 @@ export class JWTService implements TokenService {
       );
     }
 
-    let userProfile: UserProfile;
     try {
       const decryptedToken = await verifyAsync(token, this.jwtSecret);
-      userProfile = Object.assign(
-        {
-          [securityId]: '',
-          id: '',
-          name: '',
-          username: '',
-          createdAt: '',
-          permissions: [],
-        },
-        {
-          [securityId]: decryptedToken.id,
-          id: decryptedToken.id,
-          name: decryptedToken.name,
-          username: decryptedToken.username,
-          createdAt: decryptedToken.createdAt,
-          permissions: decryptedToken.permissions,
-        },
-      );
+
+      return {
+        [securityId]: decryptedToken.id,
+        id: decryptedToken.id,
+        name: decryptedToken.name,
+        username: decryptedToken.username,
+        createdAt: decryptedToken.createdAt,
+        permissions: decryptedToken.permissions,
+      };
     } catch (err) {
       throw new HttpErrors.Unauthorized(`Error verifying token:${err.message}`);
     }
-    return userProfile;
   }
 }
