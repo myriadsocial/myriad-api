@@ -85,6 +85,7 @@ jobs:
             ADMIN_MNEMONIC:${{ secrets.TESTNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             FAUCET_AMOUNT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
+            WEB_APP_URL:${{ secrets.TESTNET_GCP_PROJECT_ID }}/WEB_APP_URL
             JWT_TOKEN_SECRET_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
             JWT_TOKEN_EXPIRES_IN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.TESTNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
@@ -100,6 +101,11 @@ jobs:
             REDIS_HOST:${{ secrets.TESTNET_GCP_PROJECT_ID }}/REDIS_HOST
             REDIS_PORT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/REDIS_PORT
             REDIS_PASSWORD:${{ secrets.TESTNET_GCP_PROJECT_ID }}/REDIS_PASSWORD
+            SMTP_SERVER:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SMTP_SERVER
+            SMTP_PORT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SMTP_PORT
+            SMTP_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SMTP_USERNAME
+            SMTP_PASSWORD:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SMTP_PASSWORD
+            SMTP_SENDER_ADDRESS:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SMTP_SENDER_ADDRESS
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBASE_STORAGE_BUCKET:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FIREBASE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
@@ -125,6 +131,7 @@ jobs:
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
+              --set-string config.webAppURL=${{ steps.secrets.outputs.WEB_APP_URL }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
@@ -140,6 +147,11 @@ jobs:
               --set-string config.redis.host=${{ steps.secrets.outputs.REDIS_HOST }} \
               --set-string config.redis.port=${{ steps.secrets.outputs.REDIS_PORT }} \
               --set-string config.redis.password=${{ steps.secrets.outputs.REDIS_PASSWORD }} \
+              --set-string config.smtp.server=${{ steps.secrets.outputs.SMTP_SERVER }} \
+              --set config.smtp.port=${{ steps.secrets.outputs.SMTP_PORT }} \
+              --set-string config.smtp.username=${{ steps.secrets.outputs.SMTP_USERNAME }} \
+              --set-string config.smtp.password=${{ steps.secrets.outputs.SMTP_PASSWORD }} \
+              --set-string config.smtp.senderAddress=${{ steps.secrets.outputs.SMTP_SENDER_ADDRESS }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBASE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
@@ -213,6 +225,7 @@ jobs:
             ADMIN_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             FAUCET_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
+            WEB_APP_URL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/WEB_APP_URL
             JWT_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
             JWT_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
@@ -228,6 +241,11 @@ jobs:
             REDIS_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REDIS_HOST
             REDIS_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REDIS_PORT
             REDIS_PASSWORD:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REDIS_PASSWORD
+            SMTP_SERVER:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_SERVER
+            SMTP_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_PORT
+            SMTP_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_USERNAME
+            SMTP_PASSWORD:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_PASSWORD
+            SMTP_SENDER_ADDRESS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_SENDER_ADDRESS
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBASE_STORAGE_BUCKET:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
@@ -253,6 +271,7 @@ jobs:
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
+              --set-string config.webAppURL=${{ steps.secrets.outputs.WEB_APP_URL }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
@@ -268,6 +287,11 @@ jobs:
               --set-string config.redis.host=${{ steps.secrets.outputs.REDIS_HOST }} \
               --set-string config.redis.port=${{ steps.secrets.outputs.REDIS_PORT }} \
               --set-string config.redis.password=${{ steps.secrets.outputs.REDIS_PASSWORD }} \
+              --set-string config.smtp.server=${{ steps.secrets.outputs.SMTP_SERVER }} \
+              --set config.smtp.port=${{ steps.secrets.outputs.SMTP_PORT }} \
+              --set-string config.smtp.username=${{ steps.secrets.outputs.SMTP_USERNAME }} \
+              --set-string config.smtp.password=${{ steps.secrets.outputs.SMTP_PASSWORD }} \
+              --set-string config.smtp.senderAddress=${{ steps.secrets.outputs.SMTP_SENDER_ADDRESS }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBASE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
@@ -342,6 +366,7 @@ jobs:
             ADMIN_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             FAUCET_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
+            WEB_APP_URL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/WEB_APP_URL
             JWT_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
             JWT_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
@@ -357,6 +382,11 @@ jobs:
             REDIS_HOST:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REDIS_HOST
             REDIS_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REDIS_PORT
             REDIS_PASSWORD:${{ secrets.MAINNET_GCP_PROJECT_ID }}/REDIS_PASSWORD
+            SMTP_SERVER:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_SERVER
+            SMTP_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_PORT
+            SMTP_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_USERNAME
+            SMTP_PASSWORD:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_PASSWORD
+            SMTP_SENDER_ADDRESS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_SENDER_ADDRESS
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBASE_STORAGE_BUCKET:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
@@ -382,6 +412,7 @@ jobs:
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
+              --set-string config.webAppURL=${{ steps.secrets.outputs.WEB_APP_URL }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
@@ -397,6 +428,11 @@ jobs:
               --set-string config.redis.host=${{ steps.secrets.outputs.REDIS_HOST }} \
               --set-string config.redis.port=${{ steps.secrets.outputs.REDIS_PORT }} \
               --set-string config.redis.password=${{ steps.secrets.outputs.REDIS_PASSWORD }} \
+              --set-string config.smtp.server=${{ steps.secrets.outputs.SMTP_SERVER }} \
+              --set config.smtp.port=${{ steps.secrets.outputs.SMTP_PORT }} \
+              --set-string config.smtp.username=${{ steps.secrets.outputs.SMTP_USERNAME }} \
+              --set-string config.smtp.password=${{ steps.secrets.outputs.SMTP_PASSWORD }} \
+              --set-string config.smtp.senderAddress=${{ steps.secrets.outputs.SMTP_SENDER_ADDRESS }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBASE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \

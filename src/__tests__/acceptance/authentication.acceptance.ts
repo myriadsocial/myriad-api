@@ -1,6 +1,6 @@
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {UserWallet} from '../../models';
+import {RequestCreateNewUserByWallet} from '../../models';
 import {
   AccountSettingRepository,
   NetworkRepository,
@@ -81,7 +81,7 @@ describe('AuthenticationApplication', function () {
   it('creates a user with default settings', async () => {
     await givenNetworkInstance(networkRepository);
 
-    const userWallet: UserWallet = givenUserWallet();
+    const userWallet: RequestCreateNewUserByWallet = givenUserWallet();
 
     await client.post('/signup').send(userWallet);
     const createdUser = await userRepository.findOne({

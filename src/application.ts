@@ -76,6 +76,7 @@ import fs, {existsSync} from 'fs';
 import {FriendStatusType, UploadType} from './enums';
 import {omit} from 'lodash';
 import {PolkadotJs} from './utils/polkadotJs-utils';
+import {EmailService} from './services/email.service';
 
 const date = new DateUtils();
 const jwt = require('jsonwebtoken');
@@ -106,14 +107,6 @@ export class MyriadApiApplication extends BootMixin(
     this.registerJob();
 
     this.projectRoot = __dirname;
-    this.bootOptions = {
-      controllers: {
-        // Customize ControllerBooter Conventions here
-        dirs: ['controllers'],
-        extensions: ['.controller.js'],
-        nested: true,
-      },
-    };
   }
 
   registerComponent() {
@@ -188,6 +181,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(VoteService);
     this.service(NetworkService);
     this.service(ServerService);
+    this.service(EmailService);
 
     // 3rd party service
     this.service(FCMService);

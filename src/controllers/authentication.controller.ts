@@ -1,4 +1,4 @@
-import {inject, intercept} from '@loopback/core';
+import {inject, intercept, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {
   getModelSchemaRef,
@@ -7,11 +7,18 @@ import {
   response,
   requestBody,
   get,
+  HttpErrors,
 } from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
 import {RefreshGrant, TokenObject} from '../interfaces';
 import {RefreshTokenServiceBindings, TokenServiceBindings} from '../keys';
-import {Credential, User, UserWallet} from '../models';
+import {
+  Credential,
+  RequestCreateNewUserByEmail,
+  RequestCreateNewUserByWallet,
+  RequestOtpw,
+  User,
+} from '../models';
 import {
   NetworkRepository,
   UserRepository,
@@ -21,15 +28,24 @@ import {RefreshtokenService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
 import {AuthenticationInterceptor} from '../interceptors';
 import {pick} from 'lodash';
+import {UserOtpwRepository} from '../repositories/user-otpw.repository';
+import {UserOtpw} from '../models/user-otpw.model';
+import {EmailService} from '../services/email.service';
+import {RequestLoginByEmail} from '../models/request-login-by-email.model';
+import validator from 'validator';
 
 export class AuthenticationController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
+    @repository(UserOtpwRepository)
+    protected userOtpwRepository: UserOtpwRepository,
     @repository(NetworkRepository)
     protected networkRepository: NetworkRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
+    @service(EmailService)
+    protected emailService: EmailService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
     @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
@@ -131,20 +147,67 @@ export class AuthenticationController {
     return Boolean(user);
   }
 
+  @post('/email/otpw')
+  @response(200, {
+    description: 'Request OTWP Response',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    },
+  })
+  async requestOTPW(
+    @requestBody({
+      description: 'The input of request OTPW',
+      required: true,
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(RequestOtpw),
+        },
+      },
+    })
+    requestOtpw: RequestOtpw,
+  ): Promise<{message: string}> {
+    if (!validator.isEmail(requestOtpw.email)) {
+      throw new HttpErrors.UnprocessableEntity('Invalid Email Address');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: {email: requestOtpw.email},
+    });
+
+    if (!user) throw new HttpErrors.NotFound('Account not exist');
+
+    await this.userOtpwRepository.deleteAll({
+      userId: user.id,
+    });
+
+    const userOtpw = new UserOtpw();
+    userOtpw.userId = user.id;
+
+    const otwp = await this.userOtpwRepository.create(userOtpw);
+
+    await this.emailService.sendOTPW(user, otwp.id);
+
+    return {
+      message: `OTWP sent to ${requestOtpw.email}`,
+    };
+  }
+
   @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/signup')
   @response(200, {
     description: 'User model instance',
     content: {
       'application/json': {
-        schema: {
-          type: 'object',
-          properties: {
-            nonce: {
-              type: 'number',
-            },
-          },
-        },
+        schema: getModelSchemaRef(User, {includeRelations: false}),
       },
     },
   })
@@ -152,15 +215,49 @@ export class AuthenticationController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(UserWallet, {
-            title: 'NewUser',
+          schema: getModelSchemaRef(RequestCreateNewUserByWallet, {
+            title: 'CreateNewUserByWallet',
           }),
         },
       },
     })
-    userWallet: UserWallet,
+    requestCreateNewUserByWallet: RequestCreateNewUserByWallet,
   ): Promise<User> {
-    const user = pick(userWallet, ['name', 'username', 'permissions']);
+    const user = pick(requestCreateNewUserByWallet, [
+      'name',
+      'username',
+      'permissions',
+    ]);
+    return this.userRepository.create(user);
+  }
+
+  @intercept(AuthenticationInterceptor.BINDING_KEY)
+  @post('/signup/email')
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: false}),
+      },
+    },
+  })
+  async signupByEmail(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(RequestCreateNewUserByEmail, {
+            title: 'CreateNewUserByEmailUser',
+          }),
+        },
+      },
+    })
+    requestCreateNewUserByEmail: RequestCreateNewUserByEmail,
+  ): Promise<User> {
+    const user = pick(requestCreateNewUserByEmail, [
+      'name',
+      'username',
+      'email',
+    ]);
     return this.userRepository.create(user);
   }
 
@@ -207,6 +304,54 @@ export class AuthenticationController {
   ): Promise<TokenObject> {
     const accessToken = await this.jwtService.generateToken(
       credential.data as UserProfile,
+    );
+
+    return {accessToken};
+  }
+
+  @intercept(AuthenticationInterceptor.BINDING_KEY)
+  @post('/login/email', {
+    responses: {
+      '200': {
+        description: 'Token',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                accessToken: {
+                  type: 'string',
+                },
+                refreshToken: {
+                  type: 'string',
+                },
+                expiresId: {
+                  type: 'string',
+                },
+                tokenType: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async loginByEmail(
+    @requestBody({
+      description: 'The input of login function',
+      required: true,
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(RequestLoginByEmail, {exclude: ['data']}),
+        },
+      },
+    })
+    requestLoginByEmail: RequestLoginByEmail,
+  ): Promise<TokenObject> {
+    const accessToken = await this.jwtService.generateToken(
+      requestLoginByEmail.data as UserProfile,
     );
 
     return {accessToken};

@@ -25,6 +25,7 @@ import {
   Post,
   Report,
   ReportDetail,
+  RequestCreateNewUserByWallet,
   Server,
   Tag,
   Transaction,
@@ -33,7 +34,6 @@ import {
   UserReport,
   UserSocialMedia,
   UserVerification,
-  UserWallet,
   Vote,
   Wallet,
 } from '../../models';
@@ -792,7 +792,9 @@ export function givenWalletInstance(
   return walletRepository.create(givenWallet(wallet));
 }
 
-export function givenUserWallet(userWallet?: Partial<UserWallet>) {
+export function givenUserWallet(
+  userWallet?: Partial<RequestCreateNewUserByWallet>,
+) {
   const publicKey = getKeyring().addFromMnemonic(mnemonic);
   const id = getHexPublicKey(publicKey);
   const data = Object.assign(
@@ -804,7 +806,7 @@ export function givenUserWallet(userWallet?: Partial<UserWallet>) {
     },
     userWallet,
   );
-  return new UserWallet(data);
+  return new RequestCreateNewUserByWallet(data);
 }
 
 export function givenNetwork(network?: Partial<Network>) {
