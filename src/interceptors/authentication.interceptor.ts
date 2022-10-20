@@ -21,6 +21,7 @@ import {
   RequestCreateNewUserByEmail,
   RequestCreateNewUserByWallet,
   User,
+  UserOtpw,
   UserWithRelations,
   Wallet,
 } from '../models';
@@ -30,7 +31,12 @@ import {
   UserRepository,
   WalletRepository,
 } from '../repositories';
-import {CurrencyService, FriendService, MetricService} from '../services';
+import {
+  CurrencyService,
+  EmailService,
+  FriendService,
+  MetricService,
+} from '../services';
 import {securityId, UserProfile} from '@loopback/security';
 import {assign, intersection} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
@@ -66,6 +72,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     protected friendService: FriendService,
     @service(MetricService)
     protected metricService: MetricService,
+    @service(EmailService)
+    protected emailService: EmailService,
   ) {}
 
   /**
@@ -92,8 +100,6 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const result = await next();
 
     await this.afterAuthenticate(invocationCtx, result);
-
-    if (result.nonce) return {nonce: result.nonce};
 
     return result;
   }
@@ -216,9 +222,11 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
             },
           });
 
+          if (!validOtpw) throw new Error('OTWP invalid or expired!');
+
           user = await this.userRepository.findOne({
             where: {
-              id: validOtpw?.userId,
+              id: validOtpw.userId,
             },
           });
         }
@@ -267,28 +275,37 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
   ): Promise<void> {
     const methodName = invocationCtx.methodName as MethodType;
 
+    const jobs = [];
+
     if (methodName.startsWith(MethodType.SIGNUP)) {
-      Promise.allSettled([
+      jobs.push(
         this.userRepository.accountSetting(result.id).create({}),
         this.userRepository.notificationSetting(result.id).create({}),
         this.userRepository.languageSetting(result.id).create({}),
-        this.metricService.countServerMetric(),
         this.friendService.defaultFriend(result.id),
+        this.metricService.countServerMetric(),
         this.activityLogRepository.create({
           type: ActivityLogType.NEWUSER,
           userId: result.id,
           referenceId: result.id,
           referenceType: ReferenceType.USER,
         }),
-      ]) as Promise<AnyObject>;
+      );
 
       if (methodName === MethodType.SIGNUP) {
         const wallet = invocationCtx.args[1] as Wallet;
-        Promise.allSettled([
+        jobs.push(
           this.userRepository.wallets(result.id).create(wallet),
           this.currencyService.addUserCurrencies(result.id, wallet.networkId),
           this.currencyService.sendMyriadReward(wallet),
-        ]) as Promise<AnyObject>;
+        );
+      } else {
+        const userOtpw = new UserOtpw();
+        userOtpw.userId = result.id;
+
+        const otwp = await this.userOtpwRepository.create(userOtpw);
+
+        jobs.push(this.emailService.sendOTPW(result as User, otwp.id));
       }
     } else {
       if (
@@ -304,19 +321,21 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
         await this.walletRepository.updateAll({primary: false}, {userId});
         await this.currencyService.updateUserCurrency(userId, networkId);
-        Promise.allSettled([
+        jobs.push(
           this.userRepository.updateById(userId, {nonce: newNonce}),
           this.walletRepository.updateById(walletId, {
             primary: true,
             networkId,
           }),
-        ]) as Promise<AnyObject>;
+        );
       } else {
         const {otwp} = invocationCtx.args[0] as RequestLoginByEmail;
 
-        await this.userOtpwRepository.deleteById(otwp);
+        jobs.push(this.userOtpwRepository.deleteById(otwp));
       }
     }
+
+    Promise.allSettled(jobs) as Promise<AnyObject>;
   }
 
   validateUsername(username: string): void {

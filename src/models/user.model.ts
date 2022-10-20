@@ -44,7 +44,7 @@ import {UserCurrency} from './user-currency.model';
         },
       },
     },
-    hiddenProperties: ['nonce', 'permissions', 'friendIndex'],
+    hiddenProperties: ['permissions', 'friendIndex'],
   },
 })
 export class User extends Entity {
