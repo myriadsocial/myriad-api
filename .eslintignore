@@ -1,6 +1,7 @@
 .maintain/kubernetes
-dist/
 node_modules/
+dist/
+coverage/
 .eslintrc.js
 *.tsbuildinfo
 src/airdrop.ts
