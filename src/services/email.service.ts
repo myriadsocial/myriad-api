@@ -32,18 +32,18 @@ export class EmailService {
     }
   }
 
-  async sendOTPW(user: User, otwp: string): Promise<SentMessageInfo> {
+  async sendOTPW(user: User, otpw: string): Promise<SentMessageInfo> {
     const transporter = await EmailService.setupTransporter();
 
     const emailTemplate = new EmailTemplate({
-      from: 'no-reply@myriad.social',
+      from: config.SMTP_SENDER_ADDRESS,
       to: user.email,
       subject: 'Login Request',
       html: `
       <div>
           <p>Hello, ${user.name}</p>
           <p>Follow this link to login.</p>
-          <a href="${config.MYRIAD_WEB_APP_URL}/login?otwp=${otwp}">${config.MYRIAD_WEB_APP_URL}/login?otwp=${otwp}</a>
+          <a href="${config.MYRIAD_WEB_APP_URL}/login?otpw=${otpw}">${config.MYRIAD_WEB_APP_URL}/login?otpw=${otpw}</a>
           <p>Do not share this email with anyone</p>
           <p>Thanks,</p>
           <p>Myriad Social</p>

@@ -6,7 +6,7 @@ export class RequestLoginByEmail extends Model {
     type: 'string',
     required: true,
   })
-  otwp: string;
+  otpw: string;
 
   @property({
     type: 'object',

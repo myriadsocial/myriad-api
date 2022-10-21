@@ -204,7 +204,6 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
             assign(credential, {publicAddress}),
             currentNetwork,
             wallet.id,
-            'auth',
           );
 
           if (!verified) {
@@ -213,16 +212,16 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
           invocationCtx.args[1] = wallet.id;
         } else {
-          const {otwp} = invocationCtx.args[0] as RequestLoginByEmail;
+          const {otpw} = invocationCtx.args[0] as RequestLoginByEmail;
 
           const validOtpw = await this.userOtpwRepository.findOne({
             where: {
-              id: otwp,
+              id: otpw,
               expiredAt: {gt: new Date().toString()},
             },
           });
 
-          if (!validOtpw) throw new Error('OTWP invalid or expired!');
+          if (!validOtpw) throw new Error('OTPW invalid or expired!');
 
           user = await this.userRepository.findOne({
             where: {
@@ -303,9 +302,9 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         const userOtpw = new UserOtpw();
         userOtpw.userId = result.id;
 
-        const otwp = await this.userOtpwRepository.create(userOtpw);
+        const otpw = await this.userOtpwRepository.create(userOtpw);
 
-        jobs.push(this.emailService.sendOTPW(result as User, otwp.id));
+        jobs.push(this.emailService.sendOTPW(result as User, otpw.id));
       }
     } else {
       if (
@@ -329,9 +328,9 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           }),
         );
       } else {
-        const {otwp} = invocationCtx.args[0] as RequestLoginByEmail;
+        const {otpw} = invocationCtx.args[0] as RequestLoginByEmail;
 
-        jobs.push(this.userOtpwRepository.deleteById(otwp));
+        jobs.push(this.userOtpwRepository.deleteById(otpw));
       }
     }
 

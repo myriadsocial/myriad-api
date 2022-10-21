@@ -149,7 +149,7 @@ export class AuthenticationController {
 
   @post('/email/otpw')
   @response(200, {
-    description: 'Request OTWP Response',
+    description: 'Request OTPW Response',
     content: {
       'application/json': {
         schema: {
@@ -192,12 +192,12 @@ export class AuthenticationController {
     const userOtpw = new UserOtpw();
     userOtpw.userId = user.id;
 
-    const otwp = await this.userOtpwRepository.create(userOtpw);
+    const otpw = await this.userOtpwRepository.create(userOtpw);
 
-    await this.emailService.sendOTPW(user, otwp.id);
+    await this.emailService.sendOTPW(user, otpw.id);
 
     return {
-      message: `OTWP sent to ${requestOtpw.email}`,
+      message: `OTPW sent to ${requestOtpw.email}`,
     };
   }
 

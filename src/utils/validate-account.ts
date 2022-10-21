@@ -6,7 +6,6 @@ export async function validateAccount(
   credential: Credential,
   network?: Network,
   walletId?: string,
-  caller?: string,
 ): Promise<boolean> {
   const {walletType} = credential;
 
@@ -16,25 +15,12 @@ export async function validateAccount(
     }
 
     case 'near': {
-      console.log(
-        `[validate] [${caller}] credential`,
-        `${JSON.stringify(credential)}`,
-      );
-
-      if (!network || !walletId) {
-        console.log(
-          `[validate] [${caller}] network`,
-          `${JSON.stringify(network)}`,
-        );
-        console.log(`[validate] [${caller}] walletId`, `${walletId}`);
-        return false;
-      }
+      if (!network || !walletId) return false;
 
       const verifyAccessKey = await Near.verifyAccessKey(
         credential,
         network.rpcURL,
         walletId,
-        caller,
       );
 
       if (!verifyAccessKey) return false;
