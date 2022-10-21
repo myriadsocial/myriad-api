@@ -1,6 +1,6 @@
 import {Credential, Network} from '../models';
-import {PolkadotJs} from './polkadotJs-utils';
 import {Near} from './near-api-js';
+import {PolkadotJs} from './polkadot-js';
 
 export async function validateAccount(
   credential: Credential,

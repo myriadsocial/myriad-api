@@ -1,14 +1,14 @@
 import {AnyObject} from '@loopback/repository';
 import {ApiPromise, Keyring, WsProvider} from '@polkadot/api';
 import {KeyringPair} from '@polkadot/keyring/types';
-import {numberToHex, u8aToHex, hexToU8a, isHex} from '@polkadot/util';
+import {hexToU8a, isHex, numberToHex, u8aToHex} from '@polkadot/util';
 import {
-  mnemonicGenerate,
-  encodeAddress,
   decodeAddress,
+  encodeAddress,
+  mnemonicGenerate,
+  signatureVerify,
 } from '@polkadot/util-crypto';
 import {KeypairType} from '@polkadot/util-crypto/types';
-import {signatureVerify} from '@polkadot/util-crypto';
 import {Credential} from '../models';
 
 export class PolkadotJs {

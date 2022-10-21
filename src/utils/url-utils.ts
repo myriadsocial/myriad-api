@@ -1,10 +1,10 @@
+import {AnyObject} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
+import {omit} from 'lodash';
 import ogs from 'open-graph-scraper';
+import validator from 'validator';
 import {PlatformType} from '../enums';
 import {EmbeddedURL, Media} from '../models';
-import validator from 'validator';
-import {HttpErrors} from '@loopback/rest';
-import {AnyObject} from '@loopback/repository';
-import {omit} from 'lodash';
 
 export class UrlUtils {
   private url: URL;
