@@ -2,19 +2,19 @@ import {AuthenticationStrategy, TokenService} from '@loopback/authentication';
 import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors, Request} from '@loopback/rest';
-import {UserProfile, securityId} from '@loopback/security';
+import {securityId, UserProfile} from '@loopback/security';
 import {TokenServiceBindings} from '../../keys';
 import {UserRepository} from '../../repositories';
-import {generateObjectId} from '../../utils/formatted';
+import {generateObjectId} from '../../utils/formatter';
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   name = 'jwt';
 
   constructor(
     @repository(UserRepository)
-    protected userRepository: UserRepository,
+    private userRepository: UserRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
-    public tokenService: TokenService,
+    private tokenService: TokenService,
   ) {}
 
   async authenticate(request: Request): Promise<UserProfile | undefined> {

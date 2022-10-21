@@ -1,9 +1,9 @@
+import {TokenService} from '@loopback/authentication';
 import {inject} from '@loopback/core';
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {promisify} from 'util';
 import {TokenServiceBindings} from '../../keys';
-import {TokenService} from '@loopback/authentication';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -14,7 +14,7 @@ export class JWTService implements TokenService {
     @inject(TokenServiceBindings.TOKEN_SECRET)
     private jwtSecret: string,
     @inject(TokenServiceBindings.TOKEN_EXPIRES_IN)
-    public readonly expiresSecret: string,
+    private readonly expiresSecret: string,
   ) {}
 
   async generateToken(userProfile: UserProfile): Promise<string> {
