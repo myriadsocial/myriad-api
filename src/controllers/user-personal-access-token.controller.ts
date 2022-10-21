@@ -1,5 +1,5 @@
 import {inject} from '@loopback/core';
-import {Filter, repository} from '@loopback/repository';
+import {repository} from '@loopback/repository';
 import {
   post,
   param,
@@ -13,13 +13,17 @@ import {
 } from '@loopback/rest';
 import {TokenServiceBindings} from '../keys';
 import {UserPersonalAccessToken} from '../models';
-import {UserPersonalAccessTokenRepository} from '../repositories';
+import {
+  UserPersonalAccessTokenRepository,
+  UserRepository,
+} from '../repositories';
 import {JWTService} from '../services';
 import {securityId, UserProfile} from '@loopback/security';
 import {AuthenticationBindings} from '@loopback/authentication';
 
 export class UserPersonalAccessTokenController {
   constructor(
+    @repository(UserRepository) protected userRepository: UserRepository,
     @repository(UserPersonalAccessTokenRepository)
     public userPersonalAccessTokenRepository: UserPersonalAccessTokenRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
@@ -85,13 +89,16 @@ export class UserPersonalAccessTokenController {
   })
   async find(
     @param.path.string('userId') userId: string,
-    @param.filter(UserPersonalAccessToken, {exclude: ['include']})
-    filter?: Filter<UserPersonalAccessToken>,
   ): Promise<UserPersonalAccessToken[]> {
     if (userId !== this.currentUser[securityId])
       throw new HttpErrors.Unauthorized();
 
-    return this.userPersonalAccessTokenRepository.find(filter);
+    return this.userPersonalAccessTokenRepository.find({
+      where: {
+        userId: userId,
+      },
+      order: ['createdAt DESC'],
+    });
   }
 
   @patch('/users/{userId}/personal-access-tokens/{id}')
