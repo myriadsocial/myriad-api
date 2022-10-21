@@ -41,3 +41,4 @@ export * from './email-template.model';
 export * from './user-otpw.model';
 export * from './request-otpw.model';
 export * from './request-login-by-email.model';
+export * from './user-personal-access-token.model';

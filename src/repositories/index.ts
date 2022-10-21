@@ -29,3 +29,4 @@ export * from './wallet.repository';
 export * from './user-currency.repository';
 export * from './server.repository';
 export * from './user-otpw.repository';
+export * from './user-personal-access-token.repository';

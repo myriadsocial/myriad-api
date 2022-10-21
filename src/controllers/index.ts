@@ -36,4 +36,4 @@ export * from './wallet.controller';
 export * from './walletaddress.controller';
 export * from './server.controller';
 export * from './wallet-network.controller';
-export * from './user-otpw-user.controller';
+export * from './user-personal-access-token.controller';
