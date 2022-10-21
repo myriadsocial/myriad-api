@@ -30,13 +30,21 @@ import {UserCurrency} from './user-currency.model';
       collection: 'users',
     },
     indexes: {
+      uniqueEmail: {
+        keys: {
+          email: 1,
+        },
+        options: {
+          unique: true,
+        },
+      },
       nameIndex: {
         keys: {
           name: 1,
         },
       },
     },
-    hiddenProperties: ['nonce', 'permissions', 'friendIndex'],
+    hiddenProperties: ['permissions', 'friendIndex'],
   },
 })
 export class User extends Entity {
@@ -55,6 +63,7 @@ export class User extends Entity {
     required: true,
     jsonSchema: {
       minLength: 2,
+      maxLength: 22,
     },
   })
   name: string;
@@ -70,6 +79,15 @@ export class User extends Entity {
     },
   })
   username: string;
+
+  @property({
+    type: 'string',
+    required: false,
+    jsonSchema: {
+      minLength: 5,
+    },
+  })
+  email?: string;
 
   @property({
     type: 'string',

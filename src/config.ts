@@ -12,6 +12,7 @@ export const config = {
     process.env.MYRIAD_FAUCET_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
   MYRIAD_FAUCET_AMOUNT: +(process.env.MYRIAD_FAUCET_AMOUNT ?? 0),
+  MYRIAD_WEB_APP_URL: process.env.MYRIAD_WEB_APP_URL ?? 'localhost:3000',
 
   JWT_TOKEN_SECRET_KEY: !process.env.JWT_TOKEN_SECRET_KEY
     ? 'tok3n'
@@ -34,6 +35,13 @@ export const config = {
   REDIS_HOST: process.env.REDIS_HOST ?? 'localhost',
   REDIS_PORT: +(process.env.REDIS_PORT ?? 6379),
   REDIS_PASSWORD: process.env.REDIS_PASSWORD ?? 'passw0rd',
+
+  SMTP_SERVER: process.env.SMTP_SERVER ?? 'smtp.ethereal.email',
+  SMTP_PORT: +(process.env.SMTP_PORT ?? 587),
+  SMTP_USERNAME: process.env.SMTP_USERNAME ?? '',
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD ?? 'passw0rd',
+  SMTP_SENDER_ADDRESS:
+    process.env.SMTP_SENDER_ADDRESS ?? 'no-reply@myriad.social',
 
   FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ?? '',
 

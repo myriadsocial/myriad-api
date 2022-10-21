@@ -18,3 +18,4 @@ export * from './tag.service';
 export * from './transaction.service';
 export * from './user-social-media.service';
 export * from './vote.service';
+export * from './email.service';
