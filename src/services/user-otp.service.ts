@@ -1,8 +1,10 @@
 import {injectable, BindingScope, service} from '@loopback/core';
 import {repository} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
 import {UserOTP} from '../models';
 import {UserOTPRepository, UserRepository} from '../repositories';
 import {EmailService} from './email.service';
+import crypto from 'crypto';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserOTPService {
@@ -15,23 +17,26 @@ export class UserOTPService {
     protected emailService: EmailService,
   ) {}
 
-  private generateOTP(): number {
-    return Math.floor(100000 + Math.random() * 900000);
+  private generateOTP(): string {
+    return crypto.randomBytes(20).toString('hex');
   }
 
-  public async requestByEmail(email: string): Promise<void> {
+  public async requestByEmail(
+    email: string,
+    callbackURL: string,
+  ): Promise<void> {
     const user = await this.userRepository.findOne({
       where: {email: email},
     });
 
-    if (!user) throw new Error('Not Found User');
+    if (!user) throw new HttpErrors.NotFound('User not exists!');
 
     const existingUserOTP = await this.userOTPRepository.findOne({
       where: {userId: user.id},
     });
 
     const userOTP = new UserOTP();
-    userOTP.otp = this.generateOTP();
+    userOTP.token = this.generateOTP();
     userOTP.userId = user.id;
 
     if (existingUserOTP) {
@@ -42,13 +47,17 @@ export class UserOTPService {
       await this.userOTPRepository.create(userOTP);
     }
 
-    await this.emailService.sendOTP(user, userOTP.otp);
+    await this.emailService.sendLoginMagicLink(
+      user,
+      callbackURL,
+      userOTP.token,
+    );
   }
 
-  public async verifyOTP(otp: number): Promise<UserOTP | null> {
+  public async verifyOTP(token: string): Promise<UserOTP | null> {
     const userOTP = await this.userOTPRepository.findOne({
       where: {
-        otp: otp,
+        token: token,
         expiredAt: {gt: new Date().toString()},
       },
     });

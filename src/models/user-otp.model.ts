@@ -20,14 +20,13 @@ export class UserOTP extends Entity {
   id: string;
 
   @property({
-    type: 'number',
+    type: 'string',
     required: true,
     index: {
       unique: true,
     },
-    default: () => Math.floor(100000 + Math.random() * 900000),
   })
-  otp: number;
+  token: string;
 
   @property({
     type: 'date',

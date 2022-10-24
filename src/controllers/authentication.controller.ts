@@ -174,7 +174,10 @@ export class AuthenticationController {
       throw new HttpErrors.UnprocessableEntity('Invalid Email Address');
     }
 
-    await this.userOTPService.requestByEmail(requestOTP.email);
+    await this.userOTPService.requestByEmail(
+      requestOTP.email,
+      requestOTP.callbackURL,
+    );
 
     return {
       message: `OTP sent to ${requestOTP.email}`,

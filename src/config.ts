@@ -12,7 +12,6 @@ export const config = {
     process.env.MYRIAD_FAUCET_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
   MYRIAD_FAUCET_AMOUNT: +(process.env.MYRIAD_FAUCET_AMOUNT ?? 0),
-  MYRIAD_WEB_APP_URL: process.env.MYRIAD_WEB_APP_URL ?? 'http://localhost:3001',
 
   JWT_TOKEN_SECRET_KEY: !process.env.JWT_TOKEN_SECRET_KEY
     ? 'tok3n'

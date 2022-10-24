@@ -32,8 +32,14 @@ export class EmailService {
     }
   }
 
-  async sendOTP(user: User, otp: number): Promise<SentMessageInfo> {
+  async sendLoginMagicLink(
+    user: User,
+    callbackURL: string,
+    token: string,
+  ): Promise<SentMessageInfo> {
     const transporter = await EmailService.setupTransporter();
+    const url = new URL(callbackURL);
+    url.searchParams.set('token', token);
 
     const emailTemplate = new EmailTemplate({
       from: config.SMTP_SENDER_ADDRESS,
@@ -43,10 +49,9 @@ export class EmailService {
       <div>
           <p>Hello, ${user.name}</p>
           <p>Follow this link to login.</p>
-          <a href="${config.MYRIAD_WEB_APP_URL}/login?otp=${otp}">${config.MYRIAD_WEB_APP_URL}/login?otp=${otp}</a>
+          <a href="${url.toString()}">${url.toString()}</a>
           <p>Do not share this email with anyone</p>
           <p>Thanks,</p>
-          <p>Myriad Social</p>
       </div>
       `,
     });

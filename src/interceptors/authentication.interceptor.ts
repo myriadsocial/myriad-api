@@ -211,9 +211,9 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
           invocationCtx.args[1] = wallet.id;
         } else {
-          const {otp} = invocationCtx.args[0] as RequestLoginByOTP;
+          const {token} = invocationCtx.args[0] as RequestLoginByOTP;
 
-          const validOTP = await this.userOTPService.verifyOTP(otp);
+          const validOTP = await this.userOTPService.verifyOTP(token);
 
           if (!validOTP) throw new Error('OTP invalid or expired!');
 
@@ -293,7 +293,9 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           this.currencyService.sendMyriadReward(wallet),
         );
       } else {
-        jobs.push(this.userOTPService.requestByEmail(result.email));
+        const {email, callbackURL} = invocationCtx
+          .args[1] as RequestCreateNewUserByEmail;
+        jobs.push(this.userOTPService.requestByEmail(email, callbackURL));
       }
     } else {
       if (
@@ -317,11 +319,11 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           }),
         );
       } else {
-        const {otp} = invocationCtx.args[0] as RequestLoginByOTP;
+        const {token} = invocationCtx.args[0] as RequestLoginByOTP;
 
         jobs.push(
           this.userOTPRepository.deleteAll({
-            otp: otp,
+            token: token,
           }),
         );
       }
