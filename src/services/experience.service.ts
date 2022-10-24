@@ -1,4 +1,15 @@
-import {AnyObject, repository, Where} from '@loopback/repository';
+import {AuthenticationBindings} from '@loopback/authentication';
+import {BindingScope, inject, injectable, service} from '@loopback/core';
+import {
+  AnyObject,
+  Count,
+  Filter,
+  repository,
+  Where,
+} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
+import {securityId, UserProfile} from '@loopback/security';
+import {omit, pull} from 'lodash';
 import {
   AccountSettingType,
   FriendStatusType,
@@ -6,100 +17,179 @@ import {
   VisibilityType,
 } from '../enums';
 import {
+  CreateExperiencePostDto,
   Experience,
+  ExperiencePost,
   ExperienceWithRelations,
   People,
   Post,
-  UserExperienceWithRelations,
 } from '../models';
 import {
   ExperiencePostRepository,
   ExperienceRepository,
-  UserExperienceRepository,
   UserRepository,
 } from '../repositories';
-import {injectable, BindingScope, service, inject} from '@loopback/core';
 import {FriendService} from './friend.service';
-import {omit} from 'lodash';
-import {HttpErrors} from '@loopback/rest';
-import {AuthenticationBindings} from '@loopback/authentication';
-import {UserProfile, securityId} from '@loopback/security';
-import {pull} from 'lodash';
+import {PostService} from './post.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class ExperienceService {
   constructor(
     @repository(ExperienceRepository)
-    public experienceRepository: ExperienceRepository,
+    private experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
-    public experiencePostRepository: ExperiencePostRepository,
-    @repository(UserExperienceRepository)
-    public userExperienceRepository: UserExperienceRepository,
+    private experiencePostRepository: ExperiencePostRepository,
     @repository(UserRepository)
-    protected userRepository: UserRepository,
+    private userRepository: UserRepository,
     @service(FriendService)
-    protected friendService: FriendService,
+    private friendService: FriendService,
+    @service(PostService)
+    private postService: PostService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    private currentUser: UserProfile,
   ) {}
 
-  async getExperience(
-    userId: string,
-    experienceId?: string,
-  ): Promise<Experience | null> {
-    let experience = null;
+  // ------------------------------------------------
 
-    try {
-      if (experienceId) {
-        experience = await this.experienceRepository.findById(experienceId, {
-          include: [
-            {
-              relation: 'users',
-              scope: {
-                include: [{relation: 'accountSetting'}],
-              },
-            },
-            {
-              relation: 'posts',
-            },
-          ],
-        });
-      } else {
-        const user = await this.userRepository.findById(userId, {
-          include: [
-            {
-              relation: 'experience',
-              scope: {
-                include: [
-                  {
-                    relation: 'users',
-                    scope: {
-                      include: [{relation: 'accountSetting'}],
-                    },
-                  },
-                  {
-                    relation: 'posts',
-                  },
-                ],
-              },
-            },
-          ],
-        });
+  // ------ Experience ------------------------------
 
-        if (user.experience) experience = user.experience;
-      }
-    } catch {
-      // ignore
-    }
-
-    return experience;
+  public async find(filter?: Filter<Experience>): Promise<Experience[]> {
+    return this.experienceRepository.find(filter);
   }
 
-  async experienceTimeline(
+  public async findById(
+    id: string,
+    filter?: Filter<Experience>,
+    skip = true,
+  ): Promise<ExperienceWithRelations> {
+    if (skip) return this.experienceRepository.findById(id, filter);
+
+    filter = filter ?? {};
+
+    const include = [
+      {
+        relation: 'user',
+        scope: {
+          include: [{relation: 'accountSetting'}],
+        },
+      },
+      {relation: 'users'},
+    ];
+
+    if (!filter.include) filter.include = include;
+    else filter.include.push(...include);
+
+    const experience = await this.experienceRepository.findOne(<AnyObject>{
+      ...filter,
+      where: {
+        id,
+        deletedAt: {
+          $eq: null,
+        },
+      },
+    });
+
+    if (!experience) throw new HttpErrors.NotFound('ExperienceNotFound');
+
+    return this.validatePrivateExperience(experience)
+      .then(() => {
+        const userToPeople = experience?.users?.map(user => {
+          return new People({
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            platform: PlatformType.MYRIAD,
+            originUserId: user.id,
+            profilePictureURL: user.profilePictureURL,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            deletedAt: user.deletedAt,
+          });
+        });
+
+        if (userToPeople) {
+          experience.people = [...experience.people, ...userToPeople];
+        }
+
+        return omit(experience, ['users']);
+      })
+      .catch(err => {
+        throw err;
+      });
+  }
+
+  public async posts(id: string, filter?: Filter<Post>): Promise<Post[]> {
+    return this.postService.find(filter, id, true);
+  }
+
+  public async addPost(
+    data: CreateExperiencePostDto,
+  ): Promise<ExperiencePost[]> {
+    return this.experiencePostRepository
+      .deleteAll({
+        experienceId: {inq: data.experienceIds},
+        postId: data.postId,
+      })
+      .then(() => {
+        const experiencePosts = data.experienceIds.map(experienceId => {
+          return new ExperiencePost({experienceId, postId: data.postId});
+        });
+
+        return this.experiencePostRepository.createAll(experiencePosts);
+      });
+  }
+
+  public async substractPost(
+    experienceId: string,
+    postId: string,
+  ): Promise<Count> {
+    return this.experienceRepository
+      .findById(experienceId)
+      .then(experience => {
+        if (experience.createdBy !== this.currentUser[securityId]) {
+          return {count: 0};
+        }
+
+        return this.experiencePostRepository.deleteAll({postId, experienceId});
+      })
+      .catch(() => {
+        return {count: 0};
+      });
+  }
+
+  async getExperiencePostId(experienceId?: string): Promise<string[]> {
+    if (!experienceId) return [];
+
+    const experiencePosts = await this.experiencePostRepository.find({
+      where: {experienceId},
+    });
+    return experiencePosts.map(e => e.postId?.toString());
+  }
+
+  // ------------------------------------------------
+
+  // ------ ExperienceWhereBuilder ------------------
+
+  public async search(where: Where<Experience>, q: string): Promise<void> {
+    const userId = this.currentUser?.[securityId];
+    const [blockedFriendIds, approvedFriendIds] = await Promise.all([
+      this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
+      this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+    ]);
+
+    const pattern = new RegExp(q, 'i');
+    const userIds = pull(blockedFriendIds, ...approvedFriendIds);
+
+    Object.assign(where, {
+      and: [{name: {regexp: pattern}}, {createdBy: {nin: userIds}}],
+    });
+  }
+
+  public async timeline(
     userId: string,
     experienceId?: string,
   ): Promise<Where<Post>> {
-    const exp = await this.getExperience(userId, experienceId);
+    const exp = await this.fetchExperience(userId, experienceId);
 
     if (!exp) return {id: ''};
 
@@ -114,7 +204,7 @@ export class ExperienceService {
     const [blockedFriendIds, approvedFriendIds, friends] = await Promise.all([
       this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
       this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
-      this.friendService.friendRepository.find({
+      this.friendService.find({
         where: {
           requestorId: userId,
           requesteeId: {inq: (exp.users ?? []).map(e => e.id)},
@@ -213,188 +303,67 @@ export class ExperienceService {
     } as Where<Post>;
   }
 
-  async privateUserExperience(
-    userId: string,
-    userExperiences: UserExperienceWithRelations[],
-  ): Promise<AnyObject[]> {
-    return Promise.all(
-      userExperiences.map(async userExperience => {
-        const accountSetting = userExperience.experience?.user?.accountSetting;
-        const privateUserExp: AnyObject = {
-          ...userExperience,
-          private: false,
-          friend: false,
-          blocked: false,
-        };
+  // ------------------------------------------------
 
-        const friend = await this.friendService.friendRepository.findOne({
-          where: <AnyObject>{
-            or: [
-              {
-                requestorId: userId,
-                requesteeId: accountSetting?.userId ?? '',
+  // ------ PrivateMethod ---------------------------
+
+  private async fetchExperience(
+    userId: string,
+    experienceId?: string,
+  ): Promise<Experience | null> {
+    let experience = null;
+
+    try {
+      if (experienceId) {
+        experience = await this.experienceRepository.findById(experienceId, {
+          include: [
+            {
+              relation: 'users',
+              scope: {
+                include: [{relation: 'accountSetting'}],
               },
-              {
-                requesteeId: userId,
-                requestorId: accountSetting?.userId ?? '',
-              },
-            ],
-            deletedAt: {
-              $eq: null,
             },
-          },
+            {
+              relation: 'posts',
+            },
+          ],
+        });
+      } else {
+        const user = await this.userRepository.findById(userId, {
+          include: [
+            {
+              relation: 'experience',
+              scope: {
+                include: [
+                  {
+                    relation: 'users',
+                    scope: {
+                      include: [{relation: 'accountSetting'}],
+                    },
+                  },
+                  {
+                    relation: 'posts',
+                  },
+                ],
+              },
+            },
+          ],
         });
 
-        const status = friend?.status;
-        if (status === FriendStatusType.APPROVED) privateUserExp.friend = true;
-        if (status === FriendStatusType.BLOCKED) privateUserExp.blocked = true;
-        if (
-          accountSetting?.accountPrivacy === AccountSettingType.PRIVATE &&
-          accountSetting?.userId !== userId &&
-          friend === null
-        ) {
-          privateUserExp.private = true;
-        }
-
-        return omit(privateUserExp, ['clonedId']);
-      }),
-    );
-  }
-
-  async privateExperience(
-    userId: string,
-    experience: ExperienceWithRelations,
-  ): Promise<AnyObject> {
-    const accountSetting = experience?.user?.accountSetting;
-    const privateExperience = {
-      ...experience,
-      private: false,
-      friend: false,
-    };
-
-    const friend = await this.friendService.friendRepository.findOne({
-      where: <AnyObject>{
-        requestorId: userId,
-        requesteeId: accountSetting?.userId ?? '',
-        status: FriendStatusType.APPROVED,
-        deletedAt: {
-          $eq: null,
-        },
-      },
-    });
-
-    if (friend) privateExperience.friend = true;
-    if (
-      accountSetting?.accountPrivacy === AccountSettingType.PRIVATE &&
-      accountSetting?.userId !== userId &&
-      friend === null
-    ) {
-      privateExperience.private = true;
+        if (user.experience) experience = user.experience;
+      }
+    } catch {
+      // ignore
     }
 
-    return privateExperience;
+    return experience;
   }
 
-  async getExperiencePostId(experienceId?: string): Promise<string[]> {
-    if (!experienceId) return [];
-
-    const experiencePosts = await this.experiencePostRepository.find({
-      where: {experienceId},
-    });
-    return experiencePosts.map(e => e.postId?.toString());
-  }
-
-  async removeExperiencePost(
-    postId: string,
-    otherExperienceIds?: string[],
-  ): Promise<void> {
-    if (otherExperienceIds) {
-      await this.experiencePostRepository.deleteAll({
-        experienceId: {inq: otherExperienceIds},
-        postId: postId,
-      });
-      return;
-    }
-
-    if (!this.currentUser?.[securityId]) return;
-    const experiences = await this.experienceRepository.find({
-      where: {
-        createdBy: this.currentUser[securityId],
-      },
-    });
-    const experienceIds = experiences.map(experience => experience?.id ?? '');
-    if (experienceIds.length === 0) return;
-    await this.experiencePostRepository.deleteAll({
-      experienceId: {inq: experienceIds},
-      postId: postId,
-    });
-    return;
-  }
-
-  async validateSubscribedExperience(
-    userId: string,
-    experienceId: string,
-  ): Promise<number> {
-    // Check if user has been subscribed this experience
-    const subscribed = await this.userExperienceRepository.findOne({
-      where: {userId, experienceId, subscribed: true},
-    });
-
-    if (subscribed) {
-      throw new HttpErrors.UnprocessableEntity('AlreadySubscribed');
-    }
-
-    const {count} = await this.userExperienceRepository.count({userId});
-    return count;
-  }
-
-  async validateCreatedExperience(userId: string): Promise<number> {
-    // Check if user has experiences less than equal 10
-    const createdBy = userId;
-    const {count} = await this.experienceRepository.count({createdBy});
-
-    if (count >= 10) {
-      throw new HttpErrors.UnprocessableEntity('ExperiencesExceeded');
-    }
-
-    const {count: total} = await this.userExperienceRepository.count({userId});
-    return total;
-  }
-
-  async validateUpdateExperience(
-    userId: string,
-    experienceId: string,
-  ): Promise<void> {
-    const userExperience = await this.userExperienceRepository.findOne({
-      where: {
-        userId,
-        experienceId,
-      },
-      include: ['experience'],
-    });
-
-    if (!userExperience)
-      throw new HttpErrors.UnprocessableEntity('Experience not found');
-
-    if (userExperience.subscribed)
-      throw new HttpErrors.UnprocessableEntity(
-        'You cannot update other user experience',
-      );
-
-    if (
-      userExperience.experience &&
-      userExperience.experience.createdBy !== userId
-    )
-      throw new HttpErrors.UnprocessableEntity(
-        'You cannot update other user experience',
-      );
-  }
-
-  async validatePrivateExperience(experience: ExperienceWithRelations) {
+  private async validatePrivateExperience(experience: ExperienceWithRelations) {
     if (!experience?.user?.accountSetting) return;
     if (experience.createdBy === this.currentUser[securityId]) return;
     const {accountPrivacy} = experience.user.accountSetting;
-    const friend = await this.friendService.friendRepository.findOne({
+    const friend = await this.friendService.findOne({
       where: {
         or: [
           {
@@ -416,38 +385,5 @@ export class ExperienceService {
     throw new HttpErrors.Forbidden('PrivateExperience');
   }
 
-  combinePeopleAndUser(
-    result: UserExperienceWithRelations[],
-  ): UserExperienceWithRelations[] {
-    return result.map((userExperience: UserExperienceWithRelations) => {
-      const users = userExperience.experience?.users;
-
-      if (!users) return userExperience;
-
-      const newExperience: Partial<Experience> = {
-        ...userExperience.experience,
-      };
-
-      const userToPeople = users.map(user => {
-        return new People({
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          platform: PlatformType.MYRIAD,
-          originUserId: user.id,
-          profilePictureURL: user.profilePictureURL,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          deletedAt: user.deletedAt,
-        });
-      });
-
-      const people = userExperience.experience?.people ?? [];
-
-      newExperience.people = [...userToPeople, ...people];
-      userExperience.experience = newExperience as Experience;
-
-      return omit(userExperience, ['users']) as UserExperienceWithRelations;
-    });
-  }
+  // ------------------------------------------------
 }

@@ -1,9 +1,28 @@
-import {AnyObject, repository} from '@loopback/repository';
+import {BindingScope, injectable, service} from '@loopback/core';
+import {
+  AnyObject,
+  Count,
+  Filter,
+  repository,
+  Where,
+} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {ExtendedPost} from '../interfaces';
+import {omit} from 'lodash';
+import {
+  AccountSettingType,
+  ActivityLogType,
+  FriendStatusType,
+  PlatformType,
+  PostStatus,
+  ReferenceType,
+  VisibilityType,
+} from '../enums';
 import {
   AccountSetting,
+  CreateImportedPostDto,
   DraftPost,
+  Experience,
+  ExtendedPost,
   Friend,
   People,
   Post,
@@ -11,52 +30,104 @@ import {
   User,
 } from '../models';
 import {
+  AccountSettingRepository,
+  CommentRepository,
+  DraftPostRepository,
+  ExperiencePostRepository,
+  ExperienceRepository,
+  FriendRepository,
   PeopleRepository,
   PostRepository,
-  FriendRepository,
-  DraftPostRepository,
-  AccountSettingRepository,
-  ExperiencePostRepository,
+  UserRepository,
+  UserSocialMediaRepository,
 } from '../repositories';
-import {injectable, BindingScope, inject} from '@loopback/core';
-import {
-  AccountSettingType,
-  FriendStatusType,
-  PlatformType,
-  VisibilityType,
-} from '../enums';
-import {UrlUtils} from '../utils/url.utils';
-import {PlatformPost} from '../models/platform-post.model';
-import {AuthenticationBindings} from '@loopback/authentication';
-import {UserProfile, securityId} from '@loopback/security';
-import {formatTag, generateObjectId} from '../utils/formatted';
-import {omit} from 'lodash';
+import {formatTag, generateObjectId} from '../utils/formatter';
+import {UrlUtils} from '../utils/url-utils';
+import {ActivityLogService} from './activity-log.service';
+import {MetricService} from './metric.service';
+import {NotificationService} from './notification.service';
+import {SocialMediaService} from './social-media/social-media.service';
+import {TagService} from './tag.service';
 
 const {validateURL, getOpenGraph} = UrlUtils;
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class PostService {
   constructor(
-    @repository(PostRepository)
-    public postRepository: PostRepository,
     @repository(AccountSettingRepository)
-    protected accountSettingRepository: AccountSettingRepository,
+    private accountSettingRepository: AccountSettingRepository,
+    @repository(CommentRepository)
+    private commentRepository: CommentRepository,
     @repository(DraftPostRepository)
-    public draftPostRepository: DraftPostRepository,
+    private draftPostRepository: DraftPostRepository,
+    @repository(ExperienceRepository)
+    private experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
-    protected experiencePostRepository: ExperiencePostRepository,
+    private experiencePostRepository: ExperiencePostRepository,
     @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
+    private friendRepository: FriendRepository,
     @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
-    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    private peopleRepository: PeopleRepository,
+    @repository(PostRepository)
+    private postRepository: PostRepository,
+    @repository(UserRepository)
+    private userRepository: UserRepository,
+    @repository(UserSocialMediaRepository)
+    private userSocialMediaRepository: UserSocialMediaRepository,
+    @service(ActivityLogService)
+    private activityLogService: ActivityLogService,
+    @service(MetricService)
+    private metricService: MetricService,
+    @service(NotificationService)
+    private notificationService: NotificationService,
+    @service(SocialMediaService)
+    private socialMediaService: SocialMediaService,
+    @service(TagService)
+    private tagService: TagService,
   ) {}
 
-  async createPost(post: Omit<ExtendedPost, 'id'>): Promise<PostWithRelations> {
-    const {platformUser, platform} = post;
+  // ------------------------------------------------
 
-    if (!post) {
+  // ------ Post ------------------------------------
+
+  public async create(draftPost: DraftPost): Promise<Post | DraftPost> {
+    return this.beforeCreate(draftPost)
+      .then(async () => {
+        if (draftPost.status === PostStatus.PUBLISHED) {
+          const rawPost = omit(draftPost, ['status']);
+          return this.postRepository.create(rawPost);
+        }
+
+        await this.draftPostRepository.set(draftPost.createdBy, draftPost);
+        return draftPost;
+      })
+      .then(result => {
+        if (result.constructor.name === 'DraftPost') return result;
+        return this.afterCreate(new Post(result));
+      })
+      .catch(err => {
+        throw err;
+      });
+  }
+
+  public async import(raw: CreateImportedPostDto): Promise<Post> {
+    const platformURL = new UrlUtils(raw.url);
+    const pathname = platformURL.getPathname();
+    const platform = platformURL.getPlatform();
+    const originPostId = platformURL.getOriginPostId();
+
+    Object.assign(raw, {
+      url: [platform, originPostId].join(','),
+    });
+
+    const [_, post] = await Promise.all([
+      this.validateImportedPost(raw),
+      this.fetchImportedPost(raw, pathname),
+    ]);
+
+    const {platformUser} = post;
+
+    if (!platformUser) {
       throw new HttpErrors.UnprocessableEntity('Cannot find specified post');
     }
 
@@ -90,45 +161,125 @@ export class PostService {
         : this.peopleRepository.updateById(people.id, people),
     ]) as Promise<AnyObject>;
 
-    const createdPost = await this.postRepository.create({
-      ...rawPost,
-      peopleId: people.id,
-    });
+    rawPost.peopleId = people.id;
 
-    return Object.assign(createdPost, {people});
+    return this.postRepository
+      .create(rawPost)
+      .then(result => this.afterImport(result));
   }
 
-  async getPostImporterInfo(
-    post: AnyObject,
+  public async draft(userId: string): Promise<DraftPost | null> {
+    return this.draftPostRepository.get(userId);
+  }
+
+  public async find(
+    filter?: Filter<Post>,
+    experienceId?: string,
+    withImporter = false,
     userId?: string,
-  ): Promise<AnyObject> {
-    const {count} = await this.experiencePostRepository.count({
-      postId: post.id,
-      deletedAt: {exists: false},
-    });
+  ): Promise<Post[]> {
+    const posts = await (experienceId
+      ? this.experienceRepository.posts(experienceId).find(filter)
+      : this.postRepository.find(filter));
 
-    post.totalExperience = count;
+    if (!withImporter) return posts;
+    return Promise.all(
+      posts.map(async post => {
+        return this.postWithImporterInfo(post, userId);
+      }),
+    );
+  }
 
-    if (post.platform === PlatformType.MYRIAD) return omit(post, 'rawText');
-    if (!post.user) return post;
-    if (!userId) return post;
+  public async findById(
+    id: string,
+    filter?: Filter<Post>,
+    withImporter = false,
+    userId?: string,
+  ): Promise<Post> {
+    const currentPost = await this.postRepository.findById(id, filter);
+    if (!withImporter) return currentPost;
+    await this.validateUnrestrictedPost(currentPost, userId);
+    return this.postWithImporterInfo(currentPost, userId);
+  }
 
-    const importer = new User({...post.user});
-    const {count: totalImporter} = await this.postRepository.count({
-      originPostId: post.originPostId,
-      platform: post.platform,
-      banned: false,
-      deletedAt: {exists: false},
-    });
+  public async updateById(id: string, data: Partial<Post>): Promise<Count> {
+    let embeddedURL = null;
+    let url = '';
 
-    if (userId === post.createdBy) {
-      importer.name = 'You';
+    if (data.text && data.platform === PlatformType.MYRIAD) {
+      data.rawText = data.text;
+      const found = data.text.match(/https:\/\/|http:\/\/|www./g);
+      if (found) {
+        const index: number = data.text.indexOf(found[0]);
+
+        for (let i = index; i < data.text.length; i++) {
+          const letter = data.text[i];
+
+          if (letter === ' ' || letter === '"') break;
+          url += letter;
+        }
+      }
+
+      try {
+        if (url) validateURL(url);
+        embeddedURL = await getOpenGraph(url);
+      } catch {
+        // ignore
+      }
+
+      if (embeddedURL) data.embeddedURL = embeddedURL;
+    } else {
+      delete data.text;
     }
 
-    return omit({...post, importers: [importer], totalImporter}, ['rawText']);
+    return this.postRepository.updateAll(data, {
+      createdBy: data.createdBy,
+      id,
+      platform: data.platform,
+    });
   }
 
-  async createDraftPost(draftPost: DraftPost): Promise<DraftPost> {
+  public async deleteById(
+    id: string,
+    userId: string,
+    post?: Post,
+  ): Promise<Count> {
+    return this.postRepository
+      .deleteAll({
+        id,
+        createdBy: userId,
+      })
+      .then(async count => {
+        this.afterDelete(post) as Promise<void>;
+
+        return count;
+      });
+  }
+
+  public async deleteDraftPostById(id: string): Promise<void> {
+    return this.draftPostRepository.delete(id);
+  }
+
+  public async count(where: Where<Post>): Promise<Count> {
+    return this.postRepository.count(where);
+  }
+
+  // ------------------------------------------------
+
+  // ------ Experience ------------------------------
+
+  public async experiences(
+    id: string,
+    filter?: Filter<Experience>,
+  ): Promise<Experience[]> {
+    return this.postRepository.experiences(id).find(filter);
+  }
+
+  // ------------------------------------------------
+
+  // ------ PrivateMethod ---------------------------
+
+  private async beforeCreate(draftPost: DraftPost): Promise<void> {
     let url = '';
     let embeddedURL = null;
 
@@ -162,15 +313,117 @@ export class PostService {
         return formatTag(tag);
       });
     }
-
-    await this.draftPostRepository.set(this.currentUser[securityId], draftPost);
-
-    return draftPost;
   }
 
-  async validateImportedPost(platformPost: PlatformPost): Promise<void> {
-    const [platform, originPostId] = platformPost.url.split(',');
-    const importer = platformPost.importer;
+  private async afterCreate(post: Post): Promise<Post> {
+    const {id, createdBy: userId, tags, mentions} = post;
+
+    Promise.allSettled([
+      this.deleteDraftPostById(userId),
+      this.tagService.create(tags),
+      this.notificationService.sendMention(id, mentions ?? []),
+      this.metricService.userMetric(userId),
+      this.metricService.countServerMetric(),
+      this.activityLogService.create(
+        ActivityLogType.CREATEPOST,
+        userId,
+        ReferenceType.POST,
+      ),
+    ]) as Promise<AnyObject>;
+
+    return post;
+  }
+
+  private async afterImport(
+    post: PostWithRelations,
+  ): Promise<PostWithRelations> {
+    const importer = post.createdBy;
+    const {id, originPostId, platform, tags, peopleId} = post;
+    const [user, userSocialMedia, {count}] = await Promise.all([
+      this.userRepository.findOne({where: {id: importer}}),
+      this.userSocialMediaRepository.findOne({
+        where: {peopleId: peopleId ?? ''},
+      }),
+      this.count({
+        originPostId,
+        platform,
+        banned: false,
+        deletedAt: {exists: false},
+      }),
+    ]);
+
+    if (post?.people && userSocialMedia) {
+      post.people.userSocialMedia = userSocialMedia;
+    }
+
+    Promise.allSettled([
+      this.tagService.create(tags),
+      this.metricService.userMetric(user?.id ?? ''),
+      this.metricService.countServerMetric(),
+      this.activityLogService.create(
+        ActivityLogType.IMPORTPOST,
+        id,
+        ReferenceType.POST,
+      ),
+    ]) as Promise<AnyObject>;
+
+    post.importers = user ? [Object.assign(user, {name: 'You'})] : [];
+    post.totalImporter = count;
+
+    return post;
+  }
+
+  private async afterDelete(post?: Post): Promise<void> {
+    if (!post) return;
+
+    const {id, tags, createdBy} = post;
+
+    Promise.allSettled([
+      this.commentRepository.deleteAll({postId: id}),
+      this.metricService.userMetric(createdBy),
+      this.metricService.countTags(tags),
+      this.metricService.countServerMetric(),
+    ]) as Promise<AnyObject>;
+  }
+
+  private async postWithImporterInfo(
+    post: PostWithRelations,
+    userId?: string,
+  ): Promise<PostWithRelations> {
+    const {count} = await this.experiencePostRepository.count({
+      postId: post.id,
+      deletedAt: {exists: false},
+    });
+
+    post.totalExperience = count;
+
+    if (post.platform === PlatformType.MYRIAD) return post;
+    if (!post.user) return post;
+    if (!userId) return post;
+
+    const importer = new User({...post.user});
+    const {count: totalImporter} = await this.postRepository.count({
+      originPostId: post.originPostId,
+      platform: post.platform,
+      banned: false,
+      deletedAt: {exists: false},
+    });
+
+    if (userId === post.createdBy) {
+      importer.name = 'You';
+    }
+
+    post.importers = [importer];
+    post.totalImporter = totalImporter;
+
+    return post;
+  }
+
+  private async validateImportedPost(
+    raw: CreateImportedPostDto,
+  ): Promise<void> {
+    const [platform, originPostId] = raw.url.split(',');
+    const importer = raw.importer;
 
     const posts = await this.postRepository.find({
       where: {
@@ -201,17 +454,20 @@ export class PostService {
     const hasBeenDeleted = posts.find(e => e.deletedAt);
 
     if (hasBeenDeleted) {
-      throw new HttpErrors.NotFound('You cannot import deleted post');
+      throw new HttpErrors.NotFound('CannotImportDeletedPost');
     }
 
     const hasImported = posts.find(e => e.createdBy === importer);
 
     if (hasImported) {
-      throw new HttpErrors.Conflict('You have already import this post');
+      throw new HttpErrors.Conflict('AlreadyImported');
     }
   }
 
-  async validateUnrestrictedPost(post: Post): Promise<void> {
+  private async validateUnrestrictedPost(
+    post: Post,
+    currentUserId?: string,
+  ): Promise<void> {
     if (post.deletedAt || post.banned)
       throw new HttpErrors.NotFound('Post not found');
 
@@ -222,7 +478,8 @@ export class PostService {
       Promise<AccountSetting | null> | null,
     ] = [null, null];
 
-    if (this.currentUser[securityId] === creator) return;
+    if (!currentUserId) return;
+    if (currentUserId === creator) return;
     if (visibility === VisibilityType.PRIVATE) {
       throw new HttpErrors.Forbidden('Restricted post!');
     } else {
@@ -230,11 +487,11 @@ export class PostService {
         where: {
           or: [
             {
-              requestorId: this.currentUser[securityId],
+              requestorId: currentUserId,
               requesteeId: creator,
             },
             {
-              requesteeId: this.currentUser[securityId],
+              requesteeId: currentUserId,
               requestorId: creator,
             },
           ],
@@ -287,5 +544,55 @@ export class PostService {
       default:
         throw new HttpErrors.Forbidden('Restricted post!');
     }
+  }
+
+  private async fetchImportedPost(
+    raw: CreateImportedPostDto,
+    pathname = '',
+  ): Promise<ExtendedPost> {
+    const [platform, originPostId] = raw.url.split(',');
+
+    let rawPost = null;
+    switch (platform) {
+      case PlatformType.TWITTER:
+        rawPost = await this.socialMediaService.fetchTweet(originPostId);
+        break;
+
+      case PlatformType.REDDIT:
+        rawPost = await this.socialMediaService.fetchRedditPost(
+          originPostId,
+          pathname,
+        );
+        break;
+
+      default:
+        throw new HttpErrors.BadRequest('Cannot find the platform!');
+    }
+
+    if (!rawPost) {
+      throw new HttpErrors.BadRequest('Cannot find the specified post');
+    }
+
+    rawPost.visibility = raw.visibility ?? VisibilityType.PUBLIC;
+    rawPost.tags = this.getImportedTags(rawPost.tags, raw.tags ?? []);
+    rawPost.createdBy = raw.importer;
+    rawPost.isNSFW = Boolean(raw.NSFWTag);
+    rawPost.NSFWTag = raw.NSFWTag;
+
+    return rawPost;
+  }
+
+  private getImportedTags(
+    socialTags: string[],
+    importedTags: string[],
+  ): string[] {
+    if (!socialTags) socialTags = [];
+    if (!importedTags) importedTags = [];
+
+    const postTags = [...socialTags, ...importedTags]
+      .map(tag => formatTag(tag))
+      .filter(tag => Boolean(tag));
+
+    return [...new Set(postTags)];
   }
 }

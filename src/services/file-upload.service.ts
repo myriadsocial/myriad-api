@@ -1,10 +1,11 @@
 import {
   BindingScope,
-  ContextTags,
   config,
+  ContextTags,
   injectable,
   Provider,
 } from '@loopback/core';
+import {RequestHandler} from 'express-serve-static-core';
 import multer from 'multer';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler} from '../types';
@@ -22,6 +23,6 @@ export class FileUploadProvider implements Provider<FileUploadHandler> {
   }
 
   value(): FileUploadHandler {
-    return multer(this.options).any();
+    return multer(this.options).any() as RequestHandler;
   }
 }

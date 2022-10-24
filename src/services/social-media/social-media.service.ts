@@ -124,7 +124,7 @@ export class SocialMediaService {
           });
 
           const defaultImage =
-            'https://res.cloudinary.com/hakimblocksphere/image/upload/v1645684958/4719129_vgwiii.webp';
+            'https://res.cloudinary.com/dsget80gs/background/profile-default-bg.png';
 
           embeddedURL =
             quotedStatus?.user?.screen_name && quotedStatus?.id_str

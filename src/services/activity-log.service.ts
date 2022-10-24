@@ -1,21 +1,21 @@
 import {AuthenticationBindings} from '@loopback/authentication';
 import {BindingScope, inject, injectable} from '@loopback/core';
 import {repository} from '@loopback/repository';
+import {securityId, UserProfile} from '@loopback/security';
 import {ActivityLogType, ReferenceType} from '../enums';
 import {ActivityLog} from '../models';
 import {ActivityLogRepository} from '../repositories';
-import {UserProfile, securityId} from '@loopback/security';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class ActivityLogService {
   constructor(
     @repository(ActivityLogRepository)
-    protected activityLogRepository: ActivityLogRepository,
+    private activityLogRepository: ActivityLogRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    private currentUser: UserProfile,
   ) {}
 
-  async createLog(
+  async create(
     type: ActivityLogType,
     referenceId: string,
     referenceType: ReferenceType,

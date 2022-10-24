@@ -1,3 +1,4 @@
+import {BindingScope, injectable} from '@loopback/core';
 import {AnyObject, Count, repository, Where} from '@loopback/repository';
 import {
   ControllerType,
@@ -7,77 +8,76 @@ import {
   SectionType,
 } from '../enums';
 import {Metric, ServerMetric, UserMetric} from '../interfaces';
+import {UserSocialMedia} from '../models';
 import {
   ActivityLogRepository,
   CommentRepository,
   CurrencyRepository,
+  ExperiencePostRepository,
   ExperienceRepository,
   FriendRepository,
-  VoteRepository,
+  NetworkRepository,
   NotificationRepository,
   PeopleRepository,
   PostRepository,
+  ReportRepository,
+  ServerRepository,
   TagRepository,
   TransactionRepository,
+  UserCurrencyRepository,
   UserExperienceRepository,
+  UserReportRepository,
   UserRepository,
   UserSocialMediaRepository,
-  ReportRepository,
-  UserReportRepository,
-  ExperiencePostRepository,
+  VoteRepository,
   WalletRepository,
-  NetworkRepository,
-  UserCurrencyRepository,
-  ServerRepository,
 } from '../repositories';
-import {injectable, BindingScope} from '@loopback/core';
-import {UserSocialMedia} from '../models';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class MetricService {
   constructor(
     @repository(VoteRepository)
-    protected voteRepository: VoteRepository,
+    private voteRepository: VoteRepository,
     @repository(CommentRepository)
-    protected commentRepository: CommentRepository,
+    private commentRepository: CommentRepository,
     @repository(PostRepository)
-    protected postRepository: PostRepository,
+    private postRepository: PostRepository,
     @repository(UserRepository)
-    protected userRepository: UserRepository,
+    private userRepository: UserRepository,
     @repository(TransactionRepository)
-    protected transactionRepository: TransactionRepository,
+    private transactionRepository: TransactionRepository,
     @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
+    private friendRepository: FriendRepository,
     @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
+    private peopleRepository: PeopleRepository,
     @repository(NotificationRepository)
-    protected notificationRepository: NotificationRepository,
+    private notificationRepository: NotificationRepository,
     @repository(CurrencyRepository)
-    protected currencyRepository: CurrencyRepository,
+    private currencyRepository: CurrencyRepository,
     @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
+    private experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
-    protected experiencePostRepository: ExperiencePostRepository,
+    private experiencePostRepository: ExperiencePostRepository,
     @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
+    private userSocialMediaRepository: UserSocialMediaRepository,
     @repository(ServerRepository)
-    protected serverRepository: ServerRepository,
+    private serverRepository: ServerRepository,
     @repository(TagRepository)
-    protected tagRepository: TagRepository,
+    private tagRepository: TagRepository,
     @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
+    private userCurrencyRepository: UserCurrencyRepository,
     @repository(UserExperienceRepository)
-    protected userExpRepository: UserExperienceRepository,
+    private userExpRepository: UserExperienceRepository,
     @repository(ActivityLogRepository)
-    protected activityLogRepository: ActivityLogRepository,
+    private activityLogRepository: ActivityLogRepository,
     @repository(ReportRepository)
-    protected reportRepository: ReportRepository,
+    private reportRepository: ReportRepository,
     @repository(UserReportRepository)
-    protected userReportRepository: UserReportRepository,
+    private userReportRepository: UserReportRepository,
     @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
+    private walletRepository: WalletRepository,
     @repository(NetworkRepository)
-    protected networkRepository: NetworkRepository,
+    private networkRepository: NetworkRepository,
   ) {}
 
   async publicMetric(
@@ -332,10 +332,16 @@ export class MetricService {
     additionalData?: string,
   ): Promise<Count> {
     switch (controller) {
-      case ControllerType.USER:
+      case ControllerType.USER: {
+        if ((where as AnyObject)?.userId) {
+          return this.activityLogRepository.count(where);
+        }
+
         return this.userRepository.count(where);
+      }
 
       case ControllerType.EXPERIENCEPOST:
+      case ControllerType.USERPOST:
       case ControllerType.POST:
         return this.postRepository.count(where);
 
