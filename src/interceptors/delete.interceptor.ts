@@ -139,12 +139,7 @@ export class DeleteInterceptor implements Provider<Interceptor> {
         if (errMessage) throw new HttpErrors.UnprocessableEntity(errMessage);
 
         const network = await this.networkRepository.findById(networkType);
-        const verified = await validateAccount(
-          credential,
-          network,
-          walletId,
-          'delete',
-        );
+        const verified = await validateAccount(credential, network, walletId);
 
         if (!verified) {
           throw new HttpErrors.UnprocessableEntity('[delete] Failed to verify');
