@@ -16,6 +16,7 @@ export * from './server.service';
 export * from './social-media.service';
 export * from './tag.service';
 export * from './transaction.service';
+export * from './user.service';
 export * from './user-social-media.service';
 export * from './vote.service';
 export * from './email.service';

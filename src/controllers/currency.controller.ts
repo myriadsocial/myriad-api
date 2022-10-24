@@ -1,16 +1,16 @@
-import {intercept} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
+import {authenticate} from '@loopback/authentication';
+import {intercept, service} from '@loopback/core';
+import {Filter} from '@loopback/repository';
 import {get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {Currency} from '../models';
-import {CurrencyRepository} from '../repositories';
-import {authenticate} from '@loopback/authentication';
+import {CurrencyService} from '../services';
 
 @authenticate('jwt')
 export class CurrencyController {
   constructor(
-    @repository(CurrencyRepository)
-    protected currencyRepository: CurrencyRepository,
+    @service(CurrencyService)
+    protected currencyService: CurrencyService,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -29,24 +29,8 @@ export class CurrencyController {
   async find(
     @param.filter(Currency, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<Currency>,
+    @param.query.boolean('rates') rates = false,
   ): Promise<Currency[]> {
-    return this.currencyRepository.find(filter);
-  }
-
-  @get('/currencies/{id}')
-  @response(200, {
-    description: 'Currency model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Currency, {includeRelations: true}),
-      },
-    },
-  })
-  async findById(
-    @param.path.string('id') id: string,
-    @param.filter(Currency, {exclude: 'where'})
-    filter?: FilterExcludingWhere<Currency>,
-  ): Promise<Currency> {
-    return this.currencyRepository.findById(id, filter);
+    return this.currencyService.find(filter, rates);
   }
 }

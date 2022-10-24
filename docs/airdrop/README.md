@@ -13,7 +13,7 @@
 - Restore database
 
   ```bash
-  mongorestore -u=<username> -p=<password> -d=myriad --archive=./01.15.2022_myriad-db-0.dump
+  mongorestore -u= --archive=./01.15.2022_myriad-db-0.dump < username > -p= < password > -d=myriad
   ```
 
   > **Note:**</br>
@@ -66,7 +66,7 @@
 - Restore database
 
   ```bash
-  mongorestore -u=<username> -p=<password> -d=myriad --archive=./01.19.2022_myriad-db-0.dump
+  mongorestore -u= --archive=./01.19.2022_myriad-db-0.dump < username > -p= < password > -d=myriad
   ```
 
 - Run query to get user data by username

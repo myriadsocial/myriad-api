@@ -1,23 +1,16 @@
 import {authenticate} from '@loopback/authentication';
-import {intercept} from '@loopback/core';
-import {Filter, FilterExcludingWhere, repository} from '@loopback/repository';
-import {
-  param,
-  get,
-  getModelSchemaRef,
-  response,
-  post,
-  requestBody,
-} from '@loopback/rest';
+import {intercept, service} from '@loopback/core';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
+import {get, getModelSchemaRef, param, response} from '@loopback/rest';
 import {PaginationInterceptor} from '../interceptors';
 import {Network} from '../models';
-import {NetworkRepository} from '../repositories';
+import {NetworkService} from '../services';
 
 @authenticate('jwt')
 export class NetworkController {
   constructor(
-    @repository(NetworkRepository)
-    public networkRepository: NetworkRepository,
+    @service(NetworkService)
+    public networkService: NetworkService,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -36,7 +29,7 @@ export class NetworkController {
   async find(
     @param.filter(Network) filter?: Filter<Network>,
   ): Promise<Network[]> {
-    return this.networkRepository.find(filter);
+    return this.networkService.find(filter);
   }
 
   @get('/networks/{id}')
@@ -53,30 +46,6 @@ export class NetworkController {
     @param.filter(Network, {exclude: 'where'})
     filter?: FilterExcludingWhere<Network>,
   ): Promise<Network> {
-    return this.networkRepository.findById(id, filter);
-  }
-
-  @post('/networks')
-  @response(200, {
-    description: 'Network model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(Network),
-      },
-    },
-  })
-  async create(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Network, {
-            title: 'NewNetwork',
-          }),
-        },
-      },
-    })
-    network: Network,
-  ): Promise<Network> {
-    return this.networkRepository.create(network);
+    return this.networkService.findById(id, filter);
   }
 }
