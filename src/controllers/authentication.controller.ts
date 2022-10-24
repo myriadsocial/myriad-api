@@ -16,7 +16,7 @@ import {
   Credential,
   RequestCreateNewUserByEmail,
   RequestCreateNewUserByWallet,
-  RequestOtpw,
+  RequestOTPByEmail,
   User,
 } from '../models';
 import {
@@ -24,28 +24,23 @@ import {
   UserRepository,
   WalletRepository,
 } from '../repositories';
-import {RefreshtokenService} from '../services';
+import {RefreshtokenService, UserOTPService} from '../services';
 import {JWTService} from '../services/authentication/jwt.service';
 import {AuthenticationInterceptor} from '../interceptors';
 import {pick} from 'lodash';
-import {UserOtpwRepository} from '../repositories/user-otpw.repository';
-import {UserOtpw} from '../models/user-otpw.model';
-import {EmailService} from '../services/email.service';
-import {RequestLoginByEmail} from '../models/request-login-by-email.model';
+import {RequestLoginByOTP} from '../models/request-login-by-otp.model';
 import validator from 'validator';
 
 export class AuthenticationController {
   constructor(
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(UserOtpwRepository)
-    protected userOtpwRepository: UserOtpwRepository,
     @repository(NetworkRepository)
     protected networkRepository: NetworkRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
-    @service(EmailService)
-    protected emailService: EmailService,
+    @service(UserOTPService)
+    protected userOTPService: UserOTPService,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
     protected jwtService: JWTService,
     @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
@@ -147,9 +142,9 @@ export class AuthenticationController {
     return Boolean(user);
   }
 
-  @post('/email/otpw')
+  @post('/otp/email')
   @response(200, {
-    description: 'Request OTPW Response',
+    description: 'Request OTP by Email Response',
     content: {
       'application/json': {
         schema: {
@@ -163,41 +158,26 @@ export class AuthenticationController {
       },
     },
   })
-  async requestOTPW(
+  async requestOTPByEmail(
     @requestBody({
-      description: 'The input of request OTPW',
+      description: 'The input of request OTP by Email',
       required: true,
       content: {
         'application/json': {
-          schema: getModelSchemaRef(RequestOtpw),
+          schema: getModelSchemaRef(RequestOTPByEmail),
         },
       },
     })
-    requestOtpw: RequestOtpw,
+    requestOTP: RequestOTPByEmail,
   ): Promise<{message: string}> {
-    if (!validator.isEmail(requestOtpw.email)) {
+    if (!validator.isEmail(requestOTP.email)) {
       throw new HttpErrors.UnprocessableEntity('Invalid Email Address');
     }
 
-    const user = await this.userRepository.findOne({
-      where: {email: requestOtpw.email},
-    });
-
-    if (!user) throw new HttpErrors.NotFound('Account not exist');
-
-    await this.userOtpwRepository.deleteAll({
-      userId: user.id,
-    });
-
-    const userOtpw = new UserOtpw();
-    userOtpw.userId = user.id;
-
-    const otpw = await this.userOtpwRepository.create(userOtpw);
-
-    await this.emailService.sendOTPW(user, otpw.id);
+    await this.userOTPService.requestByEmail(requestOTP.email);
 
     return {
-      message: `OTPW sent to ${requestOtpw.email}`,
+      message: `OTP sent to ${requestOTP.email}`,
     };
   }
 
@@ -310,7 +290,7 @@ export class AuthenticationController {
   }
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
-  @post('/login/email', {
+  @post('/login/otp', {
     responses: {
       '200': {
         description: 'Token',
@@ -338,20 +318,20 @@ export class AuthenticationController {
       },
     },
   })
-  async loginByEmail(
+  async loginByOTP(
     @requestBody({
       description: 'The input of login function',
       required: true,
       content: {
         'application/json': {
-          schema: getModelSchemaRef(RequestLoginByEmail, {exclude: ['data']}),
+          schema: getModelSchemaRef(RequestLoginByOTP, {exclude: ['data']}),
         },
       },
     })
-    requestLoginByEmail: RequestLoginByEmail,
+    requestLoginByOTP: RequestLoginByOTP,
   ): Promise<TokenObject> {
     const accessToken = await this.jwtService.generateToken(
-      requestLoginByEmail.data as UserProfile,
+      requestLoginByOTP.data as UserProfile,
     );
 
     return {accessToken};

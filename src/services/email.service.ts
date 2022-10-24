@@ -32,7 +32,7 @@ export class EmailService {
     }
   }
 
-  async sendOTPW(user: User, otpw: string): Promise<SentMessageInfo> {
+  async sendOTP(user: User, otp: number): Promise<SentMessageInfo> {
     const transporter = await EmailService.setupTransporter();
 
     const emailTemplate = new EmailTemplate({
@@ -43,7 +43,7 @@ export class EmailService {
       <div>
           <p>Hello, ${user.name}</p>
           <p>Follow this link to login.</p>
-          <a href="${config.MYRIAD_WEB_APP_URL}/login?otpw=${otpw}">${config.MYRIAD_WEB_APP_URL}/login?otpw=${otpw}</a>
+          <a href="${config.MYRIAD_WEB_APP_URL}/login?otp=${otp}">${config.MYRIAD_WEB_APP_URL}/login?otp=${otp}</a>
           <p>Do not share this email with anyone</p>
           <p>Thanks,</p>
           <p>Myriad Social</p>

@@ -1,14 +1,14 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {User} from './user.model';
 
 @model({
   settings: {
     mongodb: {
-      collection: 'userOTPWs',
+      collection: 'userOTPs',
     },
   },
 })
-export class UserOtpw extends Entity {
+export class UserOTP extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -20,15 +20,25 @@ export class UserOtpw extends Entity {
   id: string;
 
   @property({
-    type: 'date',
-    required: false,
-    default: () => new Date(new Date().getTime() + 30 * 60000),
+    type: 'number',
+    required: true,
+    index: {
+      unique: true,
+    },
+    default: () => Math.floor(100000 + Math.random() * 900000),
   })
-  expiredAt: string;
+  otp: number;
 
   @property({
     type: 'date',
-    required: false,
+    required: true,
+    default: () => new Date(new Date().getTime() + 30 * 60000),
+  })
+  expiredAt?: string;
+
+  @property({
+    type: 'date',
+    required: true,
     default: () => new Date(),
   })
   createdAt?: string;
@@ -49,13 +59,13 @@ export class UserOtpw extends Entity {
   @belongsTo(() => User)
   userId: string;
 
-  constructor(data?: Partial<UserOtpw>) {
+  constructor(data?: Partial<UserOTP>) {
     super(data);
   }
 }
 
-export interface UserOtpwRelations {
+export interface UserOTPRelations {
   // describe navigational properties here
 }
 
-export type UserOtpwWithRelations = UserOtpw & UserOtpwRelations;
+export type UserOTPithRelations = UserOTP & UserOTPRelations;

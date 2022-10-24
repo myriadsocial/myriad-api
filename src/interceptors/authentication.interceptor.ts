@@ -21,7 +21,6 @@ import {
   RequestCreateNewUserByEmail,
   RequestCreateNewUserByWallet,
   User,
-  UserOtpw,
   UserWithRelations,
   Wallet,
 } from '../models';
@@ -33,9 +32,9 @@ import {
 } from '../repositories';
 import {
   CurrencyService,
-  EmailService,
   FriendService,
   MetricService,
+  UserOTPService,
 } from '../services';
 import {securityId, UserProfile} from '@loopback/security';
 import {assign, intersection} from 'lodash';
@@ -44,8 +43,8 @@ import {validateAccount} from '../utils/validate-account';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {isHex} from '@polkadot/util';
 import validator from 'validator';
-import {RequestLoginByEmail} from '../models/request-login-by-email.model';
-import {UserOtpwRepository} from '../repositories/user-otpw.repository';
+import {RequestLoginByOTP} from '../models/request-login-by-otp.model';
+import {UserOTPRepository} from '../repositories/user-otp.repository';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -62,8 +61,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     protected networkRepository: NetworkRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
-    @repository(UserOtpwRepository)
-    protected userOtpwRepository: UserOtpwRepository,
+    @repository(UserOTPRepository)
+    protected userOTPRepository: UserOTPRepository,
     @repository(WalletRepository)
     protected walletRepository: WalletRepository,
     @service(CurrencyService)
@@ -72,8 +71,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     protected friendService: FriendService,
     @service(MetricService)
     protected metricService: MetricService,
-    @service(EmailService)
-    protected emailService: EmailService,
+    @service(UserOTPService)
+    protected userOTPService: UserOTPService,
   ) {}
 
   /**
@@ -212,20 +211,15 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
           invocationCtx.args[1] = wallet.id;
         } else {
-          const {otpw} = invocationCtx.args[0] as RequestLoginByEmail;
+          const {otp} = invocationCtx.args[0] as RequestLoginByOTP;
 
-          const validOtpw = await this.userOtpwRepository.findOne({
-            where: {
-              id: otpw,
-              expiredAt: {gt: new Date().toString()},
-            },
-          });
+          const validOTP = await this.userOTPService.verifyOTP(otp);
 
-          if (!validOtpw) throw new Error('OTPW invalid or expired!');
+          if (!validOTP) throw new Error('OTP invalid or expired!');
 
           user = await this.userRepository.findOne({
             where: {
-              id: validOtpw.userId,
+              id: validOTP.userId,
             },
           });
         }
@@ -299,12 +293,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           this.currencyService.sendMyriadReward(wallet),
         );
       } else {
-        const userOtpw = new UserOtpw();
-        userOtpw.userId = result.id;
-
-        const otpw = await this.userOtpwRepository.create(userOtpw);
-
-        jobs.push(this.emailService.sendOTPW(result as User, otpw.id));
+        jobs.push(this.userOTPService.requestByEmail(result.email));
       }
     } else {
       if (
@@ -328,9 +317,13 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           }),
         );
       } else {
-        const {otpw} = invocationCtx.args[0] as RequestLoginByEmail;
+        const {otp} = invocationCtx.args[0] as RequestLoginByOTP;
 
-        jobs.push(this.userOtpwRepository.deleteById(otpw));
+        jobs.push(
+          this.userOTPRepository.deleteAll({
+            otp: otp,
+          }),
+        );
       }
     }
 

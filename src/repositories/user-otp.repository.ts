@@ -5,22 +5,22 @@ import {
   BelongsToAccessor,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {UserOtpw, UserOtpwRelations, User} from '../models';
+import {UserOTP, UserOTPRelations, User} from '../models';
 import {UserRepository} from './user.repository';
 
-export class UserOtpwRepository extends DefaultCrudRepository<
-  UserOtpw,
-  typeof UserOtpw.prototype.id,
-  UserOtpwRelations
+export class UserOTPRepository extends DefaultCrudRepository<
+  UserOTP,
+  typeof UserOTP.prototype.id,
+  UserOTPRelations
 > {
-  public readonly user: BelongsToAccessor<User, typeof UserOtpw.prototype.id>;
+  public readonly user: BelongsToAccessor<User, typeof UserOTP.prototype.id>;
 
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserRepository')
     protected userRepositoryGetter: Getter<UserRepository>,
   ) {
-    super(UserOtpw, dataSource);
+    super(UserOTP, dataSource);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
   }
 }
