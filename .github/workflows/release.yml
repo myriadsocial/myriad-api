@@ -81,7 +81,6 @@ jobs:
             ADMIN_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/ADMIN_MNEMONIC
             FAUCET_MNEMONIC:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_MNEMONIC
             FAUCET_AMOUNT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FAUCET_AMOUNT
-            WEB_APP_URL:${{ secrets.MAINNET_GCP_PROJECT_ID }}/WEB_APP_URL
             JWT_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_SECRET_KEY
             JWT_TOKEN_EXPIRES_IN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_TOKEN_EXPIRES_IN
             JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets.MAINNET_GCP_PROJECT_ID }}/JWT_REFRESH_TOKEN_SECRET_KEY
@@ -127,7 +126,6 @@ jobs:
               --set-string config.adminMnemonic="${{ steps.secrets.outputs.ADMIN_MNEMONIC }}" \
               --set-string config.faucetMnemonic="${{ steps.secrets.outputs.FAUCET_MNEMONIC }}" \
               --set config.faucetAmount=${{ steps.secrets.outputs.FAUCET_AMOUNT }} \
-              --set-string config.webAppURL=${{ steps.secrets.outputs.WEB_APP_URL }} \
               --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
               --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
               --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \

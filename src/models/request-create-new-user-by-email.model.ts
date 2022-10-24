@@ -12,6 +12,12 @@ export class RequestCreateNewUserByEmail extends RequestCreateNewUser {
   })
   email: string;
 
+  @property({
+    type: 'string',
+    required: true,
+  })
+  callbackURL: string;
+
   constructor(data?: Partial<RequestCreateNewUserByEmail>) {
     super(data);
   }

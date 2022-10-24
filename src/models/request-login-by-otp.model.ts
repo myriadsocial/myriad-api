@@ -3,10 +3,10 @@ import {AnyObject, Model, model, property} from '@loopback/repository';
 @model()
 export class RequestLoginByOTP extends Model {
   @property({
-    type: 'number',
+    type: 'string',
     required: true,
   })
-  otp: number;
+  token: string;
 
   @property({
     type: 'object',

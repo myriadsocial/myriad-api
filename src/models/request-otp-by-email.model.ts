@@ -8,6 +8,12 @@ export class RequestOTPByEmail extends Model {
   })
   email: string;
 
+  @property({
+    type: 'string',
+    required: true,
+  })
+  callbackURL: string;
+
   constructor(data?: Partial<RequestOTPByEmail>) {
     super(data);
   }
