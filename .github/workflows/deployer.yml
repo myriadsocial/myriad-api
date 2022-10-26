@@ -104,7 +104,6 @@ jobs:
             SMTP_PORT:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SMTP_PORT
             SMTP_USERNAME:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SMTP_USERNAME
             SMTP_PASSWORD:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SMTP_PASSWORD
-            SMTP_SENDER_ADDRESS:${{ secrets.TESTNET_GCP_PROJECT_ID }}/SMTP_SENDER_ADDRESS
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBASE_STORAGE_BUCKET:${{ secrets.TESTNET_GCP_PROJECT_ID }}/FIREBASE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.TESTNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
@@ -149,7 +148,6 @@ jobs:
               --set config.smtp.port=${{ steps.secrets.outputs.SMTP_PORT }} \
               --set-string config.smtp.username=${{ steps.secrets.outputs.SMTP_USERNAME }} \
               --set-string config.smtp.password=${{ steps.secrets.outputs.SMTP_PASSWORD }} \
-              --set-string config.smtp.senderAddress=${{ steps.secrets.outputs.SMTP_SENDER_ADDRESS }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBASE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
@@ -242,7 +240,6 @@ jobs:
             SMTP_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_PORT
             SMTP_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_USERNAME
             SMTP_PASSWORD:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_PASSWORD
-            SMTP_SENDER_ADDRESS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_SENDER_ADDRESS
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBASE_STORAGE_BUCKET:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
@@ -287,7 +284,6 @@ jobs:
               --set config.smtp.port=${{ steps.secrets.outputs.SMTP_PORT }} \
               --set-string config.smtp.username=${{ steps.secrets.outputs.SMTP_USERNAME }} \
               --set-string config.smtp.password=${{ steps.secrets.outputs.SMTP_PASSWORD }} \
-              --set-string config.smtp.senderAddress=${{ steps.secrets.outputs.SMTP_SENDER_ADDRESS }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBASE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
@@ -381,7 +377,6 @@ jobs:
             SMTP_PORT:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_PORT
             SMTP_USERNAME:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_USERNAME
             SMTP_PASSWORD:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_PASSWORD
-            SMTP_SENDER_ADDRESS:${{ secrets.MAINNET_GCP_PROJECT_ID }}/SMTP_SENDER_ADDRESS
             FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_SERVICE_ACCOUNT_BASE64
             FIREBASE_STORAGE_BUCKET:${{ secrets.MAINNET_GCP_PROJECT_ID }}/FIREBASE_STORAGE_BUCKET
             API_SENTRY_DSN:${{ secrets.MAINNET_GCP_PROJECT_ID }}/API_SENTRY_DSN
@@ -426,7 +421,6 @@ jobs:
               --set config.smtp.port=${{ steps.secrets.outputs.SMTP_PORT }} \
               --set-string config.smtp.username=${{ steps.secrets.outputs.SMTP_USERNAME }} \
               --set-string config.smtp.password=${{ steps.secrets.outputs.SMTP_PASSWORD }} \
-              --set-string config.smtp.senderAddress=${{ steps.secrets.outputs.SMTP_SENDER_ADDRESS }} \
               --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
               --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBASE_STORAGE_BUCKET }} \
               --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \

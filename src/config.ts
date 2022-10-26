@@ -38,9 +38,7 @@ export const config = {
   SMTP_SERVER: process.env.SMTP_SERVER ?? 'smtp.ethereal.email',
   SMTP_PORT: +(process.env.SMTP_PORT ?? 587),
   SMTP_USERNAME: process.env.SMTP_USERNAME ?? '',
-  SMTP_PASSWORD: process.env.SMTP_PASSWORD ?? 'passw0rd',
-  SMTP_SENDER_ADDRESS:
-    process.env.SMTP_SENDER_ADDRESS ?? 'no-reply@myriad.social',
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD ?? '',
 
   FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ?? '',
 
