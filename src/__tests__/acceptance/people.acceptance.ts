@@ -134,7 +134,7 @@ describe('PeopleApplication', function () {
         platform: PlatformType.REDDIT,
         originUserId: 't2_5turjfiq',
         profilePictureURL:
-          'https://styles.redditmedia.com/t5_2gskf7/styles/profileIcon_snoof1dc48fa-83bd-4ed3-8ef3-56f2469da2ce-headshot.png',
+          'https://www.redditstatic.com/avatars/avatar_default_15_DB0064.png',
       });
 
       await client

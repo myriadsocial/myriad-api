@@ -67,7 +67,7 @@ describe('CurrencyControllers', () => {
         name: 'AUSD',
         symbol: 'AUSD',
         decimal: 13,
-        image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
+        image: 'https://image.com/ausd.svg',
         native: true,
         networkId: 'acala',
       }),

@@ -302,7 +302,7 @@ export function givenCurrency(currency?: Partial<Currency>) {
       name: 'rococo',
       symbol: 'ROC',
       decimal: 12,
-      image: 'https://polkadot.js.org/apps/static/rococo.afea08ac.svg',
+      image: 'https://image.com/rococo.svg',
       native: true,
       exchangeRate: false,
       networkId: 'rococo',
@@ -328,7 +328,7 @@ export async function givenMultipleCurrencyInstances(
       name: 'acala',
       symbol: 'ACA',
       decimal: 12,
-      image: 'https://apps.acala.network/static/media/AUSD.439bc3f2.png',
+      image: 'https://image.com/ausd.svg',
       native: true,
       exchangeRate: true,
       networkId: 'acala',
@@ -813,8 +813,7 @@ export function givenNetwork(network?: Partial<Network>) {
   const data = Object.assign(
     {
       id: 'polkadot',
-      image:
-        'https://polkadot.network/assets/img/brand/Polkadot_Token_PolkadotToken_Pink.svg?v=3997aaa2a4',
+      image: 'https://image.com/polkadot.svg',
       rpcURL: 'wss://rpc.polkadot.io',
       explorerURL:
         'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.polkadot.io#/explorer/query',
@@ -839,7 +838,7 @@ export function givenServer(server?: Partial<Server>) {
   const data = Object.assign(
     {
       name: 'Myriad Social',
-      serverImageURL: 'https://',
+      serverImageURL: 'https://image.com/myriad-logo.svg',
       description: 'Welcome to myriad social',
       accountId: {
         myriad: serverId,
