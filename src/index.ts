@@ -29,6 +29,10 @@ if (require.main === module) {
         // useful when used with OpenAPI-to-GraphQL to locate your application
         setServersFromRequest: true,
       },
+      expressSettings: {
+        'trust proxy': true,
+        'x-powered-by': false,
+      },
     },
   };
   main(appConfig).catch(err => {
