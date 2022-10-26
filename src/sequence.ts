@@ -48,12 +48,12 @@ export class MyriadSequence implements SequenceHandler {
       const route = this.findRoute(request);
       const args = await this.parseParams(request, route);
 
-      // call authentication action
-      await this.authenticateRequest(request);
-
       if (this.rateLimitAction) {
         await this.rateLimitAction(request, response);
       }
+
+      // call authentication action
+      await this.authenticateRequest(request);
 
       const result = await this.invoke(route, args);
       this.send(response, result);

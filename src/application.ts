@@ -124,6 +124,7 @@ export class MyriadApiApplication extends BootMixin(
       name: 'redis',
       type: 'RedisStore',
       windowMs: 15 * date.minute,
+      standardHeaders: true,
       max: (req: Request, _: Response) => {
         switch (req.method) {
           case 'GET':
@@ -331,7 +332,7 @@ export class MyriadApiApplication extends BootMixin(
                   Object.assign(rawUser, {
                     verified: true,
                     bio: 'A social metaverse & metasocial network on web3, pulling content from mainstream social media and turning every post into a tipping wallet.',
-                    websiteURL: 'https://www.myriad.social/',
+                    websiteURL: 'https://myriad.social',
                   });
                 }
 

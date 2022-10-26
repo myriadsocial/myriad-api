@@ -7,7 +7,7 @@ import {config} from '../config';
 @injectable({scope: BindingScope.TRANSIENT})
 export class EmailService {
   private static async setupTransporter() {
-    if (!config.SMTP_USERNAME) {
+    if (!config.SMTP_USERNAME || !config.SMTP_PASSWORD) {
       const testAccount = await createTestAccount();
 
       return createTransport({
@@ -42,15 +42,18 @@ export class EmailService {
     url.searchParams.set('token', token);
 
     const emailTemplate = new EmailTemplate({
-      from: config.SMTP_SENDER_ADDRESS,
+      from: config.SMTP_USERNAME,
       to: user.email,
       subject: 'Login Request',
       html: `
       <div>
           <p>Hello, ${user.name}</p>
-          <p>Follow this link to login.</p>
+          <p>Follow this link to sign-in!</p>
           <a href="${url.toString()}">${url.toString()}</a>
+          <p>Make sure this email was sent by ${config.SMTP_USERNAME}</p>
+          <p>Make sure you are redirected to ${callbackURL}</p>
           <p>Do not share this email with anyone</p>
+          <p>This link is valid up to 30 minutes after you’ve received it.</p>
           <p>Thanks,</p>
       </div>
       `,
