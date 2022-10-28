@@ -45,7 +45,6 @@ export class Server extends Entity {
     required: false,
     default: {
       totalComments: 0,
-      totalPosts: 0,
       totalUsers: 0,
       totalVotes: 0,
       totalTransactions: 0,
@@ -55,6 +54,12 @@ export class Server extends Entity {
         totalReddit: 0,
         totalTwitter: 0,
         totalMyriad: 0,
+      },
+      totalPosts: {
+        totalMyriad:	0,
+        totalTwitter:	0,
+        totalReddit:	0,
+        totalAll:	0,
       },
     },
   })

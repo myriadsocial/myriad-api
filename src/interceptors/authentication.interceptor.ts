@@ -45,6 +45,7 @@ import {isHex} from '@polkadot/util';
 import validator from 'validator';
 import {RequestLoginByOTP} from '../models/request-login-by-otp.model';
 import {UserOTPRepository} from '../repositories/user-otp.repository';
+import {config} from '../config';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -120,7 +121,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       }
 
       if (methodName === MethodType.SIGNUP) {
-        const {address, network} = invocationCtx
+        const {address, network, name} = invocationCtx
           .args[0] as RequestCreateNewUserByWallet;
         const fixedAddress = isHex(`0x${address}`) ? `0x${address}` : address;
 
@@ -139,6 +140,11 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         }
 
         await this.validateWalletAddress(network, fixedAddress);
+
+        Object.assign(invocationCtx.args[0], {
+          name: name.substring(0, 22),
+          permissions: this.getPermissions(fixedAddress),
+        });
 
         invocationCtx.args[1] = new Wallet({
           id: fixedAddress,
@@ -414,5 +420,24 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     }
 
     return;
+  }
+
+  getPermissions(registeredAddress: string): PermissionKeys[] {
+    const permissions: PermissionKeys[] = [PermissionKeys.USER];
+
+    try {
+      const {getKeyring, getHexPublicKey} = new PolkadotJs();
+      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+      const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+      const address = getHexPublicKey(serverAdmin);
+
+      if (registeredAddress === address) {
+        permissions.push(PermissionKeys.MASTER, PermissionKeys.ADMIN);
+      }
+    } catch {
+      // ignore
+    }
+
+    return permissions;
   }
 }
