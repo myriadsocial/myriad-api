@@ -56,10 +56,10 @@ export class Server extends Entity {
         totalMyriad: 0,
       },
       totalPosts: {
-        totalMyriad:	0,
-        totalTwitter:	0,
-        totalReddit:	0,
-        totalAll:	0,
+        totalMyriad: 0,
+        totalTwitter: 0,
+        totalReddit: 0,
+        totalAll: 0,
       },
     },
   })
