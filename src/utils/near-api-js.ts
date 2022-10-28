@@ -21,7 +21,7 @@ export class Near {
         request_type: 'view_access_key',
         account_id: address,
         public_key: pk,
-        finality: 'final',
+        finality: 'optimistic',
       });
       return Boolean(result);
     } catch (e) {
