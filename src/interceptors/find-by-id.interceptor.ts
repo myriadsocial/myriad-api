@@ -34,7 +34,6 @@ import {
 } from '../repositories';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile, securityId} from '@loopback/security';
-import {HttpErrors} from '@loopback/rest';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -171,26 +170,25 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
           },
         });
 
-        if (!wallet) throw new HttpErrors.NotFound('UserNotFound');
-
-        const networkId = wallet.networkId;
         const filter = invocationCtx.args[0] ?? {};
-        const where = filter.where ?? {};
         const include = filter?.include ?? [];
 
-        include.push({
-          relation: 'userCurrencies',
-          scope: {
-            include: [{relation: 'currency'}],
-            where: {networkId},
-            order: ['priority ASC'],
-            limit: 10,
-          },
-        });
+        if (wallet) {
+          const networkId = wallet.networkId;
+
+          include.push({
+            relation: 'userCurrencies',
+            scope: {
+              include: [{relation: 'currency'}],
+              where: {networkId},
+              order: ['priority ASC'],
+              limit: 10,
+            },
+          });
+        }
 
         Object.assign(filter, {
           where: {
-            ...where,
             id: this.currentUser[securityId],
           },
           include,
