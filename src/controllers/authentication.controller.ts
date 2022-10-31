@@ -142,6 +142,19 @@ export class AuthenticationController {
     return Boolean(user);
   }
 
+  @get('/email/{email}')
+  @response(200, {
+    description: 'Get email',
+    schema: {
+      type: 'boolean',
+    },
+  })
+  async email(@param.path.string('email') email: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({where: {email}});
+
+    return Boolean(user);
+  }
+
   @post('/otp/email')
   @response(200, {
     description: 'Request OTP by Email Response',
