@@ -507,7 +507,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
         Promise.allSettled([
           this.userPermissions(userId, id),
           this.currencyService.addUserCurrencies(userId, networkId),
-          this.userRepository.updateById(userId, {nonce: newNonce}),
+          this.userRepository.updateById(userId, {
+            nonce: newNonce,
+            fullAccess: true,
+          }),
         ]) as Promise<AnyObject>;
 
         return result;

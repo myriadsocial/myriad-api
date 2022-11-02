@@ -165,6 +165,12 @@ export class User extends Entity {
   permissions: PermissionKeys[];
 
   @property({
+    type: 'boolean',
+    default: false,
+  })
+  fullAccess: boolean;
+
+  @property({
     type: 'object',
     required: false,
     default: {},

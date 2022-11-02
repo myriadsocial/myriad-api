@@ -144,6 +144,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         Object.assign(invocationCtx.args[0], {
           name: name.substring(0, 22),
           permissions: this.getPermissions(fixedAddress),
+          fullAccess: true,
         });
 
         invocationCtx.args[1] = new Wallet({
