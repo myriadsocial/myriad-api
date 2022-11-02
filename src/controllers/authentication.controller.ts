@@ -223,6 +223,7 @@ export class AuthenticationController {
       'name',
       'username',
       'permissions',
+      'fullAccess',
     ]);
     return this.userRepository.create(user);
   }
