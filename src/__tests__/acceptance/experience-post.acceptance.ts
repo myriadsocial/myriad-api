@@ -1,5 +1,5 @@
 import {EntityNotFoundError} from '@loopback/repository';
-import {Client, expect, toJSON} from '@loopback/testlab';
+import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {Experience, Post, User} from '../../models';
 import {
@@ -19,7 +19,6 @@ import {
   deleteAllRepository,
   givenPostInstance,
   givenMultipleExperienceInstances,
-  givenExperienceInstance,
 } from '../helpers';
 
 describe('ExperiencePostApplication', () => {
@@ -66,28 +65,23 @@ describe('ExperiencePostApplication', () => {
   });
 
   it('adds post to experience', async () => {
-    const response = await client
-      .post(`/experiences/${experiences[0].id}/posts/${post.id}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send()
-      .expect(200);
     const data = {
-      experienceId: experiences[0].id,
+      experienceIds: [experiences[0].id],
       postId: post.id,
     };
-    expect(response.body).to.containDeep(data);
-    const result = await experiencePostRepository.findById(response.body.id);
-    expect(result).to.containDeep(data);
-  });
-
-  it('returns 401 when adding a post to experience not as login user', async () => {
-    const experience = await givenExperienceInstance(experienceRepository);
-
-    await client
-      .post(`/experiences/${experience.id}/posts/${post.id}`)
+    const response = await client
+      .post(`/experiences/post`)
       .set('Authorization', `Bearer ${token}`)
-      .send()
-      .expect(401);
+      .send(data)
+      .expect(200);
+    expect(response.body).to.containDeep([
+      {experienceId: experiences[0].id, postId: post.id},
+    ]);
+    const result = await experiencePostRepository.findById(response.body[0].id);
+    expect(result).to.containDeep({
+      experienceId: experiences[0].id,
+      postId: post.id,
+    });
   });
 
   it('delete experience from post', async () => {
@@ -97,43 +91,13 @@ describe('ExperiencePostApplication', () => {
     });
 
     await client
-      .del(`/experiences/${experiences[0].id}/posts/${post.id}`)
+      .del(`/experience/${experiences[0].id}/post/${post.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send()
-      .expect(204);
+      .expect(200);
 
     await expect(
       experiencePostRepository.findById(experiencePost.id),
     ).to.be.rejectedWith(EntityNotFoundError);
-  });
-
-  it('adds post to multiple experiences', async () => {
-    const newExperience = await givenExperienceInstance(experienceRepository, {
-      createdBy: user.id,
-    });
-
-    await experiencePostRepository.create({
-      experienceId: experiences[0].id,
-      postId: post.id,
-    });
-
-    const response = await client
-      .post(`/experiences/post/${post.id}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send([experiences[1].id, newExperience.id])
-      .expect(200);
-
-    const experiencePosts = await experiencePostRepository.find();
-    expect(response.body).to.containDeep(toJSON(experiencePosts));
-  });
-
-  it('returns 401 when adding post to multiple experiences that not belong to user', async () => {
-    const experience = await givenExperienceInstance(experienceRepository);
-
-    await client
-      .post(`/experiences/post/${post.id}`)
-      .set('Authorization', `Bearer ${token}`)
-      .send([experiences[1].id, experience.id])
-      .expect(401);
   });
 });

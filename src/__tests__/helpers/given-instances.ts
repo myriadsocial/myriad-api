@@ -13,6 +13,8 @@ import {
   AccountSetting,
   ActivityLog,
   Comment,
+  CreateImportedPostDto,
+  CreateReportDto,
   Credential,
   Currency,
   DraftPost,
@@ -24,20 +26,18 @@ import {
   People,
   Post,
   Report,
-  ReportDetail,
   RequestCreateNewUserByWallet,
   Server,
+  SocialMediaVerificationDto,
   Tag,
   Transaction,
   User,
   UserExperience,
   UserReport,
   UserSocialMedia,
-  UserVerification,
   Vote,
   Wallet,
 } from '../../models';
-import {PlatformPost} from '../../models/platform-post.model';
 import {
   AccountSettingRepository,
   ActivityLogRepository,
@@ -61,13 +61,13 @@ import {
   VoteRepository,
   WalletRepository,
 } from '../../repositories';
-import {PolkadotJs} from '../../utils/polkadotJs-utils';
+import {PolkadotJs} from '../../utils/polkadot-js';
 import {KeyringPair} from '@polkadot/keyring/types';
 import {AnyObject} from '@loopback/repository';
 import {UserProfile, securityId} from '@loopback/security';
 import {promisify} from 'util';
 import {config} from '../../config';
-import {generateObjectId} from '../../utils/formatted';
+import {generateObjectId} from '../../utils/formatter';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -505,7 +505,9 @@ export async function givenUserSocialMediaInstance(
   );
 }
 
-export function givenPlatformPost(platformPost?: Partial<PlatformPost>) {
+export function givenPlatformPost(
+  createdImportedPostDto?: Partial<CreateImportedPostDto>,
+) {
   const data = Object.assign(
     {
       url: 'https://www.reddit.com/r/ProgrammerHumor/comments/p7qrle/when_your_boss_has_no_clue_what_you_do/',
@@ -513,13 +515,13 @@ export function givenPlatformPost(platformPost?: Partial<PlatformPost>) {
         '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
       tags: [],
     },
-    platformPost,
+    createdImportedPostDto,
   );
-  return new PlatformPost(data);
+  return new CreateImportedPostDto(data);
 }
 
 export function givenUserVerification(
-  userVerification?: Partial<UserVerification>,
+  userVerification?: Partial<SocialMediaVerificationDto>,
 ) {
   const data = Object.assign(
     {
@@ -530,7 +532,7 @@ export function givenUserVerification(
     },
     userVerification,
   );
-  return new UserVerification(data);
+  return new SocialMediaVerificationDto(data);
 }
 
 export function givenActivityLog(activityLog?: Partial<ActivityLog>) {
@@ -721,7 +723,7 @@ export async function givenUserReportInstance(
   return userReportRepository.create(givenUserReport(userReport));
 }
 
-export function givenReportDetail(reportDetail?: Partial<ReportDetail>) {
+export function givenReportDetail(reportDetail?: Partial<CreateReportDto>) {
   const data = Object.assign(
     {
       referenceType: ReferenceType.USER,
@@ -730,7 +732,7 @@ export function givenReportDetail(reportDetail?: Partial<ReportDetail>) {
     },
     reportDetail,
   );
-  return new ReportDetail(data);
+  return new CreateReportDto(data);
 }
 
 export function givenNotificationSetting(

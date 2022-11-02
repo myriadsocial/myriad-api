@@ -20,7 +20,6 @@ import {
   givenVoteInstance,
   givenUserRepository,
   givenUserInstance,
-  givenOtherUser,
   givenAccesToken,
   deleteAllRepository,
 } from '../helpers';
@@ -39,7 +38,6 @@ describe('VoteApplication', function () {
   let commentRepository: CommentRepository;
   let userRepository: UserRepository;
   let user: User;
-  let otherUser: User;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -56,7 +54,6 @@ describe('VoteApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    otherUser = await givenUserInstance(userRepository, givenOtherUser());
     token = await givenAccesToken(user);
   });
 
@@ -94,7 +91,7 @@ describe('VoteApplication', function () {
       userId: user.id.toString(),
     });
     const response = await client
-      .post('/votes')
+      .post('/user/votes')
       .set('Authorization', `Bearer ${token}`)
       .send(upvote)
       .expect(200);
@@ -125,7 +122,7 @@ describe('VoteApplication', function () {
       section: SectionType.DEBATE,
     });
     await client
-      .post('/comments')
+      .post('/user/comments')
       .set('Authorization', `Bearer ${token}`)
       .send(comment)
       .expect(200);
@@ -136,7 +133,7 @@ describe('VoteApplication', function () {
       postId: post._id.toString(),
     });
     const response = await client
-      .post('/votes')
+      .post('/user/votes')
       .set('Authorization', `Bearer ${token}`)
       .send(downvote)
       .expect(200);
@@ -175,7 +172,7 @@ describe('VoteApplication', function () {
       userId: user.id,
     });
     const response = await client
-      .post('/votes')
+      .post('/user/votes')
       .set('Authorization', `Bearer ${token}`)
       .send(upvote);
 
@@ -217,39 +214,10 @@ describe('VoteApplication', function () {
       userId: user.id,
     });
     await client
-      .post('/votes')
+      .post('/user/votes')
       .set('Authorization', `Bearer ${token}`)
       .send(downvote)
       .expect(422);
-  });
-
-  it('returns 401 when deleting the upvotes not as login user', async function () {
-    const accesToken = await givenAccesToken(otherUser);
-    const postResponse = await givenPostInstance(
-      postRepository,
-      {
-        metric: {
-          discussions: 0,
-          upvotes: 1,
-          downvotes: 0,
-          debates: 0,
-        },
-        createdBy: user.id,
-      },
-      true,
-    );
-    const post = postResponse.ops[0];
-    const vote = await givenVoteInstance(voteRepository, {
-      referenceId: post._id.toString(),
-      postId: post._id.toString(),
-      userId: user.id,
-    });
-
-    await client
-      .del(`/votes/${vote.id}`)
-      .set('Authorization', `Bearer ${accesToken}`)
-      .send()
-      .expect(401);
   });
 
   it('deletes the upvotes and post metric upvotes reduces by 1', async function () {
@@ -274,10 +242,10 @@ describe('VoteApplication', function () {
     });
 
     await client
-      .del(`/votes/${vote.id}`)
+      .del(`/user/votes/${vote.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send()
-      .expect(204);
+      .expect(200);
     await expect(voteRepository.findById(vote.id)).to.be.rejectedWith(
       EntityNotFoundError,
     );

@@ -7,7 +7,6 @@ import {
   deleteAllRepository,
   givenAccesToken,
   givenMultipleNotificationInstances,
-  givenNotification,
   givenNotificationInstance,
   givenNotificationRepository,
   givenUserInstance,
@@ -48,25 +47,6 @@ describe('NotificationApplication', function () {
   });
 
   context('when dealing with a single persisted notification', () => {
-    let persistedNotification: Notification;
-
-    beforeEach(async () => {
-      persistedNotification = await givenNotificationInstance(
-        notificationRepository,
-      );
-    });
-
-    it('gets a notification by ID', async () => {
-      const result = await client
-        .get(`/notifications/${persistedNotification.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(200);
-      const expected = toJSON(persistedNotification);
-
-      expect(result.body).to.deepEqual(expected);
-    });
-
     it('gets a count of notification', async function () {
       await givenNotificationInstance(notificationRepository, {
         type: NotificationType.FRIEND_REQUEST,
@@ -77,9 +57,9 @@ describe('NotificationApplication', function () {
         to: '1',
       });
       await client
-        .get('/notifications/count')
+        .get('/user/notifications/count')
         .set('Authorization', `Bearer ${token}`)
-        .expect(200, {count: 2});
+        .expect(200, {count: 1});
     });
 
     it('count notifications with a filter', async () => {
@@ -93,7 +73,7 @@ describe('NotificationApplication', function () {
       });
 
       await client
-        .get('/notifications/count')
+        .get('/user/notifications/count')
         .set('Authorization', `Bearer ${token}`)
         .query({
           where: {
@@ -103,21 +83,6 @@ describe('NotificationApplication', function () {
         .expect(200, {
           count: 1,
         });
-    });
-
-    it('returns 404 when getting a notification that does not exist', () => {
-      return client
-        .get('/notifications/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
-    });
-
-    it('returns 404 when updating a user that does not exist', () => {
-      return client
-        .patch('/notifications/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .send(givenNotification())
-        .expect(404);
     });
   });
 
@@ -132,7 +97,7 @@ describe('NotificationApplication', function () {
 
     it('finds all notifications', async () => {
       const response = await client
-        .get('/notifications')
+        .get('/user/notifications')
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -153,7 +118,7 @@ describe('NotificationApplication', function () {
       );
 
       await client
-        .get('/notifications')
+        .get('/user/notifications')
         .set('Authorization', `Bearer ${token}`)
         .query(
           'filter=' +
@@ -185,7 +150,7 @@ describe('NotificationApplication', function () {
       });
 
       const response = await client
-        .get('/notifications')
+        .get('/user/notifications')
         .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
@@ -218,7 +183,7 @@ describe('NotificationApplication', function () {
         });
 
       const response = await client
-        .get('/notifications')
+        .get('/user/notifications')
         .set('Authorization', `Bearer ${token}`)
         .query(filter);
 

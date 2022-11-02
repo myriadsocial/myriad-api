@@ -56,22 +56,6 @@ describe('CurrencyApplication', function () {
     await deleteAllRepository(app);
   });
 
-  context('when dealing with a single persisted currency', () => {
-    let persistedCurrency: Currency;
-
-    beforeEach(async () => {
-      persistedCurrency = await givenCurrencyInstance(currencyRepository);
-    });
-
-    it('gets a currency by ID', () => {
-      return client
-        .get(`/currencies/${persistedCurrency.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(200, toJSON(persistedCurrency));
-    });
-  });
-
   context('when dealing with multiple persisted currencies', () => {
     let persistedCurrencies: Currency[];
 
