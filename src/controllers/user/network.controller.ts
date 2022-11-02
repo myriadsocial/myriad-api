@@ -1,7 +1,6 @@
 import {authenticate} from '@loopback/authentication';
-import {intercept, service} from '@loopback/core';
+import {service} from '@loopback/core';
 import {getModelSchemaRef, patch, requestBody} from '@loopback/rest';
-import {UpdateInterceptor} from '../../interceptors';
 import {Credential, Wallet} from '../../models';
 import {UserService} from '../../services';
 
@@ -12,8 +11,7 @@ export class UserNetworkController {
     protected userService: UserService,
   ) {}
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
-  @patch('/switch-network', {
+  @patch('/user/switch-network', {
     responses: {
       '200': {
         description: 'SWITCH networks',

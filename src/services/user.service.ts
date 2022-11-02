@@ -564,7 +564,7 @@ export class UserService {
       .patch(accountSetting);
   }
 
-  public async setEmailSetting(userByEmail: UserByEmail): Promise<void> {
+  public async setEmailSetting(userByEmail: Partial<UserByEmail>): Promise<void> {
     const currentEmail = this.currentUser?.email;
 
     let action = true; // Action Add/Remove email, true = add email, false = remove email

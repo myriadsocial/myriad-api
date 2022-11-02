@@ -10,7 +10,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {CreateInterceptor, PaginationInterceptor} from '../../interceptors';
+import {PaginationInterceptor} from '../../interceptors';
 import {Comment} from '../../models';
 import {UserService} from '../../services';
 
@@ -22,7 +22,7 @@ export class CommentController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/comments')
+  @get('/user/comments')
   @response(200, {
     description: 'Array of Comment model instances',
     content: {
@@ -41,8 +41,7 @@ export class CommentController {
     return this.userService.comments(filter);
   }
 
-  @intercept(CreateInterceptor.BINDING_KEY)
-  @post('/comments')
+  @post('/user/comments')
   @response(200, {
     description: 'Comment model instance',
     content: {'application/json': {schema: getModelSchemaRef(Comment)}},
@@ -63,7 +62,7 @@ export class CommentController {
     return this.userService.createComment(comment);
   }
 
-  @del('/comments/{id}')
+  @del('/user/comments/{id}')
   @response(200, {
     description: 'SOFT DELETE user comment',
     content: {

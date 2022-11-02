@@ -21,7 +21,7 @@ export class TransactionController {
     private userService: UserService,
   ) {}
 
-  @post('/transactions')
+  @post('/user/transactions')
   @response(200, {
     description: 'CREATE user transaction',
     content: {'application/json': {schema: getModelSchemaRef(Transaction)}},
@@ -43,7 +43,7 @@ export class TransactionController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/transactions')
+  @get('/user/transactions')
   @response(200, {
     description: 'GET transactions',
     content: {
@@ -62,7 +62,7 @@ export class TransactionController {
     return this.userService.transactions(filter);
   }
 
-  @patch('/transactions')
+  @patch('/user/transactions')
   @response(204, {description: 'UPDATE user transaction'})
   async patch(
     @requestBody({

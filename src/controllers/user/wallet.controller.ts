@@ -10,18 +10,18 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {CreateInterceptor, PaginationInterceptor} from '../../interceptors';
+import {PaginationInterceptor} from '../../interceptors';
 import {Credential, Wallet} from '../../models';
 import {UserService} from '../../services';
 
+@authenticate('jwt')
 export class WalletController {
   constructor(
     @service(UserService)
     private userService: UserService,
   ) {}
 
-  @authenticate('jwt')
-  @get('/current-wallet')
+  @get('/user/wallet')
   @response(200, {
     description: 'GET current user wallet',
     content: {
@@ -34,8 +34,7 @@ export class WalletController {
     return this.userService.currentWallet();
   }
 
-  @authenticate('jwt')
-  @del('/wallets/{id}')
+  @del('/user/wallets/{id}')
   @response(204, {
     description: 'DELETE user wallet',
   })
@@ -53,8 +52,7 @@ export class WalletController {
     return this.userService.removeWallet(id, credential);
   }
 
-  @intercept(CreateInterceptor.BINDING_KEY)
-  @post('/connect-wallet')
+  @post('/user/connect-wallet')
   @response(200, {
     description: 'CONNECT new wallet',
     content: {'application/json': {schema: getModelSchemaRef(Wallet)}},

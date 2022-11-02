@@ -1,8 +1,7 @@
 import {authenticate} from '@loopback/authentication';
-import {intercept, service} from '@loopback/core';
+import {service} from '@loopback/core';
 import {Count} from '@loopback/repository';
 import {del, getModelSchemaRef, param, post, requestBody} from '@loopback/rest';
-import {CreateInterceptor} from '../../interceptors';
 import {Vote} from '../../models';
 import {UserService} from '../../services';
 
@@ -13,8 +12,7 @@ export class VoteController {
     private userService: UserService,
   ) {}
 
-  @intercept(CreateInterceptor.BINDING_KEY)
-  @post('/votes', {
+  @post('/user/votes', {
     responses: {
       '200': {
         description: 'CREATE vote',
@@ -38,7 +36,7 @@ export class VoteController {
     return this.userService.createVote(vote);
   }
 
-  @del('/votes/{id}', {
+  @del('/user/votes/{id}', {
     responses: {
       '200': {
         description: 'REMOVE vote',

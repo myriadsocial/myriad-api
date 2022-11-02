@@ -61,7 +61,7 @@ export class ServerController {
   @response(204, {
     description: 'Server PATCH success',
   })
-  async update(
+  async updateById(
     @requestBody({
       content: {
         'application/json': {

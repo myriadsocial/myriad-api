@@ -1,6 +1,6 @@
 import {authenticate} from '@loopback/authentication';
 import {intercept, service} from '@loopback/core';
-import {Filter} from '@loopback/repository';
+import {Filter, FilterExcludingWhere} from '@loopback/repository';
 import {
   get,
   getModelSchemaRef,
@@ -9,11 +9,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {
-  FindByIdInterceptor,
-  PaginationInterceptor,
-  UpdateInterceptor,
-} from '../../interceptors';
+import {FindByIdInterceptor, PaginationInterceptor} from '../../interceptors';
 import {ActivityLog, UpdateUserDto, User} from '../../models';
 import {UserService} from '../../services';
 
@@ -25,7 +21,7 @@ export class UserController {
   ) {}
 
   @intercept(FindByIdInterceptor.BINDING_KEY)
-  @get('/current-user')
+  @get('/user/me')
   @response(200, {
     description: 'GET current user',
     content: {
@@ -39,6 +35,23 @@ export class UserController {
     filter?: Filter<User>,
   ): Promise<User> {
     return this.userService.current(filter);
+  }
+
+  @intercept(FindByIdInterceptor.BINDING_KEY)
+  @get('/users/{id}')
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: true}),
+      },
+    },
+  })
+  async findById(
+    @param.path.string('id') id: string,
+    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
+  ): Promise<User> {
+    return this.userService.findById(id, filter);
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -62,7 +75,7 @@ export class UserController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/user-logs')
+  @get('/user/logs')
   @response(200, {
     description: 'GET user activity-logs',
     content: {
@@ -81,10 +94,9 @@ export class UserController {
     return this.userService.activityLog(filter);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
-  @patch('/profile')
+  @patch('/user/me')
   @response(204, {description: 'UPDATE profile'})
-  async updateById(
+  async updateMe(
     @requestBody({
       content: {
         'application/json': {

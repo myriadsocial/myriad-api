@@ -11,7 +11,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {CreateInterceptor, PaginationInterceptor} from '../../interceptors';
+import {PaginationInterceptor} from '../../interceptors';
 import {SocialMediaVerificationDto, UserSocialMedia} from '../../models';
 import {UserService} from '../../services';
 
@@ -22,8 +22,7 @@ export class UserSocialMediaController {
     private userService: UserService,
   ) {}
 
-  @intercept(CreateInterceptor.BINDING_KEY)
-  @post('/user-social-medias/verify')
+  @post('/user/social-medias/verify')
   @response(200, {
     description: 'VERIFY User Social Media',
     content: {
@@ -46,7 +45,7 @@ export class UserSocialMediaController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/user-social-medias')
+  @get('/user/social-medias')
   @response(200, {
     description: 'GET user socialmedias',
     content: {
@@ -65,7 +64,7 @@ export class UserSocialMediaController {
     return this.userService.socialMedia(filter);
   }
 
-  @patch('/user-social-medias/{id}/primary')
+  @patch('/user/social-medias/{id}/primary')
   @response(204, {
     description: 'SET primary socialmedia',
   })
@@ -73,7 +72,7 @@ export class UserSocialMediaController {
     return this.userService.setPrimarySocialMedia(id);
   }
 
-  @del('/user-social-medias/{id}')
+  @del('/user/social-medias/{id}')
   @response(204, {
     description: 'DELETE user socialmedia',
   })

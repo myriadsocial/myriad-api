@@ -14,7 +14,7 @@ export class NotificationController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/notifications')
+  @get('/user/notifications')
   @response(200, {
     description: 'GET user notifications',
     content: {
@@ -33,7 +33,7 @@ export class NotificationController {
     return this.userService.notifications(filter);
   }
 
-  @get('/notifications/count', {
+  @get('/user/notifications/count', {
     responses: {
       '200': {
         description: 'COUNT user notifications',
@@ -47,19 +47,11 @@ export class NotificationController {
     return this.userService.notificationCount(where);
   }
 
-  @patch('/notifications/{id}/read')
+  @patch('/user/notifications/read')
   @response(204, {
     description: 'READ user notification',
   })
-  async readNotification(@param.path.string('id') id: string): Promise<void> {
-    await this.userService.readNotification(id);
-  }
-
-  @patch('/notifications/read')
-  @response(204, {
-    description: 'REAR user notifications',
-  })
-  async readMultipleNotification(): Promise<Count> {
-    return this.userService.readNotifications();
+  async readNotification(@param.query.string('id') id?: string): Promise<void> {
+    await this.userService.readNotifications(id);
   }
 }

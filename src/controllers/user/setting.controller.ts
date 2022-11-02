@@ -85,7 +85,7 @@ export class SettingController {
     return this.userService.setEmailSetting({token});
   }
 
-  @get('/language-setting')
+  @get('/user/language-setting')
   @response(200, {
     description: 'GET user language-setting',
     content: {
@@ -98,7 +98,7 @@ export class SettingController {
     return this.userService.languageSetting();
   }
 
-  @patch('/language-setting')
+  @patch('/user/language-setting')
   @response(200, {
     description: 'SET user language-setting',
     content: {'application/json': {schema: CountSchema}},
@@ -116,7 +116,7 @@ export class SettingController {
     return this.userService.setLanguageSetting(languageSetting);
   }
 
-  @get('/notification-setting')
+  @get('/user/notification-setting')
   @response(200, {
     description: 'GET user notification-setting',
     content: {
@@ -129,7 +129,7 @@ export class SettingController {
     return this.userService.notificationSetting();
   }
 
-  @patch('/notification-setting')
+  @patch('/user/notification-setting')
   @response(200, {
     description: 'SET user notification-setting',
     content: {'application/json': {schema: CountSchema}},
@@ -150,7 +150,7 @@ export class SettingController {
     return this.userService.setNotificationSetting(notificationSetting);
   }
 
-  @get('/account-setting')
+  @get('/user/account-setting')
   @response(200, {
     description: 'GET user account-setting',
     content: {
@@ -163,7 +163,7 @@ export class SettingController {
     return this.userService.accountSetting();
   }
 
-  @patch('/account-setting')
+  @patch('/user/account-setting')
   @response(204, {
     description: 'SET user account-setting',
     content: {'application/json': {schema: CountSchema}},

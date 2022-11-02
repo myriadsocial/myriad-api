@@ -9,7 +9,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {PaginationInterceptor, UpdateInterceptor} from '../../interceptors';
+import {PaginationInterceptor} from '../../interceptors';
 import {Priority, UserCurrency} from '../../models';
 import {UserService} from '../../services';
 
@@ -21,7 +21,7 @@ export class UserCurrencyController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/user-currencies')
+  @get('/user/currencies')
   @response(200, {
     description: 'GET user currencies',
     content: {
@@ -40,8 +40,7 @@ export class UserCurrencyController {
     return this.userService.currencies(filter);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
-  @patch('/user-currencies')
+  @patch('/user/currencies')
   @response(204, {description: 'SET user currency prioroty'})
   async patch(
     @requestBody({

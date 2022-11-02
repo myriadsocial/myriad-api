@@ -25,7 +25,7 @@ export class UserPersonalAccessTokenController {
     private userService: UserService,
   ) {}
 
-  @post('/personal-access-tokens')
+  @post('/user/personal-access-tokens')
   @response(200, {
     description: 'CREATE user personal-access-tokens',
     content: {
@@ -47,7 +47,7 @@ export class UserPersonalAccessTokenController {
     return this.userService.createAccessToken(data);
   }
 
-  @get('/personal-access-tokens')
+  @get('/user/personal-access-tokens')
   @response(200, {
     description: 'GET user personal-access-token',
     content: {
@@ -65,7 +65,7 @@ export class UserPersonalAccessTokenController {
     return this.userService.accessTokens();
   }
 
-  @patch('/personal-access-tokens/{id}')
+  @patch('/user/personal-access-tokens/{id}')
   @response(204, {
     description: 'UPDATE user personal-access-token scopes',
   })
@@ -85,7 +85,7 @@ export class UserPersonalAccessTokenController {
     return this.userService.updateAccessTokenScopes(id, data);
   }
 
-  @del('/personal-access-tokens/{id}')
+  @del('/user/personal-access-tokens/{id}')
   @response(204, {
     description: 'REMOVE user personal-access-token',
   })

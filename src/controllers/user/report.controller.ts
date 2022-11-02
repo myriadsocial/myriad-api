@@ -1,7 +1,6 @@
 import {authenticate} from '@loopback/authentication';
-import {intercept, service} from '@loopback/core';
+import {service} from '@loopback/core';
 import {getModelSchemaRef, post, requestBody, response} from '@loopback/rest';
-import {CreateInterceptor} from '../../interceptors';
 import {CreateReportDto, Report} from '../../models';
 import {UserService} from '../../services';
 
@@ -12,8 +11,7 @@ export class UserReportController {
     protected userService: UserService,
   ) {}
 
-  @intercept(CreateInterceptor.BINDING_KEY)
-  @post('/reports')
+  @post('/user/reports')
   @response(200, {
     description: 'CREATE report',
     content: {

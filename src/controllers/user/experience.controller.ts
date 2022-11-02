@@ -16,12 +16,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {
-  CreateInterceptor,
-  FindByIdInterceptor,
-  PaginationInterceptor,
-  UpdateInterceptor,
-} from '../../interceptors';
+import {FindByIdInterceptor, PaginationInterceptor} from '../../interceptors';
 import {Experience, UserExperience} from '../../models';
 import {UserService} from '../../services';
 
@@ -33,7 +28,7 @@ export class UserExperienceController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/user-experiences')
+  @get('/user/experiences')
   @response(200, {
     description: 'GET user-experiences',
     content: {
@@ -55,7 +50,7 @@ export class UserExperienceController {
   }
 
   @intercept(FindByIdInterceptor.BINDING_KEY)
-  @get('/user-experiences/{id}')
+  @get('/user/experiences/{id}')
   @response(200, {
     description: 'GET user-experience',
     content: {
@@ -72,7 +67,7 @@ export class UserExperienceController {
     return this.userService.userExperience(id, filter);
   }
 
-  @del('/user-experiences/{id}')
+  @del('/user/experiences/{id}')
   @response(204, {
     description: 'UNSUBSCRIBE user experience',
   })
@@ -80,7 +75,6 @@ export class UserExperienceController {
     return this.userService.unsubscribeExperience(id);
   }
 
-  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/user/experiences/{id}/subscribe')
   @response(200, {
     description: 'SUBSCRIBE user experience',
@@ -94,7 +88,6 @@ export class UserExperienceController {
     return this.userService.subscribeExperience(id);
   }
 
-  @intercept(CreateInterceptor.BINDING_KEY)
   @post('/user/experiences')
   @response(200, {
     description: 'CREATE user experience',
@@ -117,13 +110,12 @@ export class UserExperienceController {
     return this.userService.createExperience(experience, experienceId);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/user/experiences/{id}')
   @response(204, {
     description: 'UPDATE user experience',
     content: {'application/json': {schema: CountSchema}},
   })
-  async updateExperience(
+  async updateById(
     @param.path.string('id') id: string,
     @requestBody({
       content: {

@@ -21,7 +21,7 @@ export class ExperiencePostController {
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/experiences/{id}/posts', {
+  @get('/experience/{id}/posts', {
     responses: {
       '200': {
         description: 'GET experience posts',
@@ -46,7 +46,7 @@ export class ExperiencePostController {
     return this.experienceService.posts(id, filter);
   }
 
-  @post('/experience-posts', {
+  @post('/experiences/post', {
     responses: {
       '200': {
         description: 'CREATE experience post',
@@ -74,7 +74,7 @@ export class ExperiencePostController {
     return this.experienceService.addPost(data);
   }
 
-  @del('/experiences/{experienceId}/posts/{postId}', {
+  @del('/experience/{experienceId}/post/{postId}', {
     responses: {
       '200': {
         description: 'Delete Experience Post model instance',

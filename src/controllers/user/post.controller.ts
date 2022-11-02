@@ -11,12 +11,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {
-  CreateInterceptor,
-  FindByIdInterceptor,
-  PaginationInterceptor,
-  UpdateInterceptor,
-} from '../../interceptors';
+import {FindByIdInterceptor, PaginationInterceptor} from '../../interceptors';
 import {
   CreateImportedPostDto,
   DraftPost,
@@ -46,7 +41,7 @@ export class UserPostController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/posts')
+  @get('/user/posts')
   @response(200, {
     description: 'Array of Post model instances',
     content: {
@@ -66,7 +61,7 @@ export class UserPostController {
   }
 
   @intercept(FindByIdInterceptor.BINDING_KEY)
-  @get('/posts/{id}')
+  @get('/user/posts/{id}')
   @response(200, {
     description: 'Post model instance',
     content: {
@@ -82,8 +77,7 @@ export class UserPostController {
     return this.userService.post(id, filter);
   }
 
-  @intercept(CreateInterceptor.BINDING_KEY)
-  @post('/posts')
+  @post('/user/posts')
   @response(200, {
     description: 'CREATE user post',
     content: {'application/json': {schema: getModelSchemaRef(Post)}},
@@ -101,8 +95,7 @@ export class UserPostController {
     return this.userService.createPost(draftPost);
   }
 
-  @intercept(CreateInterceptor.BINDING_KEY)
-  @post('/posts/import')
+  @post('/user/posts/import')
   @response(200, {
     description: 'Post',
     content: {'application/json': {schema: getModelSchemaRef(Post)}},
@@ -121,9 +114,8 @@ export class UserPostController {
     return this.userService.importPost(createImportedPostDto);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
-  @patch('/posts/{id}')
-  @response(204, {
+  @patch('/user/posts/{id}')
+  @response(200, {
     description: 'Post PATCH success',
   })
   async updateById(
@@ -140,8 +132,8 @@ export class UserPostController {
     return this.userService.updatePost(id, data);
   }
 
-  @del('/posts/{id}')
-  @response(204, {
+  @del('/user/posts/{id}')
+  @response(200, {
     description: 'Post DELETE success',
   })
   async deleteById(

@@ -12,7 +12,7 @@ import {
   response,
 } from '@loopback/rest';
 import {PermissionKeys} from '../../enums';
-import {PaginationInterceptor, UpdateInterceptor} from '../../interceptors';
+import {PaginationInterceptor} from '../../interceptors';
 import {Report} from '../../models';
 import {AdminService} from '../../services';
 
@@ -60,7 +60,6 @@ export class ReportController {
     return this.adminService.report(id, filter);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
   @patch('/reports/{id}')
   @response(204, {
     description: 'Report PATCH success',

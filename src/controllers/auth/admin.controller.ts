@@ -84,6 +84,9 @@ export class AdminController {
     const user = await this.userRepository.findById(userId);
     const permissions = union(user.permissions, [PermissionKeys.ADMIN]);
 
-    return this.userRepository.updateById(userId, {permissions});
+    return this.userRepository.updateById(userId, {
+      permissions,
+      updatedAt: new Date().toString(),
+    });
   }
 }

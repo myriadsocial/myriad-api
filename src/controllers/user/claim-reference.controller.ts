@@ -11,7 +11,7 @@ export class ClaimReferenceController {
     private userService: UserService,
   ) {}
 
-  @post('/claim-references')
+  @post('/user/claim-references')
   @response(200, {
     description: 'Claim Reference',
     content: {

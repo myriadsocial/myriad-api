@@ -11,11 +11,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {
-  CreateInterceptor,
-  PaginationInterceptor,
-  UpdateInterceptor,
-} from '../../interceptors';
+import {PaginationInterceptor} from '../../interceptors';
 import {Friend} from '../../models';
 import {UserService} from '../../services';
 
@@ -26,8 +22,7 @@ export class FriendController {
     private userService: UserService,
   ) {}
 
-  @intercept(CreateInterceptor.BINDING_KEY)
-  @post('/friends')
+  @post('/user/friends')
   @response(200, {
     description: 'Friend model instance',
     content: {'application/json': {schema: getModelSchemaRef(Friend)}},
@@ -49,7 +44,7 @@ export class FriendController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/friends')
+  @get('/user/friends')
   @response(200, {
     description: 'Array of Friend model instances',
     content: {
@@ -68,8 +63,7 @@ export class FriendController {
     return this.userService.friends(filter);
   }
 
-  @intercept(UpdateInterceptor.BINDING_KEY)
-  @patch('/friends/{id}')
+  @patch('/user/friends/{id}')
   @response(204, {description: 'RESPOND friend'})
   async updateById(
     @param.path.string('id') id: string,
@@ -87,7 +81,7 @@ export class FriendController {
     await this.userService.respondFriend(id, friend);
   }
 
-  @del('/friends/{id}')
+  @del('/user/friends/{id}')
   @response(204, {
     description: 'REMOVE friend',
   })
