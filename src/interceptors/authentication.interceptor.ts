@@ -20,6 +20,7 @@ import {
   RequestCreateNewUser,
   RequestCreateNewUserByEmail,
   RequestCreateNewUserByWallet,
+  RequestLoginByOTP,
   User,
   UserWithRelations,
   Wallet,
@@ -28,6 +29,7 @@ import {
   ActivityLogRepository,
   NetworkRepository,
   RequestCreateNewUserByEmailRepository,
+  UserOTPRepository,
   UserRepository,
   WalletRepository,
 } from '../repositories';
@@ -41,13 +43,11 @@ import {securityId, UserProfile} from '@loopback/security';
 import {assign, intersection} from 'lodash';
 import NonceGenerator from 'a-nonce-generator';
 import {validateAccount} from '../utils/validate-account';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
 import {isHex} from '@polkadot/util';
 import validator from 'validator';
-import {RequestLoginByOTP} from '../models/request-login-by-otp.model';
-import {UserOTPRepository} from '../repositories/user-otp.repository';
 import {config} from '../config';
-import {generateObjectId} from '../utils/formatted';
+import {generateObjectId} from '../utils/formatter';
+import {PolkadotJs} from '../utils/polkadot-js';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -63,21 +63,21 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     @repository(RequestCreateNewUserByEmailRepository)
     protected requestCreateNewUserByEmailRepository: RequestCreateNewUserByEmailRepository,
     @repository(NetworkRepository)
-    protected networkRepository: NetworkRepository,
+    private networkRepository: NetworkRepository,
     @repository(UserRepository)
-    protected userRepository: UserRepository,
+    private userRepository: UserRepository,
     @repository(UserOTPRepository)
-    protected userOTPRepository: UserOTPRepository,
+    private userOTPRepository: UserOTPRepository,
     @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
+    private walletRepository: WalletRepository,
     @service(CurrencyService)
-    protected currencyService: CurrencyService,
+    private currencyService: CurrencyService,
     @service(FriendService)
-    protected friendService: FriendService,
+    private friendService: FriendService,
     @service(MetricService)
-    protected metricService: MetricService,
+    private metricService: MetricService,
     @service(UserOTPService)
-    protected userOTPService: UserOTPService,
+    private userOTPService: UserOTPService,
   ) {}
 
   /**
@@ -341,7 +341,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
             referenceType: ReferenceType.USER,
           }),
           this.userRepository.wallets(result.id).create(wallet),
-          this.currencyService.addUserCurrencies(result.id, wallet.networkId),
+          this.currencyService.create(result.id, wallet.networkId),
         );
         break;
       }
@@ -357,7 +357,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         const newNonce = ng.generate();
 
         await this.walletRepository.updateAll({primary: false}, {userId});
-        await this.currencyService.updateUserCurrency(userId, networkId);
+        await this.currencyService.update(userId, networkId);
         jobs.push(
           this.userRepository.updateById(userId, {
             nonce: newNonce,
@@ -499,7 +499,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     try {
       const {getKeyring, getHexPublicKey} = new PolkadotJs();
-      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+      const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
       const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
       const address = getHexPublicKey(serverAdmin);
 

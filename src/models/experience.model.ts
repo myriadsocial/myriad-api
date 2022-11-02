@@ -128,11 +128,11 @@ export class Experience extends Entity {
   @belongsTo(() => User, {name: 'user'}, {required: true})
   createdBy: string;
 
-  @hasMany(() => User, {through: {model: () => ExperienceUser}})
-  users: User[];
-
   @hasMany(() => Post, {through: {model: () => ExperiencePost}})
   posts: Post[];
+
+  @hasMany(() => User, {through: {model: () => ExperienceUser}})
+  users?: User[];
 
   constructor(data?: Partial<Experience>) {
     super(data);

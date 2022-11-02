@@ -301,7 +301,7 @@ export class NetworkService {
         throw new HttpErrors.UnprocessableEntity('TxFeeInsufficient');
       }
 
-      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+      const mnemonic = config.MYRIAD_ADMIN_NEAR_MNEMONIC;
       const seedData = nearSeedPhrase.parseSeedPhrase(mnemonic);
       const privateKey = seedData.secretKey;
       const keyPair = utils.key_pair.KeyPairEd25519.fromString(privateKey);
@@ -392,7 +392,7 @@ export class NetworkService {
 
       const tipsBalance = JSON.parse(rawTipsBalance.toString());
       const balance = parseInt(tipsBalance.amount).toString();
-      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+      const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
       const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
       const currencies = await this.currencyRepository.find(<AnyObject>{
         where: {

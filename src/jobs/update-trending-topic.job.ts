@@ -1,7 +1,6 @@
 import {CronJob, cronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
 import {TagRepository} from '../repositories';
-import {DateUtils} from '../utils/date-utils';
 
 @cronJob()
 export class UpdateTrendingTopicJob extends CronJob {
@@ -11,8 +10,8 @@ export class UpdateTrendingTopicJob extends CronJob {
   ) {
     super({
       name: 'update-trending-topicd-job',
-      onTick: async () => {
-        await this.performJob();
+      onTick: () => {
+        this.performJob().finally(console.log);
       },
       cronTime: '0 */30 * * * *',
       start: true,
@@ -20,8 +19,7 @@ export class UpdateTrendingTopicJob extends CronJob {
   }
 
   async performJob() {
-    const dateUtils = new DateUtils();
-    const oneDay = dateUtils.day;
+    const oneDay = 24 * 60 * 60 * 1000;
 
     await this.tagRepository.updateAll(
       {count: 1},

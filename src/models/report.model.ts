@@ -1,13 +1,13 @@
 import {
+  AnyObject,
   Entity,
+  hasMany,
+  Model,
   model,
   property,
-  hasMany,
-  AnyObject,
 } from '@loopback/repository';
-import {ReportStatusType} from '../enums/report-status-type.enum';
+import {ReferenceType, ReportStatusType, ReportType} from '../enums';
 import {UserReport} from './user-report.model';
-import {ReferenceType, ReportType} from '../enums';
 
 @model({
   settings: {
@@ -107,3 +107,43 @@ export interface ReportRelations {
 }
 
 export type ReportWithRelations = Report & ReportRelations;
+
+@model()
+export class CreateReportDto extends Model {
+  @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      enum: Object.values(ReferenceType),
+    },
+  })
+  referenceType: ReferenceType;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  referenceId: string;
+
+  @property({
+    type: 'string',
+    required: false,
+    jsonSchema: {
+      enum: Object.values(ReportType),
+    },
+  })
+  type: ReportType;
+
+  @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      minLength: 3,
+    },
+  })
+  description: string;
+
+  constructor(data?: Partial<CreateReportDto>) {
+    super(data);
+  }
+}

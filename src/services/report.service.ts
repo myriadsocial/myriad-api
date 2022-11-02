@@ -83,7 +83,11 @@ export class ReportService {
         type,
       }));
 
-    return this.updateReportStatus(currentReport);
+    return this.updateReportStatus(currentReport)
+      .then(result => this.afterCreate(result, id, data))
+      .catch(err => {
+        throw err;
+      });
   }
 
   public async find(filter?: Filter<Report>): Promise<Report[]> {
@@ -203,6 +207,46 @@ export class ReportService {
   // ------------------------------------------------
 
   // ------ PrivateFunction --------------------------
+
+  private async afterCreate(
+    report: Report,
+    userId: string,
+    data: CreateReportDto,
+  ): Promise<Report> {
+    Promise.allSettled([
+      this.notificationService.sendReport(report),
+      this.userReportRepository
+        .findOne({
+          where: {
+            reportId: report.id,
+            reportedBy: userId,
+          },
+        })
+        .then(userReport => {
+          if (userReport) return;
+          return this.userReportRepository.create({
+            referenceType: report.referenceType,
+            description: data.description,
+            reportedBy: userId,
+            reportId: report.id,
+          });
+        })
+        .then(userReport => {
+          if (!userReport) return {count: 0};
+          return this.userReportRepository.count({
+            reportId: report.id?.toString() ?? '',
+          });
+        })
+        .then(({count}) => {
+          return this.reportRepository.updateById(report.id, {
+            totalReported: count,
+            status: report.status,
+          });
+        }),
+    ]) as Promise<AnyObject>;
+
+    return report;
+  }
 
   private async handleUserReports(
     userId: string,

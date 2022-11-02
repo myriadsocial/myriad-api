@@ -1,13 +1,13 @@
-import {inject, Getter} from '@loopback/core';
+import {Getter, inject} from '@loopback/core';
 import {
+  BelongsToAccessor,
   DefaultCrudRepository,
   repository,
-  BelongsToAccessor,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {UserReport, UserReportRelations, User, Report} from '../models';
-import {UserRepository} from './user.repository';
+import {Report, User, UserReport, UserReportRelations} from '../models';
 import {ReportRepository} from './report.repository';
+import {UserRepository} from './user.repository';
 
 export class UserReportRepository extends DefaultCrudRepository<
   UserReport,

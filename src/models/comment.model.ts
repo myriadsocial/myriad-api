@@ -9,9 +9,9 @@ import {MentionUser, UserWithRelations, Vote} from '.';
 import {ReferenceType, SectionType} from '../enums';
 import {Metric} from '../interfaces';
 import {CommentLink} from './comment-link.model';
+import {Post, PostWithRelations} from './post.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
-import {Post, PostWithRelations} from './post.model';
 
 @model({
   settings: {

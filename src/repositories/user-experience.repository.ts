@@ -7,9 +7,9 @@ import {
 import {MongoDataSource} from '../datasources';
 import {
   Experience,
+  User,
   UserExperience,
   UserExperienceRelations,
-  User,
 } from '../models';
 import {ExperienceRepository} from './experience.repository';
 import {UserRepository} from './user.repository';

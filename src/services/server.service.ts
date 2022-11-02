@@ -49,7 +49,7 @@ export class ServerService {
   }
 
   private async getServer(): Promise<Server | null> {
-    const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+    const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
 
     if (!mnemonic) throw new HttpErrors.NotFound('MnemonicNotFound');
 

@@ -1,7 +1,7 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
-import {User} from './user.model';
-import {Report} from './report.model';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {ReferenceType} from '../enums';
+import {Report} from './report.model';
+import {User} from './user.model';
 
 @model({
   settings: {

@@ -1,13 +1,13 @@
-import {inject, Getter} from '@loopback/core';
+import {Getter, inject} from '@loopback/core';
 import {
+  BelongsToAccessor,
   DefaultCrudRepository,
   repository,
-  BelongsToAccessor,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Wallet, WalletRelations, User, Network} from '../models';
-import {UserRepository} from './user.repository';
+import {Network, User, Wallet, WalletRelations} from '../models';
 import {NetworkRepository} from './network.repository';
+import {UserRepository} from './user.repository';
 
 export class WalletRepository extends DefaultCrudRepository<
   Wallet,

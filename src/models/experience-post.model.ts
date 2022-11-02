@@ -58,3 +58,22 @@ export interface ExperiencePostRelations {
 
 export type ExperiencePostWithRelations = ExperiencePost &
   ExperiencePostRelations;
+
+export class CreateExperiencePostDto extends Entity {
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: true,
+  })
+  experienceIds: string[];
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  postId: string;
+
+  constructor(data?: Partial<CreateExperiencePostDto>) {
+    super(data);
+  }
+}

@@ -12,7 +12,14 @@ import {securityId, UserProfile} from '@loopback/security';
 import {isHex} from '@polkadot/util';
 import NonceGenerator from 'a-nonce-generator';
 import {assign, omit} from 'lodash';
-import {FriendStatusType, PlatformType, ReferenceType} from '../enums';
+import {config} from '../config';
+import {
+  ActivityLogType,
+  FriendStatusType,
+  PermissionKeys,
+  PlatformType,
+  ReferenceType,
+} from '../enums';
 import {TokenServiceBindings} from '../keys';
 import {
   AccountSetting,
@@ -53,6 +60,7 @@ import {
   UserRepository,
   WalletRepository,
 } from '../repositories';
+import {PolkadotJs} from '../utils/polkadot-js';
 import {validateAccount} from '../utils/validate-account';
 import {JWTService} from './authentication';
 import {CommentService} from './comment.service';
@@ -121,8 +129,8 @@ export class UserService {
 
   // ------ User ------------------------------------
 
-  public async findOne(filter?: Filter<User>): Promise<User | null> {
-    return this.userRepository.findOne(filter);
+  public async findById(id: string, filter?: Filter<User>) {
+    return this.userRepository.findById(id, filter);
   }
 
   public async find(filter?: Filter<User>): Promise<User[]> {
@@ -141,39 +149,31 @@ export class UserService {
       },
     });
 
-    if (!wallet) throw new HttpErrors.NotFound('UserNotFound');
-
-    const networkId = wallet.networkId;
-    const where = filter?.where ?? {};
     const include = filter?.include ?? [];
 
-    include.push({
-      relation: 'userCurrencies',
-      scope: {
-        include: [{relation: 'currency'}],
-        where: {networkId},
-        order: ['priority ASC'],
-        limit: 10,
-      },
-    });
+    if (wallet) {
+      const networkId = wallet.networkId;
 
-    Object.assign(filter ?? {}, {
-      where: {
-        ...where,
-        id: this.currentUser[securityId],
-      },
-      include,
-    });
+      include.push({
+        relation: 'userCurrencies',
+        scope: {
+          include: [{relation: 'currency'}],
+          where: {networkId},
+          order: ['priority ASC'],
+          limit: 10,
+        },
+      });
+    }
 
-    const user = await this.findOne(filter);
-
-    if (!user) throw new HttpErrors.NotFound('UserNotFound');
-
-    return user;
+    return this.findById(this.currentUser[securityId], {include});
   }
 
   public async updateProfile(user: Partial<UpdateUserDto>): Promise<void> {
-    return this.updateById(this.currentUser[securityId], user);
+    return this.updateById(this.currentUser[securityId], user)
+      .then(() => this.afterUpdateProfile(user))
+      .catch(err => {
+        throw err;
+      });
   }
 
   public async activityLog(
@@ -446,7 +446,13 @@ export class UserService {
       primary: false,
     });
 
-    return this.userRepository.wallets(userId).create(raw);
+    return this.userRepository
+      .wallets(userId)
+      .create(raw)
+      .then(result => this.afterConnectWallet(result))
+      .catch(err => {
+        throw err;
+      });
   }
 
   // ------------------------------------------------
@@ -492,12 +498,13 @@ export class UserService {
 
     wallet.networkId = networkId;
     wallet.primary = true;
+    wallet.updatedAt = new Date().toString();
 
     await this.userRepository
       .wallets(this.currentUser[securityId])
       .patch(omit(wallet, ['id']), {id: wallet.id});
 
-    return wallet;
+    return this.afterSwitchNetwork(wallet);
   }
 
   // ------------------------------------------------
@@ -839,12 +846,8 @@ export class UserService {
     return this.notificationService.count(where);
   }
 
-  public async readNotification(id: string): Promise<Count> {
+  public async readNotifications(id?: string): Promise<Count> {
     return this.notificationService.read(id);
-  }
-
-  public async readNotifications(): Promise<Count> {
-    return this.notificationService.read();
   }
 
   // ------------------------------------------------
@@ -1085,6 +1088,115 @@ export class UserService {
       }
 
       throw err;
+    }
+  }
+
+  // ------------------------------------------------
+
+  // ------ PrivateMethod ---------------------------
+
+  private async afterConnectWallet(wallet: Wallet): Promise<Wallet> {
+    const {id, userId, networkId} = wallet;
+    const ng = new NonceGenerator();
+    const newNonce = ng.generate();
+
+    Promise.allSettled([
+      this.userPermissions(userId, id),
+      this.currencyService.create(userId, networkId),
+      this.userRepository.updateById(userId, {
+        nonce: newNonce,
+        fullAccess: true,
+      }),
+    ]) as Promise<AnyObject>;
+
+    return wallet;
+  }
+
+  private async afterSwitchNetwork(wallet: Wallet): Promise<Wallet> {
+    const {networkId, userId} = wallet;
+    const ng = new NonceGenerator();
+    const newNonce = ng.generate();
+
+    Promise.allSettled([
+      this.currencyService.update(userId, networkId).then(() => {
+        return Promise.all([
+          this.userRepository.updateById(userId, {
+            nonce: newNonce,
+            fullAccess: true,
+          }),
+          this.walletRepository.updateAll(
+            {primary: false},
+            {networkId: {nin: [networkId]}, userId},
+          ),
+        ]);
+      }),
+    ]) as Promise<AnyObject>;
+
+    return wallet;
+  }
+
+  private async afterUpdateProfile(
+    user: Partial<UpdateUserDto>,
+  ): Promise<void> {
+    const jobs: Promise<ActivityLog>[] = [];
+
+    if (user.profilePictureURL) {
+      jobs.push(
+        this.userRepository.activityLogs(this.currentUser[securityId]).create({
+          type: ActivityLogType.UPLOADPROFILEPICTURE,
+          userId: this.currentUser[securityId],
+          referenceId: this.currentUser[securityId],
+          referenceType: ReferenceType.USER,
+        }),
+      );
+    }
+
+    if (user.bannerImageURL) {
+      jobs.push(
+        this.userRepository.activityLogs(this.currentUser[securityId]).create({
+          type: ActivityLogType.UPLOADBANNER,
+          userId: this.currentUser[securityId],
+          referenceId: this.currentUser[securityId],
+          referenceType: ReferenceType.USER,
+        }),
+      );
+    }
+
+    if (user.bio) {
+      jobs.push(
+        this.userRepository.activityLogs(this.currentUser[securityId]).create({
+          type: ActivityLogType.FILLBIO,
+          userId: this.currentUser[securityId],
+          referenceId: this.currentUser[securityId],
+          referenceType: ReferenceType.USER,
+        }),
+      );
+    }
+
+    Promise.allSettled(jobs) as Promise<AnyObject>;
+  }
+
+  private async userPermissions(
+    userId: string,
+    registeredAddress: string,
+  ): Promise<void> {
+    try {
+      const {getKeyring, getHexPublicKey} = new PolkadotJs();
+      const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
+
+      const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
+      const address = getHexPublicKey(serverAdmin);
+
+      if (registeredAddress !== address) return;
+      await this.userRepository.updateById(userId, {
+        permissions: [
+          PermissionKeys.MASTER,
+          PermissionKeys.ADMIN,
+          PermissionKeys.USER,
+        ],
+      });
+    } catch {
+      // ignore
     }
   }
 

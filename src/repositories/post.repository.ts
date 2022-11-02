@@ -3,28 +3,28 @@ import {
   BelongsToAccessor,
   DefaultCrudRepository,
   HasManyRepositoryFactory,
-  repository,
   HasManyThroughRepositoryFactory,
+  repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {
   Comment,
-  Vote,
+  Experience,
+  ExperiencePost,
   People,
   Post,
   PostRelations,
   Transaction,
   User,
-  Experience,
-  ExperiencePost,
+  Vote,
 } from '../models';
 import {CommentRepository} from './comment.repository';
-import {VoteRepository} from './vote.repository';
+import {ExperiencePostRepository} from './experience-post.repository';
+import {ExperienceRepository} from './experience.repository';
 import {PeopleRepository} from './people.repository';
 import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
-import {ExperiencePostRepository} from './experience-post.repository';
-import {ExperienceRepository} from './experience.repository';
+import {VoteRepository} from './vote.repository';
 
 export class PostRepository extends DefaultCrudRepository<
   Post,

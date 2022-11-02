@@ -1,28 +1,28 @@
 import {
+  AnyObject,
+  belongsTo,
   Entity,
   hasMany,
+  hasOne,
+  Model,
   model,
   property,
-  hasOne,
-  belongsTo,
-  AnyObject,
 } from '@loopback/repository';
+import NonceGenerator from 'a-nonce-generator';
 import {PermissionKeys} from '../enums';
 import {UserMetric} from '../interfaces';
-import {ActivityLog} from './activity-log.model';
-import {Experience} from './experience.model';
-import {Friend} from './friend.model';
-import {UserExperience} from './user-experience.model';
 import {AccountSetting} from './account-setting.model';
+import {ActivityLog} from './activity-log.model';
+import {Currency} from './currency.model';
+import {Experience, ExperienceWithRelations} from './experience.model';
+import {Friend} from './friend.model';
+import {LanguageSetting} from './language-setting.model';
 import {NotificationSetting} from './notification-setting.model';
 import {People} from './people.model';
-import {UserSocialMedia} from './user-social-media.model';
-import {ExperienceWithRelations} from './experience.model';
-import {LanguageSetting} from './language-setting.model';
-import {Wallet, WalletWithRelations} from './wallet.model';
-import NonceGenerator from 'a-nonce-generator';
-import {Currency} from './currency.model';
 import {UserCurrency} from './user-currency.model';
+import {UserExperience} from './user-experience.model';
+import {UserSocialMedia} from './user-social-media.model';
+import {Wallet, WalletWithRelations} from './wallet.model';
 
 @model({
   settings: {
@@ -248,6 +248,52 @@ export interface UserRelations {
 }
 
 export type UserWithRelations = User & UserRelations;
+
+export class UpdateUserDto extends Model {
+  @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      minLength: 2,
+    },
+  })
+  name: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  profilePictureURL?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+    default:
+      'https://res.cloudinary.com/dsget80gs/background/profile-default-bg.png',
+  })
+  bannerImageURL?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+    jsonSchema: {
+      maxLength: 160,
+    },
+  })
+  bio?: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  websiteURL?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  updatedAt?: string;
+}
 
 export class UserByEmail {
   @property({

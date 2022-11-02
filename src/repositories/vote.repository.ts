@@ -5,7 +5,7 @@ import {
   repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Vote, VoteRelations, User} from '../models';
+import {User, Vote, VoteRelations} from '../models';
 import {PostRepository} from './post.repository';
 import {UserRepository} from './user.repository';
 

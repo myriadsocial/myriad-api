@@ -1,3 +1,4 @@
+import {AuthenticationBindings} from '@loopback/authentication';
 import {
   inject,
   injectable,
@@ -5,35 +6,24 @@ import {
   InvocationContext,
   InvocationResult,
   Provider,
-  service,
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
+import {securityId, UserProfile} from '@loopback/security';
+import {omit} from 'lodash';
 import {
   AccountSettingType,
   ControllerType,
   FriendStatusType,
   MethodType,
-  PlatformType,
   ReferenceType,
 } from '../enums';
-import {
-  People,
-  Post,
-  User,
-  UserCurrencyWithRelations,
-  UserExperienceWithRelations,
-} from '../models';
-import {omit} from 'lodash';
-import {ExperienceService, PostService} from '../services';
+import {User, UserCurrencyWithRelations} from '../models';
 import {
   AccountSettingRepository,
   FriendRepository,
   ReportRepository,
-  WalletRepository,
 } from '../repositories';
-import {AuthenticationBindings} from '@loopback/authentication';
-import {UserProfile, securityId} from '@loopback/security';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -45,19 +35,13 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
   constructor(
     @repository(AccountSettingRepository)
-    protected accountSettingRepository: AccountSettingRepository,
+    private accountSettingRepository: AccountSettingRepository,
     @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
+    private friendRepository: FriendRepository,
     @repository(ReportRepository)
-    protected reportRepository: ReportRepository,
-    @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
-    @service(ExperienceService)
-    protected experienceService: ExperienceService,
-    @service(PostService)
-    protected postService: PostService,
+    private reportRepository: ReportRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    private currentUser: UserProfile,
   ) {}
 
   /**
@@ -90,29 +74,9 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
   async beforeFindById(invocationCtx: InvocationContext): Promise<void> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
-    const methodName = invocationCtx.methodName as MethodType;
 
     switch (controllerName) {
-      case ControllerType.EXPERIENCE: {
-        const filter = invocationCtx.args[1] ?? {};
-        const include = [
-          {
-            relation: 'user',
-            scope: {
-              include: [{relation: 'accountSetting'}],
-            },
-          },
-          {relation: 'users'},
-        ];
-
-        if (!filter.include) filter.include = include;
-        else filter.include.push(...include);
-
-        invocationCtx.args[1] = filter;
-        break;
-      }
-
-      case ControllerType.POST: {
+      case ControllerType.USERPOST: {
         const filter = invocationCtx.args[1] ?? {};
         const experience = {
           relation: 'experiences',
@@ -157,45 +121,6 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         else filter.include.push(...include);
 
         invocationCtx.args[1] = filter;
-        break;
-      }
-
-      case ControllerType.USER: {
-        if (methodName !== MethodType.GETUSER) break;
-
-        const wallet = await this.walletRepository.findOne({
-          where: {
-            userId: this.currentUser?.[securityId] ?? '',
-            primary: true,
-          },
-        });
-
-        const filter = invocationCtx.args[0] ?? {};
-        const include = filter?.include ?? [];
-
-        if (wallet) {
-          const networkId = wallet.networkId;
-
-          include.push({
-            relation: 'userCurrencies',
-            scope: {
-              include: [{relation: 'currency'}],
-              where: {networkId},
-              order: ['priority ASC'],
-              limit: 10,
-            },
-          });
-        }
-
-        Object.assign(filter, {
-          where: {
-            id: this.currentUser[securityId],
-          },
-          include,
-        });
-
-        invocationCtx.args[0] = filter;
-
         break;
       }
     }
@@ -248,36 +173,8 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         return {...result};
       }
 
-      case ControllerType.EXPERIENCE: {
-        const users = result.users ?? [];
-        const userToPeople = users.map((user: User) => {
-          return new People({
-            id: user.id,
-            name: user.name,
-            username: user.username,
-            platform: PlatformType.MYRIAD,
-            originUserId: user.id,
-            profilePictureURL: user.profilePictureURL,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-            deletedAt: user.deletedAt,
-          });
-        });
-
-        result.people = [...result.people, ...userToPeople];
-
-        return omit(result, ['users']);
-      }
-
-      case ControllerType.POST: {
-        return this.postService.getPostImporterInfo(
-          result as Post,
-          this.currentUser[securityId],
-        );
-      }
-
       case ControllerType.USER: {
-        if (methodName === MethodType.GETUSER) {
+        if (methodName === MethodType.CURRENTUSER) {
           const user = result as User;
 
           if (user?.userCurrencies) {
@@ -332,19 +229,6 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         }
 
         return userWithFriendStatus;
-      }
-
-      case ControllerType.USEREXPERIENCE: {
-        const userExperiences = this.experienceService.combinePeopleAndUser([
-          result,
-        ] as UserExperienceWithRelations[]);
-
-        [result] = await this.experienceService.privateUserExperience(
-          this.currentUser[securityId],
-          userExperiences,
-        );
-
-        return result;
       }
 
       case ControllerType.WALLET: {

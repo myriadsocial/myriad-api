@@ -81,6 +81,21 @@ export class UserExperience extends Entity {
   @belongsTo(() => User, {}, {required: true})
   userId: string;
 
+  @property({
+    type: 'boolean',
+  })
+  private?: boolean;
+
+  @property({
+    type: 'boolean',
+  })
+  friend?: boolean;
+
+  @property({
+    type: 'boolean',
+  })
+  blocked?: boolean;
+
   constructor(data?: Partial<UserExperience>) {
     super(data);
   }

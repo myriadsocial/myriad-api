@@ -1,5 +1,6 @@
 import {BindingScope, injectable, service} from '@loopback/core';
 import {Filter} from '@loopback/repository';
+import {ReportStatusType} from '../enums';
 import {Report, Server} from '../models';
 import {ReportService} from './report.service';
 import {ServerService} from './server.service';
@@ -45,7 +46,12 @@ export class AdminService {
     id: string,
     report: Partial<Report>,
   ): Promise<void> {
-    return this.reportService.updateById(id, report);
+    return this.reportService
+      .updateById(id, report)
+      .then(() => this.afterProcessReport(id, report))
+      .catch(err => {
+        throw err;
+      });
   }
 
   public async removeReport(id: string): Promise<void> {
@@ -62,4 +68,21 @@ export class AdminService {
   }
 
   // ------------------------------------------------
+
+  // ------ PrivateMethod ---------------------------
+
+  private async afterProcessReport(
+    id: string,
+    report: Partial<Report>,
+  ): Promise<void> {
+    if (report.status === ReportStatusType.REMOVED) {
+      this.reportService.findById(id).then(({referenceId, referenceType}) => {
+        return this.reportService.updateReport(
+          referenceId,
+          referenceType,
+          false,
+        );
+      }) as Promise<void>;
+    }
+  }
 }

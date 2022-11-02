@@ -25,15 +25,10 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
       userProfile = await this.tokenService.verifyToken(token);
     } catch (err) {
       const url = request.originalUrl.split('/');
-      const wallet = url[1];
       const walletAddress = url[3];
 
       // Handle posts and users
-      if (
-        request.method === 'GET' &&
-        wallet !== 'wallet' &&
-        walletAddress !== 'walletaddress'
-      ) {
+      if (request.method === 'GET' && walletAddress !== 'walletaddress') {
         const randomUserId = generateObjectId();
 
         return {

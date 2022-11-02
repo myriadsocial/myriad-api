@@ -31,3 +31,7 @@ export interface RefreshTokenService {
    */
   refreshToken(refreshToken: string): Promise<TokenObject>;
 }
+
+export interface RefreshGrant {
+  refreshToken: string;
+}

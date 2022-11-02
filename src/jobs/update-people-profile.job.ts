@@ -1,10 +1,10 @@
-import {CronJob, cronJob} from '@loopback/cron';
 import {inject} from '@loopback/core';
-import {Reddit, Twitter} from '../services';
+import {CronJob, cronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
-import {PeopleRepository} from '../repositories';
 import {PlatformType} from '../enums';
 import {People} from '../models';
+import {PeopleRepository} from '../repositories';
+import {Reddit, Twitter} from '../services';
 
 @cronJob()
 export class UpdatePeopleProfileJob extends CronJob {
@@ -18,8 +18,8 @@ export class UpdatePeopleProfileJob extends CronJob {
   ) {
     super({
       name: 'update-people-profile-job',
-      onTick: async () => {
-        await this.performJob();
+      onTick: () => {
+        this.performJob().finally(console.log);
       },
       cronTime: '0 0 0 */30 * *',
       start: true,

@@ -141,15 +141,16 @@ export class UserExperienceService {
       .patch(experience, {id})
       .then(({count}) => {
         if (count > 0) {
-          Promise.allSettled(
-            people.map(({id: peopleId, platform}) => {
+          Promise.allSettled([
+            this.metricService.userMetric(userId),
+            ...people.map(({id: peopleId, platform}) => {
               if (platform !== PlatformType.MYRIAD) return;
               return this.experienceUserRepository.create({
                 userId: peopleId,
                 experienceId: id,
               });
             }),
-          ) as Promise<AnyObject>;
+          ]) as Promise<AnyObject>;
         }
         return {count};
       })
@@ -453,10 +454,10 @@ export class UserExperienceService {
 
   private validateExperienceData(experience: Experience): People[] {
     const userId = this.currentUser[securityId];
-    const allowedTags = experience.allowedTags.filter(e => e !== '');
-    const prohibitedTags = experience.prohibitedTags;
+    const allowedTags = experience?.allowedTags?.filter(e => e !== '') ?? [];
+    const prohibitedTags = experience?.prohibitedTags ?? [];
     const intersectionTags = intersection(allowedTags, prohibitedTags);
-    const people = experience.people.filter(e => {
+    const people = experience?.people?.filter(e => {
       if (e.id === '' || e.name === '' || e.username === '' || !e.platform) {
         return false;
       }
@@ -469,13 +470,7 @@ export class UserExperienceService {
 
       if (platforms.includes(e.platform)) return true;
       return false;
-    });
-    if (people.length === 0) {
-      throw new HttpErrors.UnprocessableEntity('PeopleCannotEmpty');
-    }
-    if (allowedTags.length === 0) {
-      throw new HttpErrors.UnprocessableEntity('TagsCannotEmpty');
-    }
+    }) ?? [];
     if (intersectionTags.length > 0) {
       throw new HttpErrors.UnprocessableEntity(
         'IntersectBetweenAllowedAndProhibitedTag',

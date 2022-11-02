@@ -79,12 +79,13 @@ export class FriendService {
   }
 
   public async respond(id: string, data: Friend): Promise<void> {
-    if (data.status !== FriendStatusType.APPROVED) {
+    if (data.status !== FriendStatusType.PENDING) {
       throw new HttpErrors.UnprocessableEntity('RespondFailed');
     }
 
     return this.validateRespond(data)
-      .then(() => this.friendRepository.updateById(id, data))
+      .then(friend => this.friendRepository.updateById(id, friend))
+      .then(() => this.afterRespond(data))
       .catch(err => {
         throw err;
       });
@@ -353,6 +354,31 @@ export class FriendService {
     return friend;
   }
 
+  private async afterRespond(friend: FriendWithRelations): Promise<void> {
+    const {requestor, requestee} = friend;
+    if (!requestor || !requestee) return;
+    const {friendIndex: requestorFriendIndex} = requestor;
+    const {friendIndex: requesteeFriendIndex} = requestee;
+
+    Promise.allSettled([
+      this.notificationService.sendFriendAccept(requestor.id),
+      this.metricService.userMetric(requestor.id),
+      this.metricService.userMetric(requestee.id),
+      this.userRepository.updateById(requestor.id, {
+        friendIndex: {
+          ...requestorFriendIndex,
+          [requestee.id]: 1,
+        },
+      }),
+      this.userRepository.updateById(requestee.id, {
+        friendIndex: {
+          ...requesteeFriendIndex,
+          [requestor.id]: 1,
+        },
+      }),
+    ]) as Promise<AnyObject>;
+  }
+
   private async afterDelete(friend?: FriendWithRelations): Promise<void> {
     if (!friend) return;
     const {requesteeId, requestorId, requestee, requestor} = friend;
@@ -373,7 +399,9 @@ export class FriendService {
     ]) as Promise<AnyObject>;
   }
 
-  private async validateRespond(friend: FriendWithRelations): Promise<void> {
+  private async validateRespond(
+    friend: FriendWithRelations,
+  ): Promise<Partial<Friend>> {
     const {requestee, requestor, status} = friend;
 
     if (requestee && requestor) {
@@ -386,6 +414,8 @@ export class FriendService {
         requestorId: requestee.id,
         status: FriendStatusType.APPROVED,
       });
+
+      return {status: FriendStatusType.APPROVED};
     } else {
       throw new HttpErrors.UnprocessableEntity('WrongRequesteeId/RequestorId');
     }

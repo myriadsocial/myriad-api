@@ -1,10 +1,7 @@
 import {BindingScope, injectable, service} from '@loopback/core';
 import {Filter, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import type {AccountInfo} from '@polkadot/types/interfaces';
-import {BN} from '@polkadot/util';
-import {config} from '../config';
-import {Currency, UserCurrency, Wallet} from '../models';
+import {Currency, UserCurrency} from '../models';
 import {
   CurrencyRepository,
   ExchangeRateRepository,
@@ -13,7 +10,6 @@ import {
   UserCurrencyRepository,
   WalletRepository,
 } from '../repositories';
-import {PolkadotJs} from '../utils/polkadot-js';
 import {NotificationService} from './notification.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -169,69 +165,6 @@ export class CurrencyService {
         );
       }),
     );
-  }
-
-  public async sendMyria(wallet: Wallet): Promise<void> {
-    const {userId: toUserId, networkId: networkType, id: address} = wallet;
-
-    if (networkType !== 'myriad') return;
-    if (!config.MYRIAD_FAUCET_AMOUNT) return;
-    if (config.MYRIAD_FAUCET_AMOUNT === 0) return;
-
-    const currency = await this.currencyRepository.findOne({
-      where: {
-        networkId: 'myriad',
-        symbol: 'MYRIA',
-      },
-      include: ['network'],
-    });
-
-    if (!currency || !currency.network) return;
-    const {id, decimal, network} = currency;
-    const rpcURL = network.rpcURL;
-    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
-    const api = await polkadotApi(rpcURL);
-
-    const mnemonic = config.MYRIAD_FAUCET_MNEMONIC;
-    const sender = getKeyring().addFromMnemonic(mnemonic);
-    const from = getHexPublicKey(sender);
-    const to = address;
-
-    const rewardAmount = config.MYRIAD_FAUCET_AMOUNT * 10 ** decimal;
-
-    const transfer = api.tx.balances.transfer(
-      to,
-      new BN(rewardAmount.toString()),
-    );
-    const {nonce} = await api.query.system.account<AccountInfo>(sender.address);
-    const number = await this.queue(nonce.toJSON(), 'MYRIA');
-
-    const hash = await new Promise((resolve, reject) => {
-      transfer
-        .signAndSend(sender, {nonce: number}, ({status, isError}) => {
-          if (status.isFinalized) {
-            const blockHash = status.asFinalized.toHex();
-            resolve(blockHash);
-          } else if (isError) {
-            reject();
-          }
-        })
-        .catch(() => reject());
-    });
-
-    await api.disconnect();
-
-    if (hash && typeof hash === 'string') {
-      const fromWallet = await this.walletRepository.findById(from);
-      const transaction = await this.transactionRepository.create({
-        hash: hash,
-        amount: rewardAmount / 10 ** decimal,
-        to: toUserId,
-        from: fromWallet.userId,
-        currencyId: id,
-      });
-      await this.notificationService.sendInitialTips(transaction);
-    }
   }
 
   private async queue(nonce: number, type: string): Promise<number> {
