@@ -5,13 +5,17 @@ export const config = {
   APPLICATION_HOST: process.env.HOST ?? 'localhost',
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
 
-  MYRIAD_ADMIN_MNEMONIC:
-    process.env.MYRIAD_ADMIN_MNEMONIC ??
+  MYRIAD_ADMIN_SUBSTRATE_MNEMONIC:
+    process.env.MYRIAD_SUBSTRATE_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
-  MYRIAD_FAUCET_MNEMONIC:
-    process.env.MYRIAD_FAUCET_MNEMONIC ??
-    'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
-  MYRIAD_FAUCET_AMOUNT: +(process.env.MYRIAD_FAUCET_AMOUNT ?? 0),
+
+  MYRIAD_ADMIN_NEAR_MNEMONIC:
+    process.env.MYRIAD_NEAR_MNEMONIC ??
+    'bottom drive obey lake curtain smoke basket hold race lonely fit walk',
+
+  MYRIAD_ADMIN_ETHEREUM_MNEMONIC:
+    process.env.MYRIAD_ETHEREUM_MNEMONIC ??
+    'bottom drive obey lake curtain smoke basket hold race lonely fit walk',
 
   JWT_TOKEN_SECRET_KEY: !process.env.JWT_TOKEN_SECRET_KEY
     ? 'tok3n'

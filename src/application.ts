@@ -1,43 +1,28 @@
 import {AuthenticationComponent} from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
 import {ApplicationConfig, createBindingFromClass} from '@loopback/core';
+import {CronComponent} from '@loopback/cron';
 import {HealthComponent} from '@loopback/health';
 import {
   AnyObject,
   RepositoryMixin,
   SchemaMigrationOptions,
 } from '@loopback/repository';
-import {RestApplication, Request, Response} from '@loopback/rest';
+import {Request, Response, RestApplication} from '@loopback/rest';
 import {RestExplorerComponent} from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
-import * as firebaseAdmin from 'firebase-admin';
-import {config} from './config';
-import path from 'path';
-import {JWTAuthenticationComponent} from './components';
-import {MyriadSequence} from './sequence';
-import {
-  CurrencyService,
-  ExperienceService,
-  FCMService,
-  FriendService,
-  MetricService,
-  NotificationService,
-  PostService,
-  ReportService,
-  SocialMediaService,
-  TagService,
-  TransactionService,
-  UserSocialMediaService,
-  ActivityLogService,
-  VoteService,
-  NetworkService,
-  ServerService,
-} from './services';
-import {UpdatePeopleProfileJob} from './jobs';
-import {CronComponent} from '@loopback/cron';
 import * as Sentry from '@sentry/node';
+import * as firebaseAdmin from 'firebase-admin';
+import {omit} from 'lodash';
+import {
+  RateLimiterComponent,
+  RateLimitSecurityBindings,
+} from 'loopback4-ratelimiter';
 import multer from 'multer';
+import path from 'path';
 import {v4 as uuid} from 'uuid';
+import {JWTAuthenticationComponent} from './components';
+import {config} from './config';
 import {FILE_UPLOAD_SERVICE} from './keys';
 import {
   AccountSettingRepository,
@@ -66,20 +51,40 @@ import {
   VoteRepository,
   WalletRepository,
 } from './repositories';
+import {MyriadSequence} from './sequence';
 import {
-  RateLimiterComponent,
-  RateLimitSecurityBindings,
-} from 'loopback4-ratelimiter';
+  ActivityLogService,
+  AdminService,
+  CurrencyService,
+  EmailService,
+  ExperienceService,
+  FCMService,
+  FriendService,
+  MetricService,
+  NetworkService,
+  NotificationService,
+  PeopleService,
+  PostService,
+  ReportService,
+  ServerService,
+  SocialMediaService,
+  StatisticService,
+  StorageService,
+  TagService,
+  TransactionService,
+  UploadType,
+  UserExperienceService,
+  UserService,
+  UserSocialMediaService,
+  VoteService,
+  WalletAddressService,
+} from './services';
+import {PolkadotJs} from './utils/polkadot-js';
 import {getFilePathFromSeedData, upload} from './utils/upload';
-import {DateUtils} from './utils/date-utils';
 import fs, {existsSync} from 'fs';
-import {FriendStatusType, UploadType} from './enums';
-import {omit} from 'lodash';
-import {PolkadotJs} from './utils/polkadotJs-utils';
-import {EmailService} from './services/email.service';
-import {UserService} from './services/user.service';
+import {FriendStatusType} from './enums';
+import {UpdatePeopleProfileJob} from './jobs';
 
-const date = new DateUtils();
 const jwt = require('jsonwebtoken');
 
 export {ApplicationConfig};
@@ -124,7 +129,7 @@ export class MyriadApiApplication extends BootMixin(
     this.bind(RateLimitSecurityBindings.CONFIG).to({
       name: 'redis',
       type: 'RedisStore',
-      windowMs: 15 * date.minute,
+      windowMs: 15 * 60 * 1000,
       standardHeaders: true,
       max: (req: Request, _: Response) => {
         switch (req.method) {
@@ -168,23 +173,29 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   registerService() {
-    this.service(NotificationService);
-    this.service(FriendService);
-    this.service(UserSocialMediaService);
-    this.service(TransactionService);
-    this.service(SocialMediaService);
-    this.service(CurrencyService);
-    this.service(ReportService);
-    this.service(PostService);
-    this.service(TagService);
-    this.service(ExperienceService);
-    this.service(MetricService);
     this.service(ActivityLogService);
-    this.service(VoteService);
-    this.service(NetworkService);
-    this.service(ServerService);
+    this.service(AdminService);
+    this.service(CurrencyService);
     this.service(EmailService);
+    this.service(ExperienceService);
+    this.service(FriendService);
+    this.service(MetricService);
+    this.service(NetworkService);
+    this.service(NotificationService);
+    this.service(PeopleService);
+    this.service(PostService);
+    this.service(ReportService);
+    this.service(ServerService);
+    this.service(SocialMediaService);
+    this.service(StatisticService);
+    this.service(StorageService);
+    this.service(TagService);
+    this.service(TransactionService);
+    this.service(UserExperienceService);
     this.service(UserService);
+    this.service(UserSocialMediaService);
+    this.service(VoteService);
+    this.service(WalletAddressService);
 
     // 3rd party service
     this.service(FCMService);
@@ -416,7 +427,7 @@ export class MyriadApiApplication extends BootMixin(
           }
 
           case 'server.json': {
-            const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+            const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
 
             if (!mnemonic) throw new Error('MnemonicNotFound');
 
@@ -447,10 +458,23 @@ export class MyriadApiApplication extends BootMixin(
               throw new Error('Image server not exists');
             }
 
+            const accountId = {myriad: address};
             const serverName =
               data.name === 'Instance'
                 ? `${data.name} ${Math.floor(Math.random() * 1000)}`
                 : data.name;
+
+            if (data?.accountId?.near) {
+              Object.assign(accountId, {
+                near: data.accountId.near,
+              });
+            }
+
+            if (data?.accountId?.ethereum) {
+              Object.assign(accountId, {
+                ethereum: data.accountId.ethereum,
+              });
+            }
 
             const rawServer = Object.assign(
               omit(data, ['sourceImageFileName', 'targetImagePath']),

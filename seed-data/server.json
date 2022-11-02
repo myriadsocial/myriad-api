@@ -7,6 +7,11 @@
   "images": {
     "sourceImageFileName": "banner",
     "targetImagePath": "general/servers"
+  },
+  "account_id": {
+    "near": "myriad.near",
+    "myriad": "5Gxe4WHjcJ1F4KSArVp7WJ6LQTUPpMdh1UuAysLP3d16phHM",
+    "ethereum": "0xEc3Aa27DC4FcCB11377Eda9492ba898f61AA8f3F"
   }
 }
 
