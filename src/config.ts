@@ -13,10 +13,6 @@ export const config = {
     process.env.MYRIAD_NEAR_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk',
 
-  MYRIAD_ADMIN_ETHEREUM_MNEMONIC:
-    process.env.MYRIAD_ETHEREUM_MNEMONIC ??
-    'bottom drive obey lake curtain smoke basket hold race lonely fit walk',
-
   JWT_TOKEN_SECRET_KEY: !process.env.JWT_TOKEN_SECRET_KEY
     ? 'tok3n'
     : process.env.JWT_TOKEN_SECRET_KEY,
