@@ -37,17 +37,17 @@ bower_components
 .lock-wscript
 
 # Compiled binary addons (http://nodejs.org/api/addons.html)
-/build
+build
 build/Release
 
 # Dependency directories
-node_modules/
-jspm_packages/
-/.pnp
+node_modules
+jspm_packages
+.pnp
 .pnp.js
 
 # Typescript v1 declaration files
-typings/
+typings
 
 # Optional npm cache directory
 .npm
@@ -68,8 +68,8 @@ typings/
 .env
 
 # Transpiled JavaScript files from Typescript
-/dist
-/out/
+dist
+out
 
 # Cache used by TypeScript's incremental build
 *.tsbuildinfo
@@ -96,6 +96,3 @@ seed-data/assets/*
 !seed-data/assets/myriad.png
 !seed-data/assets/profile.png
 !seed-data/assets/banner.svg
-
-# Ignore generated credentials from google-github-actions/auth
-gha-creds-*.json

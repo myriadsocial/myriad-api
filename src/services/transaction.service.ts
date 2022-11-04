@@ -159,28 +159,26 @@ export class TransactionService {
 
     let toWalletId = false;
 
-    const [_, toWallet] = await Promise.all([
-      this.currencyRepository.findById(currencyId),
-      this.walletRepository
-        .findById(to, {include: ['user']})
-        .catch(() => this.userRepository.findById(to))
-        .catch(() => this.peopleRepository.findById(to))
-        .then(result => {
-          if (result.constructor.name === 'Wallet') {
-            const wallet = new Wallet(result) as WalletWithRelations;
+    await this.currencyRepository.findById(currencyId);
+    const toWallet = await this.walletRepository
+      .findById(to, {include: ['user']})
+      .catch(() => this.userRepository.findById(to))
+      .catch(() => this.peopleRepository.findById(to))
+      .then(result => {
+        if (result.constructor.name === 'Wallet') {
+          const wallet = new Wallet(result) as WalletWithRelations;
 
-            toWalletId = true;
+          toWalletId = true;
 
-            if (!wallet?.user) throw new Error('UserNotFound');
-            return wallet;
-          }
+          if (!wallet?.user) throw new Error('UserNotFound');
+          return wallet;
+        }
 
-          return null;
-        })
-        .catch(() => {
-          throw new HttpErrors.NotFound('UserNotFound');
-        }),
-    ]);
+        return null;
+      })
+      .catch(() => {
+        throw new HttpErrors.NotFound('UserNotFound');
+      });
 
     transaction.from = this.currentUser[securityId];
 

@@ -120,10 +120,8 @@ export class PostService {
       url: [platform, originPostId].join(','),
     });
 
-    const [_, post] = await Promise.all([
-      this.validateImportedPost(raw),
-      this.fetchImportedPost(raw, pathname),
-    ]);
+    await this.validateImportedPost(raw);
+    const post = await this.fetchImportedPost(raw, pathname);
 
     const {platformUser} = post;
 
