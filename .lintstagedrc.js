@@ -1,3 +1,3 @@
 module.exports = {
-  '*': ['yarn lint:fix', 'yarn format:fix'],
+  '!yarn.lock': ['yarn lint:fix', 'yarn format:fix'],
 };
