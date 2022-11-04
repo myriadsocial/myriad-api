@@ -80,6 +80,9 @@ out
 # Experiment
 prisma
 
+# husky
+.husky/_
+
 # misc
 *.pem
 
