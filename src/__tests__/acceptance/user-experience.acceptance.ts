@@ -12,6 +12,7 @@ import {
   givenExperience,
   givenExperienceInstance,
   givenExperienceRepository,
+  givenMultipleExperienceInstances,
   givenMultipleUserExperienceInstances,
   givenOtherUser,
   givenUserExperience,
@@ -49,7 +50,7 @@ describe('UserExperienceApplication', function () {
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository);
+    user = await givenUserInstance(userRepository, {fullAccess: true});
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
     token = await givenAccesToken(user);
   });
@@ -347,7 +348,35 @@ describe('UserExperienceApplication', function () {
       }, 10000);
     });
 
+    it('rejects create a new experience when in lite version', async () => {
+      await Promise.all([
+        userRepository.updateById(user.id.toString(), {fullAccess: false}),
+        givenMultipleExperienceInstances(
+          experienceRepository,
+          user.id.toString(),
+        ),
+        givenMultipleExperienceInstances(
+          experienceRepository,
+          user.id.toString(),
+        ),
+        givenMultipleExperienceInstances(
+          experienceRepository,
+          user.id.toString(),
+        ),
+      ]);
+
+      const experience = givenExperience({createdBy: user.id.toString()});
+
+      await client
+        .post(`/users/${user.id}/experiences`)
+        .set('Authorization', `Bearer ${token}`)
+        .send(experience)
+        .expect(422);
+    });
+
     it('rejects creates new experience when user has experience more than 10', async () => {
+      await userRepository.updateById(user.id.toString(), {fullAccess: true});
+
       for (let i = 0; i < 10; i++) {
         await givenExperienceInstance(experienceRepository, {
           createdBy: user.id,
