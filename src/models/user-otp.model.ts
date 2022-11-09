@@ -31,7 +31,6 @@ export class UserOTP extends Entity {
   @property({
     type: 'date',
     required: true,
-    default: () => new Date(new Date().getTime() + 30 * 60000),
   })
   expiredAt?: string;
 
@@ -45,7 +44,6 @@ export class UserOTP extends Entity {
   @property({
     type: 'date',
     required: false,
-    default: () => new Date(),
   })
   updatedAt?: string;
 
