@@ -38,10 +38,12 @@ export class UserOTPService {
     const userOTP = new UserOTP();
     userOTP.token = this.generateOTP();
     userOTP.userId = user.id;
+    userOTP.expiredAt = new Date(new Date().getTime() + 30 * 60000).toString();
 
     if (existingUserOTP) {
       userOTP.id = existingUserOTP.id;
       userOTP.createdAt = existingUserOTP.createdAt;
+      userOTP.updatedAt = new Date().toString();
       await this.userOTPRepository.update(userOTP);
     } else {
       await this.userOTPRepository.create(userOTP);
