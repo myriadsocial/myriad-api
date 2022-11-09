@@ -128,7 +128,7 @@ describe('FriendApplication', function () {
     });
 
     await client
-      .post('/friends')
+      .post('/user/friends')
       .set('Authorization', `Bearer ${token}`)
       .send(friend)
       .expect(401);
@@ -248,7 +248,7 @@ describe('FriendApplication', function () {
       });
 
       await client
-        .patch(`/friends/${friend.id}`)
+        .patch(`/user/friends/${friend.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send(updatedFriend)
         .expect(401);
@@ -327,7 +327,7 @@ describe('FriendApplication', function () {
       });
 
       await client
-        .del(`/friends/${friend.id}`)
+        .del(`/user/friends/${friend.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(401);
