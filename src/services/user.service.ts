@@ -677,35 +677,55 @@ export class UserService {
     id: string,
     filter?: Filter<UserExperience>,
   ): Promise<UserExperience> {
-    return this.userExperienceService.findById(id, filter, true);
+    return this.userExperienceService.findById(
+      id,
+      filter,
+      this.currentUser[securityId],
+    );
   }
 
   public async userExperiences(
     filter?: Filter<UserExperience>,
   ): Promise<UserExperience[]> {
-    return this.userExperienceService.find(filter, true);
+    return this.userExperienceService.find(
+      filter,
+      this.currentUser[securityId],
+    );
   }
 
   public async createExperience(
     experince: Omit<Experience, 'id'>,
     clonedId?: string,
   ): Promise<Experience> {
-    return this.userExperienceService.create(experince, clonedId);
+    const userId = this.currentUser[securityId];
+    const fullAccess = this.currentUser.fullAccess;
+
+    experince.createdBy = userId;
+
+    return this.userExperienceService.create(experince, clonedId, fullAccess);
   }
 
   public async subscribeExperience(id: string): Promise<UserExperience> {
-    return this.userExperienceService.subscribe(id);
+    return this.userExperienceService.subscribe(
+      id,
+      this.currentUser[securityId],
+    );
   }
 
   public async updateExperience(
     id: string,
     experience: Partial<Experience>,
   ): Promise<Count> {
+    experience.createdBy = this.currentUser[securityId];
+
     return this.userExperienceService.update(id, experience);
   }
 
   public async unsubscribeExperience(id: string): Promise<void> {
-    return this.userExperienceService.unsubscribe(id);
+    return this.userExperienceService.unsubscribe(
+      id,
+      this.currentUser[securityId],
+    );
   }
 
   // ------------------------------------------------

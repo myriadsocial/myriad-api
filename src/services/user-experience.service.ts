@@ -1,5 +1,4 @@
-import {AuthenticationBindings} from '@loopback/authentication';
-import {BindingScope, inject, injectable, service} from '@loopback/core';
+import {BindingScope, injectable, service} from '@loopback/core';
 import {
   AnyObject,
   Count,
@@ -8,7 +7,6 @@ import {
   Where,
 } from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {securityId, UserProfile} from '@loopback/security';
 import {intersection, omit} from 'lodash';
 import {
   AccountSettingType,
@@ -54,8 +52,6 @@ export class UserExperienceService {
     private metricService: MetricService,
     @service(TagService)
     private tagService: TagService,
-    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    private currentUser: UserProfile,
   ) {}
 
   // ------------------------------------------------
@@ -65,15 +61,15 @@ export class UserExperienceService {
   public async findById(
     id: string,
     filter?: Filter<UserExperience>,
-    withPrivacyInfo = false,
+    userId?: string,
   ): Promise<UserExperienceWithRelations> {
     return this.userExperienceRepository
       .findById(id, filter)
       .then(async userExperience => {
-        if (withPrivacyInfo) {
+        if (userId) {
           const data = this.combinePeopleAndUser([userExperience]);
           const [privateUserExperience] = await this.privateUserExperience(
-            this.currentUser[securityId],
+            userId,
             data,
           );
 
@@ -86,7 +82,7 @@ export class UserExperienceService {
 
   public async find(
     filter?: Filter<UserExperience>,
-    withPrivacyInfo = false,
+    userId?: string,
   ): Promise<UserExperienceWithRelations[]> {
     return this.userExperienceRepository
       .find(filter)
@@ -96,10 +92,10 @@ export class UserExperienceService {
           'userId',
         );
 
-        if (withPrivacyInfo && includeUser) {
+        if (userId && includeUser) {
           const data = this.combinePeopleAndUser(userExperiences);
           const privateUserExperience = await this.privateUserExperience(
-            this.currentUser[securityId],
+            userId,
             data,
           );
 
@@ -128,7 +124,10 @@ export class UserExperienceService {
     id: string,
     experience: Partial<Experience>,
   ): Promise<Count> {
-    const userId = this.currentUser[securityId];
+    const userId = experience.createdBy;
+
+    if (!userId) return {count: 0};
+
     const people = this.validateExperienceData(experience as Experience);
 
     await Promise.all([
@@ -166,8 +165,19 @@ export class UserExperienceService {
   public async create(
     experience: Omit<Experience, 'id'>,
     clonedId?: string,
+    fullAccess?: boolean,
   ): Promise<Experience> {
-    const userId = this.currentUser[securityId];
+    if (!fullAccess) {
+      const {count} = await this.experienceRepository.count({
+        createdBy: experience.createdBy,
+      });
+
+      if (count > 5) {
+        throw new HttpErrors.UnprocessableEntity('ExperienceLimitExceeded');
+      }
+    }
+
+    const userId = experience.createdBy;
     const people = this.validateExperienceData(experience);
     const totalExperience = await this.validateCreatedExperience(userId);
 
@@ -182,8 +192,10 @@ export class UserExperienceService {
       });
   }
 
-  public async subscribe(experienceId: string): Promise<UserExperience> {
-    const userId = this.currentUser[securityId];
+  public async subscribe(
+    experienceId: string,
+    userId: string,
+  ): Promise<UserExperience> {
     const subscribed = await this.beforeSubscribe(userId, experienceId);
 
     return this.userExperienceRepository
@@ -194,14 +206,11 @@ export class UserExperienceService {
       });
   }
 
-  public async unsubscribe(id: string): Promise<void> {
-    const {userId, experienceId, experience} = await this.findById(id, {
+  public async unsubscribe(id: string, userId: string): Promise<void> {
+    const {experienceId, experience} = await this.findById(id, {
+      where: {userId},
       include: ['experience'],
     });
-
-    if (userId !== this.currentUser[securityId]) {
-      throw new HttpErrors.Unauthorized('UnauthorizedUser');
-    }
 
     const experienceCreator = experience?.createdBy ?? '';
 
@@ -254,7 +263,7 @@ export class UserExperienceService {
     totalExperience: number,
     clonedId?: string,
   ): Promise<Experience> {
-    const userId = this.currentUser[securityId];
+    const userId = experience.createdBy;
     const experienceId = experience?.id ?? '';
     const tags = [...experience.allowedTags, ...experience.prohibitedTags];
     const promises: Promise<AnyObject | void>[] = [
@@ -453,9 +462,9 @@ export class UserExperienceService {
   }
 
   private validateExperienceData(experience: Experience): People[] {
-    const userId = this.currentUser[securityId];
-    const allowedTags = experience?.allowedTags?.filter(e => e !== '') ?? [];
-    const prohibitedTags = experience?.prohibitedTags ?? [];
+    const userId = experience.createdBy;
+    const allowedTags = experience?.allowedTags?.filter(e => e !== '');
+    const prohibitedTags = experience?.prohibitedTags;
     const intersectionTags = intersection(allowedTags, prohibitedTags);
     const people = experience?.people?.filter(e => {
       if (e.id === '' || e.name === '' || e.username === '' || !e.platform) {

@@ -335,7 +335,6 @@ export async function givenRepositories(testdb: any) {
     friendService,
     metricService,
     tagService,
-    currentUser,
   );
 
   const currencyService = new CurrencyService(
