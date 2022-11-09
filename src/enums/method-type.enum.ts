@@ -1,5 +1,5 @@
 export enum MethodType {
-  ADMINLOGIN = 'adminLogin',
+  LOGINBYADMIN = 'loginByAdmin',
   CLAIMTIPS = 'claimTips',
   CREATE = 'create',
   CREATEBATCH = 'createBatch',
@@ -15,6 +15,7 @@ export enum MethodType {
   GETUSER = 'getUser',
   IMPORT = 'import',
   LOGIN = 'login',
+  LOGINBYOTP = 'loginByOTP',
   PATCH = 'patch',
   READMULTIPLENOTIFICATION = 'readMultipleNotification',
   READNOTIFICATION = 'readNotification',
@@ -24,6 +25,7 @@ export enum MethodType {
   SEARCH = 'search',
   SELECTCURRENCY = 'selectCurrency',
   SIGNUP = 'signup',
+  SIGNUPBYEMAIL = 'signupByEmail',
   SUBSCRIBE = 'subscribe',
   TIMELINE = 'getTimeline',
   UPDATE = 'update',

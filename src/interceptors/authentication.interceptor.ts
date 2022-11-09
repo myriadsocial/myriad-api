@@ -119,8 +119,13 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       if (foundUser) {
         throw new HttpErrors.UnprocessableEntity('User already exists');
       }
+    }
 
-      if (methodName === MethodType.SIGNUP) {
+    let user: User | UserWithRelations | undefined | null;
+
+    switch (methodName) {
+      // Sign up with wallet
+      case MethodType.SIGNUP: {
         const {address, network, name} = invocationCtx
           .args[0] as RequestCreateNewUserByWallet;
         const fixedAddress = isHex(`0x${address}`) ? `0x${address}` : address;
@@ -152,120 +157,125 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           networkId: network,
           primary: true,
         });
-      } else {
+
+        break;
+      }
+
+      // Signup with email
+      case MethodType.SIGNUPBYEMAIL: {
         const {email} = invocationCtx.args[0] as RequestCreateNewUserByEmail;
 
-        if (!validator.isEmail(email))
+        if (!validator.isEmail(email)) {
           throw new HttpErrors.UnprocessableEntity('Invalid email address');
+        }
+
+        break;
       }
 
-      return;
+      // Login with wallet
+      case MethodType.LOGIN:
+      case MethodType.LOGINBYADMIN: {
+        const credential = invocationCtx.args[0] as Credential;
+        const {nonce, networkType} = credential;
+        const [publicAddress, account] = credential.publicAddress.split('/');
+        const nearAccount = isHex(`0x${account}`) ? `0x${account}` : account;
+
+        if (nonce === 0 || !nonce) {
+          throw new HttpErrors.Unauthorized('Invalid nonce!');
+        }
+
+        const currentNetwork = await this.networkRepository.findById(
+          networkType,
+        );
+        const networks = await this.networkRepository.find({
+          where: {blockchainPlatform: currentNetwork.blockchainPlatform},
+        });
+        const networkIds = networks.map(network => network.id);
+        const wallet = await this.walletRepository.findOne({
+          where: {
+            id: nearAccount ?? publicAddress,
+            networkId: {inq: networkIds},
+          },
+          include: ['user'],
+        });
+
+        if (!wallet || !wallet.user) {
+          throw new HttpErrors.Unauthorized('Wallet address not exists!');
+        }
+
+        user = wallet.user;
+
+        if (user.nonce !== nonce) {
+          throw new HttpErrors.Unauthorized('Invalid nonce!');
+        }
+
+        const verified = await validateAccount(
+          assign(credential, {publicAddress}),
+          currentNetwork,
+          wallet.id,
+        );
+
+        if (!verified) {
+          throw new HttpErrors.Unauthorized('[auth] Failed to verified!');
+        }
+
+        invocationCtx.args[1] = wallet.id;
+
+        break;
+      }
+
+      // Login with OTP
+      case MethodType.LOGINBYOTP: {
+        const {token} = invocationCtx.args[0] as RequestLoginByOTP;
+
+        const validOTP = await this.userOTPService.verifyOTP(token);
+
+        if (!validOTP) {
+          throw new HttpErrors.Unauthorized('OTP invalid or expired!');
+        }
+
+        user = await this.userRepository.findOne({
+          where: {
+            id: validOTP.userId,
+          },
+        });
+
+        invocationCtx.args[1] = validOTP.userId;
+
+        break;
+      }
     }
 
-    if (
-      methodName.startsWith(MethodType.LOGIN) ||
-      methodName === MethodType.ADMINLOGIN
-    ) {
-      try {
-        // Verify login process
-        let user: User | UserWithRelations | undefined | null;
+    if (methodName.startsWith(MethodType.LOGIN)) {
+      if (!user) throw new Error('User not exists!');
+      if (methodName === MethodType.LOGINBYADMIN) {
+        const [permission] = intersection(user.permissions, [
+          PermissionKeys.ADMIN,
+        ]);
 
-        if (
-          methodName === MethodType.LOGIN ||
-          methodName === MethodType.ADMINLOGIN
-        ) {
-          const credential = invocationCtx.args[0] as Credential;
-          const {nonce, networkType} = credential;
-          const [publicAddress, account] = credential.publicAddress.split('/');
-          const nearAccount = isHex(`0x${account}`) ? `0x${account}` : account;
-
-          if (nonce === 0 || !nonce) throw new Error('Invalid nonce!');
-
-          const currentNetwork = await this.networkRepository.findById(
-            networkType,
-          );
-          const networks = await this.networkRepository.find({
-            where: {blockchainPlatform: currentNetwork.blockchainPlatform},
-          });
-          const networkIds = networks.map(network => network.id);
-          const wallet = await this.walletRepository.findOne({
-            where: {
-              id: nearAccount ?? publicAddress,
-              networkId: {inq: networkIds},
-            },
-            include: ['user'],
-          });
-
-          if (!wallet || !wallet.user) {
-            throw new Error('Wallet address not exists!');
-          }
-
-          user = wallet.user;
-
-          if (user.nonce !== nonce) {
-            throw new Error('Invalid nonce!');
-          }
-
-          const verified = await validateAccount(
-            assign(credential, {publicAddress}),
-            currentNetwork,
-            wallet.id,
-          );
-
-          if (!verified) {
-            throw new Error('[auth] Failed to verified!');
-          }
-
-          invocationCtx.args[1] = wallet.id;
-        } else {
-          const {token} = invocationCtx.args[0] as RequestLoginByOTP;
-
-          const validOTP = await this.userOTPService.verifyOTP(token);
-
-          if (!validOTP) throw new Error('OTP invalid or expired!');
-
-          user = await this.userRepository.findOne({
-            where: {
-              id: validOTP.userId,
-            },
-          });
+        if (permission !== PermissionKeys.ADMIN) {
+          throw new HttpErrors.Forbidden('Invalid admin');
         }
+      } else {
+        const [userPermission] = intersection(user.permissions, [
+          PermissionKeys.USER,
+        ]);
 
-        if (!user) throw new Error('User not exists!');
-
-        if (methodName === MethodType.ADMINLOGIN) {
-          const [permission] = intersection(user.permissions, [
-            PermissionKeys.ADMIN,
-          ]);
-
-          if (permission !== PermissionKeys.ADMIN) {
-            throw new HttpErrors.Forbidden('Invalid admin');
-          }
-        } else {
-          const [userPermission] = intersection(user.permissions, [
-            PermissionKeys.USER,
-          ]);
-
-          if (userPermission !== PermissionKeys.USER) {
-            throw new HttpErrors.Forbidden('Invalid user');
-          }
+        if (userPermission !== PermissionKeys.USER) {
+          throw new HttpErrors.Forbidden('Invalid user');
         }
-
-        const userProfile: UserProfile = {
-          [securityId]: user.id!.toString(),
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          createdAt: user.createdAt,
-          permissions: user.permissions,
-        };
-
-        invocationCtx.args[0].data = userProfile;
-
-        return;
-      } catch (err) {
-        throw new HttpErrors.Unauthorized(err.message);
       }
+
+      const userProfile: UserProfile = {
+        [securityId]: user.id!.toString(),
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        createdAt: user.createdAt,
+        permissions: user.permissions,
+      };
+
+      invocationCtx.args[0].data = userProfile;
     }
   }
 
@@ -274,7 +284,6 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     result: AnyObject,
   ): Promise<void> {
     const methodName = invocationCtx.methodName as MethodType;
-
     const jobs = [];
 
     if (methodName.startsWith(MethodType.SIGNUP)) {
@@ -291,24 +300,30 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           referenceType: ReferenceType.USER,
         }),
       );
+    }
 
-      if (methodName === MethodType.SIGNUP) {
+    switch (methodName) {
+      // Sign up with wallet
+      case MethodType.SIGNUP: {
         const wallet = invocationCtx.args[1] as Wallet;
         jobs.push(
           this.userRepository.wallets(result.id).create(wallet),
           this.currencyService.addUserCurrencies(result.id, wallet.networkId),
-          this.currencyService.sendMyriadReward(wallet),
         );
-      } else {
-        const {email, callbackURL} = invocationCtx
-          .args[1] as RequestCreateNewUserByEmail;
-        jobs.push(this.userOTPService.requestByEmail(email, callbackURL));
+        break;
       }
-    } else {
-      if (
-        methodName === MethodType.LOGIN ||
-        methodName === MethodType.ADMINLOGIN
-      ) {
+
+      // Sign up with email
+      case MethodType.SIGNUPBYEMAIL: {
+        const {email, callbackURL} = invocationCtx
+          .args[0] as RequestCreateNewUserByEmail;
+        jobs.push(this.userOTPService.requestByEmail(email, callbackURL));
+        break;
+      }
+
+      // Login by wallet
+      case MethodType.LOGIN:
+      case MethodType.LOGINBYADMIN: {
         // Generate random nonce after login
         const [credential, walletId] = invocationCtx.args;
         const networkId = credential.networkType;
@@ -319,20 +334,33 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         await this.walletRepository.updateAll({primary: false}, {userId});
         await this.currencyService.updateUserCurrency(userId, networkId);
         jobs.push(
-          this.userRepository.updateById(userId, {nonce: newNonce}),
+          this.userRepository.updateById(userId, {
+            nonce: newNonce,
+            fullAccess: true,
+          }),
           this.walletRepository.updateById(walletId, {
             primary: true,
             networkId,
           }),
         );
-      } else {
-        const {token} = invocationCtx.args[0] as RequestLoginByOTP;
+        break;
+      }
 
+      // Login by email
+      case MethodType.LOGINBYOTP: {
+        const {token} = invocationCtx.args[0] as RequestLoginByOTP;
+        const userId = invocationCtx.args[1];
+
+        await this.walletRepository.updateAll(
+          {networkId: 'myriad', primary: true},
+          {userId},
+        );
         jobs.push(
           this.userOTPRepository.deleteAll({
             token: token,
           }),
         );
+        break;
       }
     }
 
