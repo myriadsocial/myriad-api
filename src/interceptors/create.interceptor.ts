@@ -1,4 +1,5 @@
 import {
+  inject,
   injectable,
   Interceptor,
   InvocationContext,
@@ -64,6 +65,8 @@ import {UrlUtils} from '../utils/url.utils';
 import {omit} from 'lodash';
 import {config} from '../config';
 import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {AuthenticationBindings} from '@loopback/authentication';
+import {UserProfile, securityId} from '@loopback/security';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -114,6 +117,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
     protected networkService: NetworkService,
     @service(SocialMediaService)
     protected socialMediaService: SocialMediaService,
+    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
+    private currentUser: UserProfile,
   ) {}
 
   /**
@@ -291,6 +296,17 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USEREXPERIENCE: {
+        if (!this.currentUser?.fullAccess) {
+          const {count} =
+            await this.experienceService.experienceRepository.count({
+              createdBy: this.currentUser?.[securityId],
+            });
+
+          if (count > 5) {
+            throw new HttpErrors.UnprocessableEntity('ExperienceLimitExceeded');
+          }
+        }
+
         return this.beforeHandleExperience(invocationCtx);
       }
 

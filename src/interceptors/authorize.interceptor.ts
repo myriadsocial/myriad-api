@@ -182,6 +182,10 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         break;
 
       case ControllerType.FRIEND: {
+        if (!this.currentUser?.fullAccess) {
+          throw new HttpErrors.Unauthorized('FriendRequestUnauthorized');
+        }
+
         if (typeof data === 'object') {
           const status = data.status;
           if (status !== FriendStatusType.APPROVED) {
