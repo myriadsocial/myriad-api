@@ -75,7 +75,7 @@ describe('PostApplication', function () {
   });
 
   before(async () => {
-    user = await givenUserInstance(userRepository);
+    user = await givenUserInstance(userRepository, {fullAccess: true});
     token = await givenAccesToken(user);
   });
 
@@ -101,6 +101,25 @@ describe('PostApplication', function () {
     expect(response.body).to.containDeep(myriadPost);
     const result = await postRepository.findById(response.body.id);
     expect(result).to.containDeep(myriadPost);
+  });
+
+  it('reject creates a post in lite version when action is fulfilled', async () => {
+    await userRepository.updateById(user.id, {fullAccess: false});
+    for (let i = 0; i < 6; i++) {
+      await givenMyriadPostInstance(postRepository, {
+        createdBy: user.id.toString(),
+        platform: PlatformType.MYRIAD,
+      });
+    }
+    const myriadPost: Partial<DraftPost> = givenPost({
+      createdBy: user.id.toString(),
+    });
+    await client
+      .post('/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send(myriadPost)
+      .expect(422);
+    await userRepository.updateById(user.id, {fullAccess: true});
   });
 
   it('returns 401 when creating a post not as login user', async () => {

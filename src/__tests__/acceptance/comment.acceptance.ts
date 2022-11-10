@@ -89,7 +89,7 @@ describe('CommentApplication', function () {
   });
 
   beforeEach(async () => {
-    user = await givenUserInstance(userRepository);
+    user = await givenUserInstance(userRepository, {fullAccess: true});
     token = await givenAccesToken(user);
     otherUser = await givenUserInstance(userRepository, {
       name: 'John Doe',
@@ -126,6 +126,31 @@ describe('CommentApplication', function () {
     expect(response.body).to.containDeep(comment);
     const result = await commentRepository.findById(response.body.id);
     expect(result).to.containDeep(comment);
+  });
+
+  it('reject creates a comment in lite version when action is fulfilled', async () => {
+    await userRepository.updateById(user.id, {fullAccess: false});
+    for (let i = 0; i < 6; i++) {
+      await givenCommentInstance(commentRepository, {
+        userId: user.id,
+        postId: post.id.toString(),
+        referenceId: post.id.toString(),
+        type: ReferenceType.POST,
+      });
+    }
+    const comment = givenComment({
+      userId: user.id.toString(),
+      postId: post.id.toString(),
+      referenceId: post.id.toString(),
+      type: ReferenceType.POST,
+    });
+
+    await client
+      .post('/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send(comment)
+      .expect(422);
+    await userRepository.updateById(user.id, {fullAccess: true});
   });
 
   it('returns 401 when creates a comment not as login user', async () => {
