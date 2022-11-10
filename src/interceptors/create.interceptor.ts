@@ -34,6 +34,7 @@ import {
   WalletWithRelations,
 } from '../models';
 import {
+  CommentRepository,
   ExperienceUserRepository,
   NetworkRepository,
   PeopleRepository,
@@ -79,6 +80,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${CreateInterceptor.name}`;
 
   constructor(
+    @repository(CommentRepository)
+    protected commentRepository: CommentRepository,
     @repository(ExperienceUserRepository)
     protected experienceUserRepository: ExperienceUserRepository,
     @repository(ReportRepository)
@@ -245,6 +248,33 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.COMMENT: {
+        if (!this.currentUser?.fullAccess) {
+          const userId = this.currentUser?.[securityId] ?? '';
+          const now = new Date().setHours(0, 0, 0, 0);
+          const [{count: countComment}, {count: countPost}] = await Promise.all(
+            [
+              this.commentRepository.count({
+                userId,
+                createdAt: {
+                  gt: new Date(now).toString(),
+                },
+              }),
+              this.postService.postRepository.count({
+                createdBy: userId,
+                createdAt: {
+                  gt: new Date(now).toString(),
+                },
+              }),
+            ],
+          );
+
+          const totalActions = countComment + countPost;
+
+          if (totalActions + 1 > 6) {
+            throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
+          }
+        }
+
         const {postId} = invocationCtx.args[0] as Comment;
         await this.postService.postRepository.findById(postId);
 
@@ -302,8 +332,8 @@ export class CreateInterceptor implements Provider<Interceptor> {
               createdBy: this.currentUser?.[securityId],
             });
 
-          if (count > 5) {
-            throw new HttpErrors.UnprocessableEntity('ExperienceLimitExceeded');
+          if (count + 1 > 5) {
+            throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
           }
         }
 
@@ -365,6 +395,33 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.POST: {
+        if (!this.currentUser?.fullAccess) {
+          const userId = this.currentUser?.[securityId] ?? '';
+          const now = new Date().setHours(0, 0, 0, 0);
+          const [{count: countComment}, {count: countPost}] = await Promise.all(
+            [
+              this.commentRepository.count({
+                userId,
+                createdAt: {
+                  gt: new Date(now).toString(),
+                },
+              }),
+              this.postService.postRepository.count({
+                createdBy: userId,
+                createdAt: {
+                  gt: new Date(now).toString(),
+                },
+              }),
+            ],
+          );
+
+          const totalActions = countComment + countPost;
+
+          if (totalActions + 1 > 6) {
+            throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
+          }
+        }
+
         if (invocationCtx.methodName !== MethodType.IMPORT) return;
         const urlUtils = new UrlUtils(invocationCtx.args[0].url);
         const pathname = urlUtils.getPathname();
