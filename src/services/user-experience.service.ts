@@ -165,18 +165,7 @@ export class UserExperienceService {
   public async create(
     experience: Omit<Experience, 'id'>,
     clonedId?: string,
-    fullAccess?: boolean,
   ): Promise<Experience> {
-    if (!fullAccess) {
-      const {count} = await this.experienceRepository.count({
-        createdBy: experience.createdBy,
-      });
-
-      if (count > 5) {
-        throw new HttpErrors.UnprocessableEntity('ExperienceLimitExceeded');
-      }
-    }
-
     const userId = experience.createdBy;
     const people = this.validateExperienceData(experience);
     const totalExperience = await this.validateCreatedExperience(userId);

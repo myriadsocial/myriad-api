@@ -413,6 +413,7 @@ export async function givenRepositories(testdb: any) {
 
   const userService = new UserService(
     changeEmailRequestRepository,
+    experienceRepository,
     userRepository,
     userPersonalAccessTokenRepository,
     walletRepository,

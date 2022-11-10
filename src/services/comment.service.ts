@@ -1,5 +1,11 @@
 import {BindingScope, injectable, service} from '@loopback/core';
-import {AnyObject, Count, Filter, repository, Where} from '@loopback/repository';
+import {
+  AnyObject,
+  Count,
+  Filter,
+  repository,
+  Where,
+} from '@loopback/repository';
 import {ActivityLogType, ReferenceType, SectionType} from '../enums';
 import {Comment, CommentWithRelations} from '../models';
 import {CommentRepository, PostRepository} from '../repositories';

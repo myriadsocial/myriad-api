@@ -15,6 +15,7 @@ import {assign, omit} from 'lodash';
 import {config} from '../config';
 import {
   ActivityLogType,
+  ControllerType,
   FriendStatusType,
   PermissionKeys,
   PlatformType,
@@ -56,6 +57,7 @@ import {
 } from '../models';
 import {
   ChangeEmailRequestRepository,
+  ExperienceRepository,
   UserPersonalAccessTokenRepository,
   UserRepository,
   WalletRepository,
@@ -89,6 +91,8 @@ export class UserService {
   constructor(
     @repository(ChangeEmailRequestRepository)
     private changeEmailRequestRepository: ChangeEmailRequestRepository,
+    @repository(ExperienceRepository)
+    private experienceRepository: ExperienceRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @repository(UserPersonalAccessTokenRepository)
@@ -716,12 +720,9 @@ export class UserService {
     experince: Omit<Experience, 'id'>,
     clonedId?: string,
   ): Promise<Experience> {
-    const userId = this.currentUser[securityId];
-    const fullAccess = this.currentUser.fullAccess;
-
-    experince.createdBy = userId;
-
-    return this.userExperienceService.create(experince, clonedId, fullAccess);
+    await this.haveFullAccess(ControllerType.USEREXPERIENCE);
+    experince.createdBy = this.currentUser[securityId];
+    return this.userExperienceService.create(experince, clonedId);
   }
 
   public async subscribeExperience(id: string): Promise<UserExperience> {
@@ -774,11 +775,13 @@ export class UserService {
   }
 
   public async createPost(draftPost: DraftPost): Promise<DraftPost | Post> {
+    await this.haveFullAccess(ControllerType.POST);
     draftPost.createdBy = this.currentUser[securityId];
     return this.postService.create(draftPost);
   }
 
   public async importPost(importedPost: CreateImportedPostDto): Promise<Post> {
+    await this.haveFullAccess(ControllerType.POST);
     importedPost.importer = this.currentUser[securityId];
     return this.postService.import(importedPost);
   }
@@ -801,6 +804,7 @@ export class UserService {
   }
 
   public async createComment(comment: Omit<Comment, 'id'>): Promise<Comment> {
+    await this.haveFullAccess(ControllerType.COMMENT);
     comment.userId = this.currentUser[securityId];
     return this.commentService.create(comment);
   }
@@ -857,6 +861,7 @@ export class UserService {
   }
 
   public async requestFriend(friend: Omit<Friend, 'id'>): Promise<Friend> {
+    await this.haveFullAccess(ControllerType.FRIEND);
     return this.friendService.request(friend);
   }
 
@@ -864,10 +869,12 @@ export class UserService {
     id: string,
     friend: Partial<Friend>,
   ): Promise<void> {
+    await this.haveFullAccess(ControllerType.FRIEND);
     return this.friendService.respond(id, new Friend(friend));
   }
 
   public async removeFriend(id: string, friend?: Friend): Promise<void> {
+    await this.haveFullAccess(ControllerType.FRIEND);
     return this.friendService.remove(id, friend);
   }
 
@@ -1213,6 +1220,54 @@ export class UserService {
     }
 
     Promise.allSettled(jobs) as Promise<AnyObject>;
+  }
+
+  private async haveFullAccess(controllerType: ControllerType): Promise<void> {
+    if (this.currentUser?.fullAccess) return;
+
+    const userId = this.currentUser?.[securityId] ?? '';
+
+    switch (controllerType) {
+      case ControllerType.COMMENT:
+      case ControllerType.POST: {
+        const now = new Date().setHours(0, 0, 0, 0);
+        const [{count: countComment}, {count: countPost}] = await Promise.all([
+          this.commentService.count({
+            userId,
+            createdAt: {
+              gt: new Date(now).toString(),
+            },
+          }),
+          this.postService.count({
+            createdBy: userId,
+            createdAt: {
+              gt: new Date(now).toString(),
+            },
+          }),
+        ]);
+
+        const totalActions = countComment + countPost;
+
+        if (totalActions + 1 > 6) {
+          throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
+        }
+        return;
+      }
+
+      case ControllerType.FRIEND: {
+        throw new HttpErrors.Unauthorized('ActionLimited');
+      }
+
+      case ControllerType.USEREXPERIENCE: {
+        const {count} = await this.experienceRepository.count({
+          createdBy: userId,
+        });
+
+        if (count > 5) {
+          throw new HttpErrors.UnprocessableEntity('ExperienceLimitExceeded');
+        }
+      }
+    }
   }
 
   private async userPermissions(
