@@ -1,6 +1,12 @@
 import {authenticate} from '@loopback/authentication';
 import {service} from '@loopback/core';
-import {getModelSchemaRef, post, requestBody, response} from '@loopback/rest';
+import {
+  get,
+  getModelSchemaRef,
+  post,
+  requestBody,
+  response,
+} from '@loopback/rest';
 import {Transaction, TxDetail} from '../../models';
 import {UserService} from '../../services';
 
@@ -10,6 +16,26 @@ export class ClaimReferenceController {
     @service(UserService)
     private userService: UserService,
   ) {}
+
+  @get('/user/tip-status')
+  @response(200, {
+    description: 'GET user tip status',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            status: {
+              type: 'boolean',
+            },
+          },
+        },
+      },
+    },
+  })
+  async getTipStatus(): Promise<{status: boolean}> {
+    return this.userService.tipStatus();
+  }
 
   @post('/user/claim-references')
   @response(200, {

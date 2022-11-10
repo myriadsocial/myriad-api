@@ -511,6 +511,25 @@ export class UserService {
 
   // ------ Claim -----------------------------------
 
+  public async tipStatus(): Promise<{status: boolean}> {
+    if (this.currentUser?.fullAccess) return {status: false};
+    if (!this.currentUser?.[securityId]) return {status: false};
+
+    const socialMedias = await this.userSocialMediaService.find({
+      where: {userId: this.currentUser[securityId]},
+    });
+    const receiverIds = socialMedias.map(e => e.peopleId);
+    const receivers = await this.transactionService.find({
+      where: {
+        to: {
+          inq: [...receiverIds, this.currentUser[securityId]],
+        },
+      },
+    });
+
+    return {status: receivers.length > 0};
+  }
+
   public async claimReference(
     txDetail: TxDetail,
   ): Promise<Pick<Transaction, 'hash'>> {

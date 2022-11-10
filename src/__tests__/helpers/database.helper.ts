@@ -29,11 +29,14 @@ import {
   ExchangeRateRepository,
   QueueRepository,
   UserPersonalAccessTokenRepository,
+  ChangeEmailRequestRepository,
+  UserOTPRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
   CoinMarketCapProvider,
   CurrencyService,
+  EmailService,
   ExperienceService,
   FCMService,
   FriendService,
@@ -50,6 +53,7 @@ import {
   TransactionService,
   TwitterProvider,
   UserExperienceService,
+  UserOTPService,
   UserService,
   UserSocialMediaService,
   VoteService,
@@ -194,6 +198,14 @@ export async function givenRepositories(testdb: any) {
   const queueRepository: QueueRepository = new QueueRepository(testdb);
   const userPersonalAccessTokenRepository: UserPersonalAccessTokenRepository =
     new UserPersonalAccessTokenRepository(testdb, async () => userRepository);
+
+  const changeEmailRequestRepository: ChangeEmailRequestRepository =
+    new ChangeEmailRequestRepository(testdb);
+
+  const userOTPRepository: UserOTPRepository = new UserOTPRepository(
+    testdb,
+    async () => userRepository,
+  );
 
   const dataSource = {
     reddit: new RedditDataSource(),
@@ -391,7 +403,16 @@ export async function givenRepositories(testdb: any) {
   );
   const jwtService = new JWTService('test', '1000000');
 
+  const emailService = new EmailService();
+
+  const userOTPService = new UserOTPService(
+    userRepository,
+    userOTPRepository,
+    emailService,
+  );
+
   const userService = new UserService(
+    changeEmailRequestRepository,
     userRepository,
     userPersonalAccessTokenRepository,
     walletRepository,
@@ -404,6 +425,7 @@ export async function givenRepositories(testdb: any) {
     postService,
     reportService,
     transactionService,
+    userOTPService,
     userSocialMediaService,
     voteService,
     jwtService,
