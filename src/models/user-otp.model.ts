@@ -30,22 +30,27 @@ export class UserOTP extends Entity {
 
   @property({
     type: 'date',
-    required: true,
+    required: false,
+    default: () => {
+      const now = Date.now();
+      return new Date(now + 30 * 60 * 1000);
+    },
   })
-  expiredAt?: string;
-
-  @property({
-    type: 'date',
-    required: true,
-    default: () => new Date(),
-  })
-  createdAt?: string;
+  expiredAt: string;
 
   @property({
     type: 'date',
     required: false,
+    default: () => new Date(),
   })
-  updatedAt?: string;
+  createdAt: string;
+
+  @property({
+    type: 'date',
+    required: false,
+    default: () => new Date(),
+  })
+  updatedAt: string;
 
   @property({
     type: 'date',

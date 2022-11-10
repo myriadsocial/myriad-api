@@ -59,6 +59,8 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
     userProfile.fullAccess = user.fullAccess;
     userProfile.permissions = user.permissions;
     userProfile.profilePictureURL = user.profilePictureURL;
+    userProfile.email = user.email;
+    userProfile.createdAt = user.createdAt;
 
     if (request.method === 'GET') return userProfile;
     if (user.deletedAt) {

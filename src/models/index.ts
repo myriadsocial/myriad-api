@@ -42,3 +42,4 @@ export * from './user-otp.model';
 export * from './request-otp-by-email.model';
 export * from './request-login-by-otp.model';
 export * from './user-personal-access-token.model';
+export * from './change-email-request.model';

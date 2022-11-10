@@ -20,6 +20,7 @@ export * from './storage.controller';
 export * from './tag.controller';
 export * from './transaction-summary.controller';
 export * from './transaction.controller';
+export * from './user';
 export * from './user.controller';
 export * from './user-account-setting.controller';
 export * from './user-currency.controller';

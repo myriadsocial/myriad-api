@@ -44,7 +44,7 @@ import {UserCurrency} from './user-currency.model';
         },
       },
     },
-    hiddenProperties: ['permissions', 'friendIndex'],
+    hiddenProperties: ['permissions', 'friendIndex', 'additionalEmail'],
   },
 })
 export class User extends Entity {
@@ -248,3 +248,17 @@ export interface UserRelations {
 }
 
 export type UserWithRelations = User & UserRelations;
+
+export class UserByEmail {
+  @property({
+    type: 'string',
+    required: true,
+  })
+  email: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  token: string;
+}

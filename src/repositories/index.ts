@@ -30,3 +30,4 @@ export * from './user-currency.repository';
 export * from './server.repository';
 export * from './user-otp.repository';
 export * from './user-personal-access-token.repository';
+export * from './change-email-request.repository';

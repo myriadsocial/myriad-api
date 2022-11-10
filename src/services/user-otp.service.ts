@@ -1,9 +1,10 @@
 import {injectable, BindingScope, service} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {Count, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {UserOTP} from '../models';
+import {User, UserOTP, UserWithRelations} from '../models';
 import {UserOTPRepository, UserRepository} from '../repositories';
 import {EmailService} from './email.service';
+import {UserProfile} from '@loopback/security';
 import crypto from 'crypto';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -24,26 +25,49 @@ export class UserOTPService {
   public async requestByEmail(
     email: string,
     callbackURL: string,
+    currentUser?: UserProfile,
   ): Promise<void> {
-    const user = await this.userRepository.findOne({
-      where: {email: email},
-    });
+    let user = await this.userRepository.findOne({where: {email: email}});
 
-    if (!user) throw new HttpErrors.NotFound('User not exists!');
+    if (!currentUser) {
+      if (!user) throw new HttpErrors.NotFound('User not exists!');
+    } else {
+      if (user) throw new HttpErrors.UnprocessableEntity('EmailAlreadyExists');
+
+      user = new User(currentUser) as UserWithRelations;
+
+      if (!currentUser.email) {
+        user.email = email;
+      }
+    }
 
     const existingUserOTP = await this.userOTPRepository.findOne({
-      where: {userId: user.id},
+      where: {userId: user.id.toString()},
     });
 
+    const now = Date.now();
     const userOTP = new UserOTP();
     userOTP.token = this.generateOTP();
-    userOTP.userId = user.id;
-    userOTP.expiredAt = new Date(new Date().getTime() + 30 * 60000).toString();
+    userOTP.userId = user.id.toString();
 
     if (existingUserOTP) {
+      const updatedAt = new Date(existingUserOTP.updatedAt).getTime();
+      const expiredAt = new Date(existingUserOTP.expiredAt).getTime();
+
+      if (now < expiredAt) {
+        const waitingTime = 30 * 1000; // 30 seconds
+
+        if (now - updatedAt < waitingTime) {
+          throw new HttpErrors.UnprocessableEntity(
+            `${waitingTime / 1000} seconds waiting time`,
+          );
+        }
+      }
+
       userOTP.id = existingUserOTP.id;
       userOTP.createdAt = existingUserOTP.createdAt;
-      userOTP.updatedAt = new Date().toString();
+      userOTP.updatedAt = new Date(now).toString();
+      userOTP.expiredAt = new Date(now + 30 * 60 * 1000).toString();
       await this.userOTPRepository.update(userOTP);
     } else {
       await this.userOTPRepository.create(userOTP);
@@ -57,13 +81,17 @@ export class UserOTPService {
   }
 
   public async verifyOTP(token: string): Promise<UserOTP | null> {
-    const userOTP = await this.userOTPRepository.findOne({
+    return this.userOTPRepository.findOne({
       where: {
         token: token,
         expiredAt: {gt: new Date().toString()},
       },
     });
+  }
 
-    return userOTP;
+  public async removeOTP(token: string): Promise<Count> {
+    return this.userOTPRepository.deleteAll({
+      token: token,
+    });
   }
 }

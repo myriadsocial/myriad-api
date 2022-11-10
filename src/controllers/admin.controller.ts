@@ -28,7 +28,7 @@ export class AdminController {
   ) {}
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
-  @post('/admin/login', {
+  @post('/login/admin', {
     responses: {
       '200': {
         description: 'Token',
@@ -56,7 +56,7 @@ export class AdminController {
       },
     },
   })
-  async adminLogin(
+  async loginByAdmin(
     @requestBody({
       description: 'The input of login function',
       required: true,

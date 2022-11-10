@@ -77,6 +77,7 @@ import {FriendStatusType, UploadType} from './enums';
 import {omit} from 'lodash';
 import {PolkadotJs} from './utils/polkadotJs-utils';
 import {EmailService} from './services/email.service';
+import {UserService} from './services/user.service';
 
 const date = new DateUtils();
 const jwt = require('jsonwebtoken');
@@ -183,6 +184,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(NetworkService);
     this.service(ServerService);
     this.service(EmailService);
+    this.service(UserService);
 
     // 3rd party service
     this.service(FCMService);
