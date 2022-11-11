@@ -1,5 +1,10 @@
 import {intercept, service} from '@loopback/core';
-import {Filter, FilterExcludingWhere} from '@loopback/repository';
+import {
+  Count,
+  CountSchema,
+  Filter,
+  FilterExcludingWhere,
+} from '@loopback/repository';
 import {
   del,
   get,
@@ -21,12 +26,15 @@ import {DraftPost, Post, User} from '../models';
 import {PlatformPost} from '../models/platform-post.model';
 import {PostService} from '../services';
 import {authenticate} from '@loopback/authentication';
+import {UserService} from '../services/user.service';
 
 @authenticate('jwt')
 export class PostController {
   constructor(
     @service(PostService)
     protected postService: PostService,
+    @service(UserService)
+    private userService: UserService,
   ) {}
 
   @intercept(CreateInterceptor.BINDING_KEY)
@@ -181,5 +189,14 @@ export class PostController {
   })
   async deleteById(@param.path.string('id') id: string): Promise<void> {
     await this.postService.postRepository.deleteById(id);
+  }
+
+  @get('/posts/action')
+  @response(200, {
+    description: 'Action COUNT left',
+    content: {'application/json': {schema: CountSchema}},
+  })
+  async count(): Promise<Count | undefined> {
+    return this.userService.actionCount();
   }
 }

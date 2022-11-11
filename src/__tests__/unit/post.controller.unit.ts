@@ -19,6 +19,7 @@ import {
 import {PostService} from '../../services';
 import {givenMyriadPost} from '../helpers';
 import {securityId} from '@loopback/security';
+import {UserService} from '../../services/user.service';
 
 describe('PostController', () => {
   let accountSettingRepository: StubbedInstanceWithSinonAccessor<AccountSettingRepository>;
@@ -28,6 +29,7 @@ describe('PostController', () => {
   let friendRepository: StubbedInstanceWithSinonAccessor<FriendRepository>;
   let experiencePostRepository: StubbedInstanceWithSinonAccessor<ExperiencePostRepository>;
   let postService: PostService;
+  let userService: UserService;
   let controller: PostController;
   let aPostWithId: Post;
   let aChangedPost: Post;
@@ -104,6 +106,6 @@ describe('PostController', () => {
       peopleRepository,
       {[securityId]: ''},
     );
-    controller = new PostController(postService);
+    controller = new PostController(postService, userService);
   }
 });
