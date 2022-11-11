@@ -1,21 +1,26 @@
 import {AuthenticationBindings} from '@loopback/authentication';
 import {BindingScope, inject, injectable, service} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {Count, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {RequestOTPByEmail, UserByEmail} from '../models';
-import {UserRepository} from '../repositories';
+import {CommentRepository, UserRepository} from '../repositories';
 import {UserOTPService} from './user-otp.service';
 import {UserProfile, securityId} from '@loopback/security';
 import validator from 'validator';
 import {ChangeEmailRequestRepository} from '../repositories/change-email-request.repository';
+import {PostService} from './post.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserService {
   constructor(
     @repository(ChangeEmailRequestRepository)
     private changeEmailRequestRepository: ChangeEmailRequestRepository,
+    @repository(CommentRepository)
+    private commentRepository: CommentRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
+    @service(PostService)
+    private postService: PostService,
     @service(UserOTPService)
     private userOTPService: UserOTPService,
     @inject(AuthenticationBindings.CURRENT_USER)
@@ -91,5 +96,32 @@ export class UserService {
     return {
       message: `OTP sent to ${this.currentUser?.email ?? requestOTP.email}`,
     };
+  }
+
+  // ------------------------------------------------
+
+  // ------ PrivateMethod ---------------------------
+
+  public async actionCount(): Promise<Count | undefined> {
+    if (this.currentUser?.fullAccess) return;
+    const userId = this.currentUser?.[securityId] ?? '';
+    const now = new Date().setHours(0, 0, 0, 0);
+    const [{count: countComment}, {count: countPost}] = await Promise.all([
+      this.commentRepository.count({
+        userId,
+        createdAt: {
+          gt: new Date(now).toString(),
+        },
+      }),
+      this.postService.postRepository.count({
+        createdBy: userId,
+        createdAt: {
+          gt: new Date(now).toString(),
+        },
+      }),
+    ]);
+
+    const actions = 6;
+    return {count: actions - (countComment + countPost)};
   }
 }

@@ -8,10 +8,12 @@ import {
 import {CommentController} from '../../controllers';
 import {Comment} from '../../models';
 import {CommentRepository} from '../../repositories';
+import {UserService} from '../../services/user.service';
 import {givenComment} from '../helpers';
 
 describe('CommentController', () => {
   let commentRepository: StubbedInstanceWithSinonAccessor<CommentRepository>;
+  let userService: UserService;
   let controller: CommentController;
   let aComment: Comment;
   let aCommentWithId: Comment;
@@ -83,6 +85,6 @@ describe('CommentController', () => {
       text: "what's up",
     });
 
-    controller = new CommentController(commentRepository);
+    controller = new CommentController(commentRepository, userService);
   }
 });

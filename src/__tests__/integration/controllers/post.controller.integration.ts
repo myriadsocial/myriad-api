@@ -11,6 +11,7 @@ import {
   CurrencyRepository,
 } from '../../../repositories';
 import {PostService} from '../../../services';
+import {UserService} from '../../../services/user.service';
 import {
   givenCommentInstance,
   givenEmptyDatabase,
@@ -34,6 +35,7 @@ describe('PostControllerIntegration', () => {
   let transactionRepository: TransactionRepository;
   let currencyRepository: CurrencyRepository;
   let controller: PostController;
+  let userService: UserService;
 
   before(async () => {
     ({
@@ -49,7 +51,7 @@ describe('PostControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new PostController(postService);
+    controller = new PostController(postService, userService);
   });
 
   beforeEach(async () => {

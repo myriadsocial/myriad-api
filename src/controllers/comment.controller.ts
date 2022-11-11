@@ -1,5 +1,5 @@
-import {intercept} from '@loopback/core';
-import {Filter, repository} from '@loopback/repository';
+import {intercept, service} from '@loopback/core';
+import {Count, CountSchema, Filter, repository} from '@loopback/repository';
 import {
   del,
   get,
@@ -8,6 +8,7 @@ import {
   patch,
   post,
   requestBody,
+  response,
 } from '@loopback/rest';
 import {ReferenceType} from '../enums';
 import {
@@ -19,12 +20,15 @@ import {
 import {Comment} from '../models';
 import {CommentRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {UserService} from '../services/user.service';
 
 @authenticate('jwt')
 export class CommentController {
   constructor(
     @repository(CommentRepository)
     protected commentRepository: CommentRepository,
+    @service(UserService)
+    private userService: UserService,
   ) {}
 
   @intercept(PaginationInterceptor.BINDING_KEY)
@@ -126,5 +130,14 @@ export class CommentController {
       deletedAt: new Date().toString(),
       deleteByUser: true,
     });
+  }
+
+  @get('/comments/action')
+  @response(200, {
+    description: 'Action COUNT left',
+    content: {'application/json': {schema: CountSchema}},
+  })
+  async count(): Promise<Count | undefined> {
+    return this.userService.actionCount();
   }
 }

@@ -8,6 +8,7 @@ import {
   TransactionRepository,
   UserRepository,
 } from '../../../repositories';
+import {UserService} from '../../../services/user.service';
 import {
   givenComment,
   givenCommentInstance,
@@ -27,6 +28,7 @@ describe('CommentControllerIntegration', () => {
   let transactionRepository: TransactionRepository;
   let currencyRepository: CurrencyRepository;
   let controller: CommentController;
+  let userService: UserService;
 
   before(async () => {
     ({
@@ -39,7 +41,7 @@ describe('CommentControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new CommentController(commentRepository);
+    controller = new CommentController(commentRepository, userService);
   });
 
   beforeEach(async () => {
