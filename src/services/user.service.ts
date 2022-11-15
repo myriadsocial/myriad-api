@@ -3,7 +3,11 @@ import {BindingScope, inject, injectable, service} from '@loopback/core';
 import {Count, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {RequestOTPByEmail, UserByEmail} from '../models';
-import {CommentRepository, UserRepository} from '../repositories';
+import {
+  CommentRepository,
+  UserRepository,
+  WalletRepository,
+} from '../repositories';
 import {UserOTPService} from './user-otp.service';
 import {UserProfile, securityId} from '@loopback/security';
 import validator from 'validator';
@@ -19,6 +23,8 @@ export class UserService {
     private commentRepository: CommentRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
+    @repository(WalletRepository)
+    private walletRepository: WalletRepository,
     @service(PostService)
     private postService: PostService,
     @service(UserOTPService)
@@ -31,10 +37,38 @@ export class UserService {
 
   // ------ Setting ---------------------------------
 
-  public async setEmailSetting(userByEmail: UserByEmail): Promise<void> {
+  public async setEmailSetting(
+    userByEmail: Partial<UserByEmail>,
+  ): Promise<void> {
+    const currentEmail = this.currentUser?.email;
+
+    let action = true; // Action Add/Remove email, true = add email, false = remove email
+    if (userByEmail.email) {
+      // Add email
+      if (currentEmail) {
+        throw new HttpErrors.UnprocessableEntity('Email already exists');
+      }
+    } else {
+      // Remove email
+      const wallets = await this.walletRepository.find({
+        where: {userId: this.currentUser?.[securityId] ?? ''},
+      });
+
+      if (wallets.length === 0) {
+        throw new HttpErrors.UnprocessableEntity('CannotRemoveEmail');
+      }
+
+      if (currentEmail) userByEmail.email = currentEmail;
+      action = false;
+    }
+
     const {token, email} = userByEmail;
 
-    if (!validator.isEmail(email)) {
+    if (!token) {
+      throw new HttpErrors.UnprocessableEntity('OTP invalid or expired');
+    }
+
+    if ((email && !validator.isEmail(email)) || !email) {
       throw new HttpErrors.UnprocessableEntity('Invalid Email Address');
     }
 
@@ -66,20 +100,26 @@ export class UserService {
       throw new HttpErrors.UnprocessableEntity('Email already Exists');
     }
 
-    if (changeEmailRequest.email !== email) {
+    if (changeEmailRequest?.email !== email) {
       throw new HttpErrors.UnprocessableEntity('Invalid email address');
     }
 
     await Promise.all([
       this.userOTPService.removeOTP(token),
       this.changeEmailRequestRepository.delete(key),
-      this.userRepository.updateById(validOTP.userId, {email}),
+      this.userRepository.updateById(validOTP.userId, {
+        email: action ? email : undefined,
+      }),
     ]);
   }
 
   public async requestOTPByEmail(
     requestOTP: RequestOTPByEmail,
   ): Promise<{message: string}> {
+    if (this.currentUser.email && this.currentUser.email !== requestOTP.email) {
+      throw new HttpErrors.UnprocessableEntity('EmailAlreadyRegistered');
+    }
+
     if (!validator.isEmail(requestOTP.email)) {
       throw new HttpErrors.UnprocessableEntity('Invalid Email Address');
     }
@@ -94,7 +134,7 @@ export class UserService {
     await this.changeEmailRequestRepository.expire(key, 30 * 60 * 1000);
 
     return {
-      message: `OTP sent to ${this.currentUser?.email ?? requestOTP.email}`,
+      message: `OTP sent to ${requestOTP.email}`,
     };
   }
 

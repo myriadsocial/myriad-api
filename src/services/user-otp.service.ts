@@ -27,18 +27,20 @@ export class UserOTPService {
     callbackURL: string,
     currentUser?: UserProfile,
   ): Promise<void> {
-    let user = await this.userRepository.findOne({where: {email: email}});
+    let user: null | User | UserWithRelations = null;
 
-    if (!currentUser) {
-      if (!user) throw new HttpErrors.NotFound('User not exists!');
-    } else {
-      if (user) throw new HttpErrors.UnprocessableEntity('EmailAlreadyExists');
-
+    if (currentUser) {
       user = new User(currentUser) as UserWithRelations;
 
-      if (!currentUser.email) {
-        user.email = email;
-      }
+      if (!currentUser.email) user.email = email;
+    }
+
+    if (!user) {
+      user = await this.userRepository.findOne({where: {email: email}});
+    }
+
+    if (!user) {
+      throw new HttpErrors.UnprocessableEntity('UserNotExists');
     }
 
     const existingUserOTP = await this.userOTPRepository.findOne({
