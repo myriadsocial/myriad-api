@@ -1,7 +1,9 @@
 import {authenticate} from '@loopback/authentication';
 import {service} from '@loopback/core';
 import {
+  del,
   getModelSchemaRef,
+  param,
   patch,
   post,
   requestBody,
@@ -63,5 +65,15 @@ export class SettingController {
     userByEmail: UserByEmail,
   ) {
     return this.userService.setEmailSetting(userByEmail);
+  }
+
+  @del('/user/email-setting')
+  @response(200, {
+    description: 'REMOVE user email-setting',
+  })
+  async removeEmailSetting(
+    @param.query.string('token') token?: string,
+  ): Promise<void> {
+    return this.userService.setEmailSetting({token});
   }
 }
