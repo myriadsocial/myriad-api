@@ -326,17 +326,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USEREXPERIENCE: {
-        if (!this.currentUser?.fullAccess) {
-          const {count} =
-            await this.experienceService.experienceRepository.count({
-              createdBy: this.currentUser?.[securityId],
-            });
-
-          if (count + 1 > 5) {
-            throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
-          }
-        }
-
         return this.beforeHandleExperience(invocationCtx);
       }
 
@@ -642,6 +631,16 @@ export class CreateInterceptor implements Provider<Interceptor> {
 
     switch (methodName) {
       case MethodType.CREATE: {
+        if (!this.currentUser?.fullAccess) {
+          const {count} = await expService.experienceRepository.count({
+            createdBy: this.currentUser?.[securityId],
+          });
+
+          if (count + 1 > 5) {
+            throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
+          }
+        }
+
         const [userId, experience] = invocationCtx.args as [string, Experience];
         const tagExperience = experience.allowedTags.filter(e => e !== '');
         const prohibitedTags = experience.prohibitedTags;
