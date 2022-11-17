@@ -294,17 +294,3 @@ export class UpdateUserDto extends Model {
   })
   updatedAt?: string;
 }
-
-export class UserByEmail {
-  @property({
-    type: 'string',
-    required: true,
-  })
-  email: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  token: string;
-}

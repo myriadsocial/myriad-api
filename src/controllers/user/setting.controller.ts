@@ -16,7 +16,6 @@ import {
   LanguageSetting,
   NotificationSetting,
   RequestOTPByEmail,
-  UserByEmail,
 } from '../../models';
 import {UserService} from '../../services';
 
@@ -62,17 +61,8 @@ export class SettingController {
   @response(204, {
     description: 'UPDATE user email-setting',
   })
-  async setEmailSetting(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(UserByEmail),
-        },
-      },
-    })
-    userByEmail: UserByEmail,
-  ) {
-    return this.userService.setEmailSetting(userByEmail);
+  async setEmailSetting(@param.query.string('token') token?: string) {
+    return this.userService.setEmailSetting(token, false);
   }
 
   @del('/user/email-setting')
@@ -82,7 +72,7 @@ export class SettingController {
   async removeEmailSetting(
     @param.query.string('token') token?: string,
   ): Promise<void> {
-    return this.userService.setEmailSetting({token});
+    return this.userService.setEmailSetting(token);
   }
 
   @get('/user/language-setting')
