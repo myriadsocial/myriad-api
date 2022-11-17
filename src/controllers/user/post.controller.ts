@@ -1,6 +1,11 @@
 import {authenticate} from '@loopback/authentication';
 import {intercept, service} from '@loopback/core';
-import {Count, Filter, FilterExcludingWhere} from '@loopback/repository';
+import {
+  Count,
+  CountSchema,
+  Filter,
+  FilterExcludingWhere,
+} from '@loopback/repository';
 import {
   del,
   get,
@@ -75,6 +80,15 @@ export class UserPostController {
     @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
   ): Promise<Post> {
     return this.userService.post(id, filter);
+  }
+
+  @get('/user/posts/action')
+  @response(200, {
+    description: 'Action COUNT left',
+    content: {'application/json': {schema: CountSchema}},
+  })
+  async count(): Promise<Count | undefined> {
+    return this.userService.actionCount();
   }
 
   @post('/user/posts')

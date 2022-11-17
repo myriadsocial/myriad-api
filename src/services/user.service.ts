@@ -443,11 +443,12 @@ export class UserService {
 
     if (wallet) return wallet;
 
+    const primary = this.currentUser?.fullAccess ? false : true;
     const raw = new Wallet({
       ...credential.data,
       userId,
       networkId,
-      primary: false,
+      primary,
     });
 
     return this.userRepository
@@ -594,7 +595,9 @@ export class UserService {
       .patch(accountSetting);
   }
 
-  public async setEmailSetting(userByEmail: Partial<UserByEmail>): Promise<void> {
+  public async setEmailSetting(
+    userByEmail: Partial<UserByEmail>,
+  ): Promise<void> {
     const currentEmail = this.currentUser?.email;
 
     let action = true; // Action Add/Remove email, true = add email, false = remove email
@@ -1263,7 +1266,7 @@ export class UserService {
           createdBy: userId,
         });
 
-        if (count > 5) {
+        if (count + 1 > 5) {
           throw new HttpErrors.UnprocessableEntity('ExperienceLimitExceeded');
         }
       }
