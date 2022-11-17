@@ -375,7 +375,7 @@ export class CreateInterceptor implements Provider<Interceptor> {
           ...data,
           userId,
           networkId,
-          primary: false,
+          primary: this.currentUser?.fullAccess ? false : true,
         });
 
         break;
