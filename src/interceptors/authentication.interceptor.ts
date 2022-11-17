@@ -291,7 +291,6 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         this.userRepository.accountSetting(result.id).create({}),
         this.userRepository.notificationSetting(result.id).create({}),
         this.userRepository.languageSetting(result.id).create({}),
-        this.friendService.defaultFriend(result.id),
         this.metricService.countServerMetric(),
         this.activityLogRepository.create({
           type: ActivityLogType.NEWUSER,

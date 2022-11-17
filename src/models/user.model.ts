@@ -126,7 +126,7 @@ export class User extends Entity {
       totalPosts: 0,
       totalKudos: 0,
       totalSubscriptions: 0,
-      totalFriends: 1,
+      totalFriends: 0,
       totalExperiences: 0,
       totalTransactions: 0,
     },
