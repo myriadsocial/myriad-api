@@ -95,13 +95,6 @@ export class FriendService {
       );
     }
 
-    const myriadUserId = await this.getMyriadUserId();
-    if (requesteeId === myriadUserId) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You cannot blocked myriad official',
-      );
-    }
-
     const found = await this.friendRepository.findOne({
       where: {
         or: [
@@ -151,14 +144,11 @@ export class FriendService {
         );
       }
 
-      const myriadUserId = await this.getMyriadUserId();
-      if (requestor.id !== myriadUserId) {
-        await this.friendRepository.create({
-          requesteeId: requestor.id,
-          requestorId: requestee.id,
-          status: FriendStatusType.APPROVED,
-        });
-      }
+      await this.friendRepository.create({
+        requesteeId: requestor.id,
+        requestorId: requestee.id,
+        status: FriendStatusType.APPROVED,
+      });
 
       return {
         requesteeId: requestee.id,
@@ -221,21 +211,8 @@ export class FriendService {
     } as Where<Post>;
   }
 
-  async defaultFriend(userId: string): Promise<void> {
-    const myriadUserId = await this.getMyriadUserId();
-    await this.friendRepository.create({
-      status: FriendStatusType.APPROVED,
-      requestorId: userId,
-      requesteeId: myriadUserId,
-    });
-  }
-
   async removedFriend(friend: Friend): Promise<AnyObject> {
     const {requesteeId, requestorId} = friend;
-    const myriadUserId = await this.getMyriadUserId();
-    if (requesteeId === myriadUserId) {
-      throw new HttpErrors.UnprocessableEntity('You cannot removed this user!');
-    }
 
     await this.friendRepository.deleteAll({
       requestorId: requesteeId,
@@ -401,13 +378,5 @@ export class FriendService {
       id: friendId,
       status: friendStatus,
     };
-  }
-
-  async getMyriadUserId(): Promise<string> {
-    const user = await this.userRepository.findOne({
-      where: {username: 'myriad_official'},
-    });
-    if (!user) throw new HttpErrors.NotFound('User not found');
-    return user.id;
   }
 }
