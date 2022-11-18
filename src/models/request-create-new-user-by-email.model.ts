@@ -5,6 +5,16 @@ import {RequestCreateNewUser} from './request-create-new-user.model';
 export class RequestCreateNewUserByEmail extends RequestCreateNewUser {
   @property({
     type: 'string',
+    id: true,
+    required: false,
+    mongodb: {
+      dataType: 'ObjectId',
+    },
+  })
+  id: string;
+
+  @property({
+    type: 'string',
     required: true,
     jsonSchema: {
       minLength: 5,

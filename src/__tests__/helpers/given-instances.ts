@@ -78,6 +78,7 @@ const mnemonic =
 export function givenUser(user?: Partial<User>) {
   const data = Object.assign(
     {
+      id: generateObjectId(),
       name: 'Abdul Hakim',
       username: 'abdulhakim',
       nonce: 99999999999,
@@ -95,6 +96,7 @@ export function givenUser(user?: Partial<User>) {
 export function givenOtherUser(user?: Partial<User>) {
   const data = Object.assign(
     {
+      id: generateObjectId(),
       name: 'Abdul Hakim',
       username: 'otheruser',
       createdAt: new Date(),
@@ -132,6 +134,7 @@ export async function givenMultipleUserInstances(
   return Promise.all([
     givenUserInstance(userRepository),
     givenUserInstance(userRepository, {
+      id: generateObjectId(),
       name: 'irman',
       username: 'irman',
     }),

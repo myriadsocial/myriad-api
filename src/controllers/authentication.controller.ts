@@ -9,7 +9,7 @@ import {
   get,
   HttpErrors,
 } from '@loopback/rest';
-import {UserProfile} from '@loopback/security';
+import {UserProfile, securityId} from '@loopback/security';
 import {RefreshGrant, TokenObject} from '../interfaces';
 import {RefreshTokenServiceBindings, TokenServiceBindings} from '../keys';
 import {
@@ -21,6 +21,7 @@ import {
 } from '../models';
 import {
   NetworkRepository,
+  RequestCreateNewUserByEmailRepository,
   UserRepository,
   WalletRepository,
 } from '../repositories';
@@ -33,6 +34,8 @@ import validator from 'validator';
 
 export class AuthenticationController {
   constructor(
+    @repository(RequestCreateNewUserByEmailRepository)
+    protected requestCreateNewUserByEmailRepository: RequestCreateNewUserByEmailRepository,
     @repository(UserRepository)
     protected userRepository: UserRepository,
     @repository(NetworkRepository)
@@ -220,6 +223,7 @@ export class AuthenticationController {
     requestCreateNewUserByWallet: RequestCreateNewUserByWallet,
   ): Promise<User> {
     const user = pick(requestCreateNewUserByWallet, [
+      'id',
       'name',
       'username',
       'permissions',
@@ -230,14 +234,7 @@ export class AuthenticationController {
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/signup/email')
-  @response(200, {
-    description: 'User model instance',
-    content: {
-      'application/json': {
-        schema: getModelSchemaRef(User, {includeRelations: false}),
-      },
-    },
-  })
+  @response(200)
   async signupByEmail(
     @requestBody({
       content: {
@@ -249,13 +246,32 @@ export class AuthenticationController {
       },
     })
     requestCreateNewUserByEmail: RequestCreateNewUserByEmail,
-  ): Promise<User> {
+  ): Promise<void> {
+    const {email, callbackURL} = requestCreateNewUserByEmail;
     const user = pick(requestCreateNewUserByEmail, [
+      'id',
       'name',
       'username',
       'email',
     ]);
-    return this.userRepository.create(user);
+    const currentUser: UserProfile = {
+      [securityId]: user.id.toString(),
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+    };
+    const {token} = await this.userOTPService.requestByEmail(
+      email,
+      callbackURL,
+      currentUser,
+    );
+    const key = `sign-up/${token}`;
+    await this.requestCreateNewUserByEmailRepository.set(key, user);
+    await this.requestCreateNewUserByEmailRepository.expire(
+      key,
+      30 * 60 * 1000,
+    );
   }
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)

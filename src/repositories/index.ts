@@ -31,3 +31,4 @@ export * from './server.repository';
 export * from './user-otp.repository';
 export * from './user-personal-access-token.repository';
 export * from './change-email-request.repository';
+export * from './request-create-new-user-by-email.repository';

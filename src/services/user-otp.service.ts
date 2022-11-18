@@ -26,7 +26,7 @@ export class UserOTPService {
     email: string,
     callbackURL: string,
     currentUser?: UserProfile,
-  ): Promise<void> {
+  ): Promise<{token: string}> {
     let user: null | User | UserWithRelations = null;
 
     if (currentUser) {
@@ -80,6 +80,8 @@ export class UserOTPService {
       callbackURL,
       userOTP.token,
     );
+
+    return {token: userOTP.token};
   }
 
   public async verifyOTP(token: string): Promise<UserOTP | null> {
