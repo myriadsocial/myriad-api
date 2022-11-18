@@ -42,7 +42,7 @@ export class EmailService {
     url.searchParams.set('token', token);
 
     const emailTemplate = new EmailTemplate({
-      from: config.SMTP_USERNAME,
+      from: config.SMTP_SENDER,
       to: user.email,
       subject: 'Login Request',
       html: `
@@ -50,7 +50,7 @@ export class EmailService {
           <p>Hello, ${user.name}</p>
           <p>Follow this link to sign-in!</p>
           <a href="${url.toString()}">${url.toString()}</a>
-          <p>Make sure this email was sent by ${config.SMTP_USERNAME}</p>
+          <p>Make sure this email was sent by ${config.SMTP_SENDER}</p>
           <p>Make sure you are redirected to ${callbackURL}</p>
           <p>Do not share this email with anyone</p>
           <p>This link is valid up to 30 minutes after you’ve received it.</p>
