@@ -39,7 +39,7 @@ export const config = {
   SMTP_PORT: +(process.env.SMTP_PORT ?? 587),
   SMTP_USERNAME: process.env.SMTP_USERNAME ?? '',
   SMTP_PASSWORD: process.env.SMTP_PASSWORD ?? '',
-  SMTP_SENDER: 'no-reply@myriad.social',
+  SMTP_SENDER_ADDRESS: process.env.SMTP_SENDER_ADDRESS ?? '',
 
   FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ?? '',
 

@@ -32,33 +32,84 @@ export class EmailService {
     }
   }
 
-  async sendLoginMagicLink(
+  private async sendMagicLink(
     user: User,
     callbackURL: string,
     token: string,
+    subject: string,
+    message: string,
   ): Promise<SentMessageInfo> {
     const transporter = await EmailService.setupTransporter();
+    const senderAddress = config.SMTP_SENDER_ADDRESS ?? config.SMTP_USERNAME;
     const url = new URL(callbackURL);
     url.searchParams.set('token', token);
 
     const emailTemplate = new EmailTemplate({
-      from: config.SMTP_SENDER,
+      from: senderAddress,
       to: user.email,
-      subject: 'Login Request',
+      subject: subject,
       html: `
       <div>
           <p>Hello, ${user.name}</p>
-          <p>Follow this link to sign-in!</p>
+          <p>${message}</p>
           <a href="${url.toString()}">${url.toString()}</a>
-          <p>Make sure this email was sent by ${config.SMTP_SENDER}</p>
+          <p>Make sure this email was sent by ${senderAddress}</p>
           <p>Make sure you are redirected to ${callbackURL}</p>
           <p>Do not share this email with anyone</p>
           <p>This link is valid up to 30 minutes after you’ve received it.</p>
           <p>Thanks,</p>
+          <p>Myriad Team</p>
       </div>
       `,
     });
 
     return transporter.sendMail(emailTemplate);
+  }
+
+  async sendCreateAccountMagicLink(
+    user: User,
+    callbackURL: string,
+    token: string,
+  ): Promise<SentMessageInfo> {
+    const subject = 'Create Account Verification';
+    const message =
+      'You are about to create a new account on Myriad Social. If you want to confirm this action, click on this link or paste it in your browser.';
+
+    return this.sendMagicLink(user, callbackURL, token, subject, message);
+  }
+
+  async sendLoginMagicLink(
+    user: User,
+    callbackURL: string,
+    token: string,
+  ): Promise<SentMessageInfo> {
+    const subject = 'Login Request';
+    const message = 'Follow this link to sign-in!';
+
+    return this.sendMagicLink(user, callbackURL, token, subject, message);
+  }
+
+  async sendAddEmailMagicLink(
+    user: User,
+    callbackURL: string,
+    token: string,
+  ): Promise<SentMessageInfo> {
+    const subject = 'Add Email Verification';
+    const message =
+      'You are requesting to add this email to Myriad Social. If you want to confirm this action, click on this link or paste it in your browser.';
+
+    return this.sendMagicLink(user, callbackURL, token, subject, message);
+  }
+
+  async sendRemoveEmailMagicLink(
+    user: User,
+    callbackURL: string,
+    token: string,
+  ): Promise<SentMessageInfo> {
+    const subject = 'Remove Email Verification';
+    const message =
+      'You are requesting to remove this email from Myriad Social. If you want to confirm this action, click on this link or paste it in your browser.';
+
+    return this.sendMagicLink(user, callbackURL, token, subject, message);
   }
 }
