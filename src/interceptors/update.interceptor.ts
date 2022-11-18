@@ -258,10 +258,6 @@ export class UpdateInterceptor implements Provider<Interceptor> {
         const [userId, experienceId, experience] = invocationCtx.args;
         const rawPeople = experience.people as People[];
 
-        if (rawPeople.length === 0) {
-          throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
-        }
-
         await Promise.all([
           this.experienceService.validateUpdateExperience(userId, experienceId),
           this.experienceUserRepository.deleteAll({experienceId}),
