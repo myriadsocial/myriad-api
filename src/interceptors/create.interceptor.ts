@@ -642,8 +642,10 @@ export class CreateInterceptor implements Provider<Interceptor> {
         }
 
         const [userId, experience] = invocationCtx.args as [string, Experience];
-        const tagExperience = experience.allowedTags.filter(e => e !== '');
-        const prohibitedTags = experience.prohibitedTags;
+        const tagExperience =
+          experience?.allowedTags?.filter(e => e !== '') ?? [];
+        const prohibitedTags =
+          experience?.prohibitedTags?.filter(e => e !== '') ?? [];
         const intersectionTags = intersection(tagExperience, prohibitedTags);
         const expPeople = experience.people.filter(e => {
           if (
@@ -666,9 +668,6 @@ export class CreateInterceptor implements Provider<Interceptor> {
         });
         if (expPeople.length === 0) {
           throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
-        }
-        if (tagExperience.length === 0) {
-          throw new HttpErrors.UnprocessableEntity('Tags cannot be empty!');
         }
         if (intersectionTags.length > 0) {
           throw new HttpErrors.UnprocessableEntity(
