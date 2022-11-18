@@ -647,28 +647,26 @@ export class CreateInterceptor implements Provider<Interceptor> {
         const prohibitedTags =
           experience?.prohibitedTags?.filter(e => e !== '') ?? [];
         const intersectionTags = intersection(tagExperience, prohibitedTags);
-        const expPeople = experience.people.filter(e => {
-          if (
-            e.id === '' ||
-            e.name === '' ||
-            e.username === '' ||
-            !e.platform
-          ) {
+        const expPeople =
+          experience?.people?.filter(e => {
+            if (
+              e.id === '' ||
+              e.name === '' ||
+              e.username === '' ||
+              !e.platform
+            ) {
+              return false;
+            }
+
+            const platforms = [
+              PlatformType.MYRIAD,
+              PlatformType.REDDIT,
+              PlatformType.TWITTER,
+            ];
+
+            if (platforms.includes(e.platform)) return true;
             return false;
-          }
-
-          const platforms = [
-            PlatformType.MYRIAD,
-            PlatformType.REDDIT,
-            PlatformType.TWITTER,
-          ];
-
-          if (platforms.includes(e.platform)) return true;
-          return false;
-        });
-        if (expPeople.length === 0) {
-          throw new HttpErrors.UnprocessableEntity('People cannot be empty!');
-        }
+          }) ?? [];
         if (intersectionTags.length > 0) {
           throw new HttpErrors.UnprocessableEntity(
             'You cannot insert same hashtag in allowed and prohibited tags',
