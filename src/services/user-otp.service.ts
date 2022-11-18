@@ -57,7 +57,7 @@ export class UserOTPService {
       const expiredAt = new Date(existingUserOTP.expiredAt).getTime();
 
       if (now < expiredAt) {
-        const waitingTime = 30 * 1000; // 30 seconds
+        const waitingTime = 60 * 1000; // 1 menit
 
         if (now - updatedAt < waitingTime) {
           throw new HttpErrors.UnprocessableEntity(
