@@ -33,7 +33,7 @@ import {
   NetworkService,
   ServerService,
 } from './services';
-import {UpdateExchangeRateJob, UpdatePeopleProfileJob} from './jobs';
+import {UpdatePeopleProfileJob} from './jobs';
 import {CronComponent} from '@loopback/cron';
 import * as Sentry from '@sentry/node';
 import multer from 'multer';
@@ -191,7 +191,6 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   registerJob() {
-    this.add(createBindingFromClass(UpdateExchangeRateJob));
     this.add(createBindingFromClass(UpdatePeopleProfileJob));
   }
 
