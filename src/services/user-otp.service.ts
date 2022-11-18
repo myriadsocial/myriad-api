@@ -75,11 +75,39 @@ export class UserOTPService {
       await this.userOTPRepository.create(userOTP);
     }
 
-    await this.emailService.sendLoginMagicLink(
-      user,
-      callbackURL,
-      userOTP.token,
-    );
+    const url = new URL(callbackURL);
+    if (
+      url.searchParams.has('section') &&
+      url.searchParams.get('section') === 'email'
+    ) {
+      if (url.searchParams.has('newEmail')) {
+        await this.emailService.sendAddEmailMagicLink(
+          user,
+          callbackURL,
+          userOTP.token,
+        );
+      } else if (url.searchParams.has('isDelete')) {
+        await this.emailService.sendRemoveEmailMagicLink(
+          user,
+          callbackURL,
+          userOTP.token,
+        );
+      }
+    } else {
+      if (currentUser) {
+        await this.emailService.sendCreateAccountMagicLink(
+          user,
+          callbackURL,
+          userOTP.token,
+        );
+      } else {
+        await this.emailService.sendLoginMagicLink(
+          user,
+          callbackURL,
+          userOTP.token,
+        );
+      }
+    }
 
     return {token: userOTP.token};
   }
