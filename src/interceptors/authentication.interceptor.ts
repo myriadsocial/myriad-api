@@ -27,6 +27,7 @@ import {
 import {
   ActivityLogRepository,
   NetworkRepository,
+  RequestCreateNewUserByEmailRepository,
   UserRepository,
   WalletRepository,
 } from '../repositories';
@@ -46,6 +47,7 @@ import validator from 'validator';
 import {RequestLoginByOTP} from '../models/request-login-by-otp.model';
 import {UserOTPRepository} from '../repositories/user-otp.repository';
 import {config} from '../config';
+import {generateObjectId} from '../utils/formatted';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -58,6 +60,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(ActivityLogRepository)
     protected activityLogRepository: ActivityLogRepository,
+    @repository(RequestCreateNewUserByEmailRepository)
+    protected requestCreateNewUserByEmailRepository: RequestCreateNewUserByEmailRepository,
     @repository(NetworkRepository)
     protected networkRepository: NetworkRepository,
     @repository(UserRepository)
@@ -112,12 +116,20 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
       this.validateUsername(username);
 
-      const foundUser = await this.userRepository.findOne({
-        where: {username},
+      const or: AnyObject[] = [{username}];
+
+      if (invocationCtx.args[0]?.email) {
+        or.push({email: invocationCtx.args[0].email});
+      }
+
+      const foundUser = await this.userRepository.find({
+        where: {or},
       });
 
-      if (foundUser) {
-        throw new HttpErrors.UnprocessableEntity('User already exists');
+      if (foundUser.length > 0) {
+        throw new HttpErrors.UnprocessableEntity(
+          'Username/EmailAlreadyRegistered',
+        );
       }
     }
 
@@ -129,6 +141,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         const {address, network, name} = invocationCtx
           .args[0] as RequestCreateNewUserByWallet;
         const fixedAddress = isHex(`0x${address}`) ? `0x${address}` : address;
+
+        await this.validateWalletAddress(network, fixedAddress);
 
         const existingWallet = await this.walletRepository.exists(fixedAddress);
 
@@ -144,9 +158,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.UnprocessableEntity('Network not exists');
         }
 
-        await this.validateWalletAddress(network, fixedAddress);
-
         Object.assign(invocationCtx.args[0], {
+          id: generateObjectId(),
           name: name.substring(0, 22),
           permissions: this.getPermissions(fixedAddress),
           fullAccess: true,
@@ -163,11 +176,17 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
       // Signup with email
       case MethodType.SIGNUPBYEMAIL: {
-        const {email} = invocationCtx.args[0] as RequestCreateNewUserByEmail;
+        const {name, email} = invocationCtx
+          .args[0] as RequestCreateNewUserByEmail;
 
         if (!validator.isEmail(email)) {
           throw new HttpErrors.UnprocessableEntity('Invalid email address');
         }
+
+        Object.assign(invocationCtx.args[0], {
+          id: generateObjectId(),
+          name: name.substring(0, 22),
+        });
 
         break;
       }
@@ -234,11 +253,31 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           throw new HttpErrors.Unauthorized('OTP invalid or expired!');
         }
 
-        user = await this.userRepository.findOne({
-          where: {
-            id: validOTP.userId,
-          },
-        });
+        const key = `sign-up/${token}`;
+        const newUser = await this.requestCreateNewUserByEmailRepository.get(
+          key,
+        );
+
+        if (newUser?.id === validOTP.userId.toString()) {
+          const users = await this.userRepository.find({
+            where: {
+              or: [{email: newUser.email}, {username: newUser.username}],
+            },
+          });
+
+          if (users.length > 0) {
+            throw new HttpErrors.UnprocessableEntity('UserAlreadyExists');
+          }
+
+          user = await this.userRepository.create(newUser);
+          invocationCtx.args[2] = user;
+        } else {
+          user = await this.userRepository.findOne({
+            where: {
+              id: validOTP.userId,
+            },
+          });
+        }
 
         invocationCtx.args[1] = validOTP.userId;
 
@@ -247,7 +286,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     }
 
     if (methodName.startsWith(MethodType.LOGIN)) {
-      if (!user) throw new Error('User not exists!');
+      if (!user) throw new HttpErrors.UnprocessableEntity('User not exists!');
       if (methodName === MethodType.LOGINBYADMIN) {
         const [permission] = intersection(user.permissions, [
           PermissionKeys.ADMIN,
@@ -286,37 +325,24 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
     const jobs = [];
 
-    if (methodName.startsWith(MethodType.SIGNUP)) {
-      jobs.push(
-        this.userRepository.accountSetting(result.id).create({}),
-        this.userRepository.notificationSetting(result.id).create({}),
-        this.userRepository.languageSetting(result.id).create({}),
-        this.metricService.countServerMetric(),
-        this.activityLogRepository.create({
-          type: ActivityLogType.NEWUSER,
-          userId: result.id,
-          referenceId: result.id,
-          referenceType: ReferenceType.USER,
-        }),
-      );
-    }
-
     switch (methodName) {
       // Sign up with wallet
       case MethodType.SIGNUP: {
         const wallet = invocationCtx.args[1] as Wallet;
         jobs.push(
+          this.userRepository.accountSetting(result.id).create({}),
+          this.userRepository.notificationSetting(result.id).create({}),
+          this.userRepository.languageSetting(result.id).create({}),
+          this.metricService.countServerMetric(),
+          this.activityLogRepository.create({
+            type: ActivityLogType.NEWUSER,
+            userId: result.id,
+            referenceId: result.id,
+            referenceType: ReferenceType.USER,
+          }),
           this.userRepository.wallets(result.id).create(wallet),
           this.currencyService.addUserCurrencies(result.id, wallet.networkId),
         );
-        break;
-      }
-
-      // Sign up with email
-      case MethodType.SIGNUPBYEMAIL: {
-        const {email, callbackURL} = invocationCtx
-          .args[0] as RequestCreateNewUserByEmail;
-        jobs.push(this.userOTPService.requestByEmail(email, callbackURL));
         break;
       }
 
@@ -349,12 +375,30 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       case MethodType.LOGINBYOTP: {
         const {token} = invocationCtx.args[0] as RequestLoginByOTP;
         const userId = invocationCtx.args[1];
+        const key = `sign-up/${token}`;
+
+        if (invocationCtx.args[2]) {
+          const newUser = invocationCtx.args[2] as User;
+          jobs.push(
+            this.userRepository.accountSetting(newUser.id).create({}),
+            this.userRepository.notificationSetting(newUser.id).create({}),
+            this.userRepository.languageSetting(newUser.id).create({}),
+            this.metricService.countServerMetric(),
+            this.activityLogRepository.create({
+              type: ActivityLogType.NEWUSER,
+              userId: newUser.id,
+              referenceId: newUser.id,
+              referenceType: ReferenceType.USER,
+            }),
+          );
+        }
 
         await this.walletRepository.updateAll(
           {networkId: 'myriad', primary: true},
           {userId},
         );
         jobs.push(
+          this.requestCreateNewUserByEmailRepository.delete(key),
           this.userOTPRepository.deleteAll({
             token: token,
           }),
