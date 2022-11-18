@@ -234,7 +234,14 @@ export class AuthenticationController {
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/signup/email')
-  @response(200)
+  @response(200, {
+    description: 'User model instance',
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(User, {includeRelations: false}),
+      },
+    },
+  })
   async signupByEmail(
     @requestBody({
       content: {
@@ -246,7 +253,7 @@ export class AuthenticationController {
       },
     })
     requestCreateNewUserByEmail: RequestCreateNewUserByEmail,
-  ): Promise<void> {
+  ): Promise<User> {
     const {email, callbackURL} = requestCreateNewUserByEmail;
     const user = pick(requestCreateNewUserByEmail, [
       'id',
@@ -272,6 +279,7 @@ export class AuthenticationController {
       key,
       30 * 60 * 1000,
     );
+    return new User(currentUser);
   }
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
