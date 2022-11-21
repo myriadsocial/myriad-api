@@ -13,7 +13,7 @@ export class StatisticController {
     private statisticService: StatisticService,
   ) {}
 
-  @get('/user-growth')
+  @get('/stats/user-growth')
   @response(200, {
     description: 'User Growth',
   })
@@ -23,7 +23,7 @@ export class StatisticController {
     return this.statisticService.userGrowth(limit);
   }
 
-  @get('/top-currencies')
+  @get('/stats/top-currencies')
   @response(200, {
     description: 'Top Currencies',
   })
@@ -33,7 +33,7 @@ export class StatisticController {
     return this.statisticService.topCurrencies(limit);
   }
 
-  @get('/average')
+  @get('/stats/average')
   @response(200, {
     description: 'Averages',
   })
@@ -41,7 +41,7 @@ export class StatisticController {
     return this.statisticService.average();
   }
 
-  @get('/median')
+  @get('/stats/median')
   @response(200, {
     description: 'Medain',
   })

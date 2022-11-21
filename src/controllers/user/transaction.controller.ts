@@ -15,7 +15,7 @@ import {Transaction, UpdateTransactionDto} from '../../models';
 import {UserService} from '../../services';
 
 @authenticate('jwt')
-export class TransactionController {
+export class UserTransactionController {
   constructor(
     @service(UserService)
     private userService: UserService,

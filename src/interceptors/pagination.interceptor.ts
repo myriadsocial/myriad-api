@@ -361,12 +361,12 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.WALLET: {
+      case ControllerType.USERWALLET: {
         Object.assign(filter, invocationCtx.args[1] ?? {});
         break;
       }
 
-      case ControllerType.TRANSACTION: {
+      case ControllerType.USERTRANSACTION: {
         this.transactionService.detail(filter.where, request.query);
         break;
       }
@@ -413,7 +413,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.COMMENT: {
+      case ControllerType.USERCOMMENT: {
         const {userId, referenceId, section} = request.query;
 
         if (userId) {
@@ -428,7 +428,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.FRIEND: {
+      case ControllerType.USERFRIEND: {
         const {status, userId} = request.query;
 
         Object.assign(filter.where, {status, deletedAt: {$eq: null}});
@@ -563,7 +563,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       // include total mutual friend in friend collection
-      case ControllerType.FRIEND: {
+      case ControllerType.USERFRIEND: {
         if (request.query.mutual === 'true') {
           const where = JSON.stringify(filter.where);
 
@@ -606,7 +606,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       // Changed comment text to [comment removed] when comment is deleted
-      case ControllerType.COMMENT: {
+      case ControllerType.USERCOMMENT: {
         result = await Promise.all(
           result.map(async (comment: AnyObject) => {
             if (comment.deletedAt) {
@@ -755,7 +755,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
     if (
       controllerName === ControllerType.REPORTUSER ||
-      controllerName === ControllerType.WALLET ||
+      controllerName === ControllerType.USERWALLET ||
       controllerName === ControllerType.EXPERIENCEPOST ||
       controllerName === ControllerType.POSTEXPERIENCE
     )

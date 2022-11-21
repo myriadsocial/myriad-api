@@ -11,7 +11,7 @@ import {Transaction, TxDetail} from '../../models';
 import {UserService} from '../../services';
 
 @authenticate('jwt')
-export class ClaimReferenceController {
+export class UserClaimReferenceController {
   constructor(
     @service(UserService)
     private userService: UserService,

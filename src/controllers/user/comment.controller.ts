@@ -15,7 +15,7 @@ import {Comment} from '../../models';
 import {UserService} from '../../services';
 
 @authenticate('jwt')
-export class CommentController {
+export class UserCommentController {
   constructor(
     @service(UserService)
     private userService: UserService,

@@ -16,7 +16,7 @@ import {Friend} from '../../models';
 import {UserService} from '../../services';
 
 @authenticate('jwt')
-export class FriendController {
+export class UserFriendController {
   constructor(
     @service(UserService)
     private userService: UserService,

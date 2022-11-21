@@ -20,7 +20,7 @@ import {
 import {UserService} from '../../services';
 
 @authenticate('jwt')
-export class SettingController {
+export class UserSettingController {
   constructor(
     @service(UserService)
     private userService: UserService,

@@ -134,7 +134,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
     const methodName = invocationCtx.methodName as MethodType;
 
     switch (controllerName) {
-      case ControllerType.COMMENT: {
+      case ControllerType.USERCOMMENT: {
         if (result.deletedAt) {
           const report = await this.reportRepository.findOne({
             where: {
@@ -231,7 +231,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         return userWithFriendStatus;
       }
 
-      case ControllerType.WALLET: {
+      case ControllerType.USERWALLET: {
         const user = result as User;
 
         if (user?.userCurrencies) {

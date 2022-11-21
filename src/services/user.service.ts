@@ -806,7 +806,7 @@ export class UserService {
   }
 
   public async createComment(comment: Omit<Comment, 'id'>): Promise<Comment> {
-    await this.haveFullAccess(ControllerType.COMMENT);
+    await this.haveFullAccess(ControllerType.USERCOMMENT);
     comment.userId = this.currentUser[securityId];
     return this.commentService.create(comment);
   }
@@ -863,7 +863,7 @@ export class UserService {
   }
 
   public async requestFriend(friend: Omit<Friend, 'id'>): Promise<Friend> {
-    await this.haveFullAccess(ControllerType.FRIEND);
+    await this.haveFullAccess(ControllerType.USERFRIEND);
     return this.friendService.request(friend);
   }
 
@@ -871,12 +871,12 @@ export class UserService {
     id: string,
     friend: Partial<Friend>,
   ): Promise<void> {
-    await this.haveFullAccess(ControllerType.FRIEND);
+    await this.haveFullAccess(ControllerType.USERFRIEND);
     return this.friendService.respond(id, new Friend(friend));
   }
 
   public async removeFriend(id: string, friend?: Friend): Promise<void> {
-    await this.haveFullAccess(ControllerType.FRIEND);
+    await this.haveFullAccess(ControllerType.USERFRIEND);
     return this.friendService.remove(id, friend);
   }
 
@@ -1230,7 +1230,7 @@ export class UserService {
     const userId = this.currentUser?.[securityId] ?? '';
 
     switch (controllerType) {
-      case ControllerType.COMMENT:
+      case ControllerType.USERCOMMENT:
       case ControllerType.POST: {
         const now = new Date().setHours(0, 0, 0, 0);
         const [{count: countComment}, {count: countPost}] = await Promise.all([
@@ -1256,7 +1256,7 @@ export class UserService {
         return;
       }
 
-      case ControllerType.FRIEND: {
+      case ControllerType.USERFRIEND: {
         throw new HttpErrors.Unauthorized('ActionLimited');
       }
 
