@@ -48,7 +48,6 @@ import {
   UpdateUserPersonalAccessTokenDto,
   User,
   UserCurrency,
-  UserByEmail,
   UserExperience,
   UserPersonalAccessToken,
   UserSocialMedia,
@@ -608,18 +607,14 @@ export class UserService {
       .patch(accountSetting);
   }
 
-  public async setEmailSetting(
-    userByEmail: Partial<UserByEmail>,
-  ): Promise<void> {
+  public async setEmailSetting(token?: string, removed = true): Promise<void> {
+    if (!token) {
+      throw new HttpErrors.UnprocessableEntity('OTP invalid');
+    }
+
     const currentEmail = this.currentUser?.email;
 
-    let action = true; // Action Add/Remove email, true = add email, false = remove email
-    if (userByEmail.email) {
-      // Add email
-      if (currentEmail) {
-        throw new HttpErrors.UnprocessableEntity('Email already exists');
-      }
-    } else {
+    if (removed) {
       // Remove email
       const wallets = await this.walletRepository.find({
         where: {userId: this.currentUser?.[securityId] ?? ''},
@@ -628,19 +623,11 @@ export class UserService {
       if (wallets.length === 0) {
         throw new HttpErrors.UnprocessableEntity('CannotRemoveEmail');
       }
-
-      if (currentEmail) userByEmail.email = currentEmail;
-      action = false;
-    }
-
-    const {token, email} = userByEmail;
-
-    if (!token) {
-      throw new HttpErrors.UnprocessableEntity('OTP invalid or expired');
-    }
-
-    if ((email && !validator.isEmail(email)) || !email) {
-      throw new HttpErrors.UnprocessableEntity('Invalid Email Address');
+    } else {
+      // Add email
+      if (currentEmail) {
+        throw new HttpErrors.UnprocessableEntity('EmailAlreadyRegistered');
+      }
     }
 
     const validOTP = await this.userOTPService.verifyOTP(token);
@@ -654,32 +641,31 @@ export class UserService {
     }
 
     const key = `email-request/${this.currentUser[securityId]}`;
-    const [users, changeEmailRequest] = await Promise.all([
-      this.userRepository.find({
-        where: {
-          or: [{id: validOTP.userId}, {email}],
-        },
-      }),
-      this.changeEmailRequestRepository.get(key),
-    ]);
+    const changeEmailRequest = await this.changeEmailRequestRepository.get(key);
+
+    if (!changeEmailRequest?.email) {
+      throw new HttpErrors.UnprocessableEntity('OTP expired');
+    }
+
+    const users = await this.userRepository.find({
+      where: {
+        or: [{id: validOTP.userId}, {email: changeEmailRequest.email}],
+      },
+    });
 
     if (!users.length) {
       throw new HttpErrors.UnprocessableEntity('User not exists');
     }
 
     if (users.length > 1) {
-      throw new HttpErrors.UnprocessableEntity('Email already Exists');
-    }
-
-    if (changeEmailRequest?.email !== email) {
-      throw new HttpErrors.UnprocessableEntity('Invalid email address');
+      throw new HttpErrors.UnprocessableEntity('EmailAlreadyRegistered');
     }
 
     await Promise.all([
       this.userOTPService.removeOTP(token),
       this.changeEmailRequestRepository.delete(key),
       this.userRepository.updateById(validOTP.userId, {
-        email: action ? email : undefined,
+        email: removed ? undefined : changeEmailRequest.email,
       }),
     ]);
   }
