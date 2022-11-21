@@ -111,7 +111,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
   async beforeAuthenticate(invocationCtx: InvocationContext): Promise<void> {
     const methodName = invocationCtx.methodName as MethodType;
 
-    if (methodName.startsWith(MethodType.SIGNUP)) {
+    if (methodName.startsWith('signup')) {
       const {username} = invocationCtx.args[0] as RequestCreateNewUser;
 
       this.validateUsername(username);
@@ -137,7 +137,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     switch (methodName) {
       // Sign up with wallet
-      case MethodType.SIGNUP: {
+      case MethodType.SIGNUPBYWALLET: {
         const {address, network, name} = invocationCtx
           .args[0] as RequestCreateNewUserByWallet;
         const fixedAddress = isHex(`0x${address}`) ? `0x${address}` : address;
@@ -192,8 +192,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       }
 
       // Login with wallet
-      case MethodType.LOGIN:
-      case MethodType.LOGINBYADMIN: {
+      case MethodType.LOGINBYWALLET: {
         const credential = invocationCtx.args[0] as Credential;
         const {nonce, networkType} = credential;
         const [publicAddress, account] = credential.publicAddress.split('/');
@@ -202,6 +201,8 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         if (nonce === 0 || !nonce) {
           throw new HttpErrors.Unauthorized('Invalid nonce!');
         }
+
+        if (!credential?.role) credential.role = 'user';
 
         const currentNetwork = await this.networkRepository.findById(
           networkType,
@@ -285,23 +286,27 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       }
     }
 
-    if (methodName.startsWith(MethodType.LOGIN)) {
+    if (methodName.startsWith('login')) {
       if (!user) throw new HttpErrors.UnprocessableEntity('User not exists!');
-      if (methodName === MethodType.LOGINBYADMIN) {
-        const [permission] = intersection(user.permissions, [
-          PermissionKeys.ADMIN,
-        ]);
+      if (methodName === MethodType.LOGINBYWALLET) {
+        const credential = invocationCtx.args[0] as Credential;
 
-        if (permission !== PermissionKeys.ADMIN) {
-          throw new HttpErrors.Forbidden('Invalid admin');
-        }
-      } else {
-        const [userPermission] = intersection(user.permissions, [
-          PermissionKeys.USER,
-        ]);
+        if (credential.role === 'admin') {
+          const [permission] = intersection(user.permissions, [
+            PermissionKeys.ADMIN,
+          ]);
 
-        if (userPermission !== PermissionKeys.USER) {
-          throw new HttpErrors.Forbidden('Invalid user');
+          if (permission !== PermissionKeys.ADMIN) {
+            throw new HttpErrors.Forbidden('Invalid admin');
+          }
+        } else {
+          const [userPermission] = intersection(user.permissions, [
+            PermissionKeys.USER,
+          ]);
+
+          if (userPermission !== PermissionKeys.USER) {
+            throw new HttpErrors.Forbidden('Invalid user');
+          }
         }
       }
 
@@ -327,7 +332,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
 
     switch (methodName) {
       // Sign up with wallet
-      case MethodType.SIGNUP: {
+      case MethodType.SIGNUPBYWALLET: {
         const wallet = invocationCtx.args[1] as Wallet;
         jobs.push(
           this.userRepository.accountSetting(result.id).create({}),
@@ -347,8 +352,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
       }
 
       // Login by wallet
-      case MethodType.LOGIN:
-      case MethodType.LOGINBYADMIN: {
+      case MethodType.LOGINBYWALLET: {
         // Generate random nonce after login
         const [credential, walletId] = invocationCtx.args;
         const networkId = credential.networkType;
@@ -356,18 +360,24 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
         const ng = new NonceGenerator();
         const newNonce = ng.generate();
 
-        await this.walletRepository.updateAll({primary: false}, {userId});
-        await this.currencyService.update(userId, networkId);
         jobs.push(
           this.userRepository.updateById(userId, {
             nonce: newNonce,
             fullAccess: true,
           }),
-          this.walletRepository.updateById(walletId, {
-            primary: true,
-            networkId,
-          }),
         );
+
+        if (credential.role === 'user') {
+          await this.walletRepository.updateAll({primary: false}, {userId});
+          await this.currencyService.update(userId, networkId);
+          jobs.push(
+            this.walletRepository.updateById(walletId, {
+              primary: true,
+              networkId,
+            }),
+          );
+        }
+
         break;
       }
 

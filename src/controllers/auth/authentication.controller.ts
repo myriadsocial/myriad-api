@@ -1,12 +1,10 @@
-import {inject, intercept, service} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {intercept, service} from '@loopback/core';
 import {
   get,
   getModelSchemaRef,
   param,
   post,
   requestBody,
-  HttpErrors,
   response,
 } from '@loopback/rest';
 import {
@@ -17,39 +15,17 @@ import {
   User,
   RequestLoginByOTP,
 } from '../../models';
-import {UserProfile, securityId} from '@loopback/security';
-import {RefreshGrant, TokenObject} from '../../interfaces';
-import {RefreshTokenServiceBindings, TokenServiceBindings} from '../../keys';
-import {
-  NetworkRepository,
-  RequestCreateNewUserByEmailRepository,
-  UserRepository,
-  WalletRepository,
-} from '../../repositories';
+import {TokenObject} from '../../interfaces';
 import {AuthenticationInterceptor} from '../../interceptors';
-import {pick} from 'lodash';
-import {RefreshtokenService, JWTService, UserOTPService} from '../../services';
-import validator from 'validator';
+import {AuthService} from '../../services';
 
 export class AuthenticationController {
   constructor(
-    @repository(RequestCreateNewUserByEmailRepository)
-    protected requestCreateNewUserByEmailRepository: RequestCreateNewUserByEmailRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
-    @repository(NetworkRepository)
-    protected networkRepository: NetworkRepository,
-    @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
-    @service(UserOTPService)
-    protected userOTPService: UserOTPService,
-    @inject(TokenServiceBindings.TOKEN_SERVICE)
-    protected jwtService: JWTService,
-    @inject(RefreshTokenServiceBindings.REFRESH_TOKEN_SERVICE)
-    protected refreshService: RefreshtokenService,
+    @service(AuthService)
+    private authService: AuthService,
   ) {}
 
-  @get('/wallets/{id}/nonce', {
+  @get('/auth/nonce', {
     responses: {
       '200': {
         description: 'User nonce',
@@ -69,63 +45,13 @@ export class AuthenticationController {
     },
   })
   async getNonceByWallet(
-    @param.path.string('id') id: string,
+    @param.query.string('id') id?: string,
+    @param.query.string('type') type?: string,
   ): Promise<{nonce: number}> {
-    const result = {nonce: 0};
-
-    try {
-      const user = await this.walletRepository.user(id);
-      result.nonce = user.nonce;
-    } catch {
-      // ignore
-    }
-
-    return result;
+    return this.authService.getNonce(id, type);
   }
 
-  @get('/users/{id}/nonce', {
-    responses: {
-      '200': {
-        description: 'User nonce',
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              properties: {
-                nonce: {
-                  type: 'number',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  async getNonceByUser(
-    @param.path.string('id') id: string,
-    @param.query.string('platform') platform?: string,
-  ): Promise<{nonce: number}> {
-    if (!platform) {
-      const {nonce} = await this.userRepository.findById(id);
-      return {nonce};
-    }
-
-    const networks = await this.networkRepository.find({
-      where: {blockchainPlatform: platform},
-    });
-    const networkIds = networks.map(network => network.id);
-    const wallet = await this.walletRepository.findOne({
-      where: {networkId: {inq: networkIds}, userId: id},
-    });
-
-    if (!wallet) return {nonce: 0};
-
-    const {nonce} = await this.userRepository.findById(id);
-    return {nonce};
-  }
-
-  @post('/otp/email')
+  @post('/auth/otp/email')
   @response(200, {
     description: 'Request OTP by Email Response',
     content: {
@@ -153,22 +79,11 @@ export class AuthenticationController {
     })
     requestOTP: RequestOTPByEmail,
   ): Promise<{message: string}> {
-    if (!validator.isEmail(requestOTP.email)) {
-      throw new HttpErrors.UnprocessableEntity('Invalid Email Address');
-    }
-
-    await this.userOTPService.requestByEmail(
-      requestOTP.email,
-      requestOTP.callbackURL,
-    );
-
-    return {
-      message: `OTP sent to ${requestOTP.email}`,
-    };
+    return this.authService.requestOTPByEmail(requestOTP);
   }
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
-  @post('/signup')
+  @post('/auth/signup/wallet')
   @response(200, {
     description: 'User model instance',
     content: {
@@ -177,7 +92,7 @@ export class AuthenticationController {
       },
     },
   })
-  async signup(
+  async signupByWallet(
     @requestBody({
       content: {
         'application/json': {
@@ -189,18 +104,11 @@ export class AuthenticationController {
     })
     requestCreateNewUserByWallet: RequestCreateNewUserByWallet,
   ): Promise<User> {
-    const user = pick(requestCreateNewUserByWallet, [
-      'id',
-      'name',
-      'username',
-      'permissions',
-      'fullAccess',
-    ]);
-    return this.userRepository.create(user);
+    return this.authService.signUpByWallet(requestCreateNewUserByWallet);
   }
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
-  @post('/signup/email')
+  @post('/auth/signup/email')
   @response(200, {
     description: 'User model instance',
     content: {
@@ -221,36 +129,11 @@ export class AuthenticationController {
     })
     requestCreateNewUserByEmail: RequestCreateNewUserByEmail,
   ): Promise<User> {
-    const {email, callbackURL} = requestCreateNewUserByEmail;
-    const user = pick(requestCreateNewUserByEmail, [
-      'id',
-      'name',
-      'username',
-      'email',
-    ]);
-    const currentUser: UserProfile = {
-      [securityId]: user.id.toString(),
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      email: user.email,
-    };
-    const {token} = await this.userOTPService.requestByEmail(
-      email,
-      callbackURL,
-      currentUser,
-    );
-    const key = `sign-up/${token}`;
-    await this.requestCreateNewUserByEmailRepository.set(key, user);
-    await this.requestCreateNewUserByEmailRepository.expire(
-      key,
-      30 * 60 * 1000,
-    );
-    return new User(currentUser);
+    return this.authService.signUpByEmail(requestCreateNewUserByEmail);
   }
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
-  @post('/login', {
+  @post('/auth/login/wallet', {
     responses: {
       '200': {
         description: 'Token',
@@ -278,7 +161,7 @@ export class AuthenticationController {
       },
     },
   })
-  async login(
+  async loginByWallet(
     @requestBody({
       description: 'The input of login function',
       required: true,
@@ -290,36 +173,29 @@ export class AuthenticationController {
     })
     credential: Credential,
   ): Promise<TokenObject> {
-    const accessToken = await this.jwtService.generateToken(
-      credential.data as UserProfile,
-    );
-
-    return {accessToken};
+    return this.authService.login(credential);
   }
 
   @intercept(AuthenticationInterceptor.BINDING_KEY)
-  @post('/login/otp', {
-    responses: {
-      '200': {
-        description: 'Token',
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              properties: {
-                accessToken: {
-                  type: 'string',
-                },
-                refreshToken: {
-                  type: 'string',
-                },
-                expiresId: {
-                  type: 'string',
-                },
-                tokenType: {
-                  type: 'string',
-                },
-              },
+  @post('/auth/login/otp')
+  @response(200, {
+    description: 'Token',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            accessToken: {
+              type: 'string',
+            },
+            refreshToken: {
+              type: 'string',
+            },
+            expiresId: {
+              type: 'string',
+            },
+            tokenType: {
+              type: 'string',
             },
           },
         },
@@ -338,52 +214,6 @@ export class AuthenticationController {
     })
     requestLoginByOTP: RequestLoginByOTP,
   ): Promise<TokenObject> {
-    const accessToken = await this.jwtService.generateToken(
-      requestLoginByOTP.data as UserProfile,
-    );
-
-    return {accessToken};
-  }
-
-  @post('/refresh', {
-    responses: {
-      '200': {
-        description: 'Token',
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              properties: {
-                accessToken: {
-                  type: 'string',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  async refresh(
-    @requestBody({
-      description: 'Reissuing Acess Token',
-      required: true,
-      content: {
-        'application/json': {
-          schema: {
-            type: 'object',
-            required: ['refreshToken'],
-            properties: {
-              refreshToken: {
-                type: 'string',
-              },
-            },
-          },
-        },
-      },
-    })
-    refreshGrant: RefreshGrant,
-  ): Promise<TokenObject> {
-    return this.refreshService.refreshToken(refreshGrant.refreshToken);
+    return this.authService.login(requestLoginByOTP);
   }
 }

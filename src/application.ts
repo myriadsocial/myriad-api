@@ -55,6 +55,7 @@ import {MyriadSequence} from './sequence';
 import {
   ActivityLogService,
   AdminService,
+  AuthService,
   CurrencyService,
   EmailService,
   ExperienceService,
@@ -175,6 +176,7 @@ export class MyriadApiApplication extends BootMixin(
   registerService() {
     this.service(ActivityLogService);
     this.service(AdminService);
+    this.service(AuthService);
     this.service(CurrencyService);
     this.service(EmailService);
     this.service(ExperienceService);
