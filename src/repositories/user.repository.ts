@@ -1,41 +1,41 @@
-import {Getter, inject, bind, BindingScope} from '@loopback/core';
+import {bind, BindingScope, Getter, inject} from '@loopback/core';
 import {
+  BelongsToAccessor,
   DefaultCrudRepository,
   HasManyRepositoryFactory,
   HasManyThroughRepositoryFactory,
-  repository,
   HasOneRepositoryFactory,
-  BelongsToAccessor,
+  repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {
+  AccountSetting,
   ActivityLog,
+  Currency,
   Experience,
   Friend,
-  User,
-  UserExperience,
-  UserRelations,
-  AccountSetting,
+  LanguageSetting,
   NotificationSetting,
   People,
-  UserSocialMedia,
-  LanguageSetting,
-  Wallet,
-  Currency,
+  User,
   UserCurrency,
+  UserExperience,
+  UserRelations,
+  UserSocialMedia,
+  Wallet,
 } from '../models';
+import {AccountSettingRepository} from './account-setting.repository';
 import {ActivityLogRepository} from './activity-log.repository';
+import {CurrencyRepository} from './currency.repository';
 import {ExperienceRepository} from './experience.repository';
 import {FriendRepository} from './friend.repository';
-import {UserExperienceRepository} from './user-experience.repository';
-import {UserSocialMediaRepository} from './user-social-media.repository';
-import {AccountSettingRepository} from './account-setting.repository';
+import {LanguageSettingRepository} from './language-setting.repository';
 import {NotificationSettingRepository} from './notification-setting.repository';
 import {PeopleRepository} from './people.repository';
-import {LanguageSettingRepository} from './language-setting.repository';
-import {WalletRepository} from './wallet.repository';
 import {UserCurrencyRepository} from './user-currency.repository';
-import {CurrencyRepository} from './currency.repository';
+import {UserExperienceRepository} from './user-experience.repository';
+import {UserSocialMediaRepository} from './user-social-media.repository';
+import {WalletRepository} from './wallet.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<

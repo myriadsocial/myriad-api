@@ -1,36 +1,36 @@
-import {
-  createStubInstance,
-  sinon,
-  StubbedInstanceWithSinonAccessor,
-} from '@loopback/testlab';
-import {VoteController} from '../../controllers';
-import {Vote} from '../../models';
-import {VoteRepository} from '../../repositories';
-import {givenVote} from '../helpers';
+// import {
+//   createStubInstance,
+//   sinon,
+//   StubbedInstanceWithSinonAccessor,
+// } from '@loopback/testlab';
+// import {VoteController} from '../../controllers';
+// import {Vote} from '../../models';
+// import {VoteRepository} from '../../repositories';
+// import {givenVote} from '../helpers';
 
-describe('VoteController', () => {
-  let voteRepository: StubbedInstanceWithSinonAccessor<VoteRepository>;
-  let controller: VoteController;
-  let aVoteWithId: Vote;
+// describe('VoteController', () => {
+//   let voteRepository: StubbedInstanceWithSinonAccessor<VoteRepository>;
+//   let controller: VoteController;
+//   let aVoteWithId: Vote;
 
-  beforeEach(resetRepositories);
+//   beforeEach(resetRepositories);
 
-  describe('deleteVote', () => {
-    it('successfully deletes existing items', async () => {
-      const deleteById = voteRepository.stubs.deleteById;
-      deleteById.resolves();
-      await controller.deleteById(aVoteWithId.id as string, {});
-      sinon.assert.calledWith(deleteById, aVoteWithId.id);
-    });
-  });
+//   describe('deleteVote', () => {
+//     it('successfully deletes existing items', async () => {
+//       const deleteById = voteRepository.stubs.deleteById;
+//       deleteById.resolves();
+//       await controller.deleteById(aVoteWithId.id as string, {});
+//       sinon.assert.calledWith(deleteById, aVoteWithId.id);
+//     });
+//   });
 
-  function resetRepositories() {
-    voteRepository = createStubInstance(VoteRepository);
+//   function resetRepositories() {
+//     voteRepository = createStubInstance(VoteRepository);
 
-    aVoteWithId = givenVote({
-      id: '1',
-    });
+//     aVoteWithId = givenVote({
+//       id: '1',
+//     });
 
-    controller = new VoteController(voteRepository);
-  }
-});
+//     controller = new VoteController(voteRepository);
+//   }
+// });

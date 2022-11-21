@@ -1,4 +1,4 @@
-import {inject, bind, BindingScope} from '@loopback/core';
+import {bind, BindingScope, inject} from '@loopback/core';
 import {DefaultCrudRepository} from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {ExperienceUser, ExperienceUserRelations} from '../models';

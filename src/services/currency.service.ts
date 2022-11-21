@@ -1,44 +1,68 @@
-import {BindingScope, service, injectable} from '@loopback/core';
-import {AnyObject, repository} from '@loopback/repository';
-import {ApiPromise} from '@polkadot/api';
-import {config} from '../config';
+import {BindingScope, injectable, service} from '@loopback/core';
+import {Filter, repository} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
+import {Currency, UserCurrency} from '../models';
 import {
   CurrencyRepository,
-  NetworkRepository,
+  ExchangeRateRepository,
   QueueRepository,
   TransactionRepository,
   UserCurrencyRepository,
   WalletRepository,
 } from '../repositories';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
-import {HttpErrors} from '@loopback/rest';
 import {NotificationService} from './notification.service';
-import {BN} from '@polkadot/util';
-import {UserCurrency, Wallet} from '../models';
-import {DateUtils} from '../utils/date-utils';
-
-const dateUtils = new DateUtils();
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class CurrencyService {
   constructor(
     @repository(CurrencyRepository)
-    public currencyRepository: CurrencyRepository,
+    private currencyRepository: CurrencyRepository,
+    @repository(ExchangeRateRepository)
+    private exchangeRateRepository: ExchangeRateRepository,
     @repository(TransactionRepository)
-    public transactionRepository: TransactionRepository,
+    private transactionRepository: TransactionRepository,
     @repository(QueueRepository)
-    protected queueRepository: QueueRepository,
+    private queueRepository: QueueRepository,
     @repository(UserCurrencyRepository)
-    protected userCurrencyRepository: UserCurrencyRepository,
+    private userCurrencyRepository: UserCurrencyRepository,
     @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
-    @repository(NetworkRepository)
-    protected networkRepository: NetworkRepository,
+    private walletRepository: WalletRepository,
     @service(NotificationService)
-    protected notificationService: NotificationService,
+    private notificationService: NotificationService,
   ) {}
 
-  async addUserCurrencies(userId: string, networkId: string): Promise<void> {
+  public async findById(
+    id: string,
+    filter?: Filter<Currency>,
+  ): Promise<Currency> {
+    return this.currencyRepository.findById(id, filter);
+  }
+
+  public async find(
+    filter?: Filter<Currency>,
+    rates = false,
+  ): Promise<Currency[]> {
+    const currencies = await this.currencyRepository.find(filter);
+
+    if (rates) {
+      return Promise.all(
+        currencies.map(async currency => {
+          let price = 0;
+
+          if (currency.exchangeRate) {
+            const rate = await this.exchangeRateRepository.get(currency.symbol);
+            if (rate) price = rate.price;
+          }
+
+          return new Currency({...currency, price});
+        }),
+      );
+    }
+
+    return currencies;
+  }
+
+  public async create(userId: string, networkId: string): Promise<void> {
     const currencies = await this.currencyRepository.find({
       where: {networkId},
       order: ['native DESC'],
@@ -66,7 +90,7 @@ export class CurrencyService {
     );
   }
 
-  async updateUserCurrency(userId: string, networkId: string): Promise<void> {
+  public async update(userId: string, networkId: string): Promise<void> {
     if (!userId || !networkId) return;
 
     const [{count: countCurrency}, {count: countUserCurrency}] =
@@ -78,7 +102,7 @@ export class CurrencyService {
         }),
       ]);
     if (countUserCurrency === 0) {
-      return this.addUserCurrencies(userId, networkId);
+      return this.create(userId, networkId);
     }
 
     if (countCurrency > countUserCurrency) {
@@ -109,70 +133,41 @@ export class CurrencyService {
     }
   }
 
-  async sendMyriadReward(wallet: Wallet): Promise<void> {
-    const {userId: toUserId, networkId: networkType, id: address} = wallet;
-
-    if (networkType !== 'myriad') return;
-    if (!config.MYRIAD_FAUCET_AMOUNT) return;
-    if (config.MYRIAD_FAUCET_AMOUNT === 0) return;
-
-    const currency = await this.currencyRepository.findOne({
-      where: {
-        networkId: 'myriad',
-        symbol: 'MYRIA',
-      },
-      include: ['network'],
+  public async setPriority(
+    userId: string,
+    currencyIds: string[],
+  ): Promise<void> {
+    const wallet = await this.walletRepository.findOne({
+      where: {userId, primary: true},
     });
 
-    if (!currency || !currency.network) return;
-    const {id, decimal, network} = currency;
-    const rpcURL = network.rpcURL;
-    const {polkadotApi, getKeyring, getHexPublicKey} = new PolkadotJs();
-    const api = await polkadotApi(rpcURL);
+    if (!wallet) throw new HttpErrors.UnprocessableEntity('WalletNotFound');
 
-    const mnemonic = config.MYRIAD_FAUCET_MNEMONIC;
-    const sender = getKeyring().addFromMnemonic(mnemonic);
-    const from = getHexPublicKey(sender);
-    const to = address;
+    const networkId = wallet.networkId;
+    const [{count: countCurrency}, {count: countCurrencyNetwork}] =
+      await Promise.all([
+        this.currencyRepository.count({id: {inq: currencyIds}, networkId}),
+        this.currencyRepository.count({networkId}),
+      ]);
 
-    const rewardAmount = config.MYRIAD_FAUCET_AMOUNT * 10 ** decimal;
-
-    const transfer = api.tx.balances.transfer(
-      to,
-      new BN(rewardAmount.toString()),
-    );
-    const {nonce} = await api.query.system.account(sender.address);
-    const getNonce = await this.getQueueNumber(nonce.toJSON(), 'MYRIA');
-
-    const hash = await new Promise((resolve, reject) => {
-      transfer
-        .signAndSend(sender, {nonce: getNonce}, ({status, isError}) => {
-          if (status.isFinalized) {
-            const blockHash = status.asFinalized.toHex();
-            resolve(blockHash);
-          } else if (isError) {
-            reject();
-          }
-        })
-        .catch(() => reject());
-    });
-
-    await api.disconnect();
-
-    if (hash && typeof hash === 'string') {
-      const fromWallet = await this.walletRepository.findById(from);
-      const transaction = await this.transactionRepository.create({
-        hash: hash,
-        amount: rewardAmount / 10 ** decimal,
-        to: toUserId,
-        from: fromWallet.userId,
-        currencyId: id,
-      });
-      await this.notificationService.sendInitialTips(transaction);
+    if (
+      countCurrency !== currencyIds.length ||
+      countCurrencyNetwork !== currencyIds.length
+    ) {
+      throw new HttpErrors.UnprocessableEntity('Total currency not match');
     }
+
+    await Promise.all(
+      currencyIds.map(async (currencyId, index) => {
+        return this.userCurrencyRepository.updateAll(
+          {priority: index + 1},
+          {userId, currencyId, networkId},
+        );
+      }),
+    );
   }
 
-  async getQueueNumber(nonce: number, type: string): Promise<number> {
+  private async queue(nonce: number, type: string): Promise<number> {
     const queue = await this.queueRepository.get(type);
 
     let priority = nonce;
@@ -181,18 +176,8 @@ export class CurrencyService {
     else priority = nonce;
 
     await this.queueRepository.set(type, {priority: priority + 1});
-    await this.queueRepository.expire(type, 1 * dateUtils.hour);
+    await this.queueRepository.expire(type, 60 * 60 * 1000);
 
     return priority;
-  }
-
-  async connect(rpcURL: string, types?: AnyObject): Promise<ApiPromise> {
-    const {polkadotApi} = new PolkadotJs();
-
-    try {
-      return await polkadotApi(rpcURL, types);
-    } catch {
-      throw new HttpErrors.UnprocessableEntity('Unable to connect');
-    }
   }
 }

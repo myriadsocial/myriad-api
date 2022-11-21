@@ -1,20 +1,20 @@
-import {inject, Getter} from '@loopback/core';
+import {Getter, inject} from '@loopback/core';
 import {
+  BelongsToAccessor,
   DefaultCrudRepository,
   repository,
-  BelongsToAccessor,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {
-  UserCurrency,
-  UserCurrencyRelations,
-  User,
   Currency,
   Network,
+  User,
+  UserCurrency,
+  UserCurrencyRelations,
 } from '../models';
-import {UserRepository} from './user.repository';
 import {CurrencyRepository} from './currency.repository';
 import {NetworkRepository} from './network.repository';
+import {UserRepository} from './user.repository';
 
 export class UserCurrencyRepository extends DefaultCrudRepository<
   UserCurrency,

@@ -1,31 +1,84 @@
-import {AnyObject, repository} from '@loopback/repository';
-import {ActivityLogType, PlatformType, ReferenceType} from '../enums';
-import {People, UserSocialMedia} from '../models';
-import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
-import {injectable, BindingScope, service, inject} from '@loopback/core';
-import {NotificationService} from './';
-import {ActivityLogService} from './activity-log.service';
 import {AuthenticationBindings} from '@loopback/authentication';
-import {UserProfile, securityId} from '@loopback/security';
-import {generateObjectId} from '../utils/formatted';
+import {BindingScope, inject, injectable, service} from '@loopback/core';
+import {AnyObject, Filter, repository} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
+import {securityId, UserProfile} from '@loopback/security';
 import {omit} from 'lodash';
+import {ActivityLogType, PlatformType, ReferenceType} from '../enums';
+import {
+  People,
+  SocialMediaVerificationDto,
+  UserSocialMedia,
+  UserSocialMediaWithRelations,
+} from '../models';
+import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
+import {generateObjectId} from '../utils/formatter';
+import {NotificationService} from './notification.service';
+import {ActivityLogService} from './activity-log.service';
+import {MetricService} from './metric.service';
+import {SocialMediaService} from './social-media/social-media.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
   constructor(
     @repository(UserSocialMediaRepository)
-    public userSocialMediaRepository: UserSocialMediaRepository,
+    private userSocialMediaRepository: UserSocialMediaRepository,
     @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
-    @service(NotificationService)
-    protected notificationService: NotificationService,
+    private peopleRepository: PeopleRepository,
     @service(ActivityLogService)
-    protected activityLogService: ActivityLogService,
+    private activityLogService: ActivityLogService,
+    @service(MetricService)
+    private metricService: MetricService,
+    @service(NotificationService)
+    private notificationService: NotificationService,
+    @service(SocialMediaService)
+    private socialMediaService: SocialMediaService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    private currentUser: UserProfile,
   ) {}
 
-  async createSocialMedia(people: People): Promise<UserSocialMedia> {
+  public async find(
+    filter?: Filter<UserSocialMedia>,
+  ): Promise<UserSocialMedia[]> {
+    return this.userSocialMediaRepository.find(filter);
+  }
+
+  public async patch(id: string): Promise<void> {
+    await this.userSocialMediaRepository
+      .findById(id)
+      .then(async ({platform}) => {
+        await Promise.allSettled([
+          this.userSocialMediaRepository.updateAll(
+            {primary: false},
+            {userId: this.currentUser[securityId], platform},
+          ),
+          this.userSocialMediaRepository.updateAll(
+            {primary: true, updatedAt: new Date().toString()},
+            {userId: this.currentUser[securityId], id},
+          ),
+        ]);
+      });
+  }
+
+  public async deleteById(id: string): Promise<void> {
+    return this.userSocialMediaRepository
+      .deleteAll({
+        id,
+        userId: this.currentUser[securityId],
+      })
+      .then(({count}) => {
+        if (!count) return;
+        this.notificationService.sendDisconnectedSocialMedia(
+          id,
+        ) as Promise<boolean>;
+        return;
+      });
+  }
+
+  public async create(
+    data: SocialMediaVerificationDto,
+  ): Promise<UserSocialMedia> {
+    const people = await this.fetchPeople(data);
     const {name, originUserId, username, platform, profilePictureURL} = people;
 
     const newUserSocialMedia: Partial<UserSocialMedia> = {
@@ -77,7 +130,7 @@ export class UserSocialMediaService {
 
     if (count === 0) newUserSocialMedia.primary = true;
 
-    this.activityLogService.createLog(
+    this.activityLogService.create(
       ActivityLogType.CLAIMSOCIAL,
       found.id,
       ReferenceType.PEOPLE,
@@ -85,6 +138,72 @@ export class UserSocialMediaService {
 
     return this.peopleRepository
       .userSocialMedia(found.id)
-      .create(newUserSocialMedia);
+      .create(newUserSocialMedia)
+      .then(result => this.afterCreate(result, people));
+  }
+
+  // ------------------------------------------------
+
+  // ------ PrivateMethod ---------------------------
+
+  /* eslint-disable @typescript-eslint/no-misused-promises */
+  private async fetchPeople(
+    socialMediaVerificationDto: SocialMediaVerificationDto,
+    delay = 1000,
+    triesLeft = 10,
+  ): Promise<People> {
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(async () => {
+        if (triesLeft <= 1) {
+          reject(new HttpErrors.NotFound('Cannot find specified post'));
+          clearInterval(interval);
+        }
+
+        try {
+          const people = await this.verify(socialMediaVerificationDto);
+          resolve(people);
+          clearInterval(interval);
+        } catch {
+          // ignore
+        }
+
+        triesLeft--;
+      }, delay);
+    });
+  }
+
+  private async afterCreate(
+    userSocialMedia: UserSocialMediaWithRelations,
+    people: People,
+  ): Promise<UserSocialMedia> {
+    const connected = userSocialMedia?.connected;
+    const promises = [this.metricService.countServerMetric()];
+
+    if (!connected) {
+      promises.push(
+        this.notificationService.sendConnectedSocialMedia(userSocialMedia),
+      );
+    }
+
+    Promise.allSettled(promises) as Promise<AnyObject>;
+
+    return Object.assign(userSocialMedia, {people});
+  }
+
+  private async verify(
+    socialMediaVerificationDto: SocialMediaVerificationDto,
+  ): Promise<People> {
+    const {address, platform, username} = socialMediaVerificationDto;
+
+    switch (platform) {
+      case PlatformType.TWITTER:
+        return this.socialMediaService.verifyToTwitter(username, address);
+
+      case PlatformType.REDDIT:
+        return this.socialMediaService.verifyToReddit(username, address);
+
+      default:
+        throw new HttpErrors.NotFound('Platform does not exist');
+    }
   }
 }

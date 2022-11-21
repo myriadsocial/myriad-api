@@ -99,6 +99,26 @@ export class Server extends Entity {
   })
   images?: AnyObject;
 
+  @property({
+    type: 'date',
+    required: false,
+    default: () => new Date(),
+  })
+  createdAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+    default: () => new Date(),
+  })
+  updatedAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+  })
+  deletedAt?: string;
+
   constructor(data?: Partial<Server>) {
     super(data);
   }

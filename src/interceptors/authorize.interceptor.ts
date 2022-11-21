@@ -1,4 +1,8 @@
 import {
+  AuthenticationBindings,
+  AuthenticationMetadata,
+} from '@loopback/authentication';
+import {
   globalInterceptor,
   inject,
   Interceptor,
@@ -8,36 +12,29 @@ import {
   ValueOrPromise,
 } from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {
-  CommentRepository,
-  ExperienceRepository,
-  FriendRepository,
-  NotificationRepository,
-  PostRepository,
-  UserExperienceRepository,
-  UserRepository,
-  UserSocialMediaRepository,
-  VoteRepository,
-  WalletRepository,
-} from '../repositories';
-import {UserProfile, securityId} from '@loopback/security';
-import {
-  AuthenticationBindings,
-  AuthenticationMetadata,
-} from '@loopback/authentication';
+import {HttpErrors, RestBindings} from '@loopback/rest';
+import {securityId, UserProfile} from '@loopback/security';
+import {intersection} from 'lodash';
+import {config} from '../config';
 import {
   ControllerType,
   FriendStatusType,
   MethodType,
   PermissionKeys,
 } from '../enums';
-import {HttpErrors} from '@loopback/rest';
-import {RequiredPermissions} from '../interfaces';
-import {intersection} from 'lodash';
-import {config} from '../config';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {
+  ExperienceRepository,
+  FriendRepository,
+  PostRepository,
+  WalletRepository,
+} from '../repositories';
+import {PolkadotJs} from '../utils/polkadot-js';
 
 const {getKeyring, getHexPublicKey} = new PolkadotJs();
+
+export interface RequiredPermissions {
+  required: PermissionKeys[];
+}
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -49,26 +46,14 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
   // static readonly BINDING_KEY = `interceptors.${AuthorizeInterceptor.name}`;
 
   constructor(
-    @repository(CommentRepository)
-    protected commentRepository: CommentRepository,
     @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
+    private experienceRepository: ExperienceRepository,
     @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
+    private friendRepository: FriendRepository,
     @repository(PostRepository)
-    protected postRepository: PostRepository,
-    @repository(NotificationRepository)
-    protected notificationRepository: NotificationRepository,
-    @repository(UserRepository)
-    protected userRepository: UserRepository,
-    @repository(UserExperienceRepository)
-    protected userExperienceRepository: UserExperienceRepository,
-    @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
-    @repository(VoteRepository)
-    protected voteRepository: VoteRepository,
+    private postRepository: PostRepository,
     @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
+    private walletRepository: WalletRepository,
     @inject(AuthenticationBindings.METADATA)
     public metadata: AuthenticationMetadata[],
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -95,38 +80,18 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     next: () => ValueOrPromise<InvocationResult>,
   ) {
     if (!this.metadata) return next();
-    if (!this.selectMethod(invocationCtx)) return next();
+    const request = await invocationCtx.get(RestBindings.Http.REQUEST);
+
+    if (request.method === 'GET') return next();
+    if (request.method === 'PATCH') {
+      const methodName = invocationCtx.methodName as MethodType;
+      if (methodName === MethodType.UPDATEBYID) {
+        invocationCtx.args[1].updatedAt = new Date().toString();
+      }
+    }
     await this.authorize(invocationCtx);
 
     return next();
-  }
-
-  selectMethod(invocationCtx: InvocationContext): boolean {
-    const methodName = invocationCtx.methodName as MethodType;
-
-    switch (methodName) {
-      case MethodType.CREATE:
-      case MethodType.CREATEBATCH:
-      case MethodType.IMPORT:
-      case MethodType.CLAIMTIPS:
-      case MethodType.SUBSCRIBE:
-      case MethodType.UPDATE:
-      case MethodType.UPDATEBYID:
-      case MethodType.PATCH:
-      case MethodType.READNOTIFICATION:
-      case MethodType.READMULTIPLENOTIFICATION:
-      case MethodType.SELECTCURRENCY:
-      case MethodType.UPDATEEXPERIENCE:
-      case MethodType.UPDATEPRIMARY:
-      case MethodType.DELETEBYID:
-      case MethodType.RESTORE:
-      case MethodType.DELETEDRAFTPOST:
-      case MethodType.DELETE:
-        return true;
-
-      default:
-        return false;
-    }
   }
 
   async authorize(invocationCtx: InvocationContext): Promise<void> {
@@ -137,55 +102,28 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     let userId = null;
 
     switch (controllerName) {
-      case ControllerType.COMMENT: {
-        if (typeof data === 'object') userId = data.userId;
-        else {
-          const comment = await this.commentRepository.findById(data, {
-            include: ['post'],
-          });
-          if (methodName === MethodType.DELETEBYID) {
-            invocationCtx.args[1] = comment;
-          } else {
-            invocationCtx.args[2] = comment;
-          }
-          userId = comment.userId;
-        }
-        break;
-      }
-
       case ControllerType.ADMIN:
-      case ControllerType.NETWORKCURRENCY:
       case ControllerType.SERVER:
-      case ControllerType.TAG:
-      case ControllerType.REPORT:
-      case ControllerType.PEOPLE: {
+      case ControllerType.REPORT: {
         userId = await this.admin(controllerName);
         break;
       }
 
-      case ControllerType.EXPERIENCEPOST:
-        if (methodName === MethodType.CREATEBATCH) {
-          const experienceIds = invocationCtx.args[0];
-          const experiences = await this.experienceRepository.find({
-            where: {
-              id: {inq: experienceIds},
-              createdBy: this.currentUser[securityId],
-            },
-          });
-          if (experiences.length !== experienceIds.length) userId = '';
-          else userId = this.currentUser[securityId];
-        } else {
-          ({createdBy: userId} = await this.experienceRepository.findById(
-            data,
-          ));
-        }
+      case ControllerType.EXPERIENCEPOST: {
+        if (methodName === MethodType.DELETE) return;
+        const {experienceIds} = invocationCtx.args[0];
+        const experiences = await this.experienceRepository.find({
+          where: {
+            id: {inq: experienceIds},
+            createdBy: this.currentUser[securityId],
+          },
+        });
+        if (experiences.length === experienceIds.length) return;
+        userId = null;
         break;
+      }
 
       case ControllerType.FRIEND: {
-        if (!this.currentUser?.fullAccess) {
-          throw new HttpErrors.Unauthorized('FriendRequestUnauthorized');
-        }
-
         if (typeof data === 'object') {
           const status = data.status;
           if (status !== FriendStatusType.APPROVED) {
@@ -207,112 +145,47 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
             invocationCtx.args[1] = friend;
           } else {
             userId = friend.requesteeId;
-            invocationCtx.args[2] = friend;
+            invocationCtx.args[1] = friend;
           }
         }
         break;
       }
 
-      case ControllerType.NOTIFICATION: {
-        if (typeof data === 'string') {
-          ({to: userId} = await this.notificationRepository.findById(data));
-        } else {
-          userId = this.currentUser[securityId];
-          invocationCtx.args[0] = userId;
-        }
-        break;
+      case ControllerType.CLAIMREFERENCECONTROLLER:
+      case ControllerType.COMMENT:
+      case ControllerType.NOTIFICATION:
+      case ControllerType.SETTING:
+      case ControllerType.STORAGE:
+      case ControllerType.TRANSACTION:
+      case ControllerType.USER:
+      case ControllerType.USERCURRENCY:
+      case ControllerType.USEREXPERIENCE:
+      case ControllerType.USERNETWORK:
+      case ControllerType.USERPERSONALACCESSTOKEN:
+      case ControllerType.USERREPORT:
+      case ControllerType.WALLET:
+      case ControllerType.VOTE: {
+        return;
       }
-
-      case ControllerType.POST:
-        if (typeof data === 'object') {
-          if (data.importer) userId = data.importer;
-          else userId = data.createdBy;
-        } else {
-          const post = await this.postRepository.findById(data);
-
-          if (methodName === MethodType.DELETEBYID) {
-            invocationCtx.args[1] = post;
-          } else {
-            invocationCtx.args[2] = post;
-          }
-          userId = post.createdBy;
-        }
-        break;
 
       case ControllerType.TIP:
-      case ControllerType.USERACCOUNTSETTING:
-      case ControllerType.USERDRAFTPOST:
-      case ControllerType.USERNETWORK:
-      case ControllerType.USERNOTIFICATIONSETTING:
-      case ControllerType.USERLANGUAGESETTING:
-      case ControllerType.USERREPORT:
-      case ControllerType.USERWALLET:
-      case ControllerType.USER:
         userId = data;
         break;
 
-      case ControllerType.TRANSACTION: {
-        if (methodName === MethodType.CREATE) {
-          ({userId} = await this.walletRepository.findById(data.from));
-        } else {
-          ({id: userId} = await this.userRepository.findById(data.userId));
-        }
-        break;
-      }
+      case ControllerType.USERPOST: {
+        if (typeof data === 'object') return;
+        if (methodName !== MethodType.DELETEBYID) return;
+        const post = await this.postRepository.findById(data);
 
-      case ControllerType.USERCURRENCY: {
-        userId = this.currentUser[securityId];
-        break;
-      }
-
-      case ControllerType.USEREXPERIENCE: {
-        if (methodName !== MethodType.DELETEBYID) userId = data;
-        else {
-          const userExp = await this.userExperienceRepository.findById(data, {
-            include: ['experience'],
-          });
-          userId = userExp.userId;
-          invocationCtx.args[3] = {
-            userId,
-            experienceId: userExp.experienceId,
-            experienceCreator: userExp.experience?.createdBy ?? '',
-          };
-        }
+        invocationCtx.args[1] = post;
+        userId = post.createdBy;
         break;
       }
 
       case ControllerType.USERSOCIALMEDIA: {
-        if (typeof data === 'object') {
-          const userSocialMedia = await this.walletRepository.user(
-            data.address,
-          );
-          userId = userSocialMedia.id;
-        } else {
-          ({userId} = await this.userSocialMediaRepository.findById(data));
-        }
-        break;
-      }
-
-      case ControllerType.VOTE: {
-        if (typeof data === 'object') {
-          userId = data.userId;
-        } else {
-          const [result] = await Promise.allSettled([
-            this.voteRepository.findById(data),
-          ]);
-          const vote = result.status === 'fulfilled' ? result.value : undefined;
-
-          userId = vote?.userId ?? this.currentUser[securityId];
-          invocationCtx.args[1] = vote ?? undefined;
-        }
-        break;
-      }
-
-      case ControllerType.WALLET: {
-        const wallet = await this.walletRepository.findById(data);
-
-        userId = wallet.userId;
-        invocationCtx.args[2] = wallet;
+        if (typeof data === 'string') return;
+        const address = data.address;
+        ({id: userId} = await this.walletRepository.user(address));
         break;
       }
     }
@@ -327,26 +200,24 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
   }
 
   async admin(controllerName?: ControllerType): Promise<string> {
-    const keyring = getKeyring().addFromMnemonic(config.MYRIAD_ADMIN_MNEMONIC);
+    const keyring = getKeyring().addFromMnemonic(
+      config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC,
+    );
     const adminAddress = getHexPublicKey(keyring);
-    const [result] = await Promise.allSettled([
-      this.walletRepository.findById(adminAddress),
-    ]);
+    const wallet = await this.walletRepository.findOne({
+      where: {id: adminAddress},
+    });
 
-    if (
-      result.status === 'fulfilled' &&
-      this.currentUser[securityId] === result.value.userId
-    ) {
-      return result.value.userId;
+    if (wallet && this.currentUser[securityId] === wallet.userId) {
+      return wallet.userId;
     }
 
-    const requiredPermissions =
-      (this.metadata[0].options as RequiredPermissions) ?? {};
+    const options = this.metadata?.[0].options ?? {};
+    const requiredPermissions = options as RequiredPermissions;
     const user = this.currentUser;
-    const exists = intersection(
-      user.permissions,
-      requiredPermissions.required ?? [],
-    ).length;
+    const permissions = user.permissions;
+    const required = requiredPermissions?.required ?? [];
+    const exists = intersection(permissions, required).length;
 
     if (exists <= 0) throw new HttpErrors.Forbidden('Invalid access');
     if (

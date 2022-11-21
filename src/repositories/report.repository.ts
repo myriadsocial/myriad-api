@@ -1,8 +1,8 @@
-import {inject, Getter} from '@loopback/core';
+import {Getter, inject} from '@loopback/core';
 import {
   DefaultCrudRepository,
-  repository,
   HasManyRepositoryFactory,
+  repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {Report, ReportRelations, UserReport} from '../models';

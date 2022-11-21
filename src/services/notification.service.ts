@@ -1,5 +1,15 @@
+import {AuthenticationBindings} from '@loopback/authentication';
 import {BindingScope, inject, injectable, service} from '@loopback/core';
-import {AnyObject, repository} from '@loopback/repository';
+import {
+  AnyObject,
+  Count,
+  Filter,
+  repository,
+  Where,
+} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
+import {securityId, UserProfile} from '@loopback/security';
+import {capitalize} from 'lodash';
 import {
   NotificationType,
   PlatformType,
@@ -11,16 +21,14 @@ import {
   MentionUser,
   Notification,
   PostWithRelations,
-  People,
-  Transaction,
-  UserSocialMedia,
-  Vote,
   Report,
+  Transaction,
+  UserSocialMediaWithRelations,
+  Vote,
 } from '../models';
 import {
   CommentRepository,
   CurrencyRepository,
-  FriendRepository,
   NotificationRepository,
   NotificationSettingRepository,
   PostRepository,
@@ -28,44 +36,57 @@ import {
   UserReportRepository,
   UserRepository,
   UserSocialMediaRepository,
-  WalletRepository,
 } from '../repositories';
 import {FCMService} from './fcm.service';
-import {UserProfile, securityId} from '@loopback/security';
-import {AuthenticationBindings} from '@loopback/authentication';
-import {HttpErrors} from '@loopback/rest';
-import {capitalize} from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class NotificationService {
   constructor(
     @repository(UserRepository)
-    public userRepository: UserRepository,
+    private userRepository: UserRepository,
     @repository(PostRepository)
-    public postRepository: PostRepository,
+    private postRepository: PostRepository,
     @repository(NotificationRepository)
-    public notificationRepository: NotificationRepository,
+    private notificationRepository: NotificationRepository,
     @repository(UserSocialMediaRepository)
-    public userSocialMediaRepository: UserSocialMediaRepository,
-    @repository(FriendRepository)
-    public friendRepository: FriendRepository,
+    private userSocialMediaRepository: UserSocialMediaRepository,
     @repository(ReportRepository)
-    public reportRepository: ReportRepository,
+    private reportRepository: ReportRepository,
     @repository(CommentRepository)
-    public commentRepository: CommentRepository,
+    private commentRepository: CommentRepository,
     @repository(UserReportRepository)
-    public userReportRepository: UserReportRepository,
+    private userReportRepository: UserReportRepository,
     @repository(NotificationSettingRepository)
-    public notificationSettingRepository: NotificationSettingRepository,
-    @repository(WalletRepository)
-    public walletRepository: WalletRepository,
+    private notificationSettingRepository: NotificationSettingRepository,
     @repository(CurrencyRepository)
-    public currencyRepository: CurrencyRepository,
+    private currencyRepository: CurrencyRepository,
     @service(FCMService)
-    public fcmService: FCMService,
+    private fcmService: FCMService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    public currentUser: UserProfile,
+    private currentUser: UserProfile,
   ) {}
+
+  public async find(filter?: Filter<Notification>): Promise<Notification[]> {
+    return this.notificationRepository.find(filter);
+  }
+
+  public async count(where?: Where<Notification>): Promise<Count> {
+    return this.notificationRepository.count(where);
+  }
+
+  public async read(id?: string): Promise<Count> {
+    const where = {
+      to: this.currentUser[securityId],
+      read: false,
+    };
+
+    if (id) Object.assign(where, {id});
+
+    return this.notificationRepository.updateAll(
+      {read: true, updatedAt: new Date().toString()},
+      where,
+    );
+  }
 
   async sendFriendRequest(to: string): Promise<void> {
     const active = await this.checkNotificationSetting(
@@ -714,10 +735,9 @@ export class NotificationService {
   }
 
   async sendConnectedSocialMedia(
-    userSocialMedia: UserSocialMedia,
-    people: People,
+    userSocialMedia: UserSocialMediaWithRelations,
   ) {
-    const {userId, platform} = userSocialMedia;
+    const {userId, platform, people} = userSocialMedia;
 
     const notification = new Notification({
       type: NotificationType.CONNECTED_SOCIAL_MEDIA,
@@ -726,10 +746,10 @@ export class NotificationService {
       message: `connected to your ${capitalize(platform)} account`,
       additionalReferenceId: {
         people: {
-          id: people.id,
-          name: people.name,
-          username: people.username,
-          platform: people.platform,
+          id: people?.id,
+          name: people?.name,
+          username: people?.username,
+          platform: people?.platform,
         },
       },
     });

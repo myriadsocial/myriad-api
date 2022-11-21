@@ -75,7 +75,7 @@ describe('TransactionApplication', function () {
       to: anotherUser.id,
     });
     const response = await client
-      .post('/transactions')
+      .post('/user/transactions')
       .set('Authorization', `Bearer ${token}`)
       .send(transaction)
       .expect(200);
@@ -84,60 +84,16 @@ describe('TransactionApplication', function () {
     expect(result).to.containDeep({...transaction, from: user.id});
   });
 
-  it('returns 401 when creates transactions but "from wallet" not exist', async () => {
-    const transaction = givenTransaction({
-      from: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61860',
-      currencyId: currency.id,
-    });
-
-    await givenWalletInstance(walletRepository, {id: transaction.from});
-
-    await client
-      .post('/transactions')
-      .set('Authorization', `Bearer ${token}`)
-      .send(transaction)
-      .expect(401);
-  });
-
   it('returns 422 when create transactions but "currency" not exist', async () => {
     const transaction = givenTransaction({
       from: wallet.id,
     });
 
     await client
-      .post('/transactions')
+      .post('/user/transactions')
       .set('Authorization', `Bearer ${token}`)
       .send(transaction)
       .expect(422);
-  });
-
-  context('when dealing with a single persisted transaction', () => {
-    let persistedTransaction: Transaction;
-
-    beforeEach(async () => {
-      persistedTransaction = await givenTransactionInstance(
-        transactionRepository,
-        {currencyId: currency.id},
-      );
-    });
-
-    it('gets a transaction by ID', async () => {
-      const result = await client
-        .get(`/transactions/${persistedTransaction.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(200);
-      const expected = toJSON(persistedTransaction);
-
-      expect(result.body).to.deepEqual(expected);
-    });
-
-    it('returns 404 when getting a transaction that does not exist', () => {
-      return client
-        .get('/transaction/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
-    });
   });
 
   context('when dealing with multiple persisted transactions', () => {
@@ -159,7 +115,7 @@ describe('TransactionApplication', function () {
 
     it('finds all transactions', async () => {
       const response = await client
-        .get('/transactions')
+        .get('/user/transactions')
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -172,7 +128,7 @@ describe('TransactionApplication', function () {
       });
 
       const response = await client
-        .get('/transactions')
+        .get('/user/transactions')
         .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
 
@@ -195,7 +151,7 @@ describe('TransactionApplication', function () {
     });
 
     const response = await client
-      .get('/transactions')
+      .get('/user/transactions')
       .set('Authorization', `Bearer ${token}`)
       .query({
         filter: {

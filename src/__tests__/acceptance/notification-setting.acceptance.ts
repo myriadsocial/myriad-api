@@ -62,7 +62,7 @@ describe('NotificationSettingApplication', () => {
       });
 
     await client
-      .patch(`/users/${user.id}/notification-setting`)
+      .patch(`/user/notification-setting`)
       .set('Authorization', `Bearer ${token}`)
       .send(updatedNotificationSetting);
 

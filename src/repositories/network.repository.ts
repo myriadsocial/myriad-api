@@ -1,11 +1,11 @@
-import {inject, Getter} from '@loopback/core';
+import {Getter, inject} from '@loopback/core';
 import {
   DefaultCrudRepository,
-  repository,
   HasManyRepositoryFactory,
+  repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {Network, NetworkRelations, Currency} from '../models';
+import {Currency, Network, NetworkRelations} from '../models';
 import {CurrencyRepository} from './currency.repository';
 
 export class NetworkRepository extends DefaultCrudRepository<

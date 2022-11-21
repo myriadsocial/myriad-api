@@ -14,7 +14,6 @@ import {
   givenExperienceRepository,
   givenMultipleExperienceInstances,
   givenMultipleUserExperienceInstances,
-  givenOtherUser,
   givenUserExperience,
   givenUserExperienceInstance,
   givenUserExperienceRepository,
@@ -26,7 +25,7 @@ import {
 /* eslint-disable @typescript-eslint/no-invalid-this */
 /* eslint-disable @typescript-eslint/no-misused-promises*/
 describe('UserExperienceApplication', function () {
-  this.timeout(40000);
+  this.timeout(50000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -35,7 +34,6 @@ describe('UserExperienceApplication', function () {
   let userRepository: UserRepository;
   let userExperienceRepository: UserExperienceRepository;
   let user: User;
-  let otherUser: User;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -51,7 +49,6 @@ describe('UserExperienceApplication', function () {
 
   before(async () => {
     user = await givenUserInstance(userRepository, {fullAccess: true});
-    otherUser = await givenUserInstance(userRepository, givenOtherUser());
     token = await givenAccesToken(user);
   });
 
@@ -75,7 +72,7 @@ describe('UserExperienceApplication', function () {
 
     it('gets a userExperience by ID', async () => {
       const result = await client
-        .get(`/user-experiences/${persistedUserExperience.id}`)
+        .get(`/user/experiences/${persistedUserExperience.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -91,7 +88,7 @@ describe('UserExperienceApplication', function () {
 
     it('returns 404 when getting a user that does not exist', () => {
       return client
-        .get('/user-experiences/99999')
+        .get('/user/experiences/99999')
         .set('Authorization', `Bearer ${token}`)
         .expect(404);
     });
@@ -108,7 +105,7 @@ describe('UserExperienceApplication', function () {
 
     it('finds all userExperiences', async () => {
       const response = await client
-        .get('/user-experiences')
+        .get('/user/experiences')
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -128,7 +125,7 @@ describe('UserExperienceApplication', function () {
       );
 
       await client
-        .get('/user-experiences')
+        .get('/user/experiences')
         .set('Authorization', `Bearer ${token}`)
         .query(
           'filter=' +
@@ -165,7 +162,7 @@ describe('UserExperienceApplication', function () {
       });
 
       const response = await client
-        .get('/user-experiences')
+        .get('/user/experiences')
         .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
@@ -178,17 +175,6 @@ describe('UserExperienceApplication', function () {
       await userExperienceRepository.deleteAll();
     });
 
-    it('returns 401 when subscribing other user experience not as login user', async () => {
-      const accessToken = await givenAccesToken(otherUser);
-      const experience = await givenExperienceInstance(experienceRepository);
-
-      await client
-        .post(`/users/${user.id}/subscribe/${experience.id}`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send()
-        .expect(401);
-    });
-
     it('subscribes other user experience', async () => {
       const experience = await givenExperienceInstance(experienceRepository);
       const userExperience = givenUserExperience({
@@ -197,7 +183,7 @@ describe('UserExperienceApplication', function () {
         subscribed: true,
       });
       const response = await client
-        .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .post(`/user/experiences/${experience.id}/subscribe`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -212,7 +198,7 @@ describe('UserExperienceApplication', function () {
         createdBy: user.id,
       });
       const response = await client
-        .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .post(`/user/experiences/${experience.id}/subscribe`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -251,7 +237,7 @@ describe('UserExperienceApplication', function () {
       });
 
       await client
-        .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .post(`/user/experiences/${experience.id}/subscribe`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(422);
@@ -267,7 +253,7 @@ describe('UserExperienceApplication', function () {
       });
 
       await client
-        .post(`/users/${user.id}/subscribe/${experience.id}`)
+        .post(`/user/experiences/${experience.id}/subscribe`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(422);
@@ -280,21 +266,10 @@ describe('UserExperienceApplication', function () {
       await userExperienceRepository.deleteAll();
     });
 
-    it('returns 401 when creating an experience not as login user', async () => {
-      const accessToken = await givenAccesToken(otherUser);
-      const experience = givenExperience({createdBy: user.id});
-
-      await client
-        .post(`/users/${user.id}/experiences`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send(experience)
-        .expect(401);
-    });
-
     it('creates an experience and store it in userExperience list', async () => {
       const experience = givenExperience({createdBy: user.id.toString()});
       const response = await client
-        .post(`/users/${user.id}/experiences`)
+        .post(`/user/experiences`)
         .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(200);
@@ -322,7 +297,7 @@ describe('UserExperienceApplication', function () {
     it('sets new experience as user default timeline when user experience list is empty', async () => {
       const experience = givenExperience();
       const response = await client
-        .post(`/users/${user.id}/experiences`)
+        .post(`/user/experiences`)
         .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(200);
@@ -368,7 +343,7 @@ describe('UserExperienceApplication', function () {
       const experience = givenExperience({createdBy: user.id.toString()});
 
       await client
-        .post(`/users/${user.id}/experiences`)
+        .post(`/user/experiences`)
         .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(422);
@@ -386,7 +361,7 @@ describe('UserExperienceApplication', function () {
       const experience = givenExperience({createdBy: user.id});
 
       await client
-        .post(`/users/${user.id}/experiences`)
+        .post(`/user/experiences`)
         .set('Authorization', `Bearer ${token}`)
         .send(experience)
         .expect(422);
@@ -413,7 +388,7 @@ describe('UserExperienceApplication', function () {
       });
 
     const response = await client
-      .get('/user-experiences')
+      .get('/user/experiences')
       .set('Authorization', `Bearer ${token}`)
       .query(filter);
 

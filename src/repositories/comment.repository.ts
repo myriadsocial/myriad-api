@@ -12,15 +12,15 @@ import {
   Comment,
   CommentLink,
   CommentRelations,
+  Post,
   Transaction,
   User,
   Vote,
-  Post,
 } from '../models';
 import {CommentLinkRepository} from './comment-link.repository';
+import {PostRepository} from './post.repository';
 import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
-import {PostRepository} from './post.repository';
 
 export class CommentRepository extends DefaultCrudRepository<
   Comment,

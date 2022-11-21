@@ -1,4 +1,4 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {Entity, model, property, belongsTo, Model} from '@loopback/repository';
 import {User} from './user.model';
 
 @model({
@@ -72,3 +72,24 @@ export interface UserPersonalAccessTokenRelations {
 
 export type UserPersonalAccessTokenWithRelations = UserPersonalAccessToken &
   UserPersonalAccessTokenRelations;
+
+export class CreateUserPersonalAccessTokenDto extends Model {
+  @property({
+    type: 'string',
+    required: true,
+  })
+  description: string;
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: true,
+  })
+  scopes: string[];
+
+  constructor(data: Partial<CreateUserPersonalAccessTokenDto>) {
+    super(data);
+  }
+}
+
+export class UpdateUserPersonalAccessTokenDto extends CreateUserPersonalAccessTokenDto {}

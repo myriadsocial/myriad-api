@@ -1,4 +1,4 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {Network, NetworkWithRelations} from './network.model';
 
 @model({
@@ -82,6 +82,11 @@ export class Currency extends Entity {
     required: false,
   })
   deletedAt?: string;
+
+  @property({
+    type: 'number',
+  })
+  price?: number;
 
   @belongsTo(() => Network)
   networkId: string;

@@ -1,19 +1,18 @@
-import {Filter, repository} from '@loopback/repository';
-import {get, getModelSchemaRef, param} from '@loopback/rest';
-import {UserReport} from '../models';
-import {ReportRepository} from '../repositories';
-import {intercept} from '@loopback/core';
-import {PaginationInterceptor} from '../interceptors';
 import {authenticate} from '@loopback/authentication';
+import {intercept, service} from '@loopback/core';
+import {Filter} from '@loopback/repository';
+import {get, getModelSchemaRef, param} from '@loopback/rest';
+import {PaginationInterceptor} from '../interceptors';
+import {UserReport} from '../models';
+import {ReportService} from '../services';
 
 @authenticate('jwt')
 export class ReportUserController {
   constructor(
-    @repository(ReportRepository)
-    protected reportRepository: ReportRepository,
+    @service(ReportService)
+    protected reportService: ReportService,
   ) {}
 
-  @authenticate.skip()
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/reports/{id}/users', {
     responses: {
@@ -34,6 +33,6 @@ export class ReportUserController {
     })
     filter?: Filter<UserReport>,
   ): Promise<UserReport[]> {
-    return this.reportRepository.reporters(id).find(filter);
+    return this.reportService.findReporters(id, filter);
   }
 }

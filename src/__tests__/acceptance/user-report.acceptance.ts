@@ -9,7 +9,6 @@ import {
 import {
   deleteAllRepository,
   givenAccesToken,
-  givenOtherUser,
   givenReportDetail,
   givenReportRepository,
   givenUserInstance,
@@ -27,7 +26,6 @@ describe('UserReportApplication', () => {
   let userReportRepository: UserReportRepository;
   let userRepository: UserRepository;
   let user: User;
-  let otherUser: User;
 
   before(async () => {
     ({app, client} = await setupApplication());
@@ -43,7 +41,6 @@ describe('UserReportApplication', () => {
 
   before(async () => {
     user = await givenUserInstance(userRepository);
-    otherUser = await givenUserInstance(userRepository, givenOtherUser());
     token = await givenAccesToken(user);
   });
 
@@ -56,26 +53,13 @@ describe('UserReportApplication', () => {
     await deleteAllRepository(app);
   });
 
-  it('returns when creating a report not as login user', async () => {
-    const accessToken = await givenAccesToken(otherUser);
-    const reportedUser = await givenUserInstance(userRepository, {
-      username: 'helloworld',
-    });
-    const reportDetail = givenReportDetail({referenceId: reportedUser.id});
-    await client
-      .post(`/users/${user.id}/reports`)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send(reportDetail)
-      .expect(401);
-  });
-
   it('creates a report', async () => {
     const reportedUser = await givenUserInstance(userRepository, {
       username: 'hello',
     });
     const reportDetail = givenReportDetail({referenceId: reportedUser.id});
     const response = await client
-      .post(`/users/${user.id}/reports`)
+      .post(`/user/reports`)
       .set('Authorization', `Bearer ${token}`)
       .send(reportDetail)
       .expect(200);
@@ -101,7 +85,7 @@ describe('UserReportApplication', () => {
     const reportDetail = givenReportDetail({referenceType: ReferenceType.POST});
 
     await client
-      .post(`/users/${user.id}/reports`)
+      .post(`/user/reports`)
       .set('Authorization', `Bearer ${token}`)
       .send(reportDetail)
       .expect(422);

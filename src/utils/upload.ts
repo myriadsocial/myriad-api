@@ -1,12 +1,12 @@
 import {AnyObject} from '@loopback/repository';
-import {config} from '../config';
-import {v4 as uuid} from 'uuid';
 import * as firebaseAdmin from 'firebase-admin';
-import sharp, {FormatEnum} from 'sharp';
 import fs, {existsSync} from 'fs';
-import path from 'path';
 import os from 'os';
-import {UploadType} from '../enums';
+import path from 'path';
+import sharp, {FormatEnum} from 'sharp';
+import {v4 as uuid} from 'uuid';
+import {config} from '../config';
+import {UploadType} from '../services';
 
 export async function upload(
   type: UploadType,
@@ -71,7 +71,7 @@ export async function upload(
         throw new Error('Storage not found');
       }
 
-      const folderPath = '../../storages';
+      const folderPath = '../storages';
       const tmpSubFolderPath = `${folderPath}/${targetDir}`;
       const tmpUpdatedFilePath = `${folderPath}/${uploadFilePath}`;
       const subfolderPath = path.join(__dirname, tmpSubFolderPath);
@@ -95,7 +95,7 @@ export async function upload(
 }
 
 export function getFilePathFromSeedData(sourceImageFileName: string) {
-  const assetPath = path.join(__dirname, `../../seed-data/assets`);
+  const assetPath = path.join(__dirname, `../seed-data/assets`);
   if (!existsSync(assetPath)) return '';
 
   const files = fs.readdirSync(assetPath);

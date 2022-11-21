@@ -2,7 +2,7 @@ import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType} from '../../enums';
-import {User, UserSocialMedia, UserVerification} from '../../models';
+import {SocialMediaVerificationDto, User, UserSocialMedia} from '../../models';
 import {
   PeopleRepository,
   UserRepository,
@@ -80,7 +80,7 @@ describe('UserSocialMediaApplication', function () {
     it('verifies user social media', async () => {
       const userVerification = givenUserVerification({address: publicKey});
       const response = await client
-        .post('/user-social-medias/verify')
+        .post('/user/social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
         .expect(200);
@@ -97,16 +97,15 @@ describe('UserSocialMediaApplication', function () {
     });
 
     it('rejects user to verify non existing social media', async () => {
-      const userVerification: Partial<UserVerification> = givenUserVerification(
-        {address: publicKey},
-      );
+      const userVerification: Partial<SocialMediaVerificationDto> =
+        givenUserVerification({address: publicKey});
       delete userVerification.platform;
 
       await client
-        .post('/user-social-medias/verify')
+        .post('/user/social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
-        .expect(422);
+        .expect(404);
     });
 
     it('rejects user to verify non existing social media username', async () => {
@@ -116,7 +115,7 @@ describe('UserSocialMediaApplication', function () {
       });
 
       await client
-        .post('/user-social-medias/verify')
+        .post('/user/social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
         .expect(404);
@@ -129,7 +128,7 @@ describe('UserSocialMediaApplication', function () {
       });
 
       await client
-        .post('/user-social-medias/verify')
+        .post('/user/social-medias/verify')
         .set('Authorization', `Bearer ${accessToken}`)
         .send(userVerification)
         .expect(401);
@@ -137,70 +136,21 @@ describe('UserSocialMediaApplication', function () {
   });
 
   context('when dealing with a single persisted user social media', () => {
-    let persistedUserSocialMedia: UserSocialMedia;
-
-    beforeEach(async () => {
-      persistedUserSocialMedia = await givenUserSocialMediaInstance(
-        userSocialMediaRepository,
-      );
-    });
-
-    it('gets a user social media by ID', async () => {
-      const result = await client
-        .get(`/user-social-medias/${persistedUserSocialMedia.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(200);
-      const expected = toJSON(persistedUserSocialMedia);
-
-      expect(result.body).to.deepEqual(expected);
-    });
-
-    it('returns 404 when getting a user social media that does not exist', () => {
-      return client
-        .get('/user-social-medias/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
-    });
-
-    it('returns 401 when deleting the user social media not as login user', async () => {
-      const accessToken = await givenAccesToken(otherUser);
-      const userVerification = givenUserVerification({address: publicKey});
-      const response = await client
-        .post('/user-social-medias/verify')
-        .set('Authorization', `Bearer ${token}`)
-        .send(userVerification)
-        .expect(200);
-
-      await client
-        .del(`/user-social-medias/${response.body.id}`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send()
-        .expect(401);
-    });
-
     it('deletes the user social media', async () => {
       const userVerification = givenUserVerification({address: publicKey});
       const response = await client
-        .post('/user-social-medias/verify')
+        .post('/user/social-medias/verify')
         .set('Authorization', `Bearer ${token}`)
         .send(userVerification)
         .expect(200);
 
       await client
-        .del(`/user-social-medias/${response.body.id}`)
+        .del(`/user/social-medias/${response.body.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send();
       await expect(
         userSocialMediaRepository.findById(response.body.id),
       ).to.be.rejectedWith(EntityNotFoundError);
-    });
-
-    it('returns 404 when deleting a user social media that does not exist', async () => {
-      await client
-        .del(`/user-social-medias/99999`)
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
     });
   });
 
@@ -219,7 +169,7 @@ describe('UserSocialMediaApplication', function () {
 
     it('finds all user social medias', async () => {
       const response = await client
-        .get('/user-social-medias')
+        .get('/user/social-medias')
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -238,7 +188,7 @@ describe('UserSocialMediaApplication', function () {
       );
 
       await client
-        .get('/user-social-medias')
+        .get('/user/social-medias')
         .set('Authorization', `Bearer ${token}`)
         .query('filter=' + JSON.stringify({where: {peopleId: '3'}}))
         .expect(200, {
@@ -260,7 +210,7 @@ describe('UserSocialMediaApplication', function () {
       });
 
       const response = await client
-        .get('/user-social-medias')
+        .get('/user/social-medias')
         .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
@@ -284,7 +234,7 @@ describe('UserSocialMediaApplication', function () {
       });
 
     const response = await client
-      .get('/user-social-medias')
+      .get('/user/social-medias')
       .set('Authorization', `Bearer ${token}`)
       .query(filter);
 

@@ -26,19 +26,45 @@ import {
   NetworkRepository,
   UserCurrencyRepository,
   ServerRepository,
+  ExchangeRateRepository,
+  QueueRepository,
+  UserPersonalAccessTokenRepository,
+  ChangeEmailRequestRepository,
+  UserOTPRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
+  CoinMarketCapProvider,
+  CurrencyService,
+  EmailService,
   ExperienceService,
   FCMService,
   FriendService,
+  JWTService,
   MetricService,
+  NetworkService,
   NotificationService,
+  PeopleService,
   PostService,
+  RedditProvider,
+  ReportService,
+  SocialMediaService,
+  TagService,
   TransactionService,
+  TwitterProvider,
+  UserExperienceService,
+  UserOTPService,
+  UserService,
   UserSocialMediaService,
+  VoteService,
 } from '../../services';
 import {UserProfile, securityId} from '@loopback/security';
+import {
+  CoinMarketCapDataSource,
+  RedditDataSource,
+  TwitterDataSource,
+} from '../../datasources';
+import {CommentService} from '../../services/comment.service';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export async function givenRepositories(testdb: any) {
@@ -166,6 +192,38 @@ export async function givenRepositories(testdb: any) {
       async () => networkRepository,
     );
   const serverRepository: ServerRepository = new ServerRepository(testdb);
+  const exchangeRepository: ExchangeRateRepository = new ExchangeRateRepository(
+    testdb,
+  );
+  const queueRepository: QueueRepository = new QueueRepository(testdb);
+  const userPersonalAccessTokenRepository: UserPersonalAccessTokenRepository =
+    new UserPersonalAccessTokenRepository(testdb, async () => userRepository);
+
+  const changeEmailRequestRepository: ChangeEmailRequestRepository =
+    new ChangeEmailRequestRepository(testdb);
+
+  const userOTPRepository: UserOTPRepository = new UserOTPRepository(
+    testdb,
+    async () => userRepository,
+  );
+
+  const dataSource = {
+    reddit: new RedditDataSource(),
+    twitter: new TwitterDataSource(),
+    coinmarketcap: new CoinMarketCapDataSource(),
+  };
+
+  const redditService = await new RedditProvider(dataSource.reddit).value();
+  const twitterService = await new TwitterProvider(dataSource.twitter).value();
+  const coinmarketcapService = await new CoinMarketCapProvider(
+    dataSource.coinmarketcap,
+  ).value();
+
+  const socialMediaService = new SocialMediaService(
+    twitterService,
+    redditService,
+  );
+
   const metricService = new MetricService(
     voteRepository,
     commentRepository,
@@ -196,17 +254,20 @@ export async function givenRepositories(testdb: any) {
 
   const fcmService = new FCMService();
 
+  const activityLogService = new ActivityLogService(
+    activityLogRepository,
+    currentUser,
+  );
+
   const notificationService = new NotificationService(
     userRepository,
     postRepository,
     notificationRepository,
     userSocialMediaRepository,
-    friendRepository,
     reportRepository,
     commentRepository,
     userReportRepository,
     notificationSettingRepository,
-    walletRepository,
     currencyRepository,
     fcmService,
     currentUser,
@@ -216,37 +277,164 @@ export async function givenRepositories(testdb: any) {
     accountSettingRepository,
     friendRepository,
     userRepository,
+    activityLogService,
+    metricService,
+    notificationService,
+  );
+
+  const tagService = new TagService(
+    tagRepository,
+    postRepository,
+    friendService,
   );
 
   const postService = new PostService(
-    postRepository,
     accountSettingRepository,
+    commentRepository,
     draftPostRepository,
+    experienceRepository,
     experiencePostRepository,
     friendRepository,
     peopleRepository,
-    currentUser,
+    postRepository,
+    userRepository,
+    userSocialMediaRepository,
+    activityLogService,
+    metricService,
+    notificationService,
+    socialMediaService,
+    tagService,
   );
 
-  const transactionService = new TransactionService(transactionRepository);
-
-  const activityLogService = new ActivityLogService(
-    activityLogRepository,
+  const transactionService = new TransactionService(
+    currencyRepository,
+    peopleRepository,
+    transactionRepository,
+    userRepository,
+    userSocialMediaRepository,
+    walletRepository,
+    activityLogService,
+    metricService,
+    notificationService,
     currentUser,
   );
 
   const userSocialMediaService = new UserSocialMediaService(
     userSocialMediaRepository,
     peopleRepository,
-    notificationService,
     activityLogService,
+    metricService,
+    notificationService,
+    socialMediaService,
     currentUser,
   );
 
   const experienceService = new ExperienceService(
     experienceRepository,
     experiencePostRepository,
+    userRepository,
+    friendService,
+    postService,
+    currentUser,
+  );
+
+  const userExperienceService = new UserExperienceService(
+    experienceRepository,
+    experienceUserRepository,
     userExperienceRepository,
+    userRepository,
+    activityLogService,
+    friendService,
+    metricService,
+    tagService,
+  );
+
+  const currencyService = new CurrencyService(
+    currencyRepository,
+    exchangeRepository,
+    transactionRepository,
+    queueRepository,
+    userCurrencyRepository,
+    walletRepository,
+    notificationService,
+  );
+
+  const networkService = new NetworkService(
+    currencyRepository,
+    networkRepository,
+    queueRepository,
+    serverRepository,
+    userSocialMediaRepository,
+    walletRepository,
+    coinmarketcapService,
+    currentUser,
+  );
+
+  const reportService = new ReportService(
+    reportRepository,
+    commentRepository,
+    experienceRepository,
+    experiencePostRepository,
+    friendRepository,
+    peopleRepository,
+    postRepository,
+    userExperienceRepository,
+    userRepository,
+    userReportRepository,
+    userSocialMediaRepository,
+    metricService,
+    notificationService,
+  );
+
+  const voteService = new VoteService(
+    commentRepository,
+    voteRepository,
+    activityLogService,
+    metricService,
+    postService,
+  );
+
+  const commentService = new CommentService(
+    commentRepository,
+    postRepository,
+    activityLogService,
+    metricService,
+    notificationService,
+  );
+  const jwtService = new JWTService('test', '1000000');
+
+  const emailService = new EmailService();
+
+  const userOTPService = new UserOTPService(
+    userRepository,
+    userOTPRepository,
+    emailService,
+  );
+
+  const userService = new UserService(
+    changeEmailRequestRepository,
+    experienceRepository,
+    userRepository,
+    userPersonalAccessTokenRepository,
+    walletRepository,
+    commentService,
+    currencyService,
+    userExperienceService,
+    friendService,
+    networkService,
+    notificationService,
+    postService,
+    reportService,
+    transactionService,
+    userOTPService,
+    userSocialMediaService,
+    voteService,
+    jwtService,
+    currentUser,
+  );
+
+  const peopleService = new PeopleService(
+    peopleRepository,
     userRepository,
     friendService,
     currentUser,
@@ -286,6 +474,10 @@ export async function givenRepositories(testdb: any) {
     networkRepository,
     userCurrencyRepository,
     serverRepository,
+    userService,
+    peopleService,
+    socialMediaService,
+    tagService,
   };
 }
 

@@ -1,6 +1,15 @@
+import {AuthenticationBindings} from '@loopback/authentication';
 import {BindingScope, inject, injectable} from '@loopback/core';
-import {AnyObject, repository} from '@loopback/repository';
-import {ClaimReference, Currency, Network} from '../models';
+import {AnyObject, Filter, repository} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
+import {securityId, UserProfile} from '@loopback/security';
+import {ApiPromise} from '@polkadot/api';
+import type {AccountInfo} from '@polkadot/types/interfaces';
+import {BN} from '@polkadot/util';
+import {sha256} from 'js-sha256';
+import {providers, transactions, utils} from 'near-api-js';
+import {config} from '../config';
+import {Currency, Network, Transaction, TxDetail} from '../models';
 import {
   CurrencyRepository,
   NetworkRepository,
@@ -9,22 +18,12 @@ import {
   UserSocialMediaRepository,
   WalletRepository,
 } from '../repositories';
-import {PolkadotJs} from '../utils/polkadotJs-utils';
+import {PolkadotJs} from '../utils/polkadot-js';
 import {CoinMarketCap} from './coin-market-cap.service';
-import {providers, transactions, utils} from 'near-api-js';
-import {HttpErrors} from '@loopback/rest';
-import {ApiPromise} from '@polkadot/api';
-import {config} from '../config';
-import {DateUtils} from '../utils/date-utils';
-import {AuthenticationBindings} from '@loopback/authentication';
-import {UserProfile, securityId} from '@loopback/security';
-import {BN} from '@polkadot/util';
-import {sha256} from 'js-sha256';
-import {Transaction} from '../interfaces';
 
 const nearSeedPhrase = require('near-seed-phrase');
+
 const {polkadotApi, getKeyring} = new PolkadotJs();
-const dateUtils = new DateUtils();
 
 interface ClaimReferenceData {
   rpcURL: string;
@@ -40,24 +39,113 @@ interface ClaimReferenceData {
 export class NetworkService {
   constructor(
     @repository(CurrencyRepository)
-    protected currencyRepository: CurrencyRepository,
+    private currencyRepository: CurrencyRepository,
     @repository(NetworkRepository)
-    protected networkRepository: NetworkRepository,
+    private networkRepository: NetworkRepository,
     @repository(QueueRepository)
-    protected queueRepository: QueueRepository,
+    private queueRepository: QueueRepository,
     @repository(ServerRepository)
-    protected serverRepository: ServerRepository,
+    private serverRepository: ServerRepository,
     @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
+    private userSocialMediaRepository: UserSocialMediaRepository,
     @repository(WalletRepository)
-    protected walletRepository: WalletRepository,
+    private walletRepository: WalletRepository,
     @inject('services.CoinMarketCap')
-    protected coinMarketCapService: CoinMarketCap,
+    private coinMarketCapService: CoinMarketCap,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    protected currentUser: UserProfile,
+    private currentUser: UserProfile,
   ) {}
 
-  async verifyPolkadotConnection(network: Network): Promise<Network | void> {
+  public async find(filter?: Filter<Network>): Promise<Network[]> {
+    return this.networkRepository.find(filter);
+  }
+
+  public async findById(
+    id: string,
+    filter?: Filter<Network>,
+  ): Promise<Network> {
+    return this.networkRepository.findById(id, filter);
+  }
+
+  public async verifyContract(
+    networkId: string,
+    rpcURL: string,
+    contractId: string,
+  ): Promise<Currency> {
+    switch (networkId) {
+      case 'near':
+        return this.verifyNearContractAddress(networkId, rpcURL, contractId);
+
+      default:
+        throw new HttpErrors.UnprocessableEntity(
+          `Contract address ${contractId} not found in network ${networkId}`,
+        );
+    }
+  }
+
+  public async claim(txDetail: TxDetail): Promise<Pick<Transaction, 'hash'>> {
+    const userId = this.currentUser?.[securityId];
+    const txFee = txDetail.txFee;
+    const contractId = txDetail.tippingContractId;
+
+    if (!userId) {
+      throw new HttpErrors.Forbidden('UnathorizedUser');
+    }
+
+    if (parseInt(txFee) === 0) {
+      throw new HttpErrors.UnprocessableEntity('TxFeeMustLargerThanZero');
+    }
+
+    const wallet = await this.walletRepository.findOne({
+      where: {
+        userId,
+        primary: true,
+      },
+      include: ['network'],
+    });
+
+    if (!wallet?.network) throw new HttpErrors.NotFound('WalletNotFound');
+
+    const [server, socialMedia] = await Promise.all([
+      this.serverRepository.findOne(),
+      this.userSocialMediaRepository.find({where: {userId}}),
+    ]);
+
+    if (!server) throw new HttpErrors.NotFound('ServerNotFound');
+
+    const networkId = wallet.networkId;
+    const serverId = server?.accountId?.[networkId];
+
+    if (!serverId) {
+      throw new HttpErrors.UnprocessableEntity('ServerNotExists');
+    }
+
+    const accountId = wallet.id;
+    const referenceIds = socialMedia.map(e => e.peopleId);
+    const claimReferenceData = {
+      rpcURL: wallet.network.rpcURL,
+      serverId,
+      accountId,
+      txFee,
+      referenceIds,
+      contractId,
+    };
+
+    switch (networkId) {
+      case 'near':
+        return this.claimReferenceNear(claimReferenceData);
+
+      case 'myriad':
+        return this.claimReferenceMyriad(claimReferenceData);
+
+      default:
+        throw new HttpErrors.NotFound('WalletNotFound');
+    }
+  }
+
+  private async verifyPolkadotConnection(
+    network: Network,
+  ): Promise<Network | void> {
     const {rpcURL} = network;
     const {getSystemParameters} = new PolkadotJs();
     const api = await this.connect(rpcURL);
@@ -110,7 +198,7 @@ export class NetworkService {
     });
   }
 
-  async verifyNearContractAddress(
+  private async verifyNearContractAddress(
     networkId: string,
     rpcURL: string,
     contractId: string,
@@ -166,85 +254,9 @@ export class NetworkService {
     return currency;
   }
 
-  async verifyContractAddress(
-    networkId: string,
-    rpcURL: string,
-    contractId: string,
-  ): Promise<Currency> {
-    switch (networkId) {
-      case 'near':
-        return this.verifyNearContractAddress(networkId, rpcURL, contractId);
-
-      default:
-        throw new HttpErrors.UnprocessableEntity(
-          `Contract address ${contractId} not found in network ${networkId}`,
-        );
-    }
-  }
-
-  async claimReference(claimReference: ClaimReference): Promise<Transaction> {
-    const userId = this.currentUser?.[securityId];
-    const txFee = claimReference.txFee;
-    const contractId = claimReference.tippingContractId;
-
-    if (!userId) {
-      throw new HttpErrors.Forbidden('UnathorizedUser');
-    }
-
-    if (parseInt(txFee) === 0) {
-      throw new HttpErrors.UnprocessableEntity('TxFeeMustLargerThanZero');
-    }
-
-    const wallet = await this.walletRepository.findOne({
-      where: {
-        userId: this.currentUser[securityId],
-        primary: true,
-      },
-      include: ['network'],
-    });
-
-    if (!wallet?.network) throw new HttpErrors.NotFound('WalletNotFound');
-
-    const [server, socialMedia] = await Promise.all([
-      this.serverRepository.findOne(),
-      this.userSocialMediaRepository.find({where: {userId}}),
-    ]);
-
-    if (!server) throw new HttpErrors.NotFound('ServerNotFound');
-
-    const networkId = wallet.networkId;
-    const serverId = server?.accountId?.[networkId];
-
-    if (!serverId) {
-      throw new HttpErrors.UnprocessableEntity('ServerNotExists');
-    }
-
-    const accountId = wallet.id;
-    const referenceIds = socialMedia.map(e => e.peopleId);
-    const claimReferenceData = {
-      rpcURL: wallet.network.rpcURL,
-      serverId,
-      accountId,
-      txFee,
-      referenceIds,
-      contractId,
-    };
-
-    switch (networkId) {
-      case 'near':
-        return this.claimReferenceNear(claimReferenceData);
-
-      case 'myriad':
-        return this.claimReferenceMyriad(claimReferenceData);
-
-      default:
-        throw new HttpErrors.NotFound('WalletNotFound');
-    }
-  }
-
-  async claimReferenceNear(
+  private async claimReferenceNear(
     claimReferenceData: ClaimReferenceData,
-  ): Promise<Transaction> {
+  ): Promise<Pick<Transaction, 'hash'>> {
     try {
       const {serverId, accountId, rpcURL, txFee, contractId, referenceIds} =
         claimReferenceData;
@@ -289,7 +301,7 @@ export class NetworkService {
         throw new HttpErrors.UnprocessableEntity('TxFeeInsufficient');
       }
 
-      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+      const mnemonic = config.MYRIAD_ADMIN_NEAR_MNEMONIC;
       const seedData = nearSeedPhrase.parseSeedPhrase(mnemonic);
       const privateKey = seedData.secretKey;
       const keyPair = utils.key_pair.KeyPairEd25519.fromString(privateKey);
@@ -351,9 +363,9 @@ export class NetworkService {
     }
   }
 
-  async claimReferenceMyriad(
+  private async claimReferenceMyriad(
     claimReferenceData: ClaimReferenceData,
-  ): Promise<Transaction> {
+  ): Promise<Pick<Transaction, 'hash'>> {
     let api: ApiPromise | null = null;
 
     try {
@@ -380,7 +392,7 @@ export class NetworkService {
 
       const tipsBalance = JSON.parse(rawTipsBalance.toString());
       const balance = parseInt(tipsBalance.amount).toString();
-      const mnemonic = config.MYRIAD_ADMIN_MNEMONIC;
+      const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
       const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
       const currencies = await this.currencyRepository.find(<AnyObject>{
         where: {
@@ -412,7 +424,7 @@ export class NetworkService {
         throw new HttpErrors.UnprocessableEntity('TxFeeInsufficient');
       }
 
-      const {nonce: currentNonce} = await api.query.system.account(
+      const {nonce: currentNonce} = await api.query.system.account<AccountInfo>(
         serverAddress,
       );
 
@@ -440,7 +452,10 @@ export class NetworkService {
     }
   }
 
-  async connect(rpcURL: string, types?: AnyObject): Promise<ApiPromise> {
+  private async connect(
+    rpcURL: string,
+    types?: AnyObject,
+  ): Promise<ApiPromise> {
     try {
       return await polkadotApi(rpcURL, types);
     } catch {
@@ -448,7 +463,7 @@ export class NetworkService {
     }
   }
 
-  async getQueueNumber(nonce: number, type: string): Promise<number> {
+  private async getQueueNumber(nonce: number, type: string): Promise<number> {
     const queue = await this.queueRepository.get(type);
 
     let priority = nonce;
@@ -457,7 +472,7 @@ export class NetworkService {
     else priority = nonce;
 
     await this.queueRepository.set(type, {priority: priority + 1});
-    await this.queueRepository.expire(type, 1 * dateUtils.hour);
+    await this.queueRepository.expire(type, 60 * 60 * 1000);
 
     return priority;
   }

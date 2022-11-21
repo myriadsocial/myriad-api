@@ -10,7 +10,6 @@ import {
   deleteAllRepository,
   givenAccesToken,
   givenMultipleTagInstances,
-  givenTag,
   givenTagInstance,
   givenTagRepository,
   givenUserInstance,
@@ -54,56 +53,6 @@ describe('TagApplication', function () {
 
   after(async () => {
     await deleteAllRepository(app);
-  });
-
-  it('creates a tag', async function () {
-    const tag: Partial<Tag> = givenTag();
-    delete tag.count;
-    const response = await client
-      .post('/tags')
-      .set('Authorization', `Bearer ${token}`)
-      .send(tag)
-      .expect(200);
-    expect(response.body).to.containDeep(tag);
-    const result = await tagRepository.findById(response.body.id);
-    expect(result).to.containDeep(tag);
-  });
-
-  it('rejects requests to create a tag with no id', async () => {
-    const tag: Partial<Tag> = givenTag();
-    delete tag.id;
-    delete tag.count;
-    await client
-      .post('/tags')
-      .set('Authorization', `Bearer ${token}`)
-      .send(tag)
-      .expect(422);
-  });
-
-  context('when dealing with a single persisted tag', () => {
-    let persistedTag: Tag;
-
-    beforeEach(async () => {
-      persistedTag = await givenTagInstance(tagRepository, {id: 'world'});
-    });
-
-    it('gets a tag by ID', async () => {
-      const result = await client
-        .get(`/tags/${persistedTag.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(200);
-      const expected = toJSON(persistedTag);
-
-      expect(result.body).to.deepEqual(expected);
-    });
-
-    it('returns 404 when getting a tag that does not exist', () => {
-      return client
-        .get('/tags/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
-    });
   });
 
   context('when dealing with multiple persisted tags', () => {

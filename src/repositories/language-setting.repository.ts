@@ -1,8 +1,8 @@
-import {inject, Getter} from '@loopback/core';
+import {Getter, inject} from '@loopback/core';
 import {
+  BelongsToAccessor,
   DefaultCrudRepository,
   repository,
-  BelongsToAccessor,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {LanguageSetting, LanguageSettingRelations, User} from '../models';

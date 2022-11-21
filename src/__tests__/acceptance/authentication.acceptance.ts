@@ -117,7 +117,7 @@ describe('AuthenticationApplication', function () {
     await givenNetworkInstance(networkRepository, {id: 'myriad'});
 
     const user = await givenUserInstance(userRepository, {username: 'johndoe'});
-    const _ = await givenWalletInstance(walletRepository, {userId: user.id});
+    await givenWalletInstance(walletRepository, {userId: user.id});
     const credential = givenCredential({
       nonce: user.nonce,
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),

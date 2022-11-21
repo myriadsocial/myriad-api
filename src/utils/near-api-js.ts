@@ -1,8 +1,8 @@
-import {Credential} from '../models';
+import {hexToU8a, isHex, numberToHex} from '@polkadot/util';
 import * as bs58 from 'bs58';
 import * as nearAPI from 'near-api-js';
-import {numberToHex, hexToU8a, isHex} from '@polkadot/util';
 import nacl from 'tweetnacl';
+import {Credential} from '../models';
 
 /* eslint-disable  @typescript-eslint/naming-convention */
 export class Near {

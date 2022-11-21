@@ -82,7 +82,7 @@ describe('UserWalletApplication', function () {
     credential.data = wallet;
 
     const response = await client
-      .post(`/users/${user.id}/wallets`)
+      .post(`/user/connect-wallet`)
       .set('Authorization', `Bearer ${token}`)
       .send(credential)
       .expect(200);

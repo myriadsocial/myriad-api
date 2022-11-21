@@ -1,6 +1,19 @@
 import {BindingScope, injectable, service} from '@loopback/core';
-import {AnyObject, repository} from '@loopback/repository';
-import {PlatformType, ReferenceType} from '../enums';
+import {
+  AnyObject,
+  Count,
+  Filter,
+  repository,
+  Where,
+} from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
+import {
+  PlatformType,
+  ReferenceType,
+  ReportStatusType,
+  ReportType,
+} from '../enums';
+import {CreateReportDto, Report, UserReport} from '../models';
 import {
   CommentRepository,
   ExperiencePostRepository,
@@ -15,37 +28,111 @@ import {
   UserSocialMediaRepository,
 } from '../repositories';
 import {MetricService} from './metric.service';
+import {NotificationService} from './notification.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class ReportService {
   constructor(
     @repository(ReportRepository)
-    public reportRepository: ReportRepository,
+    private reportRepository: ReportRepository,
     @repository(CommentRepository)
-    protected commentRepository: CommentRepository,
+    private commentRepository: CommentRepository,
     @repository(ExperienceRepository)
-    protected experienceRepository: ExperienceRepository,
+    private experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
-    protected experiencePostRepository: ExperiencePostRepository,
+    private experiencePostRepository: ExperiencePostRepository,
     @repository(FriendRepository)
-    protected friendRepository: FriendRepository,
+    private friendRepository: FriendRepository,
     @repository(PeopleRepository)
-    protected peopleRepository: PeopleRepository,
+    private peopleRepository: PeopleRepository,
     @repository(PostRepository)
-    protected postRepository: PostRepository,
+    private postRepository: PostRepository,
     @repository(UserExperienceRepository)
-    protected userExperienceRepository: UserExperienceRepository,
+    private userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
-    protected userRepository: UserRepository,
+    private userRepository: UserRepository,
     @repository(UserReportRepository)
-    protected userReportRepository: UserReportRepository,
+    private userReportRepository: UserReportRepository,
     @repository(UserSocialMediaRepository)
-    protected userSocialMediaRepository: UserSocialMediaRepository,
+    private userSocialMediaRepository: UserSocialMediaRepository,
     @service(MetricService)
-    protected metricService: MetricService,
+    private metricService: MetricService,
+    @service(NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
-  async updateReport(
+  public async create(id: string, data: CreateReportDto): Promise<Report> {
+    const {referenceId, referenceType, type} = data;
+    const [reported, report] = await Promise.all([
+      this.validateReporter(referenceId, referenceType, id, type),
+      this.reportRepository.findOne({
+        where: {
+          referenceId,
+          referenceType,
+          type,
+        },
+      }),
+    ]);
+
+    const currentReport =
+      report ??
+      (await this.reportRepository.create({
+        reportedDetail: this.getReportedDetail(reported, referenceType),
+        referenceType,
+        referenceId,
+        type,
+      }));
+
+    return this.updateReportStatus(currentReport)
+      .then(result => this.afterCreate(result, id, data))
+      .catch(err => {
+        throw err;
+      });
+  }
+
+  public async find(filter?: Filter<Report>): Promise<Report[]> {
+    return this.reportRepository.find(
+      Object.assign(filter ?? {}, {
+        include: [
+          {
+            relation: 'reporters',
+            scope: {
+              limit: 5,
+            },
+          },
+        ],
+      }),
+    );
+  }
+
+  public async findById(id: string, filter?: Filter<Report>): Promise<Report> {
+    return this.reportRepository.findById(id, filter);
+  }
+
+  public async findReporters(
+    id: string,
+    filter?: Filter<UserReport>,
+  ): Promise<UserReport[]> {
+    return this.reportRepository.reporters(id).find(filter);
+  }
+
+  public async updateById(id: string, report: Partial<Report>): Promise<void> {
+    Promise.allSettled([
+      this.reportRepository.updateById(id, report),
+      this.notificationService.sendReportResponseToUser(id),
+      this.notificationService.sendReportResponseToReporters(id),
+    ]) as Promise<AnyObject>;
+  }
+
+  public async deleteById(id: string): Promise<void> {
+    return this.reportRepository.deleteById(id);
+  }
+
+  public async deleteAll(where?: Where<Report>): Promise<Count> {
+    return this.reportRepository.deleteAll(where);
+  }
+
+  public async updateReport(
     referenceId: string,
     referenceType: ReferenceType,
     restored: boolean,
@@ -101,7 +188,10 @@ export class ReportService {
               postId: {inq: [...postIds, referenceId]},
             });
           })
-          .then(() => this.metricService.userMetric(userId));
+          .then(() => this.metricService.userMetric(userId))
+          .catch(err => {
+            throw err;
+          });
       }
 
       case ReferenceType.COMMENT: {
@@ -114,7 +204,51 @@ export class ReportService {
     }
   }
 
-  async handleUserReports(
+  // ------------------------------------------------
+
+  // ------ PrivateFunction --------------------------
+
+  private async afterCreate(
+    report: Report,
+    userId: string,
+    data: CreateReportDto,
+  ): Promise<Report> {
+    Promise.allSettled([
+      this.notificationService.sendReport(report),
+      this.userReportRepository
+        .findOne({
+          where: {
+            reportId: report.id,
+            reportedBy: userId,
+          },
+        })
+        .then(userReport => {
+          if (userReport) return;
+          return this.userReportRepository.create({
+            referenceType: report.referenceType,
+            description: data.description,
+            reportedBy: userId,
+            reportId: report.id,
+          });
+        })
+        .then(userReport => {
+          if (!userReport) return {count: 0};
+          return this.userReportRepository.count({
+            reportId: report.id?.toString() ?? '',
+          });
+        })
+        .then(({count}) => {
+          return this.reportRepository.updateById(report.id, {
+            totalReported: count,
+            status: report.status,
+          });
+        }),
+    ]) as Promise<AnyObject>;
+
+    return report;
+  }
+
+  private async handleUserReports(
     userId: string,
     data: AnyObject,
     restored: boolean,
@@ -181,4 +315,127 @@ export class ReportService {
       }),
     ]) as Promise<AnyObject>;
   }
+
+  private async updateReportStatus(report: Report): Promise<Report> {
+    const {id: reportId, status} = report;
+    switch (status) {
+      case ReportStatusType.PENDING:
+        return report;
+
+      case ReportStatusType.REMOVED: {
+        throw new HttpErrors.UnprocessableEntity(
+          'This post/comment/user has been removed/banned',
+        );
+      }
+
+      case ReportStatusType.IGNORED:
+      default: {
+        await this.userReportRepository.deleteAll({reportId});
+        return Object.assign(report, {status: ReportStatusType.PENDING});
+      }
+    }
+  }
+
+  private async validateReporter(
+    referenceId: string,
+    referenceType: ReferenceType,
+    id: string,
+    type: ReportType,
+  ): Promise<AnyObject> {
+    if (referenceType === ReferenceType.POST) {
+      if (!type) {
+        throw new HttpErrors.UnprocessableEntity('Type cannot be empty');
+      }
+
+      const foundPost = await this.postRepository.findById(referenceId, {
+        include: ['user'],
+      });
+
+      if (foundPost.createdBy === id) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You cannot report your own post',
+        );
+      }
+
+      return foundPost;
+    }
+
+    if (referenceType === ReferenceType.COMMENT) {
+      if (!type) {
+        throw new HttpErrors.UnprocessableEntity('Type cannot be empty');
+      }
+
+      const comment = await this.commentRepository.findById(referenceId, {
+        include: ['user'],
+      });
+
+      if (comment.userId === id) {
+        throw new HttpErrors.UnprocessableEntity(
+          'You cannot report your own comment',
+        );
+      }
+
+      return comment;
+    }
+
+    if (referenceType === ReferenceType.USER) {
+      if (type) {
+        throw new HttpErrors.UnprocessableEntity('Type cannot be filled');
+      }
+
+      if (referenceId === id) {
+        throw new HttpErrors.UnprocessableEntity('You cannot report yourself');
+      }
+
+      return this.userRepository.findById(referenceId);
+    }
+
+    return {};
+  }
+
+  private getReportedDetail(
+    reported: AnyObject,
+    referenceType: ReferenceType,
+  ): AnyObject {
+    if (referenceType === ReferenceType.POST) {
+      return {
+        title: reported.title,
+        text: reported.text,
+        platform: reported.platform,
+        user: {
+          id: reported.user?.id,
+          name: reported.user?.name,
+          username: reported.user?.username,
+          profilePictureURL: reported.user?.profilePictureURL,
+          createdAt: reported.user?.createdAt,
+        },
+      };
+    }
+
+    if (referenceType === ReferenceType.COMMENT) {
+      return {
+        text: reported.text,
+        postId: reported.postId,
+        user: {
+          id: reported.user?.id,
+          name: reported.user?.name,
+          username: reported.user?.username,
+          profilePictureURL: reported.user?.profilePictureURL,
+          createdAt: reported.user?.createdAt,
+        },
+      };
+    }
+
+    return {
+      user: {
+        id: reported.id,
+        name: reported.name,
+        username: reported.username,
+        profilePictureURL: reported.profilePictureURL,
+        createdAt: reported.createdAt,
+      },
+    };
+  }
+
+  // ------------------------------------------------
 }

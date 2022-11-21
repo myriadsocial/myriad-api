@@ -1,6 +1,6 @@
-import {belongsTo, Entity, model, property} from '@loopback/repository';
-import {PeopleWithRelations} from './';
+import {belongsTo, Entity, Model, model, property} from '@loopback/repository';
 import {PlatformType} from '../enums';
+import {PeopleWithRelations} from './';
 import {People} from './people.model';
 import {User} from './user.model';
 
@@ -105,5 +105,47 @@ export interface UserSocialMediaRelations {
   people?: PeopleWithRelations;
 }
 
+interface AdditionalProperty {
+  connected?: boolean;
+}
+
 export type UserSocialMediaWithRelations = UserSocialMedia &
-  UserSocialMediaRelations;
+  UserSocialMediaRelations &
+  AdditionalProperty;
+
+export class SocialMediaVerificationDto extends Model {
+  @property({
+    type: 'string',
+    required: true,
+  })
+  address: string;
+
+  @property({
+    type: 'string',
+    jsonSchema: {
+      enum: Object.values(PlatformType),
+    },
+    required: true,
+  })
+  platform: PlatformType;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  username: string;
+
+  @property({
+    type: 'number',
+  })
+  delay?: number;
+
+  @property({
+    type: 'number',
+  })
+  triesLeft?: number;
+
+  constructor(data?: Partial<SocialMediaVerificationDto>) {
+    super(data);
+  }
+}

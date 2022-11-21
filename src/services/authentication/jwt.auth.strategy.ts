@@ -2,19 +2,19 @@ import {AuthenticationStrategy, TokenService} from '@loopback/authentication';
 import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors, Request} from '@loopback/rest';
-import {UserProfile, securityId} from '@loopback/security';
+import {securityId, UserProfile} from '@loopback/security';
 import {TokenServiceBindings} from '../../keys';
 import {UserRepository} from '../../repositories';
-import {generateObjectId} from '../../utils/formatted';
+import {generateObjectId} from '../../utils/formatter';
 
 export class JWTAuthenticationStrategy implements AuthenticationStrategy {
   name = 'jwt';
 
   constructor(
     @repository(UserRepository)
-    protected userRepository: UserRepository,
+    private userRepository: UserRepository,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
-    public tokenService: TokenService,
+    private tokenService: TokenService,
   ) {}
 
   async authenticate(request: Request): Promise<UserProfile | undefined> {
@@ -25,15 +25,10 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
       userProfile = await this.tokenService.verifyToken(token);
     } catch (err) {
       const url = request.originalUrl.split('/');
-      const wallet = url[1];
       const walletAddress = url[3];
 
       // Handle posts and users
-      if (
-        request.method === 'GET' &&
-        wallet !== 'wallet' &&
-        walletAddress !== 'walletaddress'
-      ) {
+      if (request.method === 'GET' && walletAddress !== 'walletaddress') {
         const randomUserId = generateObjectId();
 
         return {

@@ -22,9 +22,9 @@ const verifyAsync = promisify(jwt.verify);
 export class RefreshtokenService {
   constructor(
     @repository(UserRepository)
-    public userRepository: UserRepository,
+    private userRepository: UserRepository,
     @repository(UserRefreshTokenRepository)
-    public userRefreshTokenRepository: UserRefreshTokenRepository,
+    private userRefreshTokenRepository: UserRefreshTokenRepository,
     @inject(RefreshTokenServiceBindings.REFRESH_SECRET)
     private refreshSecret: string,
     @inject(RefreshTokenServiceBindings.JWT_REFRESH_TOKEN_EXPIRES_IN)
@@ -32,7 +32,7 @@ export class RefreshtokenService {
     @inject(RefreshTokenServiceBindings.REFRESH_ISSUER)
     private refreshIssure: string,
     @inject(TokenServiceBindings.TOKEN_SERVICE)
-    public jwtService: TokenService,
+    private jwtService: TokenService,
   ) {}
   /**
    * Generate a refresh token, bind it with the given user profile + access

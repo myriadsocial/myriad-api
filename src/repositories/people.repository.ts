@@ -2,12 +2,12 @@ import {Getter, inject} from '@loopback/core';
 import {
   DefaultCrudRepository,
   HasManyRepositoryFactory,
+  HasManyThroughRepositoryFactory,
   HasOneRepositoryFactory,
   repository,
-  HasManyThroughRepositoryFactory,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
-import {People, PeopleRelations, Post, UserSocialMedia, User} from '../models';
+import {People, PeopleRelations, Post, User, UserSocialMedia} from '../models';
 import {PostRepository} from './post.repository';
 import {UserSocialMediaRepository} from './user-social-media.repository';
 import {UserRepository} from './user.repository';

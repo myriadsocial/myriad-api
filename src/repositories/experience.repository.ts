@@ -1,23 +1,23 @@
-import {Getter, inject, bind, BindingScope} from '@loopback/core';
+import {bind, BindingScope, Getter, inject} from '@loopback/core';
 import {
   BelongsToAccessor,
   DefaultCrudRepository,
-  repository,
   HasManyThroughRepositoryFactory,
+  repository,
 } from '@loopback/repository';
 import {MongoDataSource} from '../datasources';
 import {
   Experience,
+  ExperiencePost,
   ExperienceRelations,
-  User,
   ExperienceUser,
   Post,
-  ExperiencePost,
+  User,
 } from '../models';
-import {UserRepository} from './user.repository';
-import {ExperienceUserRepository} from './experience-user.repository';
 import {ExperiencePostRepository} from './experience-post.repository';
+import {ExperienceUserRepository} from './experience-user.repository';
 import {PostRepository} from './post.repository';
+import {UserRepository} from './user.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class ExperienceRepository extends DefaultCrudRepository<

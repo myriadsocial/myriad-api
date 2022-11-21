@@ -25,10 +25,7 @@ describe('ExperienceControllerIntegration', function () {
   });
 
   before(async () => {
-    controller = new ExperienceController(
-      experienceRepository,
-      experienceService,
-    );
+    controller = new ExperienceController(experienceService);
   });
 
   beforeEach(async () => {

@@ -1,7 +1,7 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
-import {User} from './user.model';
+import {belongsTo, Entity, model, Model, property} from '@loopback/repository';
 import {Currency, CurrencyWithRelations} from './currency.model';
 import {Network} from './network.model';
+import {User} from './user.model';
 
 @model({
   settings: {
@@ -59,3 +59,16 @@ export interface UserCurrencyRelations {
 }
 
 export type UserCurrencyWithRelations = UserCurrency & UserCurrencyRelations;
+
+export class Priority extends Model {
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: true,
+  })
+  currencyIds: string[];
+
+  constructor(data?: Partial<Priority>) {
+    super(data);
+  }
+}

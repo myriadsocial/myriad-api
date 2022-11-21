@@ -1,28 +1,32 @@
-import {repository, Where} from '@loopback/repository';
+import {BindingScope, injectable, service} from '@loopback/core';
+import {Filter, repository, Where} from '@loopback/repository';
+import {pull} from 'lodash';
 import {
   FriendStatusType,
   OrderFieldType,
   OrderType,
   VisibilityType,
 } from '../enums';
-import {Post} from '../models';
+import {Post, Tag} from '../models';
 import {PostRepository, TagRepository} from '../repositories';
-import {injectable, BindingScope, service} from '@loopback/core';
 import {FriendService} from './friend.service';
-import {pull} from 'lodash';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class TagService {
   constructor(
     @repository(TagRepository)
-    public tagRepository: TagRepository,
+    private tagRepository: TagRepository,
     @repository(PostRepository)
-    protected postRepository: PostRepository,
+    private postRepository: PostRepository,
     @service(FriendService)
-    protected friendService: FriendService,
+    private friendService: FriendService,
   ) {}
 
-  async createTags(tags: string[], experience?: boolean): Promise<void> {
+  public async find(filter?: Filter<Tag>): Promise<Tag[]> {
+    return this.tagRepository.find(filter);
+  }
+
+  public async create(tags: string[], experience?: boolean): Promise<void> {
     for (const tag of tags) {
       try {
         await this.tagRepository.create({
@@ -46,8 +50,8 @@ export class TagService {
     }
   }
 
-  async trendingTopics(): Promise<string[]> {
-    const trendingTopic = await this.tagRepository.find({
+  public async timeline(userId: string): Promise<Where<Post>> {
+    const trendingTopics = await this.tagRepository.find({
       order: [
         `${OrderFieldType.COUNT} ${OrderType.DESC}`,
         `${OrderFieldType.UPDATEDAT} ${OrderType.DESC}`,
@@ -55,13 +59,9 @@ export class TagService {
       limit: 5,
     });
 
-    return trendingTopic.map(tag => tag.id);
-  }
+    const trendingTopicIds = trendingTopics.map(tag => tag.id);
 
-  async trendingTimeline(userId: string): Promise<Where<Post>> {
-    const trendingTopics = await this.trendingTopics();
-
-    if (!trendingTopics.length) return {id: ''};
+    if (!trendingTopicIds.length) return {id: ''};
 
     const [approvedFriendIds, blockedFriendIds] = await Promise.all([
       this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
@@ -74,20 +74,20 @@ export class TagService {
       or: [
         {
           and: [
-            {tags: {inq: trendingTopics}},
+            {tags: {inq: trendingTopicIds}},
             {createdBy: {nin: blocked}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
         {
           and: [
-            {tags: {inq: trendingTopics}},
+            {tags: {inq: trendingTopicIds}},
             {createdBy: {inq: approvedFriendIds}},
             {visibility: VisibilityType.FRIEND},
           ],
         },
         {
-          and: [{tags: {inq: trendingTopics}}, {createdBy: userId}],
+          and: [{tags: {inq: trendingTopicIds}}, {createdBy: userId}],
         },
       ],
     } as Where<Post>;

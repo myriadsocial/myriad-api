@@ -1,4 +1,4 @@
-import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {belongsTo, Entity, Model, model, property} from '@loopback/repository';
 import {ReferenceType} from '../enums/reference-type.enum';
 import {Currency} from './currency.model';
 import {User, UserWithRelations} from './user.model';
@@ -106,3 +106,32 @@ export interface TransactionRelations {
 }
 
 export type TransactionWithRelations = Transaction & TransactionRelations;
+
+export class UpdateTransactionDto extends Model {
+  @property({
+    type: 'array',
+    itemType: 'string',
+  })
+  currencyIds: string[];
+
+  constructor(data?: Partial<UpdateTransactionDto>) {
+    super(data);
+  }
+}
+
+export class TxDetail extends Model {
+  @property({
+    type: 'string',
+    required: true,
+  })
+  txFee: string;
+
+  @property({
+    type: 'string',
+  })
+  tippingContractId?: string;
+
+  constructor(data?: Partial<TxDetail>) {
+    super(data);
+  }
+}

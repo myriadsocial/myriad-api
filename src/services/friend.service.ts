@@ -1,163 +1,99 @@
-import {AnyObject, Count, repository, Where} from '@loopback/repository';
+import {BindingScope, injectable, service} from '@loopback/core';
+import {
+  AnyObject,
+  Count,
+  Filter,
+  repository,
+  Where,
+} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {AccountSettingType, FriendStatusType, VisibilityType} from '../enums';
+import {omit, pull, union} from 'lodash';
+import {
+  AccountSettingType,
+  ActivityLogType,
+  FriendStatusType,
+  ReferenceType,
+  VisibilityType,
+} from '../enums';
 import {Friend, FriendWithRelations, Post} from '../models';
 import {
   AccountSettingRepository,
   FriendRepository,
   UserRepository,
 } from '../repositories';
-import {injectable, BindingScope} from '@loopback/core';
-import {Filter} from '@loopback/repository';
-import {union, pull} from 'lodash';
+import {ActivityLogService} from './activity-log.service';
+import {MetricService} from './metric.service';
+import {NotificationService} from './notification.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class FriendService {
   constructor(
     @repository(AccountSettingRepository)
-    protected accountSettingRepository: AccountSettingRepository,
+    private accountSettingRepository: AccountSettingRepository,
     @repository(FriendRepository)
-    public friendRepository: FriendRepository,
+    private friendRepository: FriendRepository,
     @repository(UserRepository)
-    protected userRepository: UserRepository,
+    private userRepository: UserRepository,
+    @service(ActivityLogService)
+    private activityLogService: ActivityLogService,
+    @service(MetricService)
+    private metricService: MetricService,
+    @service(NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
-  async validatePendingFriendRequest(
-    requesteeId: string,
-    requestorId: string,
-  ): Promise<void> {
-    if (requesteeId === requestorId) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You cannot request to yourself!',
-      );
-    }
+  public async find(filter?: Filter<Friend>): Promise<Friend[]> {
+    return this.friendRepository.find(filter);
+  }
 
-    let friend = await this.friendRepository.findOne({
-      where: {
-        requesteeId: requesteeId,
-        requestorId: requestorId,
-      },
-    });
+  public async findOne(filter?: Filter<Friend>): Promise<Friend | null> {
+    return this.friendRepository.findOne(filter);
+  }
+
+  public async remove(id: string, friend?: Friend): Promise<void> {
+    const jobs: Promise<Count | void>[] = [
+      this.friendRepository.deleteById(id),
+    ];
 
     if (friend) {
-      switch (friend.status) {
-        case FriendStatusType.APPROVED: {
-          throw new HttpErrors.UnprocessableEntity(
-            'You already friend with this user',
-          );
-        }
+      const {requesteeId, requestorId} = friend;
 
-        case FriendStatusType.PENDING: {
-          throw new HttpErrors.UnprocessableEntity(
-            "Please wait for your friend's approval!",
-          );
-        }
-
-        case FriendStatusType.BLOCKED: {
-          throw new HttpErrors.UnprocessableEntity(
-            'You have blocked this user!',
-          );
-        }
-      }
-    } else {
-      friend = await this.friendRepository.findOne({
-        where: {
+      jobs.unshift(
+        this.friendRepository.deleteAll({
           requestorId: requesteeId,
           requesteeId: requestorId,
-        },
-      });
-    }
-
-    if (friend) {
-      switch (friend.status) {
-        case FriendStatusType.PENDING: {
-          throw new HttpErrors.UnprocessableEntity(
-            'Please approved your friend request!',
-          );
-        }
-
-        case FriendStatusType.BLOCKED: {
-          throw new HttpErrors.UnprocessableEntity(
-            'You have been blocked by this user!',
-          );
-        }
-      }
-    }
-  }
-
-  async validateBlockFriendRequest(
-    requesteeId: string,
-    requestorId: string,
-  ): Promise<void> {
-    if (requesteeId === requestorId) {
-      throw new HttpErrors.UnprocessableEntity(
-        'You cannot request to yourself!',
+        }),
       );
     }
 
-    const found = await this.friendRepository.findOne({
-      where: {
-        or: [
-          {
-            requestorId: requestorId,
-            requesteeId: requesteeId,
-          },
-          {
-            requestorId: requesteeId,
-            requesteeId: requestorId,
-          },
-        ],
-      },
-    });
-
-    if (found) {
-      if (found.status === FriendStatusType.BLOCKED) {
-        throw new HttpErrors.UnprocessableEntity(
-          'You already blocked/has been blocked by another user!',
-        );
-      } else {
-        await this.friendRepository.deleteAll({
-          or: [
-            {
-              requestorId: requestorId,
-              requesteeId: requesteeId,
-            },
-            {
-              requestorId: requesteeId,
-              requesteeId: requestorId,
-            },
-          ],
-        });
-      }
-    }
+    return Promise.all(jobs).then(() => this.afterDelete(friend));
   }
 
-  async validateApproveFriendRequest(
-    friend: FriendWithRelations,
-  ): Promise<AnyObject> {
-    const {requestee, requestor, status} = friend;
-
-    if (requestee && requestor) {
-      if (status === FriendStatusType.APPROVED) {
-        throw new HttpErrors.UnprocessableEntity(
-          'You already friends with the user',
-        );
-      }
-
-      await this.friendRepository.create({
-        requesteeId: requestor.id,
-        requestorId: requestee.id,
-        status: FriendStatusType.APPROVED,
+  public async request(friend: Omit<Friend, 'id'>): Promise<Friend> {
+    return this.beforeRequest(friend)
+      .then(() => this.friendRepository.create(friend))
+      .then(created => this.afterRequest(created))
+      .catch(err => {
+        throw err;
       });
-
-      return {
-        requesteeId: requestee.id,
-        requestorId: requestor.id,
-      };
-    } else {
-      throw new HttpErrors.UnprocessableEntity('Wrong requesteeId/requestorId');
-    }
   }
+
+  public async respond(id: string, data: Friend): Promise<void> {
+    if (data.status !== FriendStatusType.PENDING) {
+      throw new HttpErrors.UnprocessableEntity('RespondFailed');
+    }
+
+    return this.validateRespond(data)
+      .then(friend => this.friendRepository.updateById(id, friend))
+      .then(() => this.afterRespond(data))
+      .catch(err => {
+        throw err;
+      });
+  }
+
+  // ------------------------------------------------
+
+  // ------ PublicMethod ----------------------------
 
   async getFriendIds(
     id: string,
@@ -197,7 +133,7 @@ export class FriendService {
     return pull(friendIds, id);
   }
 
-  async friendsTimeline(userId: string): Promise<Where<Post>> {
+  async timeline(userId: string): Promise<Where<Post>> {
     const approvedFriendIds = await this.getFriendIds(
       userId,
       FriendStatusType.APPROVED,
@@ -255,26 +191,6 @@ export class FriendService {
 
     if (countMutual.length === 0) return {count: 0};
     return countMutual[0];
-  }
-
-  async handlePendingBlockedRequest(friend: Friend): Promise<void> {
-    const {requestorId, requesteeId, status} = friend;
-
-    switch (status) {
-      case FriendStatusType.PENDING: {
-        return this.validatePendingFriendRequest(requesteeId, requestorId);
-      }
-
-      case FriendStatusType.BLOCKED: {
-        return this.validateBlockFriendRequest(requesteeId, requestorId);
-      }
-
-      case FriendStatusType.APPROVED: {
-        throw new HttpErrors.UnprocessableEntity(
-          'Please set status to pending or blocked',
-        );
-      }
-    }
   }
 
   async getMutualUserIds(
@@ -378,5 +294,224 @@ export class FriendService {
       id: friendId,
       status: friendStatus,
     };
+  }
+
+  // ------------------------------------------------
+
+  // ------ PrivateMethod ---------------------------
+
+  private async beforeRequest(friend: Omit<Friend, 'id'>): Promise<void> {
+    const {requestorId, requesteeId, status} = friend;
+
+    switch (status) {
+      case FriendStatusType.PENDING: {
+        return this.validatePendingRequest(requesteeId, requestorId);
+      }
+
+      case FriendStatusType.BLOCKED: {
+        return this.validateBlockRequest(requesteeId, requestorId);
+      }
+
+      case FriendStatusType.APPROVED: {
+        throw new HttpErrors.UnprocessableEntity('RequestFailed');
+      }
+    }
+  }
+
+  private async afterRequest(friend: Friend): Promise<Friend> {
+    if (friend && friend.status === FriendStatusType.PENDING) {
+      Promise.allSettled([
+        this.notificationService.sendFriendRequest(friend.requesteeId),
+        this.activityLogService.create(
+          ActivityLogType.FRIENDREQUEST,
+          friend.requesteeId,
+          ReferenceType.USER,
+        ),
+      ]) as Promise<AnyObject>;
+    }
+
+    if (friend && friend.status === FriendStatusType.BLOCKED) {
+      const {requesteeId, requestorId} = friend as Friend;
+
+      Promise.allSettled([
+        this.userRepository
+          .findById(requestorId)
+          .then(({friendIndex: requestorFriendIndex}) => {
+            return this.userRepository.updateById(requestorId, {
+              friendIndex: omit(requestorFriendIndex, [requesteeId]),
+            });
+          }),
+        this.userRepository
+          .findById(requesteeId)
+          .then(({friendIndex: requesteeFriendIndex}) => {
+            return this.userRepository.updateById(requesteeId, {
+              friendIndex: omit(requesteeFriendIndex, [requestorId]),
+            });
+          }),
+      ]) as Promise<AnyObject>;
+    }
+
+    return friend;
+  }
+
+  private async afterRespond(friend: FriendWithRelations): Promise<void> {
+    const {requestor, requestee} = friend;
+    if (!requestor || !requestee) return;
+    const {friendIndex: requestorFriendIndex} = requestor;
+    const {friendIndex: requesteeFriendIndex} = requestee;
+
+    Promise.allSettled([
+      this.notificationService.sendFriendAccept(requestor.id),
+      this.metricService.userMetric(requestor.id),
+      this.metricService.userMetric(requestee.id),
+      this.userRepository.updateById(requestor.id, {
+        friendIndex: {
+          ...requestorFriendIndex,
+          [requestee.id]: 1,
+        },
+      }),
+      this.userRepository.updateById(requestee.id, {
+        friendIndex: {
+          ...requesteeFriendIndex,
+          [requestor.id]: 1,
+        },
+      }),
+    ]) as Promise<AnyObject>;
+  }
+
+  private async afterDelete(friend?: FriendWithRelations): Promise<void> {
+    if (!friend) return;
+    const {requesteeId, requestorId, requestee, requestor} = friend;
+    if (!requestor || !requestee) return;
+    const {friendIndex: requestorFriendIndex} = requestor;
+    const {friendIndex: requesteeFriendIndex} = requestee;
+
+    Promise.allSettled([
+      this.metricService.userMetric(requesteeId),
+      this.metricService.userMetric(requestorId),
+      this.userRepository.updateById(requestorId, {
+        friendIndex: omit(requestorFriendIndex, [requesteeId]),
+      }),
+      this.userRepository.updateById(requesteeId, {
+        friendIndex: omit(requesteeFriendIndex, [requestorId]),
+      }),
+      this.notificationService.cancelFriendRequest(requestorId, requesteeId),
+    ]) as Promise<AnyObject>;
+  }
+
+  private async validateRespond(
+    friend: FriendWithRelations,
+  ): Promise<Partial<Friend>> {
+    const {requestee, requestor, status} = friend;
+
+    if (requestee && requestor) {
+      if (status === FriendStatusType.APPROVED) {
+        throw new HttpErrors.UnprocessableEntity('AlreadyFriend');
+      }
+
+      await this.friendRepository.create({
+        requesteeId: requestor.id,
+        requestorId: requestee.id,
+        status: FriendStatusType.APPROVED,
+      });
+
+      return {status: FriendStatusType.APPROVED};
+    } else {
+      throw new HttpErrors.UnprocessableEntity('WrongRequesteeId/RequestorId');
+    }
+  }
+
+  private async validatePendingRequest(
+    requesteeId: string,
+    requestorId: string,
+  ): Promise<void> {
+    if (requesteeId === requestorId) {
+      throw new HttpErrors.UnprocessableEntity('FailedRequest');
+    }
+
+    let friend = await this.findOne({
+      where: {
+        requesteeId: requesteeId,
+        requestorId: requestorId,
+      },
+    });
+
+    if (friend) {
+      switch (friend.status) {
+        case FriendStatusType.APPROVED: {
+          throw new HttpErrors.UnprocessableEntity('AlreadyFriend');
+        }
+
+        case FriendStatusType.PENDING: {
+          throw new HttpErrors.UnprocessableEntity('Inprogress');
+        }
+
+        case FriendStatusType.BLOCKED: {
+          throw new HttpErrors.UnprocessableEntity('RequestBlocked');
+        }
+      }
+    } else {
+      friend = await this.findOne({
+        where: {
+          requestorId: requesteeId,
+          requesteeId: requestorId,
+        },
+      });
+    }
+
+    if (friend) {
+      switch (friend.status) {
+        case FriendStatusType.PENDING: {
+          throw new HttpErrors.UnprocessableEntity('WaitingForRespond');
+        }
+
+        case FriendStatusType.BLOCKED: {
+          throw new HttpErrors.UnprocessableEntity('Blocked');
+        }
+      }
+    }
+  }
+
+  private async validateBlockRequest(
+    requesteeId: string,
+    requestorId: string,
+  ): Promise<void> {
+    if (requesteeId === requestorId) {
+      throw new HttpErrors.UnprocessableEntity('FailedToRequest');
+    }
+
+    const found = await this.findOne({
+      where: {
+        or: [
+          {
+            requestorId: requestorId,
+            requesteeId: requesteeId,
+          },
+          {
+            requestorId: requesteeId,
+            requesteeId: requestorId,
+          },
+        ],
+      },
+    });
+
+    if (found) {
+      if (found.status === FriendStatusType.BLOCKED) {
+        throw new HttpErrors.UnprocessableEntity('RequestBlocked');
+      } else {
+        await this.friendRepository.deleteAll({
+          or: [
+            {
+              requestorId: requestorId,
+              requesteeId: requesteeId,
+            },
+            {
+              requestorId: requesteeId,
+              requesteeId: requestorId,
+            },
+          ],
+        });
+      }
+    }
   }
 }

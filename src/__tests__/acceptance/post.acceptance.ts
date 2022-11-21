@@ -2,13 +2,13 @@ import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {PlatformType, ReferenceType} from '../../enums';
 import {
+  CreateImportedPostDto,
   DraftPost,
   Post,
   PostWithRelations,
   User,
   UserWithRelations,
 } from '../../models';
-import {PlatformPost} from '../../models/platform-post.model';
 import {
   CommentRepository,
   VoteRepository,
@@ -93,7 +93,7 @@ describe('PostApplication', function () {
       createdBy: user.id.toString(),
     });
     const response = await client
-      .post('/posts')
+      .post('/user/posts')
       .set('Authorization', `Bearer ${token}`)
       .send(myriadPost)
       .expect(200);
@@ -115,32 +115,11 @@ describe('PostApplication', function () {
       createdBy: user.id.toString(),
     });
     await client
-      .post('/posts')
+      .post('/user/posts')
       .set('Authorization', `Bearer ${token}`)
       .send(myriadPost)
       .expect(422);
     await userRepository.updateById(user.id, {fullAccess: true});
-  });
-
-  it('returns 401 when creating a post not as login user', async () => {
-    const myriadPost: Partial<DraftPost> = givenPost();
-
-    await client
-      .post('/posts')
-      .set('Authorization', `Bearer ${token}`)
-      .send(myriadPost)
-      .expect(401);
-  });
-
-  it('rejects requests to create a post with no createdBy', async () => {
-    const myriadPost: Partial<Post> = givenPost();
-    delete myriadPost.createdBy;
-
-    await client
-      .post('/posts')
-      .set('Authorization', `Bearer ${token}`)
-      .send(myriadPost)
-      .expect(422);
   });
 
   context('when dealing with a single persisted post', () => {
@@ -155,7 +134,7 @@ describe('PostApplication', function () {
 
     it('gets a post by ID', async () => {
       const result = await client
-        .get(`/posts/${persistedPost.id}`)
+        .get(`/user/posts/${persistedPost.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -166,7 +145,6 @@ describe('PostApplication', function () {
       const expected = {
         ...toJSON(persistedPost),
         totalExperience: 0,
-        popularCount: 0,
         banned: false,
       };
 
@@ -175,13 +153,14 @@ describe('PostApplication', function () {
 
     it('returns 404 when getting a post that does not exist', () => {
       return client
-        .get('/posts/99999')
+        .get('/user/posts/99999')
         .set('Authorization', `Bearer ${token}`)
         .expect(404);
     });
 
     it('updates the post by ID ', async () => {
       const updatedPost: Partial<Post> = givenMyriadPost({
+        platform: PlatformType.MYRIAD,
         text: 'Hello world',
       });
 
@@ -189,52 +168,21 @@ describe('PostApplication', function () {
       delete updatedPost.id;
 
       await client
-        .patch(`/posts/${persistedPost.id}`)
+        .patch(`/user/posts/${persistedPost.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send(updatedPost)
-        .expect(204);
+        .expect(200);
 
       const result = await postRepository.findById(persistedPost.id);
       expect(result).to.containEql(updatedPost);
     });
 
-    it('returns 401 when updating the post by ID not as login user ', async () => {
-      const newPost = await givenMyriadPostInstance(postRepository);
-      const updatedPost: Partial<Post> = givenMyriadPost({
-        text: 'Hello world',
-      });
-
-      delete updatedPost.createdBy;
-      delete updatedPost.id;
-
-      await client
-        .patch(`/posts/${newPost.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send(updatedPost)
-        .expect(401);
-    });
-
-    it('returns 404 when updating a post that does not exist', () => {
-      const updatedPost: Partial<Post> = givenMyriadPost({
-        text: 'Hello world',
-      });
-
-      delete updatedPost.createdBy;
-      delete updatedPost.id;
-
-      return client
-        .patch('/posts/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .send(updatedPost)
-        .expect(404);
-    });
-
     it('deletes the post', async () => {
       await client
-        .del(`/posts/${persistedPost.id}`)
+        .del(`/user/posts/${persistedPost.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
-        .expect(204);
+        .expect(200);
       await expect(
         postRepository.findById(persistedPost.id),
       ).to.be.rejectedWith(EntityNotFoundError);
@@ -243,7 +191,7 @@ describe('PostApplication', function () {
     it('returns 401 when deletes the comment not belong to user', async () => {
       const post = await givenPostInstance(postRepository);
       await client
-        .del(`/posts/${post.id}`)
+        .del(`/user/posts/${post.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(401);
@@ -251,7 +199,7 @@ describe('PostApplication', function () {
 
     it('returns 404 when deleting a comment that does not exist', async () => {
       await client
-        .del(`/posts/99999`)
+        .del(`/user/posts/99999`)
         .set('Authorization', `Bearer ${token}`)
         .expect(404);
     });
@@ -276,7 +224,7 @@ describe('PostApplication', function () {
 
     it('finds all posts', async () => {
       const response = await client
-        .get('/posts?userId=' + user.id)
+        .get('/user/posts?userId=' + user.id)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -290,7 +238,7 @@ describe('PostApplication', function () {
       });
 
       const response = await client
-        .get('/posts?userId=' + user.id)
+        .get('/user/posts?userId=' + user.id)
         .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
@@ -323,7 +271,7 @@ describe('PostApplication', function () {
     });
 
     const response = await client
-      .get('/posts')
+      .get('/user/posts')
       .set('Authorization', `Bearer ${token}`)
       .query({
         filter: {
@@ -343,7 +291,6 @@ describe('PostApplication', function () {
       banned: false,
       totalImporter: 1,
       totalExperience: 0,
-      popularCount: 0,
       user: toJSON(user),
       people: toJSON(people),
       comments: [toJSON(comment)],
@@ -366,7 +313,7 @@ describe('PostApplication', function () {
     it('creates a post from reddit', async () => {
       const platformPost = givenPlatformPost({importer: user.id});
       const response = await client
-        .post('/posts/import')
+        .post('/user/posts/import')
         .set('Authorization', `Bearer ${token}`)
         .send(platformPost)
         .expect(200);
@@ -409,50 +356,19 @@ describe('PostApplication', function () {
       ).to.containDeep(toJSON(response.body));
     });
 
-    it('returns 401 when creating a post from reddit not as login user', async function () {
-      const platformPost = givenPlatformPost();
-      await client
-        .post('/posts/import')
-        .set('Authorization', `Bearer ${token}`)
-        .send(platformPost)
-        .expect(401);
-    });
-
     it('rejects request to create a post from social media if importer alreay imported', async () => {
-      const platformPost: Partial<PlatformPost> = givenPlatformPost({
-        importer: user.id,
-      });
+      const platformPost: Partial<CreateImportedPostDto> = givenPlatformPost();
+
       await client
-        .post('/posts/import')
+        .post('/user/posts/import')
         .set('Authorization', `Bearer ${token}`)
         .send(platformPost)
         .expect(200);
       await client
-        .post('/posts/import')
+        .post('/user/posts/import')
         .set('Authorization', `Bearer ${token}`)
         .send(platformPost)
         .expect(409);
-    });
-
-    it('rejects requests to create a post from social media if no url and no importer', async () => {
-      const platformPost: Partial<PlatformPost> = givenPlatformPost();
-      const url = platformPost.url;
-      delete platformPost.url;
-
-      await client
-        .post('/posts/import')
-        .set('Authorization', `Bearer ${token}`)
-        .send(platformPost)
-        .expect(422);
-
-      delete platformPost.importer;
-      platformPost.url = url;
-
-      await client
-        .post('/posts/import')
-        .set('Authorization', `Bearer ${token}`)
-        .send(platformPost)
-        .expect(422);
     });
   });
 });

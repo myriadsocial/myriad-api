@@ -119,7 +119,7 @@ describe('CommentApplication', function () {
     });
 
     const response = await client
-      .post('/comments')
+      .post('/user/comments')
       .set('Authorization', `Bearer ${token}`)
       .send(comment)
       .expect(200);
@@ -146,26 +146,11 @@ describe('CommentApplication', function () {
     });
 
     await client
-      .post('/comments')
+      .post('/user/comments')
       .set('Authorization', `Bearer ${token}`)
       .send(comment)
       .expect(422);
     await userRepository.updateById(user.id, {fullAccess: true});
-  });
-
-  it('returns 401 when creates a comment not as login user', async () => {
-    const comment = givenComment({
-      postId: post.id,
-      referenceId: post.id,
-      type: ReferenceType.POST,
-      userId: otherUser.id,
-    });
-
-    await client
-      .post('/comments')
-      .set('Authorization', `Bearer ${token}`)
-      .send(comment)
-      .expect(401);
   });
 
   it('returns 422 when created a comment with no referenceId and no type', async () => {
@@ -177,7 +162,7 @@ describe('CommentApplication', function () {
     });
 
     await client
-      .post('/comments')
+      .post('/user/comments')
       .set('Authorization', `Bearer ${token}`)
       .send(comment)
       .expect(422);
@@ -191,7 +176,7 @@ describe('CommentApplication', function () {
     });
 
     await client
-      .post('/comments')
+      .post('/user/comments')
       .set('Authorization', `Bearer ${token}`)
       .send(comment)
       .expect(422);
@@ -209,94 +194,12 @@ describe('CommentApplication', function () {
       });
     });
 
-    it('updates the comments by ID ', async () => {
-      const updatedComment: Partial<Comment> = givenComment({
-        text: 'Apa kabar dunia',
-      });
-
-      delete updatedComment.referenceId;
-      delete updatedComment.section;
-      delete updatedComment.referenceId;
-      delete updatedComment.type;
-
-      await client
-        .patch(`/comments/${persistedComment.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send(updatedComment)
-        .expect(204);
-
-      const result = await commentRepository.findById(persistedComment.id);
-      expect(result).to.containEql(updatedComment);
-    });
-
-    it('return 401 when updating a comment that does not belong to user', async () => {
-      const comment = await givenCommentInstance(commentRepository, {
-        userId: otherUser.id,
-        postId: post.id,
-        referenceId: post.id,
-        type: ReferenceType.POST,
-      });
-
-      const updatedComment: Partial<Comment> = givenComment({
-        text: 'Apa kabar dunia',
-      });
-
-      delete updatedComment.referenceId;
-      delete updatedComment.section;
-      delete updatedComment.referenceId;
-      delete updatedComment.type;
-
-      await client
-        .patch(`/comments/${comment.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send(updatedComment)
-        .expect(401);
-    });
-
-    it('returns 404 when updating a comment that does not exist', () => {
-      const updatedComment: Partial<Comment> = givenComment({
-        text: 'Apa kabar dunia',
-      });
-
-      delete updatedComment.referenceId;
-      delete updatedComment.section;
-      delete updatedComment.referenceId;
-      delete updatedComment.type;
-
-      return client
-        .patch('/comments/99999')
-        .set('Authorization', `Bearer ${token}`)
-        .send(updatedComment)
-        .expect(404);
-    });
-
     it('deletes the comment', async () => {
       await client
-        .del(`/comments/${persistedComment.id}`)
+        .del(`/user/comments/${persistedComment.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
-    });
-
-    it('returns 401 when deletes the comment not belong to user', async () => {
-      const comment = await givenCommentInstance(commentRepository, {
-        userId: otherUser.id,
-        postId: post.id,
-        referenceId: post.id,
-        type: ReferenceType.POST,
-      });
-      await client
-        .del(`/comments/${comment.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(401);
-    });
-
-    it('returns 404 when deleting a comment that does not exist', async () => {
-      await client
-        .del(`/comments/99999`)
-        .set('Authorization', `Bearer ${token}`)
-        .expect(404);
     });
   });
 
@@ -317,7 +220,7 @@ describe('CommentApplication', function () {
 
     it('finds all comments', async () => {
       const response = await client
-        .get(`/comments?postId=${post.id}&referenceId=${post.id}`)
+        .get(`/user/comments?postId=${post.id}&referenceId=${post.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
@@ -334,7 +237,7 @@ describe('CommentApplication', function () {
       });
 
       const response = await client
-        .get(`/comments?postId=${post.id}&referenceId=${post.id}`)
+        .get(`/user/comments?postId=${post.id}&referenceId=${post.id}`)
         .set('Authorization', `Bearer ${token}`)
         .query('pageLimit=2');
       expect(response.body.data).to.have.length(2);
@@ -358,7 +261,7 @@ describe('CommentApplication', function () {
     };
 
     const response = await client
-      .get(`/comments?postId=${post.id}&referenceId=${post.id}`)
+      .get(`/user/comments?postId=${post.id}&referenceId=${post.id}`)
       .set('Authorization', `Bearer ${token}`)
       .query(filter);
 

@@ -29,7 +29,7 @@ import {omit} from 'lodash';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserApplication', function () {
-  this.timeout(30000);
+  this.timeout(50000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -97,21 +97,7 @@ describe('UserApplication', function () {
         .expect(404);
     });
 
-    it('return 401 when updating the user by ID not as login user', async () => {
-      const accesToken = await givenAccesToken(otherUser);
-      const updatedUser: Partial<User> = givenUser({
-        name: 'Abdul Hakim',
-        bio: 'Hello, my name is Abdul Hakim',
-      });
-
-      await client
-        .patch(`/users/${user.id}`)
-        .set('Authorization', `Bearer ${accesToken}`)
-        .send(omit(updatedUser, ['id', 'username', 'nonce', 'permissions']))
-        .expect(401);
-    });
-
-    it('updates the user by ID ', async () => {
+    it('updates the current user', async () => {
       const rawUser: Partial<User> = givenUser({
         name: 'Abdul Hakim',
         bio: 'Hello, my name is Abdul Hakim',
@@ -124,7 +110,7 @@ describe('UserApplication', function () {
       ]);
 
       await client
-        .patch(`/users/${user.id}`)
+        .patch(`/user/me`)
         .set('Authorization', `Bearer ${token}`)
         .send(updatedUser)
         .expect(204);
@@ -133,28 +119,6 @@ describe('UserApplication', function () {
       expect(result).to.containEql(updatedUser);
 
       user.bio = updatedUser.bio;
-    });
-
-    it('returns 422 when updating a username', async () => {
-      const updatedUser: Partial<User> = givenUser({
-        username: 'abdulhakim',
-      });
-
-      await client
-        .patch(`/users/${user.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send(omit(updatedUser, ['id', 'nonce']))
-        .expect(422);
-    });
-
-    it('returns 401 when updating a user that does not belong to user', async () => {
-      const updatedUser: Partial<User> = givenUser();
-
-      await client
-        .patch(`/users/999999`)
-        .set('Authorization', `Bearer ${token}`)
-        .send(omit(updatedUser, ['id', 'username', 'nonce', 'permissions']))
-        .expect(401);
     });
   });
 

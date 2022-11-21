@@ -1,9 +1,9 @@
-import {CronJob, cronJob} from '@loopback/cron';
 import {inject} from '@loopback/core';
-import {CoinMarketCap} from '../services';
+import {CronJob, cronJob} from '@loopback/cron';
 import {repository} from '@loopback/repository';
-import {CurrencyRepository, ExchangeRateRepository} from '../repositories';
 import {ExchangeRate} from '../models';
+import {CurrencyRepository, ExchangeRateRepository} from '../repositories';
+import {CoinMarketCap} from '../services';
 
 @cronJob()
 export class UpdateExchangeRateJob extends CronJob {
@@ -17,15 +17,15 @@ export class UpdateExchangeRateJob extends CronJob {
   ) {
     super({
       name: 'update-coin-market-cap-job',
-      onTick: async () => {
-        await this.performJob();
+      onTick: () => {
+        this.performJob().finally(console.log);
       },
       cronTime: '0 */5 * * * *',
       start: true,
     });
   }
 
-  async performJob() {
+  async performJob(): Promise<void> {
     const currencies = await this.currencyRepository.find({
       where: {
         exchangeRate: true,

@@ -59,7 +59,7 @@ describe('AccountSettingApplication', () => {
     });
 
     await client
-      .patch(`/users/${user.id}/account-setting`)
+      .patch(`/user/account-setting`)
       .set('Authorization', `Bearer ${token}`)
       .send(updatedAccountSetting);
 
