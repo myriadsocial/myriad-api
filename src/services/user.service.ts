@@ -11,7 +11,7 @@ import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {isHex} from '@polkadot/util';
 import NonceGenerator from 'a-nonce-generator';
-import {assign, omit} from 'lodash';
+import {assign, omit, pull, union} from 'lodash';
 import {config} from '../config';
 import {
   ActivityLogType,
@@ -185,6 +185,26 @@ export class UserService {
     return this.userRepository
       .activityLogs(this.currentUser[securityId])
       .find(filter);
+  }
+
+  public async setAdmin(id: string): Promise<void> {
+    const user = await this.findById(id);
+    const permissions = union(user.permissions, [PermissionKeys.ADMIN]);
+
+    return this.userRepository.updateById(id, {
+      permissions,
+      updatedAt: new Date().toString(),
+    });
+  }
+
+  public async removeAdmin(id: string): Promise<void> {
+    const user = await this.findById(id);
+    const permissions = pull(user.permissions, PermissionKeys.ADMIN);
+
+    return this.userRepository.updateById(id, {
+      permissions,
+      updatedAt: new Date().toString(),
+    });
   }
 
   public async isFieldExist(

@@ -102,10 +102,9 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     let userId = null;
 
     switch (controllerName) {
-      case ControllerType.ADMIN:
       case ControllerType.SERVER:
       case ControllerType.REPORT: {
-        userId = await this.admin(controllerName);
+        userId = await this.admin();
         break;
       }
 
@@ -121,6 +120,15 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         if (experiences.length === experienceIds.length) return;
         userId = null;
         break;
+      }
+
+      case ControllerType.USER: {
+        if (methodName.endsWith('Admin')) {
+          userId = await this.admin(methodName);
+          break;
+        }
+
+        return;
       }
 
       case ControllerType.USERFRIEND: {
@@ -157,7 +165,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.USERSETTING:
       case ControllerType.STORAGE:
       case ControllerType.USERTRANSACTION:
-      case ControllerType.USER:
       case ControllerType.USERCURRENCY:
       case ControllerType.USEREXPERIENCE:
       case ControllerType.USERNETWORK:
@@ -195,7 +202,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     }
   }
 
-  async admin(controllerName?: ControllerType): Promise<string> {
+  async admin(methodName?: MethodType): Promise<string> {
     const keyring = getKeyring().addFromMnemonic(
       config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC,
     );
@@ -222,12 +229,14 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     ) {
       throw new HttpErrors.Forbidden('Invalid access');
     }
-    if (controllerName === ControllerType.ADMIN) {
+    if (methodName?.endsWith('Admin')) {
       const found = user.permissions.find(
         (permission: PermissionKeys) => permission === PermissionKeys.MASTER,
       );
       if (!found) {
-        throw new HttpErrors.Forbidden('Only master admin can create role');
+        throw new HttpErrors.Forbidden(
+          'Only master admin can create/remove role',
+        );
       }
     }
 

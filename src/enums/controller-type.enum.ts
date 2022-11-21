@@ -1,5 +1,4 @@
 export enum ControllerType {
-  ADMIN = 'AdminController',
   AUTHENTICATION = 'AuthenticationController',
   CURRENCY = 'CurrencyController',
   EXPERIENCE = 'ExperienceController',

@@ -14,10 +14,10 @@ import {
   RequestOTPByEmail,
   User,
   RequestLoginByOTP,
-} from '../../models';
-import {TokenObject} from '../../interfaces';
-import {AuthenticationInterceptor} from '../../interceptors';
-import {AuthService} from '../../services';
+} from '../models';
+import {TokenObject} from '../interfaces';
+import {AuthenticationInterceptor} from '../interceptors';
+import {AuthService} from '../services';
 
 export class AuthenticationController {
   constructor(
