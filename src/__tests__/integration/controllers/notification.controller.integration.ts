@@ -1,5 +1,5 @@
 import {expect} from '@loopback/testlab';
-import {NotificationController} from '../../../controllers';
+import {UserNotificationController} from '../../../controllers';
 import {NotificationRepository, UserRepository} from '../../../repositories';
 import {UserService} from '../../../services';
 import {
@@ -14,7 +14,7 @@ describe('NotificationControllerIntegration', () => {
   let userRepository: UserRepository;
   let notificationRepository: NotificationRepository;
   let userService: UserService;
-  let controller: NotificationController;
+  let controller: UserNotificationController;
 
   before(async () => {
     ({userRepository, notificationRepository, userService} =
@@ -22,7 +22,7 @@ describe('NotificationControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new NotificationController(userService);
+    controller = new UserNotificationController(userService);
   });
 
   beforeEach(async () => {

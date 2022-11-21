@@ -1,5 +1,5 @@
 import {expect} from '@loopback/testlab';
-import {TransactionController} from '../../../controllers';
+import {UserTransactionController} from '../../../controllers';
 import {
   TransactionRepository,
   UserRepository,
@@ -23,7 +23,7 @@ describe('TransactionControllerIntegration', () => {
   let walletRepository: WalletRepository;
   let currencyRepository: CurrencyRepository;
   let userService: UserService;
-  let controller: TransactionController;
+  let controller: UserTransactionController;
 
   before(async () => {
     ({
@@ -36,7 +36,7 @@ describe('TransactionControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new TransactionController(userService);
+    controller = new UserTransactionController(userService);
   });
 
   beforeEach(async () => {

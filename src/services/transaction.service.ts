@@ -202,7 +202,7 @@ export class TransactionService {
       this.activityLogService.create(
         ActivityLogType.SENDTIP,
         from,
-        ReferenceType.USERTRANSACTION,
+        ReferenceType.TRANSACTION,
       ),
     ]) as Promise<AnyObject>;
 
