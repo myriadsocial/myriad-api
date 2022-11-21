@@ -28,11 +28,7 @@ import {
 } from '../../repositories';
 import {AuthenticationInterceptor} from '../../interceptors';
 import {pick} from 'lodash';
-import {
-  RefreshtokenService,
-  JWTService,
-  UserOTPService,
-} from '../../services';
+import {RefreshtokenService, JWTService, UserOTPService} from '../../services';
 import validator from 'validator';
 
 export class AuthenticationController {
@@ -127,38 +123,6 @@ export class AuthenticationController {
 
     const {nonce} = await this.userRepository.findById(id);
     return {nonce};
-  }
-
-  @get('/username/{username}')
-  @response(200, {
-    description: 'Get username',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'boolean',
-        },
-      },
-    },
-  })
-  async username(
-    @param.path.string('username') username: string,
-  ): Promise<boolean> {
-    const user = await this.userRepository.findOne({where: {username}});
-
-    return Boolean(user);
-  }
-
-  @get('/email/{email}')
-  @response(200, {
-    description: 'Get email',
-    schema: {
-      type: 'boolean',
-    },
-  })
-  async email(@param.path.string('email') email: string): Promise<boolean> {
-    const user = await this.userRepository.findOne({where: {email}});
-
-    return Boolean(user);
   }
 
   @post('/otp/email')

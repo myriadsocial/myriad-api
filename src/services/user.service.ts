@@ -188,6 +188,19 @@ export class UserService {
       .find(filter);
   }
 
+  public async isFieldExist(
+    field: string,
+    name: string,
+  ): Promise<{status: boolean}> {
+    return this.userRepository
+      .findOne({
+        where: {
+          [field]: name,
+        },
+      })
+      .then(user => ({status: Boolean(user)}));
+  }
+
   public async afterFind(
     result: User[],
     props: AfterFindProps,

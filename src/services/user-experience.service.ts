@@ -455,20 +455,21 @@ export class UserExperienceService {
     const allowedTags = experience?.allowedTags?.filter(e => e !== '');
     const prohibitedTags = experience?.prohibitedTags;
     const intersectionTags = intersection(allowedTags, prohibitedTags);
-    const people = experience?.people?.filter(e => {
-      if (e.id === '' || e.name === '' || e.username === '' || !e.platform) {
+    const people =
+      experience?.people?.filter(e => {
+        if (e.id === '' || e.name === '' || e.username === '' || !e.platform) {
+          return false;
+        }
+
+        const platforms = [
+          PlatformType.MYRIAD,
+          PlatformType.REDDIT,
+          PlatformType.TWITTER,
+        ];
+
+        if (platforms.includes(e.platform)) return true;
         return false;
-      }
-
-      const platforms = [
-        PlatformType.MYRIAD,
-        PlatformType.REDDIT,
-        PlatformType.TWITTER,
-      ];
-
-      if (platforms.includes(e.platform)) return true;
-      return false;
-    }) ?? [];
+      }) ?? [];
     if (intersectionTags.length > 0) {
       throw new HttpErrors.UnprocessableEntity(
         'IntersectBetweenAllowedAndProhibitedTag',

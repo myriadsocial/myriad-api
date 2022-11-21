@@ -74,6 +74,30 @@ export class UserController {
     return this.userService.find(filter);
   }
 
+  @authenticate.skip()
+  @get('/users/{field}/{name}')
+  @response(200, {
+    description: 'CHECK field exists',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            status: {
+              type: 'boolean',
+            },
+          },
+        },
+      },
+    },
+  })
+  async isFieldExist(
+    @param.path.string('field') field: string,
+    @param.path.string('name') name: string,
+  ): Promise<{status: boolean}> {
+    return this.userService.isFieldExist(field, name);
+  }
+
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/user/logs')
   @response(200, {
