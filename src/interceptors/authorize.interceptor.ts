@@ -123,7 +123,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.FRIEND: {
+      case ControllerType.USERFRIEND: {
         if (typeof data === 'object') {
           const status = data.status;
           if (status !== FriendStatusType.APPROVED) {
@@ -151,26 +151,22 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.CLAIMREFERENCECONTROLLER:
-      case ControllerType.COMMENT:
-      case ControllerType.NOTIFICATION:
-      case ControllerType.SETTING:
+      case ControllerType.USERCLAIMREFERENCECONTROLLER:
+      case ControllerType.USERCOMMENT:
+      case ControllerType.USERNOTIFICATION:
+      case ControllerType.USERSETTING:
       case ControllerType.STORAGE:
-      case ControllerType.TRANSACTION:
+      case ControllerType.USERTRANSACTION:
       case ControllerType.USER:
       case ControllerType.USERCURRENCY:
       case ControllerType.USEREXPERIENCE:
       case ControllerType.USERNETWORK:
       case ControllerType.USERPERSONALACCESSTOKEN:
       case ControllerType.USERREPORT:
-      case ControllerType.WALLET:
-      case ControllerType.VOTE: {
+      case ControllerType.USERWALLET:
+      case ControllerType.USERVOTE: {
         return;
       }
-
-      case ControllerType.TIP:
-        userId = data;
-        break;
 
       case ControllerType.USERPOST: {
         if (typeof data === 'object') return;

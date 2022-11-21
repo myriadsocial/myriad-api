@@ -1,5 +1,5 @@
 import {expect} from '@loopback/testlab';
-import {FriendController} from '../../../controllers';
+import {UserFriendController} from '../../../controllers';
 import {FriendRepository, UserRepository} from '../../../repositories';
 import {UserService} from '../../../services';
 import {
@@ -14,7 +14,7 @@ describe('FriendControllerIntegration', () => {
   let userRepository: UserRepository;
   let friendRepository: FriendRepository;
   let userService: UserService;
-  let controller: FriendController;
+  let controller: UserFriendController;
 
   before(async () => {
     ({userRepository, friendRepository, userRepository, userService} =
@@ -22,7 +22,7 @@ describe('FriendControllerIntegration', () => {
   });
 
   before(async () => {
-    controller = new FriendController(userService);
+    controller = new UserFriendController(userService);
   });
 
   before(async () => {

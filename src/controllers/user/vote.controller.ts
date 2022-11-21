@@ -6,7 +6,7 @@ import {Vote} from '../../models';
 import {UserService} from '../../services';
 
 @authenticate('jwt')
-export class VoteController {
+export class UserVoteController {
   constructor(
     @service(UserService)
     private userService: UserService,

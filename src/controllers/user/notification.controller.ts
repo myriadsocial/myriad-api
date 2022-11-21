@@ -7,7 +7,7 @@ import {Notification} from '../../models';
 import {UserService} from '../../services';
 
 @authenticate('jwt')
-export class NotificationController {
+export class UserNotificationController {
   constructor(
     @service(UserService)
     private userService: UserService,

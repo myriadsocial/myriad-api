@@ -32,7 +32,7 @@ export class UserPostController {
     private userService: UserService,
   ) {}
 
-  @get('/draft')
+  @get('/user/draft')
   @response(200, {
     description: 'GET user draft-post',
     content: {

@@ -345,7 +345,7 @@ export class MetricService {
       case ControllerType.POST:
         return this.postRepository.count(where);
 
-      case ControllerType.TRANSACTION:
+      case ControllerType.USERTRANSACTION:
         return this.transactionRepository.count(where);
 
       case ControllerType.EXPERIENCE:
@@ -357,7 +357,7 @@ export class MetricService {
       case ControllerType.TAG:
         return this.tagRepository.count(where);
 
-      case ControllerType.NOTIFICATION:
+      case ControllerType.USERNOTIFICATION:
         return this.notificationRepository.count(where);
 
       case ControllerType.CURRENCY:
@@ -366,17 +366,14 @@ export class MetricService {
       case ControllerType.USERSOCIALMEDIA:
         return this.userSocialMediaRepository.count(where);
 
-      case ControllerType.FRIEND:
+      case ControllerType.USERFRIEND:
         return this.friendRepository.count(where);
 
       case ControllerType.USEREXPERIENCE:
         return this.userExpRepository.count(where);
 
-      case ControllerType.COMMENT:
+      case ControllerType.USERCOMMENT:
         return this.commentRepository.count(where);
-
-      case ControllerType.ACTIVITYLOG:
-        return this.activityLogRepository.count(where);
 
       case ControllerType.REPORT:
         return this.reportRepository.count(where);
@@ -396,7 +393,6 @@ export class MetricService {
       case ControllerType.USERCURRENCY:
         return this.userCurrencyRepository.count(where);
 
-      case ControllerType.WALLET:
       case ControllerType.USERWALLET:
         return this.walletRepository.count(where);
 
