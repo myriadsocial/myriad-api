@@ -218,7 +218,7 @@ export class AuthenticationInterceptor implements Provider<Interceptor> {
           include: ['user'],
         });
 
-        if (!wallet || !wallet.user) {
+        if (!wallet?.user) {
           throw new HttpErrors.Unauthorized('Wallet address not exists!');
         }
 
