@@ -839,7 +839,7 @@ export class NotificationService {
       notifications,
     );
 
-    if (!createdNotifications || !createdNotifications.length) return;
+    if (!createdNotifications?.length) return;
 
     const users = await this.userRepository.find({
       where: {

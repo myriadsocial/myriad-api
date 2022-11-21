@@ -28,7 +28,7 @@ export class UrlUtils {
   }
 
   static async getOpenGraph(url: string): Promise<EmbeddedURL | null> {
-    const {result} = await ogs({url});
+    const {result} = ogs({url});
     const embeddedURL = new EmbeddedURL();
     const embedded: AnyObject = result;
 

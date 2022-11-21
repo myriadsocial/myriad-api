@@ -1,11 +1,11 @@
 # Install dependencies only when needed
-FROM node:14.17.5-buster-slim AS dependencies
+FROM node:14.18.0-buster-slim AS dependencies
 WORKDIR /app
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile --network-timeout 100000
 
 # Rebuild the source code only when needed
-FROM node:14.17.5-buster-slim AS builder
+FROM node:14.18.0-buster-slim AS builder
 WORKDIR /app
 COPY . .
 COPY --from=dependencies /app/node_modules ./node_modules
@@ -13,7 +13,7 @@ RUN yarn build \
   && yarn install --production --prefer-offline --network-timeout 100000
 
 # Production image, copy all the files and run
-FROM node:14.17.5-buster-slim AS runner
+FROM node:14.18.0-buster-slim AS runner
 LABEL social.myriad.image.authors="myriad.dev@blocksphere.id"
 # Create user and set ownership and permissions as required
 RUN useradd -m -u 1001 -U -s /bin/sh -d /home/myriad myriad
