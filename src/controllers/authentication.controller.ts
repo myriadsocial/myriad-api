@@ -1,4 +1,4 @@
-import {intercept, service} from '@loopback/core';
+import {service} from '@loopback/core';
 import {
   get,
   getModelSchemaRef,
@@ -16,7 +16,6 @@ import {
   RequestLoginByOTP,
 } from '../models';
 import {TokenObject} from '../interfaces';
-import {AuthenticationInterceptor} from '../interceptors';
 import {AuthService} from '../services';
 
 export class AuthenticationController {
@@ -82,10 +81,9 @@ export class AuthenticationController {
     return this.authService.requestOTPByEmail(requestOTP);
   }
 
-  @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/auth/signup/wallet')
   @response(200, {
-    description: 'User model instance',
+    description: 'SIGNUP new user by wallet',
     content: {
       'application/json': {
         schema: getModelSchemaRef(User, {includeRelations: false}),
@@ -107,10 +105,9 @@ export class AuthenticationController {
     return this.authService.signUpByWallet(requestCreateNewUserByWallet);
   }
 
-  @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/auth/signup/email')
   @response(200, {
-    description: 'User model instance',
+    description: 'SIGNUP new user by email',
     content: {
       'application/json': {
         schema: getModelSchemaRef(User, {includeRelations: false}),
@@ -132,26 +129,16 @@ export class AuthenticationController {
     return this.authService.signUpByEmail(requestCreateNewUserByEmail);
   }
 
-  @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/auth/login/wallet', {
     responses: {
       '200': {
-        description: 'Token',
+        description: 'LOGIN by wallet',
         content: {
           'application/json': {
             schema: {
               type: 'object',
               properties: {
                 accessToken: {
-                  type: 'string',
-                },
-                refreshToken: {
-                  type: 'string',
-                },
-                expiresId: {
-                  type: 'string',
-                },
-                tokenType: {
                   type: 'string',
                 },
               },
@@ -173,28 +160,18 @@ export class AuthenticationController {
     })
     credential: Credential,
   ): Promise<TokenObject> {
-    return this.authService.login(credential);
+    return this.authService.loginByWallet(credential);
   }
 
-  @intercept(AuthenticationInterceptor.BINDING_KEY)
   @post('/auth/login/otp')
   @response(200, {
-    description: 'Token',
+    description: 'LOGIN by email',
     content: {
       'application/json': {
         schema: {
           type: 'object',
           properties: {
             accessToken: {
-              type: 'string',
-            },
-            refreshToken: {
-              type: 'string',
-            },
-            expiresId: {
-              type: 'string',
-            },
-            tokenType: {
               type: 'string',
             },
           },
@@ -214,6 +191,6 @@ export class AuthenticationController {
     })
     requestLoginByOTP: RequestLoginByOTP,
   ): Promise<TokenObject> {
-    return this.authService.login(requestLoginByOTP);
+    return this.authService.loginByEmail(requestLoginByOTP);
   }
 }
