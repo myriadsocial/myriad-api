@@ -80,14 +80,14 @@ export class UserOTPService {
       url.searchParams.has('section') &&
       url.searchParams.get('section') === 'email'
     ) {
-      if (url.searchParams.has('newEmail')) {
-        await this.emailService.sendAddEmailMagicLink(
+      if (url.searchParams.has('isDelete')) {
+        await this.emailService.sendRemoveEmailMagicLink(
           user,
           callbackURL,
           userOTP.token,
         );
-      } else if (url.searchParams.has('isDelete')) {
-        await this.emailService.sendRemoveEmailMagicLink(
+      } else {
+        await this.emailService.sendAddEmailMagicLink(
           user,
           callbackURL,
           userOTP.token,
