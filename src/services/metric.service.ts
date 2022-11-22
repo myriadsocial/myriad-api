@@ -257,6 +257,7 @@ export class MetricService {
       {count: totalMyriad},
       {count: totalTwitter},
       {count: totalReddit},
+      {count: totalEmails},
       {count: totalNearWallet},
       {count: totalSubstrateWallet},
       connectedSocials,
@@ -270,6 +271,7 @@ export class MetricService {
       this.postRepository.count({platform: PlatformType.MYRIAD}),
       this.postRepository.count({platform: PlatformType.TWITTER}),
       this.postRepository.count({platform: PlatformType.REDDIT}),
+      this.userRepository.count({email: {neq: undefined}}),
       this.walletRepository.count({networkId: 'near'}),
       this.walletRepository.count({
         networkId: {inq: ['myriad', 'kusama', 'polkadot']},
@@ -319,6 +321,7 @@ export class MetricService {
       totalTransactions,
       totalExperiences,
       totalSubscriptions,
+      totalEmails,
       totalWallets: {totalNearWallet, totalSubstrateWallet},
       totalConnectedSocials: {totalConnectedReddit, totalConnectedTwitter},
     };

@@ -27,6 +27,7 @@ export interface ServerMetric {
   totalTransactions: number;
   totalExperiences: number;
   totalSubscriptions: number;
+  totalEmails: number;
   totalWallets: DetailTotalWallet;
   totalConnectedSocials: DetailTotalConnectedSocial;
 }
