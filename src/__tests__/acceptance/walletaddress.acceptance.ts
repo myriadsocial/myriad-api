@@ -121,7 +121,7 @@ describe('WalletAddressApplication', function () {
     await postRepository.updateById(post.id, {peopleId: people.id});
 
     const result = await client
-      .get(`/post/${post.id}/walletaddress`)
+      .get(`/walletaddress/post/${post.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send()
       .expect(200);
@@ -139,7 +139,7 @@ describe('WalletAddressApplication', function () {
       peopleId: people.id,
     });
     const result = await client
-      .get(`/post/${post.id}/walletaddress`)
+      .get(`/walletaddress/post/${post.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send()
       .expect(200);
@@ -152,7 +152,7 @@ describe('WalletAddressApplication', function () {
 
   it('gets a post wallet address if post platform myriad', async () => {
     const result = await client
-      .get(`/post/${myriadPost.id}/walletaddress`)
+      .get(`/walletaddress/post/${myriadPost.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send()
       .expect(200);
@@ -166,7 +166,7 @@ describe('WalletAddressApplication', function () {
   it('returns 404 when wallet address not found', async () => {
     await walletRepository.deleteAll();
     await client
-      .get(`/post/${post.id}/walletaddress`)
+      .get(`/walletaddress/post/${post.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send()
       .expect(404);

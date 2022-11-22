@@ -14,7 +14,7 @@ export class WalletAddressController {
     private walletAddressService: WalletAddressService,
   ) {}
 
-  @get('/{kind}/{id}/walletaddress')
+  @get('/walletaddress/{kind}/{id}')
   @response(200, {
     description: 'Reference model wallet address',
     content: {
