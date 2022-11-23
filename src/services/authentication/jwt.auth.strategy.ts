@@ -23,19 +23,19 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
     try {
       const token: string = this.extractCredentials(request);
       userProfile = await this.tokenService.verifyToken(token);
-    } catch (err) {
-      const url = request.originalUrl.split('/');
-      const walletAddress = url[3];
+    } catch (error) {
+      if (request.method !== 'GET') throw error;
+      const randomUserId = generateObjectId();
 
-      // Handle posts and users
-      if (request.method === 'GET' && walletAddress !== 'walletaddress') {
-        const randomUserId = generateObjectId();
-
-        return {
-          [securityId]: randomUserId,
-        };
-      }
-      throw err;
+      return {
+        [securityId]: randomUserId,
+        id: randomUserId,
+        name: 'anonymous',
+        username: 'anonymous',
+        fullAccess: false,
+        permissions: [],
+        createdAt: new Date().toString(),
+      };
     }
 
     if (!userProfile?.[securityId] || !userProfile?.username) {
