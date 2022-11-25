@@ -271,7 +271,7 @@ export class MetricService {
       this.postRepository.count({platform: PlatformType.MYRIAD}),
       this.postRepository.count({platform: PlatformType.TWITTER}),
       this.postRepository.count({platform: PlatformType.REDDIT}),
-      this.userRepository.count({email: {neq: undefined}}),
+      this.userRepository.count(<AnyObject>{email: {$neq: null}}),
       this.walletRepository.count({networkId: 'near'}),
       this.walletRepository.count({
         networkId: {inq: ['myriad', 'kusama', 'polkadot']},
