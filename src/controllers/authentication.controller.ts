@@ -24,7 +24,7 @@ export class AuthenticationController {
     private authService: AuthService,
   ) {}
 
-  @get('/auth/nonce', {
+  @get('/authentication/nonce', {
     responses: {
       '200': {
         description: 'User nonce',
@@ -50,7 +50,7 @@ export class AuthenticationController {
     return this.authService.getNonce(id, type);
   }
 
-  @post('/auth/otp/email')
+  @post('/authentication/otp/email')
   @response(200, {
     description: 'Request OTP by Email Response',
     content: {
@@ -81,7 +81,7 @@ export class AuthenticationController {
     return this.authService.requestOTPByEmail(requestOTP);
   }
 
-  @post('/auth/signup/wallet')
+  @post('/authentication/signup/wallet')
   @response(200, {
     description: 'SIGNUP new user by wallet',
     content: {
@@ -105,7 +105,7 @@ export class AuthenticationController {
     return this.authService.signUpByWallet(requestCreateNewUserByWallet);
   }
 
-  @post('/auth/signup/email')
+  @post('/authentication/signup/email')
   @response(200, {
     description: 'SIGNUP new user by email',
     content: {
@@ -129,7 +129,7 @@ export class AuthenticationController {
     return this.authService.signUpByEmail(requestCreateNewUserByEmail);
   }
 
-  @post('/auth/login/wallet', {
+  @post('/authentication/login/wallet', {
     responses: {
       '200': {
         description: 'LOGIN by wallet',
@@ -163,7 +163,7 @@ export class AuthenticationController {
     return this.authService.loginByWallet(credential);
   }
 
-  @post('/auth/login/otp')
+  @post('/authentication/login/otp')
   @response(200, {
     description: 'LOGIN by email',
     content: {

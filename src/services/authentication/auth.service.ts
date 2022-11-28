@@ -86,7 +86,7 @@ export class AuthService {
   ): Promise<{message: string}> {
     const {email, callbackURL} = requestOTP;
 
-    if (isEmail(email)) {
+    if (!isEmail(email)) {
       throw new HttpErrors.UnprocessableEntity('InvalidEmailAddress');
     }
 
