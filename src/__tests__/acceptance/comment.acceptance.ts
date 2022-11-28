@@ -220,7 +220,7 @@ describe('CommentApplication', function () {
 
     it('finds all comments', async () => {
       const response = await client
-        .get(`/user/comments?postId=${post.id}&referenceId=${post.id}`)
+        .get(`/user/comments?referenceId=${post.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);

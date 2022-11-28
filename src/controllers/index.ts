@@ -1,5 +1,5 @@
 export * from './admin';
-export * from './auth';
+export * from './authentication.controller';
 export * from './currency.controller';
 export * from './experience';
 export * from './network.controller';

@@ -282,11 +282,7 @@ export async function givenRepositories(testdb: any) {
     notificationService,
   );
 
-  const tagService = new TagService(
-    tagRepository,
-    postRepository,
-    friendService,
-  );
+  const tagService = new TagService(tagRepository, postRepository);
 
   const postService = new PostService(
     accountSettingRepository,
@@ -352,11 +348,9 @@ export async function givenRepositories(testdb: any) {
   const currencyService = new CurrencyService(
     currencyRepository,
     exchangeRepository,
-    transactionRepository,
     queueRepository,
     userCurrencyRepository,
     walletRepository,
-    notificationService,
   );
 
   const networkService = new NetworkService(

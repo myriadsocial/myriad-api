@@ -10,12 +10,7 @@ import {
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {omit, pull} from 'lodash';
-import {
-  AccountSettingType,
-  FriendStatusType,
-  PlatformType,
-  VisibilityType,
-} from '../enums';
+import {AccountSettingType, FriendStatusType, PlatformType} from '../enums';
 import {
   CreateExperiencePostDto,
   Experience,
@@ -185,129 +180,7 @@ export class ExperienceService {
     });
   }
 
-  public async timeline(
-    userId: string,
-    experienceId?: string,
-  ): Promise<Where<Post>> {
-    const exp = await this.fetchExperience(userId, experienceId);
-
-    if (!exp) return {id: ''};
-
-    const postIds = exp.posts?.map(post => post.id) ?? [];
-    const userIds: string[] = [];
-    const currentUserIds: string[] = [];
-    const allowedTags = exp.allowedTags.map(tag => tag.toLowerCase());
-    const prohibitedTags = exp.prohibitedTags.map(tag => tag.toLowerCase());
-    const personIds = exp.people
-      .filter((e: People) => e.platform !== PlatformType.MYRIAD)
-      .map(e => e.id);
-    const [blockedFriendIds, approvedFriendIds, friends] = await Promise.all([
-      this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
-      this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
-      this.friendService.find({
-        where: {
-          requestorId: userId,
-          requesteeId: {inq: (exp.users ?? []).map(e => e.id)},
-          status: FriendStatusType.APPROVED,
-        },
-      }),
-    ]);
-    const friendIds = friends.map(friend => friend.requesteeId);
-    const blocked = pull(blockedFriendIds, ...friendIds, ...approvedFriendIds);
-
-    if (exp?.users) {
-      for (const user of exp.users) {
-        const accountPrivacy = user?.accountSetting.accountPrivacy;
-        const privateSetting = AccountSettingType.PRIVATE;
-
-        if (accountPrivacy === privateSetting) {
-          const found = friendIds.find(id => id === user.id);
-          if (found) userIds.push(user.id);
-        } else {
-          userIds.push(user.id);
-        }
-
-        if (user.id === userId) currentUserIds.push(userId);
-      }
-    }
-
-    return {
-      or: [
-        {
-          and: [
-            {tags: {inq: allowedTags}},
-            {tags: {nin: prohibitedTags}},
-            {createdBy: {nin: blocked}},
-            {visibility: VisibilityType.PUBLIC},
-          ],
-        },
-        {
-          and: [
-            {peopleId: {inq: personIds}},
-            {tags: {nin: prohibitedTags}},
-            {createdBy: {nin: blocked}},
-            {visibility: VisibilityType.PUBLIC},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {createdBy: {nin: blocked}},
-            {tags: {nin: prohibitedTags}},
-            {visibility: VisibilityType.PUBLIC},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {createdBy: {inq: friendIds}},
-            {tags: {nin: prohibitedTags}},
-            {visibility: VisibilityType.FRIEND},
-          ],
-        },
-        {
-          and: [
-            {tags: {inq: allowedTags}},
-            {tags: {nin: prohibitedTags}},
-            {createdBy: userId},
-          ],
-        },
-        {
-          and: [
-            {createdBy: {inq: userIds}},
-            {tags: {nin: prohibitedTags}},
-            {visibility: VisibilityType.PUBLIC},
-          ],
-        },
-        {
-          and: [
-            {createdBy: {inq: friendIds}},
-            {tags: {nin: prohibitedTags}},
-            {visibility: VisibilityType.FRIEND},
-          ],
-        },
-        {
-          and: [
-            {peopleId: {inq: personIds}},
-            {tags: {nin: prohibitedTags}},
-            {createdBy: userId},
-          ],
-        },
-        {
-          and: [
-            {tags: {nin: prohibitedTags}},
-            {createdBy: {inq: currentUserIds}},
-          ],
-        },
-      ],
-    } as Where<Post>;
-  }
-
-  // ------------------------------------------------
-
-  // ------ PrivateMethod ---------------------------
-
-  private async fetchExperience(
+  public async fetchExperience(
     userId: string,
     experienceId?: string,
   ): Promise<Experience | null> {
@@ -358,6 +231,10 @@ export class ExperienceService {
 
     return experience;
   }
+
+  // ------------------------------------------------
+
+  // ------ PrivateMethod ---------------------------
 
   private async validatePrivateExperience(experience: ExperienceWithRelations) {
     if (!experience?.user?.accountSetting) return;

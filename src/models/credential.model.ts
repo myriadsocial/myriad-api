@@ -38,6 +38,12 @@ export class Credential extends Model {
   })
   data: AnyObject;
 
+  @property({
+    type: 'string',
+    required: false,
+  })
+  role = 'user';
+
   constructor(data?: Partial<Credential>) {
     super(data);
   }

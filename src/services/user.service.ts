@@ -11,14 +11,14 @@ import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {isHex} from '@polkadot/util';
 import NonceGenerator from 'a-nonce-generator';
-import {assign, omit} from 'lodash';
+import {assign, omit, pull, union} from 'lodash';
 import {config} from '../config';
 import {
+  AccountSettingType,
   ActivityLogType,
   ControllerType,
   FriendStatusType,
   PermissionKeys,
-  PlatformType,
   ReferenceType,
 } from '../enums';
 import {TokenServiceBindings} from '../keys';
@@ -187,6 +187,26 @@ export class UserService {
       .find(filter);
   }
 
+  public async setAdmin(id: string): Promise<void> {
+    const user = await this.findById(id);
+    const permissions = union(user.permissions, [PermissionKeys.ADMIN]);
+
+    return this.userRepository.updateById(id, {
+      permissions,
+      updatedAt: new Date().toString(),
+    });
+  }
+
+  public async removeAdmin(id: string): Promise<void> {
+    const user = await this.findById(id);
+    const permissions = pull(user.permissions, PermissionKeys.ADMIN);
+
+    return this.userRepository.updateById(id, {
+      permissions,
+      updatedAt: new Date().toString(),
+    });
+  }
+
   public async isFieldExist(
     field: string,
     name: string,
@@ -200,98 +220,35 @@ export class UserService {
       .then(user => ({status: Boolean(user)}));
   }
 
-  public async afterFind(
-    result: User[],
-    props: AfterFindProps,
-  ): Promise<AnyObject[]> {
-    const currentUser = this.currentUser?.[securityId] ?? '';
+  public async isAccountPrivate(userId?: string): Promise<boolean> {
+    const currentUserId = this.currentUser[securityId];
 
-    if (props?.friendsName && props?.additional) {
-      const {userIds, requestor} = props.additional;
-      return Promise.all(
-        result.map(async user => {
-          const friend: AnyObject = {
-            id: userIds[user.id],
-            requestorId: requestor.id,
-            requesteeId: user.id,
-            status: FriendStatusType.APPROVED,
-            requestee: {
-              id: user.id,
-              name: user.name,
-              username: user.username,
-              profilePictureURL: user.profilePictureURL,
-            },
-            requestor: {
-              id: requestor.id,
-              name: requestor.name,
-              username: requestor.username,
-              profilePictureURL: requestor.profilePictureURL,
-            },
-          };
+    if (!userId) return false;
 
-          if (props?.mutual === 'true') {
-            const {count} = await this.friendService.countMutual(
-              requestor.id,
-              user.id,
-            );
+    const setting = await this.accountSetting(userId)
+      .then(account => account)
+      .catch(() => null);
 
-            friend.totalMutual = count;
-          }
+    if (!setting) return false;
+    const accountPrivacy = setting?.accountPrivacy;
+    if (accountPrivacy === AccountSettingType.PUBLIC) return false;
+    const asFriend = await this.friendService.asFriend(currentUserId, userId);
 
-          if (currentUser === friend.requestorId) return friend;
+    if (!asFriend) return true;
+    return false;
+  }
 
-          const friendInfo = await this.friendService.getFriendInfo(
-            currentUser,
-            user.id,
-          );
+  public async setExperienceTimeline(id: string): Promise<void> {
+    const {count} = await this.userExperienceService.count({
+      userId: this.currentUser[securityId],
+      experienceId: id,
+    });
 
-          if (!friendInfo) return friend;
-
-          return {
-            ...friend,
-            requestee: {
-              ...friend.requestee,
-              friendInfo,
-            },
-          };
-        }),
-      );
+    if (count === 1) {
+      await this.userRepository.updateById(this.currentUser[securityId], {
+        onTimeline: id,
+      });
     }
-
-    if (props?.name) {
-      return Promise.all(
-        result.map(async (user: User) => {
-          if (currentUser === user.id) {
-            return omit(
-              {
-                ...user,
-                friendInfo: {
-                  status: 'owner',
-                },
-              },
-              ['nonce', 'permissions', 'friendIndex'],
-            );
-          }
-
-          const friendInfo = await this.friendService.getFriendInfo(
-            currentUser,
-            user.id,
-          );
-
-          if (!friendInfo) return user;
-
-          return omit(
-            {
-              ...user,
-              friendInfo,
-            },
-            ['nonce', 'permissions', 'friendIndex'],
-          );
-        }),
-      );
-    }
-
-    return result;
   }
 
   // ------------------------------------------------
@@ -565,9 +522,11 @@ export class UserService {
 
   // ------ Setting ---------------------------------
 
-  public async notificationSetting(): Promise<NotificationSetting> {
+  public async notificationSetting(
+    userId?: string,
+  ): Promise<NotificationSetting> {
     return this.userRepository
-      .notificationSetting(this.currentUser[securityId])
+      .notificationSetting(userId ?? this.currentUser[securityId])
       .get();
   }
 
@@ -579,9 +538,9 @@ export class UserService {
       .patch(notificationSetting);
   }
 
-  public async languageSetting(): Promise<LanguageSetting> {
+  public async languageSetting(userId?: string): Promise<LanguageSetting> {
     return this.userRepository
-      .languageSetting(this.currentUser[securityId])
+      .languageSetting(userId ?? this.currentUser[securityId])
       .get();
   }
 
@@ -593,9 +552,9 @@ export class UserService {
       .patch(languageSetting);
   }
 
-  public async accountSetting(): Promise<AccountSetting> {
+  public async accountSetting(userId?: string): Promise<AccountSetting> {
     return this.userRepository
-      .accountSetting(this.currentUser[securityId])
+      .accountSetting(userId ?? this.currentUser[securityId])
       .get();
   }
 
@@ -963,180 +922,6 @@ export class UserService {
         $eq: null,
       },
     });
-  }
-
-  public async searchFriend(
-    where: Where<User>,
-    name: string,
-    userId?: string,
-  ): Promise<AnyObject | void> {
-    if (!userId) throw new HttpErrors.UnprocessableEntity('UserIdMustBeFilled');
-
-    if (name) {
-      const [requestor, friends] = await Promise.all([
-        this.userRepository.findById(userId),
-        this.friendService.find({
-          where: <AnyObject>{
-            requestorId: userId,
-            status: FriendStatusType.APPROVED,
-            deletedAt: {
-              $eq: null,
-            },
-          },
-        }),
-      ]);
-
-      if (friends.length > 0) {
-        const userIds: AnyObject = {};
-        const friendIds = friends.map(friend => {
-          userIds[friend.requesteeId] = friend.id;
-          return friend.requesteeId;
-        });
-
-        Object.assign(where, {
-          id: {inq: friendIds},
-          name: {
-            like: `${encodeURI(name)}.*`,
-            options: 'i',
-          },
-          deletedAt: {
-            $eq: null,
-          },
-        });
-
-        return {
-          userIds,
-          requestor,
-        };
-      }
-    }
-  }
-
-  public async mutualUserIds(
-    where: Where<User>,
-    requestorId?: string,
-    requesteeId?: string,
-  ) {
-    if (!(requestorId && requesteeId)) {
-      throw new HttpErrors.UnprocessableEntity(
-        'RequesteeIdAndRequestorIdMustBeFilled',
-      );
-    }
-
-    const userIds = this.friendService.getMutualUserIds(
-      requestorId,
-      requesteeId,
-    );
-
-    Object.assign(where, {
-      id: {inq: userIds},
-      deletedAt: {
-        $eq: null,
-      },
-    });
-  }
-
-  public async onBoardUserRewardList(
-    where: Where<User>,
-    month: number,
-    year: number,
-  ) {
-    try {
-      const newUsers = await this.find({
-        where: {
-          and: [
-            {
-              createdAt: {
-                gt: new Date(year, month, 1).toString(),
-              },
-            },
-            {
-              createdAt: {
-                lt: new Date(year, month + 1, 0).toString(),
-              },
-            },
-          ],
-        },
-        include: [
-          {
-            relation: 'people',
-          },
-        ],
-      });
-
-      const newUsersConnectedSocialMedia = newUsers.filter(
-        user => user.people?.length >= 1,
-      );
-
-      let importers: string[] = [];
-      let tippers: string[] = [];
-      for (const user of newUsersConnectedSocialMedia) {
-        const posts = await this.postService.find({
-          where: {
-            and: [
-              {
-                platform: {
-                  nin: [PlatformType.MYRIAD],
-                },
-              },
-              {
-                peopleId: {
-                  inq: user.people.map(people => people.id),
-                },
-              },
-              {
-                createdAt: {
-                  lt: user.createdAt,
-                },
-              },
-            ],
-          },
-        });
-
-        const trxs = await this.transactionService.find({
-          where: {
-            type: ReferenceType.POST,
-            referenceId: {
-              inq: posts.map(post => post.id),
-            },
-            createdAt: {
-              lt: user.createdAt,
-            },
-          },
-          include: [
-            {
-              relation: 'fromUser',
-            },
-          ],
-        });
-
-        const importer = Array.from(new Set(posts.map(post => post.createdBy)));
-        importers = Array.from(new Set([...importers, ...importer]));
-        const tipper = Array.from(
-          new Set(
-            trxs.map(trx => trx.fromUser?.id ?? '').filter(id => id !== ''),
-          ),
-        );
-        tippers = [...new Set([...tippers, ...tipper])];
-      }
-
-      const userIds = Array.from(new Set([...importers, ...tippers]));
-
-      Object.assign(where, {
-        id: {
-          inq: userIds,
-          deletedAt: {
-            $eq: null,
-          },
-        },
-      });
-    } catch (err) {
-      if (err.message === 'Invalid date: Invalid Date') {
-        throw new HttpErrors.UnprocessableEntity('InvalidDate');
-      }
-
-      throw err;
-    }
   }
 
   // ------------------------------------------------

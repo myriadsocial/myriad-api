@@ -40,7 +40,8 @@ export function formatRawText(text: String): string {
     .trim();
 }
 
-export const generateObjectId = () => require('bson-objectid')().toString();
+export const generateObjectId = (): string =>
+  require('bson-objectid')().toString();
 
 import {MetaPagination} from '../interfaces';
 

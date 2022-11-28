@@ -1,11 +1,5 @@
 import {BindingScope, injectable, service} from '@loopback/core';
-import {
-  AnyObject,
-  Count,
-  Filter,
-  repository,
-  Where,
-} from '@loopback/repository';
+import {AnyObject, Count, Filter, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {omit, pull, union} from 'lodash';
 import {
@@ -13,9 +7,8 @@ import {
   ActivityLogType,
   FriendStatusType,
   ReferenceType,
-  VisibilityType,
 } from '../enums';
-import {Friend, FriendWithRelations, Post} from '../models';
+import {Friend, FriendWithRelations} from '../models';
 import {
   AccountSettingRepository,
   FriendRepository,
@@ -41,6 +34,18 @@ export class FriendService {
     @service(NotificationService)
     private notificationService: NotificationService,
   ) {}
+
+  public collection() {
+    const collection = this.friendRepository.dataSource.connector?.collection(
+      Friend.modelName,
+    );
+
+    if (!collection) {
+      throw new HttpErrors.NotFound('CollectionNotFound');
+    }
+
+    return collection;
+  }
 
   public async find(filter?: Filter<Friend>): Promise<Friend[]> {
     return this.friendRepository.find(filter);
@@ -133,20 +138,6 @@ export class FriendService {
     return pull(friendIds, id);
   }
 
-  async timeline(userId: string): Promise<Where<Post>> {
-    const approvedFriendIds = await this.getFriendIds(
-      userId,
-      FriendStatusType.APPROVED,
-    );
-
-    if (!approvedFriendIds.length) return {id: ''};
-
-    return {
-      createdBy: {inq: approvedFriendIds},
-      visibility: {nlike: VisibilityType.PRIVATE},
-    } as Where<Post>;
-  }
-
   async removedFriend(friend: Friend): Promise<AnyObject> {
     const {requesteeId, requestorId} = friend;
 
@@ -191,39 +182,6 @@ export class FriendService {
 
     if (countMutual.length === 0) return {count: 0};
     return countMutual[0];
-  }
-
-  async getMutualUserIds(
-    requestorId: string,
-    requesteeId: string,
-  ): Promise<string[]> {
-    const collection = (
-      this.friendRepository.dataSource.connector as AnyObject
-    ).collection(Friend.modelName);
-
-    return (
-      await collection
-        .aggregate([
-          {
-            $match: {
-              $or: [
-                {
-                  requestorId: requestorId,
-                  status: FriendStatusType.APPROVED,
-                },
-                {
-                  requestorId: requesteeId,
-                  status: FriendStatusType.APPROVED,
-                },
-              ],
-            },
-          },
-          {$group: {_id: '$requesteeId', count: {$sum: 1}}},
-          {$match: {count: 2}},
-          {$project: {_id: 1}},
-        ])
-        .get()
-    ).map((user: AnyObject) => user._id);
   }
 
   async asFriend(requestorId: string, requesteeId: string): Promise<boolean> {

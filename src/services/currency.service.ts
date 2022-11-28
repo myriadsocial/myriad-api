@@ -1,4 +1,4 @@
-import {BindingScope, injectable, service} from '@loopback/core';
+import {BindingScope, injectable} from '@loopback/core';
 import {Filter, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {Currency, UserCurrency} from '../models';
@@ -6,11 +6,9 @@ import {
   CurrencyRepository,
   ExchangeRateRepository,
   QueueRepository,
-  TransactionRepository,
   UserCurrencyRepository,
   WalletRepository,
 } from '../repositories';
-import {NotificationService} from './notification.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class CurrencyService {
@@ -19,16 +17,12 @@ export class CurrencyService {
     private currencyRepository: CurrencyRepository,
     @repository(ExchangeRateRepository)
     private exchangeRateRepository: ExchangeRateRepository,
-    @repository(TransactionRepository)
-    private transactionRepository: TransactionRepository,
     @repository(QueueRepository)
     private queueRepository: QueueRepository,
     @repository(UserCurrencyRepository)
     private userCurrencyRepository: UserCurrencyRepository,
     @repository(WalletRepository)
     private walletRepository: WalletRepository,
-    @service(NotificationService)
-    private notificationService: NotificationService,
   ) {}
 
   public async findById(

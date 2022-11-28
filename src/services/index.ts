@@ -7,6 +7,7 @@ export * from './email.service';
 export * from './experience.service';
 export * from './fcm.service';
 export * from './file-upload.service';
+export * from './filter-builder.service';
 export * from './friend.service';
 export * from './metric.service';
 export * from './network.service';

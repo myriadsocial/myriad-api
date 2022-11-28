@@ -154,6 +154,7 @@ export function givenCredential(credential?: Partial<Credential>) {
       publicAddress: id,
       walletType: 'polkadot{.js}',
       networkType: 'polkadot',
+      role: 'user',
     },
     credential,
   );
