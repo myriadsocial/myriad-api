@@ -20,6 +20,7 @@ import {
 } from '../enums';
 import {
   CommentWithRelations,
+  Post,
   UserCurrencyWithRelations,
   UserWithRelations,
 } from '../models';
@@ -135,6 +136,21 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
       case ControllerType.USERCOMMENT: {
         const comment = result as CommentWithRelations;
+
+        if (currentUserId !== comment.userId) {
+          const contents = comment.lockableContents;
+          if (contents && contents.length > 0) {
+            const lockableContents = contents.map(content => {
+              const paidUserIds = content.paidUserIds;
+              const hasPaid = paidUserIds?.find(id => id === currentUserId);
+              if (hasPaid) return omit(content, ['paidUserIds']);
+              return omit(content, ['paidUserIds', 'content']);
+            });
+
+            comment.lockableContents = lockableContents;
+          }
+        }
+
         // mask text when comment is deleted
         if (comment.deletedAt) {
           const report = await this.reportRepository.findOne({
@@ -217,6 +233,24 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         }
 
         return comment;
+      }
+
+      case ControllerType.USERPOST: {
+        const post = result as Post;
+        if (currentUserId === post.createdBy) return post;
+        const contents = post.lockableContents;
+        if (contents && contents.length > 0) {
+          const lockableContents = contents.map(content => {
+            const paidUserIds = content.paidUserIds;
+            const hasPaid = paidUserIds?.find(id => id === currentUserId);
+            if (hasPaid) return omit(content, ['paidUserIds']);
+            return omit(content, ['paidUserIds', 'content']);
+          });
+
+          post.lockableContents = lockableContents;
+        }
+
+        return post;
       }
 
       default:

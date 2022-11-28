@@ -12,6 +12,7 @@ import {CommentLink} from './comment-link.model';
 import {Post, PostWithRelations} from './post.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
+import {LockableContent} from './lockable-content.model';
 
 @model({
   settings: {
@@ -37,7 +38,7 @@ export class Comment extends Entity {
       dataType: 'ObjectId',
     },
   })
-  id?: string;
+  id: string;
 
   @property({
     type: 'string',
@@ -135,6 +136,18 @@ export class Comment extends Entity {
 
   @hasMany(() => Transaction, {keyTo: 'referenceId'})
   transactions: Transaction[];
+
+  @property({
+    type: 'array',
+    itemType: 'object',
+    required: false,
+  })
+  @hasMany(() => LockableContent, {keyTo: 'referenceId'})
+  lockableContents?: LockableContent[];
+
+  // Indexer property to allow additional data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [prop: string]: any;
 
   constructor(data?: Partial<Comment>) {
     super(data);

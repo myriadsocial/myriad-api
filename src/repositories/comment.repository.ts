@@ -16,11 +16,13 @@ import {
   Transaction,
   User,
   Vote,
+  LockableContent,
 } from '../models';
 import {CommentLinkRepository} from './comment-link.repository';
 import {PostRepository} from './post.repository';
 import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
+import {LockableContentRepository} from './lockable-content.repository';
 
 export class CommentRepository extends DefaultCrudRepository<
   Comment,
@@ -48,6 +50,11 @@ export class CommentRepository extends DefaultCrudRepository<
 
   public readonly post: BelongsToAccessor<Post, typeof Comment.prototype.id>;
 
+  public readonly lockableContents: HasManyRepositoryFactory<
+    LockableContent,
+    typeof Comment.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserRepository')
@@ -60,8 +67,18 @@ export class CommentRepository extends DefaultCrudRepository<
     protected voteRepositoryGetter: Getter<VoteRepository>,
     @repository.getter('PostRepository')
     protected postRepositoryGetter: Getter<PostRepository>,
+    @repository.getter('LockableContentRepository')
+    protected lockableContentRepositoryGetter: Getter<LockableContentRepository>,
   ) {
     super(Comment, dataSource);
+    this.lockableContents = this.createHasManyRepositoryFactoryFor(
+      'lockableContents',
+      lockableContentRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'lockableContents',
+      this.lockableContents.inclusionResolver,
+    );
     this.post = this.createBelongsToAccessorFor('post', postRepositoryGetter);
     this.registerInclusionResolver('post', this.post.inclusionResolver);
     this.comments = this.createHasManyThroughRepositoryFactoryFor(

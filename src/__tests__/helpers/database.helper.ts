@@ -31,6 +31,7 @@ import {
   UserPersonalAccessTokenRepository,
   ChangeEmailRequestRepository,
   UserOTPRepository,
+  LockableContentRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -101,6 +102,8 @@ export async function givenRepositories(testdb: any) {
     async () => postRepository,
     async () => userRepository,
   );
+  const lockableRepositoy: LockableContentRepository =
+    new LockableContentRepository(testdb);
   const postRepository: PostRepository = new PostRepository(
     testdb,
     async () => peopleRepository,
@@ -110,6 +113,7 @@ export async function givenRepositories(testdb: any) {
     async () => voteRepository,
     async () => experiencePostRepository,
     async () => experienceRepository,
+    async () => lockableRepositoy,
   );
   const networkRepository: NetworkRepository = new NetworkRepository(
     testdb,
@@ -141,6 +145,7 @@ export async function givenRepositories(testdb: any) {
     async () => commentLinkRepository,
     async () => voteRepository,
     async () => postRepository,
+    async () => lockableRepositoy,
   );
   const transactionRepository: TransactionRepository =
     new TransactionRepository(
@@ -291,6 +296,7 @@ export async function givenRepositories(testdb: any) {
     experienceRepository,
     experiencePostRepository,
     friendRepository,
+    lockableRepositoy,
     peopleRepository,
     postRepository,
     userRepository,
@@ -390,6 +396,7 @@ export async function givenRepositories(testdb: any) {
 
   const commentService = new CommentService(
     commentRepository,
+    lockableRepositoy,
     postRepository,
     activityLogService,
     metricService,
@@ -472,6 +479,7 @@ export async function givenRepositories(testdb: any) {
     peopleService,
     socialMediaService,
     tagService,
+    lockableRepositoy,
   };
 }
 
@@ -500,6 +508,7 @@ export async function givenEmptyDatabase(testdb: any) {
     networkRepository,
     userCurrencyRepository,
     serverRepository,
+    lockableRepositoy,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
@@ -525,4 +534,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await networkRepository.deleteAll();
   await userCurrencyRepository.deleteAll();
   await serverRepository.deleteAll();
+  await lockableRepositoy.deleteAll();
 }

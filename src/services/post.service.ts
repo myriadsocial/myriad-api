@@ -24,6 +24,7 @@ import {
   Experience,
   ExtendedPost,
   Friend,
+  LockableContent,
   People,
   Post,
   PostWithRelations,
@@ -36,6 +37,7 @@ import {
   ExperiencePostRepository,
   ExperienceRepository,
   FriendRepository,
+  LockableContentRepository,
   PeopleRepository,
   PostRepository,
   UserRepository,
@@ -66,6 +68,8 @@ export class PostService {
     private experiencePostRepository: ExperiencePostRepository,
     @repository(FriendRepository)
     private friendRepository: FriendRepository,
+    @repository(LockableContentRepository)
+    private lockableContentRepository: LockableContentRepository,
     @repository(PeopleRepository)
     private peopleRepository: PeopleRepository,
     @repository(PostRepository)
@@ -91,10 +95,15 @@ export class PostService {
   // ------ Post ------------------------------------
 
   public async create(draftPost: DraftPost): Promise<Post | DraftPost> {
+    const lockableContents: LockableContent[] = [];
     return this.beforeCreate(draftPost)
       .then(async () => {
         if (draftPost.status === PostStatus.PUBLISHED) {
-          const rawPost = omit(draftPost, ['status']);
+          const contents = draftPost?.lockableContents;
+          if (contents && contents.length > 0) {
+            lockableContents.push(...contents);
+          }
+          const rawPost = omit(draftPost, ['status', 'lockableContents']);
           return this.postRepository.create(rawPost);
         }
 
@@ -103,7 +112,8 @@ export class PostService {
       })
       .then(result => {
         if (result.constructor.name === 'DraftPost') return result;
-        return this.afterCreate(new Post(result));
+        const post = {...result, lockableContents} as Post;
+        return this.afterCreate(post);
       })
       .catch(err => {
         throw err;
@@ -295,8 +305,10 @@ export class PostService {
       }
 
       try {
-        if (url) validateURL(url);
-        embeddedURL = await getOpenGraph(url);
+        if (url) {
+          validateURL(url);
+          embeddedURL = await getOpenGraph(url);
+        }
       } catch {
         // ignore
       }
@@ -315,8 +327,7 @@ export class PostService {
 
   private async afterCreate(post: Post): Promise<Post> {
     const {id, createdBy: userId, tags, mentions} = post;
-
-    Promise.allSettled([
+    const jobs: Promise<AnyObject | void>[] = [
       this.deleteDraftPostById(userId),
       this.tagService.create(tags),
       this.notificationService.sendMention(id, mentions ?? []),
@@ -327,7 +338,24 @@ export class PostService {
         userId,
         ReferenceType.POST,
       ),
-    ]) as Promise<AnyObject>;
+    ];
+
+    const contents = post.lockableContents;
+    if (contents && contents.length > 0) {
+      const lockableContents = contents.map((content, index) => {
+        content.id = generateObjectId();
+        content.referenceId = id;
+        content.paidUserIds = [];
+
+        if (!post.lockableContents) return content;
+        post.lockableContents[index] = content;
+        return content;
+      });
+
+      jobs.push(this.lockableContentRepository.createAll(lockableContents));
+    }
+
+    Promise.allSettled(jobs) as Promise<AnyObject>;
 
     return post;
   }

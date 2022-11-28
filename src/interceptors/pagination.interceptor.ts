@@ -289,7 +289,23 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         if (experienceId) {
           await this.userService.setExperienceTimeline(experienceId.toString());
         }
-        return result;
+        return Promise.all(
+          result.map((post: PostWithRelations) => {
+            if (currentUserId === post.createdBy) return post;
+            const contents = post.lockableContents;
+            if (contents && contents.length > 0) {
+              const lockableContents = contents.map(content => {
+                const paidUserIds = content.paidUserIds;
+                const hasPaid = paidUserIds?.find(id => id === currentUserId);
+                if (hasPaid) return omit(content, ['paidUserIds']);
+                return omit(content, ['paidUserIds', 'content']);
+              });
+
+              post.lockableContents = lockableContents;
+            }
+            return post;
+          }),
+        );
       }
 
       // include total mutual friend in friend collection
@@ -328,6 +344,20 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       case ControllerType.USERCOMMENT: {
         return Promise.all(
           result.map(async (comment: CommentWithRelations) => {
+            if (currentUserId !== comment.userId) {
+              const contents = comment.lockableContents;
+              if (contents && contents.length > 0) {
+                const lockableContents = contents.map(content => {
+                  const paidUserIds = content.paidUserIds;
+                  const hasPaid = paidUserIds?.find(id => id === currentUserId);
+                  if (hasPaid) return omit(content, ['paidUserIds']);
+                  return omit(content, ['paidUserIds', 'content']);
+                });
+
+                comment.lockableContents = lockableContents;
+              }
+            }
+
             // mask text when comment is deleted
             if (comment.deletedAt) {
               const report = await this.reportRepository.findOne({
@@ -339,6 +369,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
               comment.text = '[comment removed]';
               comment.reportType = report?.type;
+              comment.lockableContents = undefined;
 
               return comment;
             }
@@ -352,6 +383,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               if (isPrivate) {
                 comment.text = '[This comment is from a private account]';
                 comment.privacy = 'private';
+                comment.lockableContents = undefined;
               }
 
               return comment;
@@ -364,6 +396,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               if (isPrivate) {
                 comment.text = '[This comment is from a private account]';
                 comment.privacy = 'private';
+                comment.lockableContents = undefined;
               }
 
               return comment;
@@ -375,11 +408,13 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             if (visibility === VisibilityType.PRIVATE) {
               post.text = '[This is a private post]';
               post.rawText = '[This is a private post]';
+              post.lockableContents = undefined;
               comment.post = post;
 
               if (currentUserId !== userId) {
                 comment.text = '[This comment is from a private post]';
                 comment.privacy = 'private';
+                comment.lockableContents = undefined;
               }
 
               return comment;
@@ -396,6 +431,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               if (!asFriend) {
                 comment.text = '[This comment is from an private post]';
                 comment.privacy = 'private';
+                comment.lockableContents = undefined;
               }
 
               return comment;
@@ -407,6 +443,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             if (isPrivate) {
               comment.text = '[This comment is from a private account]';
               comment.privacy = 'private';
+              comment.lockableContents = undefined;
             }
 
             return comment;

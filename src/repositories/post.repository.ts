@@ -17,6 +17,7 @@ import {
   Transaction,
   User,
   Vote,
+  LockableContent,
 } from '../models';
 import {CommentRepository} from './comment.repository';
 import {ExperiencePostRepository} from './experience-post.repository';
@@ -25,6 +26,7 @@ import {PeopleRepository} from './people.repository';
 import {TransactionRepository} from './transaction.repository';
 import {UserRepository} from './user.repository';
 import {VoteRepository} from './vote.repository';
+import {LockableContentRepository} from './lockable-content.repository';
 
 export class PostRepository extends DefaultCrudRepository<
   Post,
@@ -57,6 +59,11 @@ export class PostRepository extends DefaultCrudRepository<
     typeof Post.prototype.id
   >;
 
+  public readonly lockableContents: HasManyRepositoryFactory<
+    LockableContent,
+    typeof Post.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('PeopleRepository')
@@ -73,8 +80,18 @@ export class PostRepository extends DefaultCrudRepository<
     protected experiencePostRepositoryGetter: Getter<ExperiencePostRepository>,
     @repository.getter('ExperienceRepository')
     protected experienceRepositoryGetter: Getter<ExperienceRepository>,
+    @repository.getter('LockableContentRepository')
+    protected lockableContentRepositoryGetter: Getter<LockableContentRepository>,
   ) {
     super(Post, dataSource);
+    this.lockableContents = this.createHasManyRepositoryFactoryFor(
+      'lockableContents',
+      lockableContentRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'lockableContents',
+      this.lockableContents.inclusionResolver,
+    );
     this.experiences = this.createHasManyThroughRepositoryFactoryFor(
       'experiences',
       experienceRepositoryGetter,

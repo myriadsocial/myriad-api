@@ -1,13 +1,6 @@
-import {
-  belongsTo,
-  Entity,
-  hasMany,
-  Model,
-  model,
-  property,
-} from '@loopback/repository';
+import {belongsTo, hasMany, Model, model, property} from '@loopback/repository';
 import {PlatformType, PostStatus, VisibilityType} from '../enums';
-import {Asset, Metric} from '../interfaces';
+import {Metric} from '../interfaces';
 import {UserWithRelations} from './';
 import {Comment} from './comment.model';
 import {EmbeddedURL} from './embedded-url.model';
@@ -18,6 +11,8 @@ import {People, PeopleWithRelations} from './people.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
 import {Vote} from './vote.model';
+import {ImportPost} from './import-post.model';
+import {LockableContent} from './lockable-content.model';
 
 @model({
   settings: {
@@ -41,7 +36,7 @@ import {Vote} from './vote.model';
     hiddenProperties: ['popularCount', 'rawText'],
   },
 })
-export class Post extends Entity {
+export class Post extends ImportPost {
   @property({
     type: 'string',
     id: true,
@@ -73,12 +68,6 @@ export class Post extends Entity {
   @property({
     type: 'string',
     required: false,
-  })
-  title?: string;
-
-  @property({
-    type: 'string',
-    required: false,
     jsonSchema: {
       minLength: 1,
     },
@@ -90,31 +79,6 @@ export class Post extends Entity {
     required: false,
   })
   rawText?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  originPostId?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  url?: string;
-
-  @property({
-    type: 'object',
-    required: false,
-  })
-  asset?: Asset;
-
-  @property({
-    type: 'date',
-    required: false,
-    default: () => new Date(),
-  })
-  originCreatedAt?: string;
 
   @property({
     type: 'object',
@@ -206,19 +170,6 @@ export class Post extends Entity {
   })
   totalExperience?: number;
 
-  @property({
-    type: 'array',
-    itemType: 'object',
-    required: false,
-  })
-  importers?: User[];
-
-  @property({
-    type: 'number',
-    required: false,
-  })
-  totalImporter?: number;
-
   @belongsTo(() => User, {name: 'user'}, {required: true})
   createdBy: string;
 
@@ -229,9 +180,6 @@ export class Post extends Entity {
   comments: Comment[];
 
   @hasMany(() => Vote, {keyTo: 'referenceId'})
-  likes: Vote[];
-
-  @hasMany(() => Vote, {keyTo: 'referenceId'})
   votes: Vote[];
 
   @hasMany(() => Transaction, {keyTo: 'referenceId'})
@@ -240,22 +188,21 @@ export class Post extends Entity {
   @hasMany(() => Experience, {through: {model: () => ExperiencePost}})
   experiences: Experience[];
 
+  @hasMany(() => LockableContent, {keyTo: 'referenceId'})
+  lockableContents?: LockableContent[];
+
   constructor(data?: Partial<Post>) {
     super(data);
   }
 }
+
 export interface PostRelations {
   // describe navigational properties here
   people?: PeopleWithRelations;
   user?: UserWithRelations;
 }
 
-interface AdditionalProperties {
-  importers?: User[];
-  totalImporter?: number;
-}
-
-export type PostWithRelations = Post & PostRelations & AdditionalProperties;
+export type PostWithRelations = Post & PostRelations;
 
 export type ExtendedPost = PostWithRelations & {
   platformUser?: Omit<People, 'id'>;
@@ -373,6 +320,13 @@ export class DraftPost extends Model {
     },
   })
   status: PostStatus;
+
+  @property({
+    type: 'array',
+    itemType: 'object',
+    required: false,
+  })
+  lockableContents?: LockableContent[];
 
   constructor(data?: Partial<DraftPost>) {
     super(data);

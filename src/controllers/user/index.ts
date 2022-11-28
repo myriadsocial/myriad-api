@@ -3,6 +3,7 @@ export * from './comment.controller';
 export * from './currency.controller';
 export * from './experience.controller';
 export * from './friend.controller';
+export * from './lockable-content.controller';
 export * from './network.controller';
 export * from './notification.controller';
 export * from './personal-access-token.controller';

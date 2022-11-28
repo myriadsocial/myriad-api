@@ -156,6 +156,14 @@ export class FilterBuilderService {
     if (Array.isArray(referenceId)) referenceId = referenceId[0];
     if (Array.isArray(section)) section = section[0];
 
+    const lockableContentFilter = {
+      relation: 'lockableContents',
+    };
+
+    filter.include = filter?.include
+      ? [...filter.include, lockableContentFilter]
+      : [lockableContentFilter];
+
     if (userId) {
       return this.finalizeFilter(filter, {userId});
     }
@@ -312,7 +320,11 @@ export class FilterBuilderService {
       },
     };
 
-    const defaultInclude = ['user', experienceFilter];
+    const lockableContentsFilter = {
+      relation: 'lockableContents',
+    };
+
+    const defaultInclude = ['user', lockableContentsFilter, experienceFilter];
     filter.order = this.orderSetting(query);
     filter.include = filter?.include
       ? [...filter.include, ...defaultInclude]
@@ -363,9 +375,13 @@ export class FilterBuilderService {
       },
     };
 
+    const lockableContentFilter = {
+      relation: 'lockableContents',
+    };
+
     filter.include = filter.include
-      ? [...filter.include, 'user', experienceFilter]
-      : ['user', experienceFilter];
+      ? [...filter.include, 'user', experienceFilter, lockableContentFilter]
+      : ['user', experienceFilter, lockableContentFilter];
 
     args[1] = filter;
   }

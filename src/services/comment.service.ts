@@ -6,9 +6,15 @@ import {
   repository,
   Where,
 } from '@loopback/repository';
+import {omit} from 'lodash';
 import {ActivityLogType, ReferenceType, SectionType} from '../enums';
-import {Comment, CommentWithRelations} from '../models';
-import {CommentRepository, PostRepository} from '../repositories';
+import {Comment, CommentWithRelations, LockableContent} from '../models';
+import {
+  CommentRepository,
+  LockableContentRepository,
+  PostRepository,
+} from '../repositories';
+import {generateObjectId} from '../utils/formatter';
 import {ActivityLogService} from './activity-log.service';
 import {MetricService} from './metric.service';
 import {NotificationService} from './notification.service';
@@ -18,6 +24,8 @@ export class CommentService {
   constructor(
     @repository(CommentRepository)
     private commentRepository: CommentRepository,
+    @repository(LockableContentRepository)
+    private lockableContentRepository: LockableContentRepository,
     @repository(PostRepository)
     private postRepository: PostRepository,
     @service(ActivityLogService)
@@ -33,16 +41,27 @@ export class CommentService {
   }
 
   public async create(data: Omit<Comment, 'id'>): Promise<Comment> {
+    const lockableContents: LockableContent[] = [];
     return this.postRepository
       .findById(data.postId)
       .then(() => {
-        if (data.type === ReferenceType.POST) {
-          return this.commentRepository.create(data);
+        const contents = data.lockableContents;
+        if (contents && contents.length > 0) {
+          lockableContents.push(...contents);
+        }
+        const rawComment = omit(data, ['lockableContents']);
+        if (rawComment.type === ReferenceType.POST) {
+          return this.commentRepository.create(rawComment);
         }
 
-        return this.commentRepository.comments(data.referenceId).create(data);
+        return this.commentRepository
+          .comments(rawComment.referenceId)
+          .create(rawComment);
       })
-      .then(comment => this.afterCreate(comment))
+      .then(result => {
+        const comment = {...result, lockableContents} as Comment;
+        return this.afterCreate(comment);
+      })
       .catch(err => {
         throw err;
       });
@@ -77,9 +96,8 @@ export class CommentService {
   // ------ PrivateMethod ----------------------------
 
   private async afterCreate(comment: Comment): Promise<Comment> {
-    const {referenceId, postId, userId} = comment;
-
-    Promise.allSettled([
+    const {id, referenceId, postId, userId} = comment;
+    const jobs: Promise<AnyObject | void>[] = [
       this.notificationService.sendPostComment(comment),
       this.metricService.countPopularPost(postId),
       this.metricService.publicMetric(ReferenceType.POST, postId),
@@ -91,7 +109,24 @@ export class CommentService {
         userId,
         ReferenceType.COMMENT,
       ),
-    ]) as Promise<AnyObject>;
+    ];
+
+    const contents = comment.lockableContents;
+    if (contents && contents.length > 0) {
+      const lockableContents = contents.map((content, index) => {
+        content.id = generateObjectId();
+        content.referenceId = id;
+        content.paidUserIds = [];
+
+        if (!comment.lockableContents) return content;
+        comment.lockableContents[index] = content;
+        return content;
+      });
+
+      jobs.push(this.lockableContentRepository.createAll(lockableContents));
+    }
+
+    Promise.allSettled(jobs) as Promise<AnyObject>;
 
     return comment;
   }
