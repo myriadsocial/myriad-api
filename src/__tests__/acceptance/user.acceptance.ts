@@ -85,9 +85,9 @@ describe('UserApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
-      const expected = toJSON({...user, status: 'owned'});
-
-      expect(result.body).to.deepEqual(expected);
+      const expected = toJSON({...user, friendInfo: {status: 'owner'}});
+      const final = omit(expected, ['nonce', 'permissions', 'friendIndex']);
+      expect(result.body).to.deepEqual(final);
     });
 
     it('returns 404 when getting a user that does not exist', () => {

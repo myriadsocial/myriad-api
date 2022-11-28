@@ -245,6 +245,7 @@ export interface UserRelations {
   // describe navigational properties here
   experience?: ExperienceWithRelations;
   wallets?: WalletWithRelations;
+  friendInfo?: AnyObject;
 }
 
 export type UserWithRelations = User & UserRelations;

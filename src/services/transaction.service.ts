@@ -1,6 +1,6 @@
 import {AuthenticationBindings} from '@loopback/authentication';
 import {BindingScope, inject, injectable, service} from '@loopback/core';
-import {AnyObject, Filter, repository, Where} from '@loopback/repository';
+import {AnyObject, Filter, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {ActivityLogType, ReferenceType} from '../enums';
@@ -79,59 +79,6 @@ export class TransactionService {
     });
 
     await Promise.allSettled(promises);
-  }
-
-  // ------------------------------------------------
-
-  // ------ TransactionWhereBuilder -----------------
-
-  public detail(where: Where<Transaction>, data: AnyObject) {
-    const {referenceId, currencyId, referenceType, status} = data;
-    const profile = referenceType === ReferenceType.USER && referenceId;
-
-    switch (referenceType) {
-      case ReferenceType.POST:
-      case ReferenceType.COMMENT: {
-        if (!referenceId) {
-          throw new HttpErrors.UnprocessableEntity('Please input reference id');
-        }
-        where = {referenceId, type: referenceType};
-        break;
-      }
-
-      default: {
-        let userId;
-        if (profile) {
-          Object.assign(where, {
-            type: {
-              nin: [ReferenceType.POST],
-            },
-          });
-          userId = referenceId ? referenceId.toString() : undefined;
-        }
-
-        if (status === 'received' || profile) {
-          Object.assign(where, {
-            to: userId ?? this.currentUser[securityId],
-          });
-        } else if (status === 'sent') {
-          Object.assign(where, {
-            from: userId ?? this.currentUser[securityId],
-          });
-        } else {
-          Object.assign(where, {
-            or: [
-              {from: userId ?? this.currentUser[securityId]},
-              {to: userId ?? this.currentUser[securityId]},
-            ],
-          });
-        }
-      }
-    }
-
-    if (currencyId) {
-      Object.assign(where, {currencyId});
-    }
   }
 
   // ------------------------------------------------

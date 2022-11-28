@@ -60,6 +60,7 @@ import {
   EmailService,
   ExperienceService,
   FCMService,
+  FilterBuilderService,
   FriendService,
   MetricService,
   NetworkService,
@@ -180,6 +181,7 @@ export class MyriadApiApplication extends BootMixin(
     this.service(CurrencyService);
     this.service(EmailService);
     this.service(ExperienceService);
+    this.service(FilterBuilderService);
     this.service(FriendService);
     this.service(MetricService);
     this.service(NetworkService);

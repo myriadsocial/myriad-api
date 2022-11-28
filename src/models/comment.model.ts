@@ -145,6 +145,8 @@ export interface CommentRelations {
   // describe navigational properties here
   user?: UserWithRelations;
   post?: PostWithRelations;
+  reportType?: string;
+  privacy?: string;
 }
 
 export type CommentWithRelations = Comment & CommentRelations;

@@ -55,9 +55,9 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
     @repository(WalletRepository)
     private walletRepository: WalletRepository,
     @inject(AuthenticationBindings.METADATA)
-    public metadata: AuthenticationMetadata[],
+    private metadata: AuthenticationMetadata[],
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    public currentUser: UserProfile,
+    private currentUser: UserProfile,
   ) {}
 
   /**

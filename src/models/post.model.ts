@@ -156,7 +156,7 @@ export class Post extends Entity {
       enum: Object.values(VisibilityType),
     },
   })
-  visibility?: VisibilityType;
+  visibility: VisibilityType;
 
   @property({
     type: 'array',

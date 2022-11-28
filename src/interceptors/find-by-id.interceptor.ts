@@ -6,24 +6,25 @@ import {
   InvocationContext,
   InvocationResult,
   Provider,
+  service,
   ValueOrPromise,
 } from '@loopback/core';
 import {AnyObject, repository} from '@loopback/repository';
 import {securityId, UserProfile} from '@loopback/security';
 import {omit} from 'lodash';
 import {
-  AccountSettingType,
   ControllerType,
-  FriendStatusType,
   MethodType,
   ReferenceType,
+  VisibilityType,
 } from '../enums';
-import {User, UserCurrencyWithRelations} from '../models';
 import {
-  AccountSettingRepository,
-  FriendRepository,
-  ReportRepository,
-} from '../repositories';
+  CommentWithRelations,
+  UserCurrencyWithRelations,
+  UserWithRelations,
+} from '../models';
+import {ReportRepository} from '../repositories';
+import {FilterBuilderService, FriendService, UserService} from '../services';
 
 /**
  * This class will be bound to the application as an `Interceptor` during
@@ -34,12 +35,14 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${FindByIdInterceptor.name}`;
 
   constructor(
-    @repository(AccountSettingRepository)
-    private accountSettingRepository: AccountSettingRepository,
-    @repository(FriendRepository)
-    private friendRepository: FriendRepository,
     @repository(ReportRepository)
     private reportRepository: ReportRepository,
+    @service(FilterBuilderService)
+    private filterBuilderService: FilterBuilderService,
+    @service(FriendService)
+    private friendService: FriendService,
+    @service(UserService)
+    private userService: UserService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
     private currentUser: UserProfile,
   ) {}
@@ -67,7 +70,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
     const result = await next();
 
-    const afterResult = await this.afterFindById(invocationCtx, result);
+    const afterResult = await this.afterFindById(result, invocationCtx);
 
     return afterResult;
   }
@@ -77,106 +80,30 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
 
     switch (controllerName) {
       case ControllerType.USERPOST: {
-        const filter = invocationCtx.args[1] ?? {};
-        const experience = {
-          relation: 'experiences',
-          scope: {
-            limit: 1,
-            order: ['name ASC'],
-            where: {
-              deletedAt: {
-                $exists: false,
-              },
-            },
-          },
-        };
-
-        filter.include = filter.include
-          ? [...filter.include, 'user', experience]
-          : ['user', experience];
-
-        invocationCtx.args[1] = filter;
-        break;
+        return this.filterBuilderService.userPostById(invocationCtx.args);
       }
 
-      case ControllerType.USEREXPERIENCE: {
-        const filter = invocationCtx.args[1] ?? {};
-        const include = [
-          {
-            relation: 'experience',
-            scope: {
-              include: [
-                {
-                  relation: 'user',
-                  scope: {
-                    include: [{relation: 'accountSetting'}],
-                  },
-                },
-              ],
-            },
-          },
-        ];
+      case ControllerType.USEREXPERIENCE:
+        return this.filterBuilderService.userExperienceById(invocationCtx.args);
 
-        if (!filter.include) filter.include = include;
-        else filter.include.push(...include);
-
-        invocationCtx.args[1] = filter;
-        break;
-      }
+      default:
+        return;
     }
   }
 
   async afterFindById(
-    invocationCtx: InvocationContext,
     result: AnyObject,
+    invocationCtx: InvocationContext,
   ): Promise<AnyObject> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
     const methodName = invocationCtx.methodName as MethodType;
+    const currentUserId = this.currentUser[securityId];
 
     switch (controllerName) {
-      case ControllerType.USERCOMMENT: {
-        if (result.deletedAt) {
-          const report = await this.reportRepository.findOne({
-            where: {
-              referenceId: result.id,
-              referenceType: ReferenceType.COMMENT,
-            },
-          });
-
-          result.text = '[comment removed]';
-          result.reportType = report?.type;
-        }
-
-        if (this.currentUser[securityId] === result.userId) return result;
-        const accountSetting = await this.accountSettingRepository.findOne({
-          where: {
-            userId: result.userId,
-          },
-        });
-        if (accountSetting?.accountPrivacy === AccountSettingType.PRIVATE) {
-          const friend = await this.friendRepository.findOne({
-            where: <AnyObject>{
-              requestorId: this.currentUser[securityId],
-              requesteeId: result.userId,
-              status: FriendStatusType.APPROVED,
-              deletedAt: {
-                $eq: null,
-              },
-            },
-          });
-
-          if (!friend) {
-            result.text = '[This comment is from a private account]';
-            result.privacy = 'private';
-          }
-        }
-        return {...result};
-      }
-
       case ControllerType.USER: {
-        if (methodName === MethodType.CURRENTUSER) {
-          const user = result as User;
+        const user = result as UserWithRelations;
 
+        if (methodName === MethodType.CURRENTUSER) {
           if (user?.userCurrencies) {
             const userCurrencies =
               user.userCurrencies as UserCurrencyWithRelations[];
@@ -191,61 +118,105 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
           return user;
         }
 
-        if (this.currentUser[securityId] === invocationCtx.args[0]) {
-          return {
-            ...result,
-            status: 'owned',
-          };
+        const userId = invocationCtx.args[0];
+        if (currentUserId === userId) {
+          user.friendInfo = {status: 'owner'};
+          return omit(user, ['nonce', 'permissions', 'friendIndex']);
         }
 
-        const friend = await this.friendRepository.findOne(<AnyObject>{
-          where: {
-            or: [
-              {
-                requestorId: this.currentUser[securityId],
-                requesteeId: invocationCtx.args[0],
-              },
-              {
-                requesteeId: this.currentUser[securityId],
-                requestorId: invocationCtx.args[0],
-              },
-            ],
-          },
-        });
-
-        if (!friend) return result;
-
-        const userWithFriendStatus = {
-          ...result,
-          friendId: friend.id,
-          status: friend.status,
-        };
-
-        if (friend.status !== FriendStatusType.APPROVED) {
-          Object.assign(userWithFriendStatus, {
-            requestee: friend.requesteeId,
-            requester: friend.requestorId,
-          });
-        }
-
-        return userWithFriendStatus;
+        const info = await this.friendService.getFriendInfo(
+          currentUserId,
+          userId,
+        );
+        if (!info) return user;
+        user.friendInfo = info;
+        return user;
       }
 
-      case ControllerType.USERWALLET: {
-        const user = result as User;
+      case ControllerType.USERCOMMENT: {
+        const comment = result as CommentWithRelations;
+        // mask text when comment is deleted
+        if (comment.deletedAt) {
+          const report = await this.reportRepository.findOne({
+            where: {
+              referenceId: comment.id,
+              referenceType: ReferenceType.COMMENT,
+            },
+          });
 
-        if (user?.userCurrencies) {
-          const userCurrencies =
-            user.userCurrencies as UserCurrencyWithRelations[];
-          const currencies = userCurrencies.map(e => e.currency);
+          comment.text = '[comment removed]';
+          comment.reportType = report?.type;
 
-          return {
-            ...omit(user, ['userCurrencies']),
-            currencies,
-          };
+          return comment;
         }
 
-        return user;
+        const post = comment?.post;
+        const userId = comment.userId;
+
+        // Check comment creator privacy if post not exist
+        if (!post) {
+          const isPrivate = await this.userService.isAccountPrivate(userId);
+          if (isPrivate) {
+            comment.text = '[This comment is from a private account]';
+            comment.privacy = 'private';
+          }
+
+          return comment;
+        }
+
+        // Check comment creator privacy when post creator is current user
+        if (currentUserId === post.createdBy) {
+          if (currentUserId === userId) return comment;
+          const isPrivate = await this.userService.isAccountPrivate(userId);
+          if (isPrivate) {
+            comment.text = '[This comment is from a private account]';
+            comment.privacy = 'private';
+          }
+
+          return comment;
+        }
+
+        // Post creator is not current user
+        // Check comment creator privacy when post visibility is private
+        const visibility = post.visibility;
+        if (visibility === VisibilityType.PRIVATE) {
+          post.text = '[This is a private post]';
+          post.rawText = '[This is a private post]';
+          comment.post = post;
+
+          if (currentUserId !== userId) {
+            comment.text = '[This comment is from a private post]';
+            comment.privacy = 'private';
+          }
+
+          return comment;
+        }
+
+        // Post creator is not current user
+        // Check comment creator privacy when post visibility is friend
+        if (visibility === VisibilityType.FRIEND) {
+          const asFriend = await this.friendService.asFriend(
+            currentUserId,
+            post.createdBy,
+          );
+
+          if (!asFriend) {
+            comment.text = '[This comment is from an private post]';
+            comment.privacy = 'private';
+          }
+
+          return comment;
+        }
+
+        // Post creator is not current user
+        // Check comment creator privacy when post visibility is public
+        const isPrivate = await this.userService.accountSetting(userId);
+        if (isPrivate) {
+          comment.text = '[This comment is from a private account]';
+          comment.privacy = 'private';
+        }
+
+        return comment;
       }
 
       default:

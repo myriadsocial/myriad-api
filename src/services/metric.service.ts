@@ -1,5 +1,5 @@
 import {BindingScope, injectable} from '@loopback/core';
-import {AnyObject, Count, repository, Where} from '@loopback/repository';
+import {AnyObject, Count, Filter, repository} from '@loopback/repository';
 import {
   ControllerType,
   FriendStatusType,
@@ -331,9 +331,11 @@ export class MetricService {
 
   async countData(
     controller: ControllerType,
-    where: Where<AnyObject>,
+    filter: Filter<AnyObject>,
     additionalData?: string,
   ): Promise<Count> {
+    const where = filter.where;
+
     switch (controller) {
       case ControllerType.USER: {
         if ((where as AnyObject)?.userId) {
@@ -397,7 +399,7 @@ export class MetricService {
         return this.userCurrencyRepository.count(where);
 
       case ControllerType.USERWALLET:
-        return this.walletRepository.count(where);
+        return this.walletRepository.count({...where, userId: additionalData});
 
       default:
         return {

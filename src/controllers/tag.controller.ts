@@ -1,3 +1,4 @@
+import {authenticate} from '@loopback/authentication';
 import {intercept, service} from '@loopback/core';
 import {Filter} from '@loopback/repository';
 import {get, getModelSchemaRef, param, response} from '@loopback/rest';
@@ -5,6 +6,7 @@ import {PaginationInterceptor} from '../interceptors';
 import {Tag} from '../models';
 import {TagService} from '../services';
 
+@authenticate('jwt')
 export class TagController {
   constructor(
     @service(TagService)

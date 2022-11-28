@@ -75,14 +75,9 @@ export class AdminService {
     id: string,
     report: Partial<Report>,
   ): Promise<void> {
-    if (report.status === ReportStatusType.REMOVED) {
-      this.reportService.findById(id).then(({referenceId, referenceType}) => {
-        return this.reportService.updateReport(
-          referenceId,
-          referenceType,
-          false,
-        );
-      }) as Promise<void>;
-    }
+    if (report.status !== ReportStatusType.REMOVED) return;
+    this.reportService.findById(id).then(({referenceId, referenceType}) => {
+      return this.reportService.updateReport(referenceId, referenceType, false);
+    }) as Promise<void>;
   }
 }
