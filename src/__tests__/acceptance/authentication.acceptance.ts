@@ -74,7 +74,9 @@ describe('AuthenticationApplication', function () {
 
     const userWallet = givenUserWallet();
 
-    const response = await client.post('/auth/signup/wallet').send(userWallet);
+    const response = await client
+      .post('/authentication/signup/wallet')
+      .send(userWallet);
     expect(response.body).to.have.property('nonce');
   });
 
@@ -83,7 +85,7 @@ describe('AuthenticationApplication', function () {
 
     const userWallet: RequestCreateNewUserByWallet = givenUserWallet();
 
-    await client.post('/auth/signup/wallet').send(userWallet);
+    await client.post('/authentication/signup/wallet').send(userWallet);
     const createdUser = await userRepository.findOne({
       where: {username: userWallet.username},
       include: ['notificationSetting', 'accountSetting'],
@@ -109,7 +111,10 @@ describe('AuthenticationApplication', function () {
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),
     });
 
-    await client.post('/auth/login/wallet').send(credential).expect(401);
+    await client
+      .post('/authentication/login/wallet')
+      .send(credential)
+      .expect(401);
   });
 
   it('changes user nonce after login', async () => {
@@ -123,7 +128,10 @@ describe('AuthenticationApplication', function () {
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),
     });
 
-    await client.post('/auth/login/wallet').send(credential).expect(200);
+    await client
+      .post('/authentication/login/wallet')
+      .send(credential)
+      .expect(200);
 
     const updatedUser = await userRepository.findById(user.id);
 
@@ -149,7 +157,10 @@ describe('AuthenticationApplication', function () {
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),
     });
 
-    await client.post('/auth/login/wallet').send(credential).expect(200);
+    await client
+      .post('/authentication/login/wallet')
+      .send(credential)
+      .expect(200);
 
     const updatedUser = await userRepository.findById(user.id);
     const expectedPrimaryWallet = await walletRepository.findById(wallet.id);
@@ -169,12 +180,15 @@ describe('AuthenticationApplication', function () {
     const userWallet = givenUserWallet();
 
     const getNonce = await client
-      .get(`/auth/nonce?id=${userWallet.address}&type=wallet`)
+      .get(`/authentication/nonce?id=${userWallet.address}&type=wallet`)
       .expect(200);
 
     expect(getNonce.body).to.containDeep({nonce: 0});
 
-    await client.post('/auth/signup/wallet').send(userWallet).expect(200);
+    await client
+      .post('/authentication/signup/wallet')
+      .send(userWallet)
+      .expect(200);
 
     const createdUser = await userRepository.findOne({
       where: {username: userWallet.username},
@@ -187,6 +201,9 @@ describe('AuthenticationApplication', function () {
       publicAddress: userWallet.address,
     });
 
-    await client.post('/auth/login/wallet').send(credential).expect(200);
+    await client
+      .post('/authentication/login/wallet')
+      .send(credential)
+      .expect(200);
   });
 });
