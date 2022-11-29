@@ -167,6 +167,13 @@ export class Post extends Entity {
   mentions: MentionUser[];
 
   @property({
+    type: 'array',
+    itemType: 'string',
+    default: [],
+  })
+  selectedUserIds: string[];
+
+  @property({
     type: 'number',
     required: false,
     default: 0,
@@ -373,6 +380,13 @@ export class DraftPost extends Model {
     },
   })
   status: PostStatus;
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    default: [],
+  })
+  selectedUserIds?: string[];
 
   constructor(data?: Partial<DraftPost>) {
     super(data);

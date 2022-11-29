@@ -95,6 +95,9 @@ export class PostService {
       .then(async () => {
         if (draftPost.status === PostStatus.PUBLISHED) {
           const rawPost = omit(draftPost, ['status']);
+          if (rawPost.visibility !== VisibilityType.SELECTED) {
+            rawPost.selectedUserIds = [];
+          }
           return this.postRepository.create(rawPost);
         }
 
@@ -228,6 +231,10 @@ export class PostService {
       if (embeddedURL) data.embeddedURL = embeddedURL;
     } else {
       delete data.text;
+    }
+
+    if (data.visibility && data.visibility !== VisibilityType.SELECTED) {
+      data.selectedUserIds = [];
     }
 
     return this.postRepository.updateAll(data, {

@@ -111,13 +111,11 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.EXPERIENCEPOST: {
         if (methodName === MethodType.DELETE) return;
         const {experienceIds} = invocationCtx.args[0];
-        const experiences = await this.experienceRepository.find({
-          where: {
-            id: {inq: experienceIds},
-            createdBy: this.currentUser[securityId],
-          },
+        const {count} = await this.experienceRepository.count({
+          id: {inq: experienceIds},
+          createdBy: this.currentUser[securityId],
         });
-        if (experiences.length === experienceIds.length) return;
+        if (count === experienceIds.length) return;
         userId = null;
         break;
       }

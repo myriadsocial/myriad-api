@@ -14,6 +14,7 @@ import {
   FriendStatusType,
   PlatformType,
   ReferenceType,
+  VisibilityType,
 } from '../enums';
 import {
   Experience,
@@ -135,6 +136,11 @@ export class UserExperienceService {
       this.experienceUserRepository.deleteAll({experienceId: id}),
     ]);
 
+    const visibility = experience.visibility;
+    if (visibility && visibility !== VisibilityType.SELECTED) {
+      experience.selectedUserIds = [];
+    }
+
     return this.userRepository
       .experiences(userId)
       .patch(experience, {id})
@@ -169,6 +175,10 @@ export class UserExperienceService {
     const userId = experience.createdBy;
     const people = this.validateExperienceData(experience);
     const totalExperience = await this.validateCreatedExperience(userId);
+
+    if (experience.visibility !== VisibilityType.SELECTED) {
+      experience.selectedUserIds = [];
+    }
 
     return this.userRepository
       .experiences(userId)
