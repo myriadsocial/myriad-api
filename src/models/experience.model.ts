@@ -11,6 +11,7 @@ import {ExperienceUser} from './experience-user.model';
 import {UserWithRelations} from './user.model';
 import {Post} from './post.model';
 import {ExperiencePost} from './experience-post.model';
+import {VisibilityType} from '../enums';
 
 @model({
   settings: {
@@ -104,6 +105,23 @@ export class Experience extends Entity {
     default: 0,
   })
   trendCount: number;
+
+  @property({
+    type: 'string',
+    required: false,
+    default: VisibilityType.PUBLIC,
+    jsonSchema: {
+      enum: Object.values(VisibilityType),
+    },
+  })
+  visibility: VisibilityType;
+
+  @property({
+    type: 'array',
+    itemType: 'string',
+    default: [],
+  })
+  selectedUserIds: string[];
 
   @property({
     type: 'date',

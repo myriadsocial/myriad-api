@@ -1177,22 +1177,15 @@ export class FilterBuilderService {
   }
 
   private async timelineByExperience(
-    experienceId?: string,
+    currentUserId: string,
+    experience: Experience,
   ): Promise<Where<Post>> {
-    const currentUserId = this.currentUser[securityId];
-    const exp = await this.experienceService.fetchExperience(
-      currentUserId,
-      experienceId,
-    );
-
-    if (!exp) return {id: ''};
-
-    const postIds = exp.posts?.map(post => post.id) ?? [];
+    const postIds = experience.posts?.map(post => post.id) ?? [];
     const experienceUserIds: string[] = [];
     const currentUserIds: string[] = [];
-    const allowedTags = exp.allowedTags.map(tag => tag.toLowerCase());
-    const prohibitedTags = exp.prohibitedTags.map(tag => tag.toLowerCase());
-    const personIds = exp.people
+    const allowedTags = experience.allowedTags.map(e => e.toLowerCase());
+    const prohibitedTags = experience.prohibitedTags.map(e => e.toLowerCase());
+    const personIds = experience.people
       .filter((e: People) => e.platform !== PlatformType.MYRIAD)
       .map(e => e.id);
     const [blockedIds, approvedIds, expFriends] = await Promise.all([
@@ -1201,7 +1194,7 @@ export class FilterBuilderService {
       this.friendService.find({
         where: {
           requestorId: currentUserId,
-          requesteeId: {inq: (exp.users ?? []).map(e => e.id)},
+          requesteeId: {inq: (experience.users ?? []).map(e => e.id)},
           status: FriendStatusType.APPROVED,
         },
       }),
@@ -1209,8 +1202,8 @@ export class FilterBuilderService {
     const expFriendIds = expFriends.map(friend => friend.requesteeId);
     const blocked = pull(blockedIds, ...expFriendIds, ...approvedIds);
 
-    if (exp?.users) {
-      for (const expUser of exp.users) {
+    if (experience?.users) {
+      for (const expUser of experience.users) {
         const accountPrivacy = expUser?.accountSetting.accountPrivacy;
         const privateSetting = AccountSettingType.PRIVATE;
 
@@ -1426,8 +1419,45 @@ export class FilterBuilderService {
     query?: Query,
   ): Promise<Where<Post>> {
     switch (timelineType) {
-      case TimelineType.EXPERIENCE:
-        return this.timelineByExperience(experienceId);
+      case TimelineType.EXPERIENCE: {
+        const currentUserId = this.currentUser[securityId];
+        const experience = await this.experienceService.fetchExperience(
+          currentUserId,
+          experienceId,
+        );
+        if (!experience) return {id: ''};
+        const creator = experience.createdBy;
+        const visibility = experience.visibility;
+        const selectedUserIds = experience.selectedUserIds;
+        const selected = selectedUserIds.find(e => e === currentUserId);
+
+        if (visibility === VisibilityType.PUBLIC) {
+          return this.timelineByExperience(currentUserId, experience);
+        }
+
+        if (visibility === VisibilityType.PRIVATE) {
+          if (creator !== currentUserId) return {id: ''};
+          return this.timelineByExperience(currentUserId, experience);
+        }
+
+        if (visibility === VisibilityType.FRIEND) {
+          if (creator !== currentUserId) {
+            const asFriend = await this.friendService.asFriend(
+              creator,
+              currentUserId,
+            );
+            if (!asFriend) return {id: ''};
+          }
+          return this.timelineByExperience(currentUserId, experience);
+        }
+
+        if (visibility === VisibilityType.SELECTED) {
+          if (!selected) return {id: ''};
+          return this.timelineByExperience(currentUserId, experience);
+        }
+
+        return this.timelineByExperience(currentUserId, experience);
+      }
 
       case TimelineType.TRENDING:
         return this.timelineByTrending();
