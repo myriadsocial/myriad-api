@@ -792,6 +792,14 @@ export class FilterBuilderService {
         {
           and: [
             {tags: {inq: [hashtag]}} as Where,
+            {visibility: VisibilityType.SELECTED},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {tags: {inq: [hashtag]}} as Where,
             {createdBy: this.currentUser[securityId]},
           ],
         },
@@ -837,6 +845,14 @@ export class FilterBuilderService {
         {
           and: [
             {'mentions.username': {inq: [mention]}} as Where,
+            {visibility: VisibilityType.SELECTED},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {'mentions.username': {inq: [mention]}} as Where,
             {createdBy: this.currentUser[securityId]},
           ],
         },
@@ -857,6 +873,14 @@ export class FilterBuilderService {
             {rawText: {regexp: regexTopic}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: regexTopic}},
+            {visibility: VisibilityType.SELECTED},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
+            {createdBy: {nin: blockedFriendIds}},
           ],
         },
         {
@@ -894,6 +918,14 @@ export class FilterBuilderService {
             {createdBy: {inq: approvedFriendIds}},
             {tags: {inq: [hashtag]}} as Where,
             {visibility: VisibilityType.FRIEND},
+          ],
+        },
+        {
+          and: [
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {tags: {inq: [hashtag]}} as Where,
+            {visibility: VisibilityType.SELECTED},
+            {createdBy: {nin: blockedFriendIds}},
           ],
         },
         {
@@ -960,33 +992,27 @@ export class FilterBuilderService {
               {visibility: VisibilityType.FRIEND},
             ],
           },
+          {
+            and: [
+              {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+              {visibility: VisibilityType.SELECTED},
+              {createdBy: {nin: blockedFriendIds}},
+            ],
+          },
           {createdBy: userId},
         ],
       };
     });
   }
 
-  private async defaulTimeline(): Promise<Where<Post>> {
+  private async defaulTimeline(platform?: string): Promise<Where<Post>> {
     const userId = this.currentUser[securityId];
-    const blockedIds = await this.friendService.getFriendIds(
-      userId,
-      FriendStatusType.BLOCKED,
-    );
-
-    return {
+    const status = FriendStatusType.BLOCKED;
+    const blockedIds = await this.friendService.getFriendIds(userId, status);
+    const where: Where<Post> = {
       visibility: VisibilityType.PUBLIC,
-      createdBy: {
-        inq: blockedIds,
-      },
+      createdBy: {nin: blockedIds},
     };
-  }
-
-  private async timelineByProfile(
-    owner?: string,
-    platform?: string,
-  ): Promise<Where<Post>> {
-    const userId = this.currentUser[securityId];
-    const where: Where<Post> = {};
 
     if (platform === 'myriad') {
       where.platform = PlatformType.MYRIAD;
@@ -998,34 +1024,77 @@ export class FilterBuilderService {
       };
     }
 
-    if (owner) {
-      where.createdBy = owner.toString();
+    return where;
+  }
 
-      if (owner !== userId) {
-        const asFriend = await this.friendService.asFriend(
-          owner.toString(),
-          userId,
-        );
+  private async timelineByProfile(
+    owner: string,
+    platform?: string,
+  ): Promise<Where<Post>> {
+    const userId = this.currentUser[securityId];
+    const or: Where<Post>[] = [];
+    const condition: Where<Post> = {};
 
-        if (asFriend) {
-          where.visibility = {
+    if (owner !== userId) {
+      let isPrivate = false;
+
+      const asFriend = await this.friendService.asFriend(
+        owner.toString(),
+        userId,
+      );
+
+      if (asFriend) {
+        or.push({
+          createdBy: owner.toString(),
+          visibility: {
             inq: [VisibilityType.FRIEND, VisibilityType.PUBLIC],
-          };
-        } else {
-          const isPrivate = await this.accountSettingRepository.findOne({
-            where: {
-              userId: owner.toString(),
-              accountPrivacy: AccountSettingType.PRIVATE,
-            },
-          });
+          },
+        });
+      } else {
+        const accountSetting = await this.accountSettingRepository.findOne({
+          where: {
+            userId: owner.toString(),
+            accountPrivacy: AccountSettingType.PRIVATE,
+          },
+        });
 
-          if (isPrivate) where.id = '';
-          else where.visibility = VisibilityType.PUBLIC;
+        isPrivate = Boolean(accountSetting);
+
+        if (!isPrivate) {
+          or.push({
+            createdBy: owner.toString(),
+            visibility: VisibilityType.PUBLIC,
+          });
         }
       }
+
+      if (!isPrivate) {
+        or.push(<Where>{
+          createdBy: owner.toString(),
+          visibility: VisibilityType.SELECTED,
+          selectedUserIds: {inq: [userId]},
+        });
+      } else {
+        or.push({id: ''});
+      }
+    } else {
+      or.push({createdBy: owner.toString()});
     }
 
-    return where;
+    if (platform === 'myriad') {
+      condition.platform = PlatformType.MYRIAD;
+    }
+
+    if (platform === 'imported') {
+      condition.platform = {
+        inq: [PlatformType.TWITTER, PlatformType.REDDIT, PlatformType.FACEBOOK],
+      };
+    }
+
+    return {
+      ...condition,
+      or,
+    };
   }
 
   private async timelineByFriend(): Promise<Where<Post>> {
@@ -1038,8 +1107,20 @@ export class FilterBuilderService {
     if (!approvedFriendIds.length) return {id: ''};
 
     return {
-      createdBy: {inq: approvedFriendIds},
-      visibility: {nlike: VisibilityType.PRIVATE},
+      or: [
+        {
+          and: [
+            {createdBy: {inq: approvedFriendIds}},
+            {visibility: VisibilityType.FRIEND},
+          ],
+        },
+        {
+          and: [
+            {createdBy: {inq: approvedFriendIds}},
+            {visibility: VisibilityType.PUBLIC},
+          ],
+        },
+      ],
     };
   }
 
@@ -1081,6 +1162,14 @@ export class FilterBuilderService {
           ],
         },
         {
+          and: [
+            {tags: {inq: trendingTopicIds}} as Where,
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {visibility: VisibilityType.SELECTED},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
           and: [{tags: {inq: trendingTopicIds}}, {createdBy: userId}],
         },
       ],
@@ -1090,54 +1179,63 @@ export class FilterBuilderService {
   private async timelineByExperience(
     experienceId?: string,
   ): Promise<Where<Post>> {
-    const userId = this.currentUser[securityId];
+    const currentUserId = this.currentUser[securityId];
     const exp = await this.experienceService.fetchExperience(
-      userId,
+      currentUserId,
       experienceId,
     );
 
     if (!exp) return {id: ''};
 
     const postIds = exp.posts?.map(post => post.id) ?? [];
-    const userIds: string[] = [];
+    const experienceUserIds: string[] = [];
     const currentUserIds: string[] = [];
     const allowedTags = exp.allowedTags.map(tag => tag.toLowerCase());
     const prohibitedTags = exp.prohibitedTags.map(tag => tag.toLowerCase());
     const personIds = exp.people
       .filter((e: People) => e.platform !== PlatformType.MYRIAD)
       .map(e => e.id);
-    const [blockedFriendIds, approvedFriendIds, friends] = await Promise.all([
-      this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
-      this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+    const [blockedIds, approvedIds, expFriends] = await Promise.all([
+      this.friendService.getFriendIds(currentUserId, FriendStatusType.BLOCKED),
+      this.friendService.getFriendIds(currentUserId, FriendStatusType.APPROVED),
       this.friendService.find({
         where: {
-          requestorId: userId,
+          requestorId: currentUserId,
           requesteeId: {inq: (exp.users ?? []).map(e => e.id)},
           status: FriendStatusType.APPROVED,
         },
       }),
     ]);
-    const friendIds = friends.map(friend => friend.requesteeId);
-    const blocked = pull(blockedFriendIds, ...friendIds, ...approvedFriendIds);
+    const expFriendIds = expFriends.map(friend => friend.requesteeId);
+    const blocked = pull(blockedIds, ...expFriendIds, ...approvedIds);
 
     if (exp?.users) {
-      for (const user of exp.users) {
-        const accountPrivacy = user?.accountSetting.accountPrivacy;
+      for (const expUser of exp.users) {
+        const accountPrivacy = expUser?.accountSetting.accountPrivacy;
         const privateSetting = AccountSettingType.PRIVATE;
 
         if (accountPrivacy === privateSetting) {
-          const found = friendIds.find(id => id === user.id);
-          if (found) userIds.push(user.id);
+          const found = expFriendIds.find(id => id === expUser.id);
+          if (found) experienceUserIds.push(expUser.id);
         } else {
-          userIds.push(user.id);
+          experienceUserIds.push(expUser.id);
         }
 
-        if (user.id === userId) currentUserIds.push(userId);
+        if (expUser.id === currentUserId) currentUserIds.push(currentUserId);
       }
     }
 
     return {
       or: [
+        // Visibility PUBLIC
+        {
+          and: [
+            {id: {inq: postIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {createdBy: {nin: blocked}},
+            {visibility: VisibilityType.PUBLIC},
+          ],
+        },
         {
           and: [
             {tags: {inq: allowedTags}} as Where,
@@ -1156,17 +1254,45 @@ export class FilterBuilderService {
         },
         {
           and: [
-            {id: {inq: postIds}},
-            {createdBy: {nin: blocked}},
             {tags: {nin: prohibitedTags}} as Where,
+            {createdBy: {inq: experienceUserIds}},
             {visibility: VisibilityType.PUBLIC},
+          ],
+        },
+        // Visibility SELECTED USER
+        {
+          and: [
+            {id: {inq: postIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {visibility: VisibilityType.SELECTED},
+            {createdBy: {nin: blocked}},
           ],
         },
         {
           and: [
-            {id: {inq: postIds}},
-            {createdBy: {inq: friendIds}},
+            {tags: {inq: allowedTags}} as Where,
             {tags: {nin: prohibitedTags}} as Where,
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {createdBy: {nin: blocked}},
+            {visibility: VisibilityType.SELECTED},
+          ],
+        },
+        {
+          and: [
+            {peopleId: {inq: personIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {createdBy: {nin: blocked}},
+            {visibility: VisibilityType.SELECTED},
+          ],
+        },
+        // Visibility FRIEND
+        {
+          and: [
+            {id: {inq: postIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {createdBy: {inq: expFriendIds}},
             {visibility: VisibilityType.FRIEND},
           ],
         },
@@ -1174,20 +1300,7 @@ export class FilterBuilderService {
           and: [
             {tags: {inq: allowedTags}} as Where,
             {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: userId},
-          ],
-        },
-        {
-          and: [
-            {createdBy: {inq: userIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {visibility: VisibilityType.PUBLIC},
-          ],
-        },
-        {
-          and: [
-            {createdBy: {inq: friendIds}},
-            {tags: {nin: prohibitedTags}} as Where,
+            {createdBy: {inq: expFriendIds}},
             {visibility: VisibilityType.FRIEND},
           ],
         },
@@ -1195,7 +1308,23 @@ export class FilterBuilderService {
           and: [
             {peopleId: {inq: personIds}},
             {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: userId},
+            {createdBy: {inq: expFriendIds}},
+            {visibility: VisibilityType.FRIEND},
+          ],
+        },
+        // CurrentUser
+        {
+          and: [
+            {tags: {inq: allowedTags}} as Where,
+            {tags: {nin: prohibitedTags}} as Where,
+            {createdBy: currentUserId},
+          ],
+        },
+        {
+          and: [
+            {peopleId: {inq: personIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {createdBy: currentUserId},
           ],
         },
         {
@@ -1311,9 +1440,11 @@ export class FilterBuilderService {
 
       default: {
         if (!query) return this.defaulTimeline();
-        const owner = query?.owner?.toString();
-        const platform = query?.platform?.toString();
-        return this.timelineByProfile(owner, platform);
+        let {owner, platform} = query;
+        if (Array.isArray(owner)) owner = owner[0];
+        if (Array.isArray(platform)) platform = platform[0];
+        if (!owner) return this.defaulTimeline(platform?.toString());
+        return this.timelineByProfile(owner.toString(), platform?.toString());
       }
     }
   }
