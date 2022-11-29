@@ -504,7 +504,7 @@ export class FilterBuilderService {
   }
 
   public async userWallet(filter: Filter<Wallet>, args: InvocationArgs) {
-    filter.where = args[1]?.where ?? {};
+    Object.assign(filter, args[1] ?? {});
     return this.finalizeFilter(filter, {});
   }
 
