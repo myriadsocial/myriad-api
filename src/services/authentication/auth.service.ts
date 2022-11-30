@@ -212,7 +212,7 @@ export class AuthService {
   }
 
   public async loginByWallet(credential: Credential): Promise<TokenObject> {
-    const {nonce, networkType, role} = credential;
+    const {nonce, networkType} = credential;
     const [publicAddress, account] = credential.publicAddress.split('/');
     const nearAccount = isHex(`0x${account}`) ? `0x${account}` : account;
 
@@ -298,18 +298,16 @@ export class AuthService {
       }),
     );
 
-    if (role === 'user') {
+    if (credential.role === 'user') {
       await this.walletRepository.updateAll(
         {primary: false},
         {userId: user.id},
       );
       await this.currencyService.update(user.id, networkType);
-      jobs.push(
-        this.walletRepository.updateById(wallet.id, {
-          primary: true,
-          networkId: networkType,
-        }),
-      );
+      await this.walletRepository.updateById(wallet.id, {
+        primary: true,
+        networkId: networkType,
+      });
     }
 
     Promise.allSettled(jobs) as Promise<AnyObject>;
