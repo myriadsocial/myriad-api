@@ -1,13 +1,6 @@
-import {
-  belongsTo,
-  Entity,
-  hasMany,
-  Model,
-  model,
-  property,
-} from '@loopback/repository';
+import {belongsTo, hasMany, Model, model, property} from '@loopback/repository';
 import {PlatformType, PostStatus, VisibilityType} from '../enums';
-import {Asset, Metric} from '../interfaces';
+import {Metric} from '../interfaces';
 import {UserWithRelations} from './';
 import {Comment} from './comment.model';
 import {EmbeddedURL} from './embedded-url.model';
@@ -18,6 +11,7 @@ import {People, PeopleWithRelations} from './people.model';
 import {Transaction} from './transaction.model';
 import {User} from './user.model';
 import {Vote} from './vote.model';
+import {ImportedPost} from './imported-post.model';
 
 @model({
   settings: {
@@ -41,7 +35,7 @@ import {Vote} from './vote.model';
     hiddenProperties: ['popularCount', 'rawText'],
   },
 })
-export class Post extends Entity {
+export class Post extends ImportedPost {
   @property({
     type: 'string',
     id: true,
@@ -68,13 +62,7 @@ export class Post extends Entity {
     },
     default: PlatformType.MYRIAD,
   })
-  platform?: PlatformType;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  title?: string;
+  platform: PlatformType;
 
   @property({
     type: 'string',
@@ -90,31 +78,6 @@ export class Post extends Entity {
     required: false,
   })
   rawText?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  originPostId?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-  })
-  url?: string;
-
-  @property({
-    type: 'object',
-    required: false,
-  })
-  asset?: Asset;
-
-  @property({
-    type: 'date',
-    required: false,
-    default: () => new Date(),
-  })
-  originCreatedAt?: string;
 
   @property({
     type: 'object',
@@ -140,7 +103,7 @@ export class Post extends Entity {
     require: false,
     default: false,
   })
-  isNSFW?: boolean;
+  isNSFW: boolean;
 
   @property({
     type: 'string',
@@ -213,19 +176,6 @@ export class Post extends Entity {
   })
   totalExperience?: number;
 
-  @property({
-    type: 'array',
-    itemType: 'object',
-    required: false,
-  })
-  importers?: User[];
-
-  @property({
-    type: 'number',
-    required: false,
-  })
-  totalImporter?: number;
-
   @belongsTo(() => User, {name: 'user'}, {required: true})
   createdBy: string;
 
@@ -234,9 +184,6 @@ export class Post extends Entity {
 
   @hasMany(() => Comment, {keyTo: 'referenceId'})
   comments: Comment[];
-
-  @hasMany(() => Vote, {keyTo: 'referenceId'})
-  likes: Vote[];
 
   @hasMany(() => Vote, {keyTo: 'referenceId'})
   votes: Vote[];
@@ -251,64 +198,20 @@ export class Post extends Entity {
     super(data);
   }
 }
+
 export interface PostRelations {
   // describe navigational properties here
   people?: PeopleWithRelations;
   user?: UserWithRelations;
 }
 
-interface AdditionalProperties {
-  importers?: User[];
-  totalImporter?: number;
-}
-
-export type PostWithRelations = Post & PostRelations & AdditionalProperties;
+export type PostWithRelations = Post & PostRelations;
 
 export type ExtendedPost = PostWithRelations & {
   platformUser?: Omit<People, 'id'>;
 };
 
-export class CreateImportedPostDto extends Model {
-  @property({
-    type: 'string',
-    required: true,
-  })
-  url: string;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  importer: string;
-
-  @property({
-    type: 'array',
-    itemType: 'string',
-    required: false,
-  })
-  tags?: string[];
-
-  @property({
-    type: 'string',
-    required: false,
-    jsonSchema: {
-      enum: Object.values(VisibilityType),
-    },
-  })
-  visibility?: VisibilityType;
-
-  @property({
-    type: 'string',
-    require: false,
-  })
-  NSFWTag?: string;
-
-  constructor(data?: Partial<CreateImportedPostDto>) {
-    super(data);
-  }
-}
-
-export class DraftPost extends Model {
+export class PostDetail extends Model {
   @property({
     type: 'array',
     itemType: 'string',
@@ -320,8 +223,11 @@ export class DraftPost extends Model {
   @property({
     type: 'string',
     required: false,
+    jsonSchema: {
+      minLength: 1,
+    },
   })
-  text?: string;
+  text: string;
 
   @property({
     type: 'string',
@@ -367,33 +273,18 @@ export class DraftPost extends Model {
   mentions: MentionUser[];
 
   @property({
-    type: 'string',
-    required: true,
-  })
-  createdBy: string;
-
-  @property({
-    type: 'string',
-    required: true,
-    jsonSchema: {
-      enum: Object.values(PostStatus),
-    },
-  })
-  status: PostStatus;
-
-  @property({
     type: 'array',
     itemType: 'string',
     default: [],
   })
   selectedUserIds?: string[];
 
-  constructor(data?: Partial<DraftPost>) {
+  constructor(data?: Partial<PostDetail>) {
     super(data);
   }
 }
 
-export class UpdatePostDto extends Model {
+export class PostDetailWithCreator extends PostDetail {
   @property({
     type: 'string',
     required: true,
@@ -405,51 +296,27 @@ export class UpdatePostDto extends Model {
 
   @property({
     type: 'string',
-    required: false,
-    jsonSchema: {
-      minLength: 1,
-    },
+    required: true,
   })
-  text?: string;
+  createdBy: string;
+}
 
-  @property({
-    type: 'array',
-    itemType: 'string',
-    required: false,
-    default: [],
-  })
-  tags?: string[];
-
-  @property({
-    type: 'boolean',
-    require: false,
-  })
-  isNSFW?: boolean;
-
+export class DraftPost extends PostDetailWithCreator {
   @property({
     type: 'string',
-    require: false,
-  })
-  NSFWTag?: string;
-
-  @property({
-    type: 'string',
-    required: false,
-    default: VisibilityType.PUBLIC,
+    required: true,
     jsonSchema: {
-      enum: Object.values(VisibilityType),
+      enum: Object.values(PostStatus),
     },
   })
-  visibility?: VisibilityType;
+  status: PostStatus;
 
-  @property({
-    type: 'array',
-    itemType: 'object',
-    required: false,
-    default: [],
-  })
-  mentions?: MentionUser[];
+  constructor(data?: Partial<DraftPost>) {
+    super(data);
+  }
+}
 
+export class UpdatePostDto extends PostDetail {
   constructor(data?: Partial<UpdatePostDto>) {
     super(data);
   }

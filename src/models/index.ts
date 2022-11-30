@@ -12,6 +12,7 @@ export * from './experience-user.model';
 export * from './experience.model';
 export * from './friend.model';
 export * from './identity.model';
+export * from './imported-post.model';
 export * from './language-setting.model';
 export * from './mention-user.model';
 export * from './network.model';
