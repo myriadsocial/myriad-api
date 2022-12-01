@@ -43,6 +43,7 @@ export function formatRawText(text: String): string {
 export const generateObjectId = (): string =>
   require('bson-objectid')().toString();
 
+import {AnyObject} from '@loopback/repository';
 import {MetaPagination} from '../interfaces';
 
 export function pageMetadata(pageDetail: number[]): MetaPagination {
@@ -89,4 +90,24 @@ export function pageMetadata(pageDetail: number[]): MetaPagination {
   }
 
   return meta;
+}
+
+export function strToJson(text: string): AnyObject | null {
+  try {
+    return JSON.parse(text);
+  } catch {
+    // ignore
+  }
+
+  return null;
+}
+
+export function base64ToString(str: string): string {
+  try {
+    return Buffer.from(str, 'base64').toString();
+  } catch {
+    // ignore
+  }
+
+  return '';
 }

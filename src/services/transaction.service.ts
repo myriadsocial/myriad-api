@@ -3,6 +3,7 @@ import {BindingScope, inject, injectable, service} from '@loopback/core';
 import {AnyObject, Filter, repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
+import {decodeAddress} from '@polkadot/util-crypto';
 import {ActivityLogType, ReferenceType} from '../enums';
 import {
   Transaction,
@@ -23,6 +24,7 @@ import {ActivityLogService} from './activity-log.service';
 import {MetricService} from './metric.service';
 import {NetworkService} from './network.service';
 import {NotificationService} from './notification.service';
+import {u8aToHex} from '@polkadot/util';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class TransactionService {
@@ -53,9 +55,8 @@ export class TransactionService {
 
   public async create(
     transaction: Omit<Transaction, 'id'>,
-    contractId?: string,
   ): Promise<Transaction> {
-    const isToWallet = await this.beforeCreate(transaction, contractId);
+    const isToWallet = await this.beforeCreate(transaction);
 
     return this.transactionRepository
       .create(transaction)
@@ -94,9 +95,8 @@ export class TransactionService {
 
   private async beforeCreate(
     transaction: Omit<Transaction, 'id'>,
-    contractId?: string,
   ): Promise<boolean> {
-    const {from, to, type, currencyId, referenceId} = transaction;
+    const {from, to, type, referenceId} = transaction;
 
     if (from === to) {
       throw new HttpErrors.UnprocessableEntity(
@@ -114,10 +114,7 @@ export class TransactionService {
       }
     }
 
-    await Promise.all([
-      this.validateHash(transaction, contractId),
-      this.currencyRepository.findById(currencyId),
-    ]);
+    await this.validateHash(transaction);
 
     let toWalletId = false;
 
@@ -183,8 +180,24 @@ export class TransactionService {
 
   private async validateHash(
     transaction: Omit<Transaction, 'id'>,
-    contractId?: string,
   ): Promise<void> {
+    const exist = await this.transactionRepository.findOne({
+      where: {hash: transaction.hash},
+    });
+
+    if (exist) {
+      throw new HttpErrors.UnprocessableEntity('HashAlreadyExists');
+    }
+
+    const currency = await this.currencyRepository.findById(
+      transaction.currencyId,
+      {
+        include: ['network'],
+      },
+    );
+
+    let methodName;
+
     // TODO: Validate blockchain hash
     if (transaction.type === ReferenceType.UNLOCKABLECONTENT) {
       const hasPaid = await this.transactionRepository.findOne({
@@ -200,19 +213,74 @@ export class TransactionService {
         throw new HttpErrors.UnprocessableEntity('ContentAlreadyPaid');
       }
 
-      const isPaid = await this.networkService.verifyUnlockableContentPayment(
-        transaction,
-        contractId,
-      );
+      methodName = 'Pay';
+    }
 
-      if (!isPaid) {
+    const info = await this.networkService.transactionHashInfo(
+      transaction,
+      currency,
+      methodName,
+    );
+
+    if (!info) throw new HttpErrors.NotFound('TransactionNotFound');
+
+    const {tipsBalanceInfo, tokenId, transactionDetail} = info;
+
+    // Validate currency
+    if (tokenId) {
+      if (tokenId.toString() !== currency.referenceId) {
+        throw new HttpErrors.UnprocessableEntity('InvalidCurrency');
+      }
+
+      if (currency.native) {
+        throw new HttpErrors.UnprocessableEntity('InvalidCurrency');
+      }
+    } else {
+      if (!currency.native) {
+        throw new HttpErrors.UnprocessableEntity('InvalidCurrency');
+      }
+    }
+
+    // Validate from address
+    const from = u8aToHex(decodeAddress(transactionDetail.from));
+    if (transaction.from !== from) {
+      throw new HttpErrors.UnprocessableEntity('InvalidSender');
+    }
+
+    // Validate balance
+    const decimal = 10 ** currency.decimal;
+    const parseAmount = parseInt(transactionDetail.amount) / decimal;
+    if (transaction.amount !== parseAmount) {
+      throw new HttpErrors.UnprocessableEntity('InvalidAmount');
+    }
+
+    // Validate to address
+    // For UnlockableContent/Tipping directly to user
+    if (
+      !tipsBalanceInfo ||
+      transaction.type === ReferenceType.UNLOCKABLECONTENT
+    ) {
+      const to = u8aToHex(decodeAddress(transactionDetail.to));
+      if (transaction.to !== to) {
+        throw new HttpErrors.UnprocessableEntity('InvalidReceiver');
+      }
+    }
+
+    // Validate referenceId and referenceType
+    // For unlockable content
+    if (
+      tipsBalanceInfo &&
+      transaction.type === ReferenceType.UNLOCKABLECONTENT
+    ) {
+      const {referenceType, referenceId} = tipsBalanceInfo;
+      if (referenceType !== transaction.type) {
         throw new HttpErrors.UnprocessableEntity('ContentNotPaid');
       }
 
-      return;
+      if (referenceId !== transaction.referenceId) {
+        throw new HttpErrors.UnprocessableEntity('ContentNotPaid');
+      }
     }
-
-    // Validate tipping hash
   }
 
   // ------------------------------------------------
