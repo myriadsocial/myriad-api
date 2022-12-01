@@ -67,6 +67,45 @@ export class NetworkService {
     return this.networkRepository.findById(id, filter);
   }
 
+  public async verifyUnlockableContentPayment(
+    transaction: Transaction,
+    contractId?: string,
+  ): Promise<boolean> {
+    // 1: Get data blockchain dari hash nya
+    // 2: Cek data dari blockchain dengan transaction
+    // 3: Cek harga dari unlockable content, blockchain, transaction
+    const server = await this.serverRepository.findOne();
+    if (!server) throw new HttpErrors.NotFound('ServerNotFound');
+    const serverIds = server.accountId;
+
+    const networkIds = Object.keys(serverIds);
+
+    for (const networkId of networkIds) {
+      const network = await this.networkRepository.findOne({
+        where: {
+          id: networkId,
+        },
+      });
+
+      if (!network) continue;
+
+      switch (networkId) {
+        case 'myriad': {
+          // logic to verify payment
+          return false;
+        }
+
+        case 'near': {
+          if (!contractId) continue;
+          // logic to verify payment
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
   public async verifyContract(
     networkId: string,
     rpcURL: string,

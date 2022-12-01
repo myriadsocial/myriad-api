@@ -32,6 +32,7 @@ import {
   SocialMediaVerificationDto,
   Tag,
   Transaction,
+  UnlockableContent,
   User,
   UserExperience,
   UserReport,
@@ -56,6 +57,7 @@ import {
   ServerRepository,
   TagRepository,
   TransactionRepository,
+  UnlockableContentRepository,
   UserExperienceRepository,
   UserReportRepository,
   UserRepository,
@@ -887,4 +889,31 @@ export function givenIdentityInstance(
 ) {
   const key = `social-media/${identity?.userId}`;
   return identityRepository.set(key, givenIdentity(identity));
+}
+
+export function givenUnlockableContent(
+  unlockableContent?: Partial<UnlockableContent>,
+) {
+  const data = Object.assign(
+    {
+      content: {
+        text: 'Hello world',
+      },
+      prices: [
+        {
+          ...givenCurrency(),
+          amount: 100,
+        },
+      ],
+    },
+    unlockableContent,
+  );
+  return new UnlockableContent(data);
+}
+
+export function givenUnlockableContentInstance(
+  unlockableRepository: UnlockableContentRepository,
+  unlockableContent?: Partial<UnlockableContent>,
+) {
+  return unlockableRepository.create(givenUnlockableContent(unlockableContent));
 }

@@ -6,6 +6,7 @@ import {securityId, UserProfile} from '@loopback/security';
 import {ActivityLogType, ReferenceType} from '../enums';
 import {
   Transaction,
+  TransactionWithRelations,
   UpdateTransactionDto,
   Wallet,
   WalletWithRelations,
@@ -20,6 +21,7 @@ import {
 } from '../repositories';
 import {ActivityLogService} from './activity-log.service';
 import {MetricService} from './metric.service';
+import {NetworkService} from './network.service';
 import {NotificationService} from './notification.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
@@ -41,6 +43,8 @@ export class TransactionService {
     private activityLogService: ActivityLogService,
     @service(MetricService)
     private metricService: MetricService,
+    @service(NetworkService)
+    private networkService: NetworkService,
     @service(NotificationService)
     private notificationService: NotificationService,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -49,8 +53,9 @@ export class TransactionService {
 
   public async create(
     transaction: Omit<Transaction, 'id'>,
+    contractId?: string,
   ): Promise<Transaction> {
-    const isToWallet = await this.beforeCreate(transaction);
+    const isToWallet = await this.beforeCreate(transaction, contractId);
 
     return this.transactionRepository
       .create(transaction)
@@ -60,7 +65,9 @@ export class TransactionService {
       });
   }
 
-  public async find(filter?: Filter<Transaction>) {
+  public async find(
+    filter?: Filter<Transaction>,
+  ): Promise<TransactionWithRelations[]> {
     return this.transactionRepository.find(filter);
   }
 
@@ -87,6 +94,7 @@ export class TransactionService {
 
   private async beforeCreate(
     transaction: Omit<Transaction, 'id'>,
+    contractId?: string,
   ): Promise<boolean> {
     const {from, to, type, currencyId, referenceId} = transaction;
 
@@ -96,17 +104,23 @@ export class TransactionService {
       );
     }
 
-    if (type === ReferenceType.POST || type === ReferenceType.COMMENT) {
+    if (
+      type === ReferenceType.POST ||
+      type === ReferenceType.COMMENT ||
+      type === ReferenceType.UNLOCKABLECONTENT
+    ) {
       if (!referenceId) {
         throw new HttpErrors.UnprocessableEntity('Please insert referenceId');
       }
     }
 
-    await this.currencyRepository.findById(currencyId);
+    await Promise.all([
+      this.validateHash(transaction, contractId),
+      this.currencyRepository.findById(currencyId),
+    ]);
 
     let toWalletId = false;
 
-    await this.currencyRepository.findById(currencyId);
     const toWallet = await this.walletRepository
       .findById(to, {include: ['user']})
       .catch(() => this.userRepository.findById(to))
@@ -140,20 +154,65 @@ export class TransactionService {
     transaction: Transaction,
     isToWallet: boolean,
   ): Promise<Transaction> {
-    const {from, referenceId} = transaction;
+    const {from, referenceId, type} = transaction;
+    const activityType =
+      type === ReferenceType.UNLOCKABLECONTENT
+        ? ActivityLogType.PAIDCONTENT
+        : ActivityLogType.SENDTIP;
 
-    Promise.allSettled([
+    const jobs: Promise<AnyObject | void>[] = [
       this.notificationService.sendTipsSuccess(transaction, isToWallet),
       this.metricService.userMetric(from),
-      this.metricService.publicMetric(ReferenceType.POST, referenceId ?? ''),
       this.activityLogService.create(
-        ActivityLogType.SENDTIP,
+        activityType,
         from,
         ReferenceType.TRANSACTION,
       ),
-    ]) as Promise<AnyObject>;
+    ];
+
+    if (type !== ReferenceType.UNLOCKABLECONTENT) {
+      jobs.push(
+        this.metricService.publicMetric(ReferenceType.POST, referenceId ?? ''),
+      );
+    }
+
+    Promise.allSettled(jobs) as Promise<AnyObject>;
 
     return transaction;
+  }
+
+  private async validateHash(
+    transaction: Omit<Transaction, 'id'>,
+    contractId?: string,
+  ): Promise<void> {
+    // TODO: Validate blockchain hash
+    if (transaction.type === ReferenceType.UNLOCKABLECONTENT) {
+      const hasPaid = await this.transactionRepository.findOne({
+        where: {
+          referenceId: transaction.referenceId,
+          type: ReferenceType.UNLOCKABLECONTENT,
+          from: transaction.from,
+          to: transaction.to,
+        },
+      });
+
+      if (hasPaid) {
+        throw new HttpErrors.UnprocessableEntity('ContentAlreadyPaid');
+      }
+
+      const isPaid = await this.networkService.verifyUnlockableContentPayment(
+        transaction,
+        contractId,
+      );
+
+      if (!isPaid) {
+        throw new HttpErrors.UnprocessableEntity('ContentNotPaid');
+      }
+
+      return;
+    }
+
+    // Validate tipping hash
   }
 
   // ------------------------------------------------

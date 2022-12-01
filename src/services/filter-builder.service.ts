@@ -1428,7 +1428,7 @@ export class FilterBuilderService {
         if (!experience) return {id: ''};
         const creator = experience.createdBy;
         const visibility = experience.visibility;
-        const selectedUserIds = experience.selectedUserIds;
+        const selectedUserIds = experience.selectedUserIds ?? [];
         const selected = selectedUserIds.find(e => e === currentUserId);
 
         if (visibility === VisibilityType.PUBLIC) {

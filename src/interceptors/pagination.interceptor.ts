@@ -27,10 +27,11 @@ import {
   Friend,
   FriendWithRelations,
   PostWithRelations,
+  UnlockableContent,
   User,
   UserWithRelations,
 } from '../models';
-import {ReportRepository} from '../repositories';
+import {ReportRepository, TransactionRepository} from '../repositories';
 import {
   FilterBuilderService,
   FriendService,
@@ -51,6 +52,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(ReportRepository)
     private reportRepository: ReportRepository,
+    @repository(TransactionRepository)
+    private transactionRepository: TransactionRepository,
     @service(FilterBuilderService)
     private filterBuilderService: FilterBuilderService,
     @service(FriendService)
@@ -412,6 +415,22 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             return comment;
           }),
         );
+      }
+
+      case ControllerType.USERUNLOCKABLECONTENT: {
+        return result.map(async (content: UnlockableContent) => {
+          if (content.createdBy === currentUserId) return content;
+          const transaction = await this.transactionRepository.findOne({
+            where: {
+              referenceId: content.id,
+              type: ReferenceType.UNLOCKABLECONTENT,
+              from: currentUserId,
+              to: content.createdBy,
+            },
+          });
+          if (transaction) return content;
+          return omit(content, ['content']);
+        });
       }
 
       case ControllerType.POST: {

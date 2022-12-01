@@ -25,6 +25,7 @@ export * from './report.model';
 export * from './server.model';
 export * from './tag.model';
 export * from './transaction.model';
+export * from './unlockable-content.model';
 export * from './user-currency.model';
 export * from './user-experience.model';
 export * from './user-refresh-token.model';

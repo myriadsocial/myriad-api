@@ -20,6 +20,7 @@ export * from './queue.repository';
 export * from './report.repository';
 export * from './tag.repository';
 export * from './transaction.repository';
+export * from './unlockable-content.repository';
 export * from './user.repository';
 export * from './user-experience.repository';
 export * from './user-refresh-token.repository';

@@ -10,6 +10,7 @@ export enum ActivityLogType {
   GIVEVOTE = 'give_vote',
   IMPORTPOST = 'import_post',
   NEWUSER = 'new_user',
+  PAIDCONTENT = 'paid_content',
   SENDTIP = 'send_tip',
   SKIPUSERNAME = 'skip_new_user_username',
   SUBSCRIBEEXPERIENCE = 'subscribe_experience',
