@@ -11,6 +11,7 @@ export * from './experience-post.model';
 export * from './experience-user.model';
 export * from './experience.model';
 export * from './friend.model';
+export * from './identity.model';
 export * from './language-setting.model';
 export * from './mention-user.model';
 export * from './network.model';

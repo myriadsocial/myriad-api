@@ -20,6 +20,7 @@ import {
   DraftPost,
   Experience,
   Friend,
+  Identity,
   Network,
   Notification,
   NotificationSetting,
@@ -45,6 +46,7 @@ import {
   CurrencyRepository,
   ExperienceRepository,
   FriendRepository,
+  IdentityRepository,
   NetworkRepository,
   NotificationRepository,
   NotificationSettingRepository,
@@ -68,6 +70,7 @@ import {UserProfile, securityId} from '@loopback/security';
 import {promisify} from 'util';
 import {config} from '../../config';
 import {generateObjectId} from '../../utils/formatter';
+import crypto from 'crypto';
 
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
@@ -861,4 +864,27 @@ export function givenServerInstance(
   server?: Partial<Server>,
 ) {
   return serverRepository.create(givenServer(server));
+}
+
+export function givenIdentity(identity?: Partial<Identity>) {
+  const text = crypto.randomBytes(32).toString('hex');
+  const data = Object.assign(
+    {
+      hash: `0x${text}`,
+      expiredAt: Date.now() + 10 * 60 * 1000,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    },
+    identity,
+  );
+
+  return new Identity(data);
+}
+
+export function givenIdentityInstance(
+  identityRepository: IdentityRepository,
+  identity?: Partial<Identity>,
+) {
+  const key = `social-media/${identity?.userId}`;
+  return identityRepository.set(key, givenIdentity(identity));
 }

@@ -24,6 +24,7 @@ import {
   UserCurrencyRepository,
   ExperiencePostRepository,
   ServerRepository,
+  IdentityRepository,
 } from '../../repositories';
 
 export async function givenUserRepository(app: MyriadApiApplication) {
@@ -126,6 +127,10 @@ export async function givenServerRepository(app: MyriadApiApplication) {
   return app.getRepository(ServerRepository);
 }
 
+export async function givenIdentityRepository(app: MyriadApiApplication) {
+  return app.getRepository(IdentityRepository);
+}
+
 export async function deleteAllRepository(app: MyriadApiApplication) {
   const userRepository = await givenUserRepository(app);
   const friendRepository = await givenFriendRepository(app);
@@ -152,6 +157,7 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   const serverRepository = await givenServerRepository(app);
   const notificationSettingRepository =
     await givenNotificationSettingRepository(app);
+  const identityRepository = await givenIdentityRepository(app);
 
   await userRepository.deleteAll();
   await friendRepository.deleteAll();
@@ -178,4 +184,5 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   await accountSettingRepository.deleteAll();
   await experiencePostRepository.deleteAll();
   await serverRepository.deleteAll();
+  await identityRepository.deleteAll();
 }

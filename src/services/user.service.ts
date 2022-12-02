@@ -33,6 +33,7 @@ import {
   DraftPost,
   Experience,
   Friend,
+  Identity,
   LanguageSetting,
   Notification,
   NotificationSetting,
@@ -57,6 +58,7 @@ import {
 import {
   ChangeEmailRequestRepository,
   ExperienceRepository,
+  IdentityRepository,
   UserPersonalAccessTokenRepository,
   UserRepository,
   WalletRepository,
@@ -92,6 +94,8 @@ export class UserService {
     private changeEmailRequestRepository: ChangeEmailRequestRepository,
     @repository(ExperienceRepository)
     private experienceRepository: ExperienceRepository,
+    @repository(IdentityRepository)
+    private identityRepository: IdentityRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @repository(UserPersonalAccessTokenRepository)
@@ -317,6 +321,39 @@ export class UserService {
 
   public async removeSocialMedia(id: string): Promise<void> {
     return this.userSocialMediaService.deleteById(id);
+  }
+
+  public async requestSocialMediaIdentityCode(): Promise<{hash: string}> {
+    const identity = new Identity();
+    const now = Date.now();
+    const key = `social-media/${this.currentUser[securityId]}`;
+    const existingIdentity = await this.identityRepository.get(key);
+
+    if (existingIdentity) {
+      const updatedAt = existingIdentity.updatedAt;
+      const expiredAt = existingIdentity.expiredAt;
+
+      if (now < expiredAt) {
+        const waitingTime = 60 * 1000;
+        if (now - updatedAt < waitingTime) {
+          throw new HttpErrors.UnprocessableEntity(
+            `${waitingTime / 1000} seconds waiting time`,
+          );
+        }
+      }
+    }
+
+    const text = this.userOTPService.generateOTP(32);
+    identity.hash = `0x${text}`;
+    identity.userId = this.currentUser[securityId];
+    identity.createdAt = Date.now();
+    identity.updatedAt = Date.now();
+    identity.expiredAt = Date.now() + 10 * 60 * 1000;
+
+    await this.identityRepository.set(key, identity);
+    await this.identityRepository.expire(key, 10 * 60 * 1000);
+
+    return {hash: `0x${text}`};
   }
 
   // ------------------------------------------------
