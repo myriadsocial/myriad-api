@@ -182,8 +182,13 @@ export class UserSocialMediaService {
     userSocialMedia: UserSocialMediaWithRelations,
     people: People,
   ): Promise<UserSocialMedia> {
+    const currentUserId = this.currentUser[securityId];
+    const key = `social-media/${currentUserId}`;
     const connected = userSocialMedia?.connected;
-    const promises = [this.metricService.countServerMetric()];
+    const promises = [
+      this.metricService.countServerMetric(),
+      this.identityRepository.delete(key),
+    ];
 
     if (!connected) {
       promises.push(
@@ -236,7 +241,5 @@ export class UserSocialMediaService {
     if (identity.hash !== hash) {
       throw new HttpErrors.UnprocessableEntity('InvalidHashCode');
     }
-
-    await this.identityRepository.delete(key);
   }
 }

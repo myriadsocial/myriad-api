@@ -404,6 +404,18 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               return comment;
             }
 
+            if (visibility === VisibilityType.SELECTED) {
+              const {selectedUserIds} = post;
+              const isSelected = selectedUserIds.find(e => e === currentUserId);
+              if (!isSelected) {
+                post.text = '[This is a post for selected user only]';
+                post.rawText = '[This is a post for selected user only]';
+                comment.text = '[This comment is for selected user only]';
+                comment.post = post;
+                comment.privacy = 'private';
+              }
+            }
+
             // Post creator is not current user
             // Check comment creator privacy when post visibility is public
             const isPrivate = await this.userService.isAccountPrivate(userId);
