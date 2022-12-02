@@ -31,6 +31,7 @@ import {
   UserPersonalAccessTokenRepository,
   ChangeEmailRequestRepository,
   UserOTPRepository,
+  IdentityRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -207,6 +208,8 @@ export async function givenRepositories(testdb: any) {
     async () => userRepository,
   );
 
+  const identityRepository: IdentityRepository = new IdentityRepository(testdb);
+
   const dataSource = {
     reddit: new RedditDataSource(),
     twitter: new TwitterDataSource(),
@@ -316,6 +319,7 @@ export async function givenRepositories(testdb: any) {
   );
 
   const userSocialMediaService = new UserSocialMediaService(
+    identityRepository,
     userSocialMediaRepository,
     peopleRepository,
     activityLogService,
@@ -408,6 +412,7 @@ export async function givenRepositories(testdb: any) {
   const userService = new UserService(
     changeEmailRequestRepository,
     experienceRepository,
+    identityRepository,
     userRepository,
     userPersonalAccessTokenRepository,
     walletRepository,

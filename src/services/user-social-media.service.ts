@@ -11,7 +11,11 @@ import {
   UserSocialMedia,
   UserSocialMediaWithRelations,
 } from '../models';
-import {PeopleRepository, UserSocialMediaRepository} from '../repositories';
+import {
+  IdentityRepository,
+  PeopleRepository,
+  UserSocialMediaRepository,
+} from '../repositories';
 import {generateObjectId} from '../utils/formatter';
 import {NotificationService} from './notification.service';
 import {ActivityLogService} from './activity-log.service';
@@ -21,6 +25,8 @@ import {SocialMediaService} from './social-media/social-media.service';
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserSocialMediaService {
   constructor(
+    @repository(IdentityRepository)
+    private identityRepository: IdentityRepository,
     @repository(UserSocialMediaRepository)
     private userSocialMediaRepository: UserSocialMediaRepository,
     @repository(PeopleRepository)
@@ -195,6 +201,8 @@ export class UserSocialMediaService {
   ): Promise<People> {
     const {address, platform, username} = socialMediaVerificationDto;
 
+    await this.verifyIdentity(address);
+
     switch (platform) {
       case PlatformType.TWITTER:
         return this.socialMediaService.verifyToTwitter(username, address);
@@ -205,5 +213,30 @@ export class UserSocialMediaService {
       default:
         throw new HttpErrors.NotFound('Platform does not exist');
     }
+  }
+
+  private async verifyIdentity(hash: string): Promise<void> {
+    const currentUserId = this.currentUser[securityId];
+    const key = `social-media/${currentUserId}`;
+    const identity = await this.identityRepository.get(key);
+    const now = Date.now();
+
+    if (!identity) {
+      throw new HttpErrors.UnprocessableEntity('InvalidHashCode');
+    }
+
+    if (now > identity.expiredAt) {
+      throw new HttpErrors.UnprocessableEntity('HashCodeExpired');
+    }
+
+    if (identity.userId !== currentUserId) {
+      throw new HttpErrors.UnprocessableEntity('InvalidUser');
+    }
+
+    if (identity.hash !== hash) {
+      throw new HttpErrors.UnprocessableEntity('InvalidHashCode');
+    }
+
+    await this.identityRepository.delete(key);
   }
 }

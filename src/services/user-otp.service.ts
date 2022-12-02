@@ -18,8 +18,8 @@ export class UserOTPService {
     protected emailService: EmailService,
   ) {}
 
-  private generateOTP(): string {
-    return crypto.randomBytes(20).toString('hex');
+  public generateOTP(size: number): string {
+    return crypto.randomBytes(size).toString('hex');
   }
 
   public async requestByEmail(
@@ -49,7 +49,7 @@ export class UserOTPService {
 
     const now = Date.now();
     const userOTP = new UserOTP();
-    userOTP.token = this.generateOTP();
+    userOTP.token = this.generateOTP(20);
     userOTP.userId = user.id.toString();
 
     if (existingUserOTP) {

@@ -22,6 +22,26 @@ export class UserSocialMediaController {
     private userService: UserService,
   ) {}
 
+  @get('/user/social-medias/identity')
+  @response(200, {
+    description: 'REQUEST social medias identity verification',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            hash: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    },
+  })
+  async requestOTP(): Promise<{hash: string}> {
+    return this.userService.requestSocialMediaIdentityCode();
+  }
+
   @post('/user/social-medias/verify')
   @response(200, {
     description: 'VERIFY User Social Media',

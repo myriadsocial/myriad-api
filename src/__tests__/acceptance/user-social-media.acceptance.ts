@@ -4,6 +4,7 @@ import {MyriadApiApplication} from '../../application';
 import {PlatformType} from '../../enums';
 import {SocialMediaVerificationDto, User, UserSocialMedia} from '../../models';
 import {
+  IdentityRepository,
   PeopleRepository,
   UserRepository,
   UserSocialMediaRepository,
@@ -12,6 +13,8 @@ import {
 import {
   deleteAllRepository,
   givenAccesToken,
+  givenIdentityInstance,
+  givenIdentityRepository,
   givenOtherUser,
   givenPeopleInstance,
   givenPeopleRepository,
@@ -36,6 +39,7 @@ describe('UserSocialMediaApplication', function () {
   let peopleRepository: PeopleRepository;
   let userSocialMediaRepository: UserSocialMediaRepository;
   let walletRepository: WalletRepository;
+  let identityRepository: IdentityRepository;
   let user: User;
   let otherUser: User;
 
@@ -53,6 +57,7 @@ describe('UserSocialMediaApplication', function () {
     peopleRepository = await givenPeopleRepository(app);
     userSocialMediaRepository = await givenUserSocialMediaRepository(app);
     walletRepository = await givenWalletRepository(app);
+    identityRepository = await givenIdentityRepository(app);
   });
 
   before(async () => {
@@ -61,6 +66,14 @@ describe('UserSocialMediaApplication', function () {
     token = await givenAccesToken(user);
 
     await givenWalletInstance(walletRepository, {userId: user.id});
+    await givenIdentityInstance(identityRepository, {
+      userId: user.id,
+      hash: publicKey,
+    });
+    await givenIdentityInstance(identityRepository, {
+      userId: otherUser.id,
+      hash: publicKey,
+    });
   });
 
   after(async () => {
@@ -137,6 +150,11 @@ describe('UserSocialMediaApplication', function () {
 
   context('when dealing with a single persisted user social media', () => {
     it('deletes the user social media', async () => {
+      await givenIdentityInstance(identityRepository, {
+        userId: user.id,
+        hash: publicKey,
+      });
+
       const userVerification = givenUserVerification({address: publicKey});
       const response = await client
         .post('/user/social-medias/verify')

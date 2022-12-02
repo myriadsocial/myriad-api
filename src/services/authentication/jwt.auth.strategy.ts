@@ -25,6 +25,7 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
       userProfile = await this.tokenService.verifyToken(token);
     } catch (error) {
       if (request.method !== 'GET') throw error;
+      if (request.url === '/user/social-medias/identity') throw error;
       const randomUserId = generateObjectId();
 
       return {

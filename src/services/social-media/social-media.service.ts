@@ -404,8 +404,9 @@ export class SocialMediaService {
     }
 
     if (!user) throw new HttpErrors.NotFound('Invalid username');
-    if (!tweets)
+    if (!tweets) {
       throw new HttpErrors.NotFound('Tweet not found/protected by user');
+    }
 
     // Verify that the publicKey is existing in user twitter
     const found = tweets[0]?.text

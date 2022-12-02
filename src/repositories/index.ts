@@ -9,6 +9,7 @@ export * from './experience.repository';
 export * from './experience-post.repository';
 export * from './experience-user.repository';
 export * from './friend.repository';
+export * from './identity.repository';
 export * from './language-setting.repository';
 export * from './network.repository';
 export * from './notification.repository';
