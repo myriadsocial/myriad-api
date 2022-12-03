@@ -13,7 +13,7 @@ export enum ControllerType {
   STORAGE = 'StorageController',
   TAG = 'TagController',
   USER = 'UserController',
-  USERCLAIMREFERENCECONTROLLER = 'UserClaimReferenceController',
+  USERCLAIMREFERENCE = 'UserClaimReferenceController',
   USERCOMMENT = 'UserCommentController',
   USERCURRENCY = 'UserCurrencyController',
   USEREXPERIENCE = 'UserExperienceController',
@@ -26,6 +26,7 @@ export enum ControllerType {
   USERSETTING = 'UserSettingController',
   USERSOCIALMEDIA = 'UserSocialMediaController',
   USERTRANSACTION = 'UserTransactionController',
+  USERUNLOCKABLECONTENT = 'UserUnlockableContentController',
   USERVOTE = 'UserVoteController',
   USERWALLET = 'UserWalletController',
 }

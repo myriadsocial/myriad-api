@@ -157,7 +157,8 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
         break;
       }
 
-      case ControllerType.USERCLAIMREFERENCECONTROLLER:
+      case ControllerType.USERUNLOCKABLECONTENT:
+      case ControllerType.USERCLAIMREFERENCE:
       case ControllerType.USERCOMMENT:
       case ControllerType.USERNOTIFICATION:
       case ControllerType.USERSETTING:

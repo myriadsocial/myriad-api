@@ -9,6 +9,7 @@ import {
   NetworkRepository,
   PostRepository,
   ServerRepository,
+  UnlockableContentRepository,
   WalletRepository,
 } from '../repositories';
 
@@ -34,6 +35,8 @@ export class WalletAddressService {
     private networkRepository: NetworkRepository,
     @repository(ServerRepository)
     private serverRepository: ServerRepository,
+    @repository(UnlockableContentRepository)
+    private unlockableContentRepository: UnlockableContentRepository,
     @repository(WalletRepository)
     private walletRepository: WalletRepository,
     @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
@@ -53,6 +56,9 @@ export class WalletAddressService {
 
       case ReferenceType.USER:
         return this.userWalletAddress(id);
+
+      case ReferenceType.UNLOCKABLECONTENT:
+        return this.unlockableContentAddress(id);
 
       default:
         throw new HttpErrors.NotFound('WalletAddressNotFound');
@@ -171,6 +177,36 @@ export class WalletAddressService {
     }
 
     return this.tipsBalanceInfo(networkId, ReferenceType.USER, id);
+  }
+
+  private async unlockableContentAddress(
+    id: string,
+    networkId?: string,
+  ): Promise<TipsBalanceInfo> {
+    const {networkId: current, networkIds} = await this.currentUserNetwork();
+    if (current !== networkId) {
+      throw new HttpErrors.UnprocessableEntity('NetworkNotMatch');
+    }
+    const unlockableContent = await this.unlockableContentRepository.findById(
+      id,
+      {
+        include: ['user'],
+      },
+    );
+    const toWalletUser = await this.walletRepository.findOne({
+      where: {
+        userId: unlockableContent.createdBy,
+        networkId: {inq: networkIds},
+      },
+    });
+    if (!toWalletUser) {
+      throw new HttpErrors.UnprocessableEntity('WalletNotExists');
+    }
+    return this.tipsBalanceInfo(
+      networkId,
+      ReferenceType.UNLOCKABLECONTENT,
+      `${unlockableContent.id}/${toWalletUser.id}`,
+    );
   }
 
   private async currentUserNetwork(): Promise<NetworkDetail> {

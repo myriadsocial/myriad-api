@@ -486,7 +486,7 @@ export class PostService {
     if (!currentUserId) return;
     if (currentUserId === creator) return;
     if (visibility === VisibilityType.PRIVATE) {
-      throw new HttpErrors.Forbidden('Restricted post!');
+      throw new HttpErrors.Forbidden('PrivatePost');
     } else {
       promises[0] = this.friendRepository.findOne({
         where: {
@@ -523,14 +523,14 @@ export class PostService {
           accountPrivacy === AccountSettingType.PUBLIC &&
           friend?.status === FriendStatusType.BLOCKED
         ) {
-          throw new HttpErrors.Forbidden('Restricted post!');
+          throw new HttpErrors.Forbidden('PrivatePost');
         }
 
         if (
           accountPrivacy === AccountSettingType.PRIVATE &&
           friend?.status !== FriendStatusType.APPROVED
         ) {
-          throw new HttpErrors.Forbidden('Restricted post!');
+          throw new HttpErrors.Forbidden('OnlyFriendPost');
         }
 
         return;
@@ -540,14 +540,23 @@ export class PostService {
         const [friend] = await Promise.all(promises);
 
         if (friend?.status !== FriendStatusType.APPROVED) {
-          throw new HttpErrors.Forbidden('Restricted post!');
+          throw new HttpErrors.Forbidden('OnlyFriendPost');
         }
 
         return;
       }
 
+      case VisibilityType.SELECTED: {
+        const {selectedUserIds} = post;
+        const isSelected = selectedUserIds.find(e => e === currentUserId);
+        if (!isSelected) {
+          throw new HttpErrors.Forbidden('OnlySelectedUser');
+        }
+        return;
+      }
+
       default:
-        throw new HttpErrors.Forbidden('Restricted post!');
+        throw new HttpErrors.Forbidden('RestrictedPost');
     }
   }
 

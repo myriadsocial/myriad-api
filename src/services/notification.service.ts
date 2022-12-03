@@ -607,7 +607,14 @@ export class NotificationService {
       message: transaction.amount + ' ' + symbol,
     });
 
-    if (type === ReferenceType.COMMENT && referenceId) {
+    if (type === ReferenceType.UNLOCKABLECONTENT && referenceId) {
+      notification.type = NotificationType.PAID_CONTENT;
+      notification.additionalReferenceId = {
+        unlockableContent: {
+          id: transaction.referenceId,
+        },
+      };
+    } else if (type === ReferenceType.COMMENT && referenceId) {
       const comment = await this.commentRepository.findById(referenceId, {
         include: ['user'],
       });
@@ -653,8 +660,13 @@ export class NotificationService {
         : NotificationType.USER_TIPS_UNCLAIMED;
     }
 
-    const title = 'Tips Received';
-    const body = `${this.currentUser.name} tipped ${notification.message}`;
+    let title = 'Tips Received';
+    let body = `${this.currentUser.name} tipped ${notification.message}`;
+
+    if (type === ReferenceType.UNLOCKABLECONTENT) {
+      title = 'Content Paid';
+      body = `${this.currentUser.name} paid ${notification.message}`;
+    }
 
     await this.sendNotificationToUser(notification, toUserId, title, body);
   }
@@ -933,6 +945,7 @@ export class NotificationService {
           if (!notificationSetting.mentions) return false;
           break;
 
+        case NotificationType.PAID_CONTENT:
         case NotificationType.POST_TIPS:
         case NotificationType.COMMENT_TIPS:
         case NotificationType.USER_TIPS:

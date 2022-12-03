@@ -11,6 +11,7 @@ export * from './report.controller';
 export * from './setting.controller';
 export * from './social-media.controller';
 export * from './transaction.controller';
+export * from './unlockable-content.controller';
 export * from './user.controller';
 export * from './vote.controller';
 export * from './wallet.controller';

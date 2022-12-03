@@ -32,6 +32,7 @@ import {
   ChangeEmailRequestRepository,
   UserOTPRepository,
   IdentityRepository,
+  UnlockableContentRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -102,6 +103,8 @@ export async function givenRepositories(testdb: any) {
     async () => postRepository,
     async () => userRepository,
   );
+  const unlockableContentRepository: UnlockableContentRepository =
+    new UnlockableContentRepository(testdb, async () => userRepository);
   const postRepository: PostRepository = new PostRepository(
     testdb,
     async () => peopleRepository,
@@ -249,6 +252,7 @@ export async function givenRepositories(testdb: any) {
     userReportRepository,
     walletRepository,
     networkRepository,
+    unlockableContentRepository,
   );
 
   const currentUser: UserProfile = {
@@ -305,6 +309,17 @@ export async function givenRepositories(testdb: any) {
     tagService,
   );
 
+  const networkService = new NetworkService(
+    currencyRepository,
+    networkRepository,
+    queueRepository,
+    serverRepository,
+    userSocialMediaRepository,
+    walletRepository,
+    coinmarketcapService,
+    currentUser,
+  );
+
   const transactionService = new TransactionService(
     currencyRepository,
     peopleRepository,
@@ -314,6 +329,7 @@ export async function givenRepositories(testdb: any) {
     walletRepository,
     activityLogService,
     metricService,
+    networkService,
     notificationService,
     currentUser,
   );
@@ -355,17 +371,6 @@ export async function givenRepositories(testdb: any) {
     queueRepository,
     userCurrencyRepository,
     walletRepository,
-  );
-
-  const networkService = new NetworkService(
-    currencyRepository,
-    networkRepository,
-    queueRepository,
-    serverRepository,
-    userSocialMediaRepository,
-    walletRepository,
-    coinmarketcapService,
-    currentUser,
   );
 
   const reportService = new ReportService(
@@ -413,6 +418,7 @@ export async function givenRepositories(testdb: any) {
     changeEmailRequestRepository,
     experienceRepository,
     identityRepository,
+    unlockableContentRepository,
     userRepository,
     userPersonalAccessTokenRepository,
     walletRepository,
@@ -477,6 +483,7 @@ export async function givenRepositories(testdb: any) {
     peopleService,
     socialMediaService,
     tagService,
+    unlockableContentRepository,
   };
 }
 
@@ -505,6 +512,7 @@ export async function givenEmptyDatabase(testdb: any) {
     networkRepository,
     userCurrencyRepository,
     serverRepository,
+    unlockableContentRepository,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
@@ -530,4 +538,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await networkRepository.deleteAll();
   await userCurrencyRepository.deleteAll();
   await serverRepository.deleteAll();
+  await unlockableContentRepository.deleteAll();
 }

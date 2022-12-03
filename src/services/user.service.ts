@@ -4,6 +4,7 @@ import {
   AnyObject,
   Count,
   Filter,
+  FilterExcludingWhere,
   repository,
   Where,
 } from '@loopback/repository';
@@ -44,6 +45,7 @@ import {
   SocialMediaVerificationDto,
   Transaction,
   TxDetail,
+  UnlockableContent,
   UpdateTransactionDto,
   UpdateUserDto,
   UpdateUserPersonalAccessTokenDto,
@@ -59,6 +61,7 @@ import {
   ChangeEmailRequestRepository,
   ExperienceRepository,
   IdentityRepository,
+  UnlockableContentRepository,
   UserPersonalAccessTokenRepository,
   UserRepository,
   WalletRepository,
@@ -96,6 +99,8 @@ export class UserService {
     private experienceRepository: ExperienceRepository,
     @repository(IdentityRepository)
     private identityRepository: IdentityRepository,
+    @repository(UnlockableContentRepository)
+    private unlockableContentRepository: UnlockableContentRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @repository(UserPersonalAccessTokenRepository)
@@ -892,6 +897,52 @@ export class UserService {
 
   public async readNotifications(id?: string): Promise<Count> {
     return this.notificationService.read(id);
+  }
+
+  // ------------------------------------------------
+
+  // ------ UnlockableContentMethod -----------------
+
+  public async createUnlockableContent(
+    content: Omit<UnlockableContent, 'id'>,
+  ): Promise<UnlockableContent> {
+    content.createdBy = this.currentUser[securityId];
+    return this.unlockableContentRepository.create(content);
+  }
+
+  public async unlockableContents(filter?: Filter<UnlockableContent>) {
+    return this.unlockableContentRepository.find(filter);
+  }
+
+  public async unlockableContent(
+    id: string,
+    filter?: FilterExcludingWhere<UnlockableContent>,
+  ): Promise<UnlockableContent> {
+    const content = await this.unlockableContentRepository.findById(id, filter);
+    const currentUserId = this.currentUser[securityId];
+    if (content.createdBy === currentUserId) return content;
+    const transaction = await this.transactionService.find({
+      where: {
+        referenceId: content.id,
+        type: ReferenceType.UNLOCKABLECONTENT,
+        from: currentUserId,
+        to: content.createdBy,
+      },
+      limit: 1,
+    });
+
+    if (transaction.length > 0) return content;
+    return omit(content, ['content']);
+  }
+
+  public async updateUnlockableContent(
+    id: string,
+    content: Partial<UnlockableContent>,
+  ): Promise<Count> {
+    return this.unlockableContentRepository.updateAll(content, {
+      id,
+      createdBy: this.currentUser[securityId],
+    });
   }
 
   // ------------------------------------------------

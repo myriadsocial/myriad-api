@@ -24,6 +24,7 @@ import {
   ServerRepository,
   TagRepository,
   TransactionRepository,
+  UnlockableContentRepository,
   UserCurrencyRepository,
   UserExperienceRepository,
   UserReportRepository,
@@ -78,6 +79,8 @@ export class MetricService {
     private walletRepository: WalletRepository,
     @repository(NetworkRepository)
     private networkRepository: NetworkRepository,
+    @repository(UnlockableContentRepository)
+    private unlockableContentRepository: UnlockableContentRepository,
   ) {}
 
   async publicMetric(
@@ -273,9 +276,7 @@ export class MetricService {
       this.postRepository.count({platform: PlatformType.REDDIT}),
       this.userRepository.count(<AnyObject>{email: {$neq: null}}),
       this.walletRepository.count({networkId: 'near'}),
-      this.walletRepository.count({
-        networkId: {inq: ['myriad', 'kusama', 'polkadot']},
-      }),
+      this.walletRepository.count({networkId: {nin: ['near']}}),
       userSocialMediaCollection
         .aggregate([
           {
@@ -400,6 +401,9 @@ export class MetricService {
 
       case ControllerType.USERWALLET:
         return this.walletRepository.count({...where, userId: additionalData});
+
+      case ControllerType.USERUNLOCKABLECONTENT:
+        return this.unlockableContentRepository.count(where);
 
       default:
         return {

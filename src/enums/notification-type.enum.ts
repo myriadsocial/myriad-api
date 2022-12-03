@@ -9,6 +9,7 @@ export enum NotificationType {
   DISCONNECTED_SOCIAL_MEDIA = 'disconnected_social_media',
   FRIEND_ACCEPT = 'friend_accept',
   FRIEND_REQUEST = 'friend_request',
+  PAID_CONTENT = 'paid_content',
   POST_COMMENT = 'post_comment',
   POST_MENTION = 'post_mention',
   POST_REMOVED = 'post_removed',

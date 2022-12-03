@@ -246,11 +246,16 @@ export class FriendService {
           friendStatus = 'respond';
         }
         break;
+
+      default:
+        friendStatus = 'blocked';
     }
 
     return {
       id: friendId,
       status: friendStatus,
+      requesteeId: friend.requesteeId,
+      requestorId: friend.requestor,
     };
   }
 

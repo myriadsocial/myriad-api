@@ -9,7 +9,13 @@ import {BN} from '@polkadot/util';
 import {sha256} from 'js-sha256';
 import {providers, transactions, utils} from 'near-api-js';
 import {config} from '../config';
-import {Currency, Network, Transaction, TxDetail} from '../models';
+import {
+  Currency,
+  CurrencyWithRelations,
+  Network,
+  Transaction,
+  TxDetail,
+} from '../models';
 import {
   CurrencyRepository,
   NetworkRepository,
@@ -18,6 +24,7 @@ import {
   UserSocialMediaRepository,
   WalletRepository,
 } from '../repositories';
+import {base64ToString, strToJson} from '../utils/formatter';
 import {PolkadotJs} from '../utils/polkadot-js';
 import {CoinMarketCap} from './coin-market-cap.service';
 
@@ -32,6 +39,25 @@ interface ClaimReferenceData {
   txFee: string;
   referenceIds: string[];
   contractId?: string;
+}
+
+interface TipsBalanceInfo {
+  serverId: string;
+  referenceType: string;
+  referenceId: string;
+  ftIdentifier: string;
+}
+
+interface TransactionDetail {
+  from: string;
+  to: string;
+  amount: string;
+}
+
+interface HashDetail {
+  transactionDetail: TransactionDetail;
+  tipsBalanceInfo: TipsBalanceInfo | null | undefined;
+  tokenId: string | null | undefined;
 }
 
 /* eslint-disable   @typescript-eslint/naming-convention */
@@ -67,19 +93,25 @@ export class NetworkService {
     return this.networkRepository.findById(id, filter);
   }
 
-  public async verifyContract(
-    networkId: string,
-    rpcURL: string,
-    contractId: string,
-  ): Promise<Currency> {
-    switch (networkId) {
+  // ------------------------------------------------
+
+  public async transactionHashInfo(
+    transaction: Transaction,
+    currency: CurrencyWithRelations,
+    method?: string,
+  ): Promise<HashDetail | void> {
+    const {network} = currency;
+    if (!network) return;
+    const {blockchainPlatform, rpcURL} = network;
+    switch (blockchainPlatform) {
+      case 'substrate':
+        return this.substrateHashDetail(transaction, rpcURL, method);
+
       case 'near':
-        return this.verifyNearContractAddress(networkId, rpcURL, contractId);
+        return this.nearHashDetail(transaction, rpcURL, method);
 
       default:
-        throw new HttpErrors.UnprocessableEntity(
-          `Contract address ${contractId} not found in network ${networkId}`,
-        );
+        return;
     }
   }
 
@@ -142,6 +174,10 @@ export class NetworkService {
         throw new HttpErrors.NotFound('WalletNotFound');
     }
   }
+
+  // ------------------------------------------------
+
+  // ------ VerifyNetwork ---------------------------
 
   private async verifyPolkadotConnection(
     network: Network,
@@ -253,6 +289,10 @@ export class NetworkService {
 
     return currency;
   }
+
+  // ------------------------------------------------
+
+  // ------ ClaimReference --------------------------
 
   private async claimReferenceNear(
     claimReferenceData: ClaimReferenceData,
@@ -451,6 +491,220 @@ export class NetworkService {
       if (api) await api.disconnect();
     }
   }
+
+  // ------------------------------------------------
+
+  // ------ HashDetail ------------------------------
+
+  private async substrateHashDetail(
+    transaction: Transaction,
+    rpcURL: string,
+    method?: string,
+  ): Promise<HashDetail> {
+    const api = await this.connect(rpcURL);
+    const apiAt = await api.at(transaction.hash).catch(() => null);
+    const result = await apiAt?.query.system.events().catch(() => null);
+
+    if (!result) {
+      throw new HttpErrors.NotFound('RecordNotFound');
+    }
+
+    const records = result.toHuman() as AnyObject[];
+
+    let hashDetail = null;
+
+    for (const record of records) {
+      const {event} = record;
+      const {method: methodName, data, section} = event;
+
+      if (method && method !== methodName) continue;
+      const func = `${section}.${methodName}`;
+
+      switch (func) {
+        // SendTip With MYRIA to KNOWN RECEIVER
+        // Example: 0xbdca73b63fd7cc0ea023ce9e680f0a8be39a9b2e43de54f1688b65912ce67b16
+        case 'balances.Transfer': {
+          const {from, to, amount} = data;
+
+          hashDetail = {
+            transactionDetail: {from, to, amount: amount.replace(/,/gi, '')},
+            tipsBalanceInfo: null,
+            tokenId: null,
+          };
+          break;
+        }
+
+        // SendTip With FT to KNOWN RECEIVER
+        // Example: 0x3223caecd4db58968bf4d9b038f08a7c6092fbb9cac08fd4c72b33d4e4d1cb2d
+        case 'octopusAssets.Transferred': {
+          const {assetId, from, to, amount} = data;
+
+          hashDetail = {
+            transactionDetail: {from, to, amount: amount.replace(/,/gi, '')},
+            tipsBalanceInfo: null,
+            tokenId: assetId,
+          };
+          break;
+        }
+
+        // SendTip With MYRIA to UNKNOWN RECEIVER
+        // Example: 0x415f477f5c82a0dbacf4750a2394f51b867534ae5c5705ce98f49ae21fea5f58
+        case 'tipping.SendTip': {
+          const [
+            from,
+            to,
+            [[serverId, referenceType, referenceId, ftIdentifier], balance],
+          ] = data;
+
+          hashDetail = {
+            transactionDetail: {from, to, amount: balance.replace(/,/gi, '')},
+            tipsBalanceInfo: {
+              serverId,
+              referenceType,
+              referenceId,
+              ftIdentifier,
+            },
+            tokenId: ftIdentifier === 'native' ? null : ftIdentifier,
+          };
+          break;
+        }
+
+        // Pay Content
+        case 'tipping.Pay': {
+          // TODO: Added when substrate is ready
+          break;
+        }
+
+        default:
+          continue;
+      }
+    }
+
+    if (!hashDetail) {
+      throw new HttpErrors.UnprocessableEntity('RecordNotFound');
+    }
+
+    await api.disconnect();
+
+    return hashDetail;
+  }
+
+  private async nearHashDetail(
+    transaction: Transaction,
+    rpcURL: string,
+    method?: string,
+  ): Promise<HashDetail> {
+    const {hash, from} = transaction;
+    const provider = new providers.JsonRpcProvider({url: rpcURL});
+    const receipts = await provider.txStatus(hash, from);
+    const actions: AnyObject[] = receipts.transaction?.actions ?? [];
+    const {receiver_id} = receipts.transaction;
+
+    if (!actions.length || !receiver_id) {
+      throw new HttpErrors.UnprocessableEntity('RecordNotFound');
+    }
+
+    let hashDetail = null;
+
+    for (const action of actions) {
+      for (const key in actions) {
+        const {args, method_name: methodName} = action[key];
+
+        if (method && method !== methodName) continue;
+
+        switch (methodName) {
+          // SendTip With FT to UNKNOWN RECEIVER
+          // Example: FG2P7SfAdxWRtb3EPgQpoXxxNiorV6X31MSasYdDT9dy
+          case 'ft_transfer_call': {
+            const result = base64ToString(args);
+            const transactionDetail = strToJson(result);
+            if (!transactionDetail) continue;
+            const {receiver_id: to, amount, msg} = transactionDetail;
+            const tipsBalanceInfo = strToJson(msg);
+            if (!tipsBalanceInfo) continue;
+
+            hashDetail = {
+              transactionDetail: {from, to, amount},
+              tipsBalanceInfo: {
+                serverId: tipsBalanceInfo.server_id,
+                referenceType: tipsBalanceInfo.reference_type,
+                referenceId: tipsBalanceInfo.reference_id,
+                ftIdentifier: tipsBalanceInfo.ft_identifier,
+              },
+              tokenId: receiver_id,
+            };
+            break;
+          }
+
+          // SendTip With NEAR to UNKNOWN RECEIVER
+          // Example: BUmxShQYfxSptncSfuZZ1dbAAWhuTtoRryCjiemYWE1E
+          case 'send_tip': {
+            const result = base64ToString(args);
+            const transactionDetail = strToJson(result);
+            if (!transactionDetail) continue;
+            const {tips_balance_info: tipsBalanceInfo} = transactionDetail;
+            const {deposit: amount} = action[key];
+
+            hashDetail = {
+              transactionDetail: {from, to: receiver_id, amount},
+              tipsBalanceInfo: {
+                serverId: tipsBalanceInfo.server_id,
+                referenceType: tipsBalanceInfo.reference_type,
+                referenceId: tipsBalanceInfo.reference_id,
+                ftIdentifier: tipsBalanceInfo.ft_identifier,
+              },
+              tokenId: null,
+            };
+            break;
+          }
+
+          // SendTip With FT to KNOWN RECEIVER
+          // Example: ADWrBEZxSTbmD3FZUky234d6B6YA93R8kKrhBWzMmZ1L
+          case 'ft_transfer': {
+            const result = base64ToString(args);
+            const transactionDetail = strToJson(result);
+            if (!transactionDetail) continue;
+            const {receiver_id: to, amount} = transactionDetail;
+
+            hashDetail = {
+              transactionDetail: {from, to, amount},
+              tipsBalanceInfo: null,
+              tokenId: receiver_id,
+            };
+            break;
+          }
+
+          // Pay Content
+          case 'pay': {
+            // TODO: When contract is ready
+            break;
+          }
+
+          // SendTip With NEAR to KNOWN RECEIVER
+          // Example: F7JgBje3dAxipcHwP3jyCMKZkjBGMaLXxqjyPD7AKovn
+          default: {
+            const {deposit: amount} = action[key];
+
+            return {
+              transactionDetail: {from, to: receiver_id, amount},
+              tipsBalanceInfo: null,
+              tokenId: null,
+            };
+          }
+        }
+      }
+
+      if (hashDetail) break;
+    }
+
+    if (!hashDetail) {
+      throw new HttpErrors.UnprocessableEntity('RecordNotFound');
+    }
+
+    return hashDetail;
+  }
+
+  // ------------------------------------------------
 
   private async connect(
     rpcURL: string,
