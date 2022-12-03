@@ -205,7 +205,12 @@ export interface PostRelations {
   user?: UserWithRelations;
 }
 
-export type PostWithRelations = Post & PostRelations;
+interface AdditionalProps {
+  importers?: User[];
+  totalImporter?: number;
+}
+
+export type PostWithRelations = Post & PostRelations & AdditionalProps;
 
 export type ExtendedPost = PostWithRelations & {
   platformUser?: Omit<People, 'id'>;

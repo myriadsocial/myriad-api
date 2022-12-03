@@ -245,10 +245,13 @@ export interface UserRelations {
   // describe navigational properties here
   experience?: ExperienceWithRelations;
   wallets?: WalletWithRelations;
+}
+
+export interface AdditionalProps {
   friendInfo?: AnyObject;
 }
 
-export type UserWithRelations = User & UserRelations;
+export type UserWithRelations = User & UserRelations & AdditionalProps;
 
 export class UpdateUserDto extends Model {
   @property({

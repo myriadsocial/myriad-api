@@ -105,13 +105,13 @@ export interface UserSocialMediaRelations {
   people?: PeopleWithRelations;
 }
 
-interface AdditionalProperty {
+interface AdditionalProps {
   connected?: boolean;
 }
 
 export type UserSocialMediaWithRelations = UserSocialMedia &
   UserSocialMediaRelations &
-  AdditionalProperty;
+  AdditionalProps;
 
 export class SocialMediaVerificationDto extends Model {
   @property({

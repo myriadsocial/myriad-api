@@ -237,6 +237,8 @@ export class FriendService {
     switch (friend.status) {
       case FriendStatusType.APPROVED:
         friendStatus = 'friends';
+        friend.requestorId = currentUser;
+        friend.requesteeId = requesteeId;
         break;
 
       case FriendStatusType.PENDING:
@@ -247,15 +249,17 @@ export class FriendService {
         }
         break;
 
-      default:
+      case FriendStatusType.BLOCKED: {
         friendStatus = 'blocked';
+        break;
+      }
     }
 
     return {
       id: friendId,
       status: friendStatus,
       requesteeId: friend.requesteeId,
-      requestorId: friend.requestor,
+      requestorId: friend.requestorId,
     };
   }
 
