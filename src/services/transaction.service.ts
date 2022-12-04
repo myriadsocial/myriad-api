@@ -242,7 +242,11 @@ export class TransactionService {
     }
 
     // Validate from address
-    const from = u8aToHex(decodeAddress(transactionDetail.from));
+    const from =
+      currency?.network?.blockchainPlatform === 'near'
+        ? transactionDetail.from
+        : u8aToHex(decodeAddress(transactionDetail.from));
+
     if (transaction.from !== from) {
       throw new HttpErrors.UnprocessableEntity('InvalidSender');
     }
@@ -260,7 +264,11 @@ export class TransactionService {
       !tipsBalanceInfo ||
       transaction.type === ReferenceType.UNLOCKABLECONTENT
     ) {
-      const to = u8aToHex(decodeAddress(transactionDetail.to));
+      const to =
+        currency?.network?.blockchainPlatform === 'near'
+          ? transactionDetail.to
+          : u8aToHex(decodeAddress(transactionDetail.to));
+
       if (transaction.to !== to) {
         throw new HttpErrors.UnprocessableEntity('InvalidReceiver');
       }

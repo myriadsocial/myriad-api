@@ -607,7 +607,7 @@ export class NetworkService {
     let hashDetail = null;
 
     for (const action of actions) {
-      for (const key in actions) {
+      for (const key in action) {
         const {args, method_name: methodName} = action[key];
 
         if (method && method !== methodName) continue;
