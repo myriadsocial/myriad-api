@@ -258,6 +258,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               );
               if (!info) return friend;
               friend.requestee.friendInfo = info;
+              friend.requestee = omit(friend.requestee, [
+                'nonce',
+                'permission',
+                'friendIndex',
+              ]) as UserWithRelations;
               return friend;
             }),
           );
@@ -300,17 +305,18 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         let {mutual} = query;
 
         if (Array.isArray(mutual)) mutual = mutual[0];
-        if (mutual !== 'true') return result;
-
         return Promise.all(
           result.map(async (friend: FriendWithRelations) => {
             const {requestorId, requesteeId} = friend;
-            const {count: totalMutual} = await this.friendService.countMutual(
-              requestorId,
-              requesteeId,
-            );
 
-            friend.totalMutual = totalMutual;
+            if (mutual === 'true') {
+              const {count: totalMutual} = await this.friendService.countMutual(
+                requestorId,
+                requesteeId,
+              );
+
+              friend.totalMutual = totalMutual;
+            }
 
             if (!friend.requestee) return friend;
             if (requestorId === currentUserId) return friend;
@@ -322,6 +328,11 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
             if (!info) return friend;
             friend.requestee.friendInfo = info;
+            friend.requestee = omit(friend.requestee, [
+              'nonce',
+              'permissions',
+              'friendIndex',
+            ]) as UserWithRelations;
             return friend;
           }),
         );
@@ -343,7 +354,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               comment.text = '[comment removed]';
               comment.reportType = report?.type;
 
-              return comment;
+              return omit(comment);
             }
 
             const post = comment?.post;
@@ -357,7 +368,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 comment.privacy = 'private';
               }
 
-              return comment;
+              return omit(comment);
             }
 
             // Check comment creator privacy when post creator is current user
@@ -369,7 +380,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 comment.privacy = 'private';
               }
 
-              return comment;
+              return omit(comment);
             }
 
             // Post creator is not current user
@@ -385,7 +396,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 comment.privacy = 'private';
               }
 
-              return comment;
+              return omit(comment);
             }
 
             // Post creator is not current user
@@ -401,7 +412,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                 comment.privacy = 'private';
               }
 
-              return comment;
+              return omit(comment);
             }
 
             if (visibility === VisibilityType.SELECTED) {
@@ -424,7 +435,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               comment.privacy = 'private';
             }
 
-            return comment;
+            return omit(comment);
           }),
         );
       }
@@ -453,14 +464,14 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               return new User({
                 id: generateObjectId(),
                 name: 'Unknown Myrian',
-                username: 'unknow_myriad',
+                username: 'unknow_myrian',
               });
             }
 
             if (currentUserId === createdBy) return user;
             if (visibility === VisibilityType.PRIVATE) {
               user.name = 'Unknown Myrian';
-              user.username = 'unknow_myriad';
+              user.username = 'unknow_myrian';
               return user;
             }
 
@@ -478,7 +489,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
               if (friend) return user;
               user.name = 'Unknown Myrian';
-              user.username = 'unknow_myriad';
+              user.username = 'unknow_myrian';
               return user;
             }
 

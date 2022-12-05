@@ -166,7 +166,7 @@ export class PostService {
 
     return this.postRepository
       .create(rawPost)
-      .then(result => this.afterImport(result));
+      .then(result => this.afterImport(result, people));
   }
 
   public async draft(userId: string): Promise<DraftPost | null> {
@@ -341,6 +341,7 @@ export class PostService {
 
   private async afterImport(
     post: PostWithRelations,
+    people: People,
   ): Promise<PostWithRelations> {
     const importer = post.createdBy;
     const {id, originPostId, platform, tags, peopleId} = post;
@@ -374,8 +375,9 @@ export class PostService {
 
     post.importers = user ? [Object.assign(user, {name: 'You'})] : [];
     post.totalImporter = count;
+    post.people = people;
 
-    return post;
+    return omit(post);
   }
 
   private async afterDelete(post?: Post): Promise<void> {
@@ -421,7 +423,7 @@ export class PostService {
     post.importers = [importer];
     post.totalImporter = totalImporter;
 
-    return post;
+    return omit(post, ['popularCount', 'rawText']) as PostWithRelations;
   }
 
   private async validateImportedPost(

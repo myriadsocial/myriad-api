@@ -20,6 +20,7 @@ import {
 } from '../enums';
 import {
   CommentWithRelations,
+  Currency,
   UserCurrencyWithRelations,
   UserWithRelations,
 } from '../models';
@@ -107,12 +108,11 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
           if (user?.userCurrencies) {
             const userCurrencies =
               user.userCurrencies as UserCurrencyWithRelations[];
-            const currencies = userCurrencies.map(e => e.currency);
-
-            return {
-              ...omit(user, ['userCurrencies']),
-              currencies,
-            };
+            const currencies = userCurrencies.map(
+              e => new Currency(e.currency),
+            );
+            user.currencies = currencies;
+            return omit(user, ['userCurrencies']);
           }
 
           return user;
@@ -130,7 +130,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         );
         if (!info) return user;
         user.friendInfo = info;
-        return user;
+        return omit(user, ['nonce', 'permissions', 'friendIndex']);
       }
 
       case ControllerType.USERCOMMENT: {
@@ -147,7 +147,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
           comment.text = '[comment removed]';
           comment.reportType = report?.type;
 
-          return comment;
+          return omit(comment);
         }
 
         const post = comment?.post;
@@ -161,7 +161,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
             comment.privacy = 'private';
           }
 
-          return comment;
+          return omit(comment);
         }
 
         // Check comment creator privacy when post creator is current user
@@ -173,7 +173,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
             comment.privacy = 'private';
           }
 
-          return comment;
+          return omit(comment);
         }
 
         // Post creator is not current user
@@ -189,7 +189,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
             comment.privacy = 'private';
           }
 
-          return comment;
+          return omit(comment);
         }
 
         // Post creator is not current user
@@ -205,7 +205,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
             comment.privacy = 'private';
           }
 
-          return comment;
+          return omit(comment);
         }
 
         // Post creator is not current user
@@ -216,7 +216,7 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
           comment.privacy = 'private';
         }
 
-        return comment;
+        return omit(comment);
       }
 
       default:

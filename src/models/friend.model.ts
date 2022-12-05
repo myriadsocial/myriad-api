@@ -1,10 +1,4 @@
-import {
-  AnyObject,
-  belongsTo,
-  Entity,
-  model,
-  property,
-} from '@loopback/repository';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {FriendStatusType} from '../enums';
 import {User, UserWithRelations} from './user.model';
 
@@ -105,7 +99,6 @@ export interface FriendRelations {
   // describe navigational properties here
   requestee?: UserWithRelations;
   requestor?: UserWithRelations;
-  friendInfo?: AnyObject;
 }
 
 export type FriendWithRelations = Friend & FriendRelations;
