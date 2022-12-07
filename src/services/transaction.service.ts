@@ -16,6 +16,7 @@ import {
   CurrencyRepository,
   PeopleRepository,
   TransactionRepository,
+  UnlockableContentRepository,
   UserRepository,
   UserSocialMediaRepository,
   WalletRepository,
@@ -35,6 +36,8 @@ export class TransactionService {
     private peopleRepository: PeopleRepository,
     @repository(TransactionRepository)
     private transactionRepository: TransactionRepository,
+    @repository(UnlockableContentRepository)
+    private unlockableContentRepository: UnlockableContentRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @repository(UserSocialMediaRepository)
@@ -198,8 +201,19 @@ export class TransactionService {
 
     let methodName;
 
-    // TODO: Validate blockchain hash
     if (transaction.type === ReferenceType.UNLOCKABLECONTENT) {
+      const id = transaction.referenceId ?? '';
+      const content = await this.unlockableContentRepository.findById(id);
+      const price = content.prices.find(e => e.id === transaction.currencyId);
+
+      if (!price) {
+        throw new HttpErrors.NotFound('ContentPriceNotFound');
+      }
+
+      if (transaction.amount < parseInt(price.amount)) {
+        throw new HttpErrors.NotFound('InvalidPayment');
+      }
+
       const hasPaid = await this.transactionRepository.findOne({
         where: {
           referenceId: transaction.referenceId,
@@ -213,7 +227,7 @@ export class TransactionService {
         throw new HttpErrors.UnprocessableEntity('ContentAlreadyPaid');
       }
 
-      methodName = 'Pay';
+      methodName = 'PayContent';
     }
 
     const info = await this.networkService.transactionHashInfo(
@@ -254,7 +268,7 @@ export class TransactionService {
     // Validate balance
     const decimal = 10 ** currency.decimal;
     const parseAmount = parseInt(transactionDetail.amount) / decimal;
-    if (transaction.amount !== parseAmount) {
+    if (transaction.amount < parseAmount) {
       throw new HttpErrors.UnprocessableEntity('InvalidAmount');
     }
 
