@@ -16,7 +16,7 @@ import {
   response,
 } from '@loopback/rest';
 import {PaginationInterceptor} from '../../interceptors';
-import {UnlockableContent} from '../../models';
+import {UnlockableContent, UnlockableContentWithPrice} from '../../models';
 import {UserService} from '../../services';
 
 @authenticate('jwt')
@@ -30,21 +30,21 @@ export class UserUnlockableContentController {
   @response(200, {
     description: 'CREATE user unlockable-content',
     'application/json': {
-      schema: getModelSchemaRef(UnlockableContent),
+      schema: getModelSchemaRef(UnlockableContentWithPrice),
     },
   })
   async create(
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(UnlockableContent, {
+          schema: getModelSchemaRef(UnlockableContentWithPrice, {
             title: 'NewUnlockableContent',
             exclude: ['id'],
           }),
         },
       },
     })
-    content: Omit<UnlockableContent, 'id'>,
+    content: Omit<UnlockableContentWithPrice, 'id'>,
   ): Promise<UnlockableContent> {
     return this.userService.createUnlockableContent(content);
   }

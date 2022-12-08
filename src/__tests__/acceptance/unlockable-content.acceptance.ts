@@ -1,9 +1,11 @@
 import {Client, expect} from '@loopback/testlab';
+import {omit} from 'lodash';
 import {MyriadApiApplication} from '../../application';
 import {ReferenceType} from '../../enums';
 import {Token} from '../../interfaces';
 import {Currency, UnlockableContentWithRelations, User} from '../../models';
 import {
+  ContentPriceRepository,
   CurrencyRepository,
   ServerRepository,
   TransactionRepository,
@@ -13,6 +15,7 @@ import {
 import {
   deleteAllRepository,
   givenAccesToken,
+  givenContentPriceRepository,
   givenCurrencyInstance,
   givenCurrencyRepository,
   givenOtherUser,
@@ -38,6 +41,7 @@ describe('UnlockableContentApplication', () => {
   let transactionRepository: TransactionRepository;
   let currencyRepository: CurrencyRepository;
   let unlockableContentRepository: UnlockableContentRepository;
+  let contentPriceRepository: ContentPriceRepository;
   let user: User;
   let currency: Currency;
 
@@ -53,6 +57,7 @@ describe('UnlockableContentApplication', () => {
     transactionRepository = await givenTransactionRepository(app);
     unlockableContentRepository = await givenUnlockableContentRepository(app);
     serverRepository = await givenServerRepository(app);
+    contentPriceRepository = await givenContentPriceRepository(app);
   });
 
   beforeEach(async () => {
@@ -72,15 +77,26 @@ describe('UnlockableContentApplication', () => {
   });
 
   it('create an unlockable content', async () => {
-    const content = givenUnlockableContent({createdBy: user.id});
+    const content = givenUnlockableContent({
+      createdBy: user.id,
+      contentPrices: [{currencyId: currency.id, amount: 100}],
+    });
     const response = await client
       .post('/user/unlockable-contents')
       .set('Authorization', `Bearer ${token}`)
       .send(content)
       .expect(200);
-    expect(response.body).to.containDeep(content);
+    expect(response.body).to.containDeep(omit(content, ['contentPrices']));
     const result = await unlockableContentRepository.findById(response.body.id);
-    expect(result).to.containDeep(content);
+    expect(result).to.containDeep(omit(content, ['contentPrices']));
+    const contentPrice = await contentPriceRepository.findOne({
+      where: {unlockableContentId: result.id},
+    });
+    expect(contentPrice).to.containEql({
+      currencyId: currency.id,
+      amount: 100,
+      unlockableContentId: result.id,
+    });
   });
 
   context('when dealing with a single persisted unlockable content', () => {

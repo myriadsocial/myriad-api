@@ -12,7 +12,7 @@ import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {isHex} from '@polkadot/util';
 import NonceGenerator from 'a-nonce-generator';
-import {assign, omit, pull, union} from 'lodash';
+import {assign, omit, pull, union, uniqBy} from 'lodash';
 import {config} from '../config';
 import {
   AccountSettingType,
@@ -27,6 +27,7 @@ import {
   AccountSetting,
   ActivityLog,
   Comment,
+  ContentPrice,
   CreateImportedPostDto,
   CreateReportDto,
   CreateUserPersonalAccessTokenDto,
@@ -46,6 +47,7 @@ import {
   Transaction,
   TxDetail,
   UnlockableContent,
+  UnlockableContentWithPrice,
   UpdateTransactionDto,
   UpdateUserDto,
   UpdateUserPersonalAccessTokenDto,
@@ -59,6 +61,7 @@ import {
 } from '../models';
 import {
   ChangeEmailRequestRepository,
+  ContentPriceRepository,
   ExperienceRepository,
   IdentityRepository,
   UnlockableContentRepository,
@@ -93,6 +96,8 @@ export interface AfterFindProps {
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserService {
   constructor(
+    @repository(ContentPriceRepository)
+    private contentPriceRepository: ContentPriceRepository,
     @repository(ChangeEmailRequestRepository)
     private changeEmailRequestRepository: ChangeEmailRequestRepository,
     @repository(ExperienceRepository)
@@ -904,10 +909,23 @@ export class UserService {
   // ------ UnlockableContentMethod -----------------
 
   public async createUnlockableContent(
-    content: Omit<UnlockableContent, 'id'>,
+    content: Omit<UnlockableContentWithPrice, 'id'>,
   ): Promise<UnlockableContent> {
     content.createdBy = this.currentUser[securityId];
-    return this.unlockableContentRepository.create(content);
+    const raw = omit(content, 'contentPrices');
+    const created = await this.unlockableContentRepository.create(raw);
+    if (content.contentPrices.length === 0) return created;
+    const prices = uniqBy(content.contentPrices, 'id').map(price => {
+      const contentPrice = new ContentPrice();
+      contentPrice.amount = price.amount;
+      contentPrice.unlockableContentId = created.id;
+      contentPrice.currencyId = price.currencyId;
+      return contentPrice;
+    });
+
+    await this.contentPriceRepository.createAll(prices);
+
+    return created;
   }
 
   public async unlockableContents(filter?: Filter<UnlockableContent>) {
