@@ -103,12 +103,16 @@ describe('AuthenticationApplication', function () {
   });
 
   it('rejects login when wrong signature', async () => {
-    await givenNetworkInstance(networkRepository);
-
+    const network = await givenNetworkInstance(networkRepository);
     const user = await givenUserInstance(userRepository);
+    const wallet = await givenWalletInstance(walletRepository, {
+      userId: user.id,
+      networkId: network.id,
+    });
     const credential = givenCredential({
-      nonce: user.nonce + 1,
-      signature: u8aToHex(address.sign(numberToHex(user.nonce))),
+      publicAddress: wallet.id,
+      nonce: user.nonce,
+      signature: u8aToHex(address.sign(numberToHex(user.nonce + 1))),
     });
 
     await client
