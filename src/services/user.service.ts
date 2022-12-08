@@ -438,12 +438,14 @@ export class UserService {
       throw new HttpErrors.UnprocessableEntity('WalletIdNotFound');
     }
 
-    const network = await this.networkService.findById(networkId);
-    const wallet = await this.walletRepository.findOne({
-      where: {id: credential.data.id},
-    });
+    const [network, exist] = await Promise.all([
+      this.networkService.findById(networkId),
+      this.walletRepository.findOne({
+        where: {id: credential.data.id},
+      }),
+    ]);
 
-    if (wallet && wallet.userId !== this.currentUser?.[securityId]) {
+    if (exist && exist.userId !== this.currentUser?.[securityId]) {
       throw new HttpErrors.UnprocessableEntity('WalletAlreadyExist');
     }
 
@@ -457,19 +459,19 @@ export class UserService {
       throw new HttpErrors.UnprocessableEntity('FailedToVerify');
     }
 
-    if (wallet) return wallet;
+    if (exist) return exist;
 
     const primary = this.currentUser?.fullAccess ? false : true;
-    const raw = new Wallet({
-      ...credential.data,
-      userId,
-      networkId,
-      primary,
-    });
+    const wallet = new Wallet();
+    wallet.id = credential.data.id;
+    wallet.userId = userId;
+    wallet.primary = primary;
+    wallet.networkId = network.id;
+    wallet.blockchainPlatform = network.blockchainPlatform;
 
     return this.userRepository
       .wallets(userId)
-      .create(raw)
+      .create(wallet)
       .then(result => this.afterConnectWallet(result))
       .catch(err => {
         throw err;
@@ -499,10 +501,6 @@ export class UserService {
       throw new HttpErrors.UnprocessableEntity('Wallet not connected');
     }
 
-    if (wallet.id !== (nearAccount ?? publicAddress)) {
-      throw new HttpErrors.UnprocessableEntity('Wrong address');
-    }
-
     if (wallet.networkId === networkId && wallet.primary === true) {
       throw new HttpErrors.UnprocessableEntity('Network already connected');
     }
@@ -519,6 +517,7 @@ export class UserService {
 
     wallet.networkId = networkId;
     wallet.primary = true;
+    wallet.blockchainPlatform = network.blockchainPlatform;
     wallet.updatedAt = new Date().toString();
 
     await this.userRepository

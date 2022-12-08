@@ -25,7 +25,7 @@ import {KeyringPair} from '@polkadot/keyring/types';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('UserWalletApplication', function () {
-  this.timeout(50000);
+  this.timeout(100000);
 
   let app: MyriadApiApplication;
   let token: string;
@@ -61,6 +61,7 @@ describe('UserWalletApplication', function () {
       givenWallet({
         id: 'abdulhakim.testnet',
         networkId: 'near',
+        blockchainPlatform: 'near',
       }),
     );
   });
@@ -70,11 +71,11 @@ describe('UserWalletApplication', function () {
   });
 
   it('creates a wallet for user', async () => {
-    await givenNetworkInstance(networkRepository);
-
+    const network = await givenNetworkInstance(networkRepository);
     const credential = givenCredential({
       nonce: user.nonce,
       signature: u8aToHex(address.sign(numberToHex(user.nonce))),
+      networkType: network.id,
     });
     const wallet = new Wallet({
       id: credential.publicAddress,

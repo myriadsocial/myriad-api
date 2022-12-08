@@ -33,6 +33,12 @@ export class Wallet extends Entity {
   primary: boolean;
 
   @property({
+    type: 'string',
+    required: true,
+  })
+  blockchainPlatform: string;
+
+  @property({
     type: 'date',
     required: false,
     default: () => new Date(),

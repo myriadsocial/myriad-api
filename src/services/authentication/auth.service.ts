@@ -168,11 +168,7 @@ export class AuthService {
       throw new HttpErrors.UnprocessableEntity('Wallet address already exists');
     }
 
-    const existingNetwork = await this.networkRepository.exists(network);
-
-    if (!existingNetwork) {
-      throw new HttpErrors.UnprocessableEntity('Network not exists');
-    }
+    const existingNetwork = await this.networkRepository.findById(network);
 
     const user = new User();
     user.id = generateObjectId();
@@ -185,6 +181,7 @@ export class AuthService {
     wallet.id = fixedAddress;
     wallet.networkId = network;
     wallet.primary = true;
+    wallet.blockchainPlatform = existingNetwork.blockchainPlatform;
 
     return this.userRepository
       .create(user)
@@ -223,21 +220,12 @@ export class AuthService {
     if (!credential?.role) credential.role = 'user';
 
     const currentNetwork = await this.networkRepository.findById(networkType);
-    const networks = await this.networkRepository.find({
-      where: {blockchainPlatform: currentNetwork.blockchainPlatform},
-    });
-    const networkIds = networks.map(network => network.id);
-    const wallet = await this.walletRepository.findOne({
-      where: {
-        id: nearAccount ?? publicAddress,
-        networkId: {inq: networkIds},
+    const wallet = await this.walletRepository.findById(
+      nearAccount ?? publicAddress,
+      {
+        include: ['user'],
       },
-      include: ['user'],
-    });
-
-    if (!wallet?.user) {
-      throw new HttpErrors.Unauthorized('Wallet address not exists!');
-    }
+    );
 
     const user = wallet.user;
 
@@ -307,6 +295,7 @@ export class AuthService {
       await this.walletRepository.updateById(wallet.id, {
         primary: true,
         networkId: networkType,
+        blockchainPlatform: currentNetwork.blockchainPlatform,
       });
     }
 
@@ -381,10 +370,6 @@ export class AuthService {
       );
     }
 
-    await this.walletRepository.updateAll(
-      {networkId: 'myriad', primary: true},
-      {userId: user.id},
-    );
     jobs.push(
       this.requestCreateNewUserByEmailRepository.delete(key),
       this.userOTPRepository.deleteAll({

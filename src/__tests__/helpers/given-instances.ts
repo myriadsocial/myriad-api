@@ -790,6 +790,7 @@ export function givenWallet(wallet?: Partial<Wallet>) {
     {
       id: id,
       networkId: 'myriad',
+      blockchainPlatform: 'substrate',
     },
     wallet,
   );
