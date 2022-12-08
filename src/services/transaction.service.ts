@@ -13,6 +13,7 @@ import {
   WalletWithRelations,
 } from '../models';
 import {
+  ContentPriceRepository,
   CurrencyRepository,
   PeopleRepository,
   TransactionRepository,
@@ -29,6 +30,8 @@ import {u8aToHex} from '@polkadot/util';
 @injectable({scope: BindingScope.TRANSIENT})
 export class TransactionService {
   constructor(
+    @repository(ContentPriceRepository)
+    private contentPriceRepository: ContentPriceRepository,
     @repository(CurrencyRepository)
     private currencyRepository: CurrencyRepository,
     @repository(PeopleRepository)
@@ -198,8 +201,19 @@ export class TransactionService {
 
     let methodName;
 
-    // TODO: Validate blockchain hash
     if (transaction.type === ReferenceType.UNLOCKABLECONTENT) {
+      const price = await this.contentPriceRepository.findOne({
+        where: {unlockableContentId: transaction.referenceId},
+      });
+
+      if (!price) {
+        throw new HttpErrors.NotFound('ContentPriceNotFound');
+      }
+
+      if (transaction.amount < price.amount) {
+        throw new HttpErrors.NotFound('InvalidPayment');
+      }
+
       const hasPaid = await this.transactionRepository.findOne({
         where: {
           referenceId: transaction.referenceId,
@@ -213,7 +227,7 @@ export class TransactionService {
         throw new HttpErrors.UnprocessableEntity('ContentAlreadyPaid');
       }
 
-      methodName = 'Pay';
+      methodName = 'PayContent';
     }
 
     const info = await this.networkService.transactionHashInfo(
@@ -254,7 +268,7 @@ export class TransactionService {
     // Validate balance
     const decimal = 10 ** currency.decimal;
     const parseAmount = parseInt(transactionDetail.amount) / decimal;
-    if (transaction.amount !== parseAmount) {
+    if (transaction.amount < parseAmount) {
       throw new HttpErrors.UnprocessableEntity('InvalidAmount');
     }
 
@@ -282,11 +296,11 @@ export class TransactionService {
     ) {
       const {referenceType, referenceId} = tipsBalanceInfo;
       if (referenceType !== transaction.type) {
-        throw new HttpErrors.UnprocessableEntity('ContentNotPaid');
+        throw new HttpErrors.UnprocessableEntity('InvalidReference');
       }
 
       if (referenceId !== transaction.referenceId) {
-        throw new HttpErrors.UnprocessableEntity('ContentNotPaid');
+        throw new HttpErrors.UnprocessableEntity('InvalidReference');
       }
     }
   }

@@ -33,6 +33,7 @@ import {
   UserOTPRepository,
   IdentityRepository,
   UnlockableContentRepository,
+  ContentPriceRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -103,8 +104,18 @@ export async function givenRepositories(testdb: any) {
     async () => postRepository,
     async () => userRepository,
   );
+  const contentPriceRepository: ContentPriceRepository =
+    new ContentPriceRepository(
+      testdb,
+      async () => currencyRepository,
+      async () => unlockableContentRepository,
+    );
   const unlockableContentRepository: UnlockableContentRepository =
-    new UnlockableContentRepository(testdb, async () => userRepository);
+    new UnlockableContentRepository(
+      testdb,
+      async () => userRepository,
+      async () => contentPriceRepository,
+    );
   const postRepository: PostRepository = new PostRepository(
     testdb,
     async () => peopleRepository,
@@ -321,6 +332,7 @@ export async function givenRepositories(testdb: any) {
   );
 
   const transactionService = new TransactionService(
+    contentPriceRepository,
     currencyRepository,
     peopleRepository,
     transactionRepository,
@@ -415,6 +427,7 @@ export async function givenRepositories(testdb: any) {
   );
 
   const userService = new UserService(
+    contentPriceRepository,
     changeEmailRequestRepository,
     experienceRepository,
     identityRepository,
@@ -484,6 +497,7 @@ export async function givenRepositories(testdb: any) {
     socialMediaService,
     tagService,
     unlockableContentRepository,
+    contentPriceRepository,
   };
 }
 
@@ -513,6 +527,7 @@ export async function givenEmptyDatabase(testdb: any) {
     userCurrencyRepository,
     serverRepository,
     unlockableContentRepository,
+    contentPriceRepository,
   } = await givenRepositories(testdb);
 
   await tagRepository.deleteAll();
@@ -539,4 +554,5 @@ export async function givenEmptyDatabase(testdb: any) {
   await userCurrencyRepository.deleteAll();
   await serverRepository.deleteAll();
   await unlockableContentRepository.deleteAll();
+  await contentPriceRepository.deleteAll();
 }

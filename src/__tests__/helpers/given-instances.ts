@@ -32,7 +32,7 @@ import {
   SocialMediaVerificationDto,
   Tag,
   Transaction,
-  UnlockableContent,
+  UnlockableContentWithPrice,
   User,
   UserExperience,
   UserReport,
@@ -892,28 +892,24 @@ export function givenIdentityInstance(
 }
 
 export function givenUnlockableContent(
-  unlockableContent?: Partial<UnlockableContent>,
+  unlockableContentWithPrice?: Partial<UnlockableContentWithPrice>,
 ) {
   const data = Object.assign(
     {
       content: {
         text: 'Hello world',
       },
-      prices: [
-        {
-          ...givenCurrency(),
-          amount: 100,
-        },
-      ],
     },
-    unlockableContent,
+    unlockableContentWithPrice,
   );
-  return new UnlockableContent(data);
+  return new UnlockableContentWithPrice(data);
 }
 
 export function givenUnlockableContentInstance(
   unlockableRepository: UnlockableContentRepository,
-  unlockableContent?: Partial<UnlockableContent>,
+  unlockableContentWithPrice?: Partial<UnlockableContentWithPrice>,
 ) {
-  return unlockableRepository.create(givenUnlockableContent(unlockableContent));
+  return unlockableRepository.create(
+    givenUnlockableContent(unlockableContentWithPrice),
+  );
 }

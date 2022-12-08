@@ -4,13 +4,10 @@ import {
   model,
   property,
   belongsTo,
+  hasMany,
 } from '@loopback/repository';
-import {Currency} from './currency.model';
 import {User, UserWithRelations} from './user.model';
-
-type Price = Currency & {
-  amount: string;
-};
+import {ContentPrice} from './content-price.model';
 
 @model({
   settings: {
@@ -47,13 +44,6 @@ export class UnlockableContent extends Entity {
   content?: AnyObject;
 
   @property({
-    type: 'array',
-    itemType: 'object',
-    required: true,
-  })
-  prices: Price[];
-
-  @property({
     type: 'date',
     required: false,
     default: () => new Date(),
@@ -73,6 +63,9 @@ export class UnlockableContent extends Entity {
   })
   deletedAt?: string;
 
+  @hasMany(() => ContentPrice)
+  prices: ContentPrice[];
+
   @belongsTo(() => User, {name: 'user'})
   createdBy: string;
 
@@ -88,3 +81,21 @@ export interface UnlockableContentRelations {
 
 export type UnlockableContentWithRelations = UnlockableContent &
   UnlockableContentRelations;
+
+export interface Price {
+  currencyId: string;
+  amount: number;
+}
+
+export class UnlockableContentWithPrice extends UnlockableContent {
+  @property({
+    type: 'array',
+    itemType: 'object',
+    required: false,
+  })
+  contentPrices: Price[];
+
+  constructor(data?: Partial<UnlockableContentWithPrice>) {
+    super(data);
+  }
+}

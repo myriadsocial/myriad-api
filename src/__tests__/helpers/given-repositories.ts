@@ -26,6 +26,7 @@ import {
   ServerRepository,
   IdentityRepository,
   UnlockableContentRepository,
+  ContentPriceRepository,
 } from '../../repositories';
 
 export async function givenUserRepository(app: MyriadApiApplication) {
@@ -138,6 +139,10 @@ export async function givenUnlockableContentRepository(
   return app.getRepository(UnlockableContentRepository);
 }
 
+export async function givenContentPriceRepository(app: MyriadApiApplication) {
+  return app.getRepository(ContentPriceRepository);
+}
+
 export async function deleteAllRepository(app: MyriadApiApplication) {
   const userRepository = await givenUserRepository(app);
   const friendRepository = await givenFriendRepository(app);
@@ -168,6 +173,7 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   const unlockableContentRepository = await givenUnlockableContentRepository(
     app,
   );
+  const contentPriceRepository = await givenContentPriceRepository(app);
 
   await userRepository.deleteAll();
   await friendRepository.deleteAll();
@@ -196,4 +202,5 @@ export async function deleteAllRepository(app: MyriadApiApplication) {
   await serverRepository.deleteAll();
   await identityRepository.deleteAll();
   await unlockableContentRepository.deleteAll();
+  await contentPriceRepository.deleteAll();
 }

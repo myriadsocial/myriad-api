@@ -46,3 +46,4 @@ export * from './user-personal-access-token.model';
 export * from './user.model';
 export * from './vote.model';
 export * from './wallet.model';
+export * from './content-price.model';

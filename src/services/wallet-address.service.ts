@@ -179,14 +179,8 @@ export class WalletAddressService {
     return this.tipsBalanceInfo(networkId, ReferenceType.USER, id);
   }
 
-  private async unlockableContentAddress(
-    id: string,
-    networkId?: string,
-  ): Promise<TipsBalanceInfo> {
-    const {networkId: current, networkIds} = await this.currentUserNetwork();
-    if (current !== networkId) {
-      throw new HttpErrors.UnprocessableEntity('NetworkNotMatch');
-    }
+  private async unlockableContentAddress(id: string): Promise<TipsBalanceInfo> {
+    const {networkId, networkIds} = await this.currentUserNetwork();
     const unlockableContent = await this.unlockableContentRepository.findById(
       id,
       {

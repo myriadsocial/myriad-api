@@ -570,8 +570,14 @@ export class NetworkService {
         }
 
         // Pay Content
-        case 'tipping.Pay': {
-          // TODO: Added when substrate is ready
+        case 'tipping.PayContent': {
+          const {from, to, amount, info} = data;
+
+          hashDetail = {
+            transactionDetail: {from, to, amount: amount.replace(/,/gi, '')},
+            tipsBalanceInfo: info,
+            tokenId: info.ftIdentifier === 'native' ? null : info.ftIdentifier,
+          };
           break;
         }
 

@@ -203,30 +203,6 @@ export class FilterBuilderService {
     return this.finalizeFilter(filter, {userId, networkId});
   }
 
-  public async userExperienceById(args: InvocationArgs): Promise<void> {
-    const filter = args[1] ?? {};
-    const include = [
-      {
-        relation: 'experience',
-        scope: {
-          include: [
-            {
-              relation: 'user',
-              scope: {
-                include: [{relation: 'accountSetting'}],
-              },
-            },
-          ],
-        },
-      },
-    ];
-
-    if (!filter.include) filter.include = include;
-    else filter.include.push(...include);
-
-    args[1] = filter;
-  }
-
   public async userFriend(
     filter: Filter<Friend>,
     query: Query,
@@ -346,6 +322,30 @@ export class FilterBuilderService {
       query,
     );
     return this.finalizeFilter(filter, where);
+  }
+
+  public async userExperienceById(args: InvocationArgs): Promise<void> {
+    const filter = args[1] ?? {};
+    const include = [
+      {
+        relation: 'experience',
+        scope: {
+          include: [
+            {
+              relation: 'user',
+              scope: {
+                include: [{relation: 'accountSetting'}],
+              },
+            },
+          ],
+        },
+      },
+    ];
+
+    if (!filter.include) filter.include = include;
+    else filter.include.push(...include);
+
+    args[1] = filter;
   }
 
   public async userPostById(args: InvocationArgs): Promise<void> {
