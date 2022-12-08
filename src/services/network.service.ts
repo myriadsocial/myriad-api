@@ -570,8 +570,8 @@ export class NetworkService {
         }
 
         // Pay Content
-        case 'tipping.PayContent': {
-          const {from, to, amount, info} = data;
+        case 'tipping.PayUnlockableContent': {
+          const [{from, to, amount, info}] = data;
 
           hashDetail = {
             transactionDetail: {from, to, amount: amount.replace(/,/gi, '')},

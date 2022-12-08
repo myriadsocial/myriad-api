@@ -227,7 +227,7 @@ export class TransactionService {
         throw new HttpErrors.UnprocessableEntity('ContentAlreadyPaid');
       }
 
-      methodName = 'PayContent';
+      methodName = 'PayUnlockableContent';
     }
 
     const info = await this.networkService.transactionHashInfo(
