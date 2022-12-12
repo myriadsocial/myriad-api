@@ -24,6 +24,7 @@ import {
 import {MetaPagination} from '../interfaces';
 import {
   CommentWithRelations,
+  Experience,
   Friend,
   FriendWithRelations,
   PostWithRelations,
@@ -496,6 +497,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
             return user;
           }),
         );
+      }
+
+      case ControllerType.EXPERIENCE: {
+        return result.map((e: Experience) => omit(e, 'posts'));
       }
 
       default:
