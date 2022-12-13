@@ -231,6 +231,12 @@ export class TransactionService {
       methodName = 'PayUnlockableContent';
     }
 
+    const blockchainPlatform = currency?.network?.blockchainPlatform;
+
+    if (blockchainPlatform === 'near') {
+      if (transaction.type !== ReferenceType.UNLOCKABLECONTENT) return;
+    }
+
     const info = await this.networkService.transactionHashInfo(
       transaction,
       currency,
@@ -258,7 +264,7 @@ export class TransactionService {
 
     // Validate from address
     const from =
-      currency?.network?.blockchainPlatform === 'near'
+      blockchainPlatform === 'near'
         ? isHex(`0x${transactionDetail.from}`)
           ? `0x${transactionDetail.from}`
           : transaction.from
@@ -282,7 +288,7 @@ export class TransactionService {
       transaction.type === ReferenceType.UNLOCKABLECONTENT
     ) {
       const to =
-        currency?.network?.blockchainPlatform === 'near'
+        blockchainPlatform === 'near'
           ? isHex(`0x${transactionDetail.to}`)
             ? `0x${transactionDetail.to}`
             : transaction.to
