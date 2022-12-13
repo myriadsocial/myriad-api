@@ -118,7 +118,9 @@ export class TransactionService {
       }
     }
 
-    await this.validateHash(transaction);
+    if (transaction.type === ReferenceType.UNLOCKABLECONTENT) {
+      await this.validateHash(transaction);
+    }
 
     let toWalletId = false;
 
@@ -232,10 +234,6 @@ export class TransactionService {
     }
 
     const blockchainPlatform = currency?.network?.blockchainPlatform;
-
-    if (blockchainPlatform === 'near') {
-      if (transaction.type !== ReferenceType.UNLOCKABLECONTENT) return;
-    }
 
     const info = await this.networkService.transactionHashInfo(
       transaction,
