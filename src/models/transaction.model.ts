@@ -86,10 +86,10 @@ export class Transaction extends Entity {
   })
   deletedAt?: string;
 
-  @belongsTo(() => User, {name: 'fromUser'})
+  @belongsTo(() => User, {name: 'fromUser'}, {required: true})
   from: string;
 
-  @belongsTo(() => User, {name: 'toUser'})
+  @belongsTo(() => User, {name: 'toUser'}, {required: true})
   to: string;
 
   @belongsTo(() => Currency, {}, {required: true})

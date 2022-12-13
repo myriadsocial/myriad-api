@@ -26,6 +26,7 @@ import {MetricService} from './metric.service';
 import {NetworkService} from './network.service';
 import {NotificationService} from './notification.service';
 import {u8aToHex} from '@polkadot/util';
+import {isHex} from '@polkadot/util';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class TransactionService {
@@ -258,7 +259,9 @@ export class TransactionService {
     // Validate from address
     const from =
       currency?.network?.blockchainPlatform === 'near'
-        ? transactionDetail.from
+        ? isHex(`0x${transactionDetail.from}`)
+          ? `0x${transactionDetail.from}`
+          : transaction.from
         : u8aToHex(decodeAddress(transactionDetail.from));
 
     if (transaction.from !== from) {
@@ -280,7 +283,9 @@ export class TransactionService {
     ) {
       const to =
         currency?.network?.blockchainPlatform === 'near'
-          ? transactionDetail.to
+          ? isHex(`0x${transactionDetail.to}`)
+            ? `0x${transactionDetail.to}`
+            : transaction.to
           : u8aToHex(decodeAddress(transactionDetail.to));
 
       if (transaction.to !== to) {
