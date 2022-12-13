@@ -28,7 +28,7 @@ import {
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('TransactionApplication', function () {
-  this.timeout(10000);
+  this.timeout(50000);
 
   let app: MyriadApiApplication;
   let token: string;

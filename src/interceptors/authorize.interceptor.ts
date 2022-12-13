@@ -163,7 +163,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.USERNOTIFICATION:
       case ControllerType.USERSETTING:
       case ControllerType.STORAGE:
-      case ControllerType.USERTRANSACTION:
       case ControllerType.USERCURRENCY:
       case ControllerType.USEREXPERIENCE:
       case ControllerType.USERNETWORK:
@@ -172,6 +171,13 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.USERWALLET:
       case ControllerType.USERVOTE: {
         return;
+      }
+
+      case ControllerType.USERTRANSACTION: {
+        if (methodName === MethodType.PATCH) return;
+        const user = await this.walletRepository.user(data.from);
+        userId = user.id;
+        break;
       }
 
       case ControllerType.USERPOST: {

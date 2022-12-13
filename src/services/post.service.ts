@@ -467,7 +467,7 @@ export class PostService {
     const hasImported = posts.find(e => e.createdBy === importer);
 
     if (hasImported) {
-      throw new HttpErrors.Conflict('AlreadyImported');
+      throw new HttpErrors.Conflict(`${hasImported.id}`);
     }
   }
 
