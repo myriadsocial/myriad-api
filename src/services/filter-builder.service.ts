@@ -100,10 +100,14 @@ export class FilterBuilderService {
     const hasWhere = Object.keys(filter?.where ?? {}).length > 0;
 
     if (
-      (airdrop && (requestorId || requesteeId || hasWhere || friendsName)) ||
-      (friendsName && (requestorId || requesteeId || hasWhere || airdrop)) ||
-      ((requestorId || requesteeId) && (friendsName || hasWhere || airdrop)) ||
-      (hasWhere && (friendsName || requestorId || requesteeId || airdrop))
+      (hasWhere &&
+        (friendsName || requestorId || requesteeId || airdrop || name)) ||
+      (airdrop &&
+        (requestorId || requesteeId || hasWhere || friendsName || name)) ||
+      (friendsName &&
+        (requestorId || requesteeId || hasWhere || airdrop || name)) ||
+      ((requestorId || requesteeId) &&
+        (friendsName || hasWhere || airdrop || name))
     ) {
       throw new HttpErrors.UnprocessableEntity('WrongFilterFormat');
     }
@@ -679,12 +683,7 @@ export class FilterBuilderService {
     }
 
     Object.assign(where, {
-      id: {
-        nin: blockedFriendIds,
-      },
-      deletedAt: {
-        $eq: null,
-      },
+      and: [{id: {nin: blockedFriendIds}}, {deletedAt: {$eq: null}}],
     });
 
     return where;
