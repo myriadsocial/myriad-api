@@ -110,7 +110,7 @@ export class UserController {
     @param.path.string('id') id: string,
     @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
   ): Promise<User> {
-    return this.userService.findById(id, filter);
+    return this.userService.findByIdOrUsername(id, filter);
   }
 
   @authenticate('jwt')

@@ -146,7 +146,23 @@ export class UserService {
 
   // ------ User ------------------------------------
 
-  public async findById(id: string, filter?: Filter<User>) {
+  public async findByIdOrUsername(
+    id: string,
+    filter?: Filter<User>,
+  ): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: {
+        or: [{id}, {username: id}],
+      },
+      ...filter,
+    });
+
+    if (!user) throw new HttpErrors.NotFound('UserNotFound');
+
+    return user;
+  }
+
+  public async findById(id: string, filter?: Filter<User>): Promise<User> {
     return this.userRepository.findById(id, filter);
   }
 
