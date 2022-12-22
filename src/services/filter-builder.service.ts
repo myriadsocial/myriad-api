@@ -279,6 +279,13 @@ export class FilterBuilderService {
       );
     }
 
+    const currentInclude =
+      filter?.include?.filter(e => {
+        if (typeof e === 'string' && e === 'experiences') return false;
+        if (typeof e === 'object' && e.relation === 'experiences') return false;
+        return true;
+      }) ?? [];
+
     const experienceFilter = {
       relation: 'experiences',
       scope: {
@@ -294,9 +301,7 @@ export class FilterBuilderService {
 
     const defaultInclude = ['user', experienceFilter];
     filter.order = this.orderSetting(query);
-    filter.include = filter?.include
-      ? [...filter.include, ...defaultInclude]
-      : defaultInclude;
+    filter.include = currentInclude.concat(defaultInclude);
     filter.where = {
       ...filter.where,
       banned: false,
@@ -459,7 +464,6 @@ export class FilterBuilderService {
   ): Promise<AnyObject | void> {
     const [id, currentFilter = {where: {}}] = args;
 
-    filter = {...filter, ...currentFilter};
     filter.where = {...currentFilter.where, deletedAt: {$eq: null}} as Where;
     filter.order = this.orderSetting(query);
 
@@ -959,6 +963,14 @@ export class FilterBuilderService {
               {id: {inq: postIds}},
               {createdBy: {inq: friends}},
               {visibility: VisibilityType.FRIEND},
+            ],
+          },
+          {
+            and: [
+              {id: {inq: postIds}},
+              {visibility: VisibilityType.SELECTED},
+              {selectedUserIds: {inq: [userId]}},
+              {createdBy: {inq: blocked}},
             ],
           },
           {
