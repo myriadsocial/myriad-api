@@ -221,13 +221,13 @@ export class FilterBuilderService {
     switch (status) {
       case FriendStatusType.PENDING:
         return this.finalizeFilter(filter, {
-          requsteeId: this.currentUser?.[securityId],
+          requesteeId: this.currentUser?.[securityId],
         });
 
       case FriendStatusType.BLOCKED:
         if (!userId) return this.defaultFilter(filter);
         return this.finalizeFilter(filter, {
-          or: [{requestorId: userId}, {requsteeId: userId}],
+          or: [{requestorId: userId}, {requesteeId: userId}],
         });
 
       case FriendStatusType.APPROVED: {
