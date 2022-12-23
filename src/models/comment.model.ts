@@ -7,7 +7,7 @@ import {
 } from '@loopback/repository';
 import {MentionUser, UserWithRelations, Vote} from '.';
 import {ReferenceType, SectionType} from '../enums';
-import {Metric} from '../interfaces';
+import {Asset, Metric} from '../interfaces';
 import {CommentLink} from './comment-link.model';
 import {Post, PostWithRelations} from './post.model';
 import {Transaction} from './transaction.model';
@@ -44,6 +44,12 @@ export class Comment extends Entity {
     required: true,
   })
   text: string;
+
+  @property({
+    type: 'object',
+    required: false,
+  })
+  asset?: Asset;
 
   @property({
     type: 'array',

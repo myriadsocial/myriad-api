@@ -1,6 +1,7 @@
 export interface Asset {
   images: Sizes[] | string[];
   videos: string[];
+  exclusiveContents: string[];
 }
 
 export interface Sizes {

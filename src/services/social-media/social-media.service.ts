@@ -50,7 +50,7 @@ export class SocialMediaService {
       display_text_range: [startWith],
     } = data;
 
-    const asset: Asset = {
+    const asset: Omit<Asset, 'exclusiveContents'> = {
       images: [],
       videos: [],
     };
@@ -188,7 +188,7 @@ export class SocialMediaService {
 
     const redditPost = data.data.children[0].data;
     const text = redditPost.selftext;
-    const asset: Asset = {
+    const asset: Omit<Asset, 'exclusiveContents'> = {
       images: [],
       videos: [],
     };

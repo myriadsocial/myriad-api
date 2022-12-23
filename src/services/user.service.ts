@@ -826,6 +826,10 @@ export class UserService {
     return this.commentService.find(filter);
   }
 
+  public async countComments(where?: Where<Comment>): Promise<Count> {
+    return this.commentService.count(where);
+  }
+
   public async createComment(comment: Omit<Comment, 'id'>): Promise<Comment> {
     await this.haveFullAccess(ControllerType.USERCOMMENT);
     comment.userId = this.currentUser[securityId];
@@ -979,8 +983,6 @@ export class UserService {
   }
 
   // ------------------------------------------------
-
-  // ------ PrivateMethod ---------------------------
 
   public async actionCount(): Promise<Count | undefined> {
     if (this.currentUser?.fullAccess) return;
