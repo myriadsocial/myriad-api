@@ -970,7 +970,7 @@ export class FilterBuilderService {
               {id: {inq: postIds}},
               {visibility: VisibilityType.SELECTED},
               {selectedUserIds: {inq: [userId]}},
-              {createdBy: {inq: blocked}},
+              {createdBy: {nin: blocked}},
             ],
           },
           {
