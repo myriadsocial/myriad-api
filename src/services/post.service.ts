@@ -222,7 +222,7 @@ export class PostService {
       }
 
       try {
-        if (url) validateURL(url);
+        if (!validateURL(url)) throw new Error('InvalidURL');
         embeddedURL = await getOpenGraph(url);
       } catch {
         // ignore
@@ -302,7 +302,7 @@ export class PostService {
       }
 
       try {
-        if (url) validateURL(url);
+        if (!validateURL(url)) throw new Error('InvalidURL');
         embeddedURL = await getOpenGraph(url);
       } catch {
         // ignore

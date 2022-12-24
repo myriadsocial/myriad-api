@@ -1,5 +1,4 @@
 import {AnyObject} from '@loopback/repository';
-import {HttpErrors} from '@loopback/rest';
 import {omit} from 'lodash';
 import ogs from 'open-graph-scraper';
 import validator from 'validator';
@@ -48,8 +47,8 @@ export class UrlUtils {
   }
 
   /* eslint-disable   @typescript-eslint/naming-convention */
-  static validateURL(url?: string): void {
-    if (!url) return;
+  static validateURL(url?: string): boolean {
+    if (!url) return false;
 
     const isURL = validator.isURL(url, {
       require_protocol: true,
@@ -57,7 +56,6 @@ export class UrlUtils {
       protocols: ['http', 'https', 'ws', 'wss'],
     });
 
-    if (isURL) return;
-    throw new HttpErrors.UnprocessableEntity('Wrong url format!');
+    return isURL;
   }
 }
