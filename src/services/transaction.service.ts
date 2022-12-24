@@ -1,11 +1,11 @@
-import {AuthenticationBindings} from '@loopback/authentication';
-import {BindingScope, inject, injectable, service} from '@loopback/core';
-import {AnyObject, Filter, repository} from '@loopback/repository';
+import {BindingScope, injectable, service} from '@loopback/core';
+import {AnyObject, Filter, repository, Where} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {securityId, UserProfile} from '@loopback/security';
 import {decodeAddress} from '@polkadot/util-crypto';
 import {ActivityLogType, ReferenceType} from '../enums';
 import {
+  Currency,
+  CurrencyWithAmount,
   Transaction,
   TransactionWithRelations,
   UpdateTransactionDto,
@@ -27,6 +27,11 @@ import {NetworkService} from './network.service';
 import {NotificationService} from './notification.service';
 import {u8aToHex} from '@polkadot/util';
 import {isHex} from '@polkadot/util';
+
+export interface TotalTips {
+  data: CurrencyWithAmount[];
+  additionalData?: AnyObject;
+}
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class TransactionService {
@@ -53,14 +58,26 @@ export class TransactionService {
     private networkService: NetworkService,
     @service(NotificationService)
     private notificationService: NotificationService,
-    @inject(AuthenticationBindings.CURRENT_USER, {optional: true})
-    private currentUser: UserProfile,
   ) {}
+
+  public collection() {
+    const collection =
+      this.transactionRepository.dataSource.connector?.collection(
+        Transaction.modelName,
+      );
+
+    if (!collection) {
+      throw new HttpErrors.NotFound('CollectionNotFound');
+    }
+
+    return collection;
+  }
 
   public async create(
     transaction: Omit<Transaction, 'id'>,
+    currentUserId: string,
   ): Promise<Transaction> {
-    const isToWallet = await this.beforeCreate(transaction);
+    const isToWallet = await this.beforeCreate(transaction, currentUserId);
 
     return this.transactionRepository
       .create(transaction)
@@ -76,21 +93,99 @@ export class TransactionService {
     return this.transactionRepository.find(filter);
   }
 
-  public async patch(data: UpdateTransactionDto): Promise<void> {
-    const userId = this.currentUser[securityId];
+  public async patch(
+    data: UpdateTransactionDto,
+    currentUserId: string,
+  ): Promise<void> {
     const {currencyIds} = data;
     const socialMedias = await this.userSocialMediaRepository.find({
-      where: {userId},
+      where: {userId: currentUserId},
     });
 
     const promises: Promise<AnyObject>[] = socialMedias.map(e => {
       return this.transactionRepository.updateAll(
-        {to: userId},
+        {to: currentUserId},
         {to: e.peopleId, currencyId: {inq: currencyIds}},
       );
     });
 
     await Promise.allSettled(promises);
+  }
+
+  public async totalTipsAmount(
+    currentUserId: string,
+    status: string,
+    referenceType?: ReferenceType,
+    networkType?: string,
+    symbol?: string,
+  ): Promise<TotalTips> {
+    const where: Where<Transaction> = {};
+    const additionalData: AnyObject = {currentUserId, status};
+
+    if (referenceType) {
+      Object.assign(where, {type: referenceType});
+      Object.assign(additionalData, {referenceType});
+    }
+
+    if (status === 'received') {
+      Object.assign(where, {to: currentUserId});
+    }
+
+    if (status === 'sent') {
+      Object.assign(where, {from: currentUserId});
+    }
+
+    if (networkType) {
+      const currencyWhere: Where<Currency> = {
+        networkId: networkType,
+      };
+
+      Object.assign(additionalData, {networkType});
+
+      if (symbol) {
+        Object.assign(currencyWhere, {symbol});
+        Object.assign(additionalData, {symbol});
+      }
+
+      const filter = {where: currencyWhere};
+      const currencies = await this.currencyRepository.find(filter);
+      const currencyIds = currencies.map(currency => currency.id);
+
+      Object.assign(where, {currencyId: {$in: currencyIds}});
+    }
+
+    const result = await this.collection()
+      .aggregate([
+        {$match: where},
+        {
+          $group: {
+            _id: '$currencyId',
+            totalTips: {
+              $sum: '$amount',
+            },
+          },
+        },
+      ])
+      .get();
+
+    if (!result.length) {
+      return {
+        data: [],
+      };
+    }
+
+    const currencyWithAmount: CurrencyWithAmount[] = await Promise.all(
+      result.map(async (e: AnyObject) => {
+        return this.currencyRepository
+          .findById(e._id)
+          .then(currency => ({...currency, amount: e.totalTips}))
+          .catch(() => null);
+      }),
+    );
+
+    const data = [...currencyWithAmount].filter(e => e !== null);
+
+    return {data, additionalData};
   }
 
   // ------------------------------------------------
@@ -99,6 +194,7 @@ export class TransactionService {
 
   private async beforeCreate(
     transaction: Omit<Transaction, 'id'>,
+    currentUserId: string,
   ): Promise<boolean> {
     const {from, to, type, referenceId} = transaction;
 
@@ -144,7 +240,7 @@ export class TransactionService {
         throw new HttpErrors.NotFound('UserNotFound');
       });
 
-    transaction.from = this.currentUser[securityId];
+    transaction.from = currentUserId;
 
     if (toWallet) {
       Object.assign(transaction, {to: toWallet.userId});

@@ -404,6 +404,7 @@ export class FilterBuilderService {
 
       default: {
         let userId;
+
         if (profile) {
           userId = referenceId ? referenceId.toString() : undefined;
           filter.where = {...filter.where, type: {nin: [ReferenceType.POST]}};

@@ -102,3 +102,14 @@ export interface CurrencyRelations {
 }
 
 export type CurrencyWithRelations = Currency & CurrencyRelations;
+
+export class CurrencyWithAmount extends Currency {
+  @property({
+    type: 'number',
+  })
+  amount: number;
+
+  constructor(data?: Partial<CurrencyWithAmount>) {
+    super(data);
+  }
+}
