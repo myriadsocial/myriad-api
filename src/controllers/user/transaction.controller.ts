@@ -10,9 +10,14 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
+import {ReferenceType} from '../../enums';
 import {PaginationInterceptor} from '../../interceptors';
-import {Transaction, UpdateTransactionDto} from '../../models';
-import {UserService} from '../../services';
+import {
+  CurrencyWithAmount,
+  Transaction,
+  UpdateTransactionDto,
+} from '../../models';
+import {TotalTips, UserService} from '../../services';
 
 @authenticate('jwt')
 export class UserTransactionController {
@@ -60,6 +65,32 @@ export class UserTransactionController {
     filter?: Filter<Transaction>,
   ): Promise<Transaction[]> {
     return this.userService.transactions(filter);
+  }
+
+  @get('/user/transactions/{status}/total')
+  @response(200, {
+    description: 'GET transactions total tips',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(CurrencyWithAmount),
+        },
+      },
+    },
+  })
+  async totalTips(
+    @param.path.string('status') status: string,
+    @param.query.string('referenceType') referenceType?: ReferenceType,
+    @param.query.string('networkType') networkType?: string,
+    @param.query.string('symbol') symbol?: string,
+  ): Promise<TotalTips> {
+    return this.userService.totalTipsAmount(
+      status,
+      referenceType,
+      networkType,
+      symbol,
+    );
   }
 
   @patch('/user/transactions')

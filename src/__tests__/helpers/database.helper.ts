@@ -343,7 +343,6 @@ export async function givenRepositories(testdb: any) {
     metricService,
     networkService,
     notificationService,
-    currentUser,
   );
 
   const userSocialMediaService = new UserSocialMediaService(

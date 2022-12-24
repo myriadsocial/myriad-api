@@ -79,7 +79,7 @@ import {NetworkService} from './network.service';
 import {NotificationService} from './notification.service';
 import {PostService} from './post.service';
 import {ReportService} from './report.service';
-import {TransactionService} from './transaction.service';
+import {TotalTips, TransactionService} from './transaction.service';
 import {UserExperienceService} from './user-experience.service';
 import {UserOTPService} from './user-otp.service';
 import {UserSocialMediaService} from './user-social-media.service';
@@ -853,11 +853,29 @@ export class UserService {
   public async createTransaction(
     transaction: Omit<Transaction, 'id'>,
   ): Promise<Transaction> {
-    return this.transactionService.create(transaction);
+    const currentUserId = this.currentUser[securityId];
+    return this.transactionService.create(transaction, currentUserId);
   }
 
   public async updateTransaction(data: UpdateTransactionDto): Promise<void> {
-    return this.transactionService.patch(data);
+    const currentUserId = this.currentUser[securityId];
+    return this.transactionService.patch(data, currentUserId);
+  }
+
+  public async totalTipsAmount(
+    status: string,
+    referenceType?: ReferenceType,
+    networkType?: string,
+    symbol?: string,
+  ): Promise<TotalTips> {
+    const currentUserId = this.currentUser[securityId];
+    return this.transactionService.totalTipsAmount(
+      currentUserId,
+      status,
+      referenceType,
+      networkType,
+      symbol,
+    );
   }
 
   // ------------------------------------------------
