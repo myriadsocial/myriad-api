@@ -1,6 +1,6 @@
 import {authenticate} from '@loopback/authentication';
 import {intercept, service} from '@loopback/core';
-import {Count, CountSchema, Filter} from '@loopback/repository';
+import {Count, CountSchema, Filter, Where} from '@loopback/repository';
 import {
   del,
   get,
@@ -46,8 +46,17 @@ export class UserCommentController {
     description: 'Action COUNT left',
     content: {'application/json': {schema: CountSchema}},
   })
-  async count(): Promise<Count | undefined> {
+  async actionCount(): Promise<Count | undefined> {
     return this.userService.actionCount();
+  }
+
+  @get('/user/comments/count')
+  @response(200, {
+    description: 'Comment COUNT',
+    content: {'application/json': {schema: CountSchema}},
+  })
+  async count(@param.where(Comment) where?: Where<Comment>): Promise<Count> {
+    return this.userService.countComments(where);
   }
 
   @post('/user/comments')

@@ -68,7 +68,7 @@ export class CommentService {
       });
   }
 
-  public async count(where: Where<Comment>): Promise<Count> {
+  public async count(where?: Where<Comment>): Promise<Count> {
     return this.commentRepository.count(where);
   }
 
