@@ -25,6 +25,9 @@ export class ImportedPost extends Entity {
   @property({
     type: 'object',
     required: false,
+    jsonSchema: {
+      properties: {},
+    },
   })
   asset?: Asset;
 

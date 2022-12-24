@@ -154,19 +154,31 @@ export class FilterBuilderService {
     filter: Filter<Comment>,
     query: Query,
   ): Promise<AnyObject | void> {
-    let {userId, referenceId, section} = query;
+    let {userId, referenceId, section, exclusiveInfo} = query;
 
     if (Array.isArray(userId)) userId = userId[0];
     if (Array.isArray(referenceId)) referenceId = referenceId[0];
     if (Array.isArray(section)) section = section[0];
+    if (Array.isArray(exclusiveInfo)) exclusiveInfo = exclusiveInfo[0];
 
-    if (userId) {
-      return this.finalizeFilter(filter, {userId});
+    if (exclusiveInfo === 'true') {
+      const where: Where<Comment> = <AnyObject>{
+        'asset.exclusiveContents': {$exists: true},
+        userId: userId ?? this.currentUser[securityId],
+      };
+
+      return this.finalizeFilter(filter, where);
+    }
+
+    if (referenceId) {
+      return this.finalizeFilter(filter, {
+        referenceId,
+        section: !section ? SectionType.DISCUSSION : section,
+      });
     }
 
     return this.finalizeFilter(filter, {
-      referenceId: !referenceId ? '' : referenceId,
-      section: !section ? SectionType.DISCUSSION : section,
+      userId: userId ?? this.currentUser[securityId],
     });
   }
 

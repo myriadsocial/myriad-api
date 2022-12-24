@@ -108,7 +108,7 @@ export class SocialMediaService {
 
     if (embeddedURL && asset.images.length === 0 && asset.videos.length === 0) {
       try {
-        validateURL(embeddedURL);
+        if (!validateURL(embeddedURL)) throw new Error('InvalidURL');
         if (quotedStatus) {
           const [embeddeStartWith] = quotedStatus?.display_text_range ?? 0;
           const quoteEntities = quotedStatus?.entities?.urls ?? [];
@@ -282,7 +282,7 @@ export class SocialMediaService {
         url = '';
       } else {
         try {
-          validateURL(url);
+          if (!validateURL(url)) throw new Error('InvalidURL');
           embedded = await getOpenGraph(url);
         } catch {
           // ignore

@@ -418,7 +418,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
             if (visibility === VisibilityType.SELECTED) {
               const {selectedUserIds} = post;
-              const isSelected = selectedUserIds.find(e => e === currentUserId);
+              const isSelected = selectedUserIds.includes(currentUserId);
               if (!isSelected) {
                 post.text = '[This is a post for selected user only]';
                 post.rawText = '[This is a post for selected user only]';
