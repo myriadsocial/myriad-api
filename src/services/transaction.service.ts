@@ -33,6 +33,11 @@ export interface TotalTips {
   additionalData?: AnyObject;
 }
 
+export interface AdditionalData {
+  toWalletId?: boolean;
+  contentReferenceId?: string;
+}
+
 @injectable({scope: BindingScope.TRANSIENT})
 export class TransactionService {
   constructor(
@@ -77,11 +82,11 @@ export class TransactionService {
     transaction: Omit<Transaction, 'id'>,
     currentUserId: string,
   ): Promise<Transaction> {
-    const isToWallet = await this.beforeCreate(transaction, currentUserId);
+    const additional = await this.beforeCreate(transaction, currentUserId);
 
     return this.transactionRepository
       .create(transaction)
-      .then(result => this.afterCreate(result, isToWallet))
+      .then(result => this.afterCreate(result, additional))
       .catch(err => {
         throw err;
       });
@@ -195,7 +200,7 @@ export class TransactionService {
   private async beforeCreate(
     transaction: Omit<Transaction, 'id'>,
     currentUserId: string,
-  ): Promise<boolean> {
+  ): Promise<AdditionalData> {
     const {from, to, type, referenceId} = transaction;
 
     if (from === to) {
@@ -214,7 +219,13 @@ export class TransactionService {
       }
     }
 
+    // Post Id related to where the exclusive content located
+    const [updateReferenceId, contentReferenceId] = (referenceId ?? '').split(
+      '/',
+    );
+
     if (transaction.type === ReferenceType.UNLOCKABLECONTENT) {
+      transaction.referenceId = updateReferenceId;
       await this.validateHash(transaction);
     }
 
@@ -246,12 +257,12 @@ export class TransactionService {
       Object.assign(transaction, {to: toWallet.userId});
     }
 
-    return toWalletId;
+    return {toWalletId, contentReferenceId};
   }
 
   private async afterCreate(
     transaction: Transaction,
-    isToWallet: boolean,
+    additional: AdditionalData,
   ): Promise<Transaction> {
     const {from, referenceId, type} = transaction;
     const activityType =
@@ -260,7 +271,7 @@ export class TransactionService {
         : ActivityLogType.SENDTIP;
 
     const jobs: Promise<AnyObject | void>[] = [
-      this.notificationService.sendTipsSuccess(transaction, isToWallet),
+      this.notificationService.sendTipsSuccess(transaction, additional),
       this.metricService.userMetric(from),
       this.activityLogService.create(
         activityType,

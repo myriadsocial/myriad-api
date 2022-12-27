@@ -38,6 +38,7 @@ import {
   UserSocialMediaRepository,
 } from '../repositories';
 import {FCMService} from './fcm.service';
+import {AdditionalData} from './transaction.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class NotificationService {
@@ -591,9 +592,10 @@ export class NotificationService {
 
   async sendTipsSuccess(
     transaction: Transaction,
-    toWallet = false,
+    additional: AdditionalData,
   ): Promise<void> {
     const {to: toUserId, type, referenceId} = transaction;
+    const {toWalletId: toWallet, contentReferenceId} = additional;
     const tipsActive = await this.checkNotificationSetting(
       toUserId,
       NotificationType.POST_TIPS,
@@ -608,12 +610,58 @@ export class NotificationService {
     });
 
     if (type === ReferenceType.UNLOCKABLECONTENT && referenceId) {
-      notification.type = NotificationType.PAID_CONTENT;
-      notification.additionalReferenceId = {
-        unlockableContent: {
-          id: transaction.referenceId,
+      let isContentExists = true;
+
+      const additionalReferenceId: AnyObject = {};
+      const comment = await this.commentRepository.findOne(<AnyObject>{
+        where: {
+          id: contentReferenceId,
+          'asset.exclusiveContents': {
+            like: `${referenceId}.*`,
+            options: 'i',
+          },
         },
-      };
+      });
+
+      if (!comment) {
+        const post = await this.postRepository.findOne(<AnyObject>{
+          where: {
+            id: contentReferenceId,
+            'asset.exclusiveContents': {
+              like: `${referenceId}.*`,
+              options: 'i',
+            },
+          },
+        });
+
+        if (post) {
+          Object.assign(additionalReferenceId, {
+            unlockableContent: {
+              id: referenceId,
+              post: {
+                id: post.id,
+              },
+            },
+          });
+        } else {
+          isContentExists = false;
+        }
+      } else {
+        Object.assign(additional, {
+          unlockableContent: {
+            id: referenceId,
+            comment: {
+              id: comment.id,
+              postId: comment.postId,
+            },
+          },
+        });
+      }
+
+      if (!isContentExists) throw new HttpErrors.NotFound('ContentNotFound');
+
+      notification.type = NotificationType.PAID_CONTENT;
+      notification.additionalReferenceId = additionalReferenceId;
     } else if (type === ReferenceType.COMMENT && referenceId) {
       const comment = await this.commentRepository.findById(referenceId, {
         include: ['user'],
