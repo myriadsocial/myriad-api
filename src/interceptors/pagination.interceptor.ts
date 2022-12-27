@@ -442,19 +442,21 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       }
 
       case ControllerType.USERUNLOCKABLECONTENT: {
-        return result.map(async (content: UnlockableContent) => {
-          if (content.createdBy === currentUserId) return content;
-          const transaction = await this.transactionRepository.findOne({
-            where: {
-              referenceId: content.id,
-              type: ReferenceType.UNLOCKABLECONTENT,
-              from: currentUserId,
-              to: content.createdBy,
-            },
-          });
-          if (transaction) return content;
-          return omit(content, ['content']);
-        });
+        return Promise.all(
+          result.map(async (content: UnlockableContent) => {
+            if (content.createdBy === currentUserId) return content;
+            const transaction = await this.transactionRepository.findOne({
+              where: {
+                referenceId: content.id,
+                type: ReferenceType.UNLOCKABLECONTENT,
+                from: currentUserId,
+                to: content.createdBy,
+              },
+            });
+            if (transaction) return content;
+            return content;
+          }),
+        );
       }
 
       case ControllerType.POST: {

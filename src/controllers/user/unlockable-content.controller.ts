@@ -7,6 +7,7 @@ import {
   FilterExcludingWhere,
 } from '@loopback/repository';
 import {
+  del,
   get,
   getModelSchemaRef,
   param,
@@ -103,5 +104,14 @@ export class UserUnlockableContentController {
     content: Partial<UnlockableContent>,
   ): Promise<Count> {
     return this.userService.updateUnlockableContent(id, content);
+  }
+
+  @del('/user/unlockable-contents/{id}')
+  @response(204, {
+    description: 'REMOVE user unlockable-content',
+    content: {'application/json': {schema: CountSchema}},
+  })
+  async deleteById(@param.path.string('id') id: string) {
+    return this.userService.removeUnlockableContent(id);
   }
 }

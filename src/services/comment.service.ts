@@ -6,6 +6,7 @@ import {
   repository,
   Where,
 } from '@loopback/repository';
+import {HttpErrors} from '@loopback/rest';
 import {ActivityLogType, ReferenceType, SectionType} from '../enums';
 import {Comment, CommentWithRelations} from '../models';
 import {CommentRepository, PostRepository} from '../repositories';
@@ -49,23 +50,27 @@ export class CommentService {
   }
 
   public async deleteById(id: string, userId: string): Promise<Comment> {
+    const comment = await this.commentRepository.findOne({
+      where: {id, userId},
+      include: ['post'],
+    });
+
+    if (!comment) throw new HttpErrors.NotFound('CommentNotFound');
+    const exclusiveContents = comment?.asset?.exclusiveContents ?? [];
+    if (exclusiveContents.length > 0) {
+      throw new HttpErrors.UnprocessableEntity('ExlusiveContentExists');
+    }
+
     const data = {
       deletedAt: new Date().toString(),
       deleteByUser: true,
     };
 
+    Object.assign(comment, data);
+
     return this.commentRepository
       .updateAll(data, {id, userId})
-      .then(({count}) => {
-        if (!count) return;
-        return this.commentRepository.findById(id, {
-          include: ['post'],
-        });
-      })
-      .then(comment => {
-        if (!comment) return new Comment();
-        return this.afterDelete(comment);
-      });
+      .then(() => this.afterDelete(comment));
   }
 
   public async count(where?: Where<Comment>): Promise<Count> {

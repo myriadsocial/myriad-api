@@ -1000,6 +1000,32 @@ export class UserService {
     });
   }
 
+  public async removeUnlockableContent(id: string): Promise<Count> {
+    const [{count: postCount}, {count: commentCount}] = await Promise.all([
+      this.postService.count(<AnyObject>{
+        'asset.exclusiveContents': {
+          like: `${id}.*`,
+          options: 'i',
+        },
+      }),
+      this.commentService.count(<AnyObject>{
+        'asset.exclusiveContents': {
+          like: `${id}.*`,
+          options: 'i',
+        },
+      }),
+    ]);
+
+    if (postCount + commentCount > 0) {
+      throw new HttpErrors.UnprocessableEntity('ContentExistOnPost/Comment');
+    }
+
+    return this.unlockableContentRepository.deleteAll({
+      id,
+      createdBy: this.currentUser[securityId],
+    });
+  }
+
   // ------------------------------------------------
 
   public async actionCount(): Promise<Count | undefined> {
