@@ -207,8 +207,9 @@ export class PostService {
     let embeddedURL = null;
     let url = '';
 
+    const raw: Partial<Post> = new Post();
+
     if (data.text && data.platform === PlatformType.MYRIAD) {
-      data.rawText = data.text;
       const found = data.text.match(/https:\/\/|http:\/\/|www./g);
       if (found) {
         const index: number = data.text.indexOf(found[0]);
@@ -228,16 +229,20 @@ export class PostService {
         // ignore
       }
 
-      if (embeddedURL) data.embeddedURL = embeddedURL;
-    } else {
-      delete data.text;
+      raw.text = data.text;
+      raw.rawText = data.rawText;
+
+      if (embeddedURL) raw.embeddedURL = embeddedURL;
     }
 
-    if (data.visibility && data.visibility !== VisibilityType.SELECTED) {
-      data.selectedUserIds = [];
-    }
+    if (data.selectedUserIds) raw.selectedUserIds = data.selectedUserIds;
+    if (data.visibility !== VisibilityType.SELECTED) raw.selectedUserIds = [];
+    if (data.mentions) raw.mentions = data.mentions;
+    if (data.NSFWTag) raw.NSFWTag = data.NSFWTag;
+    if (data.isNSFW) raw.isNSFW = data.isNSFW;
+    if (data.tags) raw.tags = data.tags;
 
-    return this.postRepository.updateAll(data, {
+    return this.postRepository.updateAll(raw, {
       createdBy: data.createdBy,
       id,
       platform: data.platform,
@@ -249,11 +254,13 @@ export class PostService {
     userId: string,
     post?: Post,
   ): Promise<Count> {
+    const exclusiveContents = post?.asset?.exclusiveContents ?? [];
+    if (exclusiveContents?.length > 0) {
+      throw new HttpErrors.UnprocessableEntity('ExclusiveContentExists');
+    }
+
     return this.postRepository
-      .deleteAll({
-        id,
-        createdBy: userId,
-      })
+      .deleteAll({id, createdBy: userId})
       .then(async count => {
         this.afterDelete(post) as Promise<void>;
 
@@ -265,7 +272,7 @@ export class PostService {
     return this.draftPostRepository.delete(id);
   }
 
-  public async count(where: Where<Post>): Promise<Count> {
+  public async count(where?: Where<Post>): Promise<Count> {
     return this.postRepository.count(where);
   }
 

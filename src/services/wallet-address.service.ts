@@ -57,7 +57,7 @@ export class WalletAddressService {
       case ReferenceType.USER:
         return this.userWalletAddress(id);
 
-      case ReferenceType.UNLOCKABLECONTENT:
+      case ReferenceType.UNLOCKABLECONTENT.replace('_', '-'):
         return this.unlockableContentAddress(id);
 
       default:
