@@ -118,14 +118,7 @@ describe('ExperienceApplication', function () {
       await client
         .get('/experiences')
         .set('Authorization', `Bearer ${token}`)
-        .query(
-          'filter=' +
-            JSON.stringify({
-              where: {
-                createdBy: user.id,
-              },
-            }),
-        )
+        .query('userId=' + user.id)
         .expect(200, {
           data: [toJSON(experienceInProgress)],
           meta: {
