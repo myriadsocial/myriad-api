@@ -443,11 +443,14 @@ export class FilterBuilderService {
     filter: Filter<Experience>,
     query: Query,
   ): Promise<AnyObject | void> {
-    let {q} = query;
+    let {q, postId, userId, visibility} = query;
 
     if (Array.isArray(q)) q = q[0];
+    if (Array.isArray(postId)) postId = postId[0];
+    if (Array.isArray(userId)) userId = userId[0];
+    if (Array.isArray(visibility)) visibility = visibility[0];
 
-    filter.where = {...filter.where, deletedAt: {$eq: null}} as Where;
+    filter.where = {deletedAt: {$eq: null}} as Where;
 
     if (typeof q === 'string') {
       const matchWord = q.toString().match('^[A-Za-z0-9]');
@@ -462,11 +465,41 @@ export class FilterBuilderService {
       return this.finalizeFilter(filter, where);
     }
 
-    if ((filter?.where as AnyObject)?.createdBy) {
-      return this.finalizeFilter(filter, {});
+    if (postId) {
+      const includes =
+        filter?.include?.filter(include => {
+          if (typeof include === 'string' && include === 'posts') return false;
+          if (typeof include === 'object' && include.relation === 'posts') {
+            return false;
+          }
+
+          return true;
+        }) ?? [];
+
+      includes.push({
+        relation: 'posts',
+        scope: {
+          where: {
+            id: postId,
+          },
+        },
+      });
+
+      filter.include = includes;
+      return this.finalizeFilter(filter, {
+        createdBy: this.currentUser[securityId],
+      });
     }
 
-    const where = await this.defaultExperience();
+    if (userId === this.currentUser[securityId] && !visibility) {
+      return this.finalizeFilter(filter, {createdBy: userId});
+    }
+
+    const visibilityType = visibility?.toString() as VisibilityType;
+    const where = await this.experienceVisibility(
+      visibilityType,
+      userId?.toString(),
+    );
     return this.finalizeFilter(filter, where);
   }
 
@@ -1407,17 +1440,58 @@ export class FilterBuilderService {
 
   // ------ ExperienceWhereBuilder ------------------
 
-  private async defaultExperience(): Promise<Where<Experience>> {
-    const userId = this.currentUser?.[securityId];
+  private async experienceVisibility(
+    visibility?: VisibilityType,
+    userId?: string,
+  ): Promise<Where<Experience>> {
+    const currentUser = this.currentUser?.[securityId];
     const [blockedFriendIds, approvedFriendIds] = await Promise.all([
-      this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
-      this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
+      this.friendService.getFriendIds(currentUser, FriendStatusType.BLOCKED),
+      this.friendService.getFriendIds(currentUser, FriendStatusType.APPROVED),
     ]);
     const userIds = pull(blockedFriendIds, ...approvedFriendIds);
 
-    return {
-      createdBy: {nin: userIds},
-    };
+    switch (visibility) {
+      case VisibilityType.PRIVATE: {
+        return {
+          and: [
+            {visibility: VisibilityType.PRIVATE},
+            {createdBy: currentUser},
+            {createdBy: {nin: userIds}},
+          ],
+        };
+      }
+
+      case VisibilityType.SELECTED: {
+        const and: Where<Experience>[] = [
+          {visibility: VisibilityType.SELECTED},
+          {selectedUserIds: {inq: [currentUser]}} as Where,
+          {createdBy: {nin: userIds}},
+        ];
+
+        if (userId) {
+          and.push({createdBy: userId});
+        }
+
+        return {and};
+      }
+
+      case VisibilityType.FRIEND: {
+        return {
+          and: [
+            {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
+            {createdBy: {nin: userIds}},
+          ],
+        };
+      }
+
+      default:
+        return {
+          createdBy: {nin: userIds},
+          visibility: VisibilityType.PUBLIC,
+        };
+    }
   }
 
   private async searchExperience(q: string): Promise<Where<Experience>> {
@@ -1431,7 +1505,37 @@ export class FilterBuilderService {
     const userIds = pull(blockedFriendIds, ...approvedFriendIds);
 
     return {
-      and: [{name: {regexp: pattern}}, {createdBy: {nin: userIds}}],
+      or: [
+        {
+          and: [
+            {name: {regexp: pattern}},
+            {createdBy: {nin: userIds}},
+            {visibility: VisibilityType.PUBLIC},
+          ],
+        },
+        {
+          and: [
+            {name: {regexp: pattern}},
+            {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {name: {regexp: pattern}},
+            {createdBy: userId},
+            {createdBy: {nin: blockedFriendIds}},
+            {visibility: VisibilityType.PRIVATE},
+          ],
+        },
+        {
+          and: [
+            {name: {regexp: pattern}},
+            {visibility: VisibilityType.SELECTED},
+            {selectedUserIds: {inq: [userId]}} as Where,
+          ],
+        },
+      ],
     };
   }
 
