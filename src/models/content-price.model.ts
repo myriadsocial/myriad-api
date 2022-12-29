@@ -40,6 +40,7 @@ export class ContentPrice extends Entity {
 
 export interface ContentPriceRelations {
   // describe navigational properties here
+  currency?: Currency;
 }
 
 export type ContentPriceWithRelations = ContentPrice & ContentPriceRelations;
