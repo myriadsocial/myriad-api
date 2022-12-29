@@ -32,7 +32,11 @@ import {
   User,
   UserWithRelations,
 } from '../models';
-import {ReportRepository, TransactionRepository} from '../repositories';
+import {
+  ContentPriceRepository,
+  ReportRepository,
+  TransactionRepository,
+} from '../repositories';
 import {
   FilterBuilderService,
   FriendService,
@@ -55,6 +59,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     private reportRepository: ReportRepository,
     @repository(TransactionRepository)
     private transactionRepository: TransactionRepository,
+    @repository(ContentPriceRepository)
+    private contentPriceRepository: ContentPriceRepository,
     @service(FilterBuilderService)
     private filterBuilderService: FilterBuilderService,
     @service(FriendService)
@@ -341,6 +347,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
 
       // Changed comment text to [comment removed] when comment is deleted
       case ControllerType.USERCOMMENT: {
+        let {exclusiveInfo} = query;
+
+        if (Array.isArray(exclusiveInfo)) exclusiveInfo = exclusiveInfo[0];
         return Promise.all(
           result.map(async (comment: CommentWithRelations) => {
             // mask text when comment is deleted
@@ -356,6 +365,52 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               comment.reportType = report?.type;
 
               return omit(comment);
+            }
+
+            if (exclusiveInfo?.toString() === 'true') {
+              const exclusiveContents = comment?.asset?.exclusiveContents ?? [];
+              if (exclusiveContents.length > 0) {
+                const updatedContents: AnyObject[] = [];
+                for (const url of exclusiveContents) {
+                  const id = url.split('/').at(-1);
+                  if (!id) continue;
+                  const prices = await this.contentPriceRepository.find({
+                    include: ['currency'],
+                    where: {
+                      unlockableContentId: id,
+                    },
+                  });
+                  if (prices.length === 0) continue;
+                  const updatedPrices = prices.map(price => {
+                    return {
+                      id,
+                      price: price.amount,
+                      decimal: price?.currency?.decimal ?? 0,
+                      symbol: price?.currency?.symbol ?? 'UNKNOWN',
+                      networId: price?.currency?.networkId ?? 'UNKNOWN',
+                    };
+                  });
+                  updatedContents.push(...updatedPrices);
+                }
+
+                if (updatedContents.length > 0) {
+                  const images = comment?.asset?.images ?? [];
+                  const videos = comment?.asset?.videos ?? [];
+                  const asset: AnyObject = {
+                    exclusiveContents: updatedContents,
+                  };
+
+                  if (images.length > 0) {
+                    Object.assign(asset, {images});
+                  }
+
+                  if (videos.length > 0) {
+                    Object.assign(asset, {videos});
+                  }
+
+                  Object.assign(comment, {asset});
+                }
+              }
             }
 
             const post = comment?.post;
