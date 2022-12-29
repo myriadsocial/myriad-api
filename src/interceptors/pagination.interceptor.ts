@@ -454,7 +454,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               },
             });
             if (transaction) return content;
-            return content;
+            return omit(content, 'content');
           }),
         );
       }
