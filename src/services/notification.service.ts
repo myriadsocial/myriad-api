@@ -653,6 +653,7 @@ export class NotificationService {
             comment: {
               id: comment.id,
               postId: comment.postId,
+              section: comment.section,
             },
           },
         });
