@@ -1517,7 +1517,7 @@ export class FilterBuilderService {
           and: [
             {name: {regexp: pattern}},
             {visibility: VisibilityType.FRIEND},
-            {createdBy: {inq: approvedFriendIds}},
+            {createdBy: {inq: [...approvedFriendIds, userId]}},
           ],
         },
         {
@@ -1532,7 +1532,9 @@ export class FilterBuilderService {
           and: [
             {name: {regexp: pattern}},
             {visibility: VisibilityType.SELECTED},
-            {selectedUserIds: {inq: [userId]}} as Where,
+            {
+              or: [{selectedUserIds: {inq: [userId]}}, {createdBy: userId}],
+            } as Where,
           ],
         },
       ],
