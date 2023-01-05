@@ -10,7 +10,12 @@ import {
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {omit, pull} from 'lodash';
-import {AccountSettingType, FriendStatusType, PlatformType} from '../enums';
+import {
+  AccountSettingType,
+  FriendStatusType,
+  PlatformType,
+  VisibilityType,
+} from '../enums';
 import {
   CreateExperiencePostDto,
   Experience,
@@ -86,31 +91,52 @@ export class ExperienceService {
 
     if (!experience) throw new HttpErrors.NotFound('ExperienceNotFound');
 
-    return this.validatePrivateExperience(experience)
-      .then(() => {
-        const userToPeople = experience?.users?.map(user => {
-          return new People({
-            id: user.id,
-            name: user.name,
-            username: user.username,
-            platform: PlatformType.MYRIAD,
-            originUserId: user.id,
-            profilePictureURL: user.profilePictureURL,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-            deletedAt: user.deletedAt,
-          });
-        });
+    if (experience.createdBy !== this.currentUser[securityId]) {
+      if (experience.visibility === VisibilityType.PRIVATE) {
+        throw new HttpErrors.Unauthorized('PrivateExperience');
+      }
 
-        if (userToPeople) {
-          experience.people = [...experience.people, ...userToPeople];
+      if (experience.visibility === VisibilityType.SELECTED) {
+        const selected = experience.selectedUserIds.includes(
+          this.currentUser[securityId],
+        );
+        if (!selected) {
+          throw new HttpErrors.Unauthorized('OnlySelectedUser');
         }
+      }
 
-        return omit(experience, ['users']);
-      })
-      .catch(err => {
-        throw err;
+      if (experience.visibility === VisibilityType.FRIEND) {
+        const asFriend = await this.friendService.asFriend(
+          experience.createdBy,
+          this.currentUser[securityId],
+        );
+        if (!asFriend) {
+          throw new HttpErrors.Unauthorized('OnlyFriend');
+        }
+      }
+    }
+
+    return this.validatePrivateExperience(experience).then(() => {
+      const userToPeople = experience?.users?.map(user => {
+        return new People({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          platform: PlatformType.MYRIAD,
+          originUserId: user.id,
+          profilePictureURL: user.profilePictureURL,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          deletedAt: user.deletedAt,
+        });
       });
+
+      if (userToPeople) {
+        experience.people = [...experience.people, ...userToPeople];
+      }
+
+      return omit(experience, ['users']);
+    });
   }
 
   public async posts(id: string, filter?: Filter<Post>): Promise<Post[]> {
@@ -138,18 +164,13 @@ export class ExperienceService {
     experienceId: string,
     postId: string,
   ): Promise<Count> {
-    return this.experienceRepository
-      .findById(experienceId)
-      .then(experience => {
-        if (experience.createdBy !== this.currentUser[securityId]) {
-          return {count: 0};
-        }
-
-        return this.experiencePostRepository.deleteAll({postId, experienceId});
-      })
-      .catch(() => {
+    return this.experienceRepository.findById(experienceId).then(experience => {
+      if (experience.createdBy !== this.currentUser[securityId]) {
         return {count: 0};
-      });
+      }
+
+      return this.experiencePostRepository.deleteAll({postId, experienceId});
+    });
   }
 
   async getExperiencePostId(experienceId?: string): Promise<string[]> {

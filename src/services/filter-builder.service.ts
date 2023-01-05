@@ -1580,7 +1580,7 @@ export class FilterBuilderService {
         }
 
         if (visibility === VisibilityType.SELECTED) {
-          if (!selected) return {id: ''};
+          if (!selected && creator !== currentUserId) return {id: ''};
           return this.timelineByExperience(currentUserId, experience);
         }
 
