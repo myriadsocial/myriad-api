@@ -144,9 +144,11 @@ export class UserExperienceService {
     return this.userRepository
       .experiences(userId)
       .patch(experience, {id})
-      .then(({count}) => {
+      .then(async ({count}) => {
+        const jobs = [];
+
         if (count > 0) {
-          Promise.allSettled([
+          jobs.push(
             this.metricService.userMetric(userId),
             ...people.map(({id: peopleId, platform}) => {
               if (platform !== PlatformType.MYRIAD) return;
@@ -155,12 +157,33 @@ export class UserExperienceService {
                 experienceId: id,
               });
             }),
-          ]) as Promise<AnyObject>;
+          );
         }
+
+        if (visibility && visibility !== VisibilityType.PUBLIC) {
+          const where: Where<UserExperience> = {
+            experienceId: id,
+            subscribed: true,
+          };
+
+          if (visibility === VisibilityType.SELECTED) {
+            where.userId = {nin: experience?.selectedUserIds ?? []};
+          }
+
+          if (visibility === VisibilityType.FRIEND) {
+            const friends = await this.friendService.getFriendIds(
+              userId,
+              FriendStatusType.APPROVED,
+            );
+            where.userId = {nin: friends};
+          }
+
+          jobs.push(this.userExperienceRepository.deleteAll(where));
+        }
+
+        Promise.all(jobs) as Promise<AnyObject>;
+
         return {count};
-      })
-      .catch(err => {
-        throw err;
       });
   }
 
@@ -185,10 +208,7 @@ export class UserExperienceService {
       .create(experience)
       .then(async created =>
         this.afterCreate(created, people, totalExperience, clonedId),
-      )
-      .catch(err => {
-        throw err;
-      });
+      );
   }
 
   public async subscribe(
@@ -199,10 +219,7 @@ export class UserExperienceService {
 
     return this.userExperienceRepository
       .create({userId, experienceId, subscribed})
-      .then(created => this.afterSubscribe(created))
-      .catch(err => {
-        throw err;
-      });
+      .then(created => this.afterSubscribe(created));
   }
 
   public async unsubscribe(id: string, userId: string): Promise<void> {
@@ -213,43 +230,38 @@ export class UserExperienceService {
 
     const experienceCreator = experience?.createdBy ?? '';
 
-    return this.userExperienceRepository
-      .deleteById(id)
-      .then(() => {
-        // Update experience subscribed count
-        // Removing experience when subscribed count zero
-        const promises: Promise<void | AnyObject>[] = [];
+    return this.userExperienceRepository.deleteById(id).then(() => {
+      // Update experience subscribed count
+      // Removing experience when subscribed count zero
+      const promises: Promise<void | AnyObject>[] = [];
 
-        if (experienceCreator === userId) {
-          promises.push(
-            this.userExperienceRepository.deleteAll({experienceId}),
-            this.experienceRepository.deleteById(experienceId),
-          );
-        }
-
+      if (experienceCreator === userId) {
         promises.push(
-          this.userRepository
-            .findOne({where: {onTimeline: experienceId}})
-            .then(user => {
-              if (!user) return [];
-              return this.userExperienceRepository.find({
-                where: {userId},
-                limit: 1,
-                order: ['createdAt DESC'],
-              });
-            })
-            .then(([latest]) =>
-              this.userRepository.updateById(userId, {
-                onTimeline: latest?.experienceId,
-              }),
-            ),
+          this.userExperienceRepository.deleteAll({experienceId}),
+          this.experienceRepository.deleteById(experienceId),
         );
+      }
 
-        Promise.allSettled(promises) as Promise<AnyObject>;
-      })
-      .catch(err => {
-        throw err;
-      });
+      promises.push(
+        this.userRepository
+          .findOne({where: {onTimeline: experienceId}})
+          .then(user => {
+            if (!user) return [];
+            return this.userExperienceRepository.find({
+              where: {userId},
+              limit: 1,
+              order: ['createdAt DESC'],
+            });
+          })
+          .then(([latest]) =>
+            this.userRepository.updateById(userId, {
+              onTimeline: latest?.experienceId,
+            }),
+          ),
+      );
+
+      Promise.allSettled(promises) as Promise<AnyObject>;
+    });
   }
 
   // ------------------------------------------------
@@ -333,6 +345,32 @@ export class UserExperienceService {
     }
 
     const experienceCreator = userExperience?.experience?.createdBy;
+    const visibility = userExperience?.experience?.visibility;
+
+    if (experienceCreator && experienceCreator !== userId) {
+      switch (visibility) {
+        case VisibilityType.FRIEND: {
+          const asFriend = await this.friendService.asFriend(
+            experienceCreator,
+            userId,
+          );
+          if (asFriend) break;
+          throw new HttpErrors.UnprocessableEntity('OnlyFriendCanSubscribe');
+        }
+
+        case VisibilityType.SELECTED: {
+          const selectedUser =
+            userExperience?.experience?.selectedUserIds ?? [];
+          if (selectedUser.includes(userId)) break;
+          throw new HttpErrors.UnprocessableEntity(
+            'OnlySelectedUserCanSubscribe',
+          );
+        }
+
+        case VisibilityType.PRIVATE:
+          throw new HttpErrors.UnprocessableEntity('PrivateExperience');
+      }
+    }
 
     if (userExperience && userId === experienceCreator) {
       throw new HttpErrors.UnprocessableEntity('ExperienceAlreadyExist');
