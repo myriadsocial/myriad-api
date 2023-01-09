@@ -1047,7 +1047,7 @@ export class UserService {
       }),
     ]);
 
-    const actions = 6;
+    const actions = 15;
     return {count: actions - (countComment + countPost)};
   }
 
