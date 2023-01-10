@@ -500,8 +500,8 @@ export class UserExperienceService {
 
   private validateExperienceData(experience: Experience): People[] {
     const userId = experience.createdBy;
-    const allowedTags = experience?.allowedTags?.filter(e => e !== '');
-    const prohibitedTags = experience?.prohibitedTags;
+    const allowedTags = experience?.allowedTags?.filter(e => e !== '') ?? [];
+    const prohibitedTags = experience?.prohibitedTags ?? [];
     const intersectionTags = intersection(allowedTags, prohibitedTags);
     const people =
       experience?.people?.filter(e => {
