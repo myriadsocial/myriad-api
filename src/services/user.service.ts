@@ -1202,7 +1202,7 @@ export class UserService {
 
         const totalActions = countComment + countPost;
 
-        if (totalActions + 1 > 6) {
+        if (totalActions + 1 > 15) {
           throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
         }
         return;

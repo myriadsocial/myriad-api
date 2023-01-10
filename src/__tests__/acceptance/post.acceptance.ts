@@ -105,7 +105,7 @@ describe('PostApplication', function () {
 
   it('reject creates a post in lite version when action is fulfilled', async () => {
     await userRepository.updateById(user.id, {fullAccess: false});
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 15; i++) {
       await givenMyriadPostInstance(postRepository, {
         createdBy: user.id.toString(),
         platform: PlatformType.MYRIAD,
