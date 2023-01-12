@@ -241,7 +241,7 @@ export class MyriadApiApplication extends BootMixin(
     await super.migrateSchema(options);
 
     if (options?.existingSchema === 'drop') return this.databaseSeeding();
-    await Promise.allSettled([this.doMigrateTransaction()]);
+    await Promise.allSettled([this.doMigrateUser()]);
   }
 
   async databaseSeeding(): Promise<void> {
@@ -509,39 +509,24 @@ export class MyriadApiApplication extends BootMixin(
     bar.stop();
   }
 
-  async doMigrateTransaction(): Promise<void> {
-    const {transactionRepository, walletRepository} = await this.repositories();
-    const {count: totalTransaction} = await transactionRepository.count();
-    const bar = this.initializeProgressBar('Start Migrate Transaction');
+  async doMigrateUser(): Promise<void> {
+    const {userRepository} = await this.repositories();
+    const {count: totalUser} = await userRepository.count();
+    const bar = this.initializeProgressBar('Start Migrate User');
     const promises = [];
 
-    bar.start(totalTransaction - 1, 0);
-    for (let i = 0; i < totalTransaction; i++) {
-      const [transaction] = await transactionRepository.find({
+    bar.start(totalUser - 1, 0);
+    for (let i = 0; i < totalUser; i++) {
+      const [user] = await userRepository.find({
         limit: 1,
         skip: i,
       });
 
-      if (!transaction) continue;
-      const {from, to} = transaction;
-      const [fromWallet, toWallet] = await Promise.all([
-        walletRepository.findOne({where: {id: from}}),
-        walletRepository.findOne({where: {id: to}}),
-      ]);
+      if (!user) continue;
+      if (!user?.email) continue;
+      const email = user.email.toLowerCase();
 
-      const updatedTransaction = {};
-
-      if (fromWallet) {
-        Object.assign(updatedTransaction, {from: fromWallet.userId});
-      }
-
-      if (toWallet) {
-        Object.assign(updatedTransaction, {to: toWallet.userId});
-      }
-
-      promises.push(
-        transactionRepository.updateById(transaction.id, updatedTransaction),
-      );
+      promises.push(userRepository.updateById(user.id, {email}));
 
       bar.update(i);
     }

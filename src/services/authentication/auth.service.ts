@@ -98,10 +98,16 @@ export class AuthService {
   public async signUpByEmail(
     requestCreateNewUserByEmail: RequestCreateNewUserByEmail,
   ): Promise<User> {
-    const {name, username, email, callbackURL} = requestCreateNewUserByEmail;
+    const {
+      name,
+      username,
+      email: rawEmail,
+      callbackURL,
+    } = requestCreateNewUserByEmail;
 
     this.validateUsername(username);
 
+    const email = rawEmail.toLowerCase();
     const found = await this.userRepository.find({
       where: {
         or: [{email}, {username}],
