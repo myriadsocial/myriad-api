@@ -510,6 +510,8 @@ export class FilterBuilderService {
   ): Promise<AnyObject | void> {
     const [id, currentFilter = {where: {}}] = args;
 
+    Object.assign(filter, currentFilter);
+
     filter.where = {...currentFilter.where, deletedAt: {$eq: null}} as Where;
     filter.order = this.orderSetting(query);
 
