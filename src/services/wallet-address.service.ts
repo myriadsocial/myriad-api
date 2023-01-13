@@ -58,7 +58,7 @@ export class WalletAddressService {
         return this.userWalletAddress(id);
 
       case ReferenceType.UNLOCKABLECONTENT.replace('_', '-'):
-        return this.unlockableContentAddress(id);
+        return this.unlockableContentWalletAddress(id);
 
       default:
         throw new HttpErrors.NotFound('WalletAddressNotFound');
@@ -179,7 +179,9 @@ export class WalletAddressService {
     return this.tipsBalanceInfo(networkId, ReferenceType.USER, id);
   }
 
-  private async unlockableContentAddress(id: string): Promise<TipsBalanceInfo> {
+  private async unlockableContentWalletAddress(
+    id: string,
+  ): Promise<TipsBalanceInfo> {
     const {networkId, networkIds} = await this.currentUserNetwork();
     const unlockableContent = await this.unlockableContentRepository.findById(
       id,
@@ -213,7 +215,7 @@ export class WalletAddressService {
     });
 
     if (!wallet?.network) {
-      throw new HttpErrors.NotFound('WalletNotExists');
+      throw new HttpErrors.NotFound('NetworkNotExists');
     }
 
     const {id: networkId, blockchainPlatform} = wallet.network;
@@ -236,7 +238,7 @@ export class WalletAddressService {
     const server = await this.serverRepository.findOne();
     const serverId = server?.accountId?.[networkType];
 
-    if (!serverId) throw new HttpErrors.NotFound('WalletNotExists');
+    if (!serverId) throw new HttpErrors.NotFound('ServerNotExists');
 
     const tipsBalanceInfo = {
       serverId: serverId,

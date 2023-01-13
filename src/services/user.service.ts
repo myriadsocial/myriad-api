@@ -906,7 +906,6 @@ export class UserService {
   }
 
   public async requestFriend(friend: Omit<Friend, 'id'>): Promise<Friend> {
-    await this.haveFullAccess(ControllerType.USERFRIEND);
     return this.friendService.request(friend);
   }
 
@@ -914,12 +913,10 @@ export class UserService {
     id: string,
     friend: Partial<Friend>,
   ): Promise<void> {
-    await this.haveFullAccess(ControllerType.USERFRIEND);
     return this.friendService.respond(id, new Friend(friend));
   }
 
   public async removeFriend(id: string, friend?: Friend): Promise<void> {
-    await this.haveFullAccess(ControllerType.USERFRIEND);
     return this.friendService.remove(id, friend);
   }
 
