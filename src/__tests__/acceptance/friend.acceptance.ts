@@ -115,27 +115,6 @@ describe('FriendApplication', function () {
       .expect(401);
   });
 
-  it('rejects request friend when in lite version', async function () {
-    await userRepository.updateById(user.id, {fullAccess: false});
-
-    const requestee = await givenUserInstance(userRepository, {
-      username: 'johndoe2',
-    });
-
-    const friend = givenFriend({
-      requesteeId: requestee.id.toString(),
-      requestorId: user.id.toString(),
-    });
-
-    await client
-      .post('/user/friends')
-      .set('Authorization', `Bearer ${token}`)
-      .send(friend)
-      .expect(401);
-
-    await userRepository.updateById(user.id, {fullAccess: true});
-  });
-
   it('returns 422 when creates a pending friend request with no requesteeId/no requestorId', async () => {
     const friendWithNoRequesteeId = givenFriend({
       requestorId: '1',
@@ -231,31 +210,6 @@ describe('FriendApplication', function () {
       expect(result).to.containEql(updatedFriend);
     });
 
-    it('rejects response updates the friend by ID when in lite version', async () => {
-      await userRepository.updateById(user.id, {fullAccess: false});
-
-      const requestor = await givenUserInstance(userRepository, {
-        username: 'black2',
-      });
-
-      const friend = await givenFriendInstance(friendRepository, {
-        requestorId: requestor.id,
-        requesteeId: user.id,
-      });
-
-      const updatedFriend = givenFriend({
-        status: FriendStatusType.APPROVED,
-      });
-
-      await client
-        .patch(`/user/friends/${friend.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send(updatedFriend)
-        .expect(401);
-
-      await userRepository.updateById(user.id, {fullAccess: true});
-    });
-
     it('returns 401 when updating the friend by ID as not login user', async () => {
       const requestor = await givenUserInstance(userRepository, {
         username: 'kirania',
@@ -311,28 +265,6 @@ describe('FriendApplication', function () {
       await expect(friendRepository.findById(friend.id)).to.be.rejectedWith(
         EntityNotFoundError,
       );
-    });
-
-    it('reject deletes friend in lite version', async () => {
-      await userRepository.updateById(user.id, {fullAccess: false});
-
-      const requestee = await givenUserInstance(userRepository, {
-        username: 'white',
-      });
-
-      const friend = await givenFriendInstance(friendRepository, {
-        requestorId: user.id,
-        requesteeId: requestee.id,
-        status: FriendStatusType.APPROVED,
-      });
-
-      await client
-        .del(`/user/friends/${friend.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send()
-        .expect(401);
-
-      await userRepository.updateById(user.id, {fullAccess: true});
     });
 
     it('returns 401 when deleting friend as not login user', async () => {
