@@ -647,7 +647,7 @@ export class NotificationService {
           isContentExists = false;
         }
       } else {
-        Object.assign(additional, {
+        Object.assign(additionalReferenceId, {
           unlockableContent: {
             id: referenceId,
             comment: {
