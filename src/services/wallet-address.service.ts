@@ -195,13 +195,15 @@ export class WalletAddressService {
         networkId: {inq: networkIds},
       },
     });
-    if (!toWalletUser) {
-      throw new HttpErrors.UnprocessableEntity('WalletNotExists');
-    }
+
+    const referenceId = toWalletUser
+      ? `${unlockableContent.id}/${toWalletUser.id}`
+      : unlockableContent.id;
+
     return this.tipsBalanceInfo(
       networkId,
       ReferenceType.UNLOCKABLECONTENT,
-      `${unlockableContent.id}/${toWalletUser.id}`,
+      referenceId,
     );
   }
 
