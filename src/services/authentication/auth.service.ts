@@ -84,7 +84,8 @@ export class AuthService {
   public async requestOTPByEmail(
     requestOTP: RequestOTPByEmail,
   ): Promise<{message: string}> {
-    const {email, callbackURL} = requestOTP;
+    const {email: rawEmail, callbackURL} = requestOTP;
+    const email = rawEmail.toLowerCase();
 
     if (!isEmail(email)) {
       throw new HttpErrors.UnprocessableEntity('InvalidEmailAddress');
@@ -329,7 +330,10 @@ export class AuthService {
     if (newUser?.id === validOTP.userId.toString()) {
       const users = await this.userRepository.find({
         where: {
-          or: [{email: newUser.email}, {username: newUser.username}],
+          or: [
+            {email: newUser.email.toLowerCase()},
+            {username: newUser.username},
+          ],
         },
       });
 
