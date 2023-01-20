@@ -241,10 +241,13 @@ export class UserService {
     field: string,
     name: string,
   ): Promise<{status: boolean}> {
+    const updatedName =
+      field === 'email' || field === 'username' ? name.toLowerCase() : name;
+
     return this.userRepository
       .findOne({
         where: {
-          [field]: name,
+          [field]: updatedName,
         },
       })
       .then(user => ({status: Boolean(user)}));
