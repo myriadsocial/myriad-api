@@ -372,7 +372,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               if (exclusiveContents.length > 0) {
                 const updatedContents: AnyObject[] = [];
                 for (const url of exclusiveContents) {
-                  const id = url.split('/').at(-1);
+                  const id = String(url).split('/').at(-1);
                   if (!id) continue;
                   const prices = await this.contentPriceRepository.find({
                     include: ['currency'],
