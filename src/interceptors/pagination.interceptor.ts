@@ -371,19 +371,17 @@ export class PaginationInterceptor implements Provider<Interceptor> {
               const exclusiveContents = comment?.asset?.exclusiveContents ?? [];
               if (exclusiveContents.length > 0) {
                 const updatedContents: AnyObject[] = [];
-                for (const url of exclusiveContents) {
-                  const id = String(url).split('/').at(-1);
-                  if (!id) continue;
+                for (const contentId of exclusiveContents) {
                   const prices = await this.contentPriceRepository.find({
                     include: ['currency'],
                     where: {
-                      unlockableContentId: id,
+                      unlockableContentId: contentId,
                     },
                   });
                   if (prices.length === 0) continue;
                   const updatedPrices = prices.map(price => {
                     return {
-                      id,
+                      id: contentId,
                       price: price.amount,
                       decimal: price?.currency?.decimal ?? 0,
                       symbol: price?.currency?.symbol ?? 'UNKNOWN',
