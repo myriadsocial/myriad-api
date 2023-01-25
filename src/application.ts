@@ -243,6 +243,7 @@ export class MyriadApiApplication extends BootMixin(
     if (options?.existingSchema === 'drop') return this.databaseSeeding();
     await Promise.allSettled([
       this.doMigrateComment(),
+      this.doMigrateCurrency(),
       this.doMigratePost(),
       this.doMigrateUser(),
     ]);
@@ -639,6 +640,24 @@ export class MyriadApiApplication extends BootMixin(
     await Promise.allSettled(promises);
 
     bar.stop();
+  }
+
+  async doMigrateCurrency(): Promise<void> {
+    if (!this.doCollectionExists('currency')) return;
+
+    const {currencyRepository, userCurrencyRepository} =
+      await this.repositories();
+    const currencies = await currencyRepository.find({
+      where: {
+        networkId: 'myriad',
+      },
+    });
+    const currencyIds = currencies.map(currency => currency.id);
+
+    await userCurrencyRepository.deleteAll({
+      currencyId: {nin: currencyIds},
+      networkId: 'myriad',
+    });
   }
 
   async repositories(): Promise<Repositories> {
