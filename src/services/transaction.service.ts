@@ -388,10 +388,7 @@ export class TransactionService {
 
     // Validate to address
     // For UnlockableContent/Tipping directly to user
-    if (
-      !tipsBalanceInfo ||
-      transaction.type === ReferenceType.UNLOCKABLECONTENT
-    ) {
+    if (!tipsBalanceInfo) {
       const to =
         blockchainPlatform === 'near'
           ? isHex(`0x${transactionDetail.to}`)
@@ -406,17 +403,16 @@ export class TransactionService {
 
     // Validate referenceId and referenceType
     // For unlockable content
-    if (
-      tipsBalanceInfo &&
-      transaction.type === ReferenceType.UNLOCKABLECONTENT
-    ) {
-      const {referenceType, referenceId} = tipsBalanceInfo;
-      if (referenceType !== transaction.type) {
-        throw new HttpErrors.UnprocessableEntity('InvalidReference');
-      }
+    if (transaction.type === ReferenceType.UNLOCKABLECONTENT) {
+      if (tipsBalanceInfo) {
+        const {referenceType, referenceId} = tipsBalanceInfo;
+        if (referenceType !== transaction.type) {
+          throw new HttpErrors.UnprocessableEntity('InvalidReference');
+        }
 
-      if (referenceId !== transaction.referenceId) {
-        throw new HttpErrors.UnprocessableEntity('InvalidReference');
+        if (referenceId !== transaction.referenceId) {
+          throw new HttpErrors.UnprocessableEntity('InvalidReference');
+        }
       }
     }
   }
