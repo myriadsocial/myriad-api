@@ -354,23 +354,10 @@ export class UserService {
 
   public async requestSocialMediaIdentityCode(): Promise<{hash: string}> {
     const identity = new Identity();
-    const now = Date.now();
     const key = `social-media/${this.currentUser[securityId]}`;
     const existingIdentity = await this.identityRepository.get(key);
 
-    if (existingIdentity) {
-      const updatedAt = existingIdentity.updatedAt;
-      const expiredAt = existingIdentity.expiredAt;
-
-      if (now < expiredAt) {
-        const waitingTime = 60 * 1000;
-        if (now - updatedAt < waitingTime) {
-          throw new HttpErrors.UnprocessableEntity(
-            `${waitingTime / 1000} seconds waiting time`,
-          );
-        }
-      }
-    }
+    if (existingIdentity) return {hash: existingIdentity.hash};
 
     const text = this.userOTPService.generateOTP(32);
     identity.hash = `0x${text}`;

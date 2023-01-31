@@ -167,6 +167,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.USEREXPERIENCE:
       case ControllerType.USERNETWORK:
       case ControllerType.USERPERSONALACCESSTOKEN:
+      case ControllerType.USERSOCIALMEDIA:
       case ControllerType.USERREPORT:
       case ControllerType.USERWALLET:
       case ControllerType.USERVOTE: {
@@ -187,13 +188,6 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
 
         invocationCtx.args[1] = post;
         userId = post.createdBy;
-        break;
-      }
-
-      case ControllerType.USERSOCIALMEDIA: {
-        if (typeof data === 'string') return;
-        const address = data.address;
-        ({id: userId} = await this.walletRepository.user(address));
         break;
       }
     }
