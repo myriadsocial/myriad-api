@@ -548,20 +548,13 @@ export class NetworkService {
         // SendTip With MYRIA to UNKNOWN RECEIVER
         // Example: 0x415f477f5c82a0dbacf4750a2394f51b867534ae5c5705ce98f49ae21fea5f58
         case 'tipping.SendTip': {
-          const [
-            from,
-            to,
-            [[serverId, referenceType, referenceId, ftIdentifier], balance],
-          ] = data;
+          const {from, to, tipsBalance} = data;
+          const {tipsBalanceInfo, amount} = tipsBalance;
+          const {ftIdentifier} = tipsBalanceInfo;
 
           hashDetail = {
-            transactionDetail: {from, to, amount: balance.replace(/,/gi, '')},
-            tipsBalanceInfo: {
-              serverId,
-              referenceType,
-              referenceId,
-              ftIdentifier,
-            },
+            transactionDetail: {from, to, amount: amount.replace(/,/gi, '')},
+            tipsBalanceInfo,
             tokenId: ftIdentifier === 'native' ? null : ftIdentifier,
           };
           break;
@@ -569,12 +562,14 @@ export class NetworkService {
 
         // Pay Content
         case 'tipping.PayUnlockableContent': {
-          const [{from, to, amount, info}] = data;
+          const {from, to, receipt} = data;
+          const {info, amount} = receipt;
+          const {ftIdentifier} = info;
 
           hashDetail = {
             transactionDetail: {from, to, amount: amount.replace(/,/gi, '')},
             tipsBalanceInfo: info,
-            tokenId: info.ftIdentifier === 'native' ? null : info.ftIdentifier,
+            tokenId: ftIdentifier === 'native' ? null : ftIdentifier,
           };
           break;
         }
