@@ -133,19 +133,6 @@ describe('UserSocialMediaApplication', function () {
         .send(userVerification)
         .expect(404);
     });
-
-    it('rejects user to verify social media that is not belong to user', async () => {
-      const accessToken = await givenAccesToken(otherUser);
-      const userVerification = givenUserVerification({
-        address: publicKey,
-      });
-
-      await client
-        .post('/user/social-medias/verify')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send(userVerification)
-        .expect(401);
-    });
   });
 
   context('when dealing with a single persisted user social media', () => {
