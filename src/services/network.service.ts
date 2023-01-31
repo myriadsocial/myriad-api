@@ -427,19 +427,17 @@ export class NetworkService {
       const stringifyTipsBalance = rawTipsBalance.toString();
 
       if (!stringifyTipsBalance) {
-        throw new HttpErrors.UnprocessableEntity('TxFeeInsufficient');
+        throw new Error('TipsBalanceNotFound');
       }
 
-      const tipsBalance = JSON.parse(rawTipsBalance.toString());
+      const tipsBalance = JSON.parse(stringifyTipsBalance);
       const balance = parseInt(tipsBalance.amount).toString();
       const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
       const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
-      const currencies = await this.currencyRepository.find(<AnyObject>{
+      const currencies = await this.currencyRepository.find({
         where: {
           networkId: 'myriad',
-          referenceId: {
-            $neq: null,
-          },
+          native: false,
         },
       });
 
@@ -461,7 +459,7 @@ export class NetworkService {
       const notSufficientFee = new BN(txFee).lt(estimateTxFee);
 
       if (notSufficientBalance || notSufficientFee) {
-        throw new HttpErrors.UnprocessableEntity('TxFeeInsufficient');
+        throw new Error('TxFeeInsufficient');
       }
 
       const {nonce: currentNonce} = await api.query.system.account<AccountInfo>(
@@ -485,8 +483,8 @@ export class NetworkService {
       const txHash = await extrinsic.signAndSend(serverAdmin, {nonce});
 
       return {hash: txHash.toString()};
-    } catch {
-      throw new HttpErrors.UnprocessableEntity('FailedToVerify');
+    } catch (err) {
+      throw new HttpErrors.UnprocessableEntity(err.message);
     } finally {
       if (api) await api.disconnect();
     }
