@@ -13,12 +13,10 @@ export class Server extends Entity {
   @property({
     type: 'string',
     id: true,
-    generated: true,
-    mongodb: {
-      dataType: 'ObjectId',
-    },
+    generated: false,
+    required: true,
   })
-  id?: string;
+  id: number;
 
   @property({
     type: 'string',
