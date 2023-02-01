@@ -468,6 +468,7 @@ export class MyriadApiApplication extends BootMixin(
             }
 
             const accountId = {myriad: address};
+            const serverId = data.id;
             const serverName =
               data.name === 'Instance'
                 ? `${data.name} ${Math.floor(Math.random() * 1000)}`
@@ -488,6 +489,7 @@ export class MyriadApiApplication extends BootMixin(
             const rawServer = Object.assign(
               omit(data, ['sourceImageFileName', 'targetImagePath']),
               {
+                id: serverId,
                 name: serverName,
                 serverImageURL: serverImageURL,
                 accountId: {

@@ -849,6 +849,7 @@ export function givenServer(server?: Partial<Server>) {
 
   const data = Object.assign(
     {
+      id: 0,
       name: 'Myriad Social',
       serverImageURL: 'https://image.com/myriad-logo.svg',
       description: 'Welcome to myriad social',

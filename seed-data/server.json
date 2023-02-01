@@ -1,4 +1,5 @@
 {
+  "id": 0,
   "name": "Instance",
   "sourceImageFileName": "profile",
   "targetImagePath": "general/servers",
