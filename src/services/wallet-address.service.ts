@@ -245,7 +245,10 @@ export class WalletAddressService {
     const tipsBalanceInfo = {
       serverId: serverId,
       referenceType: referenceType,
-      referenceId: referenceId,
+      referenceId:
+        referenceType === ReferenceType.UNLOCKABLECONTENT
+          ? `${server.id}/${referenceId}`
+          : referenceId,
     };
 
     return tipsBalanceInfo;
