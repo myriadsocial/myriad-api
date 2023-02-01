@@ -72,6 +72,10 @@ describe('UnlockableContentApplication', () => {
     await unlockableContentRepository.deleteAll();
   });
 
+  afterEach(async () => {
+    await serverRepository.deleteAll();
+  });
+
   after(async () => {
     await deleteAllRepository(app);
   });
