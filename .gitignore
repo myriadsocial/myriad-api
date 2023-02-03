@@ -97,5 +97,6 @@ seed-data/*
 !seed-data/assets
 seed-data/assets/*
 !seed-data/assets/myriad.png
+!seed-data/assets/near.png
 !seed-data/assets/profile.png
 !seed-data/assets/banner.svg

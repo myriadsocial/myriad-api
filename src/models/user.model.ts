@@ -51,7 +51,7 @@ export class User extends Entity {
   @property({
     type: 'string',
     id: true,
-    required: true,
+    required: false,
     mongodb: {
       dataType: 'ObjectId',
     },

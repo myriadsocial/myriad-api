@@ -86,7 +86,6 @@ import {getFilePathFromSeedData, upload} from './utils/upload';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType} from './enums';
 import {UpdatePeopleProfileJob} from './jobs';
-import {Asset} from './interfaces';
 
 const jwt = require('jsonwebtoken');
 
@@ -241,12 +240,6 @@ export class MyriadApiApplication extends BootMixin(
   async migrateSchema(options?: SchemaMigrationOptions): Promise<void> {
     if (!this.options?.skipMigrateSchema) await super.migrateSchema(options);
     if (options?.existingSchema === 'drop') return this.databaseSeeding();
-    await Promise.allSettled([
-      this.doMigrateComment(),
-      this.doMigrateCurrency(),
-      this.doMigratePost(),
-      this.doMigrateUser(),
-    ]);
   }
 
   async databaseSeeding(): Promise<void> {
@@ -514,152 +507,6 @@ export class MyriadApiApplication extends BootMixin(
     }
 
     bar.stop();
-  }
-
-  async doMigrateUser(): Promise<void> {
-    if (!this.doCollectionExists('user')) return;
-
-    const {userRepository} = await this.repositories();
-    const {count: totalUser} = await userRepository.count({
-      email: {exists: true},
-    });
-    const bar = this.initializeProgressBar('Start Migrate User');
-    const promises = [];
-
-    bar.start(totalUser - 1, 0);
-    for (let i = 0; i < totalUser; i++) {
-      const [user] = await userRepository.find({
-        limit: 1,
-        skip: i,
-        where: {
-          email: {
-            exists: true,
-          },
-        },
-      });
-
-      if (!user) continue;
-      if (!user?.email) continue;
-      const email = user.email.toLowerCase();
-
-      promises.push(userRepository.updateById(user.id, {email}));
-
-      bar.update(i);
-    }
-
-    await Promise.allSettled(promises);
-
-    bar.stop();
-  }
-
-  async doMigratePost(): Promise<void> {
-    if (!this.doCollectionExists('post')) return;
-
-    const {postRepository} = await this.repositories();
-    const {count: totalPost} = await postRepository.count(<AnyObject>{
-      'asset.exclusiveContents': {exists: true},
-    });
-    const bar = this.initializeProgressBar('Start Migrate Post');
-    const promises = [];
-
-    bar.start(totalPost - 1, 0);
-    for (let i = 0; i < totalPost; i++) {
-      const [post] = await postRepository.find(<AnyObject>{
-        limit: 1,
-        skip: i,
-        where: {
-          'asset.exclusiveContents': {
-            $exists: true,
-          },
-        },
-      });
-
-      if (!post) continue;
-      if (!post?.asset?.exclusiveContents) continue;
-      if (post.asset.exclusiveContents.length <= 0) continue;
-
-      const exclusiveContents = [];
-
-      for (const content of post.asset.exclusiveContents) {
-        const contentId = content.split('/').at(-1);
-        if (!contentId) continue;
-        exclusiveContents.push(contentId);
-      }
-
-      const asset: Asset = {...post.asset, exclusiveContents};
-
-      promises.push(postRepository.updateById(post.id, {asset}));
-
-      bar.update(i);
-    }
-
-    await Promise.allSettled(promises);
-
-    bar.stop();
-  }
-
-  async doMigrateComment(): Promise<void> {
-    if (!this.doCollectionExists('comment')) return;
-
-    const {commentRepository} = await this.repositories();
-    const {count: totalComments} = await commentRepository.count(<AnyObject>{
-      'asset.exclusiveContents': {exists: true},
-    });
-    const bar = this.initializeProgressBar('Start Migrate Post');
-    const promises = [];
-
-    bar.start(totalComments - 1, 0);
-    for (let i = 0; i < totalComments; i++) {
-      const [comment] = await commentRepository.find(<AnyObject>{
-        limit: 1,
-        skip: i,
-        where: {
-          'asset.exclusiveContents': {
-            $exists: true,
-          },
-        },
-      });
-
-      if (!comment) continue;
-      if (!comment?.asset?.exclusiveContents) continue;
-      if (comment.asset.exclusiveContents.length <= 0) continue;
-
-      const exclusiveContents = [];
-
-      for (const content of comment.asset.exclusiveContents) {
-        const contentId = content.split('/').at(-1);
-        if (!contentId) continue;
-        exclusiveContents.push(contentId);
-      }
-
-      const asset: Asset = {...comment.asset, exclusiveContents};
-
-      promises.push(commentRepository.updateById(comment.id, {asset}));
-
-      bar.update(i);
-    }
-
-    await Promise.allSettled(promises);
-
-    bar.stop();
-  }
-
-  async doMigrateCurrency(): Promise<void> {
-    if (!this.doCollectionExists('currency')) return;
-
-    const {currencyRepository, userCurrencyRepository} =
-      await this.repositories();
-    const currencies = await currencyRepository.find({
-      where: {
-        networkId: 'myriad',
-      },
-    });
-    const currencyIds = currencies.map(currency => currency.id);
-
-    await userCurrencyRepository.deleteAll({
-      currencyId: {nin: currencyIds},
-      networkId: 'myriad',
-    });
   }
 
   async repositories(): Promise<Repositories> {

@@ -5,6 +5,8 @@ export const config = {
   APPLICATION_HOST: process.env.HOST ?? 'localhost',
   APPLICATION_PORT: +(process.env.PORT ?? 3000),
 
+  DOMAIN: process.env.DOMAIN ?? '',
+
   MYRIAD_ADMIN_SUBSTRATE_MNEMONIC:
     process.env.MYRIAD_ADMIN_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
@@ -42,8 +44,6 @@ export const config = {
   SMTP_SENDER_ADDRESS: process.env.SMTP_SENDER_ADDRESS ?? '',
 
   FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ?? '',
-
-  STORAGE_URL: process.env.STORAGE_URL ?? '',
 
   SENTRY_DSN: process.env.SENTRY_DSN ?? '',
 

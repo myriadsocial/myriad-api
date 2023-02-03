@@ -14,7 +14,8 @@ export class Server extends Entity {
     type: 'string',
     id: true,
     generated: false,
-    required: true,
+    required: false,
+    default: 0,
   })
   id: number;
 
