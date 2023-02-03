@@ -65,13 +65,13 @@ export async function upload(
 
       result = imageFile.publicUrl();
     } else {
-      if (!config.STORAGE_URL) {
+      if (!config.DOMAIN) {
         fs.unlinkSync(filePath);
         fs.unlinkSync(formattedFilePath);
         throw new Error('Storage not found');
       }
 
-      const folderPath = '../storages';
+      const folderPath = `../../storages`;
       const tmpSubFolderPath = `${folderPath}/${targetDir}`;
       const tmpUpdatedFilePath = `${folderPath}/${uploadFilePath}`;
       const subfolderPath = path.join(__dirname, tmpSubFolderPath);
@@ -82,7 +82,7 @@ export async function upload(
 
       fs.copyFileSync(formattedFilePath, updatedFilePath);
 
-      result = `${config.STORAGE_URL}/storages/${uploadFilePath}`;
+      result = `https://${config.DOMAIN}/storages/${uploadFilePath}`;
     }
 
     if (type === UploadType.IMAGE) fs.unlinkSync(formattedFilePath);
@@ -95,7 +95,7 @@ export async function upload(
 }
 
 export function getFilePathFromSeedData(sourceImageFileName: string) {
-  const assetPath = path.join(__dirname, `../seed-data/assets`);
+  const assetPath = path.join(__dirname, `../../seed-data/assets`);
   if (!existsSync(assetPath)) return '';
 
   const files = fs.readdirSync(assetPath);
