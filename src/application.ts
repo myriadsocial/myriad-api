@@ -239,7 +239,8 @@ export class MyriadApiApplication extends BootMixin(
 
   async migrateSchema(options?: SchemaMigrationOptions): Promise<void> {
     if (!this.options?.skipMigrateSchema) await super.migrateSchema(options);
-    if (options?.existingSchema === 'drop') return this.databaseSeeding(this.options?.environment);
+    if (options?.existingSchema === 'drop')
+      return this.databaseSeeding(this.options?.environment);
   }
 
   async databaseSeeding(environment: string): Promise<void> {
@@ -330,7 +331,7 @@ export class MyriadApiApplication extends BootMixin(
             break;
           }
 
-          case 'default-user-wallet.json': 
+          case 'default-user-wallet.json':
           case 'user-wallet.json': {
             const wallets = await Promise.all(
               data.map(async (e: AnyObject) => {
@@ -364,11 +365,12 @@ export class MyriadApiApplication extends BootMixin(
               }),
             );
 
-            const myriadWalletAddress = environment === 'mainnet' ? 
-            '0xecfeabd53afba60983271c8fc13c133ae7e904ba90a7c5dee1f43523559fee5f' :
-            '0x22968e3881c9eb2625cf0d85a05f7d7ea4b542f000821ab185ce978b6da6081b'
+            const myriadWalletAddress =
+              environment === 'mainnet'
+                ? '0xecfeabd53afba60983271c8fc13c133ae7e904ba90a7c5dee1f43523559fee5f'
+                : '0x22968e3881c9eb2625cf0d85a05f7d7ea4b542f000821ab185ce978b6da6081b';
             const myriadWallet = wallets.find(e => {
-              return (e.id === myriadWalletAddress);
+              return e.id === myriadWalletAddress;
             });
             const promises = [];
             for (const wallet of wallets) {
@@ -477,23 +479,21 @@ export class MyriadApiApplication extends BootMixin(
       throw new Error('ImageNotFound');
     }
 
-    const rawServer = Object.assign(
-      {
-        id: 0,
-        name: name,
-        description: description,
-        categories: categories,
-        serverImageURL: profileImageURL, // TODO: remove
-        images: {
-          logo_banner: bannerImageURL, // TODO: remove
-          profile: profileImageURL,
-          banner: bannerImageURL,
-        },
-        accountId: {
-          myriad: substrateAdmin.address,
-        },
+    const rawServer = Object.assign({
+      id: 0,
+      name: name,
+      description: description,
+      categories: categories,
+      serverImageURL: profileImageURL, // TODO: remove
+      images: {
+        logo_banner: bannerImageURL, // TODO: remove
+        profile: profileImageURL,
+        banner: bannerImageURL,
       },
-    );
+      accountId: {
+        myriad: substrateAdmin.address,
+      },
+    });
     await serverRepository.create(rawServer);
 
     bar.update(barSize);
@@ -585,7 +585,10 @@ export class MyriadApiApplication extends BootMixin(
     const colors = require('ansi-colors');
 
     return new cliProgress.Bar({
-      format: `${title} |` + colors.blue('{bar}') + '| {percentage}% || {value}/{total}',
+      format:
+        `${title} |` +
+        colors.blue('{bar}') +
+        '| {percentage}% || {value}/{total}',
       barCompleteChar: '\u2588',
       barIncompleteChar: '\u2591',
       hideCursor: true,
