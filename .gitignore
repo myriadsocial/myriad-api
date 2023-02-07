@@ -86,17 +86,20 @@ prisma
 # misc
 *.pem
 
+# Seed data
+seed-data/**
+!seed-data/assets
+!seed-data/assets/myriad_circle.png
+!seed-data/assets/myriad_with_text.png
+!seed-data/testnet
+!seed-data/testnet/default-network-currencies.json
+!seed-data/testnet/default-user-wallet.json
+!seed-data/mainnet
+!seed-data/mainnet/default-network-currencies.json
+!seed-data/mainnet/default-user-wallet.json
+
 # Storage
 storages
 
-# Seed data
-seed-data/*
-!seed-data/default-network-currencies.json
-!seed-data/default-user-wallet.json
-!seed-data/server.json
-!seed-data/assets
-seed-data/assets/*
-!seed-data/assets/myriad.png
-!seed-data/assets/near.png
-!seed-data/assets/profile.png
-!seed-data/assets/banner.svg
+# The cache for data in container
+.local

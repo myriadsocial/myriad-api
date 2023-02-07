@@ -1,0 +1,21 @@
+[
+  {
+    "network": {
+      "id": "myriad",
+      "rpcURL": "wss://ws-rpc.testnet.myriad.social",
+      "explorerURL": "https://polkadot.js.org/apps/?rpc=wss://ws-rpc.testnet.myriad.social#/explorer/query",
+      "blockchainPlatform": "substrate",
+      "sourceImageFileName": "myriad_circle"
+    },
+    "currencies": [
+      {
+        "name": "myria",
+        "symbol": "MYRIA",
+        "decimal": 18,
+        "native": true,
+        "exchangeRate": false,
+        "sourceImageFileName": "myriad_circle"
+      }
+    ]
+  }
+]

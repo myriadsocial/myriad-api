@@ -5,11 +5,9 @@ export async function migrate(args: string[]) {
   const skipMigrateSchema = args.includes('--skip-migrate-schema')
     ? true
     : false;
-  const envIndex = args.indexOf('--environment');
+  const environmentIndex = args.indexOf('--environment');
   const environment = args.includes('--environment')
-    ? args[envIndex + 1]
-      ? args[envIndex + 1]
-      : 'development'
+    ? args[environmentIndex + 1] ?? 'development'
     : undefined;
   const alterIndex = args.indexOf('--alter');
   const alter = args.includes('--alter')

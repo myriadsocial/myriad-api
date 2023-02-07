@@ -239,11 +239,12 @@ export class MyriadApiApplication extends BootMixin(
 
   async migrateSchema(options?: SchemaMigrationOptions): Promise<void> {
     if (!this.options?.skipMigrateSchema) await super.migrateSchema(options);
-    if (options?.existingSchema === 'drop') return this.databaseSeeding();
+    if (options?.existingSchema === 'drop')
+      return this.databaseSeeding(this.options?.environment);
   }
 
-  async databaseSeeding(): Promise<void> {
-    const directory = path.join(__dirname, '../seed-data');
+  async databaseSeeding(environment: string): Promise<void> {
+    const directory = path.join(__dirname, `../seed-data/${environment}`);
 
     if (!existsSync(directory)) return;
 
@@ -259,8 +260,9 @@ export class MyriadApiApplication extends BootMixin(
 
     const bar = this.initializeProgressBar('Start Seeding');
     const files = fs.readdirSync(directory);
+    const barSize = files.length + 1;
 
-    bar.start(files.length - 1, 0);
+    bar.start(barSize, 0);
     for (const [index, file] of files.entries()) {
       if (file.endsWith('.json')) {
         const dataDirectory = path.join(directory, file);
@@ -268,15 +270,15 @@ export class MyriadApiApplication extends BootMixin(
         const data = JSON.parse(stringifyJSON);
 
         switch (file) {
-          case 'network-currencies.json':
-          case 'default-network-currencies.json': {
+          case 'default-network-currencies.json':
+          case 'network-currencies.json': {
             await Promise.all(
               data.map(async (networkCurrency: AnyObject) => {
                 const {network, currencies} = networkCurrency;
                 const filePath = getFilePathFromSeedData(
                   network.sourceImageFileName,
                 );
-                const targetDir = `${network.targetImagePath}/${network.id}`;
+                const targetDir = `general/networks/${network.id}`;
                 const networkImageURL = await upload(
                   UploadType.IMAGE,
                   targetDir,
@@ -286,7 +288,7 @@ export class MyriadApiApplication extends BootMixin(
                 if (!networkImageURL) return;
 
                 const rawNetwork = Object.assign(
-                  omit(network, ['targetImagePath', 'sourceImageFileName']),
+                  omit(network, ['sourceImageFileName']),
                   {
                     image: networkImageURL,
                   },
@@ -297,7 +299,7 @@ export class MyriadApiApplication extends BootMixin(
                     const sourceImageFileName = currency.sourceImageFileName;
                     const currencyFilePath =
                       getFilePathFromSeedData(sourceImageFileName);
-                    const currencyTargetDir = `${currency.targetImagePath}/${currency.name}`;
+                    const currencyTargetDir = `general/currencies/${currency.name}`;
                     const currencyImageURL = await upload(
                       UploadType.IMAGE,
                       currencyTargetDir,
@@ -307,10 +309,7 @@ export class MyriadApiApplication extends BootMixin(
                     if (!currencyImageURL) return;
 
                     return Object.assign(
-                      omit(currency, [
-                        'targetImagePath',
-                        'sourceImageFileName',
-                      ]),
+                      omit(currency, ['sourceImageFileName']),
                       {
                         image: currencyImageURL,
                         networkId: rawNetwork.id,
@@ -332,15 +331,12 @@ export class MyriadApiApplication extends BootMixin(
             break;
           }
 
-          case 'user-wallet.json':
-          case 'default-user-wallet.json': {
+          case 'default-user-wallet.json':
+          case 'user-wallet.json': {
             const wallets = await Promise.all(
               data.map(async (e: AnyObject) => {
                 const {user, wallet} = e;
-                const rawUser = omit(user, [
-                  'sourceImageFileName',
-                  'targetImagePath',
-                ]);
+                const rawUser = omit(user, ['sourceImageFileName']);
 
                 if (user.username === 'myriad_official') {
                   Object.assign(rawUser, {
@@ -369,11 +365,12 @@ export class MyriadApiApplication extends BootMixin(
               }),
             );
 
+            const myriadWalletAddress =
+              environment === 'mainnet'
+                ? '0xecfeabd53afba60983271c8fc13c133ae7e904ba90a7c5dee1f43523559fee5f'
+                : '0x22968e3881c9eb2625cf0d85a05f7d7ea4b542f000821ab185ce978b6da6081b';
             const myriadWallet = wallets.find(e => {
-              return (
-                e.id ===
-                '0xecfeabd53afba60983271c8fc13c133ae7e904ba90a7c5dee1f43523559fee5f'
-              );
+              return e.id === myriadWalletAddress;
             });
             const promises = [];
             for (const wallet of wallets) {
@@ -428,76 +425,6 @@ export class MyriadApiApplication extends BootMixin(
             break;
           }
 
-          case 'server.json': {
-            const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
-
-            if (!mnemonic) throw new Error('MnemonicNotFound');
-
-            const {getKeyring} = new PolkadotJs();
-            const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
-            const address = serverAdmin.address;
-            const filePathProfile = getFilePathFromSeedData(
-              data.sourceImageFileName,
-            );
-            const filePathBanner = getFilePathFromSeedData(
-              data.images.sourceImageFileName,
-            );
-            const targetDirProfile = data.targetImagePath;
-            const targetDirBanner = data.images.targetImagePath;
-            const [serverImageURL, logoBannerURL] = await Promise.all([
-              upload(UploadType.IMAGE, targetDirProfile, filePathProfile),
-              upload(UploadType.IMAGE, targetDirBanner, filePathBanner),
-            ]);
-
-            if (!serverImageURL || !logoBannerURL) {
-              await Promise.all([
-                userRepository.deleteAll(),
-                currencyRepository.deleteAll(),
-                walletRepository.deleteAll(),
-                serverRepository.deleteAll(),
-              ]);
-
-              throw new Error('Image server not exists');
-            }
-
-            const accountId = {myriad: address};
-            const serverId = data.id;
-            const serverName =
-              data.name === 'Instance'
-                ? `${data.name} ${Math.floor(Math.random() * 1000)}`
-                : data.name;
-
-            if (data?.accountId?.near) {
-              Object.assign(accountId, {
-                near: data.accountId.near,
-              });
-            }
-
-            if (data?.accountId?.ethereum) {
-              Object.assign(accountId, {
-                ethereum: data.accountId.ethereum,
-              });
-            }
-
-            const rawServer = Object.assign(
-              omit(data, ['sourceImageFileName', 'targetImagePath']),
-              {
-                id: serverId,
-                name: serverName,
-                serverImageURL: serverImageURL,
-                accountId: {
-                  myriad: address,
-                },
-                images: {
-                  logo_banner: logoBannerURL,
-                },
-              },
-            );
-
-            await serverRepository.create(rawServer);
-            break;
-          }
-
           default:
             return;
         }
@@ -506,6 +433,70 @@ export class MyriadApiApplication extends BootMixin(
       bar.update(index);
     }
 
+    const name = config.DOMAIN.trim();
+    if (!name) {
+      await Promise.all([
+        userRepository.deleteAll(),
+        currencyRepository.deleteAll(),
+        walletRepository.deleteAll(),
+        serverRepository.deleteAll(),
+      ]);
+
+      throw new Error('DomainNotFound');
+    }
+    const description = 'My Instance';
+    const categories = ['general'];
+
+    const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
+    if (!mnemonic) {
+      await Promise.all([
+        userRepository.deleteAll(),
+        currencyRepository.deleteAll(),
+        walletRepository.deleteAll(),
+        serverRepository.deleteAll(),
+      ]);
+
+      throw new Error('MnemonicNotFound');
+    }
+    const {getKeyring} = new PolkadotJs();
+    const substrateAdmin = getKeyring().addFromMnemonic(mnemonic);
+
+    const filePathProfile = getFilePathFromSeedData('myriad_circle');
+    const filePathBanner = getFilePathFromSeedData('myriad_with_text');
+    const targetDir = 'general/servers';
+    const [profileImageURL, bannerImageURL] = await Promise.all([
+      upload(UploadType.IMAGE, targetDir, filePathProfile),
+      upload(UploadType.IMAGE, targetDir, filePathBanner),
+    ]);
+    if (!profileImageURL || !bannerImageURL) {
+      await Promise.all([
+        userRepository.deleteAll(),
+        currencyRepository.deleteAll(),
+        walletRepository.deleteAll(),
+        serverRepository.deleteAll(),
+      ]);
+
+      throw new Error('ImageNotFound');
+    }
+
+    const rawServer = Object.assign({
+      id: 0,
+      name: name,
+      description: description,
+      categories: categories,
+      serverImageURL: profileImageURL, // TODO: remove
+      images: {
+        logo_banner: bannerImageURL, // TODO: remove
+        profile: profileImageURL,
+        banner: bannerImageURL,
+      },
+      accountId: {
+        myriad: substrateAdmin.address,
+      },
+    });
+    await serverRepository.create(rawServer);
+
+    bar.update(barSize);
     bar.stop();
   }
 
@@ -596,8 +587,8 @@ export class MyriadApiApplication extends BootMixin(
     return new cliProgress.Bar({
       format:
         `${title} |` +
-        colors.cyan('{bar}') +
-        '| {percentage}% || ETA: {eta}s || {value}/{total} documents ',
+        colors.blue('{bar}') +
+        '| {percentage}% || {value}/{total}',
       barCompleteChar: '\u2588',
       barIncompleteChar: '\u2591',
       hideCursor: true,

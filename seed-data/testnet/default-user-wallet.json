@@ -3,10 +3,10 @@
     "user": {
       "name": "Myriad Official",
       "username": "myriad_official",
-      "sourceImageFileName": "myriad"
+      "sourceImageFileName": "myriad_circle"
     },
     "wallet": {
-      "id": "0xecfeabd53afba60983271c8fc13c133ae7e904ba90a7c5dee1f43523559fee5f",
+      "id": "0x22968e3881c9eb2625cf0d85a05f7d7ea4b542f000821ab185ce978b6da6081b",
       "blockchainPlatform": "substrate",
       "networkId": "myriad"
     }
