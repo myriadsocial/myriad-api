@@ -2,23 +2,16 @@ import {MyriadApiApplication} from './application';
 
 export async function migrate(args: string[]) {
   const existingSchema = args.includes('--rebuild') ? 'drop' : 'alter';
-  const skipMigrateSchema = args.includes('--skip-migrate-schema')
-    ? true
-    : false;
-  const envIndex = args.indexOf('--environment');
+  const skipMigrateSchema = args.includes('--skip-migrate-schema') ? true : false;
+  const environmentIndex = args.indexOf('--environment');
   const environment = args.includes('--environment')
-    ? args[envIndex + 1]
-      ? args[envIndex + 1]
-      : 'development'
-    : undefined;
+    ? args[environmentIndex + 1] ?? 'development' : undefined;
   const alterIndex = args.indexOf('--alter');
   const alter = args.includes('--alter')
-    ? args[alterIndex + 1]?.split(',') ?? []
-    : [];
+    ? args[alterIndex + 1]?.split(',') ?? [] : [];
   const dropIndex = args.indexOf('--drop');
   const drop = args.includes('--drop')
-    ? args[dropIndex + 1]?.split(',') ?? []
-    : [];
+    ? args[dropIndex + 1]?.split(',') ?? [] : [];
   console.log('Migrating schemas (%s existing schema)', existingSchema);
 
   const app = new MyriadApiApplication({
