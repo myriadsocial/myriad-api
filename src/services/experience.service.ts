@@ -146,18 +146,35 @@ export class ExperienceService {
   public async addPost(
     data: CreateExperiencePostDto,
   ): Promise<ExperiencePost[]> {
+    const experiences = await this.experienceRepository.find({
+      where: {
+        createdBy: this.currentUser[securityId],
+      },
+    });
+
+    const experienceIds = experiences.map(e => String(e.id));
+    const newExperiencePosts = data.experienceIds.map(experienceId => {
+      return {
+        experienceId,
+        postId: data.postId,
+      };
+    });
+
     return this.experiencePostRepository
       .deleteAll({
-        experienceId: {inq: data.experienceIds},
+        experienceId: {inq: experienceIds},
         postId: data.postId,
       })
       .then(() => {
-        const experiencePosts = data.experienceIds.map(experienceId => {
-          return new ExperiencePost({experienceId, postId: data.postId});
-        });
-
-        return this.experiencePostRepository.createAll(experiencePosts);
-      });
+        return Promise.all([
+          this.experiencePostRepository.createAll(newExperiencePosts),
+          this.postService.updateById(data.postId, {
+            createdAt: new Date().toString(),
+            updatedAt: new Date().toString(),
+          }),
+        ]);
+      })
+      .then(([experiencePosts]) => experiencePosts);
   }
 
   public async substractPost(
