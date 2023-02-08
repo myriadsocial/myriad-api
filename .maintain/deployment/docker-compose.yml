@@ -1,0 +1,104 @@
+version: '3'
+
+services:
+  mongo:
+    container_name: mongo
+    image: mongo:6.0.4
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    volumes:
+      - ../../.local/mongo/db:/data/db
+      - ../../.local/mongo/configdb:/data/configdb
+    ports:
+      - 27017:27017
+    networks:
+      default:
+
+  redis:
+    container_name: redis
+    image: redis:7.0.8-bullseye
+    restart: always
+    command: redis-server --loglevel warning --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - ../../.local/redis/data:/data
+    ports:
+      - 6379:6379
+    networks:
+      default:
+
+  api: &api
+    container_name: api
+    image: myriadsocial/myriad-api:${API_VERSION:-latest}
+    restart: always  
+    environment:
+      - WAIT_HOSTS=mongo:27017
+      - DOMAIN=${DOMAIN}
+      - MYRIAD_ADMIN_SUBSTRATE_MNEMONIC=${MYRIAD_ADMIN_SUBSTRATE_MNEMONIC}
+      - MYRIAD_ADMIN_NEAR_MNEMONIC=${MYRIAD_ADMIN_NEAR_MNEMONIC}
+      - JWT_TOKEN_SECRET_KEY=${JWT_TOKEN_SECRET_KEY}
+      - JWT_REFRESH_TOKEN_SECRET_KEY=${JWT_REFRESH_TOKEN_SECRET_KEY}
+      - MONGO_HOST=mongo
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_DATABASE=admin
+      - REDIS_CONNECTOR=kv-redis
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_SENDER_ADDRESS=${SMTP_USERNAME}
+    volumes:
+      - ../../.local/storages:/app/storages
+    ports:
+      - 3000:3000
+    networks:
+      default:
+    depends_on:
+      - mongo
+      - redis
+  
+  db_migration:
+    <<: *api
+    container_name: db_migration
+    restart: none
+    entrypoint: node ./dist/migrate
+    ports: []
+    profiles:
+      - tools
+
+  certbot:
+    container_name: certbot
+    image: certbot/certbot:v2.2.0
+    restart: unless-stopped
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    volumes:
+      - ../../.local/certbot/conf:/etc/letsencrypt
+      - ../../.local/certbot/www:/var/www/certbot
+    profiles:
+      - webserver
+
+  nginx:
+    container_name: nginx
+    image: nginx:1.23.3-alpine
+    restart: unless-stopped
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"    
+    volumes:
+      - ../../.local/nginx:/etc/nginx/conf.d
+      - ../../.local/certbot/conf:/etc/letsencrypt
+      - ../../.local/certbot/www:/var/www/certbot
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - api
+      - certbot
+    profiles:
+      - webserver
+
+networks:
+  default:
+    driver: bridge
