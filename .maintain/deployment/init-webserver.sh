@@ -24,10 +24,10 @@ fi
 echo "### Copying nginx configuration"
 mkdir -p $nginx_data_path
 cp ./.maintain/deployment/nginx.conf $nginx_data_path/nginx.conf
-sed -i '' "s~api.example.com~${domains}~" $nginx_data_path/nginx.conf
+sed -i "s~api.example.com~${domains}~" $nginx_data_path/nginx.conf
 
 echo "### Restarting nginx ..."
-docker compose -f ./.maintain/deployment/docker compose.yml --env-file ./.env up --force-recreate --no-deps -d nginx
+docker compose -f ./.maintain/deployment/docker-compose.yml --env-file ./.env up --force-recreate --no-deps -d nginx
 echo
 
 if [ -d "$certbot_data_path" ]; then
@@ -48,7 +48,7 @@ fi
 echo "### Creating dummy certificate for $domains ..."
 path="/etc/letsencrypt/live/$domains"
 mkdir -p "$certbot_data_path/conf/live/$domains"
-docker compose -f ./.maintain/deployment/docker compose.yml --env-file ./.env run --rm --entrypoint "\
+docker compose -f ./.maintain/deployment/docker-compose.yml --env-file ./.env run --rm --entrypoint "\
   openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1\
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
@@ -56,11 +56,11 @@ docker compose -f ./.maintain/deployment/docker compose.yml --env-file ./.env ru
 echo
 
 echo "### Restarting nginx ..."
-docker compose -f ./.maintain/deployment/docker compose.yml --env-file ./.env up --force-recreate --no-deps -d nginx
+docker compose -f ./.maintain/deployment/docker-compose.yml --env-file ./.env up --force-recreate --no-deps -d nginx
 echo
 
 echo "### Deleting dummy certificate for $domains ..."
-docker compose -f ./.maintain/deployment/docker compose.yml --env-file ./.env run --rm --entrypoint "\
+docker compose -f ./.maintain/deployment/docker-compose.yml --env-file ./.env run --rm --entrypoint "\
   rm -Rf /etc/letsencrypt/live/$domains && \
   rm -Rf /etc/letsencrypt/archive/$domains && \
   rm -Rf /etc/letsencrypt/renewal/$domains.conf" certbot
@@ -82,7 +82,7 @@ esac
 # Enable staging mode if needed
 if [ $staging != "0" ]; then staging_arg="--staging"; fi
 
-docker compose -f ./.maintain/deployment/docker compose.yml --env-file ./.env run --rm --entrypoint "\
+docker compose -f ./.maintain/deployment/docker-compose.yml --env-file ./.env run --rm --entrypoint "\
   certbot certonly --webroot -w /var/www/certbot \
     $staging_arg \
     $email_arg \
@@ -93,4 +93,4 @@ docker compose -f ./.maintain/deployment/docker compose.yml --env-file ./.env ru
 echo
 
 echo "### Reloading nginx ..."
-docker compose -f ./.maintain/deployment/docker compose.yml --env-file ./.env exec nginx nginx -s reload
+docker compose -f ./.maintain/deployment/docker-compose.yml --env-file ./.env exec nginx nginx -s reload
