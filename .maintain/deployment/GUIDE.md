@@ -1,4 +1,4 @@
-1. git cone https://github.com/myriadsocial/myriad-api.git
+1. git clone https://github.com/myriadsocial/myriad-api.git
 2. cp ./.maintain/deployment/.env-template ./.env
 3. vim .env
 4. configure .env
