@@ -89,31 +89,29 @@ export class StatisticService {
   }
 
   public async average(): Promise<StatisticData> {
-    const userCollection = (
-      this.userRepository.dataSource.connector as AnyObject
-    ).collection(User.modelName);
+    const {
+      metric: {
+        totalUsers,
+        totalComments,
+        totalPosts: {totalAll},
+        totalExperiences,
+        totalTransactions,
+        totalSubscriptions,
+      },
+    } = await this.serverService.find();
 
-    const result = await userCollection
-      .aggregate([
-        {
-          $group: {
-            _id: null,
-            post: {$avg: '$metric.totalPosts'},
-            comment: {$avg: '$metric.totalComments'},
-            experience: {$avg: '$metric.totalExperiences'},
-            transaction: {$avg: '$metric.totalTransactions'},
-            subscription: {$avg: '$metric.totalSubscriptions'},
-          },
-        },
-      ])
-      .get();
+    const averagePost = totalAll / totalUsers;
+    const averageComment = totalComments / totalUsers;
+    const averageExpereince = totalExperiences / totalUsers;
+    const averageTransaction = totalTransactions / totalUsers;
+    const averageSubscription = totalSubscriptions / totalUsers;
 
     return {
-      post: result?.[0]?.post ?? 0,
-      comment: result?.[0]?.comments ?? 0,
-      experience: result?.[0]?.experiences ?? 0,
-      transaction: result?.[0]?.tansactions ?? 0,
-      subscription: result?.[0]?.subscriptions ?? 0,
+      post: averagePost,
+      comment: averageComment,
+      experience: averageExpereince,
+      transaction: averageTransaction,
+      subscription: averageSubscription,
     };
   }
 
