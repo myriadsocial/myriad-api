@@ -165,13 +165,11 @@ export class ExperienceService {
         experienceId: {inq: experienceIds},
         postId: data.postId,
       })
-      .then(() => {
+      .then(async () => {
+        if (newExperiencePosts.length <= 0) return [];
         return Promise.all([
           this.experiencePostRepository.createAll(newExperiencePosts),
-          this.postService.updateById(data.postId, {
-            createdAt: new Date().toString(),
-            updatedAt: new Date().toString(),
-          }),
+          this.postService.updatePostDate(data.postId),
         ]);
       })
       .then(([experiencePosts]) => experiencePosts);
