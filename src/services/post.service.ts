@@ -207,7 +207,8 @@ export class PostService {
     let embeddedURL = null;
     let url = '';
 
-    const raw: Partial<Post> = new Post();
+    const updatedAt = new Date().toString();
+    const raw: Partial<Post> = new Post({updatedAt});
 
     if (data.text && data.platform === PlatformType.MYRIAD) {
       const found = data.text.match(/https:\/\/|http:\/\/|www./g);
@@ -244,8 +245,8 @@ export class PostService {
 
     return this.postRepository.updateAll(raw, {
       createdBy: data.createdBy,
-      id,
       platform: data.platform,
+      id,
     });
   }
 
@@ -274,6 +275,13 @@ export class PostService {
 
   public async count(where?: Where<Post>): Promise<Count> {
     return this.postRepository.count(where);
+  }
+
+  public async updatePostDate(id: string): Promise<void> {
+    return this.postRepository.updateById(id, {
+      createdAt: new Date().toString(),
+      updatedAt: new Date().toString(),
+    });
   }
 
   // ------------------------------------------------
