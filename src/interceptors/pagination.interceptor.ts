@@ -28,6 +28,7 @@ import {
   Friend,
   FriendWithRelations,
   PostWithRelations,
+  Transaction,
   UnlockableContent,
   User,
   UserWithRelations,
@@ -379,15 +380,40 @@ export class PaginationInterceptor implements Provider<Interceptor> {
                     },
                   });
                   if (prices.length === 0) continue;
-                  const updatedPrices = prices.map(price => {
-                    return {
-                      id: contentId,
-                      price: price.amount,
-                      decimal: price?.currency?.decimal ?? 0,
-                      symbol: price?.currency?.symbol ?? 'UNKNOWN',
-                      networId: price?.currency?.networkId ?? 'UNKNOWN',
-                    };
-                  });
+                  const updatedPrices = await Promise.all(
+                    prices.map(async price => {
+                      const collection = (
+                        this.transactionRepository.dataSource
+                          .connector as AnyObject
+                      ).collection(Transaction.modelName);
+                      const [total] = await collection
+                        .aggregate([
+                          {
+                            $match: {
+                              type: ReferenceType.UNLOCKABLECONTENT,
+                              referenceId: contentId,
+                              currencyId: price.currency?.id ?? '',
+                            },
+                          },
+                          {
+                            $group: {
+                              _id: null,
+                              amount: {$sum: '$amount'},
+                            },
+                          },
+                        ])
+                        .get();
+
+                      return {
+                        id: contentId,
+                        price: price.amount,
+                        decimal: price?.currency?.decimal ?? 0,
+                        symbol: price?.currency?.symbol ?? 'UNKNOWN',
+                        networId: price?.currency?.networkId ?? 'UNKNOWN',
+                        totalAmount: total?.amount ?? 0,
+                      };
+                    }),
+                  );
                   updatedContents.push(...updatedPrices);
                 }
 
