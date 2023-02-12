@@ -196,9 +196,10 @@ export class WalletAddressService {
       },
     });
 
+    const userId = unlockableContent.createdBy;
     const referenceId = toWalletUser
-      ? `${unlockableContent.id}/${toWalletUser.id}`
-      : unlockableContent.id;
+      ? `${id}/${userId}/${toWalletUser.id}`
+      : `${id}/${userId}`;
 
     return this.tipsBalanceInfo(
       networkId,
