@@ -412,6 +412,10 @@ export class NetworkService {
       const {serverId, accountId, rpcURL, txFee, referenceIds} =
         claimReferenceData;
 
+      if (isNaN(Number(txFee))) {
+        throw new Error('TxFeeNotANumber');
+      }
+
       const mainReferenceType = 'user';
       const mainReferenceId = this.currentUser[securityId];
 
@@ -431,7 +435,7 @@ export class NetworkService {
       }
 
       const tipsBalance = JSON.parse(stringifyTipsBalance);
-      const balance = parseInt(tipsBalance.amount).toString();
+      const balance = tipsBalance?.amount?.substring(2) ?? '0';
       const mnemonic = config.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC;
       const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
       const currencies = await this.currencyRepository.find({
@@ -455,7 +459,7 @@ export class NetworkService {
 
       const estimateTxFee = partialFee.toBn();
       const serverAddress = serverAdmin.address;
-      const notSufficientBalance = new BN(balance).lt(new BN(txFee));
+      const notSufficientBalance = new BN(balance, 'hex').lt(new BN(txFee));
       const notSufficientFee = new BN(txFee).lt(estimateTxFee);
 
       if (notSufficientBalance || notSufficientFee) {
@@ -728,5 +732,18 @@ export class NetworkService {
     await this.queueRepository.expire(type, 60 * 60 * 1000);
 
     return priority;
+  }
+
+  private parseBN(
+    number: string | number,
+    base?: number | 'hex' | undefined,
+  ): BN {
+    try {
+      return new BN(number, base);
+    } catch {
+      //
+    }
+
+    return new BN(0);
   }
 }
