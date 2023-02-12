@@ -239,9 +239,19 @@ export class WalletAddressService {
     referenceId: string,
   ): Promise<TipsBalanceInfo> {
     const server = await this.serverRepository.findOne();
-    const serverId = server?.accountId?.[networkType];
+    const networkId =
+      networkType === 'myriad' || networkType === 'debio'
+        ? 'myriad'
+        : networkType;
+    const serverId = server?.accountId?.[networkId];
 
     if (!serverId) throw new HttpErrors.NotFound('ServerNotExists');
+    if (
+      networkId === 'near' &&
+      referenceType === ReferenceType.UNLOCKABLECONTENT
+    ) {
+      throw new HttpErrors.NotFound('NetworkNotExists');
+    }
 
     const tipsBalanceInfo = {
       serverId: serverId,
