@@ -94,6 +94,12 @@ export class PostService {
     return this.beforeCreate(draftPost)
       .then(async () => {
         if (draftPost.status === PostStatus.PUBLISHED) {
+          if (!draftPost?.text || draftPost?.text?.length <= 3) {
+            throw new HttpErrors.UnprocessableEntity(
+              'TextAtLeastThreeCharacter',
+            );
+          }
+
           const rawPost = omit(draftPost, ['status']);
           if (rawPost.visibility !== VisibilityType.SELECTED) {
             rawPost.selectedUserIds = [];
