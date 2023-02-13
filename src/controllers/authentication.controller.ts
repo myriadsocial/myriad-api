@@ -15,7 +15,7 @@ import {
   User,
   RequestLoginByOTP,
 } from '../models';
-import {TokenObject} from '../interfaces';
+import {UserToken} from '../interfaces';
 import {AuthService} from '../services';
 
 export class AuthenticationController {
@@ -159,7 +159,7 @@ export class AuthenticationController {
       },
     })
     credential: Credential,
-  ): Promise<TokenObject> {
+  ): Promise<UserToken> {
     return this.authService.loginByWallet(credential);
   }
 
@@ -190,7 +190,7 @@ export class AuthenticationController {
       },
     })
     requestLoginByOTP: RequestLoginByOTP,
-  ): Promise<TokenObject> {
+  ): Promise<UserToken> {
     return this.authService.loginByEmail(requestLoginByOTP);
   }
 }

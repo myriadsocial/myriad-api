@@ -1,5 +1,17 @@
 import {UserProfile} from '@loopback/security';
 
+export type User = {
+  id: string;
+  username: string;
+  address: string;
+  email: string;
+};
+
+export type UserToken = {
+  user: Partial<User>;
+  token: TokenObject;
+};
+
 /**
  * Describes the token object that returned by the refresh token service functions.
  */
