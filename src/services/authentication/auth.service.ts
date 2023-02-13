@@ -22,7 +22,7 @@ import {
 } from '../../repositories';
 import {assign, intersection} from 'lodash';
 import {securityId, UserProfile} from '@loopback/security';
-import {TokenObject} from '../../interfaces';
+import {UserToken} from '../../interfaces';
 import {TokenServiceBindings} from '../../keys';
 import {JWTService} from './jwt.service';
 import {isHex} from '@polkadot/util';
@@ -215,7 +215,7 @@ export class AuthService {
       });
   }
 
-  public async loginByWallet(credential: Credential): Promise<TokenObject> {
+  public async loginByWallet(credential: Credential): Promise<UserToken> {
     const {nonce, networkType} = credential;
     const [publicAddress, account] = credential.publicAddress.split('/');
     const nearAccount = isHex(`0x${account}`) ? `0x${account}` : account;
@@ -272,6 +272,7 @@ export class AuthService {
       }
     }
 
+    const userEmail = user.email ?? '';
     const userProfile: UserProfile = {
       [securityId]: user.id!.toString(),
       id: user.id,
@@ -308,12 +309,22 @@ export class AuthService {
 
     Promise.allSettled(jobs) as Promise<AnyObject>;
 
-    return {accessToken};
+    return {
+      user: {
+        id: user.id.toString(),
+        email: userEmail,
+        username: user.username,
+        address: wallet.id,
+      },
+      token: {
+        accessToken,
+      },
+    };
   }
 
   public async loginByEmail(
     requestLogin: RequestLoginByOTP,
-  ): Promise<TokenObject> {
+  ): Promise<UserToken> {
     const {token} = requestLogin;
     const validOTP = await this.userOTPService.verifyOTP(token);
 
@@ -348,6 +359,16 @@ export class AuthService {
         where: {
           id: validOTP.userId,
         },
+        include: [
+          {
+            relation: 'wallets',
+            scope: {
+              where: {
+                blockchainPlatform: 'substrate',
+              },
+            },
+          },
+        ],
       });
     }
 
@@ -362,6 +383,7 @@ export class AuthService {
       permissions: user.permissions,
     };
 
+    const userWallet = user.wallets?.[0]?.id ?? '';
     const accessToken = await this.jwtService.generateToken(userProfile);
     const jobs = [];
 
@@ -389,7 +411,17 @@ export class AuthService {
 
     Promise.allSettled(jobs) as Promise<AnyObject>;
 
-    return {accessToken};
+    return {
+      user: {
+        id: user.id.toString(),
+        email: user.email,
+        username: user.username,
+        address: userWallet,
+      },
+      token: {
+        accessToken,
+      },
+    };
   }
 
   private async validateWalletAddress(
