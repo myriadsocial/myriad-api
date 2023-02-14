@@ -155,6 +155,13 @@ export class Post extends ImportedPost {
     required: false,
     default: () => new Date(),
   })
+  originCreatedAt?: string;
+
+  @property({
+    type: 'date',
+    required: false,
+    default: () => new Date(),
+  })
   createdAt?: string;
 
   @property({

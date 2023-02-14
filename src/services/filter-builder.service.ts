@@ -1655,6 +1655,10 @@ export class FilterBuilderService {
       ];
     }
 
+    if (sortBy === 'createdAt') {
+      return ['originCreatedAt' + ' ' + order, sortBy + ' ' + order];
+    }
+
     return [sortBy + ' ' + order];
   }
 

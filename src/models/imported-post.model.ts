@@ -32,13 +32,6 @@ export class ImportedPost extends Entity {
   asset?: Asset;
 
   @property({
-    type: 'date',
-    required: false,
-    default: () => new Date(),
-  })
-  originCreatedAt?: string;
-
-  @property({
     type: 'array',
     itemType: 'object',
     required: false,
