@@ -291,6 +291,13 @@ export class PostDetail extends Model {
   })
   selectedUserIds?: string[];
 
+  @property({
+    type: 'array',
+    itemType: 'string',
+    default: [],
+  })
+  selectedTimelineIds?: string[];
+
   constructor(data?: Partial<PostDetail>) {
     super(data);
   }
