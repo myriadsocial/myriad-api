@@ -113,7 +113,7 @@ export function givenOtherUser(user?: Partial<User>) {
   return new User(data);
 }
 
-export async function givenAccesToken(user: User) {
+export async function givenAccesToken(user: User, wallet?: string) {
   const userProfile: UserProfile = {
     [securityId]: user.id!.toString(),
     id: user.id,
@@ -121,6 +121,10 @@ export async function givenAccesToken(user: User) {
     username: user.username,
     createdAt: user.createdAt,
     permissions: user.permissions,
+    walletId: wallet,
+    networkId: 'myriad',
+    walletType: 'polkadot{.js}',
+    blockchainPlatform: 'substrate',
   };
 
   return signAsync(userProfile, config.JWT_TOKEN_SECRET_KEY);
@@ -789,7 +793,6 @@ export function givenWallet(wallet?: Partial<Wallet>) {
   const data = Object.assign(
     {
       id: id,
-      networkId: 'myriad',
       blockchainPlatform: 'substrate',
     },
     wallet,
@@ -830,6 +833,7 @@ export function givenNetwork(network?: Partial<Network>) {
       explorerURL:
         'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.polkadot.io#/explorer/query',
       blockchainPlatform: 'substrate',
+      currencySymbol: 'DOT',
     },
     network,
   );

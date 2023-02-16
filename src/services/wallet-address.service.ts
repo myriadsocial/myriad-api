@@ -6,7 +6,6 @@ import {securityId, UserProfile} from '@loopback/security';
 import {PlatformType, ReferenceType} from '../enums';
 import {
   CommentRepository,
-  NetworkRepository,
   PostRepository,
   ServerRepository,
   UnlockableContentRepository,
@@ -15,7 +14,7 @@ import {
 
 interface NetworkDetail {
   networkId: string;
-  networkIds: string[];
+  blockchainPlatform: string;
 }
 
 export interface TipsBalanceInfo {
@@ -31,8 +30,6 @@ export class WalletAddressService {
     private commentRepository: CommentRepository,
     @repository(PostRepository)
     private postRepository: PostRepository,
-    @repository(NetworkRepository)
-    private networkRepository: NetworkRepository,
     @repository(ServerRepository)
     private serverRepository: ServerRepository,
     @repository(UnlockableContentRepository)
@@ -66,7 +63,7 @@ export class WalletAddressService {
   }
 
   private async postWalletAddress(id: string): Promise<TipsBalanceInfo> {
-    const {networkId, networkIds} = await this.currentUserNetwork();
+    const {networkId, blockchainPlatform} = await this.currentUserNetwork();
     const post = await this.postRepository.findById(id, {
       include: [
         {
@@ -86,10 +83,7 @@ export class WalletAddressService {
       }
 
       const toWalletPost = await this.walletRepository.findOne({
-        where: {
-          userId: post.createdBy,
-          networkId: {inq: networkIds},
-        },
+        where: {userId: post.createdBy, blockchainPlatform},
       });
 
       if (toWalletPost) {
@@ -109,7 +103,7 @@ export class WalletAddressService {
     if (people.userSocialMedia) {
       const userId = people.userSocialMedia.userId;
       const toWalletUser = await this.walletRepository.findOne({
-        where: {userId, networkId: {inq: networkIds}},
+        where: {userId, blockchainPlatform},
       });
 
       if (toWalletUser) {
@@ -126,7 +120,7 @@ export class WalletAddressService {
   }
 
   private async commentWalletAddress(id: string): Promise<TipsBalanceInfo> {
-    const {networkId, networkIds} = await this.currentUserNetwork();
+    const {networkId, blockchainPlatform} = await this.currentUserNetwork();
     const comment = await this.commentRepository.findById(id, {
       include: [
         {
@@ -136,9 +130,7 @@ export class WalletAddressService {
               {
                 relation: 'wallets',
                 scope: {
-                  where: {
-                    networkId: {inq: networkIds},
-                  },
+                  where: {blockchainPlatform},
                 },
               },
             ],
@@ -164,9 +156,9 @@ export class WalletAddressService {
   }
 
   private async userWalletAddress(id: string): Promise<TipsBalanceInfo> {
-    const {networkId, networkIds} = await this.currentUserNetwork();
+    const {networkId, blockchainPlatform} = await this.currentUserNetwork();
     const toWalletUser = await this.walletRepository.findOne({
-      where: {userId: id, networkId: {inq: networkIds}},
+      where: {userId: id, blockchainPlatform},
     });
 
     if (toWalletUser) {
@@ -182,7 +174,7 @@ export class WalletAddressService {
   private async unlockableContentWalletAddress(
     id: string,
   ): Promise<TipsBalanceInfo> {
-    const {networkId, networkIds} = await this.currentUserNetwork();
+    const {networkId, blockchainPlatform} = await this.currentUserNetwork();
     const unlockableContent = await this.unlockableContentRepository.findById(
       id,
       {
@@ -192,7 +184,7 @@ export class WalletAddressService {
     const toWalletUser = await this.walletRepository.findOne({
       where: {
         userId: unlockableContent.createdBy,
-        networkId: {inq: networkIds},
+        blockchainPlatform,
       },
     });
 
@@ -209,27 +201,33 @@ export class WalletAddressService {
   }
 
   private async currentUserNetwork(): Promise<NetworkDetail> {
-    const wallet = await this.walletRepository.findOne({
-      where: {
-        userId: this.currentUser[securityId],
-        primary: true,
-      },
-      include: ['network'],
-    });
+    const currentUserId = this.currentUser[securityId];
+    const networkId = this.currentUser.networkId;
+    const blockchainPlatform = this.currentUser.blockchainPlatform;
 
-    if (!wallet?.network) {
-      throw new HttpErrors.NotFound('NetworkNotExists');
+    if (!networkId) {
+      throw new HttpErrors.NotFound('YouHaveNoWallet');
     }
 
-    const {id: networkId, blockchainPlatform} = wallet.network;
-    const networks = await this.networkRepository.find({
-      where: {blockchainPlatform},
+    if (!blockchainPlatform) {
+      throw new HttpErrors.NotFound('YouHaveNoWallet');
+    }
+
+    const wallet = await this.walletRepository.findOne({
+      where: {
+        userId: currentUserId,
+        blockchainPlatform,
+      },
     });
-    const networkIds = networks.map(network => network.id);
+
+    if (!wallet) {
+      throw new HttpErrors.NotFound('YouHaveNoWallet');
+    }
 
     return {
-      networkId,
-      networkIds,
+      networkId:
+        networkId === 'myriad' || networkId === 'debio' ? 'myriad' : networkId,
+      blockchainPlatform,
     };
   }
 
@@ -239,18 +237,14 @@ export class WalletAddressService {
     referenceId: string,
   ): Promise<TipsBalanceInfo> {
     const server = await this.serverRepository.findOne();
-    const networkId =
-      networkType === 'myriad' || networkType === 'debio'
-        ? 'myriad'
-        : networkType;
-    const serverId = server?.accountId?.[networkId];
+    const serverId = server?.accountId?.[networkType];
 
     if (!serverId) throw new HttpErrors.NotFound('ServerNotExists');
     if (
-      networkId === 'near' &&
-      referenceType === ReferenceType.UNLOCKABLECONTENT
+      referenceType === ReferenceType.UNLOCKABLECONTENT &&
+      networkType === 'near'
     ) {
-      throw new HttpErrors.NotFound('NetworkNotExists');
+      throw new HttpErrors.NotFound('InvalidNetwork');
     }
 
     const tipsBalanceInfo = {

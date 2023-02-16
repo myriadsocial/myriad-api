@@ -22,9 +22,11 @@ import {
   CommentWithRelations,
   Currency,
   UserCurrencyWithRelations,
+  Wallet,
   UserWithRelations,
+  WalletWithRelations,
 } from '../models';
-import {ReportRepository} from '../repositories';
+import {NetworkRepository, ReportRepository} from '../repositories';
 import {FilterBuilderService, FriendService, UserService} from '../services';
 
 /**
@@ -36,6 +38,8 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
   static readonly BINDING_KEY = `interceptors.${FindByIdInterceptor.name}`;
 
   constructor(
+    @repository(NetworkRepository)
+    private networkRepository: NetworkRepository,
     @repository(ReportRepository)
     private reportRepository: ReportRepository,
     @service(FilterBuilderService)
@@ -105,17 +109,36 @@ export class FindByIdInterceptor implements Provider<Interceptor> {
         const user = result as UserWithRelations;
 
         if (methodName === MethodType.CURRENTUSER) {
+          const fullAccess = this.currentUser.fullAccess;
+
+          let currencies: Currency[] = [];
+          let wallets: Wallet[] = [];
+
           if (user?.userCurrencies) {
             const userCurrencies =
               user.userCurrencies as UserCurrencyWithRelations[];
-            const currencies = userCurrencies.map(
-              e => new Currency(e.currency),
-            );
-            user.currencies = currencies;
-            return omit(user, ['userCurrencies']);
+            currencies = userCurrencies.map(e => new Currency(e.currency));
           }
 
-          return user;
+          if (fullAccess) {
+            const networkId = this.currentUser.networkId;
+            const wallet = new Wallet() as WalletWithRelations;
+            wallet.id = this.currentUser.walletId;
+            wallet.userId = this.currentUser[securityId];
+            wallet.blockchainPlatform = this.currentUser.blockchainPlatform;
+
+            if (networkId) {
+              const network = await this.networkRepository.findById(networkId);
+
+              wallet.network = network;
+            }
+
+            wallets = [omit(wallet)];
+          }
+
+          user.currencies = currencies;
+          user.wallets = wallets;
+          return omit(user, ['userCurrencies']);
         }
 
         const userId = invocationCtx.args[0];

@@ -86,6 +86,7 @@ import {getFilePathFromSeedData, upload} from './utils/upload';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType} from './enums';
 import {UpdatePeopleProfileJob} from './jobs';
+import {Wallet} from './models';
 
 const jwt = require('jsonwebtoken');
 
@@ -239,8 +240,11 @@ export class MyriadApiApplication extends BootMixin(
 
   async migrateSchema(options?: SchemaMigrationOptions): Promise<void> {
     if (!this.options?.skipMigrateSchema) await super.migrateSchema(options);
-    if (options?.existingSchema === 'drop')
+    if (options?.existingSchema === 'drop') {
       return this.databaseSeeding(this.options?.environment);
+    }
+
+    await Promise.allSettled([this.doMigrateWallet()]);
   }
 
   async databaseSeeding(environment: string): Promise<void> {
@@ -498,6 +502,28 @@ export class MyriadApiApplication extends BootMixin(
 
     bar.update(barSize);
     bar.stop();
+    bar.stop();
+  }
+
+  async doMigrateWallet(): Promise<void> {
+    if (!this.doCollectionExists('wallet')) return;
+
+    const {walletRepository} = await this.repositories();
+    const collection = walletRepository.dataSource.connector?.collection(
+      Wallet.modelName,
+    );
+
+    if (!collection) return;
+
+    await collection.updateMany(
+      {networkId: {$in: ['myriad', 'debio', 'kusama', 'polkadot']}},
+      {$set: {blockchainPlatform: 'substrate'}},
+    );
+    await collection.updateMany(
+      {networkId: {$in: ['near']}},
+      {$set: {blockchainPlatform: 'near'}},
+    );
+    await collection.updateMany({}, {$unset: {networkId: '', primary: ''}});
   }
 
   async repositories(): Promise<Repositories> {

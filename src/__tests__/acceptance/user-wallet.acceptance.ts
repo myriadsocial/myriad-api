@@ -60,7 +60,6 @@ describe('UserWalletApplication', function () {
     defaultWallet = await userRepository.wallets(user.id).create(
       givenWallet({
         id: 'abdulhakim.testnet',
-        networkId: 'near',
         blockchainPlatform: 'near',
       }),
     );
@@ -88,9 +87,9 @@ describe('UserWalletApplication', function () {
       .send(credential)
       .expect(200);
 
-    expect(response.body).to.containDeep(wallet);
-    const result = await walletRepository.findById(response.body.id);
-    expect(result).to.containDeep(wallet);
+    expect(response.body).to.have.properties('token');
+    expect(response.body).to.have.properties('user');
+    expect(response.body.token).to.have.properties('accessToken');
   });
 
   context('when dealing with multiple persisted wallets', () => {

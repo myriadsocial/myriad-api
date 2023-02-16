@@ -11,6 +11,7 @@ import {
   response,
 } from '@loopback/rest';
 import {PaginationInterceptor} from '../../interceptors';
+import {UserToken} from '../../interfaces';
 import {Credential, Wallet} from '../../models';
 import {UserService} from '../../services';
 
@@ -66,7 +67,7 @@ export class UserWalletController {
       },
     })
     credential: Credential,
-  ): Promise<Wallet> {
+  ): Promise<UserToken | void> {
     return this.userService.connectWallet(credential);
   }
 

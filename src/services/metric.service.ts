@@ -275,8 +275,8 @@ export class MetricService {
       this.postRepository.count({platform: PlatformType.TWITTER}),
       this.postRepository.count({platform: PlatformType.REDDIT}),
       this.userRepository.count(<AnyObject>{email: {$neq: null}}),
-      this.walletRepository.count({networkId: 'near'}),
-      this.walletRepository.count({networkId: {nin: ['near']}}),
+      this.walletRepository.count({blockchainPlatform: 'near'}),
+      this.walletRepository.count({blockchainPlatform: 'substrate'}),
       userSocialMediaCollection
         .aggregate([
           {

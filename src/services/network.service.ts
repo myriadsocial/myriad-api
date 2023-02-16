@@ -116,7 +116,13 @@ export class NetworkService {
   }
 
   public async claim(txDetail: TxDetail): Promise<Pick<Transaction, 'hash'>> {
-    const userId = this.currentUser?.[securityId];
+    const userId = this.currentUser[securityId];
+    const networkId = this.currentUser.networkId;
+
+    if (!networkId) {
+      throw new HttpErrors.NotFound('NetworkNotFound');
+    }
+
     const txFee = txDetail.txFee;
     const contractId = txDetail.tippingContractId;
 
@@ -128,15 +134,12 @@ export class NetworkService {
       throw new HttpErrors.UnprocessableEntity('TxFeeMustLargerThanZero');
     }
 
+    const network = await this.networkRepository.findById(networkId);
     const wallet = await this.walletRepository.findOne({
-      where: {
-        userId,
-        primary: true,
-      },
-      include: ['network'],
+      where: {userId, blockchainPlatform: network.blockchainPlatform},
     });
 
-    if (!wallet?.network) throw new HttpErrors.NotFound('WalletNotFound');
+    if (!wallet) throw new HttpErrors.NotFound('WalletNotFound');
 
     const [server, socialMedia] = await Promise.all([
       this.serverRepository.findOne(),
@@ -145,7 +148,6 @@ export class NetworkService {
 
     if (!server) throw new HttpErrors.NotFound('ServerNotFound');
 
-    const networkId = wallet.networkId;
     const serverId = server?.accountId?.[networkId];
 
     if (!serverId) {
@@ -155,7 +157,7 @@ export class NetworkService {
     const accountId = wallet.id;
     const referenceIds = socialMedia.map(e => e.peopleId);
     const claimReferenceData = {
-      rpcURL: wallet.network.rpcURL,
+      rpcURL: network.rpcURL,
       serverId,
       accountId,
       txFee,
@@ -564,7 +566,8 @@ export class NetworkService {
           break;
         }
 
-        // Pay Content
+        // PayUnlockableContent With MYRIA and FT to KNOWN RECEIVER
+        // Example: 0xc399149bc867df9739915d372c9540006f18474055a5299cffe185af8381f2e3
         case 'tipping.PayUnlockableContent': {
           const {from, to, receipt} = data;
           const {info, amount} = receipt;

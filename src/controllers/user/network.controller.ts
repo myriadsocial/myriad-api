@@ -1,6 +1,7 @@
 import {authenticate} from '@loopback/authentication';
 import {service} from '@loopback/core';
 import {getModelSchemaRef, patch, requestBody} from '@loopback/rest';
+import {UserToken} from '../../interfaces';
 import {Credential, Wallet} from '../../models';
 import {UserService} from '../../services';
 
@@ -32,7 +33,7 @@ export class UserNetworkController {
       },
     })
     credential: Credential,
-  ): Promise<Wallet> {
+  ): Promise<UserToken> {
     return this.userService.switchNetwork(credential);
   }
 }

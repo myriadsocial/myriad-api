@@ -39,6 +39,7 @@ import {
 } from '../models';
 import {
   AccountSettingRepository,
+  NetworkRepository,
   TagRepository,
   UserRepository,
   WalletRepository,
@@ -54,6 +55,8 @@ export class FilterBuilderService {
   constructor(
     @repository(AccountSettingRepository)
     private accountSettingRepository: AccountSettingRepository,
+    @repository(NetworkRepository)
+    private networkRepository: NetworkRepository,
     @repository(TagRepository)
     private tagRepository: TagRepository,
     @repository(UserRepository)
@@ -202,21 +205,26 @@ export class FilterBuilderService {
       return this.finalizeFilter(filter, {currencyId: {inq: currencyIds}});
     }
 
+    const networkId = this.currentUser.networkId;
+    const blockchainPlatform = this.currentUser.blockchainPlatform;
+
+    if (networkId || blockchainPlatform) return this.defaultFilter(filter);
+
+    const currentUserId = this.currentUser[securityId];
     const wallet = await this.walletRepository.findOne({
       where: {
-        userId: this.currentUser?.[securityId] ?? '',
-        primary: true,
+        userId: currentUserId,
+        blockchainPlatform,
       },
     });
 
-    const networkId = wallet?.networkId ?? '';
-    const userId = wallet?.userId ?? '';
+    if (!wallet) return this.defaultFilter(filter);
 
     filter.order = ['priority ASC'];
 
-    await this.currencyService.update(this.currentUser[securityId], networkId);
+    await this.currencyService.update(currentUserId, networkId);
 
-    return this.finalizeFilter(filter, {userId, networkId});
+    return this.finalizeFilter(filter, {userId: currentUserId, networkId});
   }
 
   public async userFriend(
@@ -1054,6 +1062,14 @@ export class FilterBuilderService {
             ],
           },
           {
+            and: [
+              {id: {inq: postIds}},
+              {visibility: VisibilityType.TIMELINE},
+              {selectedUserIds: {inq: [userId]}},
+              {createdBy: {nin: blocked}},
+            ],
+          },
+          {
             and: [{id: {inq: postIds}}, {createdBy: {inq: [userId]}}],
           },
         ],
@@ -1393,6 +1409,34 @@ export class FilterBuilderService {
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {createdBy: {nin: blocked}},
             {visibility: VisibilityType.SELECTED},
+          ],
+        },
+        // Visibility TIMELINE
+        {
+          and: [
+            {id: {inq: postIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {visibility: VisibilityType.TIMELINE},
+            {createdBy: {nin: blocked}},
+          ],
+        },
+        {
+          and: [
+            {tags: {inq: allowedTags}} as Where,
+            {tags: {nin: prohibitedTags}} as Where,
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {createdBy: {nin: blocked}},
+            {visibility: VisibilityType.TIMELINE},
+          ],
+        },
+        {
+          and: [
+            {peopleId: {inq: personIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {createdBy: {nin: blocked}},
+            {visibility: VisibilityType.TIMELINE},
           ],
         },
         // Visibility FRIEND

@@ -5,6 +5,7 @@ import {Currency, UserCurrency} from '../models';
 import {
   CurrencyRepository,
   ExchangeRateRepository,
+  NetworkRepository,
   QueueRepository,
   UserCurrencyRepository,
   WalletRepository,
@@ -17,6 +18,8 @@ export class CurrencyService {
     private currencyRepository: CurrencyRepository,
     @repository(ExchangeRateRepository)
     private exchangeRateRepository: ExchangeRateRepository,
+    @repository(NetworkRepository)
+    private networkRepository: NetworkRepository,
     @repository(QueueRepository)
     private queueRepository: QueueRepository,
     @repository(UserCurrencyRepository)
@@ -130,14 +133,15 @@ export class CurrencyService {
   public async setPriority(
     userId: string,
     currencyIds: string[],
+    networkId: string,
   ): Promise<void> {
+    const network = await this.networkRepository.findById(networkId);
     const wallet = await this.walletRepository.findOne({
-      where: {userId, primary: true},
+      where: {userId, blockchainPlatform: network.blockchainPlatform},
     });
 
     if (!wallet) throw new HttpErrors.UnprocessableEntity('WalletNotFound');
 
-    const networkId = wallet.networkId;
     const [{count: countCurrency}, {count: countCurrencyNetwork}] =
       await Promise.all([
         this.currencyRepository.count({id: {inq: currencyIds}, networkId}),

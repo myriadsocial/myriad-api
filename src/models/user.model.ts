@@ -244,7 +244,7 @@ export class User extends Entity {
 export interface UserRelations {
   // describe navigational properties here
   experience?: ExperienceWithRelations;
-  wallets?: WalletWithRelations;
+  wallets?: WalletWithRelations[];
 }
 
 export interface AdditionalProps {

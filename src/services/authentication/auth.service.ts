@@ -169,13 +169,17 @@ export class AuthService {
 
     await this.validateWalletAddress(network, fixedAddress);
 
-    const existingWallet = await this.walletRepository.exists(fixedAddress);
+    const existingNetwork = await this.networkRepository.findById(network);
+    const existingWallet = await this.walletRepository.findOne({
+      where: {
+        id: fixedAddress,
+        blockchainPlatform: existingNetwork.blockchainPlatform,
+      },
+    });
 
     if (existingWallet) {
       throw new HttpErrors.UnprocessableEntity('Wallet address already exists');
     }
-
-    const existingNetwork = await this.networkRepository.findById(network);
 
     const user = new User();
     user.id = generateObjectId();
@@ -186,8 +190,6 @@ export class AuthService {
 
     const wallet = new Wallet();
     wallet.id = fixedAddress;
-    wallet.networkId = network;
-    wallet.primary = true;
     wallet.blockchainPlatform = existingNetwork.blockchainPlatform;
 
     return this.userRepository
@@ -205,7 +207,7 @@ export class AuthService {
             referenceType: ReferenceType.USER,
           }),
           this.userRepository.wallets(result.id).create(wallet),
-          this.currencyService.create(result.id, wallet.networkId),
+          this.currencyService.create(result.id, network),
         ]) as Promise<AnyObject>;
 
         return result;
@@ -226,13 +228,12 @@ export class AuthService {
 
     if (!credential?.role) credential.role = 'user';
 
-    const currentNetwork = await this.networkRepository.findById(networkType);
-    const wallet = await this.walletRepository.findById(
-      nearAccount ?? publicAddress,
-      {
+    const [network, wallet] = await Promise.all([
+      this.networkRepository.findById(networkType),
+      this.walletRepository.findById(nearAccount ?? publicAddress, {
         include: ['user'],
-      },
-    );
+      }),
+    ]);
 
     const user = wallet.user;
 
@@ -241,17 +242,17 @@ export class AuthService {
     }
 
     if (user.nonce !== nonce) {
-      throw new HttpErrors.Unauthorized('Invalid nonce!');
+      throw new HttpErrors.Unauthorized('InvalidNonce!');
     }
 
     const verified = await validateAccount(
       assign(credential, {publicAddress}),
-      currentNetwork,
+      network,
       wallet.id,
     );
 
     if (!verified) {
-      throw new HttpErrors.Unauthorized('[auth] Failed to verified!');
+      throw new HttpErrors.Unauthorized('VerificationFailed');
     }
 
     if (credential.role === 'admin') {
@@ -276,10 +277,14 @@ export class AuthService {
     const userProfile: UserProfile = {
       [securityId]: user.id!.toString(),
       id: user.id,
-      name: user.name,
       username: user.username,
-      createdAt: user.createdAt,
       permissions: user.permissions,
+      email: userEmail,
+      networkId: network.id,
+      walletId: nearAccount ?? publicAddress,
+      walletType: credential.walletType,
+      blockchainPlatform: network.blockchainPlatform,
+      fullAccess: user.fullAccess,
     };
 
     const accessToken = await this.jwtService.generateToken(userProfile);
@@ -288,6 +293,9 @@ export class AuthService {
     const jobs = [];
 
     jobs.push(
+      this.walletRepository.updateById(nearAccount ?? publicAddress, {
+        blockchainPlatform: network.blockchainPlatform,
+      }),
       this.userRepository.updateById(user.id, {
         nonce: newNonce,
         fullAccess: true,
@@ -295,16 +303,7 @@ export class AuthService {
     );
 
     if (credential.role === 'user') {
-      await this.walletRepository.updateAll(
-        {primary: false},
-        {userId: user.id},
-      );
       await this.currencyService.update(user.id, networkType);
-      await this.walletRepository.updateById(wallet.id, {
-        primary: true,
-        networkId: networkType,
-        blockchainPlatform: currentNetwork.blockchainPlatform,
-      });
     }
 
     Promise.allSettled(jobs) as Promise<AnyObject>;
@@ -377,13 +376,30 @@ export class AuthService {
     const userProfile: UserProfile = {
       [securityId]: user.id!.toString(),
       id: user.id,
-      name: user.name,
       username: user.username,
-      createdAt: user.createdAt,
       permissions: user.permissions,
+      fullAccess: user.fullAccess,
+      email: user.email,
+      networkId: '',
+      walletId: '',
+      walletType: '',
+      blockchainPlatform: '',
     };
 
-    const userWallet = user.wallets?.[0]?.id ?? '';
+    if (!isNewUser && user.fullAccess) {
+      if (user.wallets?.length === 0) {
+        throw new HttpErrors.NotFound('WalletBasedSubstrateNotFound');
+      }
+
+      const walletId = user.wallets[0].id;
+      userProfile.fullAccess = user.fullAccess;
+      userProfile.walletId = walletId;
+      userProfile.networkId = 'myriad';
+      userProfile.walletType = 'polkadot{.js}';
+      userProfile.blockchainPlatform = 'substrate';
+    }
+
+    const userWallet = userProfile.walletId;
     const accessToken = await this.jwtService.generateToken(userProfile);
     const jobs = [];
 

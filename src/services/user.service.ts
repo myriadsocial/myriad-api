@@ -37,6 +37,7 @@ import {
   Friend,
   Identity,
   LanguageSetting,
+  Network,
   Notification,
   NotificationSetting,
   Post,
@@ -85,6 +86,7 @@ import {UserOTPService} from './user-otp.service';
 import {UserSocialMediaService} from './user-social-media.service';
 import {VoteService} from './vote.service';
 import validator from 'validator';
+import {UserToken} from '../interfaces';
 
 export interface AfterFindProps {
   friendsName?: string;
@@ -175,18 +177,10 @@ export class UserService {
   }
 
   public async current(filter?: Filter<User>): Promise<User> {
-    const wallet = await this.walletRepository.findOne({
-      where: {
-        userId: this.currentUser?.[securityId] ?? '',
-        primary: true,
-      },
-    });
-
     const include = filter?.include ?? [];
+    const networkId = this.currentUser.networkId;
 
-    if (wallet) {
-      const networkId = wallet.networkId;
-
+    if (networkId) {
       include.push({
         relation: 'userCurrencies',
         scope: {
@@ -390,19 +384,40 @@ export class UserService {
   // ------ Wallet ----------------------------------
 
   public async currentWallet(): Promise<Wallet> {
-    const wallet = await this.walletRepository.findOne({
-      where: {
-        primary: true,
-        userId: this.currentUser[securityId],
-      },
-      include: ['user', 'network'],
-    });
+    const currentUserId = this.currentUser[securityId];
+    const networkId = this.currentUser.networkId;
+    const walletId = this.currentUser.walletId;
+    const blockchainPlatform = this.currentUser.blockchainPlatform;
+
+    if (!networkId) {
+      throw new HttpErrors.NotFound('WalletNotFound');
+    }
+
+    if (!blockchainPlatform) {
+      throw new HttpErrors.NotFound('WalletNotFound');
+    }
+
+    if (!walletId) {
+      throw new HttpErrors.NotFound('WalletNotFound');
+    }
+
+    const [network, wallet] = await Promise.all([
+      this.networkService.findById(networkId),
+      this.walletRepository.findOne({
+        where: {
+          id: walletId,
+          userId: currentUserId,
+          blockchainPlatform: blockchainPlatform,
+        },
+        include: ['user'],
+      }),
+    ]);
 
     if (!wallet) {
       throw new HttpErrors.NotFound('WalletNotFound');
     }
 
-    return wallet;
+    return assign(wallet, {network});
   }
 
   public async wallets(id: string, filter?: Filter<Wallet>): Promise<Wallet[]> {
@@ -410,18 +425,22 @@ export class UserService {
   }
 
   public async removeWallet(id: string, credential: Credential): Promise<void> {
+    const currentUserId = this.currentUser[securityId];
+    const currentPlatform = this.currentUser.blockchainPlatform;
+
     const {networkType} = credential;
-    const {userId, primary} = await this.walletRepository.findById(id);
-    const {count} = await this.walletRepository.count({userId});
-
-    let errMessage = null;
-
-    if (userId !== this.currentUser?.[securityId]) errMessage = 'WalletNotFoud';
-    if (count === 1) errMessage = 'DeletionFailedOnlyWallet';
-    if (primary) errMessage = 'DeletionFailedPrimaryWallet';
-    if (errMessage) throw new HttpErrors.UnprocessableEntity(errMessage);
+    const {count} = await this.walletRepository.count({userId: currentUserId});
 
     const network = await this.networkService.findById(networkType);
+    const platform = network.blockchainPlatform;
+
+    let message = null;
+
+    if (count === 0) message = 'WalletNotFoud';
+    if (count === 1) message = 'DeletionFailedOnlyWallet';
+    if (currentPlatform === platform) message = 'DeletionFailedPrimaryWallet';
+    if (message) throw new HttpErrors.UnprocessableEntity(message);
+
     const verified = await validateAccount(credential, network, id);
 
     if (!verified) {
@@ -432,53 +451,49 @@ export class UserService {
       const ng = new NonceGenerator();
       const nonce = ng.generate();
 
-      this.userRepository.updateById(userId, {nonce}) as Promise<void>;
+      this.userRepository.updateById(currentUserId, {nonce}) as Promise<void>;
     });
   }
 
-  public async connectWallet(credential: Credential): Promise<Wallet> {
-    const userId = this.currentUser[securityId];
-    const {networkType: networkId} = credential;
+  public async connectWallet(
+    credential: Credential,
+  ): Promise<UserToken | void> {
+    const currentUserId = this.currentUser[securityId];
 
-    if (!credential?.data?.id) {
-      throw new HttpErrors.UnprocessableEntity('WalletIdNotFound');
-    }
-
-    const [network, exist] = await Promise.all([
+    const {networkType: networkId, walletType} = credential;
+    const [publicAddress, near] = credential.publicAddress.split('/');
+    const nearAccount = isHex(`0x${near}`) ? `0x${near}` : near;
+    const [network, foundWallet] = await Promise.all([
       this.networkService.findById(networkId),
       this.walletRepository.findOne({
-        where: {id: credential.data.id},
+        where: {id: nearAccount ?? publicAddress},
       }),
     ]);
 
-    if (exist && exist.userId !== this.currentUser?.[securityId]) {
+    if (foundWallet) {
+      if (foundWallet.userId === currentUserId) return;
       throw new HttpErrors.UnprocessableEntity('WalletAlreadyExist');
     }
 
     const verified = await validateAccount(
-      credential,
+      assign(credential, {publicAddress}),
       network,
-      credential.data.id,
+      nearAccount ?? publicAddress,
     );
 
     if (!verified) {
-      throw new HttpErrors.UnprocessableEntity('FailedToVerify');
+      throw new HttpErrors.UnprocessableEntity('VerificationFailed');
     }
 
-    if (exist) return exist;
-
-    const primary = this.currentUser?.fullAccess ? false : true;
     const wallet = new Wallet();
-    wallet.id = credential.data.id;
-    wallet.userId = userId;
-    wallet.primary = primary;
-    wallet.networkId = network.id;
+    wallet.id = nearAccount ?? publicAddress;
+    wallet.userId = currentUserId;
     wallet.blockchainPlatform = network.blockchainPlatform;
 
     return this.userRepository
-      .wallets(userId)
+      .wallets(currentUserId)
       .create(wallet)
-      .then(result => this.afterConnectWallet(result))
+      .then(result => this.afterConnectWallet(result, network, walletType))
       .catch(err => {
         throw err;
       });
@@ -488,27 +503,28 @@ export class UserService {
 
   // ------ Switch ----------------------------------
 
-  public async switchNetwork(credential: Credential): Promise<Wallet> {
-    const userId = this.currentUser[securityId];
-    const {networkType: networkId} = credential;
+  public async switchNetwork(credential: Credential): Promise<UserToken> {
+    const currentUserId = this.currentUser[securityId];
+    const currentNetworkId = this.currentUser.networkId;
+    const networkId = credential.networkType;
+
+    if (currentNetworkId === networkId) {
+      throw new HttpErrors.UnprocessableEntity('AlreadyConnected');
+    }
+
     const [publicAddress, near] = credential.publicAddress.split('/');
     const nearAccount = isHex(`0x${near}`) ? `0x${near}` : near;
     const [network, wallet] = await Promise.all([
       this.networkService.findById(networkId),
-      this.walletRepository.findOne({
-        where: {
-          id: nearAccount ?? publicAddress,
-          userId: userId,
-        },
-      }),
+      this.walletRepository.findById(nearAccount ?? publicAddress),
     ]);
 
-    if (!wallet) {
-      throw new HttpErrors.UnprocessableEntity('Wallet not connected');
+    if (wallet?.userId !== currentUserId) {
+      throw new HttpErrors.NotFound('UserNotFound');
     }
 
-    if (wallet.networkId === networkId && wallet.primary === true) {
-      throw new HttpErrors.UnprocessableEntity('Network already connected');
+    if (wallet.blockchainPlatform !== network.blockchainPlatform) {
+      throw new HttpErrors.NotFound('NetworkNotFound');
     }
 
     const verified = await validateAccount(
@@ -518,19 +534,25 @@ export class UserService {
     );
 
     if (!verified) {
-      throw new HttpErrors.UnprocessableEntity('[update] Failed to verify');
+      throw new HttpErrors.UnprocessableEntity('VerificationFailed');
     }
 
-    wallet.networkId = networkId;
-    wallet.primary = true;
-    wallet.blockchainPlatform = network.blockchainPlatform;
-    wallet.updatedAt = new Date().toString();
+    const userProfile: UserProfile = {
+      [securityId]: this.currentUser[securityId],
+      id: this.currentUser.id,
+      username: this.currentUser.username,
+      permissions: this.currentUser.permissions,
+      email: this.currentUser.email,
+      fullAccess: this.currentUser.fullAccess,
+      networkId: network.id,
+      walletId: nearAccount ?? publicAddress,
+      walletType: credential.walletType,
+      blockchainPlatform: network.blockchainPlatform,
+    };
 
-    await this.userRepository
-      .wallets(this.currentUser[securityId])
-      .patch(omit(wallet, ['id']), {id: wallet.id});
+    const accessToken = await this.jwtService.generateToken(userProfile);
 
-    return this.afterSwitchNetwork(wallet);
+    return this.afterSwitchNetwork(accessToken, networkId, currentUserId);
   }
 
   // ------------------------------------------------
@@ -873,9 +895,12 @@ export class UserService {
   // ------ Currency --------------------------------
 
   public async setCurrencyPriority(priority: Priority): Promise<void> {
+    const networkId = this.currentUser.networkId;
+    if (!networkId) return;
     return this.currencyService.setPriority(
       this.currentUser[securityId],
       priority.currencyIds,
+      networkId,
     );
   }
 
@@ -1082,44 +1107,82 @@ export class UserService {
 
   // ------ PrivateMethod ---------------------------
 
-  private async afterConnectWallet(wallet: Wallet): Promise<Wallet> {
-    const {id, userId, networkId} = wallet;
+  private async afterConnectWallet(
+    wallet: Wallet,
+    network: Network,
+    walletType: string,
+  ): Promise<UserToken | void> {
+    const fullAccess = this.currentUser.fullAccess;
+    const {id, userId} = wallet;
     const ng = new NonceGenerator();
     const newNonce = ng.generate();
 
     Promise.allSettled([
       this.userPermissions(userId, id),
-      this.currencyService.create(userId, networkId),
+      this.currencyService.create(userId, network.id),
       this.userRepository.updateById(userId, {
         nonce: newNonce,
         fullAccess: true,
       }),
     ]) as Promise<AnyObject>;
 
-    return wallet;
+    if (fullAccess) return;
+
+    const userProfile: UserProfile = {
+      [securityId]: this.currentUser[securityId],
+      id: this.currentUser.id,
+      username: this.currentUser.username,
+      permissions: this.currentUser.permissions,
+      email: this.currentUser.email,
+      networkId: network.id,
+      walletId: wallet.id,
+      walletType: walletType,
+      blockchainPlatform: network.blockchainPlatform,
+      fullAccess: true,
+    };
+
+    const accessToken = await this.jwtService.generateToken(userProfile);
+
+    return {
+      user: {
+        id: this.currentUser[securityId],
+        username: this.currentUser.username,
+        email: this.currentUser.email,
+        address: wallet.id,
+      },
+      token: {
+        accessToken,
+      },
+    };
   }
 
-  private async afterSwitchNetwork(wallet: Wallet): Promise<Wallet> {
-    const {networkId, userId} = wallet;
+  private async afterSwitchNetwork(
+    accessToken: string,
+    networkId: string,
+    userId: string,
+  ): Promise<UserToken> {
     const ng = new NonceGenerator();
     const newNonce = ng.generate();
 
     Promise.allSettled([
-      this.currencyService.update(userId, networkId).then(() => {
-        return Promise.all([
-          this.userRepository.updateById(userId, {
-            nonce: newNonce,
-            fullAccess: true,
-          }),
-          this.walletRepository.updateAll(
-            {primary: false},
-            {networkId: {nin: [networkId]}, userId},
-          ),
-        ]);
+      this.currencyService.update(userId, networkId),
+      this.userRepository.updateById(userId, {
+        nonce: newNonce,
+        fullAccess: true,
       }),
     ]) as Promise<AnyObject>;
 
-    return wallet;
+    return {
+      user: {
+        id: userId,
+        username: this.currentUser.username,
+        email: this.currentUser.email,
+        address: this.currentUser.walletId,
+      },
+      token: {
+        accessToken,
+      },
+    };
   }
 
   private async afterUpdateProfile(

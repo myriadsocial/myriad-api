@@ -14,6 +14,7 @@ export async function validateAccount(
       return PolkadotJs.signatureVerify(credential);
     }
 
+    case 'my-near':
     case 'near': {
       if (!network || !walletId) return false;
 

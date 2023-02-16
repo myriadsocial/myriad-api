@@ -379,6 +379,7 @@ export async function givenRepositories(testdb: any) {
   const currencyService = new CurrencyService(
     currencyRepository,
     exchangeRepository,
+    networkRepository,
     queueRepository,
     userCurrencyRepository,
     walletRepository,

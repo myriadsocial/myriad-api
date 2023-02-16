@@ -82,6 +82,7 @@ describe('TransactionApplication', function () {
       explorerURL:
         'https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Fws-rpc.testnet.myriad.social#/explorer/query',
       blockchainPlatform: 'substrate',
+      currencySymbol: 'MYRIA',
     });
     currency = await givenCurrencyInstance(currencyRepository, {
       name: 'myria',

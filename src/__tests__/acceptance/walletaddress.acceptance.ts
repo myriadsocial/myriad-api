@@ -77,26 +77,26 @@ describe('WalletAddressApplication', function () {
   });
 
   before(async () => {
+    const walletId = '0x06cc7ed22ebd12ccc28fb9c0d14a5c';
     server = await givenServerInstance(serverRepository);
     otherUser = await givenUserInstance(userRepository, givenOtherUser());
     user = await givenUserInstance(userRepository);
-    token = await givenAccesToken(user);
+    token = await givenAccesToken(user, walletId);
     wallet = await givenWalletInstance(walletRepository, {
-      id: '0x06cc7ed22ebd12ccc28fb9c0d14a5c4420a331d89a5fef48b915e8449ee61863',
+      id: walletId,
       userId: otherUser.id,
-      primary: true,
-      networkId: 'polkadot',
+      blockchainPlatform: 'substrate',
     });
 
     await givenNetworkInstance(networkRepository);
     await givenNetworkInstance(networkRepository, {
       id: 'myriad',
       rpcURL: 'wss://ws-rpc.dev.myriad.social',
+      currencySymbol: 'MYRIA',
     });
     await givenWalletInstance(walletRepository, {
       userId: user.id,
-      primary: true,
-      networkId: 'myriad',
+      blockchainPlatform: 'substrate',
     });
   });
 

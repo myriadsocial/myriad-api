@@ -49,6 +49,12 @@ export class Network extends Entity {
     type: 'string',
     required: true,
   })
+  currencySymbol: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
   explorerURL: string;
 
   @property({

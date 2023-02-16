@@ -1,6 +1,6 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {User, UserWithRelations} from './user.model';
-import {Network, NetworkWithRelations} from './network.model';
+import {NetworkWithRelations} from './network.model';
 
 @model({
   settings: {
@@ -27,14 +27,8 @@ export class Wallet extends Entity {
   id: string;
 
   @property({
-    type: 'boolean',
-    required: false,
-  })
-  primary: boolean;
-
-  @property({
     type: 'string',
-    required: true,
+    required: false,
   })
   blockchainPlatform: string;
 
@@ -60,9 +54,6 @@ export class Wallet extends Entity {
 
   @belongsTo(() => User)
   userId: string;
-
-  @belongsTo(() => Network, {}, {required: true})
-  networkId: string;
 
   constructor(data?: Partial<Wallet>) {
     super(data);

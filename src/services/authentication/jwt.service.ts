@@ -25,10 +25,15 @@ export class JWTService implements TokenService {
     }
     const userInfoForToken = {
       id: userProfile[securityId],
-      name: userProfile.name,
       username: userProfile.username,
       createdAt: userProfile.createdAt,
       permissions: userProfile.permissions,
+      networkId: userProfile.networkId,
+      walletId: userProfile.walletId,
+      walletType: userProfile.walletType,
+      blockchainPlatform: userProfile.blockchainPlatform,
+      email: userProfile.email,
+      fullAccess: Boolean(userProfile.fullAccess),
     };
 
     try {
@@ -51,10 +56,15 @@ export class JWTService implements TokenService {
       return {
         [securityId]: decryptedToken.id,
         id: decryptedToken.id,
-        name: decryptedToken.name,
         username: decryptedToken.username,
         createdAt: decryptedToken.createdAt,
         permissions: decryptedToken.permissions,
+        networkId: decryptedToken.networkId,
+        walletId: decryptedToken.walletId,
+        walletType: decryptedToken.walletType,
+        blockchainPlatform: decryptedToken.blockchainPlatform,
+        email: decryptedToken.email,
+        fullAccess: decryptedToken.fullAccess,
       };
     } catch (err) {
       throw new HttpErrors.Unauthorized(`Error verifying token:${err.message}`);
