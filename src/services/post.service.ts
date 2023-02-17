@@ -108,7 +108,7 @@ export class PostService {
                 await this.experienceRepository.findById(timelineId);
               selectedUsers = [...selectedUsers, ...experience.selectedUserIds];
             }
-            rawPost.selectedUserIds = selectedUsers;
+            rawPost.selectedUserIds = [...new Set(selectedUsers)];
           } else if (rawPost.visibility !== VisibilityType.SELECTED) {
             rawPost.selectedUserIds = [];
           }
@@ -578,6 +578,15 @@ export class PostService {
       }
 
       case VisibilityType.SELECTED: {
+        const {selectedUserIds} = post;
+        const isSelected = selectedUserIds.find(e => e === currentUserId);
+        if (!isSelected) {
+          throw new HttpErrors.Forbidden('OnlySelectedUser');
+        }
+        return;
+      }
+
+      case VisibilityType.TIMELINE: {
         const {selectedUserIds} = post;
         const isSelected = selectedUserIds.find(e => e === currentUserId);
         if (!isSelected) {
