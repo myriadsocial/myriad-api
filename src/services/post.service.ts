@@ -103,7 +103,7 @@ export class PostService {
           const rawPost = omit(draftPost, ['status']);
           if (rawPost.visibility === VisibilityType.TIMELINE) {
             let selectedUsers: string[] = [];
-            for (const timelineId in rawPost.selectedTimelineIds) {
+            for (const timelineId of rawPost?.selectedTimelineIds ?? []) {
               const experience: Experience =
                 await this.experienceRepository.findById(timelineId);
               selectedUsers = [...selectedUsers, ...experience.selectedUserIds];
