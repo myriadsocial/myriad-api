@@ -137,6 +137,13 @@ export class Post extends ImportedPost {
   selectedUserIds: string[];
 
   @property({
+    type: 'array',
+    itemType: 'string',
+    default: [],
+  })
+  selectedTimelineIds: string[];
+
+  @property({
     type: 'number',
     required: false,
     default: 0,
