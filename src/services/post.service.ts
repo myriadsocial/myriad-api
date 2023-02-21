@@ -101,17 +101,14 @@ export class PostService {
           }
 
           const rawPost = omit(draftPost, ['status']);
-          if (rawPost.visibility === VisibilityType.TIMELINE) {
-            let selectedUsers: string[] = [];
-            for (const timelineId of rawPost?.selectedTimelineIds ?? []) {
-              const experience: Experience =
-                await this.experienceRepository.findById(timelineId);
-              selectedUsers = [...selectedUsers, ...experience.selectedUserIds];
-            }
-            rawPost.selectedUserIds = [...new Set(selectedUsers)];
-          } else if (rawPost.visibility !== VisibilityType.SELECTED) {
+          if (rawPost.visibility !== VisibilityType.SELECTED) {
             rawPost.selectedUserIds = [];
           }
+
+          if (rawPost.visibility !== VisibilityType.TIMELINE) {
+            rawPost.selectedTimelineIds = [];
+          }
+
           return this.postRepository.create(rawPost);
         }
 
@@ -587,8 +584,15 @@ export class PostService {
       }
 
       case VisibilityType.TIMELINE: {
-        const {selectedUserIds} = post;
-        const isSelected = selectedUserIds.find(e => e === currentUserId);
+        const {selectedTimelineIds} = post;
+        const experiences = await this.experienceRepository.find({
+          where: {id: {inq: selectedTimelineIds}},
+        });
+        const isSelected = experiences.find(
+          exp =>
+            exp.selectedUserIds.find(id => id === currentUserId) ===
+            currentUserId,
+        );
         if (!isSelected) {
           throw new HttpErrors.Forbidden('OnlySelectedUser');
         }
