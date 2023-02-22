@@ -262,16 +262,19 @@ export class PostService {
       if (embeddedURL) raw.embeddedURL = embeddedURL;
     }
 
+    const visibility = data.visibility;
+
+    if (visibility) raw.visibility = visibility;
+    if (visibility !== VisibilityType.SELECTED) raw.selectedUserIds = [];
+    if (visibility !== VisibilityType.TIMELINE) raw.selectedTimelineIds = [];
+
     if (data.selectedUserIds) raw.selectedUserIds = data.selectedUserIds;
-    if (data.visibility !== VisibilityType.SELECTED) raw.selectedUserIds = [];
-    if (data.visibility !== VisibilityType.TIMELINE)
-      raw.selectedTimelineIds = [];
     if (data.mentions) raw.mentions = data.mentions;
     if (data.NSFWTag) raw.NSFWTag = data.NSFWTag;
     if (data.isNSFW) raw.isNSFW = data.isNSFW;
     if (data.tags) raw.tags = data.tags;
 
-    if (data.visibility === VisibilityType.TIMELINE) {
+    if (visibility === VisibilityType.TIMELINE) {
       const timelineIds = data.selectedTimelineIds ?? [];
       if (timelineIds.length > 0) {
         const experiences = await this.experienceRepository.find({
