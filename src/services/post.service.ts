@@ -109,6 +109,21 @@ export class PostService {
             rawPost.selectedTimelineIds = [];
           }
 
+          if (rawPost.visibility === VisibilityType.TIMELINE) {
+            const timelineIds = rawPost.selectedTimelineIds ?? [];
+            if (timelineIds.length > 0) {
+              const experiences = await this.experienceRepository.find({
+                where: {id: {inq: timelineIds}},
+              });
+
+              rawPost.selectedUserIds = [];
+              rawPost.selectedTimelineIds = experiences.map(e => {
+                rawPost.selectedUserIds?.push(...e.selectedUserIds);
+                return e.id;
+              });
+            }
+          }
+
           return this.postRepository.create(rawPost);
         }
 
@@ -249,10 +264,26 @@ export class PostService {
 
     if (data.selectedUserIds) raw.selectedUserIds = data.selectedUserIds;
     if (data.visibility !== VisibilityType.SELECTED) raw.selectedUserIds = [];
+    if (data.visibility !== VisibilityType.TIMELINE)
+      raw.selectedTimelineIds = [];
     if (data.mentions) raw.mentions = data.mentions;
     if (data.NSFWTag) raw.NSFWTag = data.NSFWTag;
     if (data.isNSFW) raw.isNSFW = data.isNSFW;
     if (data.tags) raw.tags = data.tags;
+
+    if (data.visibility === VisibilityType.TIMELINE) {
+      const timelineIds = data.selectedTimelineIds ?? [];
+      if (timelineIds.length > 0) {
+        const experiences = await this.experienceRepository.find({
+          where: {id: {inq: timelineIds}},
+        });
+        raw.selectedUserIds = [];
+        raw.selectedTimelineIds = experiences.map(e => {
+          raw.selectedUserIds?.push(...e.selectedUserIds);
+          return e.id;
+        });
+      }
+    }
 
     return this.postRepository.updateAll(raw, {
       createdBy: data.createdBy,
@@ -449,7 +480,8 @@ export class PostService {
     post.importers = [importer];
     post.totalImporter = totalImporter;
 
-    return omit(post, ['popularCount', 'rawText']) as PostWithRelations;
+    const hiddenFields = ['popularCount', 'rawText', 'selectedUserIds'];
+    return omit(post, hiddenFields) as PostWithRelations;
   }
 
   private async validateImportedPost(

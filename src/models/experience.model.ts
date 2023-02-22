@@ -37,7 +37,7 @@ export class Experience extends Entity {
       dataType: 'ObjectId',
     },
   })
-  id?: string;
+  id: string;
 
   @property({
     type: 'string',
