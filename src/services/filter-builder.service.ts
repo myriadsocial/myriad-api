@@ -851,6 +851,14 @@ export class FilterBuilderService {
         {
           and: [
             {tags: {inq: [hashtag]}} as Where,
+            {visibility: VisibilityType.TIMELINE},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {tags: {inq: [hashtag]}} as Where,
             {createdBy: this.currentUser[securityId]},
           ],
         },
@@ -904,6 +912,14 @@ export class FilterBuilderService {
         {
           and: [
             {'mentions.username': {inq: [mention]}} as Where,
+            {visibility: VisibilityType.TIMELINE},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {'mentions.username': {inq: [mention]}} as Where,
             {createdBy: this.currentUser[securityId]},
           ],
         },
@@ -930,6 +946,14 @@ export class FilterBuilderService {
           and: [
             {rawText: {regexp: regexTopic}},
             {visibility: VisibilityType.SELECTED},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: regexTopic}},
+            {visibility: VisibilityType.TIMELINE},
             {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
             {createdBy: {nin: blockedFriendIds}},
           ],
@@ -976,6 +1000,14 @@ export class FilterBuilderService {
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {tags: {inq: [hashtag]}} as Where,
             {visibility: VisibilityType.SELECTED},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {tags: {inq: [hashtag]}} as Where,
+            {visibility: VisibilityType.TIMELINE},
             {createdBy: {nin: blockedFriendIds}},
           ],
         },
@@ -1055,6 +1087,13 @@ export class FilterBuilderService {
             and: [
               {selectedUserIds: {inq: [this.currentUser[securityId]]}},
               {visibility: VisibilityType.SELECTED},
+              {createdBy: {nin: blockedFriendIds}},
+            ],
+          },
+          {
+            and: [
+              {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+              {visibility: VisibilityType.TIMELINE},
               {createdBy: {nin: blockedFriendIds}},
             ],
           },
@@ -1229,6 +1268,14 @@ export class FilterBuilderService {
           ],
         },
         {
+          and: [
+            {tags: {inq: trendingTopicIds}} as Where,
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {visibility: VisibilityType.TIMELINE},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
           and: [{tags: {inq: trendingTopicIds}}, {createdBy: userId}],
         },
       ],
@@ -1318,6 +1365,15 @@ export class FilterBuilderService {
             {tags: {nin: prohibitedTags}} as Where,
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {visibility: VisibilityType.SELECTED},
+            {createdBy: {nin: blocked}},
+          ],
+        },
+        {
+          and: [
+            {id: {inq: postIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {visibility: VisibilityType.TIMELINE},
             {createdBy: {nin: blocked}},
           ],
         },

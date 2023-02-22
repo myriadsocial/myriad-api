@@ -109,6 +109,27 @@ export class PostService {
             rawPost.selectedTimelineIds = [];
           }
 
+          if (rawPost.visibility === VisibilityType.SELECTED) {
+            const selectedUserIds = rawPost.selectedUserIds ?? [];
+            rawPost.selectedUserIds = [...selectedUserIds, draftPost.createdBy];
+          }
+
+          if (rawPost.visibility === VisibilityType.TIMELINE) {
+            const timelineIds = rawPost.selectedTimelineIds ?? [];
+            const selectedUserIds = [draftPost.createdBy];
+            if (timelineIds.length > 0) {
+              const experiences = await this.experienceRepository.find({
+                where: {id: {inq: timelineIds}},
+              });
+
+              rawPost.selectedTimelineIds = experiences.map(e => {
+                selectedUserIds.push(...e.selectedUserIds);
+                return e.id;
+              });
+            }
+            rawPost.selectedUserIds = selectedUserIds;
+          }
+
           return this.postRepository.create(rawPost);
         }
 
@@ -247,12 +268,39 @@ export class PostService {
       if (embeddedURL) raw.embeddedURL = embeddedURL;
     }
 
+    const visibility = data.visibility;
+
+    if (visibility) raw.visibility = visibility;
+    if (visibility !== VisibilityType.SELECTED) raw.selectedUserIds = [];
+    if (visibility !== VisibilityType.TIMELINE) raw.selectedTimelineIds = [];
+
     if (data.selectedUserIds) raw.selectedUserIds = data.selectedUserIds;
-    if (data.visibility !== VisibilityType.SELECTED) raw.selectedUserIds = [];
     if (data.mentions) raw.mentions = data.mentions;
     if (data.NSFWTag) raw.NSFWTag = data.NSFWTag;
     if (data.isNSFW) raw.isNSFW = data.isNSFW;
     if (data.tags) raw.tags = data.tags;
+
+    if (visibility === VisibilityType.SELECTED) {
+      const selectedUserIds = data.selectedUserIds ?? [];
+      if (data.createdBy) selectedUserIds.push(data.createdBy);
+      raw.selectedUserIds = [...selectedUserIds];
+    }
+
+    if (visibility === VisibilityType.TIMELINE) {
+      const timelineIds = data.selectedTimelineIds ?? [];
+      const selectedUserIds = [];
+      if (data.createdBy) selectedUserIds.push(data.createdBy);
+      if (timelineIds.length > 0) {
+        const experiences = await this.experienceRepository.find({
+          where: {id: {inq: timelineIds}},
+        });
+        raw.selectedTimelineIds = experiences.map(e => {
+          selectedUserIds.push(...e.selectedUserIds);
+          return e.id;
+        });
+      }
+      raw.selectedUserIds = selectedUserIds;
+    }
 
     return this.postRepository.updateAll(raw, {
       createdBy: data.createdBy,
@@ -449,7 +497,8 @@ export class PostService {
     post.importers = [importer];
     post.totalImporter = totalImporter;
 
-    return omit(post, ['popularCount', 'rawText']) as PostWithRelations;
+    const hiddenFields = ['popularCount', 'rawText', 'selectedUserIds'];
+    return omit(post, hiddenFields) as PostWithRelations;
   }
 
   private async validateImportedPost(

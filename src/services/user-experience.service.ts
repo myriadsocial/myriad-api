@@ -498,7 +498,7 @@ export class UserExperienceService {
     }
   }
 
-  private validateExperienceData(experience: Experience): People[] {
+  private validateExperienceData(experience: Omit<Experience, 'id'>): People[] {
     const userId = experience.createdBy;
     const allowedTags = experience?.allowedTags?.filter(e => e !== '') ?? [];
     const prohibitedTags = experience?.prohibitedTags ?? [];

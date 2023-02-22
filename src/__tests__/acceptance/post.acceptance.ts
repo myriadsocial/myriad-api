@@ -41,6 +41,7 @@ import {
   givenAccesToken,
 } from '../helpers';
 import {AnyObject, EntityNotFoundError} from '@loopback/repository';
+import {omit} from 'lodash';
 
 /* eslint-disable  @typescript-eslint/no-invalid-this */
 describe('PostApplication', function () {
@@ -223,12 +224,15 @@ describe('PostApplication', function () {
     });
 
     it('finds all posts', async () => {
+      const posts = toJSON(
+        persistedPosts.map(e => omit(e, ['selectedUserIds', 'popularCount'])),
+      );
       const response = await client
         .get('/user/posts?userId=' + user.id)
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(200);
-      expect(response.body.data).to.containDeep(toJSON(persistedPosts));
+      expect(response.body.data).to.containDeep(posts);
     });
 
     it('exploded filter conditions work', async () => {
@@ -287,7 +291,7 @@ describe('PostApplication', function () {
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
-      ...toJSON(post as Post),
+      ...toJSON(omit(post as Post, ['selectedUserIds', 'popularCount'])),
       banned: false,
       totalImporter: 1,
       totalExperience: 0,
