@@ -109,19 +109,25 @@ export class PostService {
             rawPost.selectedTimelineIds = [];
           }
 
+          if (rawPost.visibility === VisibilityType.SELECTED) {
+            const selectedUserIds = rawPost.selectedUserIds ?? [];
+            rawPost.selectedUserIds = [...selectedUserIds, draftPost.createdBy];
+          }
+
           if (rawPost.visibility === VisibilityType.TIMELINE) {
             const timelineIds = rawPost.selectedTimelineIds ?? [];
+            const selectedUserIds = [draftPost.createdBy];
             if (timelineIds.length > 0) {
               const experiences = await this.experienceRepository.find({
                 where: {id: {inq: timelineIds}},
               });
 
-              rawPost.selectedUserIds = [];
               rawPost.selectedTimelineIds = experiences.map(e => {
-                rawPost.selectedUserIds?.push(...e.selectedUserIds);
+                selectedUserIds.push(...e.selectedUserIds);
                 return e.id;
               });
             }
+            rawPost.selectedUserIds = selectedUserIds;
           }
 
           return this.postRepository.create(rawPost);
@@ -274,18 +280,26 @@ export class PostService {
     if (data.isNSFW) raw.isNSFW = data.isNSFW;
     if (data.tags) raw.tags = data.tags;
 
+    if (visibility === VisibilityType.SELECTED) {
+      const selectedUserIds = data.selectedUserIds ?? [];
+      if (data.createdBy) selectedUserIds.push(data.createdBy);
+      raw.selectedUserIds = [...selectedUserIds];
+    }
+
     if (visibility === VisibilityType.TIMELINE) {
       const timelineIds = data.selectedTimelineIds ?? [];
+      const selectedUserIds = [];
+      if (data.createdBy) selectedUserIds.push(data.createdBy);
       if (timelineIds.length > 0) {
         const experiences = await this.experienceRepository.find({
           where: {id: {inq: timelineIds}},
         });
-        raw.selectedUserIds = [];
         raw.selectedTimelineIds = experiences.map(e => {
-          raw.selectedUserIds?.push(...e.selectedUserIds);
+          selectedUserIds.push(...e.selectedUserIds);
           return e.id;
         });
       }
+      raw.selectedUserIds = selectedUserIds;
     }
 
     return this.postRepository.updateAll(raw, {
