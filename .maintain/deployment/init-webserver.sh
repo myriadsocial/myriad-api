@@ -27,7 +27,7 @@ if [ $skip_nginx == "0" ]; then
   sed -i "s~api.example.com~${domains}~" $nginx_data_path/$domains.conf
 
   echo "### Restarting nginx ..."
-  docker compose -p myriad -f ./.maintain/deployment/docker-compose.yml --env-file ./.env up --force-recreate --no-deps -d nginx
+  docker compose -p myriad -f ./.maintain/deployment/docker-compose.yaml --env-file ./.env up --force-recreate --no-deps -d nginx
 fi
 
 if [ -f "$certbot_data_path/conf/live/$domains" ]; then
@@ -48,7 +48,7 @@ fi
 echo "### Creating dummy certificate for $domains ..."
 path="/etc/letsencrypt/live/$domains"
 mkdir -p "$certbot_data_path/conf/live/$domains"
-docker compose -p myriad -f ./.maintain/deployment/docker-compose.yml --env-file ./.env run --rm --entrypoint "\
+docker compose -p myriad -f ./.maintain/deployment/docker-compose.yaml --env-file ./.env run --rm --entrypoint "\
   openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1\
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
@@ -56,11 +56,11 @@ docker compose -p myriad -f ./.maintain/deployment/docker-compose.yml --env-file
 echo
 
 echo "### Restarting nginx ..."
-docker compose -p myriad -f ./.maintain/deployment/docker-compose.yml --env-file ./.env up --force-recreate --no-deps -d nginx
+docker compose -p myriad -f ./.maintain/deployment/docker-compose.yaml --env-file ./.env up --force-recreate --no-deps -d nginx
 echo
 
 echo "### Deleting dummy certificate for $domains ..."
-docker compose -p myriad -f ./.maintain/deployment/docker-compose.yml --env-file ./.env run --rm --entrypoint "\
+docker compose -p myriad -f ./.maintain/deployment/docker-compose.yaml --env-file ./.env run --rm --entrypoint "\
   rm -Rf /etc/letsencrypt/live/$domains && \
   rm -Rf /etc/letsencrypt/archive/$domains && \
   rm -Rf /etc/letsencrypt/renewal/$domains.conf" certbot
@@ -82,7 +82,7 @@ esac
 # Enable staging mode if needed
 if [ $staging != "0" ]; then staging_arg="--staging"; fi
 
-docker compose -p myriad -f ./.maintain/deployment/docker-compose.yml --env-file ./.env run --rm --entrypoint "\
+docker compose -p myriad -f ./.maintain/deployment/docker-compose.yaml --env-file ./.env run --rm --entrypoint "\
   certbot certonly --webroot -w /var/www/certbot \
     $staging_arg \
     $email_arg \
@@ -93,4 +93,4 @@ docker compose -p myriad -f ./.maintain/deployment/docker-compose.yml --env-file
 echo
 
 echo "### Reloading nginx ..."
-docker compose -p myriad -f ./.maintain/deployment/docker-compose.yml --env-file ./.env exec nginx nginx -s reload
+docker compose -p myriad -f ./.maintain/deployment/docker-compose.yaml --env-file ./.env exec nginx nginx -s reload

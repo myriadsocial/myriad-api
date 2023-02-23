@@ -22,4 +22,4 @@ COPY --from=builder /app/package.json ./package.json
 USER myriad
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
 EXPOSE ${PORT}
-ENTRYPOINT ["node", "dist/index.js"]
+ENTRYPOINT ["node", "."]

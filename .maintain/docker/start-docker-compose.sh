@@ -9,6 +9,6 @@ PROJECT_ROOT=$(git rev-parse --show-toplevel)
 cd $PROJECT_ROOT
 
 echo "Starting docker compose"
-docker-compose -p myriad-api -f .maintain/docker/docker-compose.yml up -d
+docker-compose -p myriad-api -f .maintain/docker/docker-compose.yaml up -d
 
 popd
