@@ -271,7 +271,7 @@ jobs:
             --set-string ingress.hosts[0].host=${{ steps.secrets.outputs.API_DNS }} \
             --set-string ingress.hosts[0].paths[0].path=/ \
             --set-string ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
-            --set-string ingress.tls[0].secretName=${{ github.event.repository.name }}-letsencrypt-tls \
+            --set-string ingress.tls[0].secretName=${{ steps.secrets.outputs.API_DNS }}-letsencrypt-tls \
             --set-string ingress.tls[0].hosts[0]=${{ steps.secrets.outputs.API_DNS }} \
             --set-string resources.requests.cpu=300m \
             --set-string resources.requests.memory=512Mi \
