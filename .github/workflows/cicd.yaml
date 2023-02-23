@@ -180,7 +180,6 @@ jobs:
         with:
           cluster_name: ${{ secrets[format('{0}_{1}', matrix.environment, 'GKE_CLUSTER_NAME')] }}
           location: ${{ secrets[format('{0}_{1}', matrix.environment, 'GKE_LOCATION')] }}
-          use_internal_ip: true
       - name: Get Secrets from Google Secret Manager
         id: secrets
         uses: google-github-actions/get-secretmanager-secrets@7fced8b6579c75d7c465165b38ec29175d9a469c
