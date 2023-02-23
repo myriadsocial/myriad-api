@@ -1372,9 +1372,25 @@ export class FilterBuilderService {
           and: [
             {id: {inq: postIds}},
             {tags: {nin: prohibitedTags}} as Where,
+            {visibility: VisibilityType.SELECTED},
+            {createdBy: this.currentUser[securityId]},
+          ],
+        },
+        {
+          and: [
+            {id: {inq: postIds}},
+            {tags: {nin: prohibitedTags}} as Where,
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {visibility: VisibilityType.TIMELINE},
             {createdBy: {nin: blocked}},
+          ],
+        },
+        {
+          and: [
+            {id: {inq: postIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {visibility: VisibilityType.TIMELINE},
+            {createdBy: this.currentUser[securityId]},
           ],
         },
         {
