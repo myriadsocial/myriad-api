@@ -99,7 +99,7 @@ docker-compose.yaml
 # Docs
 /docs
 README.md
-DEVELOPING.md
+CHANGELOG.md
 
 # Other
 .github
