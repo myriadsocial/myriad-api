@@ -59,7 +59,7 @@ yarn rebuild
 To check code style:
 
 ```sh
-yarn lint
+yarn lint:check
 ```
 
 To automatically fix code style issues:
@@ -73,7 +73,7 @@ yarn lint:fix
 To check format:
 
 ```sh
-yarn format
+yarn format:check
 ```
 
 To automatically fix format issues:
