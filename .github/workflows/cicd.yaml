@@ -20,13 +20,14 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
-      max-parallel: 3
       matrix:
         command:
           - 'build'
           - 'lint:check'
           - 'format:check'
-          - 'test'
+          - 'test:unit'
+          - 'test:integration'
+          - 'test:acceptance'
     runs-on: ubuntu-20.04
     name: Test on Node.js 16 ( ${{ matrix.command }} )
     steps:
@@ -40,7 +41,7 @@ jobs:
           node-version: 16
           cache: yarn
       - name: Install Dependencies
-        run: yarn install --frozen-lockfile --ignore-scripts
+        run: yarn install --frozen-lockfile
       - name: Run ${{ matrix.command }}
         run: yarn ${{ matrix.command }}
 
