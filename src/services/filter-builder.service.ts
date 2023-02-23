@@ -1363,42 +1363,26 @@ export class FilterBuilderService {
           and: [
             {id: {inq: postIds}},
             {tags: {nin: prohibitedTags}} as Where,
+            {createdBy: {nin: blocked}},
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {visibility: VisibilityType.SELECTED},
+          ],
+        },
+        {
+          and: [
+            {id: {inq: postIds}},
+            {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {nin: blocked}},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {visibility: VisibilityType.SELECTED},
-            {createdBy: this.currentUser[securityId]},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {nin: prohibitedTags}} as Where,
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {visibility: VisibilityType.TIMELINE},
-            {createdBy: {nin: blocked}},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {visibility: VisibilityType.TIMELINE},
-            {createdBy: this.currentUser[securityId]},
           ],
         },
         {
           and: [
             {tags: {inq: allowedTags}} as Where,
             {tags: {nin: prohibitedTags}} as Where,
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {createdBy: {nin: blocked}},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {visibility: VisibilityType.SELECTED},
           ],
         },
@@ -1406,8 +1390,8 @@ export class FilterBuilderService {
           and: [
             {peopleId: {inq: personIds}},
             {tags: {nin: prohibitedTags}} as Where,
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {createdBy: {nin: blocked}},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {visibility: VisibilityType.SELECTED},
           ],
         },
@@ -1455,6 +1439,13 @@ export class FilterBuilderService {
           and: [
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {inq: currentUserIds}},
+          ],
+        },
+        {
+          and: [
+            {id: {inq: postIds}},
+            {tags: {nin: prohibitedTags}} as Where,
+            {createdBy: this.currentUser[securityId]},
           ],
         },
       ],
@@ -1630,37 +1621,7 @@ export class FilterBuilderService {
           experienceId,
         );
         if (!experience) return {id: ''};
-        const creator = experience.createdBy;
-        const visibility = experience.visibility;
-        const selectedUserIds = experience.selectedUserIds ?? [];
-        const selected = selectedUserIds.find(e => e === currentUserId);
-
-        if (visibility === VisibilityType.PUBLIC) {
-          return this.timelineByExperience(currentUserId, experience);
-        }
-
-        if (visibility === VisibilityType.PRIVATE) {
-          if (creator !== currentUserId) return {id: ''};
-          return this.timelineByExperience(currentUserId, experience);
-        }
-
-        if (visibility === VisibilityType.FRIEND) {
-          if (creator !== currentUserId) {
-            const asFriend = await this.friendService.asFriend(
-              creator,
-              currentUserId,
-            );
-            if (!asFriend) return {id: ''};
-          }
-          return this.timelineByExperience(currentUserId, experience);
-        }
-
-        if (visibility === VisibilityType.SELECTED) {
-          if (!selected && creator !== currentUserId) return {id: ''};
-          return this.timelineByExperience(currentUserId, experience);
-        }
-
-        return this.timelineByExperience(currentUserId, experience);
+        return this.timelineVisibilityFilter(experience, currentUserId);
       }
 
       case TimelineType.TRENDING:
@@ -1681,6 +1642,41 @@ export class FilterBuilderService {
         return this.timelineByProfile(owner.toString(), platform?.toString());
       }
     }
+  }
+
+  private async timelineVisibilityFilter(
+    experience: Experience,
+    currentUserId: string,
+  ): Promise<Where<Post>> {
+    const creator = experience.createdBy;
+    const visibility = experience.visibility;
+    const selectedUserIds = experience.selectedUserIds ?? [];
+    const selected = selectedUserIds.find(e => e === currentUserId);
+
+    switch (visibility) {
+      case VisibilityType.PRIVATE: {
+        if (creator !== currentUserId) return {id: ''};
+        break;
+      }
+
+      case VisibilityType.FRIEND: {
+        if (creator === currentUserId) break;
+        const asFriend = await this.friendService.asFriend(
+          creator,
+          currentUserId,
+        );
+        if (asFriend) break;
+        return {id: ''};
+      }
+
+      case VisibilityType.SELECTED: {
+        if (selected) break;
+        if (creator === currentUserId) break;
+        return {id: ''};
+      }
+    }
+
+    return this.timelineByExperience(currentUserId, experience);
   }
 
   private orderSetting(query: Query): string[] {
