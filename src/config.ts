@@ -8,11 +8,11 @@ export const config = {
   DOMAIN: process.env.DOMAIN ?? '',
 
   MYRIAD_ADMIN_SUBSTRATE_MNEMONIC:
-    process.env.MYRIAD_ADMIN_MNEMONIC ??
+    process.env.MYRIAD_ADMIN_SUBSTRATE_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice',
 
   MYRIAD_ADMIN_NEAR_MNEMONIC:
-    process.env.MYRIAD_ADMIN_MNEMONIC ??
+    process.env.MYRIAD_ADMIN_NEAR_MNEMONIC ??
     'bottom drive obey lake curtain smoke basket hold race lonely fit walk',
 
   JWT_TOKEN_SECRET_KEY: !process.env.JWT_TOKEN_SECRET_KEY
