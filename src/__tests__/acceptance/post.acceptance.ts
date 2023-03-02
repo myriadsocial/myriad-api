@@ -104,25 +104,6 @@ describe('PostApplication', function () {
     expect(result).to.containDeep(myriadPost);
   });
 
-  it('reject creates a post in lite version when action is fulfilled', async () => {
-    await userRepository.updateById(user.id, {fullAccess: false});
-    for (let i = 0; i < 15; i++) {
-      await givenMyriadPostInstance(postRepository, {
-        createdBy: user.id.toString(),
-        platform: PlatformType.MYRIAD,
-      });
-    }
-    const myriadPost: Partial<DraftPost> = givenPost({
-      createdBy: user.id.toString(),
-    });
-    await client
-      .post('/user/posts')
-      .set('Authorization', `Bearer ${token}`)
-      .send(myriadPost)
-      .expect(422);
-    await userRepository.updateById(user.id, {fullAccess: true});
-  });
-
   context('when dealing with a single persisted post', () => {
     let persistedPost: PostWithRelations;
 

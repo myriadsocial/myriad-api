@@ -788,7 +788,6 @@ export class UserService {
   }
 
   public async createPost(draftPost: DraftPost): Promise<DraftPost | Post> {
-    await this.haveFullAccess(ControllerType.POST);
     draftPost.createdBy = this.currentUser[securityId];
     return this.postService.create(draftPost);
   }
