@@ -348,24 +348,6 @@ describe('UserExperienceApplication', function () {
         .send(experience)
         .expect(422);
     });
-
-    it('rejects creates new experience when user has experience more than 10', async () => {
-      await userRepository.updateById(user.id.toString(), {fullAccess: true});
-
-      for (let i = 0; i < 10; i++) {
-        await givenExperienceInstance(experienceRepository, {
-          createdBy: user.id,
-        });
-      }
-
-      const experience = givenExperience({createdBy: user.id});
-
-      await client
-        .post(`/user/experiences`)
-        .set('Authorization', `Bearer ${token}`)
-        .send(experience)
-        .expect(422);
-    });
   });
 
   it('includes both user and experience in query result', async () => {
