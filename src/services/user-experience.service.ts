@@ -197,7 +197,7 @@ export class UserExperienceService {
   ): Promise<Experience> {
     const userId = experience.createdBy;
     const people = this.validateExperienceData(experience);
-    const totalExperience = await this.validateCreatedExperience(userId);
+    const totalExperience = await this.countUserExperience(userId);
 
     if (experience.visibility !== VisibilityType.SELECTED) {
       experience.selectedUserIds = [];
@@ -461,15 +461,7 @@ export class UserExperienceService {
     );
   }
 
-  private async validateCreatedExperience(userId: string): Promise<number> {
-    // Check if user has experiences less than equal 10
-    const createdBy = userId;
-    const {count} = await this.experienceRepository.count({createdBy});
-
-    if (count >= 10) {
-      throw new HttpErrors.UnprocessableEntity('ExperiencesExceeded');
-    }
-
+  private async countUserExperience(userId: string): Promise<number> {
     const {count: total} = await this.userExperienceRepository.count({userId});
     return total;
   }
