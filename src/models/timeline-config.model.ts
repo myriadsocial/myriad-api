@@ -1,5 +1,6 @@
 import {Entity, property} from '@loopback/repository';
 import {VisibilityType} from '../enums';
+import {SelectedUser} from './experience.model';
 
 export interface Timeline {
   timelineId: string;
@@ -7,7 +8,7 @@ export interface Timeline {
   prohibitedTags: string[];
   peopleIds: string[];
   userIds: string[];
-  selectedUserIds: string[];
+  selectedUserIds: SelectedUser[];
   postIds: string[];
   visibility: VisibilityType;
   createdBy: string;

@@ -29,9 +29,9 @@ import {
   Experience,
   ExperiencePost,
   Friend,
-  People,
   Post,
   SelectedUser,
+  Timeline,
   Transaction,
   User,
   UserCurrency,
@@ -44,6 +44,7 @@ import {
   UserRepository,
   WalletRepository,
 } from '../repositories';
+import {TimelineConfigRepository} from '../repositories/timeline-config.repository';
 import {generateObjectId} from '../utils/formatter';
 import {CurrencyService} from './currency.service';
 import {ExperienceService} from './experience.service';
@@ -57,6 +58,8 @@ export class FilterBuilderService {
     private accountSettingRepository: AccountSettingRepository,
     @repository(TagRepository)
     private tagRepository: TagRepository,
+    @repository(TimelineConfigRepository)
+    private timelineConfigRepository: TimelineConfigRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @repository(WalletRepository)
@@ -275,12 +278,11 @@ export class FilterBuilderService {
     filter: Filter<Post>,
     query: Query,
   ): Promise<AnyObject | void> {
-    let {experienceId, timelineType, q, topic} = query;
+    let {timelineType, q, topic} = query;
 
     if (Array.isArray(q)) q = q[0];
     if (Array.isArray(topic)) topic = topic[0];
     if (Array.isArray(timelineType)) timelineType = timelineType[0];
-    if (Array.isArray(experienceId)) experienceId = experienceId[0];
 
     if (
       (q && (topic || timelineType)) ||
@@ -338,11 +340,7 @@ export class FilterBuilderService {
     }
 
     // get current timeline
-    const where = await this.timelineFilter(
-      timelineType?.toString(),
-      experienceId?.toString(),
-      query,
-    );
+    const where = await this.timelineFilter(timelineType?.toString(), query);
     return this.finalizeFilter(filter, where);
   }
 
@@ -1296,176 +1294,175 @@ export class FilterBuilderService {
 
   private async timelineByExperience(
     currentUserId: string,
-    experience: Experience,
+    config: Timeline,
     selected?: SelectedUser,
-  ): Promise<Where<Post>> {
-    const postIds = experience.posts?.map(post => post.id) ?? [];
+  ): Promise<Where<Post>[]> {
+    const postIds = config.postIds;
     const experienceUserIds: string[] = [];
-    const allowedTags = experience.allowedTags.map(e => e.toLowerCase());
-    const prohibitedTags = experience.prohibitedTags.map(e => e.toLowerCase());
-    const personIds = experience.people
-      .filter((e: People) => e.platform !== PlatformType.MYRIAD)
-      .map(e => e.id);
+    const allowedTags = config.allowedTags.map(e => e.toLowerCase());
+    const prohibitedTags = config.prohibitedTags.map(e => e.toLowerCase());
+    const peopleIds = config.peopleIds;
     const [blockedIds, approvedIds, expFriends] = await Promise.all([
       this.friendService.getFriendIds(currentUserId, FriendStatusType.BLOCKED),
       this.friendService.getFriendIds(currentUserId, FriendStatusType.APPROVED),
       this.friendService.find({
         where: {
           requestorId: currentUserId,
-          requesteeId: {inq: (experience.users ?? []).map(e => e.id)},
+          requesteeId: {inq: config.userIds},
           status: FriendStatusType.APPROVED,
         },
       }),
     ]);
     const expFriendIds = expFriends.map(friend => friend.requesteeId);
     const blocked = pull(blockedIds, ...expFriendIds, ...approvedIds);
+    const accountSettings = await this.accountSettingRepository.find({
+      where: {userId: {inq: config.userIds}},
+    });
 
-    if (experience?.users) {
-      for (const expUser of experience.users) {
-        const accountPrivacy = expUser?.accountSetting.accountPrivacy;
+    if (accountSettings.length > 0) {
+      for (const accountSetting of accountSettings) {
+        const accountPrivacy = accountSetting.accountPrivacy;
         const privateSetting = AccountSettingType.PRIVATE;
 
         if (accountPrivacy === privateSetting) {
-          const found = expFriendIds.find(id => id === expUser.id);
-          if (found) experienceUserIds.push(expUser.id);
+          const found = expFriendIds.find(id => id === accountSetting.userId);
+          if (found) experienceUserIds.push(accountSetting.userId);
         } else {
-          experienceUserIds.push(expUser.id);
+          experienceUserIds.push(accountSetting.userId);
         }
       }
     }
 
-    const field = `addedAt.${experience.id}`;
+    const field = `addedAt.${config.timelineId}`;
 
-    return {
-      or: [
-        // Visibility PUBLIC
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {nin: blocked}},
-            {visibility: VisibilityType.PUBLIC},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {inq: allowedTags}} as Where,
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {nin: blocked}},
-            {visibility: VisibilityType.PUBLIC},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {peopleId: {inq: personIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {nin: blocked}},
-            {visibility: VisibilityType.PUBLIC},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {inq: experienceUserIds}},
-            {visibility: VisibilityType.PUBLIC},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        // Visibility SELECTED USER
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {nin: blocked}},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
-            {visibility: VisibilityType.SELECTED},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {inq: allowedTags}} as Where,
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {nin: blocked}},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
-            {visibility: VisibilityType.SELECTED},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {peopleId: {inq: personIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {nin: blocked}},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
-            {visibility: VisibilityType.SELECTED},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        // Visibility FRIEND
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {inq: expFriendIds}},
-            {visibility: VisibilityType.FRIEND},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {inq: allowedTags}} as Where,
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {inq: expFriendIds}},
-            {visibility: VisibilityType.FRIEND},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {peopleId: {inq: personIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {inq: expFriendIds}},
-            {visibility: VisibilityType.FRIEND},
-            {[field]: {gte: selected?.addedAt ?? 0}},
-          ],
-        },
-        // CurrentUser
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {inq: allowedTags}} as Where,
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: currentUserId},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {peopleId: {inq: personIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: currentUserId},
-          ],
-        },
-        {
-          and: [
-            {id: {inq: postIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: currentUserId},
-          ],
-        },
-      ],
-    };
+    return [
+      // Visibility PUBLIC
+      {
+        and: [
+          {id: {inq: postIds}},
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {nin: blocked}},
+          {visibility: VisibilityType.PUBLIC},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      {
+        and: [
+          {id: {inq: postIds}},
+          {tags: {inq: allowedTags}} as Where,
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {nin: blocked}},
+          {visibility: VisibilityType.PUBLIC},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      {
+        and: [
+          {id: {inq: postIds}},
+          {peopleId: {inq: peopleIds}},
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {nin: blocked}},
+          {visibility: VisibilityType.PUBLIC},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      {
+        and: [
+          {id: {inq: postIds}},
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {inq: experienceUserIds}},
+          {visibility: VisibilityType.PUBLIC},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      // Visibility SELECTED USER
+      {
+        and: [
+          {id: {inq: postIds}},
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {nin: blocked}},
+          {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+          {visibility: VisibilityType.SELECTED},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      {
+        and: [
+          {id: {inq: postIds}},
+          {tags: {inq: allowedTags}} as Where,
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {nin: blocked}},
+          {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+          {visibility: VisibilityType.SELECTED},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      {
+        and: [
+          {id: {inq: postIds}},
+          {peopleId: {inq: peopleIds}},
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {nin: blocked}},
+          {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+          {visibility: VisibilityType.SELECTED},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      // Visibility FRIEND
+      {
+        and: [
+          {id: {inq: postIds}},
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {inq: expFriendIds}},
+          {visibility: VisibilityType.FRIEND},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      {
+        and: [
+          {id: {inq: postIds}},
+          {tags: {inq: allowedTags}} as Where,
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {inq: expFriendIds}},
+          {visibility: VisibilityType.FRIEND},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      {
+        and: [
+          {id: {inq: postIds}},
+          {peopleId: {inq: peopleIds}},
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: {inq: expFriendIds}},
+          {visibility: VisibilityType.FRIEND},
+          {[field]: {gte: selected?.addedAt ?? 0}},
+        ],
+      },
+      // CurrentUser
+      {
+        and: [
+          {id: {inq: postIds}},
+          {tags: {inq: allowedTags}} as Where,
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: currentUserId},
+        ],
+      },
+      {
+        and: [
+          {id: {inq: postIds}},
+          {peopleId: {inq: peopleIds}},
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: currentUserId},
+        ],
+      },
+      {
+        and: [
+          {id: {inq: postIds}},
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: this.currentUser[securityId]},
+        ],
+      },
+    ];
   }
 
   private async searchPostByUserName(
@@ -1626,18 +1623,31 @@ export class FilterBuilderService {
 
   private async timelineFilter(
     timelineType?: string,
-    experienceId?: string,
     query?: Query,
   ): Promise<Where<Post>> {
     switch (timelineType) {
       case TimelineType.EXPERIENCE: {
         const currentUserId = this.currentUser[securityId];
-        const experience = await this.experienceService.fetchExperience(
-          currentUserId,
-          experienceId,
-        );
-        if (!experience) return {id: ''};
-        return this.timelineVisibilityFilter(experience, currentUserId);
+        const timelineConfig = await this.timelineConfigRepository.findOne({
+          where: {userId: currentUserId},
+        });
+
+        if (!timelineConfig) return {id: ''};
+
+        const timelineFilter: Where<Post>[] = [];
+
+        for (const experiencId in timelineConfig.data) {
+          const config = timelineConfig.data[experiencId];
+          const filter = await this.timelineVisibilityFilter(
+            currentUserId,
+            config,
+          );
+          timelineFilter.push(...filter);
+        }
+
+        return {
+          or: timelineFilter,
+        };
       }
 
       case TimelineType.TRENDING:
@@ -1661,19 +1671,19 @@ export class FilterBuilderService {
   }
 
   private async timelineVisibilityFilter(
-    experience: Experience,
     currentUserId: string,
-  ): Promise<Where<Post>> {
-    const creator = experience.createdBy;
-    const visibility = experience.visibility;
-    const selectedUserIds = experience.selectedUserIds ?? [];
-    const selected = selectedUserIds.find(e => {
-      return e.userId === currentUserId;
-    });
+    config: Timeline,
+  ): Promise<Where<Post>[]> {
+    const creator = config.createdBy;
+    const visibility = config.visibility;
+    const selectedUserIds = config.selectedUserIds ?? [];
+    const selected = selectedUserIds.find(
+      ({userId}) => userId === currentUserId,
+    );
 
     switch (visibility) {
       case VisibilityType.PRIVATE: {
-        if (creator !== currentUserId) return {id: ''};
+        if (creator !== currentUserId) return [{id: ''}];
         break;
       }
 
@@ -1684,17 +1694,17 @@ export class FilterBuilderService {
           currentUserId,
         );
         if (asFriend) break;
-        return {id: ''};
+        return [{id: ''}];
       }
 
       case VisibilityType.SELECTED: {
         if (selected) break;
         if (creator === currentUserId) break;
-        return {id: ''};
+        return [{id: ''}];
       }
     }
 
-    return this.timelineByExperience(currentUserId, experience, selected);
+    return this.timelineByExperience(currentUserId, config, selected);
   }
 
   private orderSetting(query: Query): string[] {
