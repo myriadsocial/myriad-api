@@ -19,6 +19,7 @@ export * from './post.repository';
 export * from './queue.repository';
 export * from './report.repository';
 export * from './tag.repository';
+export * from './timeline-config.repository';
 export * from './transaction.repository';
 export * from './unlockable-content.repository';
 export * from './user.repository';
