@@ -18,6 +18,7 @@ import {
 } from '../enums';
 import {
   Experience,
+  ExperienceWithRelations,
   People,
   UserExperience,
   UserExperienceWithRelations,
@@ -28,6 +29,7 @@ import {
   UserExperienceRepository,
   UserRepository,
 } from '../repositories';
+import {TimelineConfigRepository} from '../repositories/timeline-config.repository';
 import {formatTag} from '../utils/formatter';
 import {ActivityLogService} from './activity-log.service';
 import {FriendService} from './friend.service';
@@ -41,6 +43,8 @@ export class UserExperienceService {
     private experienceRepository: ExperienceRepository,
     @repository(ExperienceUserRepository)
     private experienceUserRepository: ExperienceUserRepository,
+    @repository(TimelineConfigRepository)
+    private timelineConfigRepository: TimelineConfigRepository,
     @repository(UserExperienceRepository)
     private userExperienceRepository: UserExperienceRepository,
     @repository(UserRepository)
@@ -160,6 +164,59 @@ export class UserExperienceService {
           );
         }
 
+        const field = `data.${id}`;
+        const config = await this.timelineConfigRepository.findOne(<AnyObject>{
+          where: {
+            [field]: {$exists: true},
+          },
+        });
+
+        if (config) {
+          if (experience.allowedTags && experience.allowedTags.length > 0) {
+            config.data[id].allowedTags = experience.allowedTags;
+          }
+
+          if (
+            experience.prohibitedTags &&
+            experience.prohibitedTags.length > 0
+          ) {
+            config.data[id].prohibitedTags = experience.prohibitedTags;
+          }
+
+          if (experience.people && experience.people.length > 0) {
+            const userIds = [];
+            const peopleIds = [];
+
+            for (const person of experience.people) {
+              if (person.platform === PlatformType.MYRIAD) {
+                userIds.push(person.id);
+              } else {
+                peopleIds.push(person.id);
+              }
+            }
+
+            config.data[id].userIds = userIds;
+            config.data[id].peopleIds = peopleIds;
+          }
+
+          if (visibility) {
+            config.data[id].visibility = visibility;
+          }
+
+          if (
+            experience.selectedUserIds &&
+            experience.selectedUserIds.length > 0
+          ) {
+            config.data[id].selectedUserIds = experience.selectedUserIds;
+          }
+
+          jobs.push(
+            this.timelineConfigRepository.updateAll(config, {
+              [field]: {exists: true},
+            }),
+          );
+        }
+
         if (visibility && visibility !== VisibilityType.PUBLIC) {
           const where: Where<UserExperience> = {
             experienceId: id,
@@ -199,7 +256,6 @@ export class UserExperienceService {
   ): Promise<Experience> {
     const userId = experience.createdBy;
     const people = this.validateExperienceData(experience);
-    const totalExperience = await this.countUserExperience(userId);
 
     if (experience.visibility !== VisibilityType.SELECTED) {
       experience.selectedUserIds = [];
@@ -208,9 +264,7 @@ export class UserExperienceService {
     return this.userRepository
       .experiences(userId)
       .create(experience)
-      .then(async created =>
-        this.afterCreate(created, people, totalExperience, clonedId),
-      );
+      .then(async created => this.afterCreate(created, people, clonedId));
   }
 
   public async subscribe(
@@ -218,10 +272,13 @@ export class UserExperienceService {
     userId: string,
   ): Promise<UserExperience> {
     const subscribed = await this.beforeSubscribe(userId, experienceId);
+    const experience = await this.experienceRepository.findById(experienceId, {
+      include: ['users'],
+    });
 
     return this.userExperienceRepository
       .create({userId, experienceId, subscribed})
-      .then(created => this.afterSubscribe(created));
+      .then(created => this.afterSubscribe(created, experience));
   }
 
   public async unsubscribe(id: string, userId: string): Promise<void> {
@@ -232,35 +289,38 @@ export class UserExperienceService {
 
     const experienceCreator = experience?.createdBy ?? '';
 
-    return this.userExperienceRepository.deleteById(id).then(() => {
+    return this.userExperienceRepository.deleteById(id).then(async () => {
       // Update experience subscribed count
       // Removing experience when subscribed count zero
       const promises: Promise<void | AnyObject>[] = [];
 
       if (experienceCreator === userId) {
+        const field = `data.${experienceId}`;
+        const configs = await this.timelineConfigRepository.find(<AnyObject>{
+          where: {
+            [field]: {$exists: true},
+          },
+        });
+
+        for (const config of configs) {
+          delete config.data[experienceId];
+          promises.push(this.timelineConfigRepository.update(config));
+        }
+
         promises.push(
           this.userExperienceRepository.deleteAll({experienceId}),
           this.experienceRepository.deleteById(experienceId),
         );
-      }
+      } else {
+        const config = await this.timelineConfigRepository.findOne({
+          where: {userId},
+        });
 
-      promises.push(
-        this.userRepository
-          .findOne({where: {onTimeline: experienceId}})
-          .then(user => {
-            if (!user) return [];
-            return this.userExperienceRepository.find({
-              where: {userId},
-              limit: 1,
-              order: ['createdAt DESC'],
-            });
-          })
-          .then(([latest]) =>
-            this.userRepository.updateById(userId, {
-              onTimeline: latest?.experienceId,
-            }),
-          ),
-      );
+        if (config) {
+          delete config.data[experienceId];
+          await this.timelineConfigRepository.update(config);
+        }
+      }
 
       Promise.allSettled(promises) as Promise<AnyObject>;
     });
@@ -273,28 +333,54 @@ export class UserExperienceService {
   private async afterCreate(
     experience: Experience,
     people: People[],
-    totalExperience: number,
     clonedId?: string,
   ): Promise<Experience> {
     const userId = experience.createdBy;
     const experienceId = experience?.id ?? '';
     const tags = [...experience.allowedTags, ...experience.prohibitedTags];
+    const timelineConfig = await this.timelineConfigRepository
+      .findOne({where: {userId}})
+      .then(data => {
+        if (data) return data;
+        return this.timelineConfigRepository.create({userId});
+      });
+
+    const experienceUserIds = [];
+    const peopleIds = [];
+    const userIds = [];
+
+    for (const person of people) {
+      if (person.platform === PlatformType.MYRIAD) {
+        userIds.push(person.id);
+        experienceUserIds.push({userId: person.id, experienceId});
+      } else {
+        peopleIds.push(person.id);
+      }
+    }
+
+    timelineConfig.data[experience.id] = {
+      timelineId: experience.id,
+      allowedTags: experience.allowedTags,
+      prohibitedTags: experience.prohibitedTags,
+      selectedUserIds: experience.selectedUserIds,
+      postIds: [],
+      peopleIds,
+      userIds,
+      visibility: experience.visibility,
+      createdBy: experience.createdBy,
+    };
+
     const promises: Promise<AnyObject | void>[] = [
       this.tagService.create(tags, true),
+      this.metricService.userMetric(userId),
+      this.metricService.countServerMetric(),
+      this.userExperienceRepository.createAll(experienceUserIds),
+      this.timelineConfigRepository.update(timelineConfig),
       this.activityLogService.create(
         ActivityLogType.CREATEEXPERIENCE,
         experienceId,
         ReferenceType.EXPERIENCE,
       ),
-      this.metricService.userMetric(userId),
-      this.metricService.countServerMetric(),
-      ...people.map(({id, platform}) => {
-        if (platform !== PlatformType.MYRIAD) return Promise.resolve();
-        return this.experienceUserRepository.create({
-          userId: id,
-          experienceId,
-        });
-      }),
     ];
 
     if (clonedId) {
@@ -317,14 +403,6 @@ export class UserExperienceService {
               trendCount,
             });
           }),
-      );
-    }
-
-    if (!totalExperience) {
-      promises.push(
-        this.userRepository.updateById(userId, {
-          onTimeline: experienceId,
-        }),
       );
     }
 
@@ -388,8 +466,33 @@ export class UserExperienceService {
 
   private async afterSubscribe(
     userExperience: UserExperience,
+    experience: ExperienceWithRelations,
   ): Promise<UserExperience> {
     const {userId, experienceId} = userExperience;
+    const timelineConfig = await this.timelineConfigRepository
+      .findOne({where: {userId}})
+      .then(data => {
+        if (data) return data;
+        return this.timelineConfigRepository.create({userId});
+      });
+
+    const posts = experience.posts ?? [];
+    const people = experience.people ?? [];
+    const users = experience.users ?? [];
+    const data = timelineConfig.data;
+
+    data[experience.id] = {
+      timelineId: experience.id,
+      allowedTags: experience.allowedTags,
+      prohibitedTags: experience.prohibitedTags,
+      selectedUserIds: experience.selectedUserIds,
+      postIds: posts.map(e => e.id),
+      peopleIds: people.map(e => e.id),
+      userIds: users.map(e => e.id),
+      visibility: experience.visibility,
+      createdBy: experience.createdBy,
+    };
+
     const promises: Promise<AnyObject | void>[] = [
       Promise.all([
         this.count({experienceId, subscribed: true}),
@@ -401,12 +504,6 @@ export class UserExperienceService {
           trendCount,
         });
       }),
-      this.count({userId}).then(({count}) => {
-        if (count > 0) return;
-        return this.userRepository.updateById(userId, {
-          onTimeline: experienceId,
-        });
-      }),
       this.activityLogService.create(
         ActivityLogType.SUBSCRIBEEXPERIENCE,
         experienceId,
@@ -414,6 +511,7 @@ export class UserExperienceService {
       ),
       this.metricService.userMetric(userId),
       this.metricService.countServerMetric(),
+      this.timelineConfigRepository.update(timelineConfig),
     ];
 
     Promise.allSettled(promises) as Promise<AnyObject>;
@@ -465,11 +563,6 @@ export class UserExperienceService {
         return userExperience;
       }),
     );
-  }
-
-  private async countUserExperience(userId: string): Promise<number> {
-    const {count: total} = await this.userExperienceRepository.count({userId});
-    return total;
   }
 
   private async validateUpdateExperience(
