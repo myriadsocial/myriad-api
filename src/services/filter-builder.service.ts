@@ -31,6 +31,7 @@ import {
   Friend,
   People,
   Post,
+  SelectedUser,
   Transaction,
   User,
   UserCurrency,
@@ -852,14 +853,6 @@ export class FilterBuilderService {
         {
           and: [
             {tags: {inq: [hashtag]}} as Where,
-            {visibility: VisibilityType.TIMELINE},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
-            {createdBy: {nin: blockedFriendIds}},
-          ],
-        },
-        {
-          and: [
-            {tags: {inq: [hashtag]}} as Where,
             {createdBy: this.currentUser[securityId]},
           ],
         },
@@ -950,14 +943,6 @@ export class FilterBuilderService {
         {
           and: [
             {'mentions.username': {inq: [mention]}} as Where,
-            {visibility: VisibilityType.TIMELINE},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
-            {createdBy: {nin: blockedFriendIds}},
-          ],
-        },
-        {
-          and: [
-            {'mentions.username': {inq: [mention]}} as Where,
             {createdBy: this.currentUser[securityId]},
           ],
         },
@@ -1027,14 +1012,6 @@ export class FilterBuilderService {
         {
           and: [
             {rawText: {regexp: regexTopic}},
-            {visibility: VisibilityType.TIMELINE},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
-            {createdBy: {nin: blockedFriendIds}},
-          ],
-        },
-        {
-          and: [
-            {rawText: {regexp: regexTopic}},
             {createdBy: this.currentUser[securityId]},
           ],
         },
@@ -1074,14 +1051,6 @@ export class FilterBuilderService {
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {tags: {inq: [hashtag]}} as Where,
             {visibility: VisibilityType.SELECTED},
-            {createdBy: {nin: blockedFriendIds}},
-          ],
-        },
-        {
-          and: [
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
-            {tags: {inq: [hashtag]}} as Where,
-            {visibility: VisibilityType.TIMELINE},
             {createdBy: {nin: blockedFriendIds}},
           ],
         },
@@ -1161,13 +1130,6 @@ export class FilterBuilderService {
             and: [
               {selectedUserIds: {inq: [this.currentUser[securityId]]}},
               {visibility: VisibilityType.SELECTED},
-              {createdBy: {nin: blockedFriendIds}},
-            ],
-          },
-          {
-            and: [
-              {selectedUserIds: {inq: [this.currentUser[securityId]]}},
-              {visibility: VisibilityType.TIMELINE},
               {createdBy: {nin: blockedFriendIds}},
             ],
           },
@@ -1342,14 +1304,6 @@ export class FilterBuilderService {
           ],
         },
         {
-          and: [
-            {tags: {inq: trendingTopicIds}} as Where,
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
-            {visibility: VisibilityType.TIMELINE},
-            {createdBy: {nin: blockedFriendIds}},
-          ],
-        },
-        {
           and: [{tags: {inq: trendingTopicIds}}, {createdBy: userId}],
         },
       ],
@@ -1359,10 +1313,10 @@ export class FilterBuilderService {
   private async timelineByExperience(
     currentUserId: string,
     experience: Experience,
+    selected?: SelectedUser,
   ): Promise<Where<Post>> {
     const postIds = experience.posts?.map(post => post.id) ?? [];
     const experienceUserIds: string[] = [];
-    const currentUserIds: string[] = [];
     const allowedTags = experience.allowedTags.map(e => e.toLowerCase());
     const prohibitedTags = experience.prohibitedTags.map(e => e.toLowerCase());
     const personIds = experience.people
@@ -1393,10 +1347,10 @@ export class FilterBuilderService {
         } else {
           experienceUserIds.push(expUser.id);
         }
-
-        if (expUser.id === currentUserId) currentUserIds.push(currentUserId);
       }
     }
+
+    const field = `addedAt.${experience.id}`;
 
     return {
       or: [
@@ -1407,29 +1361,36 @@ export class FilterBuilderService {
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {nin: blocked}},
             {visibility: VisibilityType.PUBLIC},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         {
           and: [
+            {id: {inq: postIds}},
             {tags: {inq: allowedTags}} as Where,
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {nin: blocked}},
             {visibility: VisibilityType.PUBLIC},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         {
           and: [
+            {id: {inq: postIds}},
             {peopleId: {inq: personIds}},
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {nin: blocked}},
             {visibility: VisibilityType.PUBLIC},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         {
           and: [
+            {id: {inq: postIds}},
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {inq: experienceUserIds}},
             {visibility: VisibilityType.PUBLIC},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         // Visibility SELECTED USER
@@ -1440,33 +1401,29 @@ export class FilterBuilderService {
             {createdBy: {nin: blocked}},
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {visibility: VisibilityType.SELECTED},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         {
           and: [
             {id: {inq: postIds}},
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {nin: blocked}},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
-            {visibility: VisibilityType.TIMELINE},
-          ],
-        },
-        {
-          and: [
             {tags: {inq: allowedTags}} as Where,
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {nin: blocked}},
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {visibility: VisibilityType.SELECTED},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         {
           and: [
+            {id: {inq: postIds}},
             {peopleId: {inq: personIds}},
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {nin: blocked}},
             {selectedUserIds: {inq: [this.currentUser[securityId]]}},
             {visibility: VisibilityType.SELECTED},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         // Visibility FRIEND
@@ -1476,27 +1433,33 @@ export class FilterBuilderService {
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {inq: expFriendIds}},
             {visibility: VisibilityType.FRIEND},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         {
           and: [
+            {id: {inq: postIds}},
             {tags: {inq: allowedTags}} as Where,
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {inq: expFriendIds}},
             {visibility: VisibilityType.FRIEND},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         {
           and: [
+            {id: {inq: postIds}},
             {peopleId: {inq: personIds}},
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: {inq: expFriendIds}},
             {visibility: VisibilityType.FRIEND},
+            {[field]: {gte: selected?.addedAt ?? 0}},
           ],
         },
         // CurrentUser
         {
           and: [
+            {id: {inq: postIds}},
             {tags: {inq: allowedTags}} as Where,
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: currentUserId},
@@ -1504,22 +1467,17 @@ export class FilterBuilderService {
         },
         {
           and: [
+            {id: {inq: postIds}},
             {peopleId: {inq: personIds}},
             {tags: {nin: prohibitedTags}} as Where,
             {createdBy: currentUserId},
-          ],
-        },
-        {
-          and: [
-            {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: {inq: currentUserIds}},
           ],
         },
         {
           and: [
             {id: {inq: postIds}},
             {tags: {nin: prohibitedTags}} as Where,
-            {createdBy: this.currentUser[securityId]},
+            {createdBy: currentUserId},
           ],
         },
       ],
@@ -1725,7 +1683,9 @@ export class FilterBuilderService {
     const creator = experience.createdBy;
     const visibility = experience.visibility;
     const selectedUserIds = experience.selectedUserIds ?? [];
-    const selected = selectedUserIds.find(e => e === currentUserId);
+    const selected = selectedUserIds.find(e => {
+      return e.userId === currentUserId;
+    });
 
     switch (visibility) {
       case VisibilityType.PRIVATE: {
@@ -1750,7 +1710,7 @@ export class FilterBuilderService {
       }
     }
 
-    return this.timelineByExperience(currentUserId, experience);
+    return this.timelineByExperience(currentUserId, experience, selected);
   }
 
   private orderSetting(query: Query): string[] {

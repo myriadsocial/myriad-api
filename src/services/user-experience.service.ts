@@ -167,7 +167,9 @@ export class UserExperienceService {
           };
 
           if (visibility === VisibilityType.SELECTED) {
-            where.userId = {nin: experience?.selectedUserIds ?? []};
+            const selectedUserIds = experience?.selectedUserIds ?? [];
+            const userIds = selectedUserIds.map(e => e.userId);
+            where.userId = {nin: userIds};
           }
 
           if (visibility === VisibilityType.FRIEND) {
@@ -359,9 +361,13 @@ export class UserExperienceService {
         }
 
         case VisibilityType.SELECTED: {
-          const selectedUser =
-            userExperience?.experience?.selectedUserIds ?? [];
-          if (selectedUser.includes(userId)) break;
+          const experience = userExperience?.experience;
+          const selectedUser = experience?.selectedUserIds ?? [];
+          const selected = selectedUser.find(e => {
+            if (typeof e === 'string') return e === userId;
+            return e.userId === userId;
+          });
+          if (selected) break;
           throw new HttpErrors.UnprocessableEntity(
             'OnlySelectedUserCanSubscribe',
           );
@@ -510,10 +516,17 @@ export class UserExperienceService {
         if (platforms.includes(e.platform)) return true;
         return false;
       }) ?? [];
+
     if (intersectionTags.length > 0) {
       throw new HttpErrors.UnprocessableEntity(
         'IntersectBetweenAllowedAndProhibitedTag',
       );
+    }
+
+    if (experience.visibility === VisibilityType.SELECTED) {
+      if (experience?.selectedUserIds.length === 0) {
+        throw new HttpErrors.UnprocessableEntity('AtLeastSelectOneUser');
+      }
     }
 
     Object.assign(experience, {

@@ -9,7 +9,11 @@ import {
 import {HttpErrors} from '@loopback/rest';
 import {ActivityLogType, ReferenceType, SectionType} from '../enums';
 import {Comment, CommentWithRelations} from '../models';
-import {CommentRepository, PostRepository} from '../repositories';
+import {
+  CommentRepository,
+  PostRepository,
+  TransactionRepository,
+} from '../repositories';
 import {ActivityLogService} from './activity-log.service';
 import {MetricService} from './metric.service';
 import {NotificationService} from './notification.service';
@@ -21,6 +25,8 @@ export class CommentService {
     private commentRepository: CommentRepository,
     @repository(PostRepository)
     private postRepository: PostRepository,
+    @repository(TransactionRepository)
+    private transactionRepository: TransactionRepository,
     @service(ActivityLogService)
     private activityLogService: ActivityLogService,
     @service(MetricService)
@@ -58,7 +64,18 @@ export class CommentService {
     if (!comment) throw new HttpErrors.NotFound('CommentNotFound');
     const exclusiveContents = comment?.asset?.exclusiveContents ?? [];
     if (exclusiveContents.length > 0) {
-      throw new HttpErrors.UnprocessableEntity('ExlusiveContentExists');
+      const transactions = await this.transactionRepository.find({
+        where: {
+          referenceId: {
+            inq: exclusiveContents,
+          },
+          type: ReferenceType.UNLOCKABLECONTENT,
+        },
+      });
+
+      if (transactions.length > 0) {
+        throw new HttpErrors.UnprocessableEntity('ExlusiveContentExists');
+      }
     }
 
     const data = {

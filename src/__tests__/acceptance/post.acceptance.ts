@@ -4,6 +4,7 @@ import {PlatformType, ReferenceType} from '../../enums';
 import {
   CreateImportedPostDto,
   DraftPost,
+  Experience,
   Post,
   PostWithRelations,
   User,
@@ -17,6 +18,7 @@ import {
   TransactionRepository,
   UserRepository,
   ActivityLogRepository,
+  ExperienceRepository,
 } from '../../repositories';
 import {
   givenCommentInstance,
@@ -39,6 +41,8 @@ import {
   givenActivityLogRepository,
   deleteAllRepository,
   givenAccesToken,
+  givenExperienceRepository,
+  givenExperienceInstance,
 } from '../helpers';
 import {AnyObject, EntityNotFoundError} from '@loopback/repository';
 import {omit} from 'lodash';
@@ -57,7 +61,9 @@ describe('PostApplication', function () {
   let transactionRepository: TransactionRepository;
   let commentRepository: CommentRepository;
   let activityLogRepository: ActivityLogRepository;
+  let experienceRepository: ExperienceRepository;
   let user: User;
+  let experience: Experience;
 
   before(async () => {
     ({app, client} = await setupApplication(true));
@@ -73,11 +79,15 @@ describe('PostApplication', function () {
     transactionRepository = await givenTransactionRepository(app);
     commentRepository = await givenCommentRepository(app);
     activityLogRepository = await givenActivityLogRepository(app);
+    experienceRepository = await givenExperienceRepository(app);
   });
 
   before(async () => {
     user = await givenUserInstance(userRepository, {fullAccess: true});
     token = await givenAccesToken(user);
+    experience = await givenExperienceInstance(experienceRepository, {
+      createdBy: user.id,
+    });
   });
 
   after(async () => {
@@ -92,13 +102,17 @@ describe('PostApplication', function () {
   it('creates a post', async () => {
     const myriadPost: Partial<DraftPost> = givenPost({
       createdBy: user.id.toString(),
+      selectedTimelineIds: [experience.id],
     });
     const response = await client
       .post('/user/posts')
       .set('Authorization', `Bearer ${token}`)
       .send(myriadPost)
       .expect(200);
+
     delete myriadPost.status;
+    delete myriadPost.selectedTimelineIds;
+
     expect(response.body).to.containDeep(myriadPost);
     const result = await postRepository.findById(response.body.id);
     expect(result).to.containDeep(myriadPost);
@@ -206,7 +220,9 @@ describe('PostApplication', function () {
 
     it('finds all posts', async () => {
       const posts = toJSON(
-        persistedPosts.map(e => omit(e, ['selectedUserIds', 'popularCount'])),
+        persistedPosts.map(e =>
+          omit(e, ['selectedUserIds', 'popularCount', 'addedAt']),
+        ),
       );
       const response = await client
         .get('/user/posts?userId=' + user.id)
@@ -272,7 +288,9 @@ describe('PostApplication', function () {
 
     expect(response.body.data).to.have.length(1);
     expect(response.body.data[0]).to.deepEqual({
-      ...toJSON(omit(post as Post, ['selectedUserIds', 'popularCount'])),
+      ...toJSON(
+        omit(post as Post, ['selectedUserIds', 'popularCount', 'addedAt']),
+      ),
       banned: false,
       totalImporter: 1,
       totalExperience: 0,
@@ -296,7 +314,11 @@ describe('PostApplication', function () {
     });
 
     it('creates a post from reddit', async () => {
-      const platformPost = givenPlatformPost({importer: user.id});
+      const platformPost = givenPlatformPost({
+        importer: user.id,
+        selectedTimelineIds: [experience.id],
+      });
+
       const response = await client
         .post('/user/posts/import')
         .set('Authorization', `Bearer ${token}`)
@@ -342,7 +364,10 @@ describe('PostApplication', function () {
     });
 
     it('rejects request to create a post from social media if importer alreay imported', async () => {
-      const platformPost: Partial<CreateImportedPostDto> = givenPlatformPost();
+      const platformPost: Partial<CreateImportedPostDto> = givenPlatformPost({
+        importer: user.id,
+        selectedTimelineIds: [experience.id],
+      });
 
       await client
         .post('/user/posts/import')
