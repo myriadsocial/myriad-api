@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.1](https://github.com/myriadsocial/myriad-api/compare/2.3.0...2.3.1) (2023-03-09)
+
+
+### Bug Fixes
+
+* remove create post limitaion ([#799](https://github.com/myriadsocial/myriad-api/issues/799)) ([5dab00c](https://github.com/myriadsocial/myriad-api/commit/5dab00cf2cb0e48e5447813924c997d679efe646))
+* remove create timeline limitation ([#801](https://github.com/myriadsocial/myriad-api/issues/801)) ([2ba4301](https://github.com/myriadsocial/myriad-api/commit/2ba430149c4197ab9f0f0bee6dfd5b09ca7d1c18))
+
 ## [2.3.0](https://github.com/myriadsocial/myriad-api/compare/2.2.8...2.3.0) (2023-02-24)
 
 
