@@ -27,6 +27,7 @@ import {
 import {
   ExperiencePostRepository,
   ExperienceRepository,
+  TimelineConfigRepository,
   UserRepository,
 } from '../repositories';
 import {FriendService} from './friend.service';
@@ -39,6 +40,8 @@ export class ExperienceService {
     private experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
     private experiencePostRepository: ExperiencePostRepository,
+    @repository(TimelineConfigRepository)
+    private timelineConfigRepository: TimelineConfigRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @service(FriendService)
@@ -175,18 +178,31 @@ export class ExperienceService {
       throw new HttpErrors.UnprocessableEntity('AtLeastOneTimeline');
     }
 
-    const post = await this.postService.findById(data.postId, {
-      include: [
-        {
-          relation: 'experiences',
-          scope: {
-            where: {
-              createdBy: this.currentUser[securityId],
+    const [config, post] = await Promise.all([
+      this.timelineConfigRepository
+        .findOne({
+          where: {userId: this.currentUser[securityId]},
+        })
+        .then(timelineConfig => {
+          if (timelineConfig) return timelineConfig;
+          return this.timelineConfigRepository.create({
+            userId: this.currentUser[securityId],
+          });
+        }),
+      this.postService.findById(data.postId, {
+        include: [
+          {
+            relation: 'experiences',
+            scope: {
+              where: {
+                createdBy: this.currentUser[securityId],
+              },
+              include: ['posts', 'users'],
             },
           },
-        },
-      ],
-    });
+        ],
+      }),
+    ]);
 
     const deletedTimelineIds = [] as string[];
 
@@ -194,25 +210,50 @@ export class ExperienceService {
       if (data.experienceIds.includes(e.id)) continue;
       deletedTimelineIds.push(e.id);
       delete post.addedAt[e.id];
+      delete config.data[e.id];
     }
 
     const date = Date.now();
     const newExperiencePosts = [] as ExperiencePost[];
 
-    data.experienceIds.forEach(e => {
-      if (post.addedAt[e] === undefined) {
-        post.addedAt[e] = date;
+    for (const experienceId of data.experienceIds) {
+      if (post.addedAt[experienceId] === undefined) {
+        post.addedAt[experienceId] = date;
         const experiencePost = new ExperiencePost();
-        experiencePost.experienceId = e;
+        experiencePost.experienceId = experienceId;
         experiencePost.postId = data.postId;
         newExperiencePosts.push(experiencePost);
       }
-    });
+
+      if (config.data[experienceId]) {
+        config.data[experienceId].postIds.push(post.id);
+      } else {
+        const experiences = post.experiences ?? [];
+        const experience = experiences.find(e => e.id === experienceId);
+        if (!experience) continue;
+        const posts = experience.posts ?? [];
+        const people = experience.people ?? [];
+        const users = experience.users ?? [];
+
+        config.data[experience.id] = {
+          timelineId: experience.id,
+          allowedTags: experience.allowedTags,
+          prohibitedTags: experience.prohibitedTags,
+          selectedUserIds: experience.selectedUserIds,
+          postIds: posts.map(e => e.id),
+          peopleIds: people.map(e => e.id),
+          userIds: users.map(e => e.id),
+          visibility: experience.visibility,
+          createdBy: experience.createdBy,
+        };
+      }
+    }
 
     if (newExperiencePosts.length <= 0) return [];
     const [experiencePosts] = await Promise.all([
       this.experiencePostRepository.createAll(newExperiencePosts),
       this.postService.updatePostDate(data.postId, post.addedAt),
+      this.timelineConfigRepository.update(config),
       this.experiencePostRepository.deleteAll({
         postId: data.postId,
         experienceId: {
@@ -228,19 +269,24 @@ export class ExperienceService {
     experienceId: string,
     postId: string,
   ): Promise<Count> {
-    const post = await this.postService.findById(postId, {
-      include: [
-        {
-          relation: 'experiences',
-          scope: {
-            where: {
-              id: experienceId,
-              createdBy: this.currentUser[securityId],
+    const userId = this.currentUser[securityId];
+    const [config, post] = await Promise.all([
+      this.timelineConfigRepository.findOne({
+        where: {userId},
+      }),
+      this.postService.findById(postId, {
+        include: [
+          {
+            relation: 'experiences',
+            scope: {
+              where: {
+                createdBy: userId,
+              },
             },
           },
-        },
-      ],
-    });
+        ],
+      }),
+    ]);
 
     if (!post?.experiences) return {count: 0};
     if (post.experiences.length <= 0) return {count: 0};
@@ -254,6 +300,14 @@ export class ExperienceService {
           this.postService.updateById(postId, {
             addedAt: post.addedAt,
           }) as Promise<Count>;
+        }
+
+        if (config) {
+          const postIds = config.data[experienceId].postIds.filter(
+            e => e !== postId,
+          );
+          config.data[experienceId].postIds = postIds;
+          this.timelineConfigRepository.update(config);
         }
         return count;
       });
