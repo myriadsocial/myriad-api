@@ -23,6 +23,7 @@ import {
   CreateImportedPostDto,
   DraftPost,
   Experience,
+  ExperiencePost,
   ExtendedPost,
   Friend,
   People,
@@ -39,6 +40,7 @@ import {
   FriendRepository,
   PeopleRepository,
   PostRepository,
+  TimelineConfigRepository,
   TransactionRepository,
   UserRepository,
   UserSocialMediaRepository,
@@ -72,6 +74,8 @@ export class PostService {
     private peopleRepository: PeopleRepository,
     @repository(PostRepository)
     private postRepository: PostRepository,
+    @repository(TimelineConfigRepository)
+    private timelineConfigRepository: TimelineConfigRepository,
     @repository(TransactionRepository)
     private transactionRepository: TransactionRepository,
     @repository(UserRepository)
@@ -95,7 +99,8 @@ export class PostService {
   // ------ Post ------------------------------------
 
   public async create(draftPost: DraftPost): Promise<Post | DraftPost> {
-    const timelineIds = draftPost.selectedTimelineIds;
+    const timelineAdded = [] as Experience[];
+
     return this.beforeCreate(draftPost)
       .then(async () => {
         if (draftPost.status === PostStatus.PUBLISHED) {
@@ -106,10 +111,8 @@ export class PostService {
           }
 
           const {selectedTimelineIds, createdBy} = draftPost;
-          const {visibility, selectedUserIds} = await this.getVisibility(
-            createdBy,
-            selectedTimelineIds,
-          );
+          const {visibility, selectedUserIds, timelines} =
+            await this.getVisibility(createdBy, selectedTimelineIds);
 
           const date = Date.now();
           const addedAt: AddedAt = {};
@@ -123,6 +126,8 @@ export class PostService {
           newPost.selectedUserIds = selectedUserIds;
           newPost.addedAt = addedAt;
 
+          timelineAdded.push(...timelines);
+
           return this.postRepository.create(newPost);
         }
 
@@ -131,7 +136,7 @@ export class PostService {
       })
       .then(result => {
         if (result.constructor.name === 'DraftPost') return result;
-        return this.afterCreate(result as Post, timelineIds);
+        return this.afterCreate(result as Post, timelineAdded);
       })
       .catch(err => {
         throw err;
@@ -397,28 +402,58 @@ export class PostService {
     }
   }
 
-  private async afterCreate(post: Post, timelineIds: string[]): Promise<Post> {
+  private async afterCreate(
+    post: Post,
+    timelines: Experience[],
+  ): Promise<Post> {
     const {id, createdBy: userId, tags, mentions} = post;
-
-    Promise.allSettled([
+    const jobs: Promise<AnyObject | void>[] = [
       this.deleteDraftPostById(userId),
       this.tagService.create(tags),
       this.notificationService.sendMention(id, mentions ?? []),
       this.metricService.userMetric(userId),
       this.metricService.countServerMetric(),
-      this.experiencePostRepository.createAll(
-        timelineIds.map(e => {
-          return {
-            experienceId: e,
-            postId: post.id,
-          };
-        }),
-      ),
       this.activityLogService.create(
         ActivityLogType.CREATEPOST,
         userId,
         ReferenceType.POST,
       ),
+    ];
+
+    const timelineConfig = await this.timelineConfigRepository
+      .findOne({where: {userId}})
+      .then(config => {
+        if (config) return config;
+        return this.timelineConfigRepository.create({userId});
+      });
+
+    const experiencePosts = [];
+
+    for (const timeline of timelines) {
+      const postIds = timeline?.posts?.map(e => e.id) ?? [];
+      const userIds = timeline?.users?.map(e => e.id) ?? [];
+      const experiencePost = new ExperiencePost();
+      experiencePost.experienceId = timeline.id;
+      experiencePost.postId = post.id;
+      experiencePosts.push(experiencePost);
+
+      timelineConfig.data[timeline.id] = {
+        timelineId: timeline.id,
+        allowedTags: timeline.allowedTags,
+        prohibitedTags: timeline.prohibitedTags,
+        selectedUserIds: timeline.selectedUserIds,
+        userIds: userIds,
+        postIds: [...new Set([...postIds, post.id])],
+        peopleIds: timeline.people.map(e => e.id),
+        visibility: timeline.visibility,
+        createdBy: timeline.createdBy,
+      };
+    }
+
+    Promise.allSettled([
+      ...jobs,
+      this.experiencePostRepository.createAll(experiencePosts),
+      this.timelineConfigRepository.update(timelineConfig),
     ]) as Promise<AnyObject>;
 
     return post;
@@ -716,6 +751,7 @@ export class PostService {
         id: {inq: timelineIds},
         createdBy: userId,
       },
+      include: ['posts', 'users'],
     });
 
     if (timelines.length <= 0) {
@@ -822,6 +858,7 @@ export class PostService {
     return {
       visibility,
       selectedUserIds,
+      timelines,
     };
   }
 

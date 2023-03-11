@@ -24,6 +24,7 @@ import {
   UserExperienceWithRelations,
 } from '../models';
 import {
+  ExperiencePostRepository,
   ExperienceRepository,
   ExperienceUserRepository,
   UserExperienceRepository,
@@ -41,6 +42,8 @@ export class UserExperienceService {
   constructor(
     @repository(ExperienceRepository)
     private experienceRepository: ExperienceRepository,
+    @repository(ExperiencePostRepository)
+    private experiencePostRepository: ExperiencePostRepository,
     @repository(ExperienceUserRepository)
     private experienceUserRepository: ExperienceUserRepository,
     @repository(TimelineConfigRepository)
@@ -210,10 +213,19 @@ export class UserExperienceService {
             config.data[id].selectedUserIds = experience.selectedUserIds;
           }
 
+          const experiencePosts = await this.experiencePostRepository.find({
+            where: {experienceId: experience.id},
+          });
+
+          const postIds = experiencePosts.map(e => e.postId);
+
+          config.data[id].postIds = postIds;
+
           jobs.push(
-            this.timelineConfigRepository.updateAll(config, {
-              [field]: {exists: true},
-            }),
+            this.timelineConfigRepository.updateAll(
+              {data: config.data},
+              {[field]: {exists: true}},
+            ),
           );
         }
 

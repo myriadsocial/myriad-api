@@ -30,8 +30,9 @@ export class TimelineConfig extends Entity {
   id: string;
 
   @property({
-    type: 'string',
+    type: 'object',
     required: false,
+    default: {},
   })
   data: ConfigData;
 
