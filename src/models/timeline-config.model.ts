@@ -1,4 +1,4 @@
-import {Entity, property} from '@loopback/repository';
+import {Entity, property, model} from '@loopback/repository';
 import {VisibilityType} from '../enums';
 import {SelectedUser} from './experience.model';
 
@@ -18,6 +18,14 @@ export interface ConfigData {
   [key: string]: Timeline;
 }
 
+@model({
+  settings: {
+    strictObjectIDCoercion: true,
+    mongodb: {
+      collection: 'transactions',
+    },
+  },
+})
 export class TimelineConfig extends Entity {
   @property({
     type: 'string',

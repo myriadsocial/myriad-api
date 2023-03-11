@@ -302,12 +302,12 @@ export class ExperienceService {
           }) as Promise<Count>;
         }
 
-        if (config) {
+        if (config?.data?.[experienceId]) {
           const postIds = config.data[experienceId].postIds.filter(
             e => e !== postId,
           );
           config.data[experienceId].postIds = postIds;
-          this.timelineConfigRepository.update(config);
+          this.timelineConfigRepository.update(config) as Promise<void>;
         }
         return count;
       });

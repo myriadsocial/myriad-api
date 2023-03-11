@@ -638,7 +638,7 @@ export class MyriadApiApplication extends BootMixin(
       if (!experience) continue;
       const posts = experience.posts ?? [];
       const users = experience.users ?? [];
-      const timelineConfig = await (configs.get(userExperience.userId) ||
+      const timelineConfig = await (configs.get(userExperience.userId) ??
         timelineConfigRepository
           .findOne({
             where: {userId: userExperience.userId},

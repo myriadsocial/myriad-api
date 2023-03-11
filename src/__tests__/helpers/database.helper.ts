@@ -34,6 +34,7 @@ import {
   IdentityRepository,
   UnlockableContentRepository,
   ContentPriceRepository,
+  TimelineConfigRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -223,6 +224,8 @@ export async function givenRepositories(testdb: any) {
   );
 
   const identityRepository: IdentityRepository = new IdentityRepository(testdb);
+  const timelineConfigRepository: TimelineConfigRepository =
+    new TimelineConfigRepository(testdb);
 
   const dataSource = {
     reddit: new RedditDataSource(),
@@ -311,6 +314,7 @@ export async function givenRepositories(testdb: any) {
     friendRepository,
     peopleRepository,
     postRepository,
+    timelineConfigRepository,
     transactionRepository,
     userRepository,
     userSocialMediaRepository,
@@ -360,6 +364,7 @@ export async function givenRepositories(testdb: any) {
   const experienceService = new ExperienceService(
     experienceRepository,
     experiencePostRepository,
+    timelineConfigRepository,
     userRepository,
     friendService,
     postService,
@@ -368,7 +373,9 @@ export async function givenRepositories(testdb: any) {
 
   const userExperienceService = new UserExperienceService(
     experienceRepository,
+    experiencePostRepository,
     experienceUserRepository,
+    timelineConfigRepository,
     userExperienceRepository,
     userRepository,
     activityLogService,

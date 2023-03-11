@@ -8,7 +8,7 @@ export class TimelineConfigRepository extends DefaultCrudRepository<
   typeof TimelineConfig.prototype.id,
   TimelineConfigRelations
 > {
-  constructor(@inject('datasource.mongo') dataSource: MongoDataSource) {
+  constructor(@inject('datasources.mongo') dataSource: MongoDataSource) {
     super(TimelineConfig, dataSource);
   }
 }
