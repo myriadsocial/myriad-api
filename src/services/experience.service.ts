@@ -189,19 +189,7 @@ export class ExperienceService {
             userId: this.currentUser[securityId],
           });
         }),
-      this.postService.findById(data.postId, {
-        include: [
-          {
-            relation: 'experiences',
-            scope: {
-              where: {
-                createdBy: this.currentUser[securityId],
-              },
-              include: ['posts', 'users'],
-            },
-          },
-        ],
-      }),
+      this.postService.findById(data.postId),
     ]);
 
     const deletedTimelineIds = [] as string[];
@@ -223,29 +211,6 @@ export class ExperienceService {
         experiencePost.experienceId = experienceId;
         experiencePost.postId = data.postId;
         newExperiencePosts.push(experiencePost);
-      }
-
-      if (config.data[experienceId]) {
-        config.data[experienceId].postIds.push(post.id);
-      } else {
-        const experiences = post.experiences ?? [];
-        const experience = experiences.find(e => e.id === experienceId);
-        if (!experience) continue;
-        const posts = experience.posts ?? [];
-        const people = experience.people ?? [];
-        const users = experience.users ?? [];
-
-        config.data[experience.id] = {
-          timelineId: experience.id,
-          allowedTags: experience.allowedTags,
-          prohibitedTags: experience.prohibitedTags,
-          selectedUserIds: experience.selectedUserIds,
-          postIds: posts.map(e => e.id),
-          peopleIds: people.map(e => e.id),
-          userIds: users.map(e => e.id),
-          visibility: experience.visibility,
-          createdBy: experience.createdBy,
-        };
       }
     }
 
@@ -269,27 +234,7 @@ export class ExperienceService {
     experienceId: string,
     postId: string,
   ): Promise<Count> {
-    const userId = this.currentUser[securityId];
-    const [config, post] = await Promise.all([
-      this.timelineConfigRepository.findOne({
-        where: {userId},
-      }),
-      this.postService.findById(postId, {
-        include: [
-          {
-            relation: 'experiences',
-            scope: {
-              where: {
-                createdBy: userId,
-              },
-            },
-          },
-        ],
-      }),
-    ]);
-
-    if (!post?.experiences) return {count: 0};
-    if (post.experiences.length <= 0) return {count: 0};
+    const post = await this.postService.findById(postId);
 
     delete post.addedAt[experienceId];
 
@@ -302,13 +247,6 @@ export class ExperienceService {
           }) as Promise<Count>;
         }
 
-        if (config?.data?.[experienceId]) {
-          const postIds = config.data[experienceId].postIds.filter(
-            e => e !== postId,
-          );
-          config.data[experienceId].postIds = postIds;
-          this.timelineConfigRepository.update(config) as Promise<void>;
-        }
         return count;
       });
   }

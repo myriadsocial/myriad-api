@@ -373,7 +373,6 @@ export async function givenRepositories(testdb: any) {
 
   const userExperienceService = new UserExperienceService(
     experienceRepository,
-    experiencePostRepository,
     experienceUserRepository,
     timelineConfigRepository,
     userExperienceRepository,

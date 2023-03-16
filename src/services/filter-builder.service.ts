@@ -1297,18 +1297,15 @@ export class FilterBuilderService {
     config: Timeline,
     selected?: SelectedUser,
   ): Promise<Where<Post>[]> {
-    const postIds = config.postIds;
     const experienceUserIds: string[] = [];
-    const allowedTags = config.allowedTags.map(e => e.toLowerCase());
-    const prohibitedTags = config.prohibitedTags.map(e => e.toLowerCase());
-    const peopleIds = config.peopleIds;
+    const {allowedTags, prohibitedTags, peopleIds, userIds} = config;
     const [blockedIds, approvedIds, expFriends] = await Promise.all([
       this.friendService.getFriendIds(currentUserId, FriendStatusType.BLOCKED),
       this.friendService.getFriendIds(currentUserId, FriendStatusType.APPROVED),
       this.friendService.find({
         where: {
           requestorId: currentUserId,
-          requesteeId: {inq: config.userIds},
+          requesteeId: {inq: userIds},
           status: FriendStatusType.APPROVED,
         },
       }),
@@ -1316,7 +1313,7 @@ export class FilterBuilderService {
     const expFriendIds = expFriends.map(friend => friend.requesteeId);
     const blocked = pull(blockedIds, ...expFriendIds, ...approvedIds);
     const accountSettings = await this.accountSettingRepository.find({
-      where: {userId: {inq: config.userIds}},
+      where: {userId: {inq: userIds}},
     });
 
     if (accountSettings.length > 0) {
@@ -1339,127 +1336,117 @@ export class FilterBuilderService {
       // Visibility PUBLIC
       {
         and: [
-          {id: {inq: postIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {nin: blocked}},
           {visibility: VisibilityType.PUBLIC},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
         and: [
-          {id: {inq: postIds}},
           {tags: {inq: allowedTags}} as Where,
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {nin: blocked}},
           {visibility: VisibilityType.PUBLIC},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
         and: [
-          {id: {inq: postIds}},
           {peopleId: {inq: peopleIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {nin: blocked}},
           {visibility: VisibilityType.PUBLIC},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
         and: [
-          {id: {inq: postIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {inq: experienceUserIds}},
           {visibility: VisibilityType.PUBLIC},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       // Visibility SELECTED USER
       {
         and: [
-          {id: {inq: postIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {nin: blocked}},
           {selectedUserIds: {inq: [this.currentUser[securityId]]}},
           {visibility: VisibilityType.SELECTED},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
         and: [
-          {id: {inq: postIds}},
           {tags: {inq: allowedTags}} as Where,
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {nin: blocked}},
           {selectedUserIds: {inq: [this.currentUser[securityId]]}},
           {visibility: VisibilityType.SELECTED},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
         and: [
-          {id: {inq: postIds}},
           {peopleId: {inq: peopleIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {nin: blocked}},
           {selectedUserIds: {inq: [this.currentUser[securityId]]}},
           {visibility: VisibilityType.SELECTED},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       // Visibility FRIEND
       {
         and: [
-          {id: {inq: postIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {inq: expFriendIds}},
           {visibility: VisibilityType.FRIEND},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
         and: [
-          {id: {inq: postIds}},
           {tags: {inq: allowedTags}} as Where,
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {inq: expFriendIds}},
           {visibility: VisibilityType.FRIEND},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
         and: [
-          {id: {inq: postIds}},
           {peopleId: {inq: peopleIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {inq: expFriendIds}},
           {visibility: VisibilityType.FRIEND},
-          {[field]: {gte: selected?.addedAt ?? 0}},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       // CurrentUser
       {
         and: [
-          {id: {inq: postIds}},
           {tags: {inq: allowedTags}} as Where,
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: currentUserId},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
         and: [
-          {id: {inq: postIds}},
           {peopleId: {inq: peopleIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: currentUserId},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
         and: [
-          {id: {inq: postIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: this.currentUser[securityId]},
+          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
     ];
@@ -1677,9 +1664,11 @@ export class FilterBuilderService {
     const creator = config.createdBy;
     const visibility = config.visibility;
     const selectedUserIds = config.selectedUserIds ?? [];
-    const selected = selectedUserIds.find(
-      ({userId}) => userId === currentUserId,
-    );
+
+    let selected: SelectedUser | undefined = {
+      userId: this.currentUser[securityId],
+      addedAt: config.createdAt,
+    };
 
     switch (visibility) {
       case VisibilityType.PRIVATE: {
@@ -1698,6 +1687,8 @@ export class FilterBuilderService {
       }
 
       case VisibilityType.SELECTED: {
+        selected = selectedUserIds.find(({userId}) => userId === currentUserId);
+
         if (selected) break;
         if (creator === currentUserId) break;
         return [{id: ''}];

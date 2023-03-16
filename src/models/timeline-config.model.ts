@@ -9,9 +9,9 @@ export interface Timeline {
   peopleIds: string[];
   userIds: string[];
   selectedUserIds: SelectedUser[];
-  postIds: string[];
   visibility: VisibilityType;
   createdBy: string;
+  createdAt: number;
 }
 
 export interface ConfigData {

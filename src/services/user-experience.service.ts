@@ -24,7 +24,6 @@ import {
   UserExperienceWithRelations,
 } from '../models';
 import {
-  ExperiencePostRepository,
   ExperienceRepository,
   ExperienceUserRepository,
   UserExperienceRepository,
@@ -42,8 +41,6 @@ export class UserExperienceService {
   constructor(
     @repository(ExperienceRepository)
     private experienceRepository: ExperienceRepository,
-    @repository(ExperiencePostRepository)
-    private experiencePostRepository: ExperiencePostRepository,
     @repository(ExperienceUserRepository)
     private experienceUserRepository: ExperienceUserRepository,
     @repository(TimelineConfigRepository)
@@ -213,14 +210,6 @@ export class UserExperienceService {
             config.data[id].selectedUserIds = experience.selectedUserIds;
           }
 
-          const experiencePosts = await this.experiencePostRepository.find({
-            where: {experienceId: experience.id},
-          });
-
-          const postIds = experiencePosts.map(e => e.postId);
-
-          config.data[id].postIds = postIds;
-
           jobs.push(
             this.timelineConfigRepository.updateAll(
               {data: config.data},
@@ -375,11 +364,11 @@ export class UserExperienceService {
       allowedTags: experience.allowedTags,
       prohibitedTags: experience.prohibitedTags,
       selectedUserIds: experience.selectedUserIds,
-      postIds: [],
       peopleIds,
       userIds,
       visibility: experience.visibility,
       createdBy: experience.createdBy,
+      createdAt: new Date(experience.createdAt).getTime(),
     };
 
     const promises: Promise<AnyObject | void>[] = [
@@ -488,7 +477,6 @@ export class UserExperienceService {
         return this.timelineConfigRepository.create({userId});
       });
 
-    const posts = experience.posts ?? [];
     const people = experience.people ?? [];
     const users = experience.users ?? [];
     const data = timelineConfig.data;
@@ -498,11 +486,11 @@ export class UserExperienceService {
       allowedTags: experience.allowedTags,
       prohibitedTags: experience.prohibitedTags,
       selectedUserIds: experience.selectedUserIds,
-      postIds: posts.map(e => e.id),
       peopleIds: people.map(e => e.id),
       userIds: users.map(e => e.id),
       visibility: experience.visibility,
       createdBy: experience.createdBy,
+      createdAt: new Date(userExperience.createdAt).getTime(),
     };
 
     const promises: Promise<AnyObject | void>[] = [

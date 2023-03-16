@@ -627,7 +627,7 @@ export class MyriadApiApplication extends BootMixin(
           {
             relation: 'experience',
             scope: {
-              include: [{relation: 'posts'}, {relation: 'users'}],
+              include: [{relation: 'users'}],
             },
           },
         ],
@@ -636,7 +636,6 @@ export class MyriadApiApplication extends BootMixin(
       if (!userExperience) continue;
       const experience = userExperience.experience;
       if (!experience) continue;
-      const posts = experience.posts ?? [];
       const users = experience.users ?? [];
       const timelineConfig = await (configs.get(userExperience.userId) ??
         timelineConfigRepository
@@ -656,10 +655,10 @@ export class MyriadApiApplication extends BootMixin(
         prohibitedTags: experience.prohibitedTags,
         peopleIds: experience.people.map(e => e.id),
         userIds: users.map(e => e.id),
-        postIds: posts.map(e => e.id),
         selectedUserIds: experience.selectedUserIds,
         visibility: experience.visibility,
         createdBy: experience.createdBy,
+        createdAt: 0,
       };
 
       configs.set(userExperience.userId, timelineConfig);
