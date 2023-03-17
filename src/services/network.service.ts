@@ -170,8 +170,9 @@ export class NetworkService {
       case 'near':
         return this.claimReferenceNear(claimReferenceData);
 
+      case 'debio':
       case 'myriad':
-        return this.claimReferenceMyriad(claimReferenceData);
+        return this.claimReferenceSubstrate(claimReferenceData);
 
       default:
         throw new HttpErrors.NotFound('WalletNotFound');
@@ -406,7 +407,7 @@ export class NetworkService {
     }
   }
 
-  private async claimReferenceMyriad(
+  private async claimReferenceSubstrate(
     claimReferenceData: ClaimReferenceData,
   ): Promise<Pick<Transaction, 'hash'>> {
     let api: ApiPromise | null = null;
