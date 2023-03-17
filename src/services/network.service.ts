@@ -33,6 +33,7 @@ const nearSeedPhrase = require('near-seed-phrase');
 const {polkadotApi, getKeyring} = new PolkadotJs();
 
 interface ClaimReferenceData {
+  networkId: string;
   rpcURL: string;
   serverId: string;
   accountId: string;
@@ -158,6 +159,7 @@ export class NetworkService {
     const accountId = wallet.id;
     const referenceIds = socialMedia.map(e => e.peopleId);
     const claimReferenceData = {
+      networkId: networkId,
       rpcURL: wallet.network.rpcURL,
       serverId,
       accountId,
@@ -413,7 +415,7 @@ export class NetworkService {
     let api: ApiPromise | null = null;
 
     try {
-      const {serverId, accountId, rpcURL, txFee, referenceIds} =
+      const {serverId, accountId, rpcURL, txFee, referenceIds, networkId} =
         claimReferenceData;
 
       if (isNaN(Number(txFee))) {
@@ -444,7 +446,7 @@ export class NetworkService {
       const serverAdmin = getKeyring().addFromMnemonic(mnemonic);
       const currencies = await this.currencyRepository.find({
         where: {
-          networkId: 'myriad',
+          networkId,
           native: false,
         },
       });
