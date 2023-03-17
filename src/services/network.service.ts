@@ -146,7 +146,10 @@ export class NetworkService {
     if (!server) throw new HttpErrors.NotFound('ServerNotFound');
 
     const networkId = wallet.networkId;
-    const serverId = server?.accountId?.[networkId];
+    const serverId =
+      networkId === 'myriad' || networkId === 'debio'
+        ? server?.accountId?.myriad
+        : server?.accountId?.[networkId];
 
     if (!serverId) {
       throw new HttpErrors.UnprocessableEntity('ServerNotExists');
