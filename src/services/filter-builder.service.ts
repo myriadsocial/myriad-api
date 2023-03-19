@@ -824,6 +824,7 @@ export class FilterBuilderService {
 
     if (q.startsWith('#')) {
       const hashtag = q.replace('#', '').trim().toLowerCase();
+      const hashtagRegexp = new RegExp(`#${hashtag}\\b`, 'i');
 
       filterPost.push(
         {
@@ -859,12 +860,49 @@ export class FilterBuilderService {
         {
           and: [
             {tags: {inq: [hashtag]}} as Where,
+            {createdBy: this.currentUser[securityId]},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: hashtagRegexp}},
+            {visibility: VisibilityType.PUBLIC},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: hashtagRegexp}},
+            {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: hashtagRegexp}},
+            {visibility: VisibilityType.SELECTED},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: hashtagRegexp}},
+            {visibility: VisibilityType.TIMELINE},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: hashtagRegexp}},
             {createdBy: this.currentUser[securityId]},
           ],
         },
       );
     } else if (q.startsWith('@')) {
       const mention = q.replace('@', '').trim();
+      const mentionRegexp = new RegExp(`@${mention}\\b`, 'i');
 
       filterPost.push(
         {
@@ -920,6 +958,42 @@ export class FilterBuilderService {
         {
           and: [
             {'mentions.username': {inq: [mention]}} as Where,
+            {createdBy: this.currentUser[securityId]},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: mentionRegexp}},
+            {visibility: VisibilityType.PUBLIC},
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: mentionRegexp}},
+            {visibility: VisibilityType.FRIEND},
+            {createdBy: {inq: approvedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: mentionRegexp}},
+            {visibility: VisibilityType.SELECTED},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: mentionRegexp}},
+            {visibility: VisibilityType.TIMELINE},
+            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
+            {createdBy: {nin: blockedFriendIds}},
+          ],
+        },
+        {
+          and: [
+            {rawText: {regexp: mentionRegexp}},
             {createdBy: this.currentUser[securityId]},
           ],
         },
