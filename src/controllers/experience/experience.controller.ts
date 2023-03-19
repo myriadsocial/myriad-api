@@ -33,6 +33,26 @@ export class ExperienceController {
     return this.experienceService.find(filter);
   }
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
+  @get('/experiences/advances')
+  @response(200, {
+    description: 'Array of experience model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Experience, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async advanced(
+    @param.filter(Experience, {exclude: ['limit', 'skip', 'offset', 'where']})
+    filter?: Filter<Experience>,
+  ): Promise<Experience[]> {
+    return this.experienceService.findAdvanced(filter);
+  }
+
   @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/experiences/{id}')
   @response(200, {

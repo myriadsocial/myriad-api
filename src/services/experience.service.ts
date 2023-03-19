@@ -57,6 +57,29 @@ export class ExperienceService {
     return this.experienceRepository.find(filter);
   }
 
+  public async findAdvanced(
+    filter?: Filter<Experience>,
+  ): Promise<Experience[]> {
+    const experiences: Experience[] = (await this.experienceRepository.find(
+      filter,
+    )) as Experience[];
+
+    return experiences.filter(async exp => {
+      if (exp.visibility === VisibilityType.PRIVATE) {
+        return exp.createdBy === this.currentUser[securityId];
+      } else if (exp.visibility === VisibilityType.SELECTED) {
+        return exp.selectedUserIds.includes(this.currentUser[securityId]);
+      } else if (exp.visibility === VisibilityType.FRIEND) {
+        return this.friendService.asFriend(
+          exp.createdBy,
+          this.currentUser[securityId],
+        );
+      } else {
+        return true;
+      }
+    });
+  }
+
   public async findById(
     id: string,
     filter?: Filter<Experience>,
