@@ -298,16 +298,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
         return result;
       }
 
-      case ControllerType.USERPOST: {
-        let {experienceId} = query;
-
-        if (Array.isArray(experienceId)) experienceId = experienceId[0];
-        if (experienceId) {
-          await this.userService.setExperienceTimeline(experienceId.toString());
-        }
-        return result;
-      }
-
       // include total mutual friend in friend collection
       case ControllerType.USERFRIEND: {
         let {mutual} = query;

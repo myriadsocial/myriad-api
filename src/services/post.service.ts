@@ -23,6 +23,7 @@ import {
   CreateImportedPostDto,
   DraftPost,
   Experience,
+  ExperiencePost,
   ExtendedPost,
   Friend,
   People,
@@ -39,6 +40,7 @@ import {
   FriendRepository,
   PeopleRepository,
   PostRepository,
+  TimelineConfigRepository,
   TransactionRepository,
   UserRepository,
   UserSocialMediaRepository,
@@ -72,6 +74,8 @@ export class PostService {
     private peopleRepository: PeopleRepository,
     @repository(PostRepository)
     private postRepository: PostRepository,
+    @repository(TimelineConfigRepository)
+    private timelineConfigRepository: TimelineConfigRepository,
     @repository(TransactionRepository)
     private transactionRepository: TransactionRepository,
     @repository(UserRepository)
@@ -96,6 +100,7 @@ export class PostService {
 
   public async create(draftPost: DraftPost): Promise<Post | DraftPost> {
     const timelineIds = draftPost.selectedTimelineIds;
+
     return this.beforeCreate(draftPost)
       .then(async () => {
         if (draftPost.status === PostStatus.PUBLISHED) {
@@ -406,18 +411,18 @@ export class PostService {
       this.notificationService.sendMention(id, mentions ?? []),
       this.metricService.userMetric(userId),
       this.metricService.countServerMetric(),
-      this.experiencePostRepository.createAll(
-        timelineIds.map(e => {
-          return {
-            experienceId: e,
-            postId: post.id,
-          };
-        }),
-      ),
       this.activityLogService.create(
         ActivityLogType.CREATEPOST,
         userId,
         ReferenceType.POST,
+      ),
+      this.experiencePostRepository.createAll(
+        timelineIds.map(e => {
+          const experiencePost = new ExperiencePost();
+          experiencePost.experienceId = e;
+          experiencePost.postId = post.id;
+          return experiencePost;
+        }),
       ),
     ]) as Promise<AnyObject>;
 

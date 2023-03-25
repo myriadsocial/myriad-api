@@ -27,6 +27,7 @@ import {
 import {
   ExperiencePostRepository,
   ExperienceRepository,
+  TimelineConfigRepository,
   UserRepository,
 } from '../repositories';
 import {FriendService} from './friend.service';
@@ -39,6 +40,8 @@ export class ExperienceService {
     private experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
     private experiencePostRepository: ExperiencePostRepository,
+    @repository(TimelineConfigRepository)
+    private timelineConfigRepository: TimelineConfigRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @service(FriendService)
@@ -175,18 +178,19 @@ export class ExperienceService {
       throw new HttpErrors.UnprocessableEntity('AtLeastOneTimeline');
     }
 
-    const post = await this.postService.findById(data.postId, {
-      include: [
-        {
-          relation: 'experiences',
-          scope: {
-            where: {
-              createdBy: this.currentUser[securityId],
-            },
-          },
-        },
-      ],
-    });
+    const [config, post] = await Promise.all([
+      this.timelineConfigRepository
+        .findOne({
+          where: {userId: this.currentUser[securityId]},
+        })
+        .then(timelineConfig => {
+          if (timelineConfig) return timelineConfig;
+          return this.timelineConfigRepository.create({
+            userId: this.currentUser[securityId],
+          });
+        }),
+      this.postService.findById(data.postId),
+    ]);
 
     const deletedTimelineIds = [] as string[];
 
@@ -194,25 +198,27 @@ export class ExperienceService {
       if (data.experienceIds.includes(e.id)) continue;
       deletedTimelineIds.push(e.id);
       delete post.addedAt[e.id];
+      delete config.data[e.id];
     }
 
     const date = Date.now();
     const newExperiencePosts = [] as ExperiencePost[];
 
-    data.experienceIds.forEach(e => {
-      if (post.addedAt[e] === undefined) {
-        post.addedAt[e] = date;
+    for (const experienceId of data.experienceIds) {
+      if (post.addedAt[experienceId] === undefined) {
+        post.addedAt[experienceId] = date;
         const experiencePost = new ExperiencePost();
-        experiencePost.experienceId = e;
+        experiencePost.experienceId = experienceId;
         experiencePost.postId = data.postId;
         newExperiencePosts.push(experiencePost);
       }
-    });
+    }
 
     if (newExperiencePosts.length <= 0) return [];
     const [experiencePosts] = await Promise.all([
       this.experiencePostRepository.createAll(newExperiencePosts),
       this.postService.updatePostDate(data.postId, post.addedAt),
+      this.timelineConfigRepository.update(config),
       this.experiencePostRepository.deleteAll({
         postId: data.postId,
         experienceId: {
@@ -228,22 +234,7 @@ export class ExperienceService {
     experienceId: string,
     postId: string,
   ): Promise<Count> {
-    const post = await this.postService.findById(postId, {
-      include: [
-        {
-          relation: 'experiences',
-          scope: {
-            where: {
-              id: experienceId,
-              createdBy: this.currentUser[securityId],
-            },
-          },
-        },
-      ],
-    });
-
-    if (!post?.experiences) return {count: 0};
-    if (post.experiences.length <= 0) return {count: 0};
+    const post = await this.postService.findById(postId);
 
     delete post.addedAt[experienceId];
 
@@ -255,6 +246,7 @@ export class ExperienceService {
             addedAt: post.addedAt,
           }) as Promise<Count>;
         }
+
         return count;
       });
   }
