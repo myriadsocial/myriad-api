@@ -881,14 +881,6 @@ export class FilterBuilderService {
         {
           and: [
             {rawText: {regexp: hashtagRegexp}},
-            {visibility: VisibilityType.TIMELINE},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
-            {createdBy: {nin: blockedFriendIds}},
-          ],
-        },
-        {
-          and: [
-            {rawText: {regexp: hashtagRegexp}},
             {createdBy: this.currentUser[securityId]},
           ],
         },
@@ -964,14 +956,6 @@ export class FilterBuilderService {
           and: [
             {rawText: {regexp: mentionRegexp}},
             {visibility: VisibilityType.SELECTED},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
-            {createdBy: {nin: blockedFriendIds}},
-          ],
-        },
-        {
-          and: [
-            {rawText: {regexp: mentionRegexp}},
-            {visibility: VisibilityType.TIMELINE},
             {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
             {createdBy: {nin: blockedFriendIds}},
           ],

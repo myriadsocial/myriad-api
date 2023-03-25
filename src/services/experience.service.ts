@@ -68,7 +68,9 @@ export class ExperienceService {
       if (exp.visibility === VisibilityType.PRIVATE) {
         return exp.createdBy === this.currentUser[securityId];
       } else if (exp.visibility === VisibilityType.SELECTED) {
-        return exp.selectedUserIds.includes(this.currentUser[securityId]);
+        return exp.selectedUserIds.find(
+          e => e.userId === this.currentUser[securityId],
+        );
       } else if (exp.visibility === VisibilityType.FRIEND) {
         return this.friendService.asFriend(
           exp.createdBy,
