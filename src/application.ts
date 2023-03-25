@@ -30,6 +30,7 @@ import {
   CommentRepository,
   CurrencyRepository,
   DraftPostRepository,
+  ExperiencePostRepository,
   ExperienceRepository,
   ExperienceUserRepository,
   FriendRepository,
@@ -86,6 +87,7 @@ import {getFilePathFromSeedData, upload} from './utils/upload';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType} from './enums';
 import {UpdatePeopleProfileJob} from './jobs';
+import {SelectedUser} from './models';
 
 const jwt = require('jsonwebtoken');
 
@@ -238,9 +240,10 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   async migrateSchema(options?: SchemaMigrationOptions): Promise<void> {
+    const env = this.options?.environment;
     if (!this.options?.skipMigrateSchema) await super.migrateSchema(options);
-    if (options?.existingSchema === 'drop')
-      return this.databaseSeeding(this.options?.environment);
+    if (options?.existingSchema === 'drop') return this.databaseSeeding(env);
+    await Promise.all([this.doMigrateExperience()]);
   }
 
   async databaseSeeding(environment: string): Promise<void> {
@@ -500,6 +503,113 @@ export class MyriadApiApplication extends BootMixin(
     bar.stop();
   }
 
+  async doMigrateExperience(): Promise<void> {
+    if (!this.doCollectionExists('experience')) return;
+    const {experienceRepository, experiencePostRepository, postRepository} =
+      await this.repositories();
+    const {count: totalExperience} = await experienceRepository.count({
+      selectedUserIds: {
+        exists: true,
+      },
+    });
+
+    const bar1 = this.initializeProgressBar('Start Migrate Experience');
+    const promises = [];
+
+    bar1.start(totalExperience - 1);
+    for (let i = 0; i < totalExperience; i++) {
+      const [experience] = await experienceRepository.find({
+        limit: 1,
+        skip: i,
+        where: {
+          selectedUserIds: {
+            exists: true,
+          },
+        },
+      });
+
+      if (experience.selectedUserIds.length === 0) continue;
+      const selectedUserIds: SelectedUser[] = [];
+      for (const selected of experience.selectedUserIds) {
+        const stringify = JSON.stringify(selected);
+        try {
+          const obj = JSON.parse(stringify);
+
+          let data: SelectedUser;
+
+          if (typeof obj === 'string') {
+            data = {
+              userId: obj,
+              addedAt: 0,
+            };
+          } else {
+            data = obj;
+          }
+
+          selectedUserIds.push(data);
+        } catch {
+          // ignore
+        }
+      }
+
+      promises.push(
+        experienceRepository.updateById(experience.id, {
+          selectedUserIds,
+        }),
+      );
+
+      bar1.update(i);
+    }
+
+    bar1.stop();
+
+    const {count: totalPostExp} = await experiencePostRepository.count();
+    const bar2 = this.initializeProgressBar('Start Migrate Experience Post');
+
+    for (let i = 0; i < totalPostExp; i++) {
+      const [experiencePost] = await experiencePostRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      if (!experiencePost) continue;
+      const {id, experienceId, postId} = experiencePost;
+      const post = await postRepository.findOne({
+        where: {
+          id: postId,
+        },
+      });
+
+      if (!post) {
+        promises.push(experiencePostRepository.deleteById(id));
+      } else {
+        const experience = await experienceRepository.findOne({
+          where: {
+            id: experienceId,
+          },
+        });
+
+        if (!experience) {
+          promises.push(experiencePostRepository.deleteById(id));
+        } else {
+          post.addedAt = post?.addedAt ?? {};
+          post.addedAt[experienceId] = 0;
+          promises.push(
+            postRepository.updateById(postId, {
+              addedAt: post.addedAt,
+            }),
+          );
+        }
+      }
+
+      bar2.update(i);
+    }
+
+    bar2.stop();
+
+    await Promise.allSettled(promises);
+  }
+
   async repositories(): Promise<Repositories> {
     const accountSettingRepository = await this.getRepository(
       AccountSettingRepository,
@@ -514,6 +624,9 @@ export class MyriadApiApplication extends BootMixin(
       ExperienceUserRepository,
     );
     const experienceRepository = await this.getRepository(ExperienceRepository);
+    const experiencePostRepository = await this.getRepository(
+      ExperiencePostRepository,
+    );
     const friendRepository = await this.getRepository(FriendRepository);
     const languageSettingRepository = await this.getRepository(
       LanguageSettingRepository,
@@ -553,6 +666,7 @@ export class MyriadApiApplication extends BootMixin(
       commentRepository,
       currencyRepository,
       draftPostRepository,
+      experiencePostRepository,
       experienceUserRepository,
       experienceRepository,
       friendRepository,
@@ -603,6 +717,7 @@ interface Repositories {
   commentRepository: CommentRepository;
   currencyRepository: CurrencyRepository;
   draftPostRepository: DraftPostRepository;
+  experiencePostRepository: ExperiencePostRepository;
   experienceUserRepository: ExperienceUserRepository;
   experienceRepository: ExperienceRepository;
   friendRepository: FriendRepository;

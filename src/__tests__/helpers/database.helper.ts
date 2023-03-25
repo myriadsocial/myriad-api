@@ -311,6 +311,7 @@ export async function givenRepositories(testdb: any) {
     friendRepository,
     peopleRepository,
     postRepository,
+    transactionRepository,
     userRepository,
     userSocialMediaRepository,
     activityLogService,
@@ -411,6 +412,7 @@ export async function givenRepositories(testdb: any) {
   const commentService = new CommentService(
     commentRepository,
     postRepository,
+    transactionRepository,
     activityLogService,
     metricService,
     notificationService,
