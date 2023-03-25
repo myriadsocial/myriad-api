@@ -47,7 +47,7 @@ export class ExperienceController {
     },
   })
   async advanced(
-    @param.filter(Experience, {exclude: ['limit', 'skip', 'offset', 'where']})
+    @param.filter(Experience, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<Experience>,
   ): Promise<Experience[]> {
     return this.experienceService.findAdvanced(filter);
