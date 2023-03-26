@@ -7,6 +7,7 @@ import {CommentRepository, VoteRepository} from '../repositories';
 import {ActivityLogService} from './activity-log.service';
 import {MetricService} from './metric.service';
 import {PostService} from './post.service';
+import { NotificationService } from './notification.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class VoteService {
@@ -21,6 +22,8 @@ export class VoteService {
     private metricService: MetricService,
     @service(PostService)
     private postService: PostService,
+    @service(NotificationService)
+    private NotificationService: NotificationService,
   ) {}
 
   public async create(vote: Vote): Promise<Vote> {
@@ -144,11 +147,33 @@ export class VoteService {
 
     await Promise.allSettled([
       this.metricService.countPopularPost(referenceId),
-      this.metricService.publicMetric(type, referenceId),
+      this.metricService.publicMetric(type, referenceId).then((metric) => {
+        if (this.upvoteCounter(metric.upvotes)) {
+          this.NotificationService.sendVoteCount(type , referenceId);
+        }
+      }),
       this.metricService.countServerMetric(),
       this.voteRepository
         .updateById(id.toString(), {toUserId})
         .then(() => this.metricService.userMetric(toUserId)),
     ]);
   }
+  private upvoteCounter(upvote : number) : boolean {
+    let temp = upvote ;
+    while (temp > 10) {
+      temp = temp / 10 ;
+    }
+    if (temp % 10 == 5) {
+      return true ;
+    }
+    else if (temp % 10 == 0) {
+      return true ;
+    }
+    else {
+      return false ;
+    }
+  
+  }
 }
+
+
