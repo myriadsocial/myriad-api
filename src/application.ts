@@ -76,7 +76,6 @@ import {
   StorageService,
   TagService,
   TransactionService,
-  UploadType,
   UserExperienceService,
   UserService,
   UserSocialMediaService,
@@ -84,7 +83,7 @@ import {
   WalletAddressService,
 } from './services';
 import {PolkadotJs} from './utils/polkadot-js';
-import {getFilePathFromSeedData, upload} from './utils/upload';
+import {getFilePathFromSeedData, upload, UploadType} from './utils/upload';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType} from './enums';
 import {UpdatePeopleProfileJob} from './jobs';

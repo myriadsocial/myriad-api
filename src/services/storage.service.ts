@@ -5,12 +5,7 @@ import {HttpErrors, Request, Response} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {FILE_UPLOAD_SERVICE} from '../keys';
 import {FileUploadHandler} from '../types';
-import {upload} from '../utils/upload';
-
-export enum UploadType {
-  IMAGE = 'image',
-  VIDEO = 'video',
-}
+import {upload, UploadType} from '../utils/upload';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class StorageService {

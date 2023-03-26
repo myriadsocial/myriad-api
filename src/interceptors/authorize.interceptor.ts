@@ -163,6 +163,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.USERNOTIFICATION:
       case ControllerType.USERSETTING:
       case ControllerType.STORAGE:
+      case ControllerType.VIDEOUPLOAD:
       case ControllerType.USERCURRENCY:
       case ControllerType.USEREXPERIENCE:
       case ControllerType.USERNETWORK:
