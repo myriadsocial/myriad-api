@@ -1,3 +1,4 @@
+import {authenticate} from '@loopback/authentication';
 import {inject, service} from '@loopback/core';
 import {
   post,
@@ -8,6 +9,7 @@ import {
 } from '@loopback/rest';
 import {VideoUploadService} from '../services/video-upload.service';
 
+@authenticate('jwt')
 export class VideoUploadController {
   constructor(
     @service(VideoUploadService)
