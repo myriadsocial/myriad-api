@@ -163,16 +163,26 @@ export class VoteService {
     ]);
   }
   private upvoteCounter(upvote: number): boolean {
-    let temp = upvote;
-    while (temp > 10) {
-      temp = temp / 10;
-    }
-    if (temp % 10 === 5) {
-      return true;
-    } else if (temp % 10 === 0) {
-      return true;
+    if (upvote >= 1000) {
+      if (upvote % 1000 === 0) {
+        return true;
+      } else {
+        return false;
+      }
     } else {
-      return false;
+      if (upvote === 5) {
+        return true;
+      } else if (upvote === 10) {
+        return true;
+      } else if (upvote === 50) {
+        return true;
+      } else if (upvote === 100) {
+        return true;
+      } else if (upvote === 500) {
+        return true;
+      } else {
+        return false;
+      }
     }
   }
 }
