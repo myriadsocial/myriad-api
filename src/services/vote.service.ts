@@ -7,7 +7,7 @@ import {CommentRepository, VoteRepository} from '../repositories';
 import {ActivityLogService} from './activity-log.service';
 import {MetricService} from './metric.service';
 import {PostService} from './post.service';
-import { NotificationService } from './notification.service';
+import {NotificationService} from './notification.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class VoteService {
@@ -147,9 +147,13 @@ export class VoteService {
 
     await Promise.allSettled([
       this.metricService.countPopularPost(referenceId),
-      this.metricService.publicMetric(type, referenceId).then((metric) => {
+      this.metricService.publicMetric(type, referenceId).then(metric => {
         if (this.upvoteCounter(metric.upvotes)) {
-          this.notificationService.sendVoteCount(type , referenceId).catch((err : Error) => {throw err ;});
+          this.notificationService
+            .sendVoteCount(type, referenceId)
+            .catch((err: Error) => {
+              throw err;
+            });
         }
       }),
       this.metricService.countServerMetric(),
@@ -158,22 +162,17 @@ export class VoteService {
         .then(() => this.metricService.userMetric(toUserId)),
     ]);
   }
-  private upvoteCounter(upvote : number) : boolean {
-    let temp = upvote ;
+  private upvoteCounter(upvote: number): boolean {
+    let temp = upvote;
     while (temp > 10) {
-      temp = temp / 10 ;
+      temp = temp / 10;
     }
     if (temp % 10 === 5) {
-      return true ;
+      return true;
+    } else if (temp % 10 === 0) {
+      return true;
+    } else {
+      return false;
     }
-    else if (temp % 10 === 0) {
-      return true ;
-    }
-    else {
-      return false ;
-    }
-  
   }
 }
-
-

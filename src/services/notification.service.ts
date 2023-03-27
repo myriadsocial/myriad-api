@@ -148,36 +148,53 @@ export class NotificationService {
 
   async sendVoteCount(
     referencetype: ReferenceType,
-    referenceID : string,
-    ) : Promise<void> { 
-      const destination : Promise<string> = new Promise(resolve => {
-    if (referencetype === ReferenceType.POST) {
-     this.postRepository.findById(referenceID, {
-        include: [{relation: 'User'}], fields: ['createdBy'],
-      }).then((result) => {return result.createdBy}).catch((err : Error) => {throw err ;}) ;
-
-    }
-    else {
-      this.commentRepository.findById(referenceID, {
-        include: [{relation: 'User'}], fields: ['userId'],
-      }).then((result) => {return result.userId}).catch((err : Error) => {throw err ;})  ;
-
-    }});
-    const MyriadUserID = await this.getMyriadUserId() ;
+    referenceID: string,
+  ): Promise<void> {
+    const destination: Promise<string> = new Promise(resolve => {
+      if (referencetype === ReferenceType.POST) {
+        this.postRepository
+          .findById(referenceID, {
+            include: [{relation: 'User'}],
+            fields: ['createdBy'],
+          })
+          .then(result => {
+            return result.createdBy;
+          })
+          .catch((err: Error) => {
+            throw err;
+          });
+      } else {
+        this.commentRepository
+          .findById(referenceID, {
+            include: [{relation: 'User'}],
+            fields: ['userId'],
+          })
+          .then(result => {
+            return result.userId;
+          })
+          .catch((err: Error) => {
+            throw err;
+          });
+      }
+    });
+    const MyriadUserID = await this.getMyriadUserId();
     const notification = new Notification({
-      type: NotificationType.VOTE_COUNT ,
+      type: NotificationType.VOTE_COUNT,
       referenceId: referenceID,
-      message: "Insert message here" ,
-      from: MyriadUserID ,
+      message: 'Insert message here',
+      from: MyriadUserID,
     });
-    const title = "New Upvotes" ;
-    const body = "Your post is getting upvotes" ;
-    await destination.then((result) => {
-      this.sendNotificationToUser(notification, result , title , body).catch((err : Error) => {throw err ;});
+    const title = 'New Upvotes';
+    const body = 'Your post is getting upvotes';
+    await destination.then(result => {
+      this.sendNotificationToUser(notification, result, title, body).catch(
+        (err: Error) => {
+          throw err;
+        },
+      );
     });
+  }
 
-  } 
- 
   async sendPostComment(comment: Comment): Promise<void> {
     await this.sendMention(
       comment.id ?? '',
