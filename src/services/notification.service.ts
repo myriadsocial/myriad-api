@@ -152,13 +152,13 @@ export class NotificationService {
     ) : Promise<void> { 
       const destination : Promise<string> = new Promise(resolve => {
     if (referencetype === ReferenceType.POST) {
-      this.postRepository.findById(referenceID, {
+     await this.postRepository.findById(referenceID, {
         include: [{relation: 'User'}], fields: ['createdBy'],
       }).then((result) => {return result.createdBy}) ;
 
     }
     else {
-      this.commentRepository.findById(referenceID, {
+      await this.commentRepository.findById(referenceID, {
         include: [{relation: 'User'}], fields: ['userId'],
       }).then((result) => {return result.userId})  ;
 
@@ -170,10 +170,10 @@ export class NotificationService {
       message: "Insert message here" ,
       from: MyriadUserID ,
     });
-    const title : string = "To be filled" ;
-    const body : string = "To be filled" ;
-    destination.then((result) => {
-      this.sendNotificationToUser(notification, result , title , body);
+    const title = "To be filled" ;
+    const body = "To be filled" ;
+    await destination.then((result) => {
+      await this.sendNotificationToUser(notification, result , title , body);
     });
 
   } 

@@ -23,7 +23,7 @@ export class VoteService {
     @service(PostService)
     private postService: PostService,
     @service(NotificationService)
-    private NotificationService: NotificationService,
+    private notificationService: NotificationService,
   ) {}
 
   public async create(vote: Vote): Promise<Vote> {
@@ -149,7 +149,7 @@ export class VoteService {
       this.metricService.countPopularPost(referenceId),
       this.metricService.publicMetric(type, referenceId).then((metric) => {
         if (this.upvoteCounter(metric.upvotes)) {
-          this.NotificationService.sendVoteCount(type , referenceId);
+          this.notificationService.sendVoteCount(type , referenceId);
         }
       }),
       this.metricService.countServerMetric(),
@@ -163,10 +163,10 @@ export class VoteService {
     while (temp > 10) {
       temp = temp / 10 ;
     }
-    if (temp % 10 == 5) {
+    if (temp % 10 === 5) {
       return true ;
     }
-    else if (temp % 10 == 0) {
+    else if (temp % 10 === 0) {
       return true ;
     }
     else {
