@@ -149,7 +149,7 @@ export class VoteService {
       this.metricService.countPopularPost(referenceId),
       this.metricService.publicMetric(type, referenceId).then((metric) => {
         if (this.upvoteCounter(metric.upvotes)) {
-          this.notificationService.sendVoteCount(type , referenceId);
+          this.notificationService.sendVoteCount(type , referenceId).catch((err : Error) => {throw err ;});
         }
       }),
       this.metricService.countServerMetric(),
