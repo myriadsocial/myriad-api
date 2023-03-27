@@ -152,15 +152,15 @@ export class NotificationService {
     ) : Promise<void> { 
       const destination : Promise<string> = new Promise(resolve => {
     if (referencetype === ReferenceType.POST) {
-     await this.postRepository.findById(referenceID, {
+     this.postRepository.findById(referenceID, {
         include: [{relation: 'User'}], fields: ['createdBy'],
-      }).then((result) => {return result.createdBy}) ;
+      }).then((result) => {return result.createdBy}).catch((err : Error) => {throw err ;}) ;
 
     }
     else {
-      await this.commentRepository.findById(referenceID, {
+      this.commentRepository.findById(referenceID, {
         include: [{relation: 'User'}], fields: ['userId'],
-      }).then((result) => {return result.userId})  ;
+      }).then((result) => {return result.userId}).catch((err : Error) => {throw err ;})  ;
 
     }});
     const MyriadUserID = await this.getMyriadUserId() ;
@@ -170,10 +170,10 @@ export class NotificationService {
       message: "Insert message here" ,
       from: MyriadUserID ,
     });
-    const title = "To be filled" ;
-    const body = "To be filled" ;
+    const title = "New Upvotes" ;
+    const body = "Your post is getting upvotes" ;
     await destination.then((result) => {
-      await this.sendNotificationToUser(notification, result , title , body);
+      this.sendNotificationToUser(notification, result , title , body).catch((err : Error) => {throw err ;});
     });
 
   } 
