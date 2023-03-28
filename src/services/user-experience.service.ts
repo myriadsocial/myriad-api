@@ -35,6 +35,7 @@ import {ActivityLogService} from './activity-log.service';
 import {FriendService} from './friend.service';
 import {MetricService} from './metric.service';
 import {TagService} from './tag.service';
+import {NotificationService} from './notification.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class UserExperienceService {
@@ -57,6 +58,8 @@ export class UserExperienceService {
     private metricService: MetricService,
     @service(TagService)
     private tagService: TagService,
+    @service(NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   // ------------------------------------------------
@@ -499,10 +502,20 @@ export class UserExperienceService {
         this.count({clonedId: experienceId}),
       ]).then(([{count: subscribedCount}, {count: clonedCount}]) => {
         const trendCount = subscribedCount + clonedCount;
-        return this.experienceRepository.updateById(experienceId, {
-          subscribedCount,
-          trendCount,
-        });
+        return this.experienceRepository
+          .updateById(experienceId, {
+            subscribedCount,
+            trendCount,
+          })
+          .then(() => {
+            if (this.followerCounter(subscribedCount)) {
+              this.notificationService
+                .sendSubscriberCount(experienceId, subscribedCount)
+                .catch((err: Error) => {
+                  throw err;
+                });
+            }
+          });
       }),
       this.activityLogService.create(
         ActivityLogType.SUBSCRIBEEXPERIENCE,
@@ -664,6 +677,30 @@ export class UserExperienceService {
 
       return omit(userExperience, ['users']) as UserExperienceWithRelations;
     });
+  }
+
+  private followerCounter(follower: number): boolean {
+    if (follower >= 1000) {
+      if (follower % 1000 === 0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      if (follower === 5) {
+        return true;
+      } else if (follower === 10) {
+        return true;
+      } else if (follower === 50) {
+        return true;
+      } else if (follower === 100) {
+        return true;
+      } else if (follower === 500) {
+        return true;
+      } else {
+        return false;
+      }
+    }
   }
 
   // ------------------------------------------------
