@@ -413,6 +413,7 @@ export async function givenRepositories(testdb: any) {
     activityLogService,
     metricService,
     postService,
+    notificationService,
   );
 
   const commentService = new CommentService(

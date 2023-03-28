@@ -7,6 +7,7 @@ import {CommentRepository, VoteRepository} from '../repositories';
 import {ActivityLogService} from './activity-log.service';
 import {MetricService} from './metric.service';
 import {PostService} from './post.service';
+import {NotificationService} from './notification.service';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class VoteService {
@@ -21,6 +22,8 @@ export class VoteService {
     private metricService: MetricService,
     @service(PostService)
     private postService: PostService,
+    @service(NotificationService)
+    private notificationService: NotificationService,
   ) {}
 
   public async create(vote: Vote): Promise<Vote> {
@@ -144,11 +147,42 @@ export class VoteService {
 
     await Promise.allSettled([
       this.metricService.countPopularPost(referenceId),
-      this.metricService.publicMetric(type, referenceId),
+      this.metricService.publicMetric(type, referenceId).then(metric => {
+        if (this.upvoteCounter(metric.upvotes)) {
+          this.notificationService
+            .sendVoteCount(type, referenceId)
+            .catch((err: Error) => {
+              throw err;
+            });
+        }
+      }),
       this.metricService.countServerMetric(),
       this.voteRepository
         .updateById(id.toString(), {toUserId})
         .then(() => this.metricService.userMetric(toUserId)),
     ]);
+  }
+  private upvoteCounter(upvote: number): boolean {
+    if (upvote >= 1000) {
+      if (upvote % 1000 === 0) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      if (upvote === 5) {
+        return true;
+      } else if (upvote === 10) {
+        return true;
+      } else if (upvote === 50) {
+        return true;
+      } else if (upvote === 100) {
+        return true;
+      } else if (upvote === 500) {
+        return true;
+      } else {
+        return false;
+      }
+    }
   }
 }
