@@ -268,7 +268,7 @@ export class UserExperienceService {
     return this.userRepository
       .experiences(userId)
       .create(experience)
-      .then(async created => this.afterCreate(created, people, clonedId));
+      .then(async exp => this.afterCreate(exp, people, clonedId));
   }
 
   public async subscribe(

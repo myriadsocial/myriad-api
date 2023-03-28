@@ -512,16 +512,27 @@ export class MyriadApiApplication extends BootMixin(
       userExperienceRepository,
       timelineConfigRepository,
     } = await this.repositories();
-    const {count: totalExperience} = await experienceRepository.count({
-      selectedUserIds: {
-        exists: true,
-      },
-    });
 
-    const bar1 = this.initializeProgressBar('Start Migrate Experience');
+    const [
+      {count: totalPostExp},
+      {count: totalExperience},
+      {count: totalUserExperience},
+    ] = await Promise.all([
+      experiencePostRepository.count(),
+      experienceRepository.count({
+        selectedUserIds: {
+          exists: true,
+        },
+      }),
+      userExperienceRepository.count(),
+    ]);
+
+    const bar = this.initializeProgressBar('Start Migrate Experience');
+
     const promises = [];
+    const barSize = totalExperience + totalPostExp + totalUserExperience;
 
-    bar1.start(totalExperience - 1);
+    bar.start(barSize - 1);
     for (let i = 0; i < totalExperience; i++) {
       const [experience] = await experienceRepository.find({
         limit: 1,
@@ -563,15 +574,9 @@ export class MyriadApiApplication extends BootMixin(
         }),
       );
 
-      bar1.update(i + 1);
+      bar.update(i);
     }
 
-    bar1.stop();
-
-    const {count: totalPostExp} = await experiencePostRepository.count();
-    const bar2 = this.initializeProgressBar('Start Migrate Experience Post');
-
-    bar2.start(totalPostExp - 1);
     for (let i = 0; i < totalPostExp; i++) {
       const [experiencePost] = await experiencePostRepository.find({
         limit: 1,
@@ -608,16 +613,11 @@ export class MyriadApiApplication extends BootMixin(
         }
       }
 
-      bar2.update(i + 1);
+      bar.update(totalExperience + i + 1);
     }
 
-    bar2.stop();
-
-    const {count: totalUserExperience} = await userExperienceRepository.count();
-    const bar3 = this.initializeProgressBar('Start Migrate Timeline Config');
     const configs = new Map<string, TimelineConfig>();
 
-    bar3.start(totalExperience - 1);
     for (let i = 0; i < totalUserExperience; i++) {
       const [userExperience] = await userExperienceRepository.find({
         limit: 1,
@@ -662,14 +662,14 @@ export class MyriadApiApplication extends BootMixin(
 
       configs.set(userExperience.userId, timelineConfig);
 
-      bar3.update(i + 1);
+      bar.update(totalExperience + totalPostExp + i + 1);
     }
 
     configs.forEach(value => {
       promises.push(timelineConfigRepository.update(value));
     });
 
-    bar3.stop();
+    bar.stop();
 
     await Promise.allSettled(promises);
   }
