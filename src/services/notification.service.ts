@@ -149,6 +149,7 @@ export class NotificationService {
   async sendVoteCount(
     referencetype: ReferenceType,
     referenceID: string,
+    upvotes: number,
   ): Promise<void> {
     const destination: string = await (referencetype === ReferenceType.POST
       ? this.postRepository
@@ -166,7 +167,7 @@ export class NotificationService {
     const notification = new Notification({
       type: NotificationType.VOTE_COUNT,
       referenceId: referenceID,
-      message: 'Your post is getting upvotes',
+      message: upvotes.toString(),
       from: MyriadUserID,
     });
     const title = 'New Upvotes';

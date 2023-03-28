@@ -150,7 +150,7 @@ export class VoteService {
       this.metricService.publicMetric(type, referenceId).then(metric => {
         if (this.upvoteCounter(metric.upvotes)) {
           this.notificationService
-            .sendVoteCount(type, referenceId)
+            .sendVoteCount(type, referenceId, metric.upvotes)
             .catch((err: Error) => {
               throw err;
             });
