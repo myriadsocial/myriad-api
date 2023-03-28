@@ -60,29 +60,84 @@ export class ExperienceService {
     return this.experienceRepository.find(filter);
   }
 
+  /* eslint-disable  @typescript-eslint/no-explicit-any */
   public async findAdvanced(
-    filter?: Filter<Experience>,
+    allowedTags?: string[],
+    prohibitedTags?: string[],
+    people?: string[],
+    page?: number,
+    limit?: number,
   ): Promise<Experience[]> {
+    const userId = this.currentUser[securityId];
+
+    const approvedFriendIds = await this.friendService.getFriendIds(
+      userId,
+      FriendStatusType.APPROVED,
+    );
+
+    const limitNum = limit ?? 30;
+    const skip = ((page ?? 1) - 1) * limitNum;
+    const peoples =
+      people?.map(peo => ({
+        people: {
+          elemMatch: {
+            id: peo,
+          },
+        },
+      })) ?? [];
+
+    const orCondition: any[] = [...peoples];
+
+    if (allowedTags) {
+      orCondition.push({
+        allowedTags: {inq: allowedTags},
+      });
+    }
+
+    if (prohibitedTags) {
+      orCondition.push({
+        prohibitedTags: {inq: prohibitedTags},
+      });
+    }
+
+    const query: any = {
+      where: {
+        and: [
+          orCondition.length > 0
+            ? {
+                or: orCondition,
+              }
+            : {},
+          {
+            or: [
+              {
+                visibility: {eq: VisibilityType.PRIVATE},
+                createdBy: {eq: userId},
+              },
+              {
+                visibility: {eq: VisibilityType.SELECTED},
+                selectedUserIds: {inq: [userId]},
+              },
+              {
+                visibility: {eq: VisibilityType.FRIEND},
+                createdBy: {inq: approvedFriendIds},
+              },
+              {
+                visibility: {exists: false},
+              },
+            ],
+          },
+        ],
+      },
+      limit: limitNum,
+      skip: skip,
+    };
+
     const experiences: Experience[] = (await this.experienceRepository.find(
-      filter,
+      query,
     )) as Experience[];
 
-    return experiences.filter(async exp => {
-      if (exp.visibility === VisibilityType.PRIVATE) {
-        return exp.createdBy === this.currentUser[securityId];
-      } else if (exp.visibility === VisibilityType.SELECTED) {
-        return exp.selectedUserIds.find(
-          e => e.userId === this.currentUser[securityId],
-        );
-      } else if (exp.visibility === VisibilityType.FRIEND) {
-        return this.friendService.asFriend(
-          exp.createdBy,
-          this.currentUser[securityId],
-        );
-      } else {
-        return true;
-      }
-    });
+    return experiences;
   }
 
   public async findById(

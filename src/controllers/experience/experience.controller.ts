@@ -46,10 +46,24 @@ export class ExperienceController {
     },
   })
   async advanced(
-    @param.filter(Experience)
-    filter?: Filter<Experience>,
+    @param.array('allowedTags', 'query', {type: 'string'})
+    allowedTags?: string[],
+    @param.array('prohibitedTags', 'query', {type: 'string'})
+    prohibitedTags?: string[],
+    @param.array('people', 'query', {type: 'string'})
+    people?: string[],
+    @param.query.number('page')
+    page?: number,
+    @param.query.number('limit')
+    limit?: number,
   ): Promise<Experience[]> {
-    return this.experienceService.findAdvanced(filter);
+    return this.experienceService.findAdvanced(
+      allowedTags,
+      prohibitedTags,
+      people,
+      page,
+      limit,
+    );
   }
 
   @intercept(FindByIdInterceptor.BINDING_KEY)
