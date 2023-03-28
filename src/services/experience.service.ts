@@ -75,7 +75,7 @@ export class ExperienceService {
       FriendStatusType.APPROVED,
     );
 
-    const limitNum = limit ?? 50;
+    const limitNum = limit ?? 30;
     const skip = ((page ?? 1) - 1) * limitNum;
     const peoples =
       people?.map(peo => ({
