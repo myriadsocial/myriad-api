@@ -27,6 +27,7 @@ import {
 import {
   ExperiencePostRepository,
   ExperienceRepository,
+  TimelineConfigRepository,
   UserRepository,
 } from '../repositories';
 import {FriendService} from './friend.service';
@@ -39,6 +40,8 @@ export class ExperienceService {
     private experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
     private experiencePostRepository: ExperiencePostRepository,
+    @repository(TimelineConfigRepository)
+    private timelineConfigRepository: TimelineConfigRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @service(FriendService)
@@ -68,7 +71,9 @@ export class ExperienceService {
       if (exp.visibility === VisibilityType.PRIVATE) {
         return exp.createdBy === this.currentUser[securityId];
       } else if (exp.visibility === VisibilityType.SELECTED) {
-        return exp.selectedUserIds.includes(this.currentUser[securityId]);
+        return exp.selectedUserIds.find(
+          e => e.userId === this.currentUser[securityId],
+        );
       } else if (exp.visibility === VisibilityType.FRIEND) {
         return this.friendService.asFriend(
           exp.createdBy,
@@ -120,9 +125,9 @@ export class ExperienceService {
       }
 
       if (experience.visibility === VisibilityType.SELECTED) {
-        const selected = experience.selectedUserIds.includes(
-          this.currentUser[securityId],
-        );
+        const selected = experience.selectedUserIds.find(e => {
+          return e.userId === this.currentUser[securityId];
+        });
         if (!selected) {
           throw new HttpErrors.Unauthorized('OnlySelectedUser');
         }
@@ -169,46 +174,81 @@ export class ExperienceService {
   public async addPost(
     data: CreateExperiencePostDto,
   ): Promise<ExperiencePost[]> {
-    const experiences = await this.experienceRepository.find({
-      where: {
-        createdBy: this.currentUser[securityId],
-      },
-    });
+    if (data.experienceIds.length === 0) {
+      throw new HttpErrors.UnprocessableEntity('AtLeastOneTimeline');
+    }
 
-    const experienceIds = experiences.map(e => String(e.id));
-    const newExperiencePosts = data.experienceIds.map(experienceId => {
-      return {
-        experienceId,
-        postId: data.postId,
-      };
-    });
+    const [config, post] = await Promise.all([
+      this.timelineConfigRepository
+        .findOne({
+          where: {userId: this.currentUser[securityId]},
+        })
+        .then(timelineConfig => {
+          if (timelineConfig) return timelineConfig;
+          return this.timelineConfigRepository.create({
+            userId: this.currentUser[securityId],
+          });
+        }),
+      this.postService.findById(data.postId),
+    ]);
 
-    return this.experiencePostRepository
-      .deleteAll({
-        experienceId: {inq: experienceIds},
+    const deletedTimelineIds = [] as string[];
+
+    for (const e of post.experiences ?? []) {
+      if (data.experienceIds.includes(e.id)) continue;
+      deletedTimelineIds.push(e.id);
+      delete post.addedAt[e.id];
+      delete config.data[e.id];
+    }
+
+    const date = Date.now();
+    const newExperiencePosts = [] as ExperiencePost[];
+
+    for (const experienceId of data.experienceIds) {
+      if (post.addedAt[experienceId] === undefined) {
+        post.addedAt[experienceId] = date;
+        const experiencePost = new ExperiencePost();
+        experiencePost.experienceId = experienceId;
+        experiencePost.postId = data.postId;
+        newExperiencePosts.push(experiencePost);
+      }
+    }
+
+    if (newExperiencePosts.length <= 0) return [];
+    const [experiencePosts] = await Promise.all([
+      this.experiencePostRepository.createAll(newExperiencePosts),
+      this.postService.updatePostDate(data.postId, post.addedAt),
+      this.timelineConfigRepository.update(config),
+      this.experiencePostRepository.deleteAll({
         postId: data.postId,
-      })
-      .then(async () => {
-        if (newExperiencePosts.length <= 0) return [];
-        return Promise.all([
-          this.experiencePostRepository.createAll(newExperiencePosts),
-          this.postService.updatePostDate(data.postId),
-        ]);
-      })
-      .then(([experiencePosts]) => experiencePosts);
+        experienceId: {
+          inq: deletedTimelineIds,
+        },
+      }),
+    ]);
+
+    return experiencePosts;
   }
 
   public async substractPost(
     experienceId: string,
     postId: string,
   ): Promise<Count> {
-    return this.experienceRepository.findById(experienceId).then(experience => {
-      if (experience.createdBy !== this.currentUser[securityId]) {
-        return {count: 0};
-      }
+    const post = await this.postService.findById(postId);
 
-      return this.experiencePostRepository.deleteAll({postId, experienceId});
-    });
+    delete post.addedAt[experienceId];
+
+    return this.experiencePostRepository
+      .deleteAll({postId, experienceId})
+      .then(count => {
+        if (count.count > 0) {
+          this.postService.updateById(postId, {
+            addedAt: post.addedAt,
+          }) as Promise<Count>;
+        }
+
+        return count;
+      });
   }
 
   async getExperiencePostId(experienceId?: string): Promise<string[]> {

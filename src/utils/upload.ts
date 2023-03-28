@@ -6,7 +6,11 @@ import path from 'path';
 import sharp, {FormatEnum} from 'sharp';
 import {v4 as uuid} from 'uuid';
 import {config} from '../config';
-import {UploadType} from '../services';
+
+export enum UploadType {
+  IMAGE = 'image',
+  VIDEO = 'video',
+}
 
 export async function upload(
   type: UploadType,

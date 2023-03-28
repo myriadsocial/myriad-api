@@ -13,6 +13,11 @@ import {Post} from './post.model';
 import {ExperiencePost} from './experience-post.model';
 import {VisibilityType} from '../enums';
 
+export interface SelectedUser {
+  userId: string;
+  addedAt: number;
+}
+
 @model({
   settings: {
     strictObjectIDCoercion: true,
@@ -118,24 +123,24 @@ export class Experience extends Entity {
 
   @property({
     type: 'array',
-    itemType: 'string',
+    itemType: 'object',
     default: [],
   })
-  selectedUserIds: string[];
+  selectedUserIds: SelectedUser[];
 
   @property({
     type: 'date',
     required: false,
     default: () => new Date(),
   })
-  createdAt?: string;
+  createdAt: string;
 
   @property({
     type: 'date',
     required: false,
     default: () => new Date(),
   })
-  updatedAt?: string;
+  updatedAt: string;
 
   @property({
     type: 'date',

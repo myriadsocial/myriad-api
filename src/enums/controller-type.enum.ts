@@ -29,4 +29,5 @@ export enum ControllerType {
   USERUNLOCKABLECONTENT = 'UserUnlockableContentController',
   USERVOTE = 'UserVoteController',
   USERWALLET = 'UserWalletController',
+  VIDEOUPLOAD = 'VideoUploadController',
 }

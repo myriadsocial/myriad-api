@@ -13,6 +13,10 @@ import {User} from './user.model';
 import {Vote} from './vote.model';
 import {ImportedPost} from './imported-post.model';
 
+export interface AddedAt {
+  [key: string]: number;
+}
+
 @model({
   settings: {
     strictObjectIDCoercion: true,
@@ -32,7 +36,7 @@ import {ImportedPost} from './imported-post.model';
         },
       },
     },
-    hiddenProperties: ['popularCount', 'rawText'],
+    hiddenProperties: ['popularCount', 'rawText', 'addedAt', 'selectedUserIds'],
   },
 })
 export class Post extends ImportedPost {
@@ -137,13 +141,6 @@ export class Post extends ImportedPost {
   selectedUserIds: string[];
 
   @property({
-    type: 'array',
-    itemType: 'string',
-    default: [],
-  })
-  selectedTimelineIds: string[];
-
-  @property({
     type: 'number',
     required: false,
     default: 0,
@@ -163,6 +160,13 @@ export class Post extends ImportedPost {
     default: () => new Date(),
   })
   originCreatedAt?: string;
+
+  @property({
+    type: 'object',
+    required: false,
+    default: {},
+  })
+  addedAt: AddedAt;
 
   @property({
     type: 'date',
@@ -274,36 +278,12 @@ export class PostDetail extends Model {
   NSFWTag?: string;
 
   @property({
-    type: 'string',
-    required: false,
-    default: VisibilityType.PUBLIC,
-    jsonSchema: {
-      enum: Object.values(VisibilityType),
-    },
-  })
-  visibility?: VisibilityType;
-
-  @property({
     type: 'array',
     itemType: 'object',
     required: false,
     default: [],
   })
   mentions: MentionUser[];
-
-  @property({
-    type: 'array',
-    itemType: 'string',
-    default: [],
-  })
-  selectedUserIds?: string[];
-
-  @property({
-    type: 'array',
-    itemType: 'string',
-    default: [],
-  })
-  selectedTimelineIds?: string[];
 
   constructor(data?: Partial<PostDetail>) {
     super(data);
@@ -329,6 +309,13 @@ export class PostDetailWithCreator extends PostDetail {
 
 export class DraftPost extends PostDetailWithCreator {
   @property({
+    type: 'array',
+    itemType: 'string',
+    default: [],
+  })
+  selectedTimelineIds: string[];
+
+  @property({
     type: 'string',
     required: true,
     jsonSchema: {
@@ -343,6 +330,23 @@ export class DraftPost extends PostDetailWithCreator {
 }
 
 export class UpdatePostDto extends PostDetail {
+  @property({
+    type: 'array',
+    itemType: 'string',
+    default: [],
+  })
+  selectedUserIds: string[];
+
+  @property({
+    type: 'string',
+    required: false,
+    default: VisibilityType.PUBLIC,
+    jsonSchema: {
+      enum: Object.values(VisibilityType),
+    },
+  })
+  visibility?: VisibilityType;
+
   constructor(data?: Partial<UpdatePostDto>) {
     super(data);
   }

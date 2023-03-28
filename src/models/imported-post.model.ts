@@ -1,5 +1,4 @@
 import {Entity, Model, property} from '@loopback/repository';
-import {VisibilityType} from '../enums';
 import {Asset} from '../interfaces';
 import {User} from './user.model';
 
@@ -70,13 +69,12 @@ export class CreateImportedPostDto extends Model {
   tags?: string[];
 
   @property({
-    type: 'string',
-    required: false,
-    jsonSchema: {
-      enum: Object.values(VisibilityType),
-    },
+    type: 'array',
+    itemType: 'string',
+    required: true,
+    default: [],
   })
-  visibility?: VisibilityType;
+  selectedTimelineIds: string[];
 
   @property({
     type: 'string',

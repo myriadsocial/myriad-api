@@ -30,6 +30,7 @@ import {
   CommentRepository,
   CurrencyRepository,
   DraftPostRepository,
+  ExperiencePostRepository,
   ExperienceRepository,
   ExperienceUserRepository,
   FriendRepository,
@@ -42,6 +43,7 @@ import {
   ReportRepository,
   ServerRepository,
   TagRepository,
+  TimelineConfigRepository,
   TransactionRepository,
   UserCurrencyRepository,
   UserExperienceRepository,
@@ -74,7 +76,6 @@ import {
   StorageService,
   TagService,
   TransactionService,
-  UploadType,
   UserExperienceService,
   UserService,
   UserSocialMediaService,
@@ -82,10 +83,11 @@ import {
   WalletAddressService,
 } from './services';
 import {PolkadotJs} from './utils/polkadot-js';
-import {getFilePathFromSeedData, upload} from './utils/upload';
+import {getFilePathFromSeedData, upload, UploadType} from './utils/upload';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType} from './enums';
 import {UpdatePeopleProfileJob} from './jobs';
+import {SelectedUser, TimelineConfig} from './models';
 
 const jwt = require('jsonwebtoken');
 
@@ -238,9 +240,10 @@ export class MyriadApiApplication extends BootMixin(
   }
 
   async migrateSchema(options?: SchemaMigrationOptions): Promise<void> {
+    const env = this.options?.environment;
     if (!this.options?.skipMigrateSchema) await super.migrateSchema(options);
-    if (options?.existingSchema === 'drop')
-      return this.databaseSeeding(this.options?.environment);
+    if (options?.existingSchema === 'drop') return this.databaseSeeding(env);
+    await Promise.all([this.doMigrateExperience()]);
   }
 
   async databaseSeeding(environment: string): Promise<void> {
@@ -500,6 +503,177 @@ export class MyriadApiApplication extends BootMixin(
     bar.stop();
   }
 
+  async doMigrateExperience(): Promise<void> {
+    if (!this.doCollectionExists('experience')) return;
+    const {
+      experienceRepository,
+      experiencePostRepository,
+      postRepository,
+      userExperienceRepository,
+      timelineConfigRepository,
+    } = await this.repositories();
+    const {count: totalExperience} = await experienceRepository.count({
+      selectedUserIds: {
+        exists: true,
+      },
+    });
+
+    const bar1 = this.initializeProgressBar('Start Migrate Experience');
+    const promises = [];
+
+    bar1.start(totalExperience - 1);
+    for (let i = 0; i < totalExperience; i++) {
+      const [experience] = await experienceRepository.find({
+        limit: 1,
+        skip: i,
+        where: {
+          selectedUserIds: {
+            exists: true,
+          },
+        },
+      });
+
+      if (experience.selectedUserIds.length === 0) continue;
+      const selectedUserIds: SelectedUser[] = [];
+      for (const selected of experience.selectedUserIds) {
+        const stringify = JSON.stringify(selected);
+        try {
+          const obj = JSON.parse(stringify);
+
+          let data: SelectedUser;
+
+          if (typeof obj === 'string') {
+            data = {
+              userId: obj,
+              addedAt: 0,
+            };
+          } else {
+            data = obj;
+          }
+
+          selectedUserIds.push(data);
+        } catch {
+          // ignore
+        }
+      }
+
+      promises.push(
+        experienceRepository.updateById(experience.id, {
+          selectedUserIds,
+        }),
+      );
+
+      bar1.update(i + 1);
+    }
+
+    bar1.stop();
+
+    const {count: totalPostExp} = await experiencePostRepository.count();
+    const bar2 = this.initializeProgressBar('Start Migrate Experience Post');
+
+    bar2.start(totalPostExp - 1);
+    for (let i = 0; i < totalPostExp; i++) {
+      const [experiencePost] = await experiencePostRepository.find({
+        limit: 1,
+        skip: i,
+      });
+
+      if (!experiencePost) continue;
+      const {id, experienceId, postId} = experiencePost;
+      const post = await postRepository.findOne({
+        where: {
+          id: postId,
+        },
+      });
+
+      if (!post) {
+        promises.push(experiencePostRepository.deleteById(id));
+      } else {
+        const experience = await experienceRepository.findOne({
+          where: {
+            id: experienceId,
+          },
+        });
+
+        if (!experience) {
+          promises.push(experiencePostRepository.deleteById(id));
+        } else {
+          post.addedAt = post?.addedAt ?? {};
+          post.addedAt[experienceId] = 0;
+          promises.push(
+            postRepository.updateById(postId, {
+              addedAt: post.addedAt,
+            }),
+          );
+        }
+      }
+
+      bar2.update(i + 1);
+    }
+
+    bar2.stop();
+
+    const {count: totalUserExperience} = await userExperienceRepository.count();
+    const bar3 = this.initializeProgressBar('Start Migrate Timeline Config');
+    const configs = new Map<string, TimelineConfig>();
+
+    bar3.start(totalExperience - 1);
+    for (let i = 0; i < totalUserExperience; i++) {
+      const [userExperience] = await userExperienceRepository.find({
+        limit: 1,
+        skip: i,
+        include: [
+          {
+            relation: 'experience',
+            scope: {
+              include: [{relation: 'users'}],
+            },
+          },
+        ],
+      });
+
+      if (!userExperience) continue;
+      const experience = userExperience.experience;
+      if (!experience) continue;
+      const users = experience.users ?? [];
+      const timelineConfig = await (configs.get(userExperience.userId) ??
+        timelineConfigRepository
+          .findOne({
+            where: {userId: userExperience.userId},
+          })
+          .then(result => {
+            if (result) return result;
+            return timelineConfigRepository.create({
+              userId: userExperience.userId,
+            });
+          }));
+
+      timelineConfig.data[experience.id] = {
+        timelineId: experience.id,
+        allowedTags: experience.allowedTags,
+        prohibitedTags: experience.prohibitedTags,
+        peopleIds: experience.people.map(e => e.id),
+        userIds: users.map(e => e.id),
+        selectedUserIds: experience.selectedUserIds,
+        visibility: experience.visibility,
+        createdBy: experience.createdBy,
+        createdAt: 0,
+      };
+
+      configs.set(userExperience.userId, timelineConfig);
+
+      bar3.update(i + 1);
+    }
+
+    configs.forEach(value => {
+      promises.push(timelineConfigRepository.update(value));
+    });
+
+    bar3.stop();
+
+    await Promise.allSettled(promises);
+  }
+
   async repositories(): Promise<Repositories> {
     const accountSettingRepository = await this.getRepository(
       AccountSettingRepository,
@@ -514,6 +688,9 @@ export class MyriadApiApplication extends BootMixin(
       ExperienceUserRepository,
     );
     const experienceRepository = await this.getRepository(ExperienceRepository);
+    const experiencePostRepository = await this.getRepository(
+      ExperiencePostRepository,
+    );
     const friendRepository = await this.getRepository(FriendRepository);
     const languageSettingRepository = await this.getRepository(
       LanguageSettingRepository,
@@ -530,6 +707,9 @@ export class MyriadApiApplication extends BootMixin(
     const reportRepository = await this.getRepository(ReportRepository);
     const serverRepository = await this.getRepository(ServerRepository);
     const tagRepository = await this.getRepository(TagRepository);
+    const timelineConfigRepository = await this.getRepository(
+      TimelineConfigRepository,
+    );
     const transactionRepository = await this.getRepository(
       TransactionRepository,
     );
@@ -553,6 +733,7 @@ export class MyriadApiApplication extends BootMixin(
       commentRepository,
       currencyRepository,
       draftPostRepository,
+      experiencePostRepository,
       experienceUserRepository,
       experienceRepository,
       friendRepository,
@@ -565,6 +746,7 @@ export class MyriadApiApplication extends BootMixin(
       reportRepository,
       serverRepository,
       tagRepository,
+      timelineConfigRepository,
       transactionRepository,
       userRepository,
       userCurrencyRepository,
@@ -603,6 +785,7 @@ interface Repositories {
   commentRepository: CommentRepository;
   currencyRepository: CurrencyRepository;
   draftPostRepository: DraftPostRepository;
+  experiencePostRepository: ExperiencePostRepository;
   experienceUserRepository: ExperienceUserRepository;
   experienceRepository: ExperienceRepository;
   friendRepository: FriendRepository;
@@ -615,6 +798,7 @@ interface Repositories {
   reportRepository: ReportRepository;
   serverRepository: ServerRepository;
   tagRepository: TagRepository;
+  timelineConfigRepository: TimelineConfigRepository;
   transactionRepository: TransactionRepository;
   userRepository: UserRepository;
   userCurrencyRepository: UserCurrencyRepository;

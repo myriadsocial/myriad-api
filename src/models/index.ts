@@ -24,6 +24,7 @@ export * from './queue.model';
 export * from './report.model';
 export * from './server.model';
 export * from './tag.model';
+export * from './timeline-config.model';
 export * from './transaction.model';
 export * from './unlockable-content.model';
 export * from './user-currency.model';

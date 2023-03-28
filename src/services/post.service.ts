@@ -7,7 +7,7 @@ import {
   Where,
 } from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {omit} from 'lodash';
+import {intersection, omit} from 'lodash';
 import {
   AccountSettingType,
   ActivityLogType,
@@ -19,9 +19,11 @@ import {
 } from '../enums';
 import {
   AccountSetting,
+  AddedAt,
   CreateImportedPostDto,
   DraftPost,
   Experience,
+  ExperiencePost,
   ExtendedPost,
   Friend,
   People,
@@ -38,6 +40,8 @@ import {
   FriendRepository,
   PeopleRepository,
   PostRepository,
+  TimelineConfigRepository,
+  TransactionRepository,
   UserRepository,
   UserSocialMediaRepository,
 } from '../repositories';
@@ -70,6 +74,10 @@ export class PostService {
     private peopleRepository: PeopleRepository,
     @repository(PostRepository)
     private postRepository: PostRepository,
+    @repository(TimelineConfigRepository)
+    private timelineConfigRepository: TimelineConfigRepository,
+    @repository(TransactionRepository)
+    private transactionRepository: TransactionRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @repository(UserSocialMediaRepository)
@@ -91,6 +99,8 @@ export class PostService {
   // ------ Post ------------------------------------
 
   public async create(draftPost: DraftPost): Promise<Post | DraftPost> {
+    const timelineIds = draftPost.selectedTimelineIds;
+
     return this.beforeCreate(draftPost)
       .then(async () => {
         if (draftPost.status === PostStatus.PUBLISHED) {
@@ -100,37 +110,25 @@ export class PostService {
             );
           }
 
-          const rawPost = omit(draftPost, ['status']);
-          if (rawPost.visibility !== VisibilityType.SELECTED) {
-            rawPost.selectedUserIds = [];
-          }
+          const {selectedTimelineIds, createdBy} = draftPost;
+          const {visibility, selectedUserIds} = await this.getVisibility(
+            createdBy,
+            selectedTimelineIds,
+          );
 
-          if (rawPost.visibility !== VisibilityType.TIMELINE) {
-            rawPost.selectedTimelineIds = [];
-          }
+          const date = Date.now();
+          const addedAt: AddedAt = {};
+          selectedTimelineIds.forEach(e => {
+            addedAt[e] = date;
+          });
 
-          if (rawPost.visibility === VisibilityType.SELECTED) {
-            const selectedUserIds = rawPost.selectedUserIds ?? [];
-            rawPost.selectedUserIds = [...selectedUserIds, draftPost.createdBy];
-          }
+          const rawPost = omit(draftPost, ['status', 'selectedTimelineIds']);
+          const newPost = new Post(rawPost);
+          newPost.visibility = visibility;
+          newPost.selectedUserIds = selectedUserIds;
+          newPost.addedAt = addedAt;
 
-          if (rawPost.visibility === VisibilityType.TIMELINE) {
-            const timelineIds = rawPost.selectedTimelineIds ?? [];
-            const selectedUserIds = [draftPost.createdBy];
-            if (timelineIds.length > 0) {
-              const experiences = await this.experienceRepository.find({
-                where: {id: {inq: timelineIds}},
-              });
-
-              rawPost.selectedTimelineIds = experiences.map(e => {
-                selectedUserIds.push(...e.selectedUserIds);
-                return e.id;
-              });
-            }
-            rawPost.selectedUserIds = selectedUserIds;
-          }
-
-          return this.postRepository.create(rawPost);
+          return this.postRepository.create(newPost);
         }
 
         await this.draftPostRepository.set(draftPost.createdBy, draftPost);
@@ -138,7 +136,7 @@ export class PostService {
       })
       .then(result => {
         if (result.constructor.name === 'DraftPost') return result;
-        return this.afterCreate(new Post(result));
+        return this.afterCreate(result as Post, timelineIds);
       })
       .catch(err => {
         throw err;
@@ -146,6 +144,7 @@ export class PostService {
   }
 
   public async import(raw: CreateImportedPostDto): Promise<Post> {
+    const date = Date.now();
     const platformURL = new UrlUtils(raw.url);
     const pathname = platformURL.getPathname();
     const platform = platformURL.getPlatform();
@@ -186,7 +185,8 @@ export class PostService {
       profilePictureURL: platformUser.profilePictureURL,
     });
 
-    const rawPost = omit(post, ['platformUser']);
+    const timelineIds = raw.selectedTimelineIds;
+    const rawPost = omit(post, ['platformUser', 'selectedTimelineIds']);
 
     Promise.allSettled([
       people.id === peopleId
@@ -194,11 +194,18 @@ export class PostService {
         : this.peopleRepository.updateById(people.id, people),
     ]) as Promise<AnyObject>;
 
+    const addedAt: AddedAt = {};
+
     rawPost.peopleId = people.id;
+    raw.selectedTimelineIds.forEach(e => {
+      addedAt[e] = date;
+    });
+
+    rawPost.addedAt = addedAt;
 
     return this.postRepository
       .create(rawPost)
-      .then(result => this.afterImport(result, people));
+      .then(result => this.afterImport(result, people, timelineIds));
   }
 
   public async draft(userId: string): Promise<DraftPost | null> {
@@ -270,36 +277,25 @@ export class PostService {
 
     const visibility = data.visibility;
 
-    if (visibility) raw.visibility = visibility;
-    if (visibility !== VisibilityType.SELECTED) raw.selectedUserIds = [];
-    if (visibility !== VisibilityType.TIMELINE) raw.selectedTimelineIds = [];
+    if (visibility) {
+      raw.visibility = visibility;
+
+      if (visibility !== VisibilityType.SELECTED) {
+        raw.selectedUserIds = [];
+      }
+    }
 
     if (data.selectedUserIds) raw.selectedUserIds = data.selectedUserIds;
     if (data.mentions) raw.mentions = data.mentions;
     if (data.NSFWTag) raw.NSFWTag = data.NSFWTag;
     if (data.isNSFW) raw.isNSFW = data.isNSFW;
     if (data.tags) raw.tags = data.tags;
+    if (data.addedAt) raw.addedAt = data.addedAt;
 
     if (visibility === VisibilityType.SELECTED) {
       const selectedUserIds = data.selectedUserIds ?? [];
       if (data.createdBy) selectedUserIds.push(data.createdBy);
       raw.selectedUserIds = [...selectedUserIds];
-    }
-
-    if (visibility === VisibilityType.TIMELINE) {
-      const timelineIds = data.selectedTimelineIds ?? [];
-      const selectedUserIds = [];
-      if (data.createdBy) selectedUserIds.push(data.createdBy);
-      if (timelineIds.length > 0) {
-        const experiences = await this.experienceRepository.find({
-          where: {id: {inq: timelineIds}},
-        });
-        raw.selectedTimelineIds = experiences.map(e => {
-          selectedUserIds.push(...e.selectedUserIds);
-          return e.id;
-        });
-      }
-      raw.selectedUserIds = selectedUserIds;
     }
 
     return this.postRepository.updateAll(raw, {
@@ -315,8 +311,19 @@ export class PostService {
     post?: Post,
   ): Promise<Count> {
     const exclusiveContents = post?.asset?.exclusiveContents ?? [];
-    if (exclusiveContents?.length > 0) {
-      throw new HttpErrors.UnprocessableEntity('ExclusiveContentExists');
+    if (exclusiveContents.length > 0) {
+      const transactions = await this.transactionRepository.find({
+        where: {
+          referenceId: {
+            inq: exclusiveContents,
+          },
+          type: ReferenceType.UNLOCKABLECONTENT,
+        },
+      });
+
+      if (transactions.length > 0) {
+        throw new HttpErrors.UnprocessableEntity('ExclusiveContentExists');
+      }
     }
 
     return this.postRepository
@@ -336,10 +343,11 @@ export class PostService {
     return this.postRepository.count(where);
   }
 
-  public async updatePostDate(id: string): Promise<void> {
+  public async updatePostDate(id: string, addedAt: AddedAt): Promise<void> {
     return this.postRepository.updateById(id, {
       createdAt: new Date().toString(),
       updatedAt: new Date().toString(),
+      addedAt: addedAt,
     });
   }
 
@@ -394,7 +402,7 @@ export class PostService {
     }
   }
 
-  private async afterCreate(post: Post): Promise<Post> {
+  private async afterCreate(post: Post, timelineIds: string[]): Promise<Post> {
     const {id, createdBy: userId, tags, mentions} = post;
 
     Promise.allSettled([
@@ -408,6 +416,14 @@ export class PostService {
         userId,
         ReferenceType.POST,
       ),
+      this.experiencePostRepository.createAll(
+        timelineIds.map(e => {
+          const experiencePost = new ExperiencePost();
+          experiencePost.experienceId = e;
+          experiencePost.postId = post.id;
+          return experiencePost;
+        }),
+      ),
     ]) as Promise<AnyObject>;
 
     return post;
@@ -416,6 +432,7 @@ export class PostService {
   private async afterImport(
     post: PostWithRelations,
     people: People,
+    timelineIds: string[],
   ): Promise<PostWithRelations> {
     const importer = post.createdBy;
     const {id, originPostId, platform, tags, peopleId} = post;
@@ -440,6 +457,14 @@ export class PostService {
       this.tagService.create(tags),
       this.metricService.userMetric(user?.id ?? ''),
       this.metricService.countServerMetric(),
+      this.experiencePostRepository.createAll(
+        timelineIds.map(e => {
+          return {
+            postId: post.id,
+            experienceId: e,
+          };
+        }),
+      ),
       this.activityLogService.create(
         ActivityLogType.IMPORTPOST,
         id,
@@ -451,7 +476,13 @@ export class PostService {
     post.totalImporter = count;
     post.people = people;
 
-    return omit(post);
+    const hiddenFields = [
+      'popularCount',
+      'rawText',
+      'selectedUserIds',
+      'addedAt',
+    ];
+    return omit(post, hiddenFields) as PostWithRelations;
   }
 
   private async afterDelete(post?: Post): Promise<void> {
@@ -461,6 +492,7 @@ export class PostService {
 
     Promise.allSettled([
       this.commentRepository.deleteAll({postId: id}),
+      this.experiencePostRepository.deleteAll({postId: id}),
       this.metricService.userMetric(createdBy),
       this.metricService.countTags(tags),
       this.metricService.countServerMetric(),
@@ -497,7 +529,12 @@ export class PostService {
     post.importers = [importer];
     post.totalImporter = totalImporter;
 
-    const hiddenFields = ['popularCount', 'rawText', 'selectedUserIds'];
+    const hiddenFields = [
+      'popularCount',
+      'rawText',
+      'selectedUserIds',
+      'addedAt',
+    ];
     return omit(post, hiddenFields) as PostWithRelations;
   }
 
@@ -632,22 +669,6 @@ export class PostService {
         return;
       }
 
-      case VisibilityType.TIMELINE: {
-        const {selectedTimelineIds} = post;
-        const experiences = await this.experienceRepository.find({
-          where: {id: {inq: selectedTimelineIds}},
-        });
-        const isSelected = experiences.find(
-          exp =>
-            exp.selectedUserIds.find(id => id === currentUserId) ===
-            currentUserId,
-        );
-        if (!isSelected) {
-          throw new HttpErrors.Forbidden('OnlySelectedUser');
-        }
-        return;
-      }
-
       default:
         throw new HttpErrors.Forbidden('RestrictedPost');
     }
@@ -658,6 +679,10 @@ export class PostService {
     pathname = '',
   ): Promise<ExtendedPost> {
     const [platform, originPostId] = raw.url.split(',');
+    const {visibility, selectedUserIds} = await this.getVisibility(
+      raw.importer,
+      raw.selectedTimelineIds,
+    );
 
     let rawPost = null;
     switch (platform) {
@@ -680,13 +705,129 @@ export class PostService {
       throw new HttpErrors.BadRequest('Cannot find the specified post');
     }
 
-    rawPost.visibility = raw.visibility ?? VisibilityType.PUBLIC;
+    rawPost.visibility = visibility;
+    rawPost.selectedUserIds = selectedUserIds;
     rawPost.tags = this.getImportedTags(rawPost.tags, raw.tags ?? []);
     rawPost.createdBy = raw.importer;
     rawPost.isNSFW = Boolean(raw.NSFWTag);
     rawPost.NSFWTag = raw.NSFWTag;
 
     return rawPost;
+  }
+
+  private async getVisibility(userId: string, timelineIds = [] as string[]) {
+    const timelines = await this.experienceRepository.find({
+      where: {
+        id: {inq: timelineIds},
+        createdBy: userId,
+      },
+    });
+
+    if (timelines.length <= 0) {
+      throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
+    }
+
+    if (timelines.length !== timelineIds.length) {
+      throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
+    }
+
+    const publicTimelines = [];
+    const privateTimelines = [];
+    const customTimelines = [];
+    const friendTimelines = [];
+
+    for (const timeline of timelines) {
+      if (timeline.visibility === VisibilityType.PUBLIC) {
+        publicTimelines.push(timeline);
+      }
+
+      if (timeline.visibility === VisibilityType.FRIEND) {
+        friendTimelines.push(timeline);
+      }
+
+      if (timeline.visibility === VisibilityType.PRIVATE) {
+        privateTimelines.push(timeline);
+      }
+
+      if (timeline.visibility === VisibilityType.SELECTED) {
+        customTimelines.push(timeline);
+      }
+    }
+
+    let visibility = VisibilityType.PRIVATE;
+
+    const selectedUserIds = [];
+
+    if (privateTimelines.length <= 0) {
+      if (customTimelines.length > 0 || friendTimelines.length > 0) {
+        const friendUserIds = await Promise.all(
+          friendTimelines.map(async e => {
+            const friends = await this.friendRepository.find({
+              where: {
+                or: [
+                  {
+                    requesteeId: e.createdBy,
+                    requestorId: userId,
+                  },
+                  {
+                    requesteeId: userId,
+                    requestorId: e.createdBy,
+                  },
+                ],
+                status: FriendStatusType.APPROVED,
+              },
+            });
+
+            const requesteeIds = [];
+            const requestorIds = [];
+
+            for (const friend of friends) {
+              if (friend.requesteeId === userId) {
+                requestorIds.push(friend.requestorId);
+                continue;
+              } else if (friend.requestorId === userId) {
+                requesteeIds.push(friend.requesteeId);
+              } else {
+                requesteeIds.push(friend.requesteeId);
+                requestorIds.push(friend.requestorId);
+              }
+            }
+
+            return [...new Set([...requesteeIds, ...requestorIds])];
+          }),
+        );
+
+        const selected = customTimelines.map(e => {
+          const userIds = e.selectedUserIds.map(selectedUser => {
+            if (typeof selectedUser === 'string') return selectedUser;
+            return selectedUser.userId;
+          });
+
+          return userIds;
+        });
+
+        const data = [];
+
+        if (friendUserIds.length > 0) {
+          data.push(...friendUserIds);
+        }
+
+        if (selected.length > 0) {
+          data.push(...selected);
+        }
+
+        const selectedUserIdsIntersection = intersection(...data);
+        selectedUserIds.push(...selectedUserIdsIntersection, userId);
+        visibility = VisibilityType.SELECTED;
+      } else {
+        visibility = VisibilityType.PUBLIC;
+      }
+    }
+
+    return {
+      visibility,
+      selectedUserIds,
+    };
   }
 
   private getImportedTags(
