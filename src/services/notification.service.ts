@@ -146,6 +146,41 @@ export class NotificationService {
     return;
   }
 
+  async sendVoteCount(
+    referencetype: ReferenceType,
+    referenceID: string,
+  ): Promise<void> {
+    const destination: string = await (referencetype === ReferenceType.POST
+      ? this.postRepository
+          .findById(referenceID, {
+            fields: ['createdBy'],
+          })
+          .then(result => result.createdBy)
+      : this.commentRepository
+          .findById(referenceID, {
+            fields: ['userId'],
+          })
+          .then(result => result.userId));
+
+    const MyriadUserID = await this.getMyriadUserId();
+    const notification = new Notification({
+      type: NotificationType.VOTE_COUNT,
+      referenceId: referenceID,
+      message: 'Your post is getting upvotes',
+      from: MyriadUserID,
+    });
+    const title = 'New Upvotes';
+    const body = 'Your post is getting upvotes';
+    await this.sendNotificationToUser(
+      notification,
+      destination,
+      title,
+      body,
+    ).catch((err: Error) => {
+      throw err;
+    });
+  }
+
   async sendPostComment(comment: Comment): Promise<void> {
     await this.sendMention(
       comment.id ?? '',
