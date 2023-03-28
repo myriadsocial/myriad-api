@@ -204,6 +204,8 @@ export class ExperienceService {
     const date = Date.now();
     const newExperiencePosts = [] as ExperiencePost[];
 
+    if (!post.addedAt) post.addedAt = {};
+
     for (const experienceId of data.experienceIds) {
       if (post.addedAt[experienceId] === undefined) {
         post.addedAt[experienceId] = date;
