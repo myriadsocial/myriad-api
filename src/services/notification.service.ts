@@ -27,6 +27,7 @@ import {
   Vote,
 } from '../models';
 import {
+  ExperienceRepository,
   CommentRepository,
   CurrencyRepository,
   NotificationRepository,
@@ -43,6 +44,8 @@ import {AdditionalData} from './transaction.service';
 @injectable({scope: BindingScope.TRANSIENT})
 export class NotificationService {
   constructor(
+    @repository(ExperienceRepository)
+    private experienceRepository: ExperienceRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
     @repository(PostRepository)
@@ -624,6 +627,28 @@ export class NotificationService {
     );
 
     return;
+  }
+
+  async sendSubscriberCount(
+    referenceID: string,
+    followers: number,
+  ): Promise<void> {
+    const userId: string = await this.experienceRepository
+      .findById(referenceID, {
+        fields: ['createdBy'],
+      })
+      .then(result => result.createdBy);
+    const myriadUserId = await this.getMyriadUserId();
+    const notification = new Notification({
+      type: NotificationType.VOTE_COUNT,
+      referenceId: referenceID,
+      message: followers.toString(),
+      from: myriadUserId,
+    });
+    const body = 'Your timeline is getting follower';
+    const title = 'Follower Notification';
+
+    await this.sendNotificationToUser(notification, userId, title, body);
   }
 
   async sendTipsSuccess(
