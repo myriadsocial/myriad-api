@@ -60,11 +60,42 @@ export class ExperienceService {
     return this.experienceRepository.find(filter);
   }
 
+  /* eslint-disable  @typescript-eslint/no-explicit-any */
   public async findAdvanced(
-    filter?: Filter<Experience>,
+    allowedTags?: string[],
+    prohibitedTags?: string[],
+    people?: string[],
+    page?: number,
+    limit?: number,
   ): Promise<Experience[]> {
+    const limitNum = limit ?? 50;
+    const skip = ((page ?? 1) - 1) * limitNum;
+    const peoples =
+      people?.map(peo => ({
+        people: {
+          elemMatch: {
+            id: peo,
+          },
+        },
+      })) ?? [];
+    const query: any = {
+      where: {
+        or: [
+          {
+            allowedTags: {inq: allowedTags},
+          },
+          {
+            prohibitedTags: {inq: prohibitedTags},
+          },
+          ...peoples,
+        ],
+      },
+      limit: limitNum,
+      skip: skip,
+    };
+
     const experiences: Experience[] = (await this.experienceRepository.find(
-      filter,
+      query,
     )) as Experience[];
 
     return experiences.filter(async exp => {
