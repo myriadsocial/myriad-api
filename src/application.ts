@@ -87,7 +87,7 @@ import {getFilePathFromSeedData, upload, UploadType} from './utils/upload';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType} from './enums';
 import {UpdatePeopleProfileJob} from './jobs';
-import {SelectedUser, TimelineConfig} from './models';
+import {MentionUser, SelectedUser, TimelineConfig} from './models';
 
 const jwt = require('jsonwebtoken');
 
@@ -243,7 +243,7 @@ export class MyriadApiApplication extends BootMixin(
     const env = this.options?.environment;
     if (!this.options?.skipMigrateSchema) await super.migrateSchema(options);
     if (options?.existingSchema === 'drop') return this.databaseSeeding(env);
-    await Promise.all([this.doMigrateExperience()]);
+    await Promise.all([this.doMigrateExperience(), this.doMigratePost()]);
   }
 
   async databaseSeeding(environment: string): Promise<void> {
@@ -668,6 +668,59 @@ export class MyriadApiApplication extends BootMixin(
     configs.forEach(value => {
       promises.push(timelineConfigRepository.update(value));
     });
+
+    bar.stop();
+
+    await Promise.allSettled(promises);
+  }
+
+  async doMigratePost(): Promise<void> {
+    if (!this.doCollectionExists('post')) return;
+    const {postRepository, userRepository} = await this.repositories();
+    const {count: totalPost} = await postRepository.count(<AnyObject>{
+      'mentions.id': {exists: true},
+    });
+
+    const bar = this.initializeProgressBar('Start Migrate Post');
+    const promises = [];
+
+    bar.start(totalPost - 1);
+    for (let i = 0; i < totalPost; i++) {
+      const [post] = await postRepository.find(<AnyObject>{
+        where: {
+          'mentions.id': {
+            exists: true,
+          },
+        },
+        limit: 1,
+        skip: i,
+      });
+
+      if (!post) continue;
+      if (post.mentions.length === 0) continue;
+
+      const mentions = post.mentions;
+      const updatedMentions = await Promise.all<MentionUser>(
+        mentions.map(async mention => {
+          return userRepository
+            .findOne({where: {id: mention.id}})
+            .then(user => {
+              if (!user) return mention;
+              const newMention = new MentionUser();
+              newMention.id = user.id;
+              newMention.name = user.name;
+              newMention.username = user.username;
+              return newMention;
+            });
+        }),
+      );
+
+      promises.push(
+        postRepository.updateById(post.id, {mentions: updatedMentions}),
+      );
+
+      bar.update(i);
+    }
 
     bar.stop();
 
