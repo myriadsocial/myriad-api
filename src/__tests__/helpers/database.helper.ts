@@ -281,6 +281,7 @@ export async function givenRepositories(testdb: any) {
   );
 
   const notificationService = new NotificationService(
+    experienceRepository,
     userRepository,
     postRepository,
     notificationRepository,
@@ -381,6 +382,7 @@ export async function givenRepositories(testdb: any) {
     friendService,
     metricService,
     tagService,
+    notificationService,
   );
 
   const currencyService = new CurrencyService(
