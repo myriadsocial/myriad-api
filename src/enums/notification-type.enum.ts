@@ -26,4 +26,5 @@ export enum NotificationType {
   USER_TIPS = 'user_tips',
   USER_TIPS_UNCLAIMED = 'user_tips_unclaimed',
   VOTE_COUNT = 'vote_count',
+  FOLLOWER_COUNT = 'follower_count',
 }

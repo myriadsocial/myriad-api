@@ -640,7 +640,7 @@ export class NotificationService {
       .then(result => result.createdBy);
     const myriadUserId = await this.getMyriadUserId();
     const notification = new Notification({
-      type: NotificationType.VOTE_COUNT,
+      type: NotificationType.FOLLOWER_COUNT,
       referenceId: referenceID,
       message: followers.toString(),
       from: myriadUserId,
