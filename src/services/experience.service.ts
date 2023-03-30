@@ -33,7 +33,6 @@ import {
 import {FriendService} from './friend.service';
 import {PostService} from './post.service';
 
-/* eslint-disable  @typescript-eslint/no-explicit-any */
 @injectable({scope: BindingScope.TRANSIENT})
 export class ExperienceService {
   constructor(
