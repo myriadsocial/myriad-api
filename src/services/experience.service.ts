@@ -65,8 +65,6 @@ export class ExperienceService {
     allowedTags?: string[],
     prohibitedTags?: string[],
     people?: string[],
-    page?: number,
-    limit?: number,
   ): Promise<Experience[]> {
     const userId = this.currentUser[securityId];
 
@@ -75,8 +73,6 @@ export class ExperienceService {
       FriendStatusType.APPROVED,
     );
 
-    const limitNum = limit ?? 30;
-    const skip = ((page ?? 1) - 1) * limitNum;
     const peoples =
       people?.map(peo => ({
         people: {
@@ -88,13 +84,13 @@ export class ExperienceService {
 
     const orCondition: any[] = [...peoples];
 
-    if (allowedTags) {
+    if (allowedTags && allowedTags.length > 0) {
       orCondition.push({
         allowedTags: {inq: allowedTags},
       });
     }
 
-    if (prohibitedTags) {
+    if (prohibitedTags && prohibitedTags.length > 0) {
       orCondition.push({
         prohibitedTags: {inq: prohibitedTags},
       });
@@ -129,8 +125,6 @@ export class ExperienceService {
           },
         ],
       },
-      limit: limitNum,
-      skip: skip,
     };
 
     const experiences: Experience[] = (await this.experienceRepository.find(

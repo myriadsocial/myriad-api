@@ -33,6 +33,7 @@ export class ExperienceController {
     return this.experienceService.find(filter);
   }
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/experiences/advances')
   @response(200, {
     description: 'Array of experience model instances',
@@ -45,24 +46,18 @@ export class ExperienceController {
       },
     },
   })
-  async advanced(
+  async findAdvanced(
     @param.array('allowedTags', 'query', {type: 'string'})
     allowedTags?: string[],
     @param.array('prohibitedTags', 'query', {type: 'string'})
     prohibitedTags?: string[],
     @param.array('people', 'query', {type: 'string'})
     people?: string[],
-    @param.query.number('page')
-    page?: number,
-    @param.query.number('limit')
-    limit?: number,
   ): Promise<Experience[]> {
     return this.experienceService.findAdvanced(
       allowedTags,
       prohibitedTags,
       people,
-      page,
-      limit,
     );
   }
 
