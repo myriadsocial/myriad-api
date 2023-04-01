@@ -449,7 +449,10 @@ export class FilterBuilderService {
     if (Array.isArray(userId)) userId = userId[0];
     if (Array.isArray(visibility)) visibility = visibility[0];
 
-    filter.where = {deletedAt: {$eq: null}} as Where;
+    filter.where = {
+      ...filter.where,
+      deletedAt: {$eq: null},
+    } as Where;
 
     if (typeof q === 'string') {
       const matchWord = q.toString().match('^[A-Za-z0-9]');
@@ -499,6 +502,85 @@ export class FilterBuilderService {
       visibilityType,
       userId?.toString(),
     );
+
+    return this.finalizeFilter(filter, where);
+  }
+
+  /* eslint-disable  @typescript-eslint/no-explicit-any */
+  public async experienceAdvanceSearch(
+    filter: Filter<Experience>,
+    query: Query,
+  ): Promise<AnyObject | void> {
+    const userId = this.currentUser[securityId];
+
+    const approvedFriendIds = await this.friendService.getFriendIds(
+      userId,
+      FriendStatusType.APPROVED,
+    );
+
+    const {allowedTags, prohibitedTags, people} = query;
+
+    let orCondition: any[] = [];
+    if (people && Array.isArray(people)) {
+      const peoples =
+        people.map(peo => ({
+          people: {
+            elemMatch: {
+              id: peo,
+            },
+          },
+        })) ?? [];
+
+      orCondition = [...peoples];
+    }
+
+    if (allowedTags && Array.isArray(allowedTags) && allowedTags.length > 0) {
+      orCondition.push({
+        allowedTags: {inq: allowedTags},
+      });
+    }
+
+    if (
+      prohibitedTags &&
+      Array.isArray(prohibitedTags) &&
+      prohibitedTags.length > 0
+    ) {
+      orCondition.push({
+        prohibitedTags: {inq: prohibitedTags},
+      });
+    }
+
+    const where: any = {
+      and: [
+        orCondition.length > 0
+          ? {
+              or: orCondition,
+            }
+          : {},
+        {
+          or: [
+            {
+              visibility: {eq: VisibilityType.PRIVATE},
+              createdBy: {eq: userId},
+            },
+            {
+              visibility: {eq: VisibilityType.SELECTED},
+              selectedUserIds: {inq: [userId]},
+            },
+            {
+              visibility: {eq: VisibilityType.FRIEND},
+              createdBy: {inq: approvedFriendIds},
+            },
+            {
+              visibility: {exists: false},
+            },
+          ],
+        },
+      ],
+    };
+
+    console.log(where);
+
     return this.finalizeFilter(filter, where);
   }
 

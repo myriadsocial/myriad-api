@@ -6,6 +6,7 @@ export enum MethodType {
   DELETEBYID = 'deleteById',
   DRAFTPOST = 'draftPost',
   FIND = 'find',
+  FINDADVANCED = 'findAdvanced',
   FINDBYID = 'findById',
   FILEUPLOAD = 'fileUpload',
   GETIMPORTERS = 'getImporters',

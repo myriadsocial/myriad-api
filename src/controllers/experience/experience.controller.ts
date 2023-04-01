@@ -27,7 +27,7 @@ export class ExperienceController {
     },
   })
   async find(
-    @param.filter(Experience, {exclude: ['limit', 'skip', 'offset', 'where']})
+    @param.filter(Experience, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<Experience>,
   ): Promise<Experience[]> {
     return this.experienceService.find(filter);
@@ -47,18 +47,10 @@ export class ExperienceController {
     },
   })
   async findAdvanced(
-    @param.array('allowedTags', 'query', {type: 'string'})
-    allowedTags?: string[],
-    @param.array('prohibitedTags', 'query', {type: 'string'})
-    prohibitedTags?: string[],
-    @param.array('people', 'query', {type: 'string'})
-    people?: string[],
+    @param.filter(Experience, {exclude: ['limit', 'skip', 'offset']})
+    filter?: Filter<Experience>,
   ): Promise<Experience[]> {
-    return this.experienceService.findAdvanced(
-      allowedTags,
-      prohibitedTags,
-      people,
-    );
+    return this.experienceService.find(filter);
   }
 
   @intercept(FindByIdInterceptor.BINDING_KEY)
