@@ -168,7 +168,9 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       case ControllerType.EXPERIENCE: {
         if (methodName === 'find') {
           await this.filterBuilderService.experience(filter, query);
-        } else {
+        }
+
+        if (methodName === 'findAdvanced') {
           await this.filterBuilderService.experienceAdvanceSearch(
             filter,
             query,
