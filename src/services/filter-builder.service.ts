@@ -1614,6 +1614,7 @@ export class FilterBuilderService {
   ): Promise<Where<Post>> {
     switch (timelineType) {
       case TimelineType.EXPERIENCE: {
+        const experienceId = query?.experienceId;
         const currentUserId = this.currentUser[securityId];
         const timelineConfig = await this.timelineConfigRepository.findOne({
           where: {userId: currentUserId},
@@ -1623,13 +1624,24 @@ export class FilterBuilderService {
 
         const timelineFilter: Where<Post>[] = [];
 
-        for (const experiencId in timelineConfig.data) {
-          const config = timelineConfig.data[experiencId];
-          const filter = await this.timelineVisibilityFilter(
-            currentUserId,
-            config,
-          );
-          timelineFilter.push(...filter);
+        if (experienceId) {
+          const config = timelineConfig.data[experienceId.toString()];
+          if (config) {
+            const filter = await this.timelineVisibilityFilter(
+              currentUserId,
+              config,
+            );
+            timelineFilter.push(...filter);
+          }
+        } else {
+          for (const experiencId in timelineConfig.data) {
+            const config = timelineConfig.data[experiencId];
+            const filter = await this.timelineVisibilityFilter(
+              currentUserId,
+              config,
+            );
+            timelineFilter.push(...filter);
+          }
         }
 
         return {
