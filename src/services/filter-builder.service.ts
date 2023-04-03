@@ -442,15 +442,15 @@ export class FilterBuilderService {
     filter: Filter<Experience>,
     query: Query,
   ): Promise<AnyObject | void> {
-    let {q, postId, userId, visibility} = query;
+    let {q, postId, userId, createdBy, visibility} = query;
 
     if (Array.isArray(q)) q = q[0];
     if (Array.isArray(postId)) postId = postId[0];
     if (Array.isArray(userId)) userId = userId[0];
     if (Array.isArray(visibility)) visibility = visibility[0];
+    if (Array.isArray(createdBy)) createdBy = createdBy[0];
 
     filter.where = {
-      ...filter.where,
       deletedAt: {$eq: null},
     } as Where;
 
@@ -464,7 +464,10 @@ export class FilterBuilderService {
       const re = new RegExp('[^A-Za-z0-9 ]', 'gi');
       const experienceQuery = q.toString().replace(re, '');
       const where = await this.searchExperience(experienceQuery);
-      return this.finalizeFilter(filter, where);
+      return this.finalizeFilter(filter, {
+        ...where,
+        createdBy: createdBy,
+      });
     }
 
     if (postId) {
@@ -503,7 +506,10 @@ export class FilterBuilderService {
       userId?.toString(),
     );
 
-    return this.finalizeFilter(filter, where);
+    return this.finalizeFilter(filter, {
+      ...where,
+      createdBy: createdBy,
+    });
   }
 
   /* eslint-disable  @typescript-eslint/no-explicit-any */
@@ -578,8 +584,6 @@ export class FilterBuilderService {
         },
       ],
     };
-
-    console.log(where);
 
     return this.finalizeFilter(filter, where);
   }
