@@ -20,6 +20,31 @@ export class ExperiencePostController {
     private experienceService: ExperienceService,
   ) {}
 
+  @get('/experience/{id}/count_new_post', {
+    responses: {
+      '200': {
+        description: 'GET experiences new post number',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'number',
+              newPostCount: 1,
+            },
+          },
+        },
+      },
+    },
+  })
+  async countNewPost(@param.path.string('id') id: string) {
+    const count = this.experienceService.countNewPost(id);
+
+    return {
+      data: {
+        newPostCount: count,
+      },
+    };
+  }
+
   @intercept(PaginationInterceptor.BINDING_KEY)
   @get('/experience/{id}/posts', {
     responses: {

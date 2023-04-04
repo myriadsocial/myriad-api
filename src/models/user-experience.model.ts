@@ -1,4 +1,5 @@
 import {belongsTo, Entity, model, property} from '@loopback/repository';
+import {UserExperienceStatus} from '../enums/user-experience-status.enum';
 import {Experience, ExperienceWithRelations} from './experience.model';
 import {User} from './user.model';
 
@@ -95,6 +96,16 @@ export class UserExperience extends Entity {
     type: 'boolean',
   })
   blocked?: boolean;
+
+  @property({
+    type: 'number',
+    required: false,
+    jsonSchema: {
+      enum: Object.values(UserExperienceStatus),
+    },
+    default: UserExperienceStatus.NEW,
+  })
+  status?: number;
 
   constructor(data?: Partial<UserExperience>) {
     super(data);
