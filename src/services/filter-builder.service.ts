@@ -442,13 +442,13 @@ export class FilterBuilderService {
     filter: Filter<Experience>,
     query: Query,
   ): Promise<AnyObject | void> {
-    let {q, postId, userId, createdBy, visibility} = query;
+    const {createdBy} = query;
+    let {q, postId, userId, visibility} = query;
 
     if (Array.isArray(q)) q = q[0];
     if (Array.isArray(postId)) postId = postId[0];
     if (Array.isArray(userId)) userId = userId[0];
     if (Array.isArray(visibility)) visibility = visibility[0];
-    if (Array.isArray(createdBy)) createdBy = createdBy[0];
 
     filter.where = {
       deletedAt: {$eq: null},
