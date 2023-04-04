@@ -367,6 +367,7 @@ export async function givenRepositories(testdb: any) {
     experiencePostRepository,
     timelineConfigRepository,
     userRepository,
+    userExperienceRepository,
     friendService,
     postService,
     currentUser,
