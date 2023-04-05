@@ -16,6 +16,7 @@ import {
   PlatformType,
   VisibilityType,
 } from '../enums';
+import {UserExperienceStatus} from '../enums/user-experience-status.enum';
 import {
   CreateExperiencePostDto,
   Experience,
@@ -29,6 +30,7 @@ import {
   ExperienceRepository,
   TimelineConfigRepository,
   UserRepository,
+  UserExperienceRepository,
 } from '../repositories';
 import {FriendService} from './friend.service';
 import {PostService} from './post.service';
@@ -44,6 +46,8 @@ export class ExperienceService {
     private timelineConfigRepository: TimelineConfigRepository,
     @repository(UserRepository)
     private userRepository: UserRepository,
+    @repository(UserExperienceRepository)
+    private userExperienceRepository: UserExperienceRepository,
     @service(FriendService)
     private friendService: FriendService,
     @service(PostService)
@@ -55,6 +59,32 @@ export class ExperienceService {
   // ------------------------------------------------
 
   // ------ Experience ------------------------------
+
+  // count post new per experiences
+  public async countNewPost(id: string): Promise<number> {
+    const userId = this.currentUser[securityId];
+
+    const lastUpdateUserExperience =
+      await this.userExperienceRepository.findOne({
+        where: {
+          userId: {eq: userId},
+          experienceId: {eq: id},
+        },
+      });
+
+    if (lastUpdateUserExperience) {
+      const experiencePost = await this.experiencePostRepository.count({
+        experienceId: {eq: id},
+        updatedAt: {
+          gt: lastUpdateUserExperience.updatedAt,
+        },
+      });
+
+      return experiencePost.count;
+    }
+
+    return 0;
+  }
 
   public async find(filter?: Filter<Experience>): Promise<Experience[]> {
     return this.experienceRepository.find(filter);
@@ -143,6 +173,17 @@ export class ExperienceService {
   }
 
   public async posts(id: string, filter?: Filter<Post>): Promise<Post[]> {
+    await this.userExperienceRepository.updateAll(
+      {
+        status: UserExperienceStatus.NONE,
+        updatedAt: Date.now().toString(),
+      },
+      {
+        experienceId: {eq: id},
+        userId: {eq: this.currentUser[securityId]},
+      },
+    );
+
     return this.postService.find(filter, id, true);
   }
 
@@ -189,6 +230,13 @@ export class ExperienceService {
         experiencePost.postId = data.postId;
         newExperiencePosts.push(experiencePost);
       }
+      await this.userExperienceRepository.updateAll(
+        {status: UserExperienceStatus.ADDED},
+        {
+          experienceId: {eq: experienceId},
+          userId: {neq: this.currentUser[securityId]},
+        },
+      );
     }
 
     if (newExperiencePosts.length <= 0) return [];
