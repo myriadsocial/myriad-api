@@ -1730,6 +1730,10 @@ export class FilterBuilderService {
           }
         }
 
+        if (timelineFilter.length === 0) {
+          return {id: ''};
+        }
+
         return {
           or: timelineFilter,
         };
