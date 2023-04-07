@@ -315,7 +315,6 @@ export async function givenRepositories(testdb: any) {
     friendRepository,
     peopleRepository,
     postRepository,
-    timelineConfigRepository,
     transactionRepository,
     userRepository,
     userSocialMediaRepository,

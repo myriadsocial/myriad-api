@@ -5,6 +5,7 @@ import {
   Filter,
   repository,
   Where,
+  WhereBuilder,
 } from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {intersection, omit} from 'lodash';
@@ -40,7 +41,6 @@ import {
   FriendRepository,
   PeopleRepository,
   PostRepository,
-  TimelineConfigRepository,
   TransactionRepository,
   UserRepository,
   UserSocialMediaRepository,
@@ -74,8 +74,6 @@ export class PostService {
     private peopleRepository: PeopleRepository,
     @repository(PostRepository)
     private postRepository: PostRepository,
-    @repository(TimelineConfigRepository)
-    private timelineConfigRepository: TimelineConfigRepository,
     @repository(TransactionRepository)
     private transactionRepository: TransactionRepository,
     @repository(UserRepository)
@@ -99,7 +97,7 @@ export class PostService {
   // ------ Post ------------------------------------
 
   public async create(draftPost: DraftPost): Promise<Post | DraftPost> {
-    const timelineIds = draftPost.selectedTimelineIds;
+    let timelineIds = draftPost.selectedTimelineIds;
 
     return this.beforeCreate(draftPost)
       .then(async () => {
@@ -111,14 +109,17 @@ export class PostService {
           }
 
           const {selectedTimelineIds, createdBy} = draftPost;
-          const {visibility, selectedUserIds} = await this.getVisibility(
+          const result = await this.getVisibility(
             createdBy,
             selectedTimelineIds,
           );
+          const {visibility, selectedUserIds} = result;
+
+          timelineIds = result.timelineIds;
 
           const date = Date.now();
           const addedAt: AddedAt = {};
-          selectedTimelineIds.forEach(e => {
+          timelineIds.forEach(e => {
             addedAt[e] = date;
           });
 
@@ -679,10 +680,12 @@ export class PostService {
     pathname = '',
   ): Promise<ExtendedPost> {
     const [platform, originPostId] = raw.url.split(',');
-    const {visibility, selectedUserIds} = await this.getVisibility(
+    const {visibility, selectedUserIds, timelineIds} = await this.getVisibility(
       raw.importer,
       raw.selectedTimelineIds,
     );
+
+    raw.selectedTimelineIds = timelineIds;
 
     let rawPost = null;
     switch (platform) {
@@ -716,19 +719,26 @@ export class PostService {
   }
 
   private async getVisibility(userId: string, timelineIds = [] as string[]) {
-    const timelines = await this.experienceRepository.find({
-      where: {
-        id: {inq: timelineIds},
-        createdBy: userId,
-      },
-    });
+    const whereBuilder = new WhereBuilder<Experience>();
+
+    if (timelineIds.length > 0) {
+      whereBuilder.inq('id', timelineIds);
+    }
+
+    const where = whereBuilder.eq('createdBy', userId).build();
+    const timelines = await this.experienceRepository.find({where});
 
     if (timelines.length <= 0) {
       throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
     }
 
-    if (timelines.length !== timelineIds.length) {
-      throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
+    // TODO: Uncomment when Web App is ready
+    // if (timelines.length !== timelineIds.length) {
+    //   throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
+    // }
+
+    if (timelineIds.length <= 0) {
+      timelineIds = timelines.map(e => e.id);
     }
 
     const publicTimelines = [];
@@ -827,6 +837,7 @@ export class PostService {
     return {
       visibility,
       selectedUserIds,
+      timelineIds,
     };
   }
 
