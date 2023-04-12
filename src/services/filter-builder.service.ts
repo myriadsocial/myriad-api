@@ -40,6 +40,7 @@ import {
 } from '../models';
 import {
   AccountSettingRepository,
+  ExperienceUserRepository,
   TagRepository,
   UserRepository,
   WalletRepository,
@@ -68,6 +69,8 @@ export class FilterBuilderService {
     private currencyService: CurrencyService,
     @service(ExperienceService)
     private experienceService: ExperienceService,
+    @repository(ExperienceUserRepository)
+    private experienceUserRepository: ExperienceUserRepository,
     @service(FriendService)
     private friendService: FriendService,
     @service(PostService)
@@ -528,6 +531,12 @@ export class FilterBuilderService {
 
     let orCondition: any[] = [];
     if (people && Array.isArray(people)) {
+      const userExperiences = await this.experienceUserRepository.find({
+        where: {
+          userId: {inq: people as string[]},
+        },
+      });
+
       const peoples =
         people.map(peo => ({
           people: {
@@ -538,6 +547,14 @@ export class FilterBuilderService {
         })) ?? [];
 
       orCondition = [...peoples];
+
+      const experienceIds = userExperiences.map(val => {
+        return val.experienceId;
+      });
+
+      orCondition.push({
+        id: {inq: experienceIds},
+      });
     }
 
     if (allowedTags && Array.isArray(allowedTags) && allowedTags.length > 0) {
