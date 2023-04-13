@@ -16,7 +16,7 @@ export class VideoUploadController {
     private videoUploadService: VideoUploadService,
   ) {}
 
-  @post('/upload/vide', {
+  @post('/upload/video', {
     responses: {
       200: {
         content: {
