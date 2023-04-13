@@ -515,7 +515,6 @@ export class FilterBuilderService {
     });
   }
 
-  /* eslint-disable  @typescript-eslint/no-explicit-any */
   public async experienceAdvanceSearch(
     filter: Filter<Experience>,
     query: Query,
@@ -530,7 +529,7 @@ export class FilterBuilderService {
     const {allowedTags, prohibitedTags, people} = query;
 
     // to collect query or condition
-    let orCondition: any[] = [];
+    let orCondition: AnyObject[] = [];
 
     // check if query people is not null and type of people is array
     // push condition to match with people field with id from people query
