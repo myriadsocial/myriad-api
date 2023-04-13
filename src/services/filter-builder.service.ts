@@ -1451,7 +1451,6 @@ export class FilterBuilderService {
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {nin: blocked}},
           {visibility: VisibilityType.PUBLIC},
-          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
@@ -1460,7 +1459,6 @@ export class FilterBuilderService {
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {nin: blocked}},
           {visibility: VisibilityType.PUBLIC},
-          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
@@ -1468,7 +1466,6 @@ export class FilterBuilderService {
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {inq: experienceUserIds}},
           {visibility: VisibilityType.PUBLIC},
-          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       // Visibility SELECTED USER
@@ -1488,7 +1485,6 @@ export class FilterBuilderService {
           {createdBy: {nin: blocked}},
           {selectedUserIds: {inq: [this.currentUser[securityId]]}},
           {visibility: VisibilityType.SELECTED},
-          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
@@ -1498,7 +1494,6 @@ export class FilterBuilderService {
           {createdBy: {nin: blocked}},
           {selectedUserIds: {inq: [this.currentUser[securityId]]}},
           {visibility: VisibilityType.SELECTED},
-          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       // Visibility FRIEND
@@ -1516,7 +1511,6 @@ export class FilterBuilderService {
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {inq: expFriendIds}},
           {visibility: VisibilityType.FRIEND},
-          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
@@ -1525,7 +1519,6 @@ export class FilterBuilderService {
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: {inq: expFriendIds}},
           {visibility: VisibilityType.FRIEND},
-          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       // CurrentUser
@@ -1534,7 +1527,6 @@ export class FilterBuilderService {
           {tags: {inq: allowedTags}} as Where,
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: currentUserId},
-          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
         ],
       },
       {
@@ -1542,7 +1534,12 @@ export class FilterBuilderService {
           {peopleId: {inq: peopleIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: currentUserId},
-          {[field]: {gte: selected?.addedAt ?? Date.now() + 60 * 60 * 1000}},
+        ],
+      },
+      {
+        and: [
+          {tags: {nin: prohibitedTags}} as Where,
+          {createdBy: this.currentUser[securityId]},
         ],
       },
       {
