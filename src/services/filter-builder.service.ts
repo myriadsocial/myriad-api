@@ -515,7 +515,6 @@ export class FilterBuilderService {
     });
   }
 
-  /* eslint-disable  @typescript-eslint/no-explicit-any */
   public async experienceAdvanceSearch(
     filter: Filter<Experience>,
     query: Query,
@@ -529,14 +528,13 @@ export class FilterBuilderService {
 
     const {allowedTags, prohibitedTags, people} = query;
 
-    let orCondition: any[] = [];
-    if (people && Array.isArray(people)) {
-      const userExperiences = await this.experienceUserRepository.find({
-        where: {
-          userId: {inq: people as string[]},
-        },
-      });
+    // to collect query or condition
+    let orCondition: AnyObject[] = [];
 
+    // check if query people is not null and type of people is array
+    // push condition to match with people field with id from people query
+    // push condition to query by id in list experience id from query experience user by people
+    if (people && Array.isArray(people)) {
       const peoples =
         people.map(peo => ({
           people: {
@@ -548,12 +546,18 @@ export class FilterBuilderService {
 
       orCondition = [...peoples];
 
-      const experienceIds = userExperiences.map(val => {
-        return val.experienceId;
+      const userExperiences = await this.experienceUserRepository.find({
+        where: {
+          userId: {inq: people as string[]},
+        },
+      });
+
+      const experienceIdsPeople = userExperiences.map(userExperience => {
+        return userExperience.experienceId;
       });
 
       orCondition.push({
-        id: {inq: experienceIds},
+        id: {inq: experienceIdsPeople},
       });
     }
 
@@ -573,34 +577,40 @@ export class FilterBuilderService {
       });
     }
 
-    const where: any = {
-      and: [
-        orCondition.length > 0
-          ? {
-              or: orCondition,
-            }
-          : {},
+    const filterVisiblity = {
+      or: [
         {
-          or: [
-            {
-              visibility: {eq: VisibilityType.PRIVATE},
-              createdBy: {eq: userId},
-            },
-            {
-              visibility: {eq: VisibilityType.SELECTED},
-              selectedUserIds: {inq: [userId]},
-            },
-            {
-              visibility: {eq: VisibilityType.FRIEND},
-              createdBy: {inq: approvedFriendIds},
-            },
-            {
-              visibility: {exists: false},
-            },
-          ],
+          visibility: {eq: VisibilityType.PRIVATE},
+          createdBy: {eq: userId},
+        },
+        {
+          visibility: {eq: VisibilityType.SELECTED},
+          selectedUserIds: {inq: [userId]},
+        },
+        {
+          visibility: {eq: VisibilityType.FRIEND},
+          createdBy: {inq: approvedFriendIds},
+        },
+        {
+          visibility: {eq: VisibilityType.PUBLIC},
+        },
+        {
+          visibility: {exists: false},
         },
       ],
     };
+
+    const where: AnyObject = {
+      and: [],
+    };
+
+    where.and.push(filterVisiblity);
+
+    if (orCondition.length > 0) {
+      where.and.push({
+        or: orCondition,
+      });
+    }
 
     return this.finalizeFilter(filter, where);
   }

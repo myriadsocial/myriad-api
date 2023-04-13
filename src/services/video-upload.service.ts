@@ -17,6 +17,7 @@ export class VideoUploadService {
     'video/x-msvideo',
     'video/x-ms-wmv',
   ];
+
   constructor(
     @inject(FILE_UPLOAD_SERVICE)
     private handler: FileUploadHandler,
@@ -28,7 +29,7 @@ export class VideoUploadService {
     const userId = this.currentUser[securityId];
 
     if (!userId) {
-      throw new HttpErrors[400]();
+      throw new HttpErrors[401]();
     }
 
     return new Promise<object>((resolve, reject) => {
