@@ -595,6 +595,9 @@ export class FilterBuilderService {
               createdBy: {inq: approvedFriendIds},
             },
             {
+              visibility: {eq: VisibilityType.PUBLIC},
+            },
+            {
               visibility: {exists: false},
             },
           ],
