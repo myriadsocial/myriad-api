@@ -22,7 +22,7 @@ export interface ConfigData {
   settings: {
     strictObjectIDCoercion: true,
     mongodb: {
-      collection: 'transactions',
+      collection: 'timelineConfigs',
     },
   },
 })
