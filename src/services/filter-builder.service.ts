@@ -1152,7 +1152,7 @@ export class FilterBuilderService {
         {
           and: [
             {createdBy: this.currentUser[securityId]},
-            {tags: {inq: [hashtag]}},
+            {tags: {inq: [hashtag]}} as Where,
           ],
         },
       ],
@@ -1399,7 +1399,7 @@ export class FilterBuilderService {
           ],
         },
         {
-          and: [{tags: {inq: trendingTopicIds}}, {createdBy: userId}],
+          and: [{tags: {inq: trendingTopicIds}} as Where, {createdBy: userId}],
         },
       ],
     };
