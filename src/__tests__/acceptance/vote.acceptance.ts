@@ -1,13 +1,14 @@
 import {EntityNotFoundError} from '@loopback/repository';
 import {Client, expect} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
-import {SectionType} from '../../enums';
+import {NotificationType, SectionType} from '../../enums';
 import {User} from '../../models';
 import {
   CommentRepository,
   VoteRepository,
   PostRepository,
   UserRepository,
+  NotificationRepository
 } from '../../repositories';
 import {
   givenComment,
@@ -22,6 +23,8 @@ import {
   givenUserInstance,
   givenAccesToken,
   deleteAllRepository,
+  givenNotificationRepository,
+  givenNotification,
 } from '../helpers';
 import {omit} from 'lodash';
 
@@ -37,6 +40,7 @@ describe('VoteApplication', function () {
   let postRepository: PostRepository;
   let commentRepository: CommentRepository;
   let userRepository: UserRepository;
+  let notificationRepository: NotificationRepository;
   let user: User;
 
   before(async () => {
@@ -50,6 +54,7 @@ describe('VoteApplication', function () {
     postRepository = await givenPostRepository(app);
     commentRepository = await givenCommentRepository(app);
     userRepository = await givenUserRepository(app);
+    notificationRepository = await givenNotificationRepository(app);
   });
 
   before(async () => {
@@ -254,6 +259,92 @@ describe('VoteApplication', function () {
       const resultPost = await postRepository.findById(vote.referenceId);
       post.metric.upvotes = post.metric.upvotes - 1;
       expect(resultPost.metric.upvotes).to.equal(post.metric.upvotes);
+    }, 10000);
+  });
+
+  it('send notification at 5 upvotes', async () => {
+    const userPost = await givenUserInstance(userRepository, {
+      username: 'alexander',
+    });
+
+    const postResponse = (
+      await givenPostInstance(
+        postRepository,
+        {
+          metric: {
+            discussions: 0,
+            upvotes: 0,
+            downvotes: 0,
+            debates: 0,
+          },
+          createdBy: userPost.id,
+        },
+        true,
+      )
+    ).ops[0];
+    const post = Object.assign(omit(postResponse, ['_id']), {
+      id: postResponse._id.toString(),
+    });
+
+    const users = ['alpha'] ;
+    const user_instances = await Promise.all([
+      givenUserInstance(userRepository, {
+        username: 'alpha',
+      }),
+      givenUserInstance(userRepository, {
+        username: 'beta',
+      }),
+      givenUserInstance(userRepository, {
+        username: 'gamma',
+      }),
+      givenUserInstance(userRepository, {
+        username: 'epsilon',
+      }),
+    ]);
+    const vote_instances = await Promise.all([
+      givenVoteInstance(voteRepository, {
+        referenceId: post.id,
+        postId: post.id,
+        userId: user_instances[0].id,
+      }),
+      givenVoteInstance(voteRepository, {
+        referenceId: post.id,
+      postId: post.id,
+        userId: user_instances[1].id,
+      }),
+      givenVoteInstance(voteRepository, {
+        referenceId: post.id,
+      postId: post.id,
+        userId: user_instances[2].id,
+      }),
+      givenVoteInstance(voteRepository, {
+        referenceId: post.id,
+      postId: post.id,
+        userId: user_instances[3].id,
+      }),
+    ]);
+    const notif_instances = givenNotification({
+      type:NotificationType.VOTE_COUNT,
+      message:'5',
+      referenceId: post.id,
+    });
+    const notif_instance = Object.assign(omit(notif_instances , ['from']), {
+      to : userPost.id ,
+    })
+
+    const upvote = givenVote({
+      referenceId: post.id,
+      postId: post.id,
+      userId: user.id,
+    });
+    const response = await client
+      .post('/user/votes')
+      .set('Authorization', `Bearer ${token}`)
+      .send(upvote);
+
+    setTimeout(async () => {
+      const resultNotification = await notificationRepository.find({where : {type:NotificationType.VOTE_COUNT}});
+      expect(resultNotification).to.containDeep(notif_instance);
     }, 10000);
   });
 });
