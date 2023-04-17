@@ -285,9 +285,7 @@ describe('VoteApplication', function () {
     const post = Object.assign(omit(postResponse, ['_id']), {
       id: postResponse._id.toString(),
     });
-
-    const users = ['alpha'] ;
-    const user_instances = await Promise.all([
+    const userInstances = await Promise.all([
       givenUserInstance(userRepository, {
         username: 'alpha',
       }),
@@ -301,34 +299,34 @@ describe('VoteApplication', function () {
         username: 'epsilon',
       }),
     ]);
-    const vote_instances = await Promise.all([
+    const voteInstances = await Promise.all([
       givenVoteInstance(voteRepository, {
         referenceId: post.id,
         postId: post.id,
-        userId: user_instances[0].id,
+        userId: userInstances[0].id,
       }),
       givenVoteInstance(voteRepository, {
         referenceId: post.id,
       postId: post.id,
-        userId: user_instances[1].id,
+        userId: userInstances[1].id,
       }),
       givenVoteInstance(voteRepository, {
         referenceId: post.id,
       postId: post.id,
-        userId: user_instances[2].id,
+        userId: userInstances[2].id,
       }),
       givenVoteInstance(voteRepository, {
         referenceId: post.id,
       postId: post.id,
-        userId: user_instances[3].id,
+        userId: userInstances[3].id,
       }),
     ]);
-    const notif_instances = givenNotification({
+    const notifInstances = givenNotification({
       type:NotificationType.VOTE_COUNT,
       message:'5',
       referenceId: post.id,
     });
-    const notif_instance = Object.assign(omit(notif_instances , ['from']), {
+    const notifInstance = Object.assign(omit(notifInstances , ['from']), {
       to : userPost.id ,
     })
 
@@ -342,9 +340,12 @@ describe('VoteApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .send(upvote);
 
+      console.log(response.body.postId);
+      console.log(voteInstances);
+
     setTimeout(async () => {
       const resultNotification = await notificationRepository.find({where : {type:NotificationType.VOTE_COUNT}});
-      expect(resultNotification).to.containDeep(notif_instance);
+      expect(resultNotification).to.containDeep(notifInstance);
     }, 10000);
   });
 });
