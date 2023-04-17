@@ -87,7 +87,7 @@ import {getFilePathFromSeedData, upload, UploadType} from './utils/upload';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType} from './enums';
 import {UpdatePeopleProfileJob} from './jobs';
-import {MentionUser, SelectedUser, TimelineConfig} from './models';
+import {ConfigData, MentionUser, SelectedUser} from './models';
 
 const jwt = require('jsonwebtoken');
 
@@ -243,7 +243,12 @@ export class MyriadApiApplication extends BootMixin(
     const env = this.options?.environment;
     if (!this.options?.skipMigrateSchema) await super.migrateSchema(options);
     if (options?.existingSchema === 'drop') return this.databaseSeeding(env);
-    await Promise.all([this.doMigrateExperience(), this.doMigratePost()]);
+    await Promise.all([
+      this.doMigrateExperience(),
+      this.doMigrateExperiencePost(),
+      this.doMigrateTimelineConfig(),
+      this.doMigratePost(),
+    ]);
   }
 
   async databaseSeeding(environment: string): Promise<void> {
@@ -505,34 +510,21 @@ export class MyriadApiApplication extends BootMixin(
 
   async doMigrateExperience(): Promise<void> {
     if (!this.doCollectionExists('experience')) return;
-    const {
-      experienceRepository,
-      experiencePostRepository,
-      postRepository,
-      userExperienceRepository,
-      timelineConfigRepository,
-    } = await this.repositories();
+    const {experienceRepository} = await this.repositories();
 
-    const [
-      {count: totalPostExp},
-      {count: totalExperience},
-      {count: totalUserExperience},
-    ] = await Promise.all([
-      experiencePostRepository.count(),
+    const [{count: totalExperience}] = await Promise.all([
       experienceRepository.count({
         selectedUserIds: {
           exists: true,
         },
       }),
-      userExperienceRepository.count(),
     ]);
 
     const bar = this.initializeProgressBar('Start Migrate Experience');
 
     const promises = [];
-    const barSize = totalExperience + totalPostExp + totalUserExperience;
 
-    bar.start(barSize - 1);
+    bar.start(totalExperience - 1);
     for (let i = 0; i < totalExperience; i++) {
       const [experience] = await experienceRepository.find({
         limit: 1,
@@ -577,7 +569,25 @@ export class MyriadApiApplication extends BootMixin(
       bar.update(i);
     }
 
-    for (let i = 0; i < totalPostExp; i++) {
+    bar.stop();
+
+    await Promise.allSettled(promises);
+  }
+
+  async doMigrateExperiencePost(): Promise<void> {
+    if (!this.doCollectionExists('experience-post')) return;
+    const {experienceRepository, experiencePostRepository, postRepository} =
+      await this.repositories();
+
+    const [{count: totalExperiencePost}] = await Promise.all([
+      experiencePostRepository.count(),
+    ]);
+
+    const bar = this.initializeProgressBar('Start Migrate Experience Post');
+    const promises = [];
+
+    bar.start(totalExperiencePost - 1);
+    for (let i = 0; i < totalExperiencePost; i++) {
       const [experiencePost] = await experiencePostRepository.find({
         limit: 1,
         skip: i,
@@ -613,15 +623,36 @@ export class MyriadApiApplication extends BootMixin(
         }
       }
 
-      bar.update(totalExperience + i + 1);
+      bar.update(i);
     }
 
-    const configs = new Map<string, TimelineConfig>();
+    bar.stop();
 
-    for (let i = 0; i < totalUserExperience; i++) {
-      const [userExperience] = await userExperienceRepository.find({
+    await Promise.allSettled(promises);
+  }
+
+  async doMigrateTimelineConfig(): Promise<void> {
+    if (!this.doCollectionExists('timeline-config')) return;
+    const {userRepository, userExperienceRepository, timelineConfigRepository} =
+      await this.repositories();
+
+    const {count: totalUser} = await userRepository.count();
+    const bar = this.initializeProgressBar('Start Migrate Timeline Config');
+    const promises = [];
+
+    bar.start(totalUser - 1);
+    for (let i = 0; i < totalUser; i++) {
+      const [user] = await userRepository.find({
         limit: 1,
         skip: i,
+      });
+
+      if (!user) continue;
+
+      const userExperiences = await userExperienceRepository.find({
+        where: {
+          userId: user.id,
+        },
         include: [
           {
             relation: 'experience',
@@ -632,42 +663,50 @@ export class MyriadApiApplication extends BootMixin(
         ],
       });
 
-      if (!userExperience) continue;
-      const experience = userExperience.experience;
-      if (!experience) continue;
-      const users = experience.users ?? [];
-      const timelineConfig = await (configs.get(userExperience.userId) ??
-        timelineConfigRepository
-          .findOne({
-            where: {userId: userExperience.userId},
-          })
-          .then(result => {
-            if (result) return result;
-            return timelineConfigRepository.create({
-              userId: userExperience.userId,
-            });
-          }));
+      if (userExperiences.length === 0) continue;
 
-      timelineConfig.data[experience.id] = {
-        timelineId: experience.id,
-        allowedTags: experience.allowedTags,
-        prohibitedTags: experience.prohibitedTags,
-        peopleIds: experience.people.map(e => e.id),
-        userIds: users.map(e => e.id),
-        selectedUserIds: experience.selectedUserIds,
-        visibility: experience.visibility,
-        createdBy: experience.createdBy,
-        createdAt: 0,
-      };
+      const timelineConfig = await timelineConfigRepository
+        .findOne({
+          where: {
+            userId: user.id,
+          },
+        })
+        .then(result => {
+          if (result) return result;
+          return timelineConfigRepository.create({
+            data: {},
+            userId: user.id,
+          });
+        });
 
-      configs.set(userExperience.userId, timelineConfig);
+      const data: ConfigData = {};
 
-      bar.update(totalExperience + totalPostExp + i + 1);
+      for (const userExperience of userExperiences) {
+        const experience = userExperience.experience;
+        if (!experience) continue;
+        const users = experience.users ?? [];
+        data[experience.id] = {
+          timelineId: experience.id,
+          allowedTags: experience.allowedTags,
+          prohibitedTags: experience.prohibitedTags,
+          peopleIds: experience.people.map(e => e.id),
+          userIds: users.map(e => e.id),
+          selectedUserIds: experience.selectedUserIds,
+          visibility: experience.visibility,
+          createdBy: experience.createdBy,
+          createdAt: 0,
+        };
+      }
+
+      promises.push(
+        timelineConfigRepository.updateById(timelineConfig.id, {
+          data,
+          userId: user.id,
+        }),
+      );
+
+      bar.update(i + 1);
     }
-
-    configs.forEach(value => {
-      promises.push(timelineConfigRepository.update(value));
-    });
 
     bar.stop();
 

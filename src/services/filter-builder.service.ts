@@ -26,6 +26,7 @@ import {
 import {
   ActivityLog,
   Comment,
+  ConfigData,
   Experience,
   ExperiencePost,
   Friend,
@@ -515,7 +516,6 @@ export class FilterBuilderService {
     });
   }
 
-  /* eslint-disable  @typescript-eslint/no-explicit-any */
   public async experienceAdvanceSearch(
     filter: Filter<Experience>,
     query: Query,
@@ -529,14 +529,13 @@ export class FilterBuilderService {
 
     const {allowedTags, prohibitedTags, people} = query;
 
-    let orCondition: any[] = [];
-    if (people && Array.isArray(people)) {
-      const userExperiences = await this.experienceUserRepository.find({
-        where: {
-          userId: {inq: people as string[]},
-        },
-      });
+    // to collect query or condition
+    let orCondition: AnyObject[] = [];
 
+    // check if query people is not null and type of people is array
+    // push condition to match with people field with id from people query
+    // push condition to query by id in list experience id from query experience user by people
+    if (people && Array.isArray(people)) {
       const peoples =
         people.map(peo => ({
           people: {
@@ -548,12 +547,18 @@ export class FilterBuilderService {
 
       orCondition = [...peoples];
 
-      const experienceIds = userExperiences.map(val => {
-        return val.experienceId;
+      const userExperiences = await this.experienceUserRepository.find({
+        where: {
+          userId: {inq: people as string[]},
+        },
+      });
+
+      const experienceIdsPeople = userExperiences.map(userExperience => {
+        return userExperience.experienceId;
       });
 
       orCondition.push({
-        id: {inq: experienceIds},
+        id: {inq: experienceIdsPeople},
       });
     }
 
@@ -573,34 +578,40 @@ export class FilterBuilderService {
       });
     }
 
-    const where: any = {
-      and: [
-        orCondition.length > 0
-          ? {
-              or: orCondition,
-            }
-          : {},
+    const filterVisiblity = {
+      or: [
         {
-          or: [
-            {
-              visibility: {eq: VisibilityType.PRIVATE},
-              createdBy: {eq: userId},
-            },
-            {
-              visibility: {eq: VisibilityType.SELECTED},
-              selectedUserIds: {inq: [userId]},
-            },
-            {
-              visibility: {eq: VisibilityType.FRIEND},
-              createdBy: {inq: approvedFriendIds},
-            },
-            {
-              visibility: {exists: false},
-            },
-          ],
+          visibility: {eq: VisibilityType.PRIVATE},
+          createdBy: {eq: userId},
+        },
+        {
+          visibility: {eq: VisibilityType.SELECTED},
+          selectedUserIds: {inq: [userId]},
+        },
+        {
+          visibility: {eq: VisibilityType.FRIEND},
+          createdBy: {inq: approvedFriendIds},
+        },
+        {
+          visibility: {eq: VisibilityType.PUBLIC},
+        },
+        {
+          visibility: {exists: false},
         },
       ],
     };
+
+    const where: AnyObject = {
+      and: [],
+    };
+
+    where.and.push(filterVisiblity);
+
+    if (orCondition.length > 0) {
+      where.and.push({
+        or: orCondition,
+      });
+    }
 
     return this.finalizeFilter(filter, where);
   }
@@ -1142,7 +1153,7 @@ export class FilterBuilderService {
         {
           and: [
             {createdBy: this.currentUser[securityId]},
-            {tags: {inq: [hashtag]}},
+            {tags: {inq: [hashtag]}} as Where,
           ],
         },
       ],
@@ -1389,7 +1400,7 @@ export class FilterBuilderService {
           ],
         },
         {
-          and: [{tags: {inq: trendingTopicIds}}, {createdBy: userId}],
+          and: [{tags: {inq: trendingTopicIds}} as Where, {createdBy: userId}],
         },
       ],
     };
@@ -1398,13 +1409,13 @@ export class FilterBuilderService {
   private async timelineByExperience(
     currentUserId: string,
     config: Timeline,
+    approvedIds: string[],
+    blockedIds: string[],
     selected?: SelectedUser,
   ): Promise<Where<Post>[]> {
     const experienceUserIds: string[] = [];
     const {allowedTags, prohibitedTags, peopleIds, userIds} = config;
-    const [blockedIds, approvedIds, expFriends] = await Promise.all([
-      this.friendService.getFriendIds(currentUserId, FriendStatusType.BLOCKED),
-      this.friendService.getFriendIds(currentUserId, FriendStatusType.APPROVED),
+    const [expFriends, accountSettings] = await Promise.all([
       this.friendService.find({
         where: {
           requestorId: currentUserId,
@@ -1412,12 +1423,12 @@ export class FilterBuilderService {
           status: FriendStatusType.APPROVED,
         },
       }),
+      this.accountSettingRepository.find({
+        where: {userId: {inq: userIds}},
+      }),
     ]);
     const expFriendIds = expFriends.map(friend => friend.requesteeId);
     const blocked = pull(blockedIds, ...expFriendIds, ...approvedIds);
-    const accountSettings = await this.accountSettingRepository.find({
-      where: {userId: {inq: userIds}},
-    });
 
     if (accountSettings.length > 0) {
       for (const accountSetting of accountSettings) {
@@ -1496,7 +1507,7 @@ export class FilterBuilderService {
           {visibility: VisibilityType.SELECTED},
         ],
       },
-      // Visibility FRIEND
+      // // Visibility FRIEND
       {
         and: [
           {tags: {nin: prohibitedTags}} as Where,
@@ -1534,12 +1545,6 @@ export class FilterBuilderService {
           {peopleId: {inq: peopleIds}},
           {tags: {nin: prohibitedTags}} as Where,
           {createdBy: currentUserId},
-        ],
-      },
-      {
-        and: [
-          {tags: {nin: prohibitedTags}} as Where,
-          {createdBy: this.currentUser[securityId]},
         ],
       },
       {
@@ -1723,25 +1728,37 @@ export class FilterBuilderService {
         if (!timelineConfig) return {id: ''};
 
         const timelineFilter: Where<Post>[] = [];
+        const timelineConfigData: ConfigData = {};
 
         if (experienceId) {
           const config = timelineConfig.data[experienceId.toString()];
           if (config) {
-            const filter = await this.timelineVisibilityFilter(
-              currentUserId,
-              config,
-            );
-            timelineFilter.push(...filter);
+            timelineConfigData[experienceId.toString()] = config;
           }
         } else {
-          for (const experiencId in timelineConfig.data) {
-            const config = timelineConfig.data[experiencId];
-            const filter = await this.timelineVisibilityFilter(
-              currentUserId,
-              config,
-            );
-            timelineFilter.push(...filter);
-          }
+          Object.assign(timelineConfigData, timelineConfig.data);
+        }
+
+        const [friendIds, blockedIds] = await Promise.all([
+          this.friendService.getFriendIds(
+            currentUserId,
+            FriendStatusType.APPROVED,
+          ),
+          this.friendService.getFriendIds(
+            currentUserId,
+            FriendStatusType.BLOCKED,
+          ),
+        ]);
+
+        for (const experiencId in timelineConfigData) {
+          const config = timelineConfigData[experiencId];
+          const filter = await this.timelineVisibilityFilter(
+            currentUserId,
+            config,
+            friendIds,
+            blockedIds,
+          );
+          timelineFilter.push(...filter);
         }
 
         if (timelineFilter.length === 0) {
@@ -1776,6 +1793,8 @@ export class FilterBuilderService {
   private async timelineVisibilityFilter(
     currentUserId: string,
     config: Timeline,
+    friendIds: string[],
+    blockedIds: string[],
   ): Promise<Where<Post>[]> {
     const creator = config.createdBy;
     const visibility = config.visibility;
@@ -1811,7 +1830,13 @@ export class FilterBuilderService {
       }
     }
 
-    return this.timelineByExperience(currentUserId, config, selected);
+    return this.timelineByExperience(
+      currentUserId,
+      config,
+      friendIds,
+      blockedIds,
+      selected,
+    );
   }
 
   private orderSetting(query: Query): string[] {

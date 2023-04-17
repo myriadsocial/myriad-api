@@ -176,7 +176,7 @@ export class ExperienceService {
     await this.userExperienceRepository.updateAll(
       {
         status: UserExperienceStatus.NONE,
-        updatedAt: Date.now().toString(),
+        updatedAt: new Date().toString(),
       },
       {
         experienceId: {eq: id},
