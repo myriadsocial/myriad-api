@@ -36,11 +36,11 @@ export class ExperiencePostController {
     },
   })
   async countNewPost(@param.path.string('id') id: string) {
-    const count = this.experienceService.countNewPost(id);
+    const count = await this.experienceService.countNewPost(id);
 
     return {
       data: {
-        newPostCount: count,
+        newPostsCount: count,
       },
     };
   }

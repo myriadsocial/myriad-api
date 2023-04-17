@@ -530,22 +530,21 @@ export class FilterBuilderService {
     const {allowedTags, prohibitedTags, people} = query;
 
     // to collect query or condition
-    let orCondition: AnyObject[] = [];
+    const orCondition: AnyObject[] = [];
 
     // check if query people is not null and type of people is array
     // push condition to match with people field with id from people query
     // push condition to query by id in list experience id from query experience user by people
     if (people && Array.isArray(people)) {
-      const peoples =
-        people.map(peo => ({
-          people: {
-            elemMatch: {
-              id: peo,
-            },
+      const peoplesMatcher = people.map(peopleId => ({
+        people: {
+          elemMatch: {
+            id: peopleId,
           },
-        })) ?? [];
+        },
+      }));
 
-      orCondition = [...peoples];
+      orCondition.push(...peoplesMatcher);
 
       const userExperiences = await this.experienceUserRepository.find({
         where: {
@@ -553,9 +552,16 @@ export class FilterBuilderService {
         },
       });
 
-      const experienceIdsPeople = userExperiences.map(userExperience => {
-        return userExperience.experienceId;
-      });
+      const experienceIdsPeople = userExperiences
+        .filter((userExperience, index, userExperiencesCollection) => {
+          const userExperienceIndex = userExperiencesCollection.findIndex(
+            uec => uec.experienceId === userExperience.experienceId,
+          );
+          return index === userExperienceIndex;
+        })
+        .map(userExperience => {
+          return userExperience.experienceId;
+        });
 
       orCondition.push({
         id: {inq: experienceIdsPeople},
