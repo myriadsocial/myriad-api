@@ -61,20 +61,20 @@ export class ExperienceService {
   // ------ Experience ------------------------------
 
   // count post new per experiences
-  public async countNewPost(id: string): Promise<number> {
+  public async countNewPost(experienceId: string): Promise<number> {
     const userId = this.currentUser[securityId];
 
     const lastUpdateUserExperience =
       await this.userExperienceRepository.findOne({
         where: {
           userId: {eq: userId},
-          experienceId: {eq: id},
+          experienceId: {eq: experienceId},
         },
       });
 
     if (lastUpdateUserExperience) {
       const experiencePost = await this.experiencePostRepository.count({
-        experienceId: {eq: id},
+        experienceId: {eq: experienceId},
         updatedAt: {
           gt: lastUpdateUserExperience.updatedAt,
         },
@@ -194,15 +194,17 @@ export class ExperienceService {
       throw new HttpErrors.UnprocessableEntity('AtLeastOneTimeline');
     }
 
+    const userId = this.currentUser[securityId];
+
     const [config, post] = await Promise.all([
       this.timelineConfigRepository
         .findOne({
-          where: {userId: this.currentUser[securityId]},
+          where: {userId: userId},
         })
         .then(timelineConfig => {
           if (timelineConfig) return timelineConfig;
           return this.timelineConfigRepository.create({
-            userId: this.currentUser[securityId],
+            userId: userId,
           });
         }),
       this.postService.findById(data.postId),
@@ -234,7 +236,7 @@ export class ExperienceService {
         {status: UserExperienceStatus.ADDED},
         {
           experienceId: {eq: experienceId},
-          userId: {neq: this.currentUser[securityId]},
+          userId: {neq: userId},
         },
       );
     }

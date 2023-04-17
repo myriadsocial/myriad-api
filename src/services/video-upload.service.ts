@@ -44,19 +44,19 @@ export class VideoUploadService {
 
   async getFilesAndFields(userId: string, request: Request) {
     const uploadedFiles = request.files;
-    const mapper = async (f: globalThis.Express.Multer.File) => {
-      if (!this.mimeTypes.includes(f.mimetype)) {
+    const mapper = async (file: globalThis.Express.Multer.File) => {
+      if (!this.mimeTypes.includes(file.mimetype)) {
         throw new HttpErrors[415]();
       }
 
       const targetDir = `/users/${userId}/video`;
-      const fileURL = await upload(UploadType.VIDEO, targetDir, f.path);
+      const fileURL = await upload(UploadType.VIDEO, targetDir, file.path);
 
       return {
-        fieldname: f.fieldname,
-        originalname: f.originalname,
-        mimetype: f.mimetype,
-        size: f.size,
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
         url: fileURL,
       };
     };
@@ -66,7 +66,10 @@ export class VideoUploadService {
       files = await Promise.all(uploadedFiles.map(mapper));
     } else {
       for (const filename in uploadedFiles) {
-        files.push(...(await Promise.all(uploadedFiles[filename].map(mapper))));
+        const listFileUploaded = await Promise.all(
+          uploadedFiles[filename].map(mapper),
+        );
+        files.push(...listFileUploaded);
       }
     }
 
