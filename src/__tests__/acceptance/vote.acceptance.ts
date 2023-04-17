@@ -8,7 +8,7 @@ import {
   VoteRepository,
   PostRepository,
   UserRepository,
-  NotificationRepository
+  NotificationRepository,
 } from '../../repositories';
 import {
   givenComment,
@@ -307,28 +307,28 @@ describe('VoteApplication', function () {
       }),
       givenVoteInstance(voteRepository, {
         referenceId: post.id,
-      postId: post.id,
+        postId: post.id,
         userId: userInstances[1].id,
       }),
       givenVoteInstance(voteRepository, {
         referenceId: post.id,
-      postId: post.id,
+        postId: post.id,
         userId: userInstances[2].id,
       }),
       givenVoteInstance(voteRepository, {
         referenceId: post.id,
-      postId: post.id,
+        postId: post.id,
         userId: userInstances[3].id,
       }),
     ]);
     const notifInstances = givenNotification({
-      type:NotificationType.VOTE_COUNT,
-      message:'5',
+      type: NotificationType.VOTE_COUNT,
+      message: '5',
       referenceId: post.id,
     });
-    const notifInstance = Object.assign(omit(notifInstances , ['from']), {
-      to : userPost.id ,
-    })
+    const notifInstance = Object.assign(omit(notifInstances, ['from']), {
+      to: userPost.id,
+    });
 
     const upvote = givenVote({
       referenceId: post.id,
@@ -340,11 +340,13 @@ describe('VoteApplication', function () {
       .set('Authorization', `Bearer ${token}`)
       .send(upvote);
 
-      console.log(response.body.postId);
-      console.log(voteInstances);
+    console.log(response.body.postId);
+    console.log(voteInstances);
 
     setTimeout(async () => {
-      const resultNotification = await notificationRepository.find({where : {type:NotificationType.VOTE_COUNT}});
+      const resultNotification = await notificationRepository.find({
+        where: {type: NotificationType.VOTE_COUNT},
+      });
       expect(resultNotification).to.containDeep(notifInstance);
     }, 10000);
   });
