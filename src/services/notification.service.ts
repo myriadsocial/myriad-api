@@ -1062,6 +1062,11 @@ export class NotificationService {
           if (!notificationSetting.tips) return false;
           break;
 
+        case NotificationType.POST_VOTE:
+        case NotificationType.COMMENT_VOTE:
+          if (!notificationSetting.upvotes) return false;
+          break;
+
         default:
           return false;
       }
