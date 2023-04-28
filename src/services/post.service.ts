@@ -5,7 +5,6 @@ import {
   Filter,
   repository,
   Where,
-  WhereBuilder,
 } from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {intersection, omit} from 'lodash';
@@ -97,8 +96,8 @@ export class PostService {
   // ------ Post ------------------------------------
 
   public async create(draftPost: DraftPost): Promise<Post | DraftPost> {
-    let timelineIds = draftPost.selectedTimelineIds;
-
+    const timelineIds = draftPost.selectedTimelineIds;
+    const userId = draftPost.createdBy;
     return this.beforeCreate(draftPost)
       .then(async () => {
         if (draftPost.status === PostStatus.PUBLISHED) {
@@ -108,14 +107,10 @@ export class PostService {
             );
           }
 
-          const {selectedTimelineIds, createdBy} = draftPost;
-          const result = await this.getVisibility(
-            createdBy,
-            selectedTimelineIds,
+          const {visibility, selectedUserIds} = await this.getVisibility(
+            userId,
+            timelineIds,
           );
-          const {visibility, selectedUserIds} = result;
-
-          timelineIds = result.timelineIds;
 
           const date = Date.now();
           const addedAt: AddedAt = {};
@@ -680,12 +675,10 @@ export class PostService {
     pathname = '',
   ): Promise<ExtendedPost> {
     const [platform, originPostId] = raw.url.split(',');
-    const {visibility, selectedUserIds, timelineIds} = await this.getVisibility(
+    const {visibility, selectedUserIds} = await this.getVisibility(
       raw.importer,
       raw.selectedTimelineIds,
     );
-
-    raw.selectedTimelineIds = timelineIds;
 
     let rawPost = null;
     switch (platform) {
@@ -719,26 +712,19 @@ export class PostService {
   }
 
   private async getVisibility(userId: string, timelineIds = [] as string[]) {
-    const whereBuilder = new WhereBuilder<Experience>();
-
-    if (timelineIds.length > 0) {
-      whereBuilder.inq('id', timelineIds);
-    }
-
-    const where = whereBuilder.eq('createdBy', userId).build();
-    const timelines = await this.experienceRepository.find({where});
+    const timelines = await this.experienceRepository.find({
+      where: {
+        id: {inq: timelineIds},
+        createdBy: userId,
+      },
+    });
 
     if (timelines.length <= 0) {
       throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
     }
 
-    // TODO: Uncomment when Web App is ready
-    // if (timelines.length !== timelineIds.length) {
-    //   throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
-    // }
-
-    if (timelineIds.length <= 0) {
-      timelineIds = timelines.map(e => e.id);
+    if (timelines.length !== timelineIds.length) {
+      throw new HttpErrors.UnprocessableEntity('TimelineNotMatch');
     }
 
     const publicTimelines = [];
@@ -837,7 +823,6 @@ export class PostService {
     return {
       visibility,
       selectedUserIds,
-      timelineIds,
     };
   }
 
