@@ -756,63 +756,26 @@ export class PostService {
 
     if (privateTimelines.length <= 0) {
       if (customTimelines.length > 0 || friendTimelines.length > 0) {
-        const friendUserIds = await Promise.all(
-          friendTimelines.map(async e => {
-            const friends = await this.friendRepository.find({
-              where: {
-                or: [
-                  {
-                    requesteeId: e.createdBy,
+        const friends =
+          friendTimelines.length === 0
+            ? []
+            : await this.friendRepository
+                .find({
+                  where: {
                     requestorId: userId,
+                    status: FriendStatusType.APPROVED,
                   },
-                  {
-                    requesteeId: userId,
-                    requestorId: e.createdBy,
-                  },
-                ],
-                status: FriendStatusType.APPROVED,
-              },
-            });
-
-            const requesteeIds = [];
-            const requestorIds = [];
-
-            for (const friend of friends) {
-              if (friend.requesteeId === userId) {
-                requestorIds.push(friend.requestorId);
-                continue;
-              } else if (friend.requestorId === userId) {
-                requesteeIds.push(friend.requesteeId);
-              } else {
-                requesteeIds.push(friend.requesteeId);
-                requestorIds.push(friend.requestorId);
-              }
-            }
-
-            return [...new Set([...requesteeIds, ...requestorIds])];
-          }),
-        );
+                })
+                .then(result => result.map(e => e.requesteeId));
 
         const selected = customTimelines.map(e => {
-          const userIds = e.selectedUserIds.map(selectedUser => {
+          return e.selectedUserIds.map(selectedUser => {
             if (typeof selectedUser === 'string') return selectedUser;
             return selectedUser.userId;
           });
-
-          return userIds;
         });
 
-        const data = [];
-
-        if (friendUserIds.length > 0) {
-          data.push(...friendUserIds);
-        }
-
-        if (selected.length > 0) {
-          data.push(...selected);
-        }
-
-        const selectedUserIdsIntersection = intersection(...data);
+        const selectedUserIdsIntersection = intersection(friends, ...selected);
         selectedUserIds.push(...selectedUserIdsIntersection, userId);
         visibility = VisibilityType.SELECTED;
       } else {
