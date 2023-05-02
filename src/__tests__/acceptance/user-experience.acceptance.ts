@@ -286,22 +286,22 @@ describe('UserExperienceApplication', function () {
         }),
       ]);
       const userExperienceInstances = await Promise.all([
-        givenVoteInstance(voteRepository, {
+        givenUserExperienceInstance(voteRepository, {
           userId: userInstances[0].id,
           experienceId: experience.id?.toString(),
           subscribed: true,
         }),
-        givenVoteInstance(voteRepository, {
+        givenUserExperienceInstance(voteRepository, {
           userId: userInstances[1].id,
           experienceId: experience.id?.toString(),
           subscribed: true,
         }),
-        givenVoteInstance(voteRepository, {
+        givenUserExperienceInstance(voteRepository, {
           userId: userInstances[2].id,
           experienceId: experience.id?.toString(),
           subscribed: true,
         }),
-        givenVoteInstance(voteRepository, {
+        givenUserExperienceInstance(voteRepository, {
           userId: userInstances[3].id,
           experienceId: experience.id?.toString(),
           subscribed: true,
