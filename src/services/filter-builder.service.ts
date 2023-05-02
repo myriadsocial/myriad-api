@@ -592,7 +592,7 @@ export class FilterBuilderService {
         },
         {
           visibility: {eq: VisibilityType.SELECTED},
-          selectedUserIds: {inq: [userId]},
+          'selectedUserIds.userId': {inq: [userId]},
         },
         {
           visibility: {eq: VisibilityType.FRIEND},
@@ -1686,6 +1686,13 @@ export class FilterBuilderService {
           and: [
             {name: {regexp: pattern}},
             {createdBy: {nin: userIds}},
+            {visibility: {exists: false}},
+          ],
+        },
+        {
+          and: [
+            {name: {regexp: pattern}},
+            {createdBy: {nin: userIds}},
             {visibility: VisibilityType.PUBLIC},
           ],
         },
@@ -1709,7 +1716,10 @@ export class FilterBuilderService {
             {name: {regexp: pattern}},
             {visibility: VisibilityType.SELECTED},
             {
-              or: [{selectedUserIds: {inq: [userId]}}, {createdBy: userId}],
+              or: [
+                {'selectedUserIds.userId': {inq: [userId]}},
+                {createdBy: userId},
+              ],
             } as Where,
           ],
         },

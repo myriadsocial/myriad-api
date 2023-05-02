@@ -58,6 +58,20 @@ export class NotificationSetting extends Entity {
   })
   tips?: boolean;
 
+  @property({
+    type: 'boolean',
+    default: true,
+    required: false,
+  })
+  followers?: boolean;
+
+  @property({
+    type: 'boolean',
+    default: true,
+    required: false,
+  })
+  upvotes?: boolean;
+
   @belongsTo(() => User)
   userId: string;
 

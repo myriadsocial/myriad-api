@@ -5,7 +5,6 @@ import {
   Filter,
   repository,
   Where,
-  WhereBuilder,
 } from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {intersection, omit} from 'lodash';
@@ -97,8 +96,8 @@ export class PostService {
   // ------ Post ------------------------------------
 
   public async create(draftPost: DraftPost): Promise<Post | DraftPost> {
-    let timelineIds = draftPost.selectedTimelineIds;
-
+    const timelineIds = draftPost.selectedTimelineIds;
+    const userId = draftPost.createdBy;
     return this.beforeCreate(draftPost)
       .then(async () => {
         if (draftPost.status === PostStatus.PUBLISHED) {
@@ -108,14 +107,10 @@ export class PostService {
             );
           }
 
-          const {selectedTimelineIds, createdBy} = draftPost;
-          const result = await this.getVisibility(
-            createdBy,
-            selectedTimelineIds,
+          const {visibility, selectedUserIds} = await this.getVisibility(
+            userId,
+            timelineIds,
           );
-          const {visibility, selectedUserIds} = result;
-
-          timelineIds = result.timelineIds;
 
           const date = Date.now();
           const addedAt: AddedAt = {};
@@ -680,12 +675,10 @@ export class PostService {
     pathname = '',
   ): Promise<ExtendedPost> {
     const [platform, originPostId] = raw.url.split(',');
-    const {visibility, selectedUserIds, timelineIds} = await this.getVisibility(
+    const {visibility, selectedUserIds} = await this.getVisibility(
       raw.importer,
       raw.selectedTimelineIds,
     );
-
-    raw.selectedTimelineIds = timelineIds;
 
     let rawPost = null;
     switch (platform) {
@@ -719,26 +712,19 @@ export class PostService {
   }
 
   private async getVisibility(userId: string, timelineIds = [] as string[]) {
-    const whereBuilder = new WhereBuilder<Experience>();
-
-    if (timelineIds.length > 0) {
-      whereBuilder.inq('id', timelineIds);
-    }
-
-    const where = whereBuilder.eq('createdBy', userId).build();
-    const timelines = await this.experienceRepository.find({where});
+    const timelines = await this.experienceRepository.find({
+      where: {
+        id: {inq: timelineIds},
+        createdBy: userId,
+      },
+    });
 
     if (timelines.length <= 0) {
       throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
     }
 
-    // TODO: Uncomment when Web App is ready
-    // if (timelines.length !== timelineIds.length) {
-    //   throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
-    // }
-
-    if (timelineIds.length <= 0) {
-      timelineIds = timelines.map(e => e.id);
+    if (timelines.length !== timelineIds.length) {
+      throw new HttpErrors.UnprocessableEntity('TimelineNotMatch');
     }
 
     const publicTimelines = [];
@@ -770,63 +756,26 @@ export class PostService {
 
     if (privateTimelines.length <= 0) {
       if (customTimelines.length > 0 || friendTimelines.length > 0) {
-        const friendUserIds = await Promise.all(
-          friendTimelines.map(async e => {
-            const friends = await this.friendRepository.find({
-              where: {
-                or: [
-                  {
-                    requesteeId: e.createdBy,
+        const friends =
+          friendTimelines.length === 0
+            ? []
+            : await this.friendRepository
+                .find({
+                  where: {
                     requestorId: userId,
+                    status: FriendStatusType.APPROVED,
                   },
-                  {
-                    requesteeId: userId,
-                    requestorId: e.createdBy,
-                  },
-                ],
-                status: FriendStatusType.APPROVED,
-              },
-            });
-
-            const requesteeIds = [];
-            const requestorIds = [];
-
-            for (const friend of friends) {
-              if (friend.requesteeId === userId) {
-                requestorIds.push(friend.requestorId);
-                continue;
-              } else if (friend.requestorId === userId) {
-                requesteeIds.push(friend.requesteeId);
-              } else {
-                requesteeIds.push(friend.requesteeId);
-                requestorIds.push(friend.requestorId);
-              }
-            }
-
-            return [...new Set([...requesteeIds, ...requestorIds])];
-          }),
-        );
+                })
+                .then(result => result.map(e => e.requesteeId));
 
         const selected = customTimelines.map(e => {
-          const userIds = e.selectedUserIds.map(selectedUser => {
+          return e.selectedUserIds.map(selectedUser => {
             if (typeof selectedUser === 'string') return selectedUser;
             return selectedUser.userId;
           });
-
-          return userIds;
         });
 
-        const data = [];
-
-        if (friendUserIds.length > 0) {
-          data.push(...friendUserIds);
-        }
-
-        if (selected.length > 0) {
-          data.push(...selected);
-        }
-
-        const selectedUserIdsIntersection = intersection(...data);
+        const selectedUserIdsIntersection = intersection(friends, ...selected);
         selectedUserIds.push(...selectedUserIdsIntersection, userId);
         visibility = VisibilityType.SELECTED;
       } else {
@@ -837,7 +786,6 @@ export class PostService {
     return {
       visibility,
       selectedUserIds,
-      timelineIds,
     };
   }
 
