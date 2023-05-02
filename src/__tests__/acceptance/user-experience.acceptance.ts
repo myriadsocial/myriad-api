@@ -1,6 +1,7 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {User, UserExperience} from '../../models';
+import {NotificationType} from '../../enums';
 import {
   ExperienceRepository,
   UserExperienceRepository,
@@ -24,6 +25,7 @@ import {
   givenNotificationRepository,
   setupApplication,
 } from '../helpers';
+import {omit} from 'lodash';
 
 /* eslint-disable @typescript-eslint/no-invalid-this */
 /* eslint-disable @typescript-eslint/no-misused-promises*/
