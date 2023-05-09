@@ -1,10 +1,12 @@
 import {Client, expect, toJSON} from '@loopback/testlab';
 import {MyriadApiApplication} from '../../application';
 import {User, UserExperience} from '../../models';
+import {NotificationType} from '../../enums';
 import {
   ExperienceRepository,
   UserExperienceRepository,
   UserRepository,
+  NotificationRepository,
 } from '../../repositories';
 import {
   deleteAllRepository,
@@ -19,8 +21,11 @@ import {
   givenUserExperienceRepository,
   givenUserInstance,
   givenUserRepository,
+  givenNotification,
+  givenNotificationRepository,
   setupApplication,
 } from '../helpers';
+import {omit} from 'lodash';
 
 /* eslint-disable @typescript-eslint/no-invalid-this */
 /* eslint-disable @typescript-eslint/no-misused-promises*/
@@ -33,6 +38,7 @@ describe('UserExperienceApplication', function () {
   let experienceRepository: ExperienceRepository;
   let userRepository: UserRepository;
   let userExperienceRepository: UserExperienceRepository;
+  let notificationRepository: NotificationRepository;
   let user: User;
 
   before(async () => {
@@ -45,6 +51,7 @@ describe('UserExperienceApplication', function () {
     userRepository = await givenUserRepository(app);
     experienceRepository = await givenExperienceRepository(app);
     userExperienceRepository = await givenUserExperienceRepository(app);
+    notificationRepository = await givenNotificationRepository(app);
   });
 
   before(async () => {
@@ -257,6 +264,78 @@ describe('UserExperienceApplication', function () {
         .set('Authorization', `Bearer ${token}`)
         .send()
         .expect(422);
+    });
+
+    it('Notification after 5 user has subscribed', async () => {
+      const experienceCreator = await givenUserInstance(userRepository, {
+        username: 'alexander',
+      });
+      const experience = await givenExperienceInstance(experienceRepository, {
+        createdBy: experienceCreator.id,
+      });
+      const userInstances = await Promise.all([
+        givenUserInstance(userRepository, {
+          username: 'alpha',
+        }),
+        givenUserInstance(userRepository, {
+          username: 'beta',
+        }),
+        givenUserInstance(userRepository, {
+          username: 'gamma',
+        }),
+        givenUserInstance(userRepository, {
+          username: 'epsilon',
+        }),
+      ]);
+      const userExperienceInstances = await Promise.all([
+        givenUserExperienceInstance(userExperienceRepository, {
+          userId: userInstances[0].id,
+          experienceId: experience.id?.toString(),
+          subscribed: true,
+        }),
+        givenUserExperienceInstance(userExperienceRepository, {
+          userId: userInstances[1].id,
+          experienceId: experience.id?.toString(),
+          subscribed: true,
+        }),
+        givenUserExperienceInstance(userExperienceRepository, {
+          userId: userInstances[2].id,
+          experienceId: experience.id?.toString(),
+          subscribed: true,
+        }),
+        givenUserExperienceInstance(userExperienceRepository, {
+          userId: userInstances[3].id,
+          experienceId: experience.id?.toString(),
+          subscribed: true,
+        }),
+      ]);
+      console.log(userExperienceInstances[0].subscribed);
+      const userExperience = givenUserExperience({
+        userId: user.id.toString(),
+        experienceId: experience.id?.toString(),
+        subscribed: true,
+      });
+      const notifInstances = givenNotification({
+        type: NotificationType.FOLLOWER_COUNT,
+        message: '5',
+        referenceId: experience.id,
+      });
+      const notifInstance = Object.assign(omit(notifInstances, ['from']), {
+        to: experienceCreator.id,
+      });
+      const response = await client
+        .post(`/user/experiences/${experience.id}/subscribe`)
+        .set('Authorization', `Bearer ${token}`)
+        .send()
+        .expect(200);
+      expect(response.body).to.containDeep(userExperience);
+
+      setTimeout(async () => {
+        const resultNotification = await notificationRepository.find({
+          where: {type: NotificationType.FOLLOWER_COUNT},
+        });
+        expect(resultNotification).to.containDeep(notifInstance);
+      }, 10000);
     });
   });
 
