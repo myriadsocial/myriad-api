@@ -107,6 +107,12 @@ export class UserExperience extends Entity {
   })
   status?: number;
 
+  @property({
+    type: 'number',
+    default: 0,
+  })
+  newPostCount: number;
+
   constructor(data?: Partial<UserExperience>) {
     super(data);
   }

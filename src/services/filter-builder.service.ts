@@ -23,6 +23,7 @@ import {
   TimelineType,
   VisibilityType,
 } from '../enums';
+import {UserExperienceStatus} from '../enums/user-experience-status.enum';
 import {
   ActivityLog,
   Comment,
@@ -43,6 +44,7 @@ import {
   AccountSettingRepository,
   ExperienceUserRepository,
   TagRepository,
+  UserExperienceRepository,
   UserRepository,
   WalletRepository,
 } from '../repositories';
@@ -60,6 +62,8 @@ export class FilterBuilderService {
     private accountSettingRepository: AccountSettingRepository,
     @repository(TagRepository)
     private tagRepository: TagRepository,
+    @repository(UserExperienceRepository)
+    private userExperienceRepository: UserExperienceRepository,
     @repository(TimelineConfigRepository)
     private timelineConfigRepository: TimelineConfigRepository,
     @repository(UserRepository)
@@ -1747,6 +1751,17 @@ export class FilterBuilderService {
         const timelineConfigData: ConfigData = {};
 
         if (experienceId) {
+          await this.userExperienceRepository.updateAll(
+            {
+              status: UserExperienceStatus.NONE,
+              updatedAt: new Date().toString(),
+            },
+            {
+              experienceId: {eq: experienceId as string},
+              userId: {eq: currentUserId},
+            },
+          );
+
           const config = timelineConfig.data[experienceId.toString()];
           if (config) {
             timelineConfigData[experienceId.toString()] = config;

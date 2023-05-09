@@ -24,6 +24,7 @@ import {
   UserExperienceWithRelations,
 } from '../models';
 import {
+  ExperiencePostRepository,
   ExperienceRepository,
   ExperienceUserRepository,
   UserExperienceRepository,
@@ -42,6 +43,8 @@ export class UserExperienceService {
   constructor(
     @repository(ExperienceRepository)
     private experienceRepository: ExperienceRepository,
+    @repository(ExperiencePostRepository)
+    private experiencePostRepository: ExperiencePostRepository,
     @repository(ExperienceUserRepository)
     private experienceUserRepository: ExperienceUserRepository,
     @repository(TimelineConfigRepository)
@@ -118,7 +121,14 @@ export class UserExperienceService {
           });
         }
 
-        return userExperiences;
+        return Promise.all(
+          userExperiences.map(async userExperience => {
+            userExperience.newPostCount = await this.getNewPostCount(
+              userExperience,
+            );
+            return userExperience;
+          }),
+        );
       });
   }
 
@@ -532,12 +542,27 @@ export class UserExperienceService {
     return userExperience;
   }
 
+  private async getNewPostCount(userExperience: UserExperienceWithRelations) {
+    const experiencePost = await this.experiencePostRepository.count({
+      experienceId: {eq: userExperience.experienceId},
+      updatedAt: {
+        gt: userExperience.updatedAt,
+      },
+    });
+
+    return experiencePost.count ?? 0;
+  }
+
   private async privateUserExperience(
     userId: string,
     userExperiences: UserExperienceWithRelations[],
   ): Promise<UserExperienceWithRelations[]> {
     return Promise.all(
       userExperiences.map(async userExperience => {
+        userExperience.newPostCount = await this.getNewPostCount(
+          userExperience,
+        );
+
         const accountSetting = userExperience.experience?.user?.accountSetting;
 
         userExperience.private = false;
