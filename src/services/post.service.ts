@@ -28,6 +28,7 @@ import {
   Friend,
   People,
   Post,
+  PostRelations,
   PostWithRelations,
   User,
 } from '../models';
@@ -228,11 +229,29 @@ export class PostService {
 
   public async findById(
     id: string,
-    filter?: Filter<Post>,
+    filter = {} as Filter<Post>,
     withImporter = false,
     userId?: string,
+    platform?: PlatformType,
   ): Promise<Post> {
-    const currentPost = await this.postRepository.findById(id, filter);
+    let currentPost: Post & PostRelations;
+
+    if (platform && platform !== PlatformType.MYRIAD) {
+      const post = await this.postRepository.findOne({
+        where: {
+          originPostId: id,
+          platform,
+        },
+      });
+      if (!post) {
+        throw new HttpErrors.NotFound('PostNotFound');
+      }
+
+      currentPost = post;
+    } else {
+      currentPost = await this.postRepository.findById(id, filter);
+    }
+
     if (!withImporter) return currentPost;
     await this.validateUnrestrictedPost(currentPost, userId);
     return this.postWithImporterInfo(currentPost, userId);

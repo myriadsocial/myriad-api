@@ -20,6 +20,7 @@ import {
   ControllerType,
   FriendStatusType,
   PermissionKeys,
+  PlatformType,
   ReferenceType,
 } from '../enums';
 import {TokenServiceBindings} from '../keys';
@@ -774,12 +775,17 @@ export class UserService {
     );
   }
 
-  public async post(id: string, filter?: Filter<Post>): Promise<Post> {
+  public async post(
+    id: string,
+    filter?: Filter<Post>,
+    platform?: PlatformType,
+  ): Promise<Post> {
     return this.postService.findById(
       id,
       filter,
       true,
       this.currentUser[securityId],
+      platform,
     );
   }
 
