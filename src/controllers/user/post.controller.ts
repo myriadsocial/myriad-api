@@ -24,6 +24,7 @@ import {
   UpdatePostDto,
 } from '../../models';
 import {UserService} from '../../services';
+import {PlatformType} from '../../enums';
 
 @authenticate('jwt')
 export class UserPostController {
@@ -78,8 +79,9 @@ export class UserPostController {
   async findById(
     @param.path.string('id') id: string,
     @param.filter(Post, {exclude: 'where'}) filter?: FilterExcludingWhere<Post>,
+    @param.query.string('platform') platform?: PlatformType,
   ): Promise<Post> {
-    return this.userService.post(id, filter);
+    return this.userService.post(id, filter, platform);
   }
 
   @get('/user/posts/action')
