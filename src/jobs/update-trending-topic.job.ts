@@ -13,17 +13,20 @@ export class UpdateTrendingTopicJob extends CronJob {
       onTick: () => {
         this.performJob().finally(console.log);
       },
-      cronTime: '0 */30 * * * *',
+      // cronTime: '0 */30 * * * *',
+      cronTime: '0 0 0 * * 0', // every sunday 12 am
       start: true,
     });
   }
 
   async performJob() {
-    const oneDay = 24 * 60 * 60 * 1000;
+    // const oneDay = 24 * 60 * 60 * 1000;
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
     await this.tagRepository.updateAll(
       {count: 1},
-      {updatedAt: {lt: new Date(Date.now() - oneDay).toString()}},
+      // {updatedAt: {lt: new Date(Date.now() - oneDay).toString()}},
+      {updatedAt: {lt: new Date(Date.now() - oneWeek).toString()}},
     );
   }
 }
