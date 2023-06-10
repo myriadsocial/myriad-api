@@ -86,7 +86,7 @@ import {PolkadotJs} from './utils/polkadot-js';
 import {getFilePathFromSeedData, upload, UploadType} from './utils/upload';
 import fs, {existsSync} from 'fs';
 import {FriendStatusType} from './enums';
-import {UpdatePeopleProfileJob} from './jobs';
+import {UpdatePeopleProfileJob, UpdateTrendingTopicJob} from './jobs';
 import {ConfigData, MentionUser, SelectedUser} from './models';
 
 const jwt = require('jsonwebtoken');
@@ -209,7 +209,7 @@ export class MyriadApiApplication extends BootMixin(
 
   registerJob() {
     this.add(createBindingFromClass(UpdatePeopleProfileJob));
-  }
+    this.add(createBindingFromClass(UpdateTrendingTopicJob));
 
   configureFileUpload() {
     if (this.options.test) return;
