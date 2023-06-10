@@ -210,6 +210,7 @@ export class MyriadApiApplication extends BootMixin(
   registerJob() {
     this.add(createBindingFromClass(UpdatePeopleProfileJob));
     this.add(createBindingFromClass(UpdateTrendingTopicJob));
+  }
 
   configureFileUpload() {
     if (this.options.test) return;
