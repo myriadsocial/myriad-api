@@ -22,11 +22,16 @@ export class UpdateTrendingTopicJob extends CronJob {
   async performJob() {
     // const oneDay = 24 * 60 * 60 * 1000;
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
+    const data = {
+      count: 1,
+      updatedAt: new Date(Date.now() - oneWeek).toString(),
+    };
 
     await this.tagRepository.updateAll(
-      {count: 1},
-      // {updatedAt: {lt: new Date(Date.now() - oneDay).toString()}},
-      {updatedAt: {lt: new Date(Date.now() - oneWeek).toString()}},
+      data,
+      // {count: 1},
+      // // {updatedAt: {lt: new Date(Date.now() - oneDay).toString()}},
+      // {updatedAt: {lt: new Date(Date.now() - oneWeek).toString()}},
     );
   }
 }
