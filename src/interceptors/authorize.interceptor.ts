@@ -40,11 +40,8 @@ export interface RequiredPermissions {
  * This class will be bound to the application as an `Interceptor` during
  * `boot`
  */
-// @injectable({tags: {key: AuthorizeInterceptor.BINDING_KEY}})
 @globalInterceptor('', {tags: {name: 'authorize'}})
 export class AuthorizeInterceptor implements Provider<Interceptor> {
-  // static readonly BINDING_KEY = `interceptors.${AuthorizeInterceptor.name}`;
-
   constructor(
     @repository(ExperienceRepository)
     private experienceRepository: ExperienceRepository,
