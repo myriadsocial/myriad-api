@@ -9,7 +9,7 @@ describe('RedditService', function () {
   before(givenRedditService);
 
   it('gets post from reddit social media', async () => {
-    const response = await service.getActions('pa582c.json');
+    const response = await service.getActions('nw2hs6.json');
     expect(response).to.be.an.instanceOf(Array);
   });
 
