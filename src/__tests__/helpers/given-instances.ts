@@ -516,7 +516,7 @@ export function givenPlatformPost(
 ) {
   const data = Object.assign(
     {
-      url: 'https://www.reddit.com/r/ProgrammerHumor/comments/p7qrle/when_your_boss_has_no_clue_what_you_do/',
+      url: 'https://www.reddit.com/r/announcements/comments/nw2hs6/sunsetting_secret_santa_and_reddit_gifts/',
       importer:
         '0x06fc711c1a49ad61d7b615d085723aa7d429b621d324a5513b6e54aea442d94e',
       tags: [],
