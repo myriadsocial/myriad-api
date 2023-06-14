@@ -299,7 +299,7 @@ describe('VoteApplication', function () {
         username: 'epsilon',
       }),
     ]);
-    const voteInstances = await Promise.all([
+    await Promise.all([
       givenVoteInstance(voteRepository, {
         referenceId: post.id,
         postId: post.id,
@@ -335,13 +335,10 @@ describe('VoteApplication', function () {
       postId: post.id,
       userId: user.id,
     });
-    const response = await client
+    await client
       .post('/user/votes')
       .set('Authorization', `Bearer ${token}`)
       .send(upvote);
-
-    console.log(response.body.postId);
-    console.log(voteInstances);
 
     setTimeout(async () => {
       const resultNotification = await notificationRepository.find({

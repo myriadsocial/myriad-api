@@ -287,7 +287,7 @@ describe('UserExperienceApplication', function () {
           username: 'epsilon',
         }),
       ]);
-      const userExperienceInstances = await Promise.all([
+      await Promise.all([
         givenUserExperienceInstance(userExperienceRepository, {
           userId: userInstances[0].id,
           experienceId: experience.id?.toString(),
@@ -309,7 +309,6 @@ describe('UserExperienceApplication', function () {
           subscribed: true,
         }),
       ]);
-      console.log(userExperienceInstances[0].subscribed);
       const userExperience = givenUserExperience({
         userId: user.id.toString(),
         experienceId: experience.id?.toString(),
