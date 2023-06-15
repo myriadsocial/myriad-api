@@ -81,9 +81,10 @@ export class UserPostController {
   })
   async findByProfile(
     @param.path.string('id') id: string,
-    @param.filter(Post, {exclude: ['limit', 'skip', 'offset', 'where']}) filter?: Filter<Post>,
+    @param.filter(Post, {exclude: ['limit', 'skip', 'offset', 'where']})
+    filter?: Filter<Post>,
   ): Promise<Post[]> {
-    return this.userService.profilePosts(id , filter);
+    return this.userService.profilePosts(id, filter);
   }
 
   @intercept(FindByIdInterceptor.BINDING_KEY)
