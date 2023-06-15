@@ -17,6 +17,7 @@ import {
   LanguageSetting,
   NotificationSetting,
   People,
+  Post,
   User,
   UserCurrency,
   UserExperience,
@@ -36,6 +37,7 @@ import {UserCurrencyRepository} from './user-currency.repository';
 import {UserExperienceRepository} from './user-experience.repository';
 import {UserSocialMediaRepository} from './user-social-media.repository';
 import {WalletRepository} from './wallet.repository';
+import {PostRepository} from './post.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<
@@ -104,6 +106,11 @@ export class UserRepository extends DefaultCrudRepository<
     typeof User.prototype.id
   >;
 
+  public readonly posts: HasManyRepositoryFactory<
+    Post,
+    typeof User.prototype.id
+  >;
+
   constructor(
     @inject('datasources.mongo') dataSource: MongoDataSource,
     @repository.getter('UserSocialMediaRepository')
@@ -130,6 +137,8 @@ export class UserRepository extends DefaultCrudRepository<
     protected userCurrencyRepositoryGetter: Getter<UserCurrencyRepository>,
     @repository.getter('CurrencyRepository')
     protected currencyRepositoryGetter: Getter<CurrencyRepository>,
+    @repository.getter('PostRepository')
+    protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(User, dataSource);
     this.userCurrencies = this.createHasManyRepositoryFactoryFor(
@@ -192,6 +201,11 @@ export class UserRepository extends DefaultCrudRepository<
       friendRepositoryGetter,
     );
     this.registerInclusionResolver('friends', this.friends.inclusionResolver);
+    this.posts = this.createHasManyRepositoryFactoryFor(
+      'posts',
+      postRepositoryGetter,
+    );
+    this.registerInclusionResolver('posts', this.posts.inclusionResolver);
     this.activityLogs = this.createHasManyRepositoryFactoryFor(
       'activityLogs',
       activityLogRepositoryGetter,

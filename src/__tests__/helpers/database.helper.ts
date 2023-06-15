@@ -86,6 +86,7 @@ export async function givenRepositories(testdb: any) {
     async () => walletRepository,
     async () => userCurrencyRepository,
     async () => currencyRepository,
+    async () => postRepository,
   );
   const userExperienceRepository: UserExperienceRepository =
     new UserExperienceRepository(
