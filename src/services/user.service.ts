@@ -793,16 +793,7 @@ export class UserService {
     id: string,
     filter?: Filter<Post>,
   ): Promise<Post[]> {
-    const newFilter: Filter<Post> = {
-      ...filter,
-      where: {createdBy: id},
-    };
-    return this.postService.find(
-      newFilter,
-      undefined,
-      true,
-      this.currentUser[securityId],
-    );
+    return this.userRepository.posts(id).find(filter);
   }
 
   public async draftPost(): Promise<DraftPost | null> {

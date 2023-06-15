@@ -23,6 +23,7 @@ import {UserCurrency} from './user-currency.model';
 import {UserExperience} from './user-experience.model';
 import {UserSocialMedia} from './user-social-media.model';
 import {Wallet, WalletWithRelations} from './wallet.model';
+import { Post } from './post.model';
 
 @model({
   settings: {
@@ -235,6 +236,9 @@ export class User extends Entity {
 
   @hasMany(() => UserCurrency)
   userCurrencies: UserCurrency[];
+
+  @hasMany(() => Post)
+  posts: Post[];
 
   constructor(data?: Partial<User>) {
     super(data);
