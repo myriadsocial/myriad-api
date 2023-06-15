@@ -5,7 +5,7 @@ import {config} from '../config';
 const twitterConfig = {
   name: 'twitter',
   connector: 'rest',
-  baseURL: 'https://api.twitter.com/',
+  baseURL: 'https://api.twitter.com/2/',
   crud: false,
   options: {
     headers: {
@@ -16,7 +16,7 @@ const twitterConfig = {
     {
       template: {
         method: 'GET',
-        url: 'https://api.twitter.com/{action}',
+        url: 'https://api.twitter.com/2/{action}',
       },
       functions: {
         getActions: ['action'],
