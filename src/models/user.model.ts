@@ -237,7 +237,7 @@ export class User extends Entity {
   @hasMany(() => UserCurrency)
   userCurrencies: UserCurrency[];
 
-  @hasMany(() => Post)
+  @hasMany(() => Post, {keyTo: 'createdBy'})
   posts: Post[];
 
   constructor(data?: Partial<User>) {
