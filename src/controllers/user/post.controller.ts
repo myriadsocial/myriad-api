@@ -66,6 +66,27 @@ export class UserPostController {
     return this.userService.posts(filter);
   }
 
+  @intercept(PaginationInterceptor.BINDING_KEY)
+  @get('/user/profile/{id}/posts')
+  @response(200, {
+    description: 'Array of Post model instances',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'array',
+          items: getModelSchemaRef(Post, {includeRelations: true}),
+        },
+      },
+    },
+  })
+  async findByProfile(
+    @param.path.string('id') id: string,
+    @param.filter(Post, {exclude: ['limit', 'skip', 'offset', 'where']})
+    filter?: Filter<Post>,
+  ): Promise<Post[]> {
+    return this.userService.profilePosts(id, filter);
+  }
+
   @intercept(FindByIdInterceptor.BINDING_KEY)
   @get('/user/posts/{id}')
   @response(200, {
