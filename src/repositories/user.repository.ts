@@ -37,7 +37,7 @@ import {UserCurrencyRepository} from './user-currency.repository';
 import {UserExperienceRepository} from './user-experience.repository';
 import {UserSocialMediaRepository} from './user-social-media.repository';
 import {WalletRepository} from './wallet.repository';
-import { PostRepository } from './post.repository';
+import {PostRepository} from './post.repository';
 
 @bind({scope: BindingScope.SINGLETON})
 export class UserRepository extends DefaultCrudRepository<
@@ -138,7 +138,7 @@ export class UserRepository extends DefaultCrudRepository<
     @repository.getter('CurrencyRepository')
     protected currencyRepositoryGetter: Getter<CurrencyRepository>,
     @repository.getter('PostRepository')
-    protected postRepositoryGetter: Getter<PostRepository>
+    protected postRepositoryGetter: Getter<PostRepository>,
   ) {
     super(User, dataSource);
     this.userCurrencies = this.createHasManyRepositoryFactoryFor(

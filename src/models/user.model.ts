@@ -23,7 +23,7 @@ import {UserCurrency} from './user-currency.model';
 import {UserExperience} from './user-experience.model';
 import {UserSocialMedia} from './user-social-media.model';
 import {Wallet, WalletWithRelations} from './wallet.model';
-import { Post } from './post.model';
+import {Post} from './post.model';
 
 @model({
   settings: {
