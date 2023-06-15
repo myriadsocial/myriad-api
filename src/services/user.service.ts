@@ -789,6 +789,22 @@ export class UserService {
     );
   }
 
+  public async profilePosts(
+    id: string,
+    filter?: Filter<Post>,
+  ): Promise<Post[]> {
+    const newFilter: Filter<Post> = {
+      ...filter,
+      where: {createdBy: id},
+    };
+    return this.postService.find(
+      newFilter,
+      undefined,
+      true,
+      this.currentUser[securityId],
+    );
+  }
+
   public async draftPost(): Promise<DraftPost | null> {
     return this.postService.draft(this.currentUser[securityId]);
   }
