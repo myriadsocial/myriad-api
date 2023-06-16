@@ -793,7 +793,7 @@ export class UserService {
     id: string,
     filter?: Filter<Post>,
   ): Promise<Post[]> {
-    return this.userRepository.posts(id).find(filter);
+    return this.postService.findByProfile(id, filter);
   }
 
   public async draftPost(): Promise<DraftPost | null> {
