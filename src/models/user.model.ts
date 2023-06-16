@@ -37,6 +37,7 @@ import {Post} from './post.model';
         },
         options: {
           unique: true,
+          sparse: true,
         },
       },
       nameIndex: {
