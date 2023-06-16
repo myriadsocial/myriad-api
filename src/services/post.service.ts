@@ -257,6 +257,14 @@ export class PostService {
     return this.postWithImporterInfo(currentPost, userId);
   }
 
+  public async findByProfile(
+    id: string,
+    filter?: Filter<Post>,
+  ): Promise<Post[]> {
+    const posts = (await this.postRepository.find(filter)).filter(posts => (posts.createdBy === id));
+    return posts ;
+  }
+
   public async updateById(id: string, data: Partial<Post>): Promise<Count> {
     let embeddedURL = null;
     let url = '';
