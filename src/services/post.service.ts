@@ -261,8 +261,10 @@ export class PostService {
     id: string,
     filter?: Filter<Post>,
   ): Promise<Post[]> {
-    const posts = (await this.postRepository.find(filter)).filter(posts => (posts.createdBy === id));
-    return posts ;
+    const posts = (await this.postRepository.find(filter)).filter(
+      posts => posts.createdBy === id,
+    );
+    return posts;
   }
 
   public async updateById(id: string, data: Partial<Post>): Promise<Count> {
