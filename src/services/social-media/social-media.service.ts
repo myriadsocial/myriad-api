@@ -4,7 +4,7 @@ import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../../enums';
 import {Asset, Sizes} from '../../interfaces';
 import {EmbeddedURL, ExtendedPost, Media, People} from '../../models';
-import {Reddit, Twitter} from '..';
+import {Reddit, Tweets, Twitter, twitterReferences, twitterUser} from '..';
 import {formatRawText} from '../../utils/formatter';
 import {UrlUtils} from '../../utils/url-utils';
 
@@ -47,24 +47,24 @@ export class SocialMediaService {
       data,
       includes,
     } = response;
-
+    const references : twitterReferences[] = data.referenced_tweets ;
     const {
       id: idStr,
       text: fullText,
       created_at: createdAt,
       author_id: author,
-      referenced_tweets: references,
       entities,
       attachments,
     } = data ;
-    let user = includes.users.filter(user => (user.id === author));
+    const users : twitterUser[] = includes.users ;
+    const tweets : Tweets[] = includes.tweets ;
+    let user = users.filter(user => (user.id === author))[0];
     let quote = references.filter(reference => (reference.type === 'quoted'));
-    let quotedStatus = [] ;
+    let quotesStatus : Tweets[] = [] ;
     if (quote.length > 0) {
-      quotedStatus = includes.tweets.filter(tweet => (tweet.id === quote[0].id));
+      quotesStatus = tweets.filter(tweet => (tweet.id === quote[0].id));
     }
-    
-
+    let quotedStatus = quotesStatus[0];
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
       images: [],
@@ -142,8 +142,8 @@ export class SocialMediaService {
             'https://res.cloudinary.com/dsget80gs/background/profile-default-bg.png';
 
           embeddedURL =
-            quotedStatus?.user?.screen_name && quotedStatus?.id_str
-              ? `https://twitter.com/${quotedStatus.user.screen_name}/status/${quotedStatus.id_str}`
+            quotedStatus?.user?.screen_name && quotedStatus?.id
+              ? `https://twitter.com/${quotedStatus.user.screen_name}/status/${quotedStatus.id}`
               : '';
 
           embedded = new EmbeddedURL({
