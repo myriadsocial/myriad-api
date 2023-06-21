@@ -1,7 +1,6 @@
 import {inject, Provider} from '@loopback/core';
 import {getService} from '@loopback/service-proxy';
 import {TwitterDataSource} from '../../datasources';
-import { AnyObject } from '@loopback/repository';
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 export interface Twitter {

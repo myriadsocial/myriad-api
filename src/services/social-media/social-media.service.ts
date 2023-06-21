@@ -21,7 +21,8 @@ export class SocialMediaService {
 
   async fetchTweet(textId: string): Promise<ExtendedPost> {
     let response = null;
-    const expansions = 'author_id,attachments.media_keys,referenced_tweets.id,referenced_tweets.id.author_id';
+    const expansions =
+      'author_id,attachments.media_keys,referenced_tweets.id,referenced_tweets.id.author_id';
     const tweetFields = 'attachments,entities';
     const mediaFields = 'url';
     const userFields = 'profile_image_url';
@@ -43,10 +44,7 @@ export class SocialMediaService {
       }
     }
 
-    const {
-      data,
-      includes,
-    } = response;
+    const {data, includes} = response;
     const {
       id: idStr,
       text: fullText,
@@ -55,23 +53,27 @@ export class SocialMediaService {
       referenced_tweets: references,
       entities,
       attachments,
-    } = data ;
-    let users : any[] = includes.users;
-    let user : any ;
+    } = data;
+    let users: any[] = includes.users;
+    let user: any;
     users.forEach(element => {
       if (element.id === author) {
-        user = element ;
+        user = element;
       }
     });
-    let reference : any[] = references ;
+    let reference: any[] = references;
     // let user = users.filter(user => (user.id === author))[0];
-    let quote : any = reference.filter(reference => (reference.type === 'quoted'))[0];
-    let quotedStatus : any ;
-    let tweets : any[] = includes.tweets ;
+    let quote: any = reference.filter(
+      reference => reference.type === 'quoted',
+    )[0];
+    let quotedStatus: any;
+    let tweets: any[] = includes.tweets;
     if (quote.length > 0) {
-      quotedStatus = tweets.filter(tweet => (tweet.id === quote.id))[0];
+      quotedStatus = tweets.filter(tweet => tweet.id === quote.id)[0];
     }
-    quotedStatus.user = users.filter(user => (user.id === quotedStatus.author_id))[0];
+    quotedStatus.user = users.filter(
+      user => user.id === quotedStatus.author_id,
+    )[0];
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
       images: [],
@@ -86,7 +88,7 @@ export class SocialMediaService {
         : []
       : [];
 
-    let text: String = fullText
+    let text: String = fullText;
     if (attachments) {
       const medias = includes.media;
       const images: Sizes[] = [];
@@ -135,8 +137,7 @@ export class SocialMediaService {
         if (quotedStatus) {
           const quoteEntities = quotedStatus?.entities?.urls ?? [];
 
-          let description =
-            quotedStatus?.text ?? '';
+          let description = quotedStatus?.text ?? '';
 
           quoteEntities.forEach((entity: AnyObject) => {
             description = description.replace(
