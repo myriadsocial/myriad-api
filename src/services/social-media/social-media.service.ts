@@ -54,25 +54,30 @@ export class SocialMediaService {
       entities,
       attachments,
     } = data;
-    let users: any[] = includes.users;
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
+    const users: any[] = includes.users;
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
     let user: any;
     users.forEach(element => {
       if (element.id === author) {
         user = element;
       }
     });
-    let reference: any[] = references;
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
+    const reference: any[] = references;
     // let user = users.filter(user => (user.id === author))[0];
-    let quote: any = reference.filter(
-      reference => reference.type === 'quoted',
+    const quote: any = reference.filter(
+      referenced => referenced.type === 'quoted',
     )[0];
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
     let quotedStatus: any;
-    let tweets: any[] = includes.tweets;
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
+    const tweets: any[] = includes.tweets;
     if (quote.length > 0) {
       quotedStatus = tweets.filter(tweet => tweet.id === quote.id)[0];
     }
     quotedStatus.user = users.filter(
-      user => user.id === quotedStatus.author_id,
+      quoter => quoter.id === quotedStatus.author_id,
     )[0];
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
