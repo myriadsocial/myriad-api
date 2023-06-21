@@ -11,29 +11,6 @@ export interface Twitter {
   getActions(action: String): Promise<any>;
 }
 
-export interface twitterReferences extends AnyObject {
-  id: any ,
-  type: any ,
-}
-
-export interface Tweets extends AnyObject {
-  id: any ,
-  text: any ,
-  attachments?: any,
-  author_id?: any,
-  created_at?: any,
-  entities?: any,
-  referenced_tweets?: any,
-  user?: twitterUser,
-}
-
-export interface twitterUser extends AnyObject {
-  id: any ,
-  name: any ,
-  username: any ,
-  profile_image_url?: any ,
-}
-
 export class TwitterProvider implements Provider<Twitter> {
   constructor(
     // twitter must match the name property in the datasource json file

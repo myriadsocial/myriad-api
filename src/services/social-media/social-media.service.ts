@@ -4,7 +4,7 @@ import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../../enums';
 import {Asset, Sizes} from '../../interfaces';
 import {EmbeddedURL, ExtendedPost, Media, People} from '../../models';
-import {Reddit, Tweets, Twitter, twitterReferences, twitterUser} from '..';
+import {Reddit, Twitter} from '..';
 import {formatRawText} from '../../utils/formatter';
 import {UrlUtils} from '../../utils/url-utils';
 
@@ -47,24 +47,30 @@ export class SocialMediaService {
       data,
       includes,
     } = response;
-    const references : twitterReferences[] = data.referenced_tweets ;
     const {
       id: idStr,
       text: fullText,
       created_at: createdAt,
       author_id: author,
+      referenced_tweets: references,
       entities,
       attachments,
     } = data ;
-    const users : twitterUser[] = includes.users ;
-    const tweets : Tweets[] = includes.tweets ;
-    let user = users.filter(user => (user.id === author))[0];
-    let quote = references.filter(reference => (reference.type === 'quoted'));
-    let quotesStatus : Tweets[] = [] ;
+    let users : any[] = includes.users;
+    let user : any ;
+    users.forEach(element => {
+      if (element.id === author) {
+        user = element ;
+      }
+    });
+    let reference : any[] = references ;
+    // let user = users.filter(user => (user.id === author))[0];
+    let quote : any = reference.filter(reference => (reference.type === 'quoted'))[0];
+    let quotedStatus : any ;
+    let tweets : any[] = includes.tweets ;
     if (quote.length > 0) {
-      quotesStatus = tweets.filter(tweet => (tweet.id === quote[0].id));
+      quotedStatus = tweets.filter(tweet => (tweet.id === quote.id))[0];
     }
-    let quotedStatus = quotesStatus[0];
     quotedStatus.user = users.filter(user => (user.id === quotedStatus.author_id))[0];
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
