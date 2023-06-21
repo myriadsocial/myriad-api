@@ -20,11 +20,15 @@ export class SocialMediaService {
   ) {}
 
   async fetchTweet(textId: string): Promise<ExtendedPost> {
-    let data = null;
+    let response = null;
+    const expansions = 'author_id,attachments.media_keys,referenced_tweets.id,referenced_tweets.id.author_id';
+    const tweetFields = 'attachments,entities';
+    const mediaFields = 'url';
+    const userFields = 'profile_image_url';
 
     try {
-      data = await this.twitterService.getActions(
-        `1.1/statuses/show.json?id=${textId}&include_entities=true&tweet_mode=extended`,
+      response = await this.twitterService.getActions(
+        `2/tweets/${textId}?expansions=${expansions}&tweet.fields=${tweetFields}&media.fields=${mediaFields}&user.fields=${userFields}`,
       );
     } catch (err) {
       switch (err.statusCode) {
@@ -39,16 +43,39 @@ export class SocialMediaService {
       }
     }
 
+    // const {
+    //   id_str: idStr,
+    //   full_text: fullText,
+    //   created_at: createdAt,
+    //   user,
+    //   entities,
+    //   extended_entities: extendedEntities,
+    //   quoted_status: quotedStatus,
+    //   display_text_range: [startWith],
+    // } = data;
+
     const {
-      id_str: idStr,
-      full_text: fullText,
+      data,
+      includes,
+    } = response;
+
+    const {
+      id: idStr,
+      text: fullText,
       created_at: createdAt,
-      user,
+      author_id: author,
+      referenced_tweets: references,
       entities,
-      extended_entities: extendedEntities,
-      quoted_status: quotedStatus,
-      display_text_range: [startWith],
-    } = data;
+      attachments,
+    } = data ;
+    let user = includes.users.filter(user => (user.id === author));
+    let quote = references.filter(reference => (reference.type === 'quoted'));
+    let quotedStatus = [] ;
+    if (quote.length > 0) {
+      quotedStatus = includes.tweets.filter(tweet => (tweet.id === quote[0].id));
+    }
+    
+
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
       images: [],
@@ -63,16 +90,16 @@ export class SocialMediaService {
         : []
       : [];
 
-    let text: String = fullText.substring(startWith);
-    if (extendedEntities) {
-      const medias = extendedEntities.media;
+    let text: String = fullText
+    if (attachments) {
+      const medias = includes.media;
       const images: Sizes[] = [];
 
       for (const media of medias) {
         text = text.replace(media.url, '');
 
         if (media.type === 'photo') {
-          const imageURL = media.media_url_https;
+          const imageURL = media.url;
 
           images.push({
             original: imageURL,
@@ -82,11 +109,11 @@ export class SocialMediaService {
             large: `${imageURL}?name=large`,
           });
         } else {
-          const videoInfo = media.video_info.variants;
+          const variants = includes.media.variants;
 
-          for (const video of videoInfo) {
-            if (video.content_type === 'video/mp4') {
-              asset.videos.push(video.url.split('?tag=12')[0]);
+          for (const variant of variants) {
+            if (variant.content_type === 'video/mp4') {
+              asset.videos.push(variant.url.split('?tag=12')[0]);
               break;
             }
           }
@@ -110,11 +137,10 @@ export class SocialMediaService {
       try {
         if (!validateURL(embeddedURL)) throw new Error('InvalidURL');
         if (quotedStatus) {
-          const [embeddeStartWith] = quotedStatus?.display_text_range ?? 0;
           const quoteEntities = quotedStatus?.entities?.urls ?? [];
 
           let description =
-            quotedStatus?.full_text?.substring(embeddeStartWith) ?? '';
+            quotedStatus?.text ?? '';
 
           quoteEntities.forEach((entity: AnyObject) => {
             description = description.replace(
@@ -161,12 +187,12 @@ export class SocialMediaService {
       originCreatedAt: new Date(createdAt).toString(),
       asset: asset,
       embeddedURL: embedded,
-      url: `https://twitter.com/${user.id_str}/status/${textId}`,
+      url: `https://twitter.com/${user.id}/status/${textId}`,
       platformUser: {
         name: user.name,
-        username: user.screen_name,
-        originUserId: user.id_str,
-        profilePictureURL: user.profile_image_url_https || '',
+        username: user.username,
+        originUserId: user.id,
+        profilePictureURL: user.profile_image_url || '',
         platform: PlatformType.TWITTER,
       },
     } as ExtendedPost;
