@@ -65,6 +65,7 @@ export class SocialMediaService {
       quotesStatus = tweets.filter(tweet => (tweet.id === quote[0].id));
     }
     let quotedStatus = quotesStatus[0];
+    quotedStatus.user = users.filter(user => (user.id === quotedStatus.author_id))[0];
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
       images: [],
@@ -142,12 +143,12 @@ export class SocialMediaService {
             'https://res.cloudinary.com/dsget80gs/background/profile-default-bg.png';
 
           embeddedURL =
-            quotedStatus?.user?.screen_name && quotedStatus?.id
-              ? `https://twitter.com/${quotedStatus.user.screen_name}/status/${quotedStatus.id}`
+            quotedStatus?.user?.username && quotedStatus?.id
+              ? `https://twitter.com/${quotedStatus.user?.username}/status/${quotedStatus.id}`
               : '';
 
           embedded = new EmbeddedURL({
-            title: quotedStatus?.user?.name ?? '',
+            title: quotedStatus?.user?.username ?? '',
             description: description,
             siteName: 'Twitter',
             url: embeddedURL,

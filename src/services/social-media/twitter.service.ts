@@ -24,13 +24,14 @@ export interface Tweets extends AnyObject {
   created_at?: any,
   entities?: any,
   referenced_tweets?: any,
+  user?: twitterUser,
 }
 
 export interface twitterUser extends AnyObject {
   id: any ,
   name: any ,
   username: any ,
-  profile_image_url: any ,
+  profile_image_url?: any ,
 }
 
 export class TwitterProvider implements Provider<Twitter> {
