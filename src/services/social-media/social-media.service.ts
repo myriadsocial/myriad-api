@@ -43,17 +43,6 @@ export class SocialMediaService {
       }
     }
 
-    // const {
-    //   id_str: idStr,
-    //   full_text: fullText,
-    //   created_at: createdAt,
-    //   user,
-    //   entities,
-    //   extended_entities: extendedEntities,
-    //   quoted_status: quotedStatus,
-    //   display_text_range: [startWith],
-    // } = data;
-
     const {
       data,
       includes,
