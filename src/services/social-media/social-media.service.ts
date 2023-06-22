@@ -78,9 +78,8 @@ export class SocialMediaService {
       quotedStatus.user = users.filter(
         quoter => quoter.id === quotedStatus.author_id,
       )[0];
-    }
-    else {
-      quotedStatus = null ;
+    } else {
+      quotedStatus = null;
     }
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
@@ -115,7 +114,7 @@ export class SocialMediaService {
             large: `${imageURL}?name=large`,
           });
         } else {
-          const variants : any[] = media.variants;
+          const variants: any[] = media.variants;
 
           for (const variant of variants) {
             if (variant.content_type === 'video/mp4') {
