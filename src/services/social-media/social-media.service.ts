@@ -23,8 +23,8 @@ export class SocialMediaService {
     let response = null;
     const expansions =
       'author_id,attachments.media_keys,referenced_tweets.id,referenced_tweets.id.author_id';
-    const tweetFields = 'attachments,entities';
-    const mediaFields = 'url';
+    const tweetFields = 'attachments,entities,created_at';
+    const mediaFields = 'url,variants';
     const userFields = 'profile_image_url';
 
     try {
@@ -66,19 +66,21 @@ export class SocialMediaService {
     /* eslint-disable  @typescript-eslint/no-explicit-any */
     const reference: any[] = references;
     // let user = users.filter(user => (user.id === author))[0];
-    const quote: any = reference.filter(
+    const quote: any[] = reference.filter(
       referenced => referenced.type === 'quoted',
-    )[0];
+    );
     /* eslint-disable  @typescript-eslint/no-explicit-any */
     let quotedStatus: any;
     /* eslint-disable  @typescript-eslint/no-explicit-any */
     const tweets: any[] = includes.tweets;
     if (quote.length > 0) {
-      quotedStatus = tweets.filter(tweet => tweet.id === quote.id)[0];
+      quotedStatus = tweets.filter(tweet => tweet.id === quote[0].id)[0];
+      quotedStatus.user = users.filter(
+        quoter => quoter.id === quotedStatus.author_id,
+      )[0];
+    } else {
+      quotedStatus = null;
     }
-    quotedStatus.user = users.filter(
-      quoter => quoter.id === quotedStatus.author_id,
-    )[0];
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
       images: [],
@@ -112,7 +114,7 @@ export class SocialMediaService {
             large: `${imageURL}?name=large`,
           });
         } else {
-          const variants = includes.media.variants;
+          const variants: any[] = media.variants;
 
           for (const variant of variants) {
             if (variant.content_type === 'video/mp4') {
