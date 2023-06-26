@@ -83,7 +83,6 @@ export class SocialMediaService {
       } else {
         quotedStatus = null;
       }
-    }
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
       images: [],
