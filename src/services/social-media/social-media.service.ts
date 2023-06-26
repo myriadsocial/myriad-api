@@ -64,20 +64,25 @@ export class SocialMediaService {
       }
     });
     /* eslint-disable  @typescript-eslint/no-explicit-any */
-    const reference: any[] = references;
-    // let user = users.filter(user => (user.id === author))[0];
-    const quote: any[] = reference.filter(
-      referenced => referenced.type === 'quoted',
-    );
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
     let quotedStatus: any;
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
-    const tweets: any[] = includes.tweets;
-    if (quote.length > 0) {
-      quotedStatus = tweets.filter(tweet => tweet.id === quote[0].id)[0];
-      quotedStatus.user = users.filter(
-        quoter => quoter.id === quotedStatus.author_id,
-      )[0];
+    if (typeof references !== 'undefined') {
+      /* eslint-disable  @typescript-eslint/no-explicit-any */
+      const reference: any[] = references;
+      // let user = users.filter(user => (user.id === author))[0];
+      const quote: any[] = reference.filter(
+        referenced => referenced.type === 'quoted',
+      );
+
+      /* eslint-disable  @typescript-eslint/no-explicit-any */
+      const tweets: any[] = includes.tweets;
+      if (quote.length > 0) {
+        quotedStatus = tweets.filter(tweet => tweet.id === quote[0].id)[0];
+        quotedStatus.user = users.filter(
+          quoter => quoter.id === quotedStatus.author_id,
+        )[0];
+      } else {
+        quotedStatus = null;
+      }
     } else {
       quotedStatus = null;
     }
@@ -90,7 +95,7 @@ export class SocialMediaService {
     const twitterTags = entities
       ? entities.hashtags
         ? entities.hashtags.map((hashtag: AnyObject) =>
-            hashtag.text.toLowerCase(),
+            hashtag.tag.toLowerCase(),
           )
         : []
       : [];
@@ -127,16 +132,19 @@ export class SocialMediaService {
 
       if (images.length > 0) asset.images = images;
     }
+    if (typeof entities?.url !== 'undefined') {
+      for (const entity of entities?.urls as AnyObject[]) {
+        const url = entity.url;
+        const expandedURL = entity.expanded_url;
 
-    for (const entity of entities.urls as AnyObject[]) {
-      const url = entity.url;
-      const expandedURL = entity.expanded_url;
-
-      text = text.replace(url, expandedURL);
+        text = text.replace(url, expandedURL);
+      }
     }
 
     let embedded = null;
-    let embeddedURL = entities?.urls[entities.urls.length - 1]?.expanded_url;
+    let embeddedURL = entities?.urls
+      ? entities?.urls[entities.urls.length - 1]?.expanded_url
+      : null;
 
     if (embeddedURL && asset.images.length === 0 && asset.videos.length === 0) {
       try {
