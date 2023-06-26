@@ -84,7 +84,7 @@ export class SocialMediaService {
         quotedStatus = null;
       }
     } else {
-      quotedStatus = null;
+      quotedStatus = null ;
     }
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
