@@ -64,13 +64,15 @@ export class SocialMediaService {
       }
     });
     /* eslint-disable  @typescript-eslint/no-explicit-any */
+    let quotedStatus: any;
+    if (typeof references !== 'undefined')
+    {/* eslint-disable  @typescript-eslint/no-explicit-any */
     const reference: any[] = references;
     // let user = users.filter(user => (user.id === author))[0];
     const quote: any[] = reference.filter(
       referenced => referenced.type === 'quoted',
     );
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
-    let quotedStatus: any;
+
     /* eslint-disable  @typescript-eslint/no-explicit-any */
     const tweets: any[] = includes.tweets;
     if (quote.length > 0) {
@@ -80,7 +82,7 @@ export class SocialMediaService {
       )[0];
     } else {
       quotedStatus = null;
-    }
+    }}
 
     const asset: Omit<Asset, 'exclusiveContents'> = {
       images: [],
@@ -90,7 +92,7 @@ export class SocialMediaService {
     const twitterTags = entities
       ? entities.hashtags
         ? entities.hashtags.map((hashtag: AnyObject) =>
-            hashtag.text.toLowerCase(),
+            hashtag.tag.toLowerCase(),
           )
         : []
       : [];
@@ -127,16 +129,16 @@ export class SocialMediaService {
 
       if (images.length > 0) asset.images = images;
     }
-
-    for (const entity of entities.urls as AnyObject[]) {
+    if (typeof entities?.url !== 'undefined') 
+    {for (const entity of entities?.urls as AnyObject[]) {
       const url = entity.url;
       const expandedURL = entity.expanded_url;
 
       text = text.replace(url, expandedURL);
-    }
+    }}
 
     let embedded = null;
-    let embeddedURL = entities?.urls[entities.urls.length - 1]?.expanded_url;
+    let embeddedURL = entities?.urls ? entities?.urls[entities.urls.length - 1]?.expanded_url : null ;
 
     if (embeddedURL && asset.images.length === 0 && asset.videos.length === 0) {
       try {
