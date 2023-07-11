@@ -5,6 +5,7 @@ import {
   CountSchema,
   Filter,
   FilterExcludingWhere,
+  InclusionFilter,
 } from '@loopback/repository';
 import {
   del,
@@ -63,6 +64,42 @@ export class UserPostController {
     @param.filter(Post, {exclude: ['limit', 'skip', 'offset', 'where']})
     filter?: Filter<Post>,
   ): Promise<Post[]> {
+    const newinclusion = filter ? filter.include?.map(incl => {
+      if (typeof incl !== 'string')
+      {if (incl.relation === 'user') {
+        incl = {
+          relation: 'user',
+          scope: {
+            fields: {email: false},
+            include: [
+              {
+                relation: 'wallets',
+              },
+            ],
+          },
+        } ;
+        return incl
+      }
+    else {return incl}}
+      else {
+        if (incl === 'user') {
+          incl = {
+            relation: 'user',
+            scope: {
+              fields: {email: false},
+              include: [
+                {
+                  relation: 'wallets',
+                },
+              ],
+            },
+          } ;
+          return incl
+        }
+        else {return incl}
+      }
+    }) : undefined ;
+    filter ? filter.include = newinclusion : null ;
     return this.userService.posts(filter);
   }
 
