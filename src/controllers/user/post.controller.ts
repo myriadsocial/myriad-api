@@ -102,7 +102,7 @@ export class UserPostController {
           }
         })
       : undefined;
-    filter ? (filter.include = newinclusion) : null;
+    filter!.include = newinclusion ;
     return this.userService.posts(filter);
   }
 
