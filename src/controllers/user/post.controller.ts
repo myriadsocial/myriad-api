@@ -63,6 +63,46 @@ export class UserPostController {
     @param.filter(Post, {exclude: ['limit', 'skip', 'offset', 'where']})
     filter?: Filter<Post>,
   ): Promise<Post[]> {
+    const newinclusion = filter
+      ? filter.include?.map(incl => {
+          if (typeof incl !== 'string') {
+            if (incl.relation === 'user') {
+              incl = {
+                relation: 'user',
+                scope: {
+                  fields: {email: false},
+                  include: [
+                    {
+                      relation: 'wallets',
+                    },
+                  ],
+                },
+              };
+              return incl;
+            } else {
+              return incl;
+            }
+          } else {
+            if (incl === 'user') {
+              incl = {
+                relation: 'user',
+                scope: {
+                  fields: {email: false},
+                  include: [
+                    {
+                      relation: 'wallets',
+                    },
+                  ],
+                },
+              };
+              return incl;
+            } else {
+              return incl;
+            }
+          }
+        })
+      : undefined;
+    filter!.include = newinclusion;
     return this.userService.posts(filter);
   }
 
