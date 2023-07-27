@@ -131,6 +131,7 @@ export class UserController {
     @param.filter(User, {exclude: ['limit', 'skip', 'offset']})
     filter?: Filter<User>,
   ): Promise<User[]> {
+    filter ? (filter.fields = {email: false}) : null;
     return this.userService.find(filter);
   }
 
