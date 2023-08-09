@@ -1177,9 +1177,11 @@ export class UserService {
 
   private async haveFullAccess(controllerType: ControllerType): Promise<void> {
     if (this.currentUser?.fullAccess) return;
-    const filter : Filter<UserSocialMedia> = {include : ["people"], where: {userId: this.currentUser?.[securityId]}}
-    const result = await this.socialMedia(filter
-    );
+    const filter: Filter<UserSocialMedia> = {
+      include: ['people'],
+      where: {userId: this.currentUser?.[securityId]},
+    };
+    const result = await this.socialMedia(filter);
     if (result.length !== 0) return;
     const userId = this.currentUser?.[securityId] ?? '';
 
