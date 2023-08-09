@@ -1177,14 +1177,16 @@ export class UserService {
 
   private async haveFullAccess(controllerType: ControllerType): Promise<void> {
     if (this.currentUser?.fullAccess) return;
-    const result = await this.userRepository.findById(this.currentUser?.[securityId]) ;
-    const people = result.people ;
-    if(people.length !== 0) return;
+    const result = await this.userRepository.findById(
+      this.currentUser?.[securityId],
+    );
+    const people = result.people;
+    if (people.length !== 0) return;
 
     const userId = this.currentUser?.[securityId] ?? '';
 
     switch (controllerType) {
-      case ControllerType.USERCOMMENT:{
+      case ControllerType.USERCOMMENT: {
         const now = new Date().setHours(0, 0, 0, 0);
         const {count: totalComment} = await this.commentService.count({
           userId,
@@ -1195,16 +1197,16 @@ export class UserService {
         if (totalComment > 50) {
           throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
         }
-        return ;
+        return;
       }
       case ControllerType.POST: {
         const now = new Date().setHours(0, 0, 0, 0);
         const {count: countPost} = await this.postService.count({
-            createdBy: userId,
-            createdAt: {
-              gt: new Date(now).toString(),
-            },
-          });
+          createdBy: userId,
+          createdAt: {
+            gt: new Date(now).toString(),
+          },
+        });
 
         if (countPost > 15) {
           throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
