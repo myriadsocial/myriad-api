@@ -1177,31 +1177,38 @@ export class UserService {
 
   private async haveFullAccess(controllerType: ControllerType): Promise<void> {
     if (this.currentUser?.fullAccess) return;
-
+    const filter: Filter<UserSocialMedia> = {
+      include: ['people'],
+      where: {userId: this.currentUser?.[securityId]},
+    };
+    const result = await this.socialMedia(filter);
+    if (result.length !== 0) return;
     const userId = this.currentUser?.[securityId] ?? '';
 
     switch (controllerType) {
-      case ControllerType.USERCOMMENT:
+      case ControllerType.USERCOMMENT: {
+        const now = new Date().setHours(0, 0, 0, 0);
+        const {count: totalComment} = await this.commentService.count({
+          userId,
+          createdAt: {
+            gt: new Date(now).toString(),
+          },
+        });
+        if (totalComment > 50) {
+          throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
+        }
+        return;
+      }
       case ControllerType.POST: {
         const now = new Date().setHours(0, 0, 0, 0);
-        const [{count: countComment}, {count: countPost}] = await Promise.all([
-          this.commentService.count({
-            userId,
-            createdAt: {
-              gt: new Date(now).toString(),
-            },
-          }),
-          this.postService.count({
-            createdBy: userId,
-            createdAt: {
-              gt: new Date(now).toString(),
-            },
-          }),
-        ]);
+        const {count: countPost} = await this.postService.count({
+          createdBy: userId,
+          createdAt: {
+            gt: new Date(now).toString(),
+          },
+        });
 
-        const totalActions = countComment + countPost;
-
-        if (totalActions + 1 > 15) {
+        if (countPost > 15) {
           throw new HttpErrors.UnprocessableEntity('ActionLimitExceeded');
         }
         return;

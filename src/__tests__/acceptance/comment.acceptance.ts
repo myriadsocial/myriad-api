@@ -130,7 +130,7 @@ describe('CommentApplication', function () {
 
   it('reject creates a comment in lite version when action is fulfilled', async () => {
     await userRepository.updateById(user.id, {fullAccess: false});
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i <= 50; i++) {
       await givenCommentInstance(commentRepository, {
         userId: user.id,
         postId: post.id.toString(),
