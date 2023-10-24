@@ -32,11 +32,11 @@ jobs:
     name: Test on Node.js 16 ( ${{ matrix.command }} )
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           fetch-depth: 0
       - name: Set Up Node.js
-        uses: actions/setup-node@5e21ff4d9bc1a8cf6de233a3057d20ec6b3fb69d
+        uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7
         with:
           node-version: 16
           cache: yarn
@@ -51,7 +51,7 @@ jobs:
     name: Build
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           fetch-depth: 0
       - name: Set Up QEMU
@@ -97,7 +97,7 @@ jobs:
     name: Release Please
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           fetch-depth: 0
       - name: Release
@@ -165,7 +165,7 @@ jobs:
     name: Deploy to ${{ matrix.environment }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           fetch-depth: 0
       - name: Authenticate to Google Cloud
