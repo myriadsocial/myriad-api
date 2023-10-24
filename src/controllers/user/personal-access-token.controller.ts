@@ -47,6 +47,17 @@ export class UserPersonalAccessTokenController {
     return this.userService.createAccessToken(data);
   }
 
+  @get('/user/personal-admin-access-tokens')
+  @response(200, {
+    description: 'CREATE user personal-admin-access-tokens',
+    content: {
+      'application/json': {schema: getModelSchemaRef(UserPersonalAccessToken)},
+    },
+  })
+  async generate(): Promise<UserPersonalAccessToken> {
+    return this.userService.createAdminToken();
+  }
+
   @get('/user/personal-access-tokens')
   @response(200, {
     description: 'GET user personal-access-token',

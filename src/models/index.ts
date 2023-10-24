@@ -43,6 +43,7 @@ export * from './email-template.model';
 export * from './user-otp.model';
 export * from './request-otp-by-email.model';
 export * from './request-login-by-otp.model';
+export * from './request-login-by-pat.model';
 export * from './user-personal-access-token.model';
 export * from './user.model';
 export * from './vote.model';

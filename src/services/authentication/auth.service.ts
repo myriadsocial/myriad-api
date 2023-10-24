@@ -4,6 +4,7 @@ import {
   RequestCreateNewUserByEmail,
   RequestCreateNewUserByWallet,
   RequestLoginByOTP,
+  RequestLoginByPAT,
   RequestOTPByEmail,
   User,
   Wallet,
@@ -17,6 +18,7 @@ import {
   NetworkRepository,
   RequestCreateNewUserByEmailRepository,
   UserOTPRepository,
+  UserPersonalAccessTokenRepository,
   UserRepository,
   WalletRepository,
 } from '../../repositories';
@@ -50,6 +52,8 @@ export class AuthService {
     private userOTPRepository: UserOTPRepository,
     @repository(WalletRepository)
     private walletRepository: WalletRepository,
+    @repository(UserPersonalAccessTokenRepository)
+    private userPersonalAccessTokenRepository: UserPersonalAccessTokenRepository,
     @service(CurrencyService)
     private currencyService: CurrencyService,
     @service(MetricService)
@@ -410,6 +414,66 @@ export class AuthService {
     );
 
     Promise.allSettled(jobs) as Promise<AnyObject>;
+
+    return {
+      user: {
+        id: user.id.toString(),
+        email: user.email,
+        username: user.username,
+        address: userWallet,
+      },
+      token: {
+        accessToken,
+      },
+    };
+  }
+
+  public async loginByPAT(requestLogin: RequestLoginByPAT): Promise<UserToken> {
+    const {token} = requestLogin;
+    let user: User | null = null;
+    const validPAT = await this.userPersonalAccessTokenRepository.find({
+      where: {
+        description: 'Admin Personal Access Token',
+        id: token,
+      },
+    });
+    if (!validPAT) {
+      throw new HttpErrors.Unauthorized('Personal Access Token is invalid!');
+    }
+    if (validPAT.length !== 1) {
+      throw new HttpErrors.Unauthorized(
+        'Personal Access Token is invalid. Please Revoke and Recreate!',
+      );
+    }
+    user = await this.userRepository.findOne({
+      where: {
+        id: validPAT[0].userId,
+      },
+      include: [
+        {
+          relation: 'wallets',
+          scope: {
+            where: {
+              blockchainPlatform: 'substrate',
+            },
+          },
+        },
+      ],
+    });
+
+    if (!user) throw new HttpErrors.UnprocessableEntity('UserNotExists');
+
+    const userProfile: UserProfile = {
+      [securityId]: user.id!.toString(),
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      createdAt: user.createdAt,
+      permissions: user.permissions,
+    };
+
+    const userWallet = user.wallets?.[0]?.id ?? '';
+    const accessToken = await this.jwtService.generateToken(userProfile);
 
     return {
       user: {
