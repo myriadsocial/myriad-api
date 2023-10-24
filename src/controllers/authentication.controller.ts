@@ -193,4 +193,37 @@ export class AuthenticationController {
   ): Promise<UserToken> {
     return this.authService.loginByEmail(requestLoginByOTP);
   }
+
+  @post('/authentication/login/pat')
+  @response(200, {
+    description: 'LOGIN by personal access token',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            accessToken: {
+              type: 'string',
+            },
+          },
+        },
+      },
+    },
+  })
+  async loginByPAT(
+    @requestBody({
+      description: 'The input of login function',
+      required: true,
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(RequestLoginByOTP, {exclude: ['data']}),
+        },
+      },
+    })
+    requestLoginByOTP: RequestLoginByOTP,
+  ): Promise<UserToken> {
+    return this.authService.loginByPAT(requestLoginByOTP);
+  }
 }
+
+
