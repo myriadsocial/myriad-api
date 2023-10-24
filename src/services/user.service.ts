@@ -301,11 +301,15 @@ export class UserService {
   public async createAccessToken(
     data: CreateUserPersonalAccessTokenDto,
   ): Promise<UserPersonalAccessToken> {
-    if (data.description === "Admin Personal Access Token") {
-      throw new HttpErrors.UnprocessableEntity('The description you used is reserved for internal use. Try another description');
+    if (data.description === 'Admin Personal Access Token') {
+      throw new HttpErrors.UnprocessableEntity(
+        'The description you used is reserved for internal use. Try another description',
+      );
     }
-    if (data.scopes.includes("Admin")) {
-      throw new HttpErrors.UnprocessableEntity('Scopes containing Admin is forbidden for this method');
+    if (data.scopes.includes('Admin')) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Scopes containing Admin is forbidden for this method',
+      );
     }
     const accessToken = await this.jwtService.generateToken(this.currentUser);
     const pat = new UserPersonalAccessToken({
@@ -318,14 +322,14 @@ export class UserService {
   }
 
   public async createAdminToken(): Promise<UserPersonalAccessToken> {
-    const filter : Where<UserPersonalAccessToken> = {
+    const filter: Where<UserPersonalAccessToken> = {
       userId: this.currentUser[securityId],
-      description: "Admin Personal Access Token"
+      description: 'Admin Personal Access Token',
     };
     const data = {
-      description: "Admin Personal Access Token",
-      scopes: ["Admin"]
-    }
+      description: 'Admin Personal Access Token',
+      scopes: ['Admin'],
+    };
     await this.userPersonalAccessTokenRepository.deleteAll(filter);
     const accessToken = await this.jwtService.generateToken(this.currentUser);
     const pat = new UserPersonalAccessToken({
@@ -341,11 +345,15 @@ export class UserService {
     id: string,
     data: Partial<UpdateUserPersonalAccessTokenDto>,
   ): Promise<Count> {
-    if (data.description === "Admin Personal Access Token") {
-      throw new HttpErrors.UnprocessableEntity('The description you used is reserved for internal use. Try another description');
+    if (data.description === 'Admin Personal Access Token') {
+      throw new HttpErrors.UnprocessableEntity(
+        'The description you used is reserved for internal use. Try another description',
+      );
     }
-    if (data?.scopes?.includes("Admin")) {
-      throw new HttpErrors.UnprocessableEntity('Scopes containing Admin is forbidden for this method');
+    if (data?.scopes?.includes('Admin')) {
+      throw new HttpErrors.UnprocessableEntity(
+        'Scopes containing Admin is forbidden for this method',
+      );
     }
     if (!data?.scopes) return {count: 0};
     return this.userPersonalAccessTokenRepository.updateAll(data, {

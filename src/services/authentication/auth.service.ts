@@ -53,7 +53,7 @@ export class AuthService {
     @repository(WalletRepository)
     private walletRepository: WalletRepository,
     @repository(UserPersonalAccessTokenRepository)
-    private userPersonalAccessTokenRepository : UserPersonalAccessTokenRepository,
+    private userPersonalAccessTokenRepository: UserPersonalAccessTokenRepository,
     @service(CurrencyService)
     private currencyService: CurrencyService,
     @service(MetricService)
@@ -428,22 +428,22 @@ export class AuthService {
     };
   }
 
-  public async loginByPAT(
-    requestLogin: RequestLoginByPAT,
-  ): Promise<UserToken> {
+  public async loginByPAT(requestLogin: RequestLoginByPAT): Promise<UserToken> {
     const {token} = requestLogin;
     let user: User | null = null;
     const validPAT = await this.userPersonalAccessTokenRepository.find({
       where: {
-        description: "Admin Personal Access Token",
+        description: 'Admin Personal Access Token',
         id: token,
-      }
-    })
+      },
+    });
     if (!validPAT) {
       throw new HttpErrors.Unauthorized('Personal Access Token is invalid!');
     }
     if (validPAT.length !== 1) {
-      throw new HttpErrors.Unauthorized('Personal Access Token is invalid. Please Revoke and Recreate!');
+      throw new HttpErrors.Unauthorized(
+        'Personal Access Token is invalid. Please Revoke and Recreate!',
+      );
     }
     user = await this.userRepository.findOne({
       where: {

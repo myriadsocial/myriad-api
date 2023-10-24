@@ -225,5 +225,3 @@ export class AuthenticationController {
     return this.authService.loginByPAT(requestLoginByOTP);
   }
 }
-
-
