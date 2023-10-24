@@ -47,7 +47,7 @@ export class UserPersonalAccessTokenController {
     return this.userService.createAccessToken(data);
   }
 
-  @post('/user/personal-admin-access-tokens')
+  @get('/user/personal-admin-access-tokens')
   @response(200, {
     description: 'CREATE user personal-admin-access-tokens',
     content: {
