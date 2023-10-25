@@ -312,10 +312,16 @@ export class UserService {
       );
     }
     const accessToken = await this.jwtService.generateToken(this.currentUser);
+    const user = await this.userRepository.findById(
+      this.currentUser[securityId],
+    );
+    if (!user) {
+      throw new HttpErrors.UnprocessableEntity('Unauthorized');
+    }
     const pat = new UserPersonalAccessToken({
       ...data,
       token: accessToken,
-      userId: this.currentUser[securityId],
+      userId: user.id,
     });
 
     return this.userPersonalAccessTokenRepository.create(pat);
@@ -332,10 +338,16 @@ export class UserService {
     };
     await this.userPersonalAccessTokenRepository.deleteAll(filter);
     const accessToken = await this.jwtService.generateToken(this.currentUser);
+    const user = await this.userRepository.findById(
+      this.currentUser[securityId],
+    );
+    if (!user) {
+      throw new HttpErrors.UnprocessableEntity('Unauthorized');
+    }
     const pat = new UserPersonalAccessToken({
       ...data,
       token: accessToken,
-      userId: this.currentUser[securityId],
+      userId: user.id,
     });
 
     return this.userPersonalAccessTokenRepository.create(pat);
