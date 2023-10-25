@@ -312,11 +312,11 @@ export class UserService {
       );
     }
     const accessToken = await this.jwtService.generateToken(this.currentUser);
-    const user = await this.userRepository.findById(this.currentUser[securityId]);
+    const user = await this.userRepository.findById(
+      this.currentUser[securityId],
+    );
     if (!user) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Unauthorized',
-      );
+      throw new HttpErrors.UnprocessableEntity('Unauthorized');
     }
     const pat = new UserPersonalAccessToken({
       ...data,
@@ -338,11 +338,11 @@ export class UserService {
     };
     await this.userPersonalAccessTokenRepository.deleteAll(filter);
     const accessToken = await this.jwtService.generateToken(this.currentUser);
-    const user = await this.userRepository.findById(this.currentUser[securityId]);
+    const user = await this.userRepository.findById(
+      this.currentUser[securityId],
+    );
     if (!user) {
-      throw new HttpErrors.UnprocessableEntity(
-        'Unauthorized',
-      );
+      throw new HttpErrors.UnprocessableEntity('Unauthorized');
     }
     const pat = new UserPersonalAccessToken({
       ...data,
