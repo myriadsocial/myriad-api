@@ -9,6 +9,7 @@ export * from './embedded-url.model';
 export * from './exchange-rate.model';
 export * from './experience-post.model';
 export * from './experience-user.model';
+export * from './experience-editor.model';
 export * from './experience.model';
 export * from './friend.model';
 export * from './identity.model';

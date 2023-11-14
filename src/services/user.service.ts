@@ -783,12 +783,13 @@ export class UserService {
   }
 
   public async createExperience(
-    experince: Omit<Experience, 'id'>,
+    experience: Omit<Experience, 'id'>,
     clonedId?: string,
+    editors?: string[],
   ): Promise<Experience> {
     await this.haveFullAccess(ControllerType.USEREXPERIENCE);
-    experince.createdBy = this.currentUser[securityId];
-    return this.userExperienceService.create(experince, clonedId);
+    experience.createdBy = this.currentUser[securityId];
+    return this.userExperienceService.create(experience, clonedId,editors);
   }
 
   public async subscribeExperience(id: string): Promise<UserExperience> {

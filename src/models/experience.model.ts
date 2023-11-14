@@ -8,6 +8,7 @@ import {
 import {People} from './people.model';
 import {User} from './user.model';
 import {ExperienceUser} from './experience-user.model';
+import { ExperienceEditor } from './experience-editor.model';
 import {UserWithRelations} from './user.model';
 import {Post} from './post.model';
 import {ExperiencePost} from './experience-post.model';
@@ -156,6 +157,9 @@ export class Experience extends Entity {
 
   @hasMany(() => User, {through: {model: () => ExperienceUser}})
   users?: User[];
+
+  @hasMany(() => User, {through: {model: () => ExperienceEditor}})
+  editors?: User[];
 
   constructor(data?: Partial<Experience>) {
     super(data);

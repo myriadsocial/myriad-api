@@ -267,6 +267,7 @@ export class UserExperienceService {
   public async create(
     experience: Omit<Experience, 'id'>,
     clonedId?: string,
+    editors?: string[],
   ): Promise<Experience> {
     const userId = experience.createdBy;
     const people = this.validateExperienceData(experience);
@@ -278,7 +279,7 @@ export class UserExperienceService {
     return this.userRepository
       .experiences(userId)
       .create(experience)
-      .then(async exp => this.afterCreate(exp, people, clonedId));
+      .then(async exp => this.afterCreate(exp, people, clonedId,editors));
   }
 
   public async subscribe(
@@ -348,6 +349,7 @@ export class UserExperienceService {
     experience: Experience,
     people: People[],
     clonedId?: string,
+    editors?: string[],
   ): Promise<Experience> {
     const userId = experience.createdBy;
     const experienceId = experience?.id ?? '';
@@ -418,6 +420,16 @@ export class UserExperienceService {
             });
           }),
       );
+    }
+
+    if (editors) {
+      editors.map(editor => {
+        const promise = this.experienceRepository.editors(experienceId).link(editor);
+        promises.push(promise);
+        return editor ;
+      })
+      
+
     }
 
     Promise.allSettled(promises) as Promise<AnyObject>;
