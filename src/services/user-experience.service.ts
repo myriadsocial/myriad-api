@@ -95,6 +95,7 @@ export class UserExperienceService {
     filter?: Filter<UserExperience>,
     userId?: string,
   ): Promise<UserExperienceWithRelations[]> {
+
     return this.userExperienceRepository
       .find(filter)
       .then(async userExperiences => {
@@ -424,8 +425,10 @@ export class UserExperienceService {
 
     if (editors) {
       editors.map(editor => {
-        const promise = this.experienceRepository.editors(experienceId).link(editor);
-        promises.push(promise);
+        const link = this.experienceRepository.editors(experienceId).link(editor);
+        const creation = this.userExperienceRepository.create({userId: editor, experienceId})
+        promises.push(link);
+        promises.push(creation);
         return editor ;
       })
       
