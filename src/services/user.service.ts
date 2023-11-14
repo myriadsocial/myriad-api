@@ -789,7 +789,7 @@ export class UserService {
   ): Promise<Experience> {
     await this.haveFullAccess(ControllerType.USEREXPERIENCE);
     experience.createdBy = this.currentUser[securityId];
-    return this.userExperienceService.create(experience, clonedId,editors);
+    return this.userExperienceService.create(experience, clonedId, editors);
   }
 
   public async subscribeExperience(id: string): Promise<UserExperience> {

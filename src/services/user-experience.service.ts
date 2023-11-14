@@ -95,7 +95,6 @@ export class UserExperienceService {
     filter?: Filter<UserExperience>,
     userId?: string,
   ): Promise<UserExperienceWithRelations[]> {
-
     return this.userExperienceRepository
       .find(filter)
       .then(async userExperiences => {
@@ -280,7 +279,7 @@ export class UserExperienceService {
     return this.userRepository
       .experiences(userId)
       .create(experience)
-      .then(async exp => this.afterCreate(exp, people, clonedId,editors));
+      .then(async exp => this.afterCreate(exp, people, clonedId, editors));
   }
 
   public async subscribe(
@@ -425,14 +424,17 @@ export class UserExperienceService {
 
     if (editors) {
       editors.map(editor => {
-        const link = this.experienceRepository.editors(experienceId).link(editor);
-        const creation = this.userExperienceRepository.create({userId: editor, experienceId})
+        const link = this.experienceRepository
+          .editors(experienceId)
+          .link(editor);
+        const creation = this.userExperienceRepository.create({
+          userId: editor,
+          experienceId,
+        });
         promises.push(link);
         promises.push(creation);
-        return editor ;
-      })
-      
-
+        return editor;
+      });
     }
 
     Promise.allSettled(promises) as Promise<AnyObject>;

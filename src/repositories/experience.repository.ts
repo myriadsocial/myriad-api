@@ -17,7 +17,7 @@ import {
 } from '../models';
 import {ExperiencePostRepository} from './experience-post.repository';
 import {ExperienceUserRepository} from './experience-user.repository';
-import { ExperienceEditorRepository } from './experience-editor.repository';
+import {ExperienceEditorRepository} from './experience-editor.repository';
 import {PostRepository} from './post.repository';
 import {UserRepository} from './user.repository';
 

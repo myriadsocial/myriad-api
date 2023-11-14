@@ -8,7 +8,7 @@ import {
 import {People} from './people.model';
 import {User} from './user.model';
 import {ExperienceUser} from './experience-user.model';
-import { ExperienceEditor } from './experience-editor.model';
+import {ExperienceEditor} from './experience-editor.model';
 import {UserWithRelations} from './user.model';
 import {Post} from './post.model';
 import {ExperiencePost} from './experience-post.model';
