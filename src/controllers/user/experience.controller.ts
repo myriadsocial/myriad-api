@@ -108,8 +108,7 @@ export class UserExperienceController {
     @param.query.string('experienceId') experienceId?: string,
     @param.array('editors', 'query', {type: 'string'}) editors?: string[]
   ): Promise<Experience> {
-    if (editors) {
-    }
+    
     return this.userService.createExperience(experience, experienceId, editors);
   }
 
