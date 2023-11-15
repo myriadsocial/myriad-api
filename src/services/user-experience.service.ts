@@ -141,6 +141,7 @@ export class UserExperienceService {
   public async update(
     id: string,
     experience: Partial<Experience>,
+    editors?: string[],
   ): Promise<Count> {
     const userId = experience.createdBy;
 
@@ -252,6 +253,23 @@ export class UserExperienceService {
           }
 
           jobs.push(this.userExperienceRepository.deleteAll(where));
+        }
+
+        if (editors && !editors.includes(userId)) {
+          await this.experienceRepository.editors(id).unlinkAll();
+          editors.map(editor => {
+            const link = this.experienceRepository
+              .editors(id)
+              .link(editor);
+            const creation = this.userExperienceRepository.create({
+              userId: editor,
+              experienceId: id,
+            });
+            jobs.push(link);
+            jobs.push(creation);
+            return editor;
+          });
+
         }
 
         Promise.all(jobs) as Promise<AnyObject>;

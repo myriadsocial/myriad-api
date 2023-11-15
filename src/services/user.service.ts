@@ -802,10 +802,11 @@ export class UserService {
   public async updateExperience(
     id: string,
     experience: Partial<Experience>,
+    editors?: string[],
   ): Promise<Count> {
     experience.createdBy = this.currentUser[securityId];
 
-    return this.userExperienceService.update(id, experience);
+    return this.userExperienceService.update(id, experience,editors);
   }
 
   public async unsubscribeExperience(id: string): Promise<void> {
