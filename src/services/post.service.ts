@@ -24,6 +24,7 @@ import {
   DraftPost,
   Experience,
   ExperiencePost,
+  ExperienceRelations,
   ExtendedPost,
   Friend,
   People,
@@ -37,6 +38,7 @@ import {
   CommentRepository,
   DraftPostRepository,
   ExperiencePostRepository,
+  ExperienceEditorRepository,
   ExperienceRepository,
   FriendRepository,
   PeopleRepository,
@@ -68,6 +70,8 @@ export class PostService {
     private experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
     private experiencePostRepository: ExperiencePostRepository,
+    @repository(ExperienceEditorRepository)
+    private experienceEditorRepository: ExperienceEditorRepository,
     @repository(FriendRepository)
     private friendRepository: FriendRepository,
     @repository(PeopleRepository)
@@ -743,12 +747,28 @@ export class PostService {
   }
 
   private async getVisibility(userId: string, timelineIds = [] as string[]) {
-    const timelines = await this.experienceRepository.find({
+    const timeline = this.experienceRepository.find({
       where: {
         id: {inq: timelineIds},
         createdBy: userId,
       },
     });
+    const editable = this.experienceEditorRepository.find({
+      where: {
+        experienceId: {inq: timelineIds},
+        userId,
+      },
+    }).then(res => {
+      const query = res.map(res => res.userId)
+      return this.experienceRepository.find({
+        where: {
+          id: {inq: query},
+        },
+      });
+    });
+    const timelines = await Promise.all([timeline,editable]).then(res => {
+      return [...res[0],...res[1]]
+    })
 
     if (timelines.length <= 0) {
       throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
