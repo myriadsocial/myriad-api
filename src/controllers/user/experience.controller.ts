@@ -132,6 +132,6 @@ export class UserExperienceController {
     experience: Partial<Experience>,
     @param.array('editors', 'query', {type: 'string'}) editors?: string[],
   ): Promise<Count> {
-    return this.userService.updateExperience(id, experience,editors);
+    return this.userService.updateExperience(id, experience, editors);
   }
 }

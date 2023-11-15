@@ -806,7 +806,7 @@ export class UserService {
   ): Promise<Count> {
     experience.createdBy = this.currentUser[securityId];
 
-    return this.userExperienceService.update(id, experience,editors);
+    return this.userExperienceService.update(id, experience, editors);
   }
 
   public async unsubscribeExperience(id: string): Promise<void> {

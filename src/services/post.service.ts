@@ -753,22 +753,24 @@ export class PostService {
         createdBy: userId,
       },
     });
-    const editable = this.experienceEditorRepository.find({
-      where: {
-        experienceId: {inq: timelineIds},
-        userId,
-      },
-    }).then(res => {
-      const query = res.map(res => res.userId)
-      return this.experienceRepository.find({
+    const editable = this.experienceEditorRepository
+      .find({
         where: {
-          id: {inq: query},
+          experienceId: {inq: timelineIds},
+          userId,
         },
+      })
+      .then(res => {
+        const query = res.map(res => res.userId);
+        return this.experienceRepository.find({
+          where: {
+            id: {inq: query},
+          },
+        });
       });
+    const timelines = await Promise.all([timeline, editable]).then(res => {
+      return [...res[0], ...res[1]];
     });
-    const timelines = await Promise.all([timeline,editable]).then(res => {
-      return [...res[0],...res[1]]
-    })
 
     if (timelines.length <= 0) {
       throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
