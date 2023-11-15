@@ -309,6 +309,20 @@ export class UserExperienceService {
       // Removing experience when subscribed count zero
       const promises: Promise<void | AnyObject>[] = [];
 
+      if (experience) {
+        const editors = await this.experienceRepository.editors(experience.id).find({
+          where: {
+            id: userId
+          }
+        })
+        if (editors) {
+          editors.map(editor => {
+            promises.push(this.experienceRepository.editors(experience.id).unlink(editor.id));
+            return editor
+          }) 
+        }
+      }
+
       if (experienceCreator === userId) {
         const field = `data.${experienceId}`;
         const configs = await this.timelineConfigRepository.find(<AnyObject>{
