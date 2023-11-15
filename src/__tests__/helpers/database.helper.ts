@@ -35,6 +35,7 @@ import {
   UnlockableContentRepository,
   ContentPriceRepository,
   TimelineConfigRepository,
+  ExperienceEditorRepository,
 } from '../../repositories';
 import {
   ActivityLogService,
@@ -145,10 +146,13 @@ export async function givenRepositories(testdb: any) {
     async () => userRepository,
     async () => experienceUserRepository,
     async () => experiencePostRepository,
+    async () => experienceEditorRepository,
     async () => postRepository,
   );
   const experienceUserRepository: ExperienceUserRepository =
     new ExperienceUserRepository(testdb);
+  const experienceEditorRepository: ExperienceUserRepository =
+    new ExperienceEditorRepository(testdb);
   const experiencePostRepository: ExperiencePostRepository =
     new ExperiencePostRepository(testdb);
   const commentRepository: CommentRepository = new CommentRepository(

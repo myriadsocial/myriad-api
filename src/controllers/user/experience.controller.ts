@@ -91,7 +91,11 @@ export class UserExperienceController {
   @post('/user/experiences')
   @response(200, {
     description: 'CREATE user experience',
-    content: {'application/json': {schema: getModelSchemaRef(Experience)}},
+    content: {
+      'application/json': {
+        schema: getModelSchemaRef(Experience, {includeRelations: true}),
+      },
+    },
   })
   async create(
     @requestBody({
@@ -106,8 +110,9 @@ export class UserExperienceController {
     })
     experience: Omit<Experience, 'id'>,
     @param.query.string('experienceId') experienceId?: string,
+    @param.array('editors', 'query', {type: 'string'}) editors?: string[],
   ): Promise<Experience> {
-    return this.userService.createExperience(experience, experienceId);
+    return this.userService.createExperience(experience, experienceId, editors);
   }
 
   @patch('/user/experiences/{id}')

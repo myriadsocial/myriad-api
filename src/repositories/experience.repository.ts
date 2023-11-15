@@ -11,11 +11,13 @@ import {
   ExperiencePost,
   ExperienceRelations,
   ExperienceUser,
+  ExperienceEditor,
   Post,
   User,
 } from '../models';
 import {ExperiencePostRepository} from './experience-post.repository';
 import {ExperienceUserRepository} from './experience-user.repository';
+import {ExperienceEditorRepository} from './experience-editor.repository';
 import {PostRepository} from './post.repository';
 import {UserRepository} from './user.repository';
 
@@ -34,6 +36,13 @@ export class ExperienceRepository extends DefaultCrudRepository<
     typeof Experience.prototype.id
   >;
 
+  public readonly editors: HasManyThroughRepositoryFactory<
+    User,
+    typeof User.prototype.id,
+    ExperienceEditor,
+    typeof Experience.prototype.id
+  >;
+
   public readonly posts: HasManyThroughRepositoryFactory<
     Post,
     typeof Post.prototype.id,
@@ -49,6 +58,8 @@ export class ExperienceRepository extends DefaultCrudRepository<
     protected experienceUserRepositoryGetter: Getter<ExperienceUserRepository>,
     @repository.getter('ExperiencePostRepository')
     protected experiencePostRepositoryGetter: Getter<ExperiencePostRepository>,
+    @repository.getter('ExperienceEditorRepository')
+    protected experienceEditorRepositoryGetter: Getter<ExperienceEditorRepository>,
     @repository.getter('PostRepository')
     protected postRepositoryGetter: Getter<PostRepository>,
   ) {
@@ -65,6 +76,12 @@ export class ExperienceRepository extends DefaultCrudRepository<
       experienceUserRepositoryGetter,
     );
     this.registerInclusionResolver('users', this.users.inclusionResolver);
+    this.editors = this.createHasManyThroughRepositoryFactoryFor(
+      'editors',
+      userRepositoryGetter,
+      experienceEditorRepositoryGetter,
+    );
+    this.registerInclusionResolver('editors', this.editors.inclusionResolver);
     this.user = this.createBelongsToAccessorFor('user', userRepositoryGetter);
     this.registerInclusionResolver('user', this.user.inclusionResolver);
   }
