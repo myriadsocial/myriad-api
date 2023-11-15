@@ -24,7 +24,6 @@ import {
   DraftPost,
   Experience,
   ExperiencePost,
-  ExperienceRelations,
   ExtendedPost,
   Friend,
   People,
@@ -747,7 +746,7 @@ export class PostService {
   }
 
   private async getVisibility(userId: string, timelineIds = [] as string[]) {
-    const timeline = this.experienceRepository.find({
+    const timelineUser = this.experienceRepository.find({
       where: {
         id: {inq: timelineIds},
         createdBy: userId,
@@ -761,14 +760,14 @@ export class PostService {
         },
       })
       .then(res => {
-        const query = res.map(res => res.userId);
+        const query = res.map(result => result.userId);
         return this.experienceRepository.find({
           where: {
             id: {inq: query},
           },
         });
       });
-    const timelines = await Promise.all([timeline, editable]).then(res => {
+    const timelines = await Promise.all([timelineUser, editable]).then(res => {
       return [...res[0], ...res[1]];
     });
 
