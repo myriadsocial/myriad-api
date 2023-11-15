@@ -255,7 +255,11 @@ export class UserExperienceService {
           jobs.push(this.userExperienceRepository.deleteAll(where));
         }
 
-        if (editors && !editors.includes(userId)) {
+        if (editors) {
+          if (editors.includes(userId)) {
+            jobs.push(this.experienceRepository.editors(id).unlinkAll())
+          }
+          else {
           await this.experienceRepository.editors(id).unlinkAll();
           editors.map(editor => {
             const link = this.experienceRepository
@@ -269,7 +273,7 @@ export class UserExperienceService {
             jobs.push(creation);
             return editor;
           });
-
+}
         }
 
         Promise.all(jobs) as Promise<AnyObject>;
