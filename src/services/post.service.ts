@@ -37,6 +37,7 @@ import {
   CommentRepository,
   DraftPostRepository,
   ExperiencePostRepository,
+  ExperienceEditorRepository,
   ExperienceRepository,
   FriendRepository,
   PeopleRepository,
@@ -68,6 +69,8 @@ export class PostService {
     private experienceRepository: ExperienceRepository,
     @repository(ExperiencePostRepository)
     private experiencePostRepository: ExperiencePostRepository,
+    @repository(ExperienceEditorRepository)
+    private experienceEditorRepository: ExperienceEditorRepository,
     @repository(FriendRepository)
     private friendRepository: FriendRepository,
     @repository(PeopleRepository)
@@ -743,11 +746,29 @@ export class PostService {
   }
 
   private async getVisibility(userId: string, timelineIds = [] as string[]) {
-    const timelines = await this.experienceRepository.find({
+    const timelineUser = this.experienceRepository.find({
       where: {
         id: {inq: timelineIds},
         createdBy: userId,
       },
+    });
+    const editable = this.experienceEditorRepository
+      .find({
+        where: {
+          experienceId: {inq: timelineIds},
+          userId,
+        },
+      })
+      .then(res => {
+        const query = res.map(result => result.userId);
+        return this.experienceRepository.find({
+          where: {
+            id: {inq: query},
+          },
+        });
+      });
+    const timelines = await Promise.all([timelineUser, editable]).then(res => {
+      return [...res[0], ...res[1]];
     });
 
     if (timelines.length <= 0) {

@@ -141,6 +141,7 @@ export class UserExperienceService {
   public async update(
     id: string,
     experience: Partial<Experience>,
+    editors?: string[],
   ): Promise<Count> {
     const userId = experience.createdBy;
 
@@ -254,6 +255,24 @@ export class UserExperienceService {
           jobs.push(this.userExperienceRepository.deleteAll(where));
         }
 
+        if (editors) {
+          if (editors.includes(userId)) {
+            jobs.push(this.experienceRepository.editors(id).unlinkAll());
+          } else {
+            await this.experienceRepository.editors(id).unlinkAll();
+            editors.map(editor => {
+              const link = this.experienceRepository.editors(id).link(editor);
+              const creation = this.userExperienceRepository.create({
+                userId: editor,
+                experienceId: id,
+              });
+              jobs.push(link);
+              jobs.push(creation);
+              return editor;
+            });
+          }
+        }
+
         Promise.all(jobs) as Promise<AnyObject>;
 
         return {count};
@@ -308,6 +327,26 @@ export class UserExperienceService {
       // Update experience subscribed count
       // Removing experience when subscribed count zero
       const promises: Promise<void | AnyObject>[] = [];
+
+      if (experience) {
+        const editors = await this.experienceRepository
+          .editors(experience.id)
+          .find({
+            where: {
+              id: userId,
+            },
+          });
+        if (editors) {
+          editors.map(editor => {
+            promises.push(
+              this.experienceRepository
+                .editors(experience.id)
+                .unlink(editor.id),
+            );
+            return editor;
+          });
+        }
+      }
 
       if (experienceCreator === userId) {
         const field = `data.${experienceId}`;
