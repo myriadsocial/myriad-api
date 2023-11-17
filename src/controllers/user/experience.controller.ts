@@ -17,7 +17,7 @@ import {
   response,
 } from '@loopback/rest';
 import {FindByIdInterceptor, PaginationInterceptor} from '../../interceptors';
-import {Experience, UserExperience} from '../../models';
+import {Experience, UserExperience, createExperienceDto} from '../../models';
 import {UserService} from '../../services';
 
 @authenticate('jwt')
@@ -101,18 +101,21 @@ export class UserExperienceController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Experience, {
+          schema: getModelSchemaRef(createExperienceDto, {
             title: 'NewExperienceInUser',
             optional: ['createdBy'],
           }),
         },
       },
     })
-    experience: Omit<Experience, 'id'>,
+    experience: Omit<createExperienceDto, 'id'>,
     @param.query.string('experienceId') experienceId?: string,
-    @param.array('editors', 'query', {type: 'string'}) editors?: string[],
   ): Promise<Experience> {
-    return this.userService.createExperience(experience, experienceId, editors);
+    return this.userService.createExperience(
+      experience,
+      experienceId,
+      experience.editorsId,
+    );
   }
 
   @patch('/user/experiences/{id}')
@@ -125,13 +128,16 @@ export class UserExperienceController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Experience, {partial: true}),
+          schema: getModelSchemaRef(createExperienceDto, {partial: true}),
         },
       },
     })
-    experience: Partial<Experience>,
-    @param.array('editors', 'query', {type: 'string'}) editors?: string[],
+    experience: Partial<createExperienceDto>,
   ): Promise<Count> {
-    return this.userService.updateExperience(id, experience, editors);
+    return this.userService.updateExperience(
+      id,
+      experience,
+      experience.editorsId,
+    );
   }
 }
