@@ -173,6 +173,11 @@ export interface ExperienceRelations {
 
 export type ExperienceWithRelations = Experience & ExperienceRelations;
 
-export class createExperienceDto extends Experience {
+export class CreateExperienceDto extends Experience {
+  @property({
+    type: 'array',
+    itemType: 'string',
+    required: false,
+  })
   editorsId?: string[];
 }
