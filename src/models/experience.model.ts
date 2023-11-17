@@ -172,3 +172,7 @@ export interface ExperienceRelations {
 }
 
 export type ExperienceWithRelations = Experience & ExperienceRelations;
+
+export class createExperienceDto extends Experience {
+  editorsId?: string[];
+}
