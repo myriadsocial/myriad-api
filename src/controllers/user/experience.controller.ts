@@ -17,7 +17,7 @@ import {
   response,
 } from '@loopback/rest';
 import {FindByIdInterceptor, PaginationInterceptor} from '../../interceptors';
-import {Experience, UserExperience, createExperienceDto} from '../../models';
+import {Experience, UserExperience, CreateExperienceDto} from '../../models';
 import {UserService} from '../../services';
 
 @authenticate('jwt')
@@ -93,7 +93,7 @@ export class UserExperienceController {
     description: 'CREATE user experience',
     content: {
       'application/json': {
-        schema: getModelSchemaRef(Experience, {includeRelations: true}),
+        schema: getModelSchemaRef(Experience, {includeRelations: false}),
       },
     },
   })
@@ -101,20 +101,22 @@ export class UserExperienceController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(createExperienceDto, {
+          schema: getModelSchemaRef(CreateExperienceDto, {
             title: 'NewExperienceInUser',
             optional: ['createdBy'],
           }),
         },
       },
     })
-    experience: Omit<createExperienceDto, 'id'>,
+    experience: Omit<CreateExperienceDto, 'id'>,
     @param.query.string('experienceId') experienceId?: string,
   ): Promise<Experience> {
+    const editors = experience.editorsId ;
+    delete experience.editorsId
     return this.userService.createExperience(
       experience,
       experienceId,
-      experience.editorsId,
+      editors
     );
   }
 
@@ -128,16 +130,18 @@ export class UserExperienceController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(createExperienceDto, {partial: true}),
+          schema: getModelSchemaRef(CreateExperienceDto, {partial: true}),
         },
       },
     })
-    experience: Partial<createExperienceDto>,
+    experience: Partial<CreateExperienceDto>,
   ): Promise<Count> {
+    const editors = experience.editorsId ;
+    delete experience.editorsId
     return this.userService.updateExperience(
       id,
       experience,
-      experience.editorsId,
+      editors,
     );
   }
 }
