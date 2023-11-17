@@ -111,13 +111,9 @@ export class UserExperienceController {
     experience: Omit<CreateExperienceDto, 'id'>,
     @param.query.string('experienceId') experienceId?: string,
   ): Promise<Experience> {
-    const editors = experience.editorsId ;
-    delete experience.editorsId
-    return this.userService.createExperience(
-      experience,
-      experienceId,
-      editors
-    );
+    const editors = experience.editorsId;
+    delete experience.editorsId;
+    return this.userService.createExperience(experience, experienceId, editors);
   }
 
   @patch('/user/experiences/{id}')
@@ -136,12 +132,8 @@ export class UserExperienceController {
     })
     experience: Partial<CreateExperienceDto>,
   ): Promise<Count> {
-    const editors = experience.editorsId ;
-    delete experience.editorsId
-    return this.userService.updateExperience(
-      id,
-      experience,
-      editors,
-    );
+    const editors = experience.editorsId;
+    delete experience.editorsId;
+    return this.userService.updateExperience(id, experience, editors);
   }
 }
