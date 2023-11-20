@@ -121,7 +121,7 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
             userId: this.currentUser[securityId],
           }),
         ]);
-        const count = counts[0].count + counts[0].count;
+        const count = counts[0].count + counts[1].count;
         if (count === experienceIds.length) return;
         userId = null;
         break;
