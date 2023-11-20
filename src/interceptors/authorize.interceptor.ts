@@ -24,6 +24,7 @@ import {
 } from '../enums';
 import {
   ExperienceRepository,
+  ExperienceEditorRepository,
   FriendRepository,
   PostRepository,
   WalletRepository,
@@ -45,6 +46,8 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
   constructor(
     @repository(ExperienceRepository)
     private experienceRepository: ExperienceRepository,
+    @repository(ExperienceEditorRepository)
+    private experienceEditorRepository: ExperienceEditorRepository,
     @repository(FriendRepository)
     private friendRepository: FriendRepository,
     @repository(PostRepository)
@@ -108,10 +111,17 @@ export class AuthorizeInterceptor implements Provider<Interceptor> {
       case ControllerType.EXPERIENCEPOST: {
         if (methodName === MethodType.DELETE) return;
         const {experienceIds} = invocationCtx.args[0];
-        const {count} = await this.experienceRepository.count({
-          id: {inq: experienceIds},
-          createdBy: this.currentUser[securityId],
-        });
+        const counts = await Promise.all([
+          this.experienceRepository.count({
+            id: {inq: experienceIds},
+            createdBy: this.currentUser[securityId],
+          }),
+          this.experienceEditorRepository.count({
+            experienceId: {inq: experienceIds},
+            userId: this.currentUser[securityId],
+          }),
+        ]);
+        const count = counts[0].count + counts[1].count;
         if (count === experienceIds.length) return;
         userId = null;
         break;
