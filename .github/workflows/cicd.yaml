@@ -181,39 +181,6 @@ jobs:
           cluster_name: ${{ secrets[format('{0}_{1}', matrix.environment, 'GKE_CLUSTER_NAME')] }}
           location: ${{ secrets[format('{0}_{1}', matrix.environment, 'GKE_LOCATION')] }}
           use_internal_ip: true
-      - name: Get Secrets from Google Secret Manager
-        id: secrets
-        uses: google-github-actions/get-secretmanager-secrets@4d6d3dfd94110800dda8d84109cb6da0f6a5919d
-        with:
-          secrets: |-
-            ADMIN_SUBSTRATE_MNEMONIC:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/ADMIN_SUBSTRATE_MNEMONIC
-            ADMIN_NEAR_MNEMONIC:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/ADMIN_NEAR_MNEMONIC
-            JWT_TOKEN_SECRET_KEY:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/JWT_TOKEN_SECRET_KEY
-            JWT_TOKEN_EXPIRES_IN:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/JWT_TOKEN_EXPIRES_IN
-            JWT_REFRESH_TOKEN_SECRET_KEY:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/JWT_REFRESH_TOKEN_SECRET_KEY
-            JWT_REFRESH_TOKEN_EXPIRES_IN:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/JWT_REFRESH_TOKEN_EXPIRES_IN
-            MONGO_PROTOCOL:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/MONGO_PROTOCOL
-            MONGO_HOST:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/MONGO_HOST
-            MONGO_PORT:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/MONGO_PORT
-            MONGO_USER_API:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/MONGO_USER_API
-            MONGO_PASSWORD_API:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/MONGO_PASSWORD_API
-            MONGO_DB:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/MONGO_DB
-            MONGO_URL:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/MONGO_URL
-            REDIS_CONNECTOR:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/REDIS_CONNECTOR
-            REDIS_HOST:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/REDIS_HOST
-            REDIS_PORT:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/REDIS_PORT
-            REDIS_PASSWORD:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/REDIS_PASSWORD
-            SMTP_SERVER:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/SMTP_SERVER
-            SMTP_PORT:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/SMTP_PORT
-            SMTP_USERNAME:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/SMTP_USERNAME
-            SMTP_PASSWORD:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/SMTP_PASSWORD
-            SMTP_SENDER_ADDRESS:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/SMTP_SENDER_ADDRESS
-            FIREBASE_SERVICE_ACCOUNT_BASE64:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/FIREBASE_SERVICE_ACCOUNT_BASE64
-            FIREBASE_STORAGE_BUCKET:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/FIREBASE_STORAGE_BUCKET
-            API_SENTRY_DSN:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/API_SENTRY_DSN
-            TWITTER_API_KEY:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/TWITTER_API_KEY
-            COIN_MARKET_CAP_API_KEY:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/COIN_MARKET_CAP_API_KEY
-            API_DNS:${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}/API_DNS
       - name: Tunneling SSH connections
         run: |
           gcloud compute ssh ${{ secrets[format('{0}_{1}', matrix.environment, 'GCE_BASTION_INSTANCE_NAME')] }} \
@@ -235,34 +202,9 @@ jobs:
             --set-string image.tag=${{ needs.release-please.outputs.tag_name || github.sha }} \
             --set-string serviceAccount.name=${{ github.event.repository.name }} \
             --set-string serviceAccount.annotations.'iam\.gke\.io/gcp-service-account'=${{ github.event.repository.name }}@${{ secrets[format('{0}_{1}', matrix.environment, 'GCP_PROJECT_ID')] }}.iam.gserviceaccount.com \
-            --set-string config.domain=${{ steps.secrets.outputs.API_DNS }} \
-            --set-string config.adminSubstrateMnemonic="${{ steps.secrets.outputs.ADMIN_SUBSTRATE_MNEMONIC }}" \
-            --set-string config.adminNearMnemonic="${{ steps.secrets.outputs.ADMIN_NEAR_MNEMONIC }}" \
-            --set-string config.jwt.tokenSecretKey=${{ steps.secrets.outputs.JWT_TOKEN_SECRET_KEY }} \
-            --set config.jwt.tokenExpireIn=${{ steps.secrets.outputs.JWT_TOKEN_EXPIRES_IN }} \
-            --set-string config.jwt.refreshTokenSecretKey=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_SECRET_KEY }} \
-            --set config.jwt.refreshTokenExpireIn=${{ steps.secrets.outputs.JWT_REFRESH_TOKEN_EXPIRES_IN }} \
-            --set-string config.mongo.protocol=${{ steps.secrets.outputs.MONGO_PROTOCOL }} \
-            --set-string config.mongo.host=${{ steps.secrets.outputs.MONGO_HOST }} \
-            --set config.mongo.port=${{ steps.secrets.outputs.MONGO_PORT }} \
-            --set-string config.mongo.user=${{ steps.secrets.outputs.MONGO_USER_API }} \
-            --set-string config.mongo.password=${{ steps.secrets.outputs.MONGO_PASSWORD_API }} \
-            --set-string config.mongo.database=${{ steps.secrets.outputs.MONGO_DB }} \
-            --set-string config.mongo.url="${{ steps.secrets.outputs.MONGO_URL }}" \
-            --set-string config.redis.connector=${{ steps.secrets.outputs.REDIS_CONNECTOR }} \
-            --set-string config.redis.host=${{ steps.secrets.outputs.REDIS_HOST }} \
-            --set-string config.redis.port=${{ steps.secrets.outputs.REDIS_PORT }} \
-            --set-string config.redis.password=${{ steps.secrets.outputs.REDIS_PASSWORD }} \
-            --set-string config.smtp.server=${{ steps.secrets.outputs.SMTP_SERVER }} \
-            --set config.smtp.port=${{ steps.secrets.outputs.SMTP_PORT }} \
-            --set-string config.smtp.username=${{ steps.secrets.outputs.SMTP_USERNAME }} \
-            --set-string config.smtp.password=${{ steps.secrets.outputs.SMTP_PASSWORD }} \
-            --set-string config.smtp.senderAddress=${{ steps.secrets.outputs.SMTP_SENDER_ADDRESS }} \
-            --set-string config.firebase.serviceAccountBase64=${{ steps.secrets.outputs.FIREBASE_SERVICE_ACCOUNT_BASE64 }} \
-            --set-string config.firebase.storageBucket=${{ steps.secrets.outputs.FIREBASE_STORAGE_BUCKET }} \
-            --set-string config.sentry.dsn=${{ steps.secrets.outputs.API_SENTRY_DSN }} \
-            --set-string config.twitter.apiKey=${{ steps.secrets.outputs.TWITTER_API_KEY }} \
-            --set-string config.coinMarketCap.apiKey=${{ steps.secrets.outputs.COIN_MARKET_CAP_API_KEY }} \
+            --set config.secretsStore.enabled=true \
+            --set-string config.secretsStore.providerClass=${{ github.event.repository.name }}-secrets-store-provider \
+            --set-string config.secretsStore.name=${{ github.event.repository.name }}-secrets-store \
             --set-string nodeSelector.node_pool=general \
             --set-string nodeSelector.'iam\.gke\.io/gke-metadata-server-enabled'='true'
           HTTPS_PROXY=127.0.0.1:8888 kubectl rollout status deployment/${{ github.event.repository.name }}
