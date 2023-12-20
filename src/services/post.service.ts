@@ -255,7 +255,7 @@ export class PostService {
       currentPost = await this.postRepository.findById(id, filter);
     }
 
-    delete currentPost?.user?.email
+    delete currentPost?.user?.email;
     if (!withImporter) return currentPost;
     await this.validateUnrestrictedPost(currentPost, userId);
     return this.postWithImporterInfo(currentPost, userId);
