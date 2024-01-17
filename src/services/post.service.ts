@@ -828,8 +828,12 @@ export class PostService {
           });
         });
 
-        const selectedUserIdsIntersection = intersection(friends, ...selected);
-        selectedUserIds.push(...selectedUserIdsIntersection, userId);
+        const selectedUserIdsIntersection = intersection(...selected);
+        selectedUserIds.push(
+          ...friends,
+          ...selectedUserIdsIntersection,
+          userId,
+        );
         visibility = VisibilityType.SELECTED;
       } else {
         visibility = VisibilityType.PUBLIC;
