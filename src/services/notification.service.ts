@@ -212,7 +212,7 @@ export class NotificationService {
           : NotificationType.COMMENT_COMMENT,
       from: this.currentUser[securityId],
       referenceId: comment.id,
-      message: 'commented: ' + comment.text,
+      message: comment.text,
       additionalReferenceId: additionalReferenceId,
     });
 
