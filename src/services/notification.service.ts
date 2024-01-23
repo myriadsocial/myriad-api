@@ -207,7 +207,9 @@ export class NotificationService {
 
     const notificationMessage = (text: string) => {
       const message = JSON.parse(text);
-      return message[0].children.text as string;
+      return message[0].children.text
+        ? message[0].children.text
+        : ('' as string);
     };
 
     const notification = new Notification({
