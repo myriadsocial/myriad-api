@@ -205,6 +205,11 @@ export class NotificationService {
       },
     };
 
+    const notificationMessage = (text: string) => {
+      const message = JSON.parse(text);
+      return message[0].children.text as string;
+    };
+
     const notification = new Notification({
       type:
         comment.type === ReferenceType.POST
@@ -212,7 +217,7 @@ export class NotificationService {
           : NotificationType.COMMENT_COMMENT,
       from: this.currentUser[securityId],
       referenceId: comment.id,
-      message: 'commented: ' + comment.text,
+      message: notificationMessage(comment.text),
       additionalReferenceId: additionalReferenceId,
     });
 
