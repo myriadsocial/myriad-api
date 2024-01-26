@@ -570,7 +570,7 @@ export class NotificationService {
         include: ['user'],
       });
       notification.type = NotificationType.COMMENT_MENTION;
-      notification.message = comment.text
+      notification.message = comment.text;
       notification.additionalReferenceId = {
         comment: {
           id: comment.id,
@@ -588,7 +588,7 @@ export class NotificationService {
         include: ['user'],
       });
       notification.type = NotificationType.POST_MENTION;
-      notification.message = post.rawText ? post.rawText : "mentioned you"
+      notification.message = post.rawText ? post.rawText : 'mentioned you';
       notification.additionalReferenceId = {
         post: {
           id: post.id,
