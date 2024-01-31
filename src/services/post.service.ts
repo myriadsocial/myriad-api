@@ -761,7 +761,7 @@ export class PostService {
         },
       })
       .then(res => {
-        const query = res.map(result => result.userId);
+        const query = res.map(result => result.experienceId);
         return this.experienceRepository.find({
           where: {
             id: {inq: query},
