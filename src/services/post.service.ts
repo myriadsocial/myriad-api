@@ -297,6 +297,7 @@ export class PostService {
         if (!validateURL(url)) throw new Error('InvalidURL');
         embeddedURL = await getOpenGraph(url);
       } catch (error) {
+        embeddedURL = null;
         throw error;
         // ignore
       }
@@ -848,6 +849,7 @@ export class PostService {
         selectedUserIds,
       };
     } catch (error) {
+      console.error(error);
       throw error;
     }
   }
