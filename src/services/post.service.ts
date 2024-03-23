@@ -297,7 +297,7 @@ export class PostService {
         if (!validateURL(url)) throw new Error('InvalidURL');
         embeddedURL = await getOpenGraph(url);
       } catch (error) {
-        throw error
+        throw error;
         // ignore
       }
 
@@ -403,7 +403,9 @@ export class PostService {
     let embeddedURL = null;
 
     if (draftPost.text) {
-      const found = draftPost.text.match(/https:\/\/(?!storage.googleapis.com\/myriad-social-testnet.appspot.com)|http:\/\/|www./g);
+      const found = draftPost.text.match(
+        /https:\/\/(?!storage.googleapis.com\/myriad-social-testnet.appspot.com)|http:\/\/|www./g,
+      );
       if (found) {
         const index: number = draftPost.text.indexOf(found[0]);
 
@@ -419,7 +421,7 @@ export class PostService {
         if (!validateURL(url)) throw new Error('InvalidURL');
         embeddedURL = await getOpenGraph(url);
       } catch (error) {
-        console.error(error)
+        console.error(error);
         // ignore
       }
 
@@ -750,104 +752,103 @@ export class PostService {
 
   private async getVisibility(userId: string, timelineIds = [] as string[]) {
     try {
-      
-    const timelineUser = await this.experienceRepository.find({
-      where: {
-        id: {inq: timelineIds},
-        createdBy: userId,
-      },
-    });
-    const editable = await this.experienceEditorRepository
-      .find({
+      const timelineUser = await this.experienceRepository.find({
         where: {
-          experienceId: {inq: timelineIds},
-          userId,
+          id: {inq: timelineIds},
+          createdBy: userId,
         },
-      })
-      .then(res => {
-        const query = res.map(result => result.experienceId);
-        return this.experienceRepository.find({
-          where: {
-            id: {inq: query},
-          },
-        });
       });
-      const timelines = [...timelineUser, ...editable];
-
-    if (timelines.length <= 0) {
-      throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
-    }
-
-    if (timelines.length !== timelineIds.length) {
-      throw new HttpErrors.UnprocessableEntity('TimelineNotMatch');
-    }
-
-    const publicTimelines = [];
-    const privateTimelines = [];
-    const customTimelines = [];
-    const friendTimelines = [];
-
-    for (const timeline of timelines) {
-      if (timeline.visibility === VisibilityType.PUBLIC) {
-        publicTimelines.push(timeline);
-      }
-
-      if (timeline.visibility === VisibilityType.FRIEND) {
-        friendTimelines.push(timeline);
-      }
-
-      if (timeline.visibility === VisibilityType.PRIVATE) {
-        privateTimelines.push(timeline);
-      }
-
-      if (timeline.visibility === VisibilityType.SELECTED) {
-        customTimelines.push(timeline);
-      }
-    }
-
-    let visibility = VisibilityType.PRIVATE;
-
-    const selectedUserIds = [];
-
-    if (privateTimelines.length <= 0) {
-      if (customTimelines.length > 0 || friendTimelines.length > 0) {
-        const friends =
-          friendTimelines.length === 0
-            ? []
-            : await this.friendRepository
-                .find({
-                  where: {
-                    requestorId: userId,
-                    status: FriendStatusType.APPROVED,
-                  },
-                })
-                .then(result => result.map(e => e.requesteeId));
-
-        const selected = customTimelines.map(e => {
-          return e.selectedUserIds.map(selectedUser => {
-            if (typeof selectedUser === 'string') return selectedUser;
-            return selectedUser.userId;
+      const editable = await this.experienceEditorRepository
+        .find({
+          where: {
+            experienceId: {inq: timelineIds},
+            userId,
+          },
+        })
+        .then(res => {
+          const query = res.map(result => result.experienceId);
+          return this.experienceRepository.find({
+            where: {
+              id: {inq: query},
+            },
           });
         });
+      const timelines = [...timelineUser, ...editable];
 
-        const selectedUserIdsIntersection = intersection(...selected);
-        selectedUserIds.push(
-          ...friends,
-          ...selectedUserIdsIntersection,
-          userId,
-        );
-        visibility = VisibilityType.SELECTED;
-      } else {
-        visibility = VisibilityType.PUBLIC;
+      if (timelines.length <= 0) {
+        throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
       }
-    }
 
-    return {
-      visibility,
-      selectedUserIds,
-    };
+      if (timelines.length !== timelineIds.length) {
+        throw new HttpErrors.UnprocessableEntity('TimelineNotMatch');
+      }
+
+      const publicTimelines = [];
+      const privateTimelines = [];
+      const customTimelines = [];
+      const friendTimelines = [];
+
+      for (const timeline of timelines) {
+        if (timeline.visibility === VisibilityType.PUBLIC) {
+          publicTimelines.push(timeline);
+        }
+
+        if (timeline.visibility === VisibilityType.FRIEND) {
+          friendTimelines.push(timeline);
+        }
+
+        if (timeline.visibility === VisibilityType.PRIVATE) {
+          privateTimelines.push(timeline);
+        }
+
+        if (timeline.visibility === VisibilityType.SELECTED) {
+          customTimelines.push(timeline);
+        }
+      }
+
+      let visibility = VisibilityType.PRIVATE;
+
+      const selectedUserIds = [];
+
+      if (privateTimelines.length <= 0) {
+        if (customTimelines.length > 0 || friendTimelines.length > 0) {
+          const friends =
+            friendTimelines.length === 0
+              ? []
+              : await this.friendRepository
+                  .find({
+                    where: {
+                      requestorId: userId,
+                      status: FriendStatusType.APPROVED,
+                    },
+                  })
+                  .then(result => result.map(e => e.requesteeId));
+
+          const selected = customTimelines.map(e => {
+            return e.selectedUserIds.map(selectedUser => {
+              if (typeof selectedUser === 'string') return selectedUser;
+              return selectedUser.userId;
+            });
+          });
+
+          const selectedUserIdsIntersection = intersection(...selected);
+          selectedUserIds.push(
+            ...friends,
+            ...selectedUserIdsIntersection,
+            userId,
+          );
+          visibility = VisibilityType.SELECTED;
+        } else {
+          visibility = VisibilityType.PUBLIC;
+        }
+      }
+
+      return {
+        visibility,
+        selectedUserIds,
+      };
     } catch (error) {
-      throw error
+      throw error;
     }
   }
 
