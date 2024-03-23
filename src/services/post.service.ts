@@ -757,7 +757,6 @@ export class PostService {
         createdBy: userId,
       },
     });
-    console.log("timelineUser is", timelineUser)
     const editable = await this.experienceEditorRepository
       .find({
         where: {
@@ -774,9 +773,6 @@ export class PostService {
         });
       });
       const timelines = [...timelineUser, ...editable];
-    // const timelines = await Promise.all([timelineUser, editable]).then(res => {
-    //   return [...res[0], ...res[1]];
-    // });
 
     if (timelines.length <= 0) {
       throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
