@@ -405,7 +405,7 @@ export class PostService {
 
     if (draftPost.text) {
       const found = draftPost.text.match(
-        /https:\/\/(?!storage.googleapis.com\/myriad-social-testnet.appspot.com)|http:\/\/|www./g,
+        /https:\/\/(?!storage\.googleapis\.com\/myriad-social-testnet\.appspot\.com)|http:\/\/|www./g,
       );
       if (found) {
         const index: number = draftPost.text.indexOf(found[0]);
