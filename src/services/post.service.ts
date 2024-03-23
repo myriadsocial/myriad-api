@@ -296,7 +296,8 @@ export class PostService {
       try {
         if (!validateURL(url)) throw new Error('InvalidURL');
         embeddedURL = await getOpenGraph(url);
-      } catch {
+      } catch (error) {
+        throw error
         // ignore
       }
 
@@ -402,7 +403,7 @@ export class PostService {
     let embeddedURL = null;
 
     if (draftPost.text) {
-      const found = draftPost.text.match(/https:\/\/|http:\/\/|www./g);
+      const found = draftPost.text.match(/https:\/\/(?!storage.googleapis.com\/myriad-social-testnet.appspot.com)|http:\/\/|www./g);
       if (found) {
         const index: number = draftPost.text.indexOf(found[0]);
 
@@ -417,7 +418,8 @@ export class PostService {
       try {
         if (!validateURL(url)) throw new Error('InvalidURL');
         embeddedURL = await getOpenGraph(url);
-      } catch {
+      } catch (error) {
+        console.error(error)
         // ignore
       }
 
@@ -747,13 +749,16 @@ export class PostService {
   }
 
   private async getVisibility(userId: string, timelineIds = [] as string[]) {
-    const timelineUser = this.experienceRepository.find({
+    try {
+      
+    const timelineUser = await this.experienceRepository.find({
       where: {
         id: {inq: timelineIds},
         createdBy: userId,
       },
     });
-    const editable = this.experienceEditorRepository
+    console.log("timelineUser is", timelineUser)
+    const editable = await this.experienceEditorRepository
       .find({
         where: {
           experienceId: {inq: timelineIds},
@@ -768,9 +773,10 @@ export class PostService {
           },
         });
       });
-    const timelines = await Promise.all([timelineUser, editable]).then(res => {
-      return [...res[0], ...res[1]];
-    });
+      const timelines = [...timelineUser, ...editable];
+    // const timelines = await Promise.all([timelineUser, editable]).then(res => {
+    //   return [...res[0], ...res[1]];
+    // });
 
     if (timelines.length <= 0) {
       throw new HttpErrors.UnprocessableEntity('TimelineNotFound');
@@ -844,6 +850,9 @@ export class PostService {
       visibility,
       selectedUserIds,
     };
+    } catch (error) {
+      throw error
+    }
   }
 
   private getImportedTags(
