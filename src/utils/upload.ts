@@ -1,11 +1,19 @@
 import {AnyObject} from '@loopback/repository';
-import * as firebaseAdmin from 'firebase-admin';
 import fs, {existsSync} from 'fs';
 import os from 'os';
 import path from 'path';
 import sharp, {FormatEnum} from 'sharp';
 import {v4 as uuid} from 'uuid';
 import {config} from '../config';
+import {Client as MinioClient} from 'minio';
+
+const minioClient = new MinioClient({
+  endPoint: config.MINIO_ENDPOINT,
+  port: config.MINIO_PORT,
+  useSSL: false,
+  accessKey: config.MINIO_ACCESS_KEY,
+  secretKey: config.MINIO_SECRET_KEY,
+});
 
 export enum UploadType {
   IMAGE = 'image',
@@ -18,10 +26,6 @@ export async function upload(
   filePath: string,
 ) {
   if (!filePath) return '';
-
-  const bucket = config.FIREBASE_STORAGE_BUCKET
-    ? firebaseAdmin.storage().bucket()
-    : undefined;
 
   const tmpDir = os.tmpdir();
   const baseName = path.parse(filePath).name;
@@ -60,14 +64,34 @@ export async function upload(
       }
     }
 
-    if (bucket) {
-      const [imageFile] = await bucket.upload(formattedFilePath, {
-        resumable: false,
-        public: true,
-        destination: uploadFilePath,
-      });
+    if (minioClient) {
+      try {
+        const bucketName = config.MINIO_BUCKET_NAME;
+        const objectName = formattedFilePath;
+        await minioClient.fPutObject(bucketName, objectName, formattedFilePath);
+        const url = `${config.MINIO_ENDPOINT}:${config.MINIO_PORT}/${config.MINIO_BUCKET_NAME}/${objectName}`;
+        result = url;
+      } catch (error) {
+        console.error(error);
+        if (!config.DOMAIN) {
+          fs.unlinkSync(filePath);
+          fs.unlinkSync(formattedFilePath);
+          throw new Error('Storage not found');
+        }
 
-      result = imageFile.publicUrl();
+        const folderPath = `../../storages`;
+        const tmpSubFolderPath = `${folderPath}/${targetDir}`;
+        const tmpUpdatedFilePath = `${folderPath}/${uploadFilePath}`;
+        const subfolderPath = path.join(__dirname, tmpSubFolderPath);
+        const updatedFilePath = path.join(__dirname, tmpUpdatedFilePath);
+        if (!fs.existsSync(subfolderPath)) {
+          fs.mkdirSync(subfolderPath, {recursive: true});
+        }
+
+        fs.copyFileSync(formattedFilePath, updatedFilePath);
+
+        result = `https://${config.DOMAIN}/storages/${uploadFilePath}`;
+      }
     } else {
       if (!config.DOMAIN) {
         fs.unlinkSync(filePath);
