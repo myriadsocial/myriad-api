@@ -50,4 +50,10 @@ export const config = {
   TWITTER_API_KEY: process.env.TWITTER_API_KEY ?? '',
 
   COIN_MARKET_CAP_API_KEY: process.env.COIN_MARKET_CAP_API_KEY ?? '',
+
+  MINIO_ENDPOINT: process.env.MINIO_ENDPOINT ?? '',
+  MINIO_SECRET_KEY: process.env.MINIO_SECRET_KEY ?? '',
+  MINIO_ACCESS_KEY: process.env.MINIO_ACCESS_KEY ?? '',
+  MINIO_PORT: process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT) : 9000,
+  MINIO_BUCKET_NAME: process.env.MINIO_BUCKET_NAME ?? '',
 };
