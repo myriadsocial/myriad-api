@@ -56,4 +56,5 @@ export const config = {
   MINIO_ACCESS_KEY: process.env.MINIO_ACCESS_KEY ?? '',
   MINIO_PORT: process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT) : 9000,
   MINIO_BUCKET_NAME: process.env.MINIO_BUCKET_NAME ?? '',
+  MINIO_URL: process.env.MINIO_URL ?? 'localhost:9000',
 };
