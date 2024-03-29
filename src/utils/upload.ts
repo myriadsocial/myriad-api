@@ -67,9 +67,9 @@ export async function upload(
     if (minioClient) {
       try {
         const bucketName = config.MINIO_BUCKET_NAME;
-        const objectName = formattedFilePath;
+        const objectName = uploadFilePath;
         await minioClient.fPutObject(bucketName, objectName, formattedFilePath);
-        const url = `${config.MINIO_ENDPOINT}:${config.MINIO_PORT}/${config.MINIO_BUCKET_NAME}/${objectName}`;
+        const url = `${config.MINIO_URL}/${objectName}`;
         result = url;
       } catch (error) {
         console.error(error);
