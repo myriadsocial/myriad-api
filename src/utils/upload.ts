@@ -68,14 +68,11 @@ export async function upload(
       try {
         const bucketName = config.MINIO_BUCKET_NAME;
         const objectName = formattedFilePath;
-        console.log(objectName); // delete this
-        // const expiry = 30 * 365 * 24 * 3600;
-        const expiry = 2;
         await minioClient.fPutObject(bucketName, objectName, formattedFilePath);
         const url = `${config.MINIO_ENDPOINT}:${config.MINIO_PORT}/${config.MINIO_BUCKET_NAME}/${objectName}`;
         result = url;
       } catch (error) {
-        console.log('There is an error', error);
+        console.error(error)
         if (!config.DOMAIN) {
           fs.unlinkSync(filePath);
           fs.unlinkSync(formattedFilePath);
