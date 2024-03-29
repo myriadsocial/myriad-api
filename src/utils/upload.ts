@@ -72,7 +72,7 @@ export async function upload(
         const url = `${config.MINIO_ENDPOINT}:${config.MINIO_PORT}/${config.MINIO_BUCKET_NAME}/${objectName}`;
         result = url;
       } catch (error) {
-        console.error(error)
+        console.error(error);
         if (!config.DOMAIN) {
           fs.unlinkSync(filePath);
           fs.unlinkSync(formattedFilePath);
