@@ -266,7 +266,6 @@ export class PostService {
     filter?: Filter<Post>,
   ): Promise<Post[]> {
     const where = filter?.where ?? {createdBy: id};
-    const newFilter = {...filter, where};
     return this.postRepository.find({
       where: {
         createdBy: id,
