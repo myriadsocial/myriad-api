@@ -28,4 +28,5 @@ export enum MethodType {
   UPDATEEXPERIENCE = 'updateExperience',
   UPDATEPRIMARY = 'updatePrimary',
   VERIFY = 'verify',
+  FINDBYPROFILE = 'findByProfile',
 }

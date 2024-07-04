@@ -107,7 +107,7 @@ export class UserPostController {
   }
 
   @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/user/profile/{id}/posts')
+  @get('/user/profile//posts/{id}')
   @response(200, {
     description: 'Array of Post model instances',
     content: {
