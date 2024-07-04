@@ -594,10 +594,16 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     pageDetail: number[],
   ): Promise<MetaPagination> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
+    let additionalData = invocationCtx.args[0];
+    if (
+      controllerName === ControllerType.USERPOST &&
+      invocationCtx.methodName === MethodType.FIND
+    )
+      additionalData = undefined;
     const {count} = await this.metricService.countData(
       controllerName,
       filter,
-      invocationCtx.args[0],
+      additionalData,
     );
 
     const meta = pageMetadata([...pageDetail, count]);
