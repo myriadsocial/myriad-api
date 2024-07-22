@@ -348,13 +348,6 @@ export class MetricService {
 
       case ControllerType.EXPERIENCEPOST:
       case ControllerType.USERPOST:
-        if (additionalData) {
-          const newWhere = {
-            createdBy: additionalData,
-            banned: false,
-          };
-          return this.postRepository.count(newWhere);
-        }
       case ControllerType.POST:
         return this.postRepository.count(where);
 

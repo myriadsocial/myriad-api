@@ -97,8 +97,8 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   ) {
     const {query} = await invocationCtx.get(RestBindings.Http.REQUEST);
     const {pageNumber, pageLimit} = query;
-    const filter = await this.beforePagination(invocationCtx, query);
 
+    const filter = await this.beforePagination(invocationCtx, query);
     const meta = await this.initializeMeta(invocationCtx, filter, [
       Number(pageNumber),
       Number(pageLimit),
@@ -123,7 +123,7 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   ): Promise<Filter<AnyObject>> {
     const methodName = invocationCtx.methodName as MethodType;
     const controllerName = invocationCtx.targetClass.name as ControllerType;
-    const filter = this.initializeFilter(invocationCtx, methodName);
+    const filter = this.initializeFilter(invocationCtx);
 
     switch (controllerName) {
       case ControllerType.USER: {
@@ -594,16 +594,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     pageDetail: number[],
   ): Promise<MetaPagination> {
     const controllerName = invocationCtx.targetClass.name as ControllerType;
-    let additionalData = invocationCtx.args[0];
-    if (
-      controllerName === ControllerType.USERPOST &&
-      invocationCtx.methodName === MethodType.FIND
-    )
-      additionalData = undefined;
     const {count} = await this.metricService.countData(
       controllerName,
       filter,
-      additionalData,
+      invocationCtx.args[0],
     );
 
     const meta = pageMetadata([...pageDetail, count]);
@@ -635,17 +629,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     };
   }
 
-  private initializeFilter(
-    invocationCtx: InvocationContext,
-    method: MethodType,
-  ): AnyObject {
-    let num = 0;
-    if (method === MethodType.FINDBYPROFILE) {
-      num = 1;
-    }
+  private initializeFilter(invocationCtx: InvocationContext): AnyObject {
     const filter =
-      invocationCtx.args[num] && typeof invocationCtx.args[num] === 'object'
-        ? invocationCtx.args[num]
+      invocationCtx.args[0] && typeof invocationCtx.args[0] === 'object'
+        ? invocationCtx.args[0]
         : {where: {}};
 
     filter.where = {...filter.where};
@@ -677,7 +664,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
     }
 
     if (methodName === MethodType.GETIMPORTERS) return 2;
-    if (methodName === MethodType.FINDBYPROFILE) return 1;
     return 0;
   }
 }
