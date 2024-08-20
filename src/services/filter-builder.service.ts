@@ -322,7 +322,19 @@ export class FilterBuilderService {
       },
     };
 
-    const defaultInclude = ['user', experienceFilter];
+    const userFilter = {
+      relation: 'user',
+      scope: {
+        fields: {email: false},
+        include: [
+          {
+            relation: 'wallets',
+          },
+        ],
+      },
+    };
+
+    const defaultInclude = [userFilter, experienceFilter];
     filter.order = this.orderSetting(query);
     filter.include = currentInclude.concat(defaultInclude);
     filter.where = {
