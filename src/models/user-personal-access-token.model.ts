@@ -29,14 +29,7 @@ export class UserPersonalAccessToken extends Entity {
     type: 'string',
     required: true,
   })
-  description: string;
-
-  @property({
-    type: 'array',
-    itemType: 'string',
-    required: true,
-  })
-  scopes: string[];
+  hash: string;
 
   @property({
     type: 'date',
@@ -78,14 +71,13 @@ export class CreateUserPersonalAccessTokenDto extends Model {
     type: 'string',
     required: true,
   })
-  description: string;
+  token: string;
 
   @property({
-    type: 'array',
-    itemType: 'string',
+    type: 'string',
     required: true,
   })
-  scopes: string[];
+  hash: string;
 
   constructor(data: Partial<CreateUserPersonalAccessTokenDto>) {
     super(data);

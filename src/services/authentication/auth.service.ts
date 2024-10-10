@@ -36,6 +36,7 @@ import {CurrencyService} from '../currency.service';
 import {MetricService} from '../metric.service';
 import {validateAccount} from '../../utils/validate-account';
 import NonceGenerator from 'a-nonce-generator';
+import {sha256} from 'js-sha256';
 
 @injectable({scope: BindingScope.TRANSIENT})
 export class AuthService {
@@ -431,10 +432,10 @@ export class AuthService {
   public async loginByPAT(requestLogin: RequestLoginByPAT): Promise<UserToken> {
     const {token} = requestLogin;
     let user: User | null = null;
+    const hash = sha256(token);
     const validPAT = await this.userPersonalAccessTokenRepository.find({
       where: {
-        description: 'Admin Personal Access Token',
-        id: token,
+        hash: hash,
       },
     });
     if (!validPAT) {

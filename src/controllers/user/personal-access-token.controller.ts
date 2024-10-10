@@ -47,17 +47,6 @@ export class UserPersonalAccessTokenController {
     return this.userService.createAccessToken(data);
   }
 
-  @get('/user/personal-admin-access-tokens')
-  @response(200, {
-    description: 'CREATE user personal-admin-access-tokens',
-    content: {
-      'application/json': {schema: getModelSchemaRef(UserPersonalAccessToken)},
-    },
-  })
-  async generate(): Promise<UserPersonalAccessToken> {
-    return this.userService.createAdminToken();
-  }
-
   @get('/user/personal-access-tokens')
   @response(200, {
     description: 'GET user personal-access-token',
@@ -74,26 +63,6 @@ export class UserPersonalAccessTokenController {
   })
   async find(): Promise<UserPersonalAccessToken[]> {
     return this.userService.accessTokens();
-  }
-
-  @patch('/user/personal-access-tokens/{id}')
-  @response(204, {
-    description: 'UPDATE user personal-access-token scopes',
-  })
-  async updateById(
-    @param.path.string('id') id: string,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(UpdateUserPersonalAccessTokenDto, {
-            partial: true,
-          }),
-        },
-      },
-    })
-    data: Partial<UpdateUserPersonalAccessTokenDto>,
-  ): Promise<Count> {
-    return this.userService.updateAccessTokenScopes(id, data);
   }
 
   @del('/user/personal-access-tokens/{id}')
