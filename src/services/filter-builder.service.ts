@@ -341,7 +341,7 @@ export class FilterBuilderService {
       twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
       filter.where = {
         ...filter.where,
-        createdAt: { gte: twelveMonthsAgo.toISOString() },
+        originCreatedAt: { gte: twelveMonthsAgo.toISOString() },
       };
     }
 
@@ -987,7 +987,7 @@ export class FilterBuilderService {
     // Apply date filter to limit posts to the last 12 months
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-    const dateFilter = {createdAt: {gte: twelveMonthsAgo.toISOString()}};
+    const dateFilter = { originCreatedAt: { gte: twelveMonthsAgo.toISOString() } };
   
     const currentUser = this.currentUser[securityId];
     const [approvedFriendIds, blockedFriends] = await Promise.all([
@@ -1676,8 +1676,10 @@ export class FilterBuilderService {
         },
       );
     }
-    const nonDeletedUser = {or: filterUser, deletedAt: {$eq: null}};
-    const users = await this.userRepository.find({where: nonDeletedUser});
+    const nonDeletedUser = { 
+      or: filterUser, 
+      originCreatedAt: { gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() }
+    };    const users = await this.userRepository.find({where: nonDeletedUser});
     const friendUserIds = users
       .filter(user => approvedFriendIds.includes(user.id))
       .map(e => e.id);
@@ -1690,12 +1692,14 @@ export class FilterBuilderService {
         and: [
           {createdBy: {inq: publicUserIds}},
           {visibility: VisibilityType.PUBLIC},
+          { originCreatedAt: { gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() } },
         ],
       },
       {
         and: [
           {createdBy: {inq: friendUserIds}},
           {visibility: VisibilityType.FRIEND},
+          { originCreatedAt: { gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() } },
         ],
       },
     ];
@@ -1714,15 +1718,21 @@ export class FilterBuilderService {
       this.friendService.getFriendIds(currentUser, FriendStatusType.BLOCKED),
       this.friendService.getFriendIds(currentUser, FriendStatusType.APPROVED),
     ]);
-    const userIds = pull(blockedFriendIds, ...approvedFriendIds);
-
+    
+    // Exclude approved friends from blockedFriendIds to get the final userIds
+    const userIds = blockedFriendIds.filter(id => !approvedFriendIds.includes(id));
+    
     switch (visibility) {
       case VisibilityType.PRIVATE: {
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+    
         return {
           and: [
-            {visibility: VisibilityType.PRIVATE},
-            {createdBy: currentUser},
-            {createdBy: {nin: userIds}},
+            { visibility: VisibilityType.PRIVATE },
+            { createdBy: currentUser },
+            { createdBy: { nin: userIds } },
+            { createdAt: { gte: twelveMonthsAgo.toISOString() } },
           ],
         };
       }
@@ -1740,35 +1750,38 @@ export class FilterBuilderService {
 
         return {and};
       }
-
+    
       case VisibilityType.FRIEND: {
         return {
           and: [
-            {visibility: VisibilityType.FRIEND},
-            {createdBy: {inq: approvedFriendIds}},
-            {createdBy: {nin: userIds}},
+            { visibility: VisibilityType.FRIEND },
+            { createdBy: { inq: approvedFriendIds } },
+            { createdBy: { nin: userIds } },
           ],
         };
       }
 
       default:
         return {
-          createdBy: {nin: userIds},
-          visibility: VisibilityType.PUBLIC,
+          and: [
+            { visibility: VisibilityType.PUBLIC },
+            { createdBy: { nin: userIds } },
+          ],
         };
     }
   }
 
   private async searchExperience(q: string): Promise<Where<Experience>> {
-    const userId = this.currentUser[securityId];
+    const userId = this.currentUser?.[securityId];
     const [blockedFriendIds, approvedFriendIds] = await Promise.all([
       this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
       this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
     ]);
 
     const pattern = new RegExp(q, 'i');
-    const userIds = pull(blockedFriendIds, ...approvedFriendIds);
-
+    const userIds = pull([...blockedFriendIds], ...approvedFriendIds);  
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
     return {
       or: [
         {
@@ -1776,6 +1789,7 @@ export class FilterBuilderService {
             {name: {regexp: pattern}},
             {createdBy: {nin: userIds}},
             {visibility: {exists: false}},
+            { createdAt: { gte: twelveMonthsAgo.toISOString() } },
           ],
         },
         {
@@ -1783,6 +1797,7 @@ export class FilterBuilderService {
             {name: {regexp: pattern}},
             {createdBy: {nin: userIds}},
             {visibility: VisibilityType.PUBLIC},
+            { createdAt: { gte: twelveMonthsAgo.toISOString() } },
           ],
         },
         {
@@ -1790,6 +1805,7 @@ export class FilterBuilderService {
             {name: {regexp: pattern}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: [...approvedFriendIds, userId]}},
+            { createdAt: { gte: twelveMonthsAgo.toISOString() } },
           ],
         },
         {
@@ -1798,6 +1814,7 @@ export class FilterBuilderService {
             {createdBy: userId},
             {createdBy: {nin: blockedFriendIds}},
             {visibility: VisibilityType.PRIVATE},
+            { createdAt: { gte: twelveMonthsAgo.toISOString() } },
           ],
         },
         {
@@ -1809,7 +1826,8 @@ export class FilterBuilderService {
                 {'selectedUserIds.userId': {inq: [userId]}},
                 {createdBy: userId},
               ],
-            } as Where,
+            }, {
+            createdAt: { gte: twelveMonthsAgo.toISOString() } } as Where,
           ],
         },
       ],
@@ -1829,7 +1847,7 @@ export class FilterBuilderService {
     if (needsDateFilter) {
       const twelveMonthsAgo = new Date();
       twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-      dateFilter = { createdAt: { gte: twelveMonthsAgo.toISOString() } };
+      dateFilter = { originCreatedAt: { gte: twelveMonthsAgo.toISOString() } };
     }
   
     switch (timelineType) {
