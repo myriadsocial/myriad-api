@@ -630,12 +630,10 @@ export class PaginationInterceptor implements Provider<Interceptor> {
   }
 
   private initializeFilter(invocationCtx: InvocationContext): AnyObject {
-    const methodName = invocationCtx.methodName as MethodType;
-    const arg =
-      methodName === MethodType.FINDBYPROFILE
-        ? invocationCtx.args[1]
-        : invocationCtx.args[0];
-    const filter = arg && typeof arg === 'object' ? arg : {where: {}};
+    const filter =
+      invocationCtx.args[0] && typeof invocationCtx.args[0] === 'object'
+        ? invocationCtx.args[0]
+        : {where: {}};
 
     filter.where = {...filter.where};
     return filter;
@@ -662,10 +660,6 @@ export class PaginationInterceptor implements Provider<Interceptor> {
       controllerName === ControllerType.EXPERIENCEPOST ||
       controllerName === ControllerType.POSTEXPERIENCE
     ) {
-      return 1;
-    }
-
-    if (methodName === MethodType.FINDBYPROFILE) {
       return 1;
     }
 

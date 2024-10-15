@@ -63,68 +63,7 @@ export class UserPostController {
     @param.filter(Post, {exclude: ['limit', 'skip', 'offset', 'where']})
     filter?: Filter<Post>,
   ): Promise<Post[]> {
-    const newinclusion = filter
-      ? filter.include?.map(incl => {
-          if (typeof incl !== 'string') {
-            if (incl.relation === 'user') {
-              incl = {
-                relation: 'user',
-                scope: {
-                  fields: {email: false},
-                  include: [
-                    {
-                      relation: 'wallets',
-                    },
-                  ],
-                },
-              };
-              return incl;
-            } else {
-              return incl;
-            }
-          } else {
-            if (incl === 'user') {
-              incl = {
-                relation: 'user',
-                scope: {
-                  fields: {email: false},
-                  include: [
-                    {
-                      relation: 'wallets',
-                    },
-                  ],
-                },
-              };
-              return incl;
-            } else {
-              return incl;
-            }
-          }
-        })
-      : undefined;
-    filter!.include = newinclusion;
     return this.userService.posts(filter);
-  }
-
-  @intercept(PaginationInterceptor.BINDING_KEY)
-  @get('/user/profile/{id}/posts')
-  @response(200, {
-    description: 'Array of Post model instances',
-    content: {
-      'application/json': {
-        schema: {
-          type: 'array',
-          items: getModelSchemaRef(Post, {includeRelations: true}),
-        },
-      },
-    },
-  })
-  async findByProfile(
-    @param.path.string('id') id: string,
-    @param.filter(Post, {exclude: ['limit', 'skip', 'offset', 'where']})
-    filter?: Filter<Post>,
-  ): Promise<Post[]> {
-    return this.userService.profilePosts(id, filter);
   }
 
   @intercept(FindByIdInterceptor.BINDING_KEY)
