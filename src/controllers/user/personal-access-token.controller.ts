@@ -4,14 +4,14 @@ import {
   param,
   get,
   getModelSchemaRef,
-  patch,
+  // patch,
   del,
   requestBody,
   response,
 } from '@loopback/rest';
 import {
   CreateUserPersonalAccessTokenDto,
-  UpdateUserPersonalAccessTokenDto,
+  // UpdateUserPersonalAccessTokenDto,
   UserPersonalAccessToken,
 } from '../../models';
 import {UserService} from '../../services';
