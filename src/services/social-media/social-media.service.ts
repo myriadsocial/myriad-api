@@ -1,10 +1,10 @@
 import {BindingScope, inject, injectable} from '@loopback/core';
 import {AnyObject} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
-import {PlatformType} from '../../enums';
+import {PlatformType, VisibilityType} from '../../enums';
 import {Asset, Sizes} from '../../interfaces';
 import {EmbeddedURL, ExtendedPost, Media, People} from '../../models';
-import {Reddit, Twitter} from '..';
+import {Reddit, Twitter, Youtube} from '..';
 import {formatRawText} from '../../utils/formatter';
 import {UrlUtils} from '../../utils/url-utils';
 
@@ -17,6 +17,8 @@ export class SocialMediaService {
     private twitterService: Twitter,
     @inject('services.Reddit')
     private redditService: Reddit,
+    @inject('services.YouTube')
+    private youTubeService: Youtube,
   ) {}
 
   async fetchTweet(textId: string): Promise<ExtendedPost> {
@@ -420,7 +422,104 @@ export class SocialMediaService {
       },
     } as ExtendedPost;
   }
+  async fetchYouTubeVideo(videoId: string): Promise<ExtendedPost> {
+    let response: any = null;
 
+    try {
+      response = await this.youTubeService.getVideos(
+        'snippet,contentDetails,statistics',
+        videoId,
+      );
+    } catch (error) {
+      console.error('Error fetching YouTube video:', error);
+      throw new HttpErrors.BadRequest(
+        'Invalid YouTube video ID or Video not found',
+      );
+    }
+
+    if (!response?.items?.length) {
+      console.error('No video found for ID:', videoId);
+      throw new HttpErrors.BadRequest(
+        'Invalid YouTube video ID or Video not found',
+      );
+    }
+
+    const video = response.items[0];
+    const {id: idStr, snippet} = video;
+
+    const {
+      title,
+      description,
+      publishedAt,
+      channelId,
+      channelTitle,
+      thumbnails,
+      tags,
+    } = snippet;
+
+    const asset: Asset = {
+      images: [
+        {
+          original: thumbnails.high.url,
+          thumbnail: thumbnails.default.url,
+          small: thumbnails.medium.url,
+          medium: thumbnails.high.url,
+          large: thumbnails.maxres
+            ? thumbnails.maxres.url
+            : thumbnails.high.url,
+        },
+      ],
+      videos: [`https://www.youtube.com/watch?v=${videoId}`],
+      exclusiveContents: [],
+    };
+
+    let embeddedURL: EmbeddedURL | undefined = undefined;
+
+    try {
+      embeddedURL = new EmbeddedURL({
+        title: title,
+        description: description,
+        siteName: 'YouTube',
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        image: new Media({
+          url: thumbnails.high.url,
+        }),
+      });
+    } catch (error) {
+      console.error('Error creating EmbeddedURL:', error);
+    }
+
+    const youtubeTags = tags
+      ? tags.map((tag: string) => tag.toLowerCase())
+      : [];
+
+    return {
+      metric: {
+        upvotes: 0,
+        downvotes: 0,
+      },
+      isNSFW: false,
+      visibility: VisibilityType.PUBLIC,
+      platform: PlatformType.YOUTUBE,
+      originPostId: idStr,
+      title: title,
+      text: description.trim(),
+      rawText: formatRawText(description),
+      tags: youtubeTags.filter((tag: string) => Boolean(tag)),
+      originCreatedAt: new Date(publishedAt).toISOString(),
+      asset: asset,
+      embeddedURL: embeddedURL,
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+      platformUser: new People({
+        name: channelTitle,
+        username: channelId,
+        originUserId: channelId,
+        profilePictureURL: '',
+        platform: PlatformType.YOUTUBE,
+      }),
+      // Include only properties defined in the 'Post' model
+    } as unknown as ExtendedPost;
+  }
   public async verifyToTwitter(
     username: string,
     address: string,
@@ -493,5 +592,35 @@ export class SocialMediaService {
     } catch {
       throw new HttpErrors.NotFound('Cannot find the specified post');
     }
+  }
+
+  public async verifyToYouTube(videoId: string): Promise<People> {
+    let response = null;
+
+    try {
+      response = await this.youTubeService.getVideos('snippet', videoId);
+    } catch (error) {
+      throw new HttpErrors.NotFound(
+        'Invalid YouTube video ID or Video not found',
+      );
+    }
+
+      if (!response?.items?.length) {
+        throw new HttpErrors.NotFound('Invalid YouTube video ID');
+      }
+
+    const video = response.items[0];
+    const snippet = video.snippet;
+    const channelTitle = snippet.channelTitle || 'Unknown Channel';
+    const channelId = snippet.channelId || 'Unknown ID';
+    const thumbnailUrl = snippet.thumbnails?.default?.url || '';
+
+    return new People({
+      name: channelTitle,
+      originUserId: channelId,
+      platform: PlatformType.YOUTUBE,
+      username: channelTitle.replace(/\s+/g, '').toLowerCase(),
+      profilePictureURL: thumbnailUrl,
+    });
   }
 }
