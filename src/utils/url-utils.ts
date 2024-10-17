@@ -21,9 +21,34 @@ export class UrlUtils {
   }
 
   getOriginPostId(): string {
-    return this.url.pathname
-      .replace(new RegExp(/\/user\/|\/u\/|\/r\//), '/')
-      .split('/')[3];
+    const platform = this.getPlatform();
+    const pathname = this.url.pathname;
+    let postId = '';
+
+    switch (platform) {
+      case PlatformType.YOUTUBE:
+        if (pathname === '/watch') {
+          // Handle standard YouTube URLs: https://www.youtube.com/watch?v=VIDEO_ID
+          postId = this.url.searchParams.get('v') ?? '';
+        } else if (this.url.hostname === 'youtu.be') {
+          // Handle shortened YouTube URLs: https://youtu.be/VIDEO_ID
+          postId = pathname.substring(1);
+        }
+        break;
+
+      case PlatformType.REDDIT:
+      case PlatformType.TWITTER:
+        // Handle Reddit and Twitter URLs
+        postId =
+          pathname
+            .replace(new RegExp(/\/user\/|\/u\/|\/r\//), '/')
+            .split('/')[3] || '';
+        break;
+      default:
+        postId = '';
+    }
+
+    return postId;
   }
 
   static async getOpenGraph(url: string): Promise<EmbeddedURL | null> {

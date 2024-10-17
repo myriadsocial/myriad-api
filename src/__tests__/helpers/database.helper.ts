@@ -62,12 +62,14 @@ import {
   UserService,
   UserSocialMediaService,
   VoteService,
+  YouTubeProvider,
 } from '../../services';
 import {UserProfile, securityId} from '@loopback/security';
 import {
   CoinMarketCapDataSource,
   RedditDataSource,
   TwitterDataSource,
+  YouTubeDataSource,
 } from '../../datasources';
 import {CommentService} from '../../services/comment.service';
 
@@ -235,11 +237,13 @@ export async function givenRepositories(testdb: any) {
   const dataSource = {
     reddit: new RedditDataSource(),
     twitter: new TwitterDataSource(),
+    youtube: new YouTubeDataSource(),
     coinmarketcap: new CoinMarketCapDataSource(),
   };
 
   const redditService = await new RedditProvider(dataSource.reddit).value();
   const twitterService = await new TwitterProvider(dataSource.twitter).value();
+  const youtubeService = await new YouTubeProvider(dataSource.youtube).value();
   const coinmarketcapService = await new CoinMarketCapProvider(
     dataSource.coinmarketcap,
   ).value();
@@ -247,6 +251,7 @@ export async function givenRepositories(testdb: any) {
   const socialMediaService = new SocialMediaService(
     twitterService,
     redditService,
+    youtubeService,
   );
 
   const metricService = new MetricService(
