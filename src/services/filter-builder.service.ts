@@ -3,7 +3,7 @@ import {inject, InvocationArgs, service} from '@loopback/core';
 import {
   AnyObject,
   Filter,
-  OrClause,
+  // OrClause,
   repository,
   Where,
 } from '@loopback/repository';
@@ -125,7 +125,7 @@ export class FilterBuilderService {
     }
 
     if (!friendsName) {
-      filter.order = this.orderSetting(query);
+      filter.order = this.orderSetting(query).order;
     }
 
     if (airdrop === 'onboarding') {
@@ -323,7 +323,11 @@ export class FilterBuilderService {
     };
 
     const defaultInclude = ['user', experienceFilter];
-    filter.order = this.orderSetting(query);
+
+    // Update the order and get the needsDateFilter flag
+    const {order, needsDateFilter} = this.orderSetting(query);
+    filter.order = order;
+
     filter.include = currentInclude.concat(defaultInclude);
     filter.where = {
       ...filter.where,
@@ -331,7 +335,17 @@ export class FilterBuilderService {
       deletedAt: {$eq: null},
     } as Where;
 
-    // search post
+    // Ensure date filter is added
+    if (needsDateFilter) {
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+      filter.where = {
+        ...filter.where,
+        originCreatedAt: {gte: twelveMonthsAgo.toISOString()},
+      };
+    }
+
+    // Handle search queries
     if (typeof q === 'string') {
       if (q.length <= 3 && !q.match('^[A-Za-z0-9]')) {
         return this.defaultFilter(filter);
@@ -636,7 +650,19 @@ export class FilterBuilderService {
     Object.assign(filter, currentFilter);
 
     filter.where = {...currentFilter.where, deletedAt: {$eq: null}} as Where;
-    filter.order = this.orderSetting(query);
+
+    const {order, needsDateFilter} = this.orderSetting(query);
+    filter.order = order;
+
+    if (needsDateFilter) {
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+
+      filter.where = {
+        ...filter.where,
+        createdAt: {gte: twelveMonthsAgo.toISOString()},
+      };
+    }
 
     const where = await this.searchPostByExperience(id);
     return this.finalizeFilter(filter, where);
@@ -653,7 +679,19 @@ export class FilterBuilderService {
     if (Array.isArray(platform)) platform = platform[0];
     if (Array.isArray(importerFilter)) importerFilter = importerFilter[0];
 
-    filter.order = this.orderSetting(query);
+    const {order, needsDateFilter} = this.orderSetting(query);
+    filter.order = order;
+
+    if (needsDateFilter) {
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+
+      filter.where = {
+        ...filter.where,
+        createdAt: {gte: twelveMonthsAgo.toISOString()},
+      };
+    }
+
     filter.include = ['user'];
     return this.finalizeFilter(filter, {
       ...importerFilter.where,
@@ -667,7 +705,19 @@ export class FilterBuilderService {
     args: InvocationArgs,
     query: Query,
   ): Promise<AnyObject | void> {
-    filter.order = this.orderSetting(query);
+    const {order, needsDateFilter} = this.orderSetting(query);
+    filter.order = order;
+
+    if (needsDateFilter) {
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+
+      filter.where = {
+        ...filter.where,
+        createdAt: {gte: twelveMonthsAgo.toISOString()},
+      };
+    }
+
     filter.include = args[1]?.include ?? [];
     return this.finalizeFilter(filter, {deletedAt: {$eq: null}});
   }
@@ -677,8 +727,10 @@ export class FilterBuilderService {
     args: InvocationArgs,
     query: Query,
   ): Promise<AnyObject | void> {
+    const {order} = this.orderSetting(query);
+    filter.order = order;
+
     filter.include = ['reporter'];
-    filter.order = this.orderSetting(query);
     return this.finalizeFilter(filter, {reportId: args[0]});
   }
 
@@ -915,7 +967,7 @@ export class FilterBuilderService {
 
   // ------ PostWhereBuilder ------------------------
 
-  private async searchPostByQuery(q: string): Promise<OrClause<Post>> {
+  private async searchPostByQuery(q: string): Promise<Where<Post>> {
     let text = q;
 
     if (text.length > 1) {
@@ -924,13 +976,18 @@ export class FilterBuilderService {
           text[0] === '@'
             ? new RegExp('[^A-Za-z0-9 _]', 'gi')
             : new RegExp('[^A-Za-z0-9]', 'gi');
-        text = text[0] + text.replace(re, '');
+        text = text[0] + text.substr(1).replace(re, '');
       } else {
-        text.replace(new RegExp('[^A-Za-z0-9 ]', 'gi'), '');
+        text = text.replace(new RegExp('[^A-Za-z0-9 ]', 'gi'), '');
       }
     }
 
     text = text.trim();
+
+    // Apply date filter to limit posts to the last 12 months
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+    const dateFilter = {originCreatedAt: {gte: twelveMonthsAgo.toISOString()}};
 
     const currentUser = this.currentUser[securityId];
     const [approvedFriendIds, blockedFriends] = await Promise.all([
@@ -938,8 +995,13 @@ export class FilterBuilderService {
       this.friendService.getFriendIds(currentUser, FriendStatusType.BLOCKED),
     ]);
 
-    const blockedFriendIds = pull(blockedFriends, ...approvedFriendIds);
-    const filterPost = await this.searchPostByUserName(
+    // Remove approved friends from the blocked friends list
+    const blockedFriendIds = blockedFriends.filter(
+      id => !approvedFriendIds.includes(id),
+    );
+
+    // Initialize the filterPost array by searching posts by username
+    const filterPost: AnyObject[] = await this.searchPostByUserName(
       approvedFriendIds,
       blockedFriendIds,
       q,
@@ -952,37 +1014,38 @@ export class FilterBuilderService {
       filterPost.push(
         {
           and: [
-            {tags: {inq: [hashtag]}} as Where,
+            {tags: {inq: [[hashtag]]}},
             {visibility: VisibilityType.PUBLIC},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
-            {tags: {inq: [hashtag]}} as Where,
+            {tags: {inq: [[hashtag]]}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
-            {tags: {inq: [hashtag]}} as Where,
+            {tags: {inq: [[hashtag]]}},
             {visibility: VisibilityType.SELECTED},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {selectedUserIds: {inq: [currentUser]}},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
-          and: [
-            {tags: {inq: [hashtag]}} as Where,
-            {createdBy: this.currentUser[securityId]},
-          ],
+          and: [{tags: {inq: [hashtag]}}, {createdBy: currentUser}, dateFilter],
         },
         {
           and: [
             {rawText: {regexp: hashtagRegexp}},
             {visibility: VisibilityType.PUBLIC},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
@@ -990,20 +1053,23 @@ export class FilterBuilderService {
             {rawText: {regexp: hashtagRegexp}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
             {rawText: {regexp: hashtagRegexp}},
             {visibility: VisibilityType.SELECTED},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
+            {selectedUserIds: {inq: [currentUser]}},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
             {rawText: {regexp: hashtagRegexp}},
-            {createdBy: this.currentUser[securityId]},
+            {createdBy: currentUser},
+            dateFilter,
           ],
         },
       );
@@ -1014,50 +1080,57 @@ export class FilterBuilderService {
       filterPost.push(
         {
           and: [
-            {'mentions.name': {inq: [mention]}} as Where,
+            {mentions: {elemMatch: {name: mention}}},
             {visibility: VisibilityType.PUBLIC},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
-            {'mentions.name': {inq: [mention]}} as Where,
+            {mentions: {elemMatch: {name: mention}}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
-            {'mentions.name': {inq: [mention]}} as Where,
-            {createdBy: this.currentUser[securityId]},
+            {mentions: {elemMatch: {name: mention}}},
+            {createdBy: currentUser},
+            dateFilter,
           ],
         },
         {
           and: [
-            {'mentions.username': {inq: [mention]}} as Where,
+            {mentions: {elemMatch: {username: mention}}},
             {visibility: VisibilityType.PUBLIC},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
-            {'mentions.username': {inq: [mention]}} as Where,
+            {mentions: {elemMatch: {username: mention}}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
-            {'mentions.username': {inq: [mention]}} as Where,
+            {mentions: {elemMatch: {username: mention}}},
             {visibility: VisibilityType.SELECTED},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}},
+            {selectedUserIds: {inq: [currentUser]}},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
-            {'mentions.username': {inq: [mention]}} as Where,
-            {createdBy: this.currentUser[securityId]},
+            {mentions: {elemMatch: {username: mention}}},
+            {createdBy: currentUser},
+            dateFilter,
           ],
         },
         {
@@ -1065,6 +1138,7 @@ export class FilterBuilderService {
             {rawText: {regexp: mentionRegexp}},
             {visibility: VisibilityType.PUBLIC},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
@@ -1072,20 +1146,23 @@ export class FilterBuilderService {
             {rawText: {regexp: mentionRegexp}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
             {rawText: {regexp: mentionRegexp}},
             {visibility: VisibilityType.SELECTED},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
+            {selectedUserIds: {inq: [currentUser]}},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
             {rawText: {regexp: mentionRegexp}},
-            {createdBy: this.currentUser[securityId]},
+            {createdBy: currentUser},
+            dateFilter,
           ],
         },
       );
@@ -1098,6 +1175,7 @@ export class FilterBuilderService {
             {rawText: {regexp: regexTopic}},
             {visibility: VisibilityType.PUBLIC},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
@@ -1105,20 +1183,23 @@ export class FilterBuilderService {
             {rawText: {regexp: regexTopic}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: approvedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
             {rawText: {regexp: regexTopic}},
             {visibility: VisibilityType.SELECTED},
-            {selectedUserIds: {inq: [this.currentUser[securityId]]}} as Where,
+            {selectedUserIds: {inq: [currentUser]}},
             {createdBy: {nin: blockedFriendIds}},
+            dateFilter,
           ],
         },
         {
           and: [
             {rawText: {regexp: regexTopic}},
-            {createdBy: this.currentUser[securityId]},
+            {createdBy: currentUser},
+            dateFilter,
           ],
         },
       );
@@ -1591,7 +1672,12 @@ export class FilterBuilderService {
         },
       );
     }
-    const nonDeletedUser = {or: filterUser, deletedAt: {$eq: null}};
+    const nonDeletedUser = {
+      or: filterUser,
+      originCreatedAt: {
+        gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    };
     const users = await this.userRepository.find({where: nonDeletedUser});
     const friendUserIds = users
       .filter(user => approvedFriendIds.includes(user.id))
@@ -1605,12 +1691,26 @@ export class FilterBuilderService {
         and: [
           {createdBy: {inq: publicUserIds}},
           {visibility: VisibilityType.PUBLIC},
+          {
+            originCreatedAt: {
+              gte: new Date(
+                Date.now() - 365 * 24 * 60 * 60 * 1000,
+              ).toISOString(),
+            },
+          },
         ],
       },
       {
         and: [
           {createdBy: {inq: friendUserIds}},
           {visibility: VisibilityType.FRIEND},
+          {
+            originCreatedAt: {
+              gte: new Date(
+                Date.now() - 365 * 24 * 60 * 60 * 1000,
+              ).toISOString(),
+            },
+          },
         ],
       },
     ];
@@ -1629,15 +1729,23 @@ export class FilterBuilderService {
       this.friendService.getFriendIds(currentUser, FriendStatusType.BLOCKED),
       this.friendService.getFriendIds(currentUser, FriendStatusType.APPROVED),
     ]);
-    const userIds = pull(blockedFriendIds, ...approvedFriendIds);
+
+    // Exclude approved friends from blockedFriendIds to get the final userIds
+    const userIds = blockedFriendIds.filter(
+      id => !approvedFriendIds.includes(id),
+    );
 
     switch (visibility) {
       case VisibilityType.PRIVATE: {
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+
         return {
           and: [
             {visibility: VisibilityType.PRIVATE},
             {createdBy: currentUser},
             {createdBy: {nin: userIds}},
+            {createdAt: {gte: twelveMonthsAgo.toISOString()}},
           ],
         };
       }
@@ -1668,22 +1776,25 @@ export class FilterBuilderService {
 
       default:
         return {
-          createdBy: {nin: userIds},
-          visibility: VisibilityType.PUBLIC,
+          and: [
+            {visibility: VisibilityType.PUBLIC},
+            {createdBy: {nin: userIds}},
+          ],
         };
     }
   }
 
   private async searchExperience(q: string): Promise<Where<Experience>> {
-    const userId = this.currentUser[securityId];
+    const userId = this.currentUser?.[securityId];
     const [blockedFriendIds, approvedFriendIds] = await Promise.all([
       this.friendService.getFriendIds(userId, FriendStatusType.BLOCKED),
       this.friendService.getFriendIds(userId, FriendStatusType.APPROVED),
     ]);
 
     const pattern = new RegExp(q, 'i');
-    const userIds = pull(blockedFriendIds, ...approvedFriendIds);
-
+    const userIds = pull([...blockedFriendIds], ...approvedFriendIds);
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
     return {
       or: [
         {
@@ -1691,6 +1802,7 @@ export class FilterBuilderService {
             {name: {regexp: pattern}},
             {createdBy: {nin: userIds}},
             {visibility: {exists: false}},
+            {createdAt: {gte: twelveMonthsAgo.toISOString()}},
           ],
         },
         {
@@ -1698,6 +1810,7 @@ export class FilterBuilderService {
             {name: {regexp: pattern}},
             {createdBy: {nin: userIds}},
             {visibility: VisibilityType.PUBLIC},
+            {createdAt: {gte: twelveMonthsAgo.toISOString()}},
           ],
         },
         {
@@ -1705,6 +1818,7 @@ export class FilterBuilderService {
             {name: {regexp: pattern}},
             {visibility: VisibilityType.FRIEND},
             {createdBy: {inq: [...approvedFriendIds, userId]}},
+            {createdAt: {gte: twelveMonthsAgo.toISOString()}},
           ],
         },
         {
@@ -1713,6 +1827,7 @@ export class FilterBuilderService {
             {createdBy: userId},
             {createdBy: {nin: blockedFriendIds}},
             {visibility: VisibilityType.PRIVATE},
+            {createdAt: {gte: twelveMonthsAgo.toISOString()}},
           ],
         },
         {
@@ -1724,6 +1839,9 @@ export class FilterBuilderService {
                 {'selectedUserIds.userId': {inq: [userId]}},
                 {createdBy: userId},
               ],
+            },
+            {
+              createdAt: {gte: twelveMonthsAgo.toISOString()},
             } as Where,
           ],
         },
@@ -1737,6 +1855,16 @@ export class FilterBuilderService {
     timelineType?: string,
     query?: Query,
   ): Promise<Where<Post>> {
+    // Determine if a date filter is needed based on the query
+    const {needsDateFilter} = this.orderSetting(query ?? {});
+    let dateFilter: Where<Post> = {};
+
+    if (needsDateFilter) {
+      const twelveMonthsAgo = new Date();
+      twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+      dateFilter = {originCreatedAt: {gte: twelveMonthsAgo.toISOString()}};
+    }
+
     switch (timelineType) {
       case TimelineType.EXPERIENCE: {
         const experienceId = query?.experienceId;
@@ -1754,7 +1882,7 @@ export class FilterBuilderService {
           await this.userExperienceRepository.updateAll(
             {
               status: UserExperienceStatus.NONE,
-              updatedAt: new Date().toString(),
+              updatedAt: new Date().toISOString(),
             },
             {
               experienceId: {eq: experienceId as string},
@@ -1796,27 +1924,93 @@ export class FilterBuilderService {
           return {id: ''};
         }
 
-        return {
-          or: timelineFilter,
-        };
+        // Combine the timeline filters with the date filter if needed
+        const combinedFilter: Where<Post> = needsDateFilter
+          ? {
+              and: [
+                {
+                  or: timelineFilter,
+                },
+                dateFilter,
+              ],
+            }
+          : {
+              or: timelineFilter,
+            };
+
+        return combinedFilter;
       }
 
-      case TimelineType.TRENDING:
-        return this.timelineByTrending();
+      case TimelineType.TRENDING: {
+        // Get the trending timeline filter without passing 'query'
+        let trendingFilter = await this.timelineByTrending();
 
-      case TimelineType.FRIEND:
-        return this.timelineByFriend();
+        // Apply the date filter if necessary
+        if (needsDateFilter) {
+          trendingFilter = {
+            and: [trendingFilter, dateFilter],
+          };
+        }
 
-      case TimelineType.ALL:
-        return this.timelineByAll();
+        return trendingFilter;
+      }
+
+      case TimelineType.FRIEND: {
+        // Get the friend timeline filter without passing 'query'
+        let friendFilter = await this.timelineByFriend();
+
+        // Apply the date filter if necessary
+        if (needsDateFilter) {
+          friendFilter = {
+            and: [friendFilter, dateFilter],
+          };
+        }
+
+        return friendFilter;
+      }
+
+      case TimelineType.ALL: {
+        // Get the all timeline filter without passing 'query'
+        let allFilter = await this.timelineByAll();
+
+        // Apply the date filter if necessary
+        if (needsDateFilter) {
+          allFilter = {
+            and: [allFilter, dateFilter],
+          };
+        }
+
+        return allFilter;
+      }
 
       default: {
         if (!query) return this.defaulTimeline();
+
         let {owner, platform} = query;
         if (Array.isArray(owner)) owner = owner[0];
         if (Array.isArray(platform)) platform = platform[0];
-        if (!owner) return this.defaulTimeline(platform?.toString());
-        return this.timelineByProfile(owner.toString(), platform?.toString());
+
+        let defaultOrProfileFilter: Where<Post>;
+
+        if (!owner) {
+          defaultOrProfileFilter = await this.defaulTimeline(
+            platform?.toString(),
+          );
+        } else {
+          defaultOrProfileFilter = await this.timelineByProfile(
+            owner.toString(),
+            platform?.toString(),
+          );
+        }
+
+        // Apply the date filter if necessary
+        if (needsDateFilter) {
+          defaultOrProfileFilter = {
+            and: [defaultOrProfileFilter, dateFilter],
+          };
+        }
+
+        return defaultOrProfileFilter;
       }
     }
   }
@@ -1870,24 +2064,32 @@ export class FilterBuilderService {
     );
   }
 
-  private orderSetting(query: Query): string[] {
+  private orderSetting(query: Query): {
+    order: string[];
+    needsDateFilter: boolean;
+  } {
     let {sortBy, order} = query;
+    let needsDateFilter = false;
 
     switch (sortBy) {
       case OrderFieldType.POPULAR:
         sortBy = 'popularCount';
+        needsDateFilter = true;
         break;
 
       case OrderFieldType.UPVOTE:
         sortBy = 'metric.upvotes';
+        needsDateFilter = true;
         break;
 
       case OrderFieldType.COMMENT:
         sortBy = 'metric.comments';
+        needsDateFilter = true;
         break;
 
       case OrderFieldType.TIP:
         sortBy = 'metric.tips';
+        needsDateFilter = true;
         break;
 
       case OrderFieldType.LATEST:
@@ -1907,18 +2109,17 @@ export class FilterBuilderService {
     }
 
     if (!order) order = OrderType.DESC;
+
+    const orderArray =
+      sortBy === 'createdAt'
+        ? [`${sortBy} ${order}`, `originCreatedAt ${order}`]
+        : [`${sortBy} ${order}`];
+
     if (query.name) {
-      return [
-        `friendIndex.${this.currentUser[securityId]} DESC`,
-        sortBy + ' ' + order,
-      ];
+      orderArray.unshift(`friendIndex.${this.currentUser[securityId]} DESC`);
     }
 
-    if (sortBy === 'createdAt') {
-      return [sortBy + ' ' + order, 'originCreatedAt' + ' ' + order];
-    }
-
-    return [sortBy + ' ' + order];
+    return {order: orderArray, needsDateFilter};
   }
 
   private defaultFilter(filter: Filter<AnyObject>) {

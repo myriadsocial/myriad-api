@@ -401,7 +401,7 @@ export class PostService {
 
   private async beforeCreate(draftPost: DraftPost): Promise<void> {
     let url = '';
-    let embeddedURL = null;
+    const embeddedURL = null;
 
     if (draftPost.text) {
       const found = draftPost.text.match(
