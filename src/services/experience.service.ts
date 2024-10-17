@@ -183,6 +183,14 @@ export class ExperienceService {
         userId: {eq: this.currentUser[securityId]},
       },
     );
+    const experience = await this.experienceRepository.findById(id);
+
+    if (
+      experience?.exclusive === true &&
+      this.currentUser[securityId] !== experience.user?.id
+    ) {
+      return [];
+    }
 
     return this.postService.find(filter, id, true);
   }
