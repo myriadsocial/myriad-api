@@ -149,6 +149,13 @@ export class Experience extends Entity {
   })
   deletedAt?: string;
 
+  @property({
+    type: 'boolean',
+    required: false,
+    default: false,
+  })
+  exclusive?: boolean;
+
   @belongsTo(() => User, {name: 'user'}, {required: true})
   createdBy: string;
 
