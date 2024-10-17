@@ -29,7 +29,6 @@ services:
       default:
 
   db_migration:
-    <<: *api
     container_name: db_migration
     restart: none
     entrypoint: node ./dist/migrate
