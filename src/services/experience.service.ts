@@ -187,7 +187,7 @@ export class ExperienceService {
 
     if (
       experience?.exclusive === true &&
-      this.currentUser[securityId] !== experience.user?.id
+      this.currentUser[securityId] !== experience.createdBy
     ) {
       return [];
     }
