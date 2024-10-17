@@ -7,6 +7,7 @@ export enum ReferenceType {
   USER = 'user',
   WALLETADDRESS = 'wallet_address',
   UNLOCKABLECONTENT = 'unlockable_content',
+  UNLOCKABLETIMELINE = 'unlockable_timeline'
 }
 
 export enum SectionType {
