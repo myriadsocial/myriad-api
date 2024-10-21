@@ -1,22 +1,6 @@
 version: '3'
 
 services:
-  api: &api
-    container_name: api
-    image: myriadsocial/myriad-api
-    build:
-      context: ../../
-      dockerfile: .maintain/docker/Dockerfile
-    env_file:
-      - ../../.env
-    ports:
-      - 3003:3000
-    networks:
-      myriad:
-        ipv4_address: 172.27.3.3
-        aliases:
-          - api
-
   mongo:
     container_name: mongo
     image: mongo:6.0.4
@@ -45,7 +29,6 @@ services:
       default:
 
   db_migration:
-    <<: *api
     container_name: db_migration
     restart: none
     entrypoint: node ./dist/migrate
@@ -85,5 +68,3 @@ services:
 networks:
   default:
     driver: bridge
-  myriad:
-    external: true
