@@ -57,4 +57,8 @@ export const config = {
   MINIO_PORT: process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT) : 9000,
   MINIO_BUCKET_NAME: process.env.MINIO_BUCKET_NAME ?? '',
   MINIO_URL: process.env.MINIO_URL ?? 'localhost:9000',
+
+  TWITCH_CLIENT_ID: process.env.TWITCH_CLIENT_ID ?? '',
+  TWITCH_SECRET: process.env.TWITCH_SECRET ?? '',
+  TWITCH_ACCESS_TOKEN: process.env.TWITCH_ACCESS_TOKEN ?? '',
 };

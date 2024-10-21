@@ -4,19 +4,21 @@ import {HttpErrors} from '@loopback/rest';
 import {PlatformType} from '../../enums';
 import {Asset, Sizes} from '../../interfaces';
 import {EmbeddedURL, ExtendedPost, Media, People} from '../../models';
-import {Reddit, Twitter} from '..';
+import {Reddit, Twitter, Twitch} from '..';
 import {formatRawText} from '../../utils/formatter';
 import {UrlUtils} from '../../utils/url-utils';
 
 const {validateURL, getOpenGraph} = UrlUtils;
 
-@injectable({scope: BindingScope.TRANSIENT})
+@injectable({ scope: BindingScope.TRANSIENT })
 export class SocialMediaService {
   constructor(
     @inject('services.Twitter')
     private twitterService: Twitter,
     @inject('services.Reddit')
     private redditService: Reddit,
+    @inject('services.Twitch')
+    private twitchService: Twitch,
   ) {}
 
   async fetchTweet(textId: string): Promise<ExtendedPost> {
@@ -419,6 +421,54 @@ export class SocialMediaService {
         platform: PlatformType.REDDIT,
       },
     } as ExtendedPost;
+  }
+
+  async fetchTwitchClip(clipId: string): Promise<ExtendedPost> {
+    const response = await this.twitchService.getClipById(clipId);
+
+    if (!response.data || response.data.length === 0) {
+      throw new HttpErrors.NotFound('Invalid Twitch clip ID or clip not found');
+    }
+
+    const clip = response.data;
+
+    // Fetch broadcaster's profile picture
+    const userResponse = await this.twitchService.getUserById(clip.broadcasterId);
+    const userData = userResponse.data;
+    const profilePictureURL = userData.profileImageUrl || '';
+
+    const asset: Asset = {
+      images: [
+        {
+          original: clip.thumbnailUrl,
+          thumbnail: clip.thumbnailUrl,
+          small: clip.thumbnailUrl,
+          medium: clip.thumbnailUrl,
+          large: clip.thumbnailUrl,
+        },
+      ],
+      videos: [clip.embedUrl],
+      exclusiveContents: [],
+    };
+
+    return {
+      platform: PlatformType.TWITCH,
+      originPostId: clip.id,
+      text: clip.title || '',
+      rawText: formatRawText(clip.title || ''),
+      tags: [],
+      originCreatedAt: new Date(clip.createdAt).toISOString(),
+      asset: asset,
+      embeddedURL: undefined,
+      url: clip.url,
+      platformUser: new People({
+        name: clip.broadcasterName,
+        username: clip.broadcasterName,
+        originUserId: clip.broadcasterId,
+        profilePictureURL: profilePictureURL,
+        platform: PlatformType.TWITCH,
+      }),
+    } as unknown as ExtendedPost;
   }
 
   public async verifyToTwitter(

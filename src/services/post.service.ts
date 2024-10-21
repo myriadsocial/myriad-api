@@ -733,6 +733,10 @@ export class PostService {
         );
         break;
 
+      case PlatformType.TWITCH:
+        rawPost = await this.socialMediaService.fetchTwitchClip(originPostId);
+        break;
+
       default:
         throw new HttpErrors.BadRequest('Cannot find the platform!');
     }
