@@ -4,3 +4,4 @@ export * from './mongo.datasource';
 export * from './reddit.datasource';
 export * from './redis.datasource';
 export * from './twitter.datasource';
+export * from './twitch.datasource';

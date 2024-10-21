@@ -21,9 +21,31 @@ export class UrlUtils {
   }
 
   getOriginPostId(): string {
-    return this.url.pathname
-      .replace(new RegExp(/\/user\/|\/u\/|\/r\//), '/')
-      .split('/')[3];
+    const platform = this.getPlatform();
+    const pathname = this.url.pathname;
+    let postId = '';
+
+    switch (platform) {
+      case PlatformType.REDDIT:
+      case PlatformType.TWITTER:
+        // Handle Reddit and Twitter URLs
+        postId =
+          pathname
+            .replace(new RegExp(/\/user\/|\/u\/|\/r\//), '/')
+            .split('/')[3] || '';
+        break;
+
+        case PlatformType.TWITCH: {
+          // Example Twitch URL: https://www.twitch.tv/videos/123456789
+          const pathSegments = this.url.pathname.split('/');
+          const idIndex = pathSegments.findIndex(segment => segment === 'videos') + 1;
+          return pathSegments[idIndex] || '';
+        }
+      default:
+        postId = '';
+    }
+
+    return postId;
   }
 
   static async getOpenGraph(url: string): Promise<EmbeddedURL | null> {

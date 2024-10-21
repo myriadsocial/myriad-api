@@ -3,4 +3,5 @@ export enum PlatformType {
   TWITTER = 'twitter',
   REDDIT = 'reddit',
   FACEBOOK = 'facebook',
+  TWITCH = 'twitch',
 }

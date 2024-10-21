@@ -62,11 +62,13 @@ import {
   UserService,
   UserSocialMediaService,
   VoteService,
+  TwitchProvider,
 } from '../../services';
 import {UserProfile, securityId} from '@loopback/security';
 import {
   CoinMarketCapDataSource,
   RedditDataSource,
+  TwitchDataSource,
   TwitterDataSource,
 } from '../../datasources';
 import {CommentService} from '../../services/comment.service';
@@ -235,11 +237,13 @@ export async function givenRepositories(testdb: any) {
   const dataSource = {
     reddit: new RedditDataSource(),
     twitter: new TwitterDataSource(),
+    twitch: new TwitchDataSource(),
     coinmarketcap: new CoinMarketCapDataSource(),
   };
 
   const redditService = await new RedditProvider(dataSource.reddit).value();
   const twitterService = await new TwitterProvider(dataSource.twitter).value();
+  const twitchService = await new TwitchProvider(dataSource.twitch).value();
   const coinmarketcapService = await new CoinMarketCapProvider(
     dataSource.coinmarketcap,
   ).value();
@@ -247,6 +251,7 @@ export async function givenRepositories(testdb: any) {
   const socialMediaService = new SocialMediaService(
     twitterService,
     redditService,
+    twitchService,
   );
 
   const metricService = new MetricService(
