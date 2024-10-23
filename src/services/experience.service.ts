@@ -202,10 +202,9 @@ export class ExperienceService {
         },
       });
       if (transaction.length === 0) {
-        return []
-      }
-      else {
-        return this.postService.find(filter,id,true)
+        return [];
+      } else {
+        return this.postService.find(filter, id, true);
       }
     }
 
