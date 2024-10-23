@@ -193,7 +193,7 @@ export class ExperienceService {
       experience?.exclusive === true &&
       this.currentUser[securityId] !== experience.createdBy
     ) {
-      const transaction = await this.transactionRepository.findOne({
+      const transaction = await this.transactionRepository.find({
         where: {
           type: ReferenceType.UNLOCKABLETIMELINE,
           from: this.currentUser[securityId],
@@ -201,10 +201,10 @@ export class ExperienceService {
           referenceId: experience.id,
         },
       });
-      if (typeof transaction !== null) {
-        return this.postService.find(filter, id, true);
-      } else {
+      if (transaction.length === 0) {
         return [];
+      } else {
+        return this.postService.find(filter, id, true);
       }
     }
 
