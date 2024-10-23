@@ -373,6 +373,7 @@ export async function givenRepositories(testdb: any) {
     timelineConfigRepository,
     userRepository,
     userExperienceRepository,
+    transactionRepository,
     friendService,
     postService,
     currentUser,
