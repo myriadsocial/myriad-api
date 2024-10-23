@@ -14,6 +14,7 @@ import {
   AccountSettingType,
   FriendStatusType,
   PlatformType,
+  ReferenceType,
   VisibilityType,
 } from '../enums';
 import {UserExperienceStatus} from '../enums/user-experience-status.enum';
@@ -31,6 +32,7 @@ import {
   TimelineConfigRepository,
   UserRepository,
   UserExperienceRepository,
+  TransactionRepository,
 } from '../repositories';
 import {FriendService} from './friend.service';
 import {PostService} from './post.service';
@@ -48,6 +50,8 @@ export class ExperienceService {
     private userRepository: UserRepository,
     @repository(UserExperienceRepository)
     private userExperienceRepository: UserExperienceRepository,
+    @repository(TransactionRepository)
+    private transactionRepository: TransactionRepository,
     @service(FriendService)
     private friendService: FriendService,
     @service(PostService)
@@ -189,7 +193,19 @@ export class ExperienceService {
       experience?.exclusive === true &&
       this.currentUser[securityId] !== experience.createdBy
     ) {
-      return [];
+      const transaction = await this.transactionRepository.findOne({
+        where: {
+          type: ReferenceType.UNLOCKABLETIMELINE,
+          from: this.currentUser[securityId],
+          to: experience.createdBy,
+          referenceId: experience.id,
+        },
+      });
+      if (typeof transaction !== null) {
+        return this.postService.find(filter, id, true);
+      } else {
+        return [];
+      }
     }
 
     return this.postService.find(filter, id, true);
