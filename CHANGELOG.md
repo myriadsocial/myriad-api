@@ -1,5 +1,47 @@
 # Changelog
 
+## [2.5.0](https://github.com/myriadsocial/myriad-api/compare/2.4.0...2.5.0) (2024-11-08)
+
+
+### Features
+
+* add authentication with personal access token ([#926](https://github.com/myriadsocial/myriad-api/issues/926)) ([b662acb](https://github.com/myriadsocial/myriad-api/commit/b662acb8ab504c5ea8b04c33003293872771ce03))
+* add exclusiveness to timeline model ([#974](https://github.com/myriadsocial/myriad-api/issues/974)) ([b67661c](https://github.com/myriadsocial/myriad-api/commit/b67661cc9efcf0b0dfb65d5f6d518497f6bdf885))
+* add new reference type ([#975](https://github.com/myriadsocial/myriad-api/issues/975)) ([c495d1f](https://github.com/myriadsocial/myriad-api/commit/c495d1fb1188de9c5c7b3fefabfc65a89ea50ac5))
+* add YouTube video fetching and embedding support ([#976](https://github.com/myriadsocial/myriad-api/issues/976)) ([05e53b0](https://github.com/myriadsocial/myriad-api/commit/05e53b0fbcf4fa92bc9a248fc1651de287f45203))
+* enable editors in timeline for multi user timeline ([#931](https://github.com/myriadsocial/myriad-api/issues/931)) ([bdf2167](https://github.com/myriadsocial/myriad-api/commit/bdf2167d04335339d6b6f4503baf821f657f9e47))
+
+
+### Bug Fixes
+
+* CRUD operation involving multi user timeline editors ([#932](https://github.com/myriadsocial/myriad-api/issues/932)) ([8eaa4f6](https://github.com/myriadsocial/myriad-api/commit/8eaa4f6ad65c7b567b454ae23448614462011426))
+* email leak on find post by id api ([#947](https://github.com/myriadsocial/myriad-api/issues/947)) ([e30dde9](https://github.com/myriadsocial/myriad-api/commit/e30dde91ee8bcda398a302e1dcfc798a22442cb4))
+* email showing on api request ([#906](https://github.com/myriadsocial/myriad-api/issues/906)) ([2ab5aac](https://github.com/myriadsocial/myriad-api/commit/2ab5aac15ea9954457b83a9d4bbd30a41e93f977))
+* embedded url ([#966](https://github.com/myriadsocial/myriad-api/issues/966)) ([f7403af](https://github.com/myriadsocial/myriad-api/commit/f7403af7ba9252a804c1ae8d558bd967fa0cead2))
+* error on creating multi user timeline ([#958](https://github.com/myriadsocial/myriad-api/issues/958)) ([6c83e79](https://github.com/myriadsocial/myriad-api/commit/6c83e797e01ab18213d539ea99f665b38f329ab4))
+* error when importing from twitter ([#895](https://github.com/myriadsocial/myriad-api/issues/895)) ([1cae52f](https://github.com/myriadsocial/myriad-api/commit/1cae52f9e5fd1613f2b124f89be7c4b1854b82d7))
+* fetch twitter ([#893](https://github.com/myriadsocial/myriad-api/issues/893)) ([f0ab8e7](https://github.com/myriadsocial/myriad-api/commit/f0ab8e72b562e58f9f528d6e46f1d43639ae2d70))
+* fetch twitter ([#894](https://github.com/myriadsocial/myriad-api/issues/894)) ([0a5016e](https://github.com/myriadsocial/myriad-api/commit/0a5016e504b7029374b1da47af1e1daab1d39a30))
+* get posts by profile ([#967](https://github.com/myriadsocial/myriad-api/issues/967)) ([ed271af](https://github.com/myriadsocial/myriad-api/commit/ed271af0ee6b7eca3ae61c6a7456ca82f43378d9))
+* get posts by profile ([#968](https://github.com/myriadsocial/myriad-api/issues/968)) ([a226514](https://github.com/myriadsocial/myriad-api/commit/a22651449ed610ffe335bd2bfec96478ffdac325))
+* issue with private timeline ([#951](https://github.com/myriadsocial/myriad-api/issues/951)) ([2ad03f3](https://github.com/myriadsocial/myriad-api/commit/2ad03f34ac1870020ad3eeaa659fc57f82e323fd))
+* issue with uploading image ([#963](https://github.com/myriadsocial/myriad-api/issues/963)) ([1a361e2](https://github.com/myriadsocial/myriad-api/commit/1a361e28e7bdf2a484c69f5b80a7a5b6c855891d))
+* mention notification ([#957](https://github.com/myriadsocial/myriad-api/issues/957)) ([d7255d6](https://github.com/myriadsocial/myriad-api/commit/d7255d68d2d0368e9ec04bd731e9b5a075254e09))
+* mongo index user email ([#892](https://github.com/myriadsocial/myriad-api/issues/892)) ([71eff2c](https://github.com/myriadsocial/myriad-api/commit/71eff2ca6378a598666fd258df56f8050d36023f))
+* multi user timeline dto ([#934](https://github.com/myriadsocial/myriad-api/issues/934)) ([ff77366](https://github.com/myriadsocial/myriad-api/commit/ff77366994f02edcb1e124c213b095bf151e28e9))
+* patch database helper error ([#982](https://github.com/myriadsocial/myriad-api/issues/982)) ([badec41](https://github.com/myriadsocial/myriad-api/commit/badec41b67d070ff2ef7ef2818e57a4f897f8473))
+* patch issue with minio url ([#965](https://github.com/myriadsocial/myriad-api/issues/965)) ([dc2d7c3](https://github.com/myriadsocial/myriad-api/commit/dc2d7c3bd58c1ed36f1af7e16c780e9bb5db1ad4))
+* prevent anonymous user to generate personal access token ([#929](https://github.com/myriadsocial/myriad-api/issues/929)) ([908d17a](https://github.com/myriadsocial/myriad-api/commit/908d17a2784852ddf0bccb3494921f71da5a352f))
+* profile ([#890](https://github.com/myriadsocial/myriad-api/issues/890)) ([8a3b7d9](https://github.com/myriadsocial/myriad-api/commit/8a3b7d9be344b10a7e1f2143547506bb4c383abe))
+* rate limit ([#907](https://github.com/myriadsocial/myriad-api/issues/907)) ([1938cd5](https://github.com/myriadsocial/myriad-api/commit/1938cd555e86cab875e2b6d730ea8b89af6fc0f1))
+* remove email from get post request ([#902](https://github.com/myriadsocial/myriad-api/issues/902)) ([6a1ef00](https://github.com/myriadsocial/myriad-api/commit/6a1ef0016e10d1ef1d0f4cbd202ccd011d04bd0b))
+* replace firebase with minio ([#964](https://github.com/myriadsocial/myriad-api/issues/964)) ([8d58fac](https://github.com/myriadsocial/myriad-api/commit/8d58fac8c80e9751befb30189bf4fbd39cd3173c))
+* return empty array when timeline is exclusive ([#978](https://github.com/myriadsocial/myriad-api/issues/978)) ([dd7e5ea](https://github.com/myriadsocial/myriad-api/commit/dd7e5ea279ee254dcbcd5fc737b4924ab0863778))
+* update access token API ([#973](https://github.com/myriadsocial/myriad-api/issues/973)) ([f343f73](https://github.com/myriadsocial/myriad-api/commit/f343f73c4eebe7ab7614a939744fbcaf82332b38))
+* update comment notification message ([#953](https://github.com/myriadsocial/myriad-api/issues/953)) ([20ce7dc](https://github.com/myriadsocial/myriad-api/commit/20ce7dcc75d21f7d85330e9a31893d4d74d3827b))
+* update exclusive timeline exclusion logic to fetch transaction ([#981](https://github.com/myriadsocial/myriad-api/issues/981)) ([98c713e](https://github.com/myriadsocial/myriad-api/commit/98c713efd44ad57ace530b620922d013ea0b6eec))
+* update transaction search for exclusive timeline ([#983](https://github.com/myriadsocial/myriad-api/issues/983)) ([fa6432c](https://github.com/myriadsocial/myriad-api/commit/fa6432cfa90612a36d0d56c2417ca9193793fc16))
+
 ## [2.4.0](https://github.com/myriadsocial/myriad-api/compare/2.3.1...2.4.0) (2023-06-15)
 
 
