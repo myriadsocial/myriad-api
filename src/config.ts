@@ -57,4 +57,6 @@ export const config = {
   MINIO_PORT: process.env.MINIO_PORT ? parseInt(process.env.MINIO_PORT) : 9000,
   MINIO_BUCKET_NAME: process.env.MINIO_BUCKET_NAME ?? '',
   MINIO_URL: process.env.MINIO_URL ?? 'localhost:9000',
+
+  YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY ?? '',
 };

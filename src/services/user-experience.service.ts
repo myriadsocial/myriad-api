@@ -698,6 +698,7 @@ export class UserExperienceService {
           PlatformType.MYRIAD,
           PlatformType.REDDIT,
           PlatformType.TWITTER,
+          PlatformType.YOUTUBE,
         ];
 
         if (platforms.includes(e.platform)) return true;

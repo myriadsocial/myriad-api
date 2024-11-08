@@ -733,6 +733,10 @@ export class PostService {
         );
         break;
 
+      case PlatformType.YOUTUBE:
+        rawPost = await this.socialMediaService.fetchYouTubeVideo(originPostId);
+        break;
+
       default:
         throw new HttpErrors.BadRequest('Cannot find the platform!');
     }
